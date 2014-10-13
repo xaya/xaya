@@ -31,9 +31,9 @@ const char* GetOpName(opcodetype opcode)
     case OP_PUSHDATA4              : return "OP_PUSHDATA4";
     case OP_1NEGATE                : return "-1";
     case OP_RESERVED               : return "OP_RESERVED";
-    case OP_1                      : return "1";
-    case OP_2                      : return "2";
-    case OP_3                      : return "3";
+    case OP_1                      : return "OP_NAME_NEW";
+    case OP_2                      : return "OP_NAME_FIRSTUPDATE";
+    case OP_3                      : return "OP_NAME_UPDATE";
     case OP_4                      : return "4";
     case OP_5                      : return "5";
     case OP_6                      : return "6";
