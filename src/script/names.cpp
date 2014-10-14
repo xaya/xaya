@@ -60,3 +60,33 @@ CNameScript::CNameScript (const CScript& script)
   op = nameOp;
   address = CScript (pc, script.end ());
 }
+
+CScript
+CNameScript::buildNameNew (const CScript& addr, const uint160& hash)
+{
+  CScript prefix;
+  prefix << OP_NAME_NEW << hash << OP_2DROP;
+
+  return prefix + addr;
+}
+
+CScript
+CNameScript::buildNameFirstupdate (const CScript& addr, const valtype& name,
+                                   const valtype& value, const valtype& rand)
+{
+  CScript prefix;
+  prefix << OP_NAME_FIRSTUPDATE << name << rand << value
+         << OP_2DROP << OP_2DROP;
+
+  return prefix + addr;
+}
+
+CScript
+CNameScript::buildNameUpdate (const CScript& addr, const valtype& name,
+                              const valtype& value)
+{
+  CScript prefix;
+  prefix << OP_NAME_UPDATE << name << value << OP_2DROP << OP_DROP;
+
+  return prefix + addr;
+}

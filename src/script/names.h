@@ -67,6 +67,122 @@ public:
     return address;
   }
 
+  /**
+   * Return the name operation.  This returns OP_NAME_NEW, OP_NAME_FIRSTUPDATE
+   * or OP_NAME_UPDATE.  Do not call if this is not a name script.
+   * @return The name operation opcode.
+   */
+  inline opcodetype
+  getNameOp () const
+  {
+    switch (op)
+      {
+      case OP_NAME_NEW:
+      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_UPDATE:
+        return op;
+
+      default:
+        assert (false);
+      }
+  }
+
+  /**
+   * Return the name operation name.  This call is only valid for
+   * OP_NAME_FIRSTUPDATE or OP_NAME_UPDATE.
+   * @return The name operation's name.
+   */
+  inline const valtype&
+  getOpName () const
+  {
+    switch (op)
+      {
+      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_UPDATE:
+        return args[0];
+
+      default:
+        assert (false);
+      }
+  }
+
+  /**
+   * Return the name operation value.  This call is only valid for
+   * OP_NAME_FIRSTUPDATE or OP_NAME_UPDATE.
+   * @return The name operation's value.
+   */
+  inline const valtype&
+  getOpValue () const
+  {
+    switch (op)
+      {
+      case OP_NAME_FIRSTUPDATE:
+        return args[2];
+
+      case OP_NAME_UPDATE:
+        return args[1];
+
+      default:
+        assert (false);
+      }
+  }
+
+  /**
+   * Return the name operation's rand value.  This is only valid
+   * for OP_NAME_FIRSTUPDATE.
+   * @return The name operation's rand.
+   */
+  inline const valtype&
+  getOpRand () const
+  {
+    assert (op == OP_NAME_FIRSTUPDATE);
+    return args[1];
+  }
+
+  /**
+   * Return the name operation's hash value.  This is only valid
+   * for OP_NAME_NEW.
+   * @return The name operation's hash.
+   */
+  inline const uint160
+  getOpHash () const
+  {
+    assert (op == OP_NAME_NEW);
+    return uint160 (args[0]);
+  }
+
+  /**
+   * Build a NAME_NEW transaction.
+   * @param addr The address script to append.
+   * @param hash The hash to use.
+   * @return The full NAME_NEW script.
+   */
+  static CScript buildNameNew (const CScript& addr, const uint160& hash);
+
+  /**
+   * Build a NAME_FIRSTUPDATE transaction.  Note that the arguments to this
+   * function are not in the same order as in the script.  They are chosen
+   * to mimic the arguments to NAME_UPDATE.
+   * @param addr The address script to append.
+   * @param name The name to firstupdate.
+   * @param value The value to set it to.
+   * @param rand The rand value to use.
+   * @return The full NAME_FIRSTUPDATE script.
+   */
+  static CScript buildNameFirstupdate (const CScript& addr, const valtype& name,
+                                       const valtype& value,
+                                       const valtype& rand);
+
+  /**
+   * Build a NAME_UPDATE transaction.
+   * @param addr The address script to append.
+   * @param name The name to update.
+   * @param value The value to set it to.
+   * @return The full NAME_UPDATE script.
+   */
+  static CScript buildNameUpdate (const CScript& addr, const valtype& name,
+                                  const valtype& value);
+
 };
 
 #endif // H_BITCOIN_SCRIPT_NAMES
