@@ -7,6 +7,8 @@
 #define BITCOIN_COINS_H
 
 #include "compressor.h"
+#include "core.h"
+#include "names.h"
 #include "serialize.h"
 #include "uint256.h"
 
@@ -315,9 +317,12 @@ public:
     //! Retrieve the block hash whose state this CCoinsView currently represents
     virtual uint256 GetBestBlock() const;
 
+    // Get a name (if it exists)
+    virtual bool GetName(const valtype& name, CNameData& data) const;
+
     //! Do a bulk modification (multiple CCoins changes + BestBlock change).
     //! The passed mapCoins can be modified.
-    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
 
     //! Calculate statistics about the unspent transaction output set
     virtual bool GetStats(CCoinsStats &stats) const;
@@ -338,8 +343,9 @@ public:
     bool GetCoins(const uint256 &txid, CCoins &coins) const;
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
+    bool GetName(const valtype& name, CNameData& data) const;
     void SetBackend(CCoinsView &viewIn);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
 };
 
@@ -379,6 +385,9 @@ protected:
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
 
+    /* Name changes cache.  */
+    CNameCache cacheNames;
+
 public:
     CCoinsViewCache(CCoinsView *baseIn);
     ~CCoinsViewCache();
@@ -388,7 +397,10 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     void SetBestBlock(const uint256 &hashBlock);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock);
+    bool GetName(const valtype &name, CNameData &data) const;
+    void SetName(const valtype &name, const CNameData &data);
+    void DeleteName(const valtype &name);
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
 
     /**
      * Return a pointer to CCoins in the cache, or NULL if not found. This is

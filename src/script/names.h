@@ -88,6 +88,28 @@ public:
   }
 
   /**
+   * Return whether this is a name update (including first updates).  I. e.,
+   * whether this creates a name index update/entry.
+   * @return True iff this is NAME_FIRSTUPDATE or NAME_UPDATE.
+   */
+  inline bool
+  isAnyUpdate () const
+  {
+    switch (op)
+      {
+      case OP_NAME_NEW:
+        return false;
+
+      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_UPDATE:
+        return true;
+
+      default:
+        assert (false);
+      }
+  }
+
+  /**
    * Return the name operation name.  This call is only valid for
    * OP_NAME_FIRSTUPDATE or OP_NAME_UPDATE.
    * @return The name operation's name.

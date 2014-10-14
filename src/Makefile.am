@@ -172,7 +172,6 @@ libbitcoin_server_a_SOURCES = \
   chain.cpp \
   checkpoints.cpp \
   init.cpp \
-  leveldbwrapper.cpp \
   main.cpp \
   merkleblock.cpp \
   miner.cpp \
@@ -252,6 +251,7 @@ libbitcoin_common_a_SOURCES = \
   hash.cpp \
   key.cpp \
   keystore.cpp \
+  leveldbwrapper.cpp \
   names.cpp \
   netbase.cpp \
   protocol.cpp \

@@ -38,6 +38,7 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   const CNameScript opNew(script);
   BOOST_CHECK (opNew.isNameOp ());
   BOOST_CHECK (opNew.getAddress () == scrAddr);
+  BOOST_CHECK (!opNew.isAnyUpdate ());
   BOOST_CHECK (opNew.getNameOp () == OP_NAME_NEW);
   BOOST_CHECK (opNew.getOpHash () == hash);
 
@@ -45,6 +46,7 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   const CNameScript opFirstupdate(script);
   BOOST_CHECK (opFirstupdate.isNameOp ());
   BOOST_CHECK (opFirstupdate.getAddress () == scrAddr);
+  BOOST_CHECK (opFirstupdate.isAnyUpdate ());
   BOOST_CHECK (opFirstupdate.getNameOp () == OP_NAME_FIRSTUPDATE);
   BOOST_CHECK (opFirstupdate.getOpName () == name);
   BOOST_CHECK (opFirstupdate.getOpValue () == value);
@@ -54,9 +56,40 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   const CNameScript opUpdate(script);
   BOOST_CHECK (opUpdate.isNameOp ());
   BOOST_CHECK (opUpdate.getAddress () == scrAddr);
+  BOOST_CHECK (opUpdate.isAnyUpdate ());
   BOOST_CHECK (opUpdate.getNameOp () == OP_NAME_UPDATE);
   BOOST_CHECK (opUpdate.getOpName () == name);
   BOOST_CHECK (opUpdate.getOpValue () == value);
+}
+
+BOOST_AUTO_TEST_CASE (name_database)
+{
+  const valtype name = ValtypeFromString ("database-test-name");
+  const valtype value = ValtypeFromString ("my-value");
+
+  CBitcoinAddress addr("N5e1vXUUL3KfhPyVjQZSes1qQ7eyarDbUU");
+  BOOST_CHECK (addr.IsValid ());
+  const CScript scrAddr = GetScriptForDestination (addr.Get ());
+
+  CNameData data, data2;
+  CScript updateScript = CNameScript::buildNameUpdate (scrAddr, name, value);
+  const CNameScript nameOp(updateScript);
+  data.fromScript (42, nameOp);
+
+  CCoinsViewCache& view = *pcoinsTip;
+
+  BOOST_CHECK (!view.GetName (name, data2));
+  view.SetName (name, data);
+  BOOST_CHECK (view.GetName (name, data2));
+  BOOST_CHECK (data == data2);
+  BOOST_CHECK (view.Flush ());
+  BOOST_CHECK (view.GetName (name, data2));
+  BOOST_CHECK (data == data2);
+
+  view.DeleteName (name);
+  BOOST_CHECK (!view.GetName (name, data2));
+  BOOST_CHECK (view.Flush ());
+  BOOST_CHECK (!view.GetName (name, data2));
 }
 
 BOOST_AUTO_TEST_SUITE_END ()
