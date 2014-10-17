@@ -64,7 +64,11 @@ if BUILD_BITCOIND
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += namecoin-cli namecoin-tx
+  # FIXME: Reenable
+  # Disable namecoin-tx.  For this to work, we need to better
+  # separate files between the various LIBBITCOIN_* libraries
+  # to not produce linker errors.
+  bin_PROGRAMS += namecoin-cli # namecoin-tx
 endif
 
 .PHONY: FORCE

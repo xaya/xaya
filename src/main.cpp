@@ -14,6 +14,7 @@
 #include "checkqueue.h"
 #include "init.h"
 #include "merkleblock.h"
+#include "names.h"
 #include "net.h"
 #include "pow.h"
 #include "txdb.h"
@@ -1071,7 +1072,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
-        if (!CheckInputs(tx, state, view, true, STANDARD_SCRIPT_VERIFY_FLAGS, true))
+        if (!CheckInputs(tx, state, view, true, STANDARD_SCRIPT_VERIFY_FLAGS, true, MEMPOOL_HEIGHT))
         {
             return error("AcceptToMemoryPool: ConnectInputs failed %s", hash.ToString());
         }
@@ -1484,7 +1485,7 @@ bool CScriptCheck::operator()() {
     return true;
 }
 
-bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, std::vector<CScriptCheck> *pvChecks)
+bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &inputs, bool fScriptChecks, unsigned int flags, bool cacheStore, unsigned nHeight, std::vector<CScriptCheck> *pvChecks)
 {
     if (!tx.IsCoinBase())
     {
@@ -1582,6 +1583,9 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
             }
         }
     }
+
+    if (!CheckNameTransaction (tx, nHeight, inputs, state))
+        return error ("CheckInputs: tx invalid for Namecoin");
 
     return true;
 }
@@ -1881,7 +1885,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             nFees += view.GetValueIn(tx)-tx.GetValueOut();
 
             std::vector<CScriptCheck> vChecks;
-            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, nScriptCheckThreads ? &vChecks : NULL))
+            if (!CheckInputs(tx, state, view, fScriptChecks, flags, false, pindex->nHeight, nScriptCheckThreads ? &vChecks : NULL))
                 return false;
             control.Add(vChecks);
         }

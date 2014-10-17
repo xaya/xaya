@@ -176,6 +176,7 @@ private:
 
 public:
     static const int32_t CURRENT_VERSION=1;
+    static const int32_t NAMECOIN_VERSION=0x7100;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -232,6 +233,11 @@ public:
         return (vin.size() == 1 && vin[0].prevout.IsNull());
     }
 
+    bool IsNamecoin() const
+    {
+        return nVersion == NAMECOIN_VERSION;
+    }
+
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
         return a.hash == b.hash;
@@ -271,6 +277,12 @@ struct CMutableTransaction
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
      */
     uint256 GetHash() const;
+
+    /**
+     * Turn this into a Namecoin version transaction.  It is assumed
+     * that it isn't already.
+     */
+    void SetNamecoin();
 };
 
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

@@ -67,6 +67,12 @@ uint256 CMutableTransaction::GetHash() const
     return SerializeHash(*this);
 }
 
+void CMutableTransaction::SetNamecoin()
+{
+    assert (nVersion == CTransaction::CURRENT_VERSION);
+    nVersion = CTransaction::NAMECOIN_VERSION;
+}
+
 void CTransaction::UpdateHash() const
 {
     *const_cast<uint256*>(&hash) = SerializeHash(*this);

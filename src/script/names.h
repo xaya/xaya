@@ -7,6 +7,8 @@
 
 #include "script/script.h"
 
+class uint160;
+
 /**
  * A script parsed for name operations.  This can be initialised
  * from a "standard" script, and will then determine if this is
@@ -27,6 +29,14 @@ private:
   std::vector<valtype> args;
 
 public:
+
+  /**
+   * Default constructor.  This enables us to declare a variable
+   * and initialise it later via assignment.
+   */
+  inline CNameScript ()
+    : op(OP_NOP)
+  {}
 
   /**
    * Parse a script and determine whether it is a valid name script.  Sets
@@ -166,11 +176,11 @@ public:
    * for OP_NAME_NEW.
    * @return The name operation's hash.
    */
-  inline const uint160
+  inline const valtype&
   getOpHash () const
   {
     assert (op == OP_NAME_NEW);
-    return uint160 (args[0]);
+    return args[0];
   }
 
   /**

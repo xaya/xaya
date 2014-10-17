@@ -4,6 +4,8 @@
 
 #include "script/names.h"
 
+#include "uint256.h"
+
 CNameScript::CNameScript (const CScript& script)
   : op(OP_NOP), address(script)
 {
@@ -65,7 +67,7 @@ CScript
 CNameScript::buildNameNew (const CScript& addr, const uint160& hash)
 {
   CScript prefix;
-  prefix << OP_NAME_NEW << hash << OP_2DROP;
+  prefix << OP_NAME_NEW << ToByteVector (hash) << OP_2DROP;
 
   return prefix + addr;
 }

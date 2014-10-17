@@ -5,15 +5,17 @@
 #ifndef H_BITCOIN_NAMES
 #define H_BITCOIN_NAMES
 
-#include "core.h"
 #include "serialize.h"
 
 #include "script/script.h"
 
 #include <string>
 
+class CCoinsView;
 class CNameScript;
 class CLevelDBBatch;
+class CTransaction;
+class CValidationState;
 
 /**
  * Construct a valtype (e. g., name) from a string.
@@ -83,6 +85,16 @@ public:
   }
 
   /**
+   * Get the height.
+   * @return The name's update height.
+   */
+  inline unsigned
+  getHeight () const
+  {
+    return nHeight;
+  }
+
+  /**
    * Set from a name update operation.
    * @param h The height (not available from script).
    * @param script The name script.  Should be a name (first) update.
@@ -144,5 +156,19 @@ public:
   void writeBatch (CLevelDBBatch& batch) const;
 
 };
+
+/**
+ * Check a transaction according to the additional Namecoin rules.  This
+ * ensures that all name operations (if any) are valid and that it has
+ * name operations iff it is marked as Namecoin tx by its version.
+ * @param tx The transaction to check.
+ * @param nHeight Height at which the tx will be.  May be MEMPOOL_HEIGHT.
+ * @param view The current chain state.
+ * @param state Resulting validation state.
+ * @return True in case of success.
+ */
+bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
+                           const CCoinsView& view,
+                           CValidationState& state);
 
 #endif // H_BITCOIN_NAMES

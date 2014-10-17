@@ -3,9 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "base58.h"
-#include "core.h"
 #include "main.h"
 #include "names.h"
+
+#include "core/transaction.h"
 
 #include "script/names.h"
 
@@ -40,7 +41,7 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   BOOST_CHECK (opNew.getAddress () == scrAddr);
   BOOST_CHECK (!opNew.isAnyUpdate ());
   BOOST_CHECK (opNew.getNameOp () == OP_NAME_NEW);
-  BOOST_CHECK (opNew.getOpHash () == hash);
+  BOOST_CHECK (uint160 (opNew.getOpHash ()) == hash);
 
   script = CNameScript::buildNameFirstupdate (scrAddr, name, value, rand);
   const CNameScript opFirstupdate(script);
