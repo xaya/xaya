@@ -290,4 +290,69 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
 /* ************************************************************************** */
 
+BOOST_AUTO_TEST_CASE (name_updates_undo)
+{
+  const valtype name = ValtypeFromString ("database-test-name");
+  const valtype value1 = ValtypeFromString ("old-value");
+  const valtype value2 = ValtypeFromString ("new-value");
+  const CScript addr = getTestAddress ();
+
+  CCoinsView dummyView;
+  CCoinsViewCache view(&dummyView);
+  CBlockUndo undo;
+  CNameData data;
+
+  const valtype rand(20, 'x');
+  valtype toHash(rand);
+  toHash.insert (toHash.end (), name.begin (), name.end ());
+  const uint160 hash = Hash160 (toHash);
+
+  const CScript scrNew = CNameScript::buildNameNew (addr, hash);
+  const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name,
+                                                              value1, rand);
+  const CScript scrUpdate = CNameScript::buildNameUpdate (addr, name, value2);
+
+  /* The constructed tx needs not be valid.  We only test
+     ApplyNameTransaction and not validation.  */
+
+  CMutableTransaction mtx;
+  mtx.SetNamecoin ();
+  mtx.vout.push_back (CTxOut (COIN, scrNew));
+  ApplyNameTransaction (mtx, 100, view, undo);
+  BOOST_CHECK (!view.GetName (name, data));
+  BOOST_CHECK (undo.vnameundo.empty ());
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, scrFirst));
+  ApplyNameTransaction (mtx, 200, view, undo);
+  BOOST_CHECK (view.GetName (name, data));
+  BOOST_CHECK (data.getHeight () == 200);
+  BOOST_CHECK (data.getValue () == value1);
+  BOOST_CHECK (data.getAddress () == addr);
+  BOOST_CHECK (undo.vnameundo.size () == 1);
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, scrUpdate));
+  ApplyNameTransaction (mtx, 300, view, undo);
+  BOOST_CHECK (view.GetName (name, data));
+  BOOST_CHECK (data.getHeight () == 300);
+  BOOST_CHECK (data.getValue () == value2);
+  BOOST_CHECK (data.getAddress () == addr);
+  BOOST_CHECK (undo.vnameundo.size () == 2);
+
+  undo.vnameundo.back ().apply (view);
+  BOOST_CHECK (view.GetName (name, data));
+  BOOST_CHECK (data.getHeight () == 200);
+  BOOST_CHECK (data.getValue () == value1);
+  BOOST_CHECK (data.getAddress () == addr);
+  undo.vnameundo.pop_back ();
+
+  undo.vnameundo.back ().apply (view);
+  BOOST_CHECK (!view.GetName (name, data));
+  undo.vnameundo.pop_back ();
+  BOOST_CHECK (undo.vnameundo.empty ());
+}
+
+/* ************************************************************************** */
+
 BOOST_AUTO_TEST_SUITE_END ()

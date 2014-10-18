@@ -97,6 +97,26 @@ public:
   }
 
   /**
+   * Get the value.
+   * @return The name's value.
+   */
+  inline const valtype&
+  getValue () const
+  {
+    return value;
+  }
+
+  /**
+   * Get the address.
+   * @return The name's address.
+   */
+  inline const CScript&
+  getAddress () const
+  {
+    return addr;
+  }
+
+  /**
    * Set from a name update operation.
    * @param h The height (not available from script).
    * @param script The name script.  Should be a name (first) update.
