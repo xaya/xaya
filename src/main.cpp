@@ -1738,6 +1738,12 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
         }
     }
 
+    // undo name operations in reverse order
+    std::vector<CNameTxUndo>::const_reverse_iterator nameUndoIter;
+    for (nameUndoIter = blockUndo.vnameundo.rbegin ();
+         nameUndoIter != blockUndo.vnameundo.rend (); ++nameUndoIter)
+      nameUndoIter->apply (view);
+
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
@@ -1891,12 +1897,11 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         }
 
         CTxUndo undoDummy;
-        if (i > 0)
+        if (i > 0) {
             blockundo.vtxundo.push_back(CTxUndo());
-        else
-            assert(!tx.IsNamecoin());
+        }
         UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
-        ApplyNameTransaction(tx, pindex->nHeight, view);
+        ApplyNameTransaction(tx, pindex->nHeight, view, blockundo);
 
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);

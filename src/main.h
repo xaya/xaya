@@ -16,6 +16,7 @@
 #include "coins.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
+#include "names.h"
 #include "net.h"
 #include "pow.h"
 #include "script/script.h"
