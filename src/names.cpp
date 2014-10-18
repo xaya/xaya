@@ -270,7 +270,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   if (nameOpOut.getOpRand ().size () > 20)
     return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
-                                 " rand too large"));
+                                 " rand too large, %d bytes",
+                                 nameOpOut.getOpRand ().size ()));
 
   {
     valtype toHash(nameOpOut.getOpRand ());
