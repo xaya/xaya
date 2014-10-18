@@ -88,7 +88,7 @@ static const Checkpoints::CCheckpointData dataTestnet = {
 /* FIXME: Update.  */
 static Checkpoints::MapCheckpoints mapCheckpointsRegtest =
         boost::assign::map_list_of
-        ( 0, uint256S("0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"))
+        ( 0, uint256S("5287b3809b71433729402429b7d909a853cfac5ed40f09117b242c275e6b2d63"))
         ;
 static const Checkpoints::CCheckpointData dataRegtest = {
         &mapCheckpointsRegtest,
@@ -279,7 +279,6 @@ static CTestNetParams testNetParams;
 /**
  * Regression test
  */
-/* FIXME: Update for Namecoin.  */
 class CRegTestParams : public CTestNetParams {
 public:
     CRegTestParams() {
@@ -301,7 +300,7 @@ public:
         genesis.nNonce = 2;
         hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18444;
-        //assert(hashGenesisBlock == uint256S("0x0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"));
+        assert(hashGenesisBlock == uint256S("0x5287b3809b71433729402429b7d909a853cfac5ed40f09117b242c275e6b2d63"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
@@ -327,6 +326,11 @@ public:
     bool AllowLegacyBlocks(unsigned) const
     {
         return false;
+    }
+
+    unsigned NameExpirationDepth (unsigned nHeight) const
+    {
+        return 100;
     }
 };
 static CRegTestParams regTestParams;
