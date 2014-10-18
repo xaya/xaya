@@ -4,6 +4,7 @@
 
 #include "names.h"
 
+#include "chainparams.h"
 #include "coins.h"
 #include "leveldbwrapper.h"
 #include "txmempool.h"
@@ -16,22 +17,6 @@
 static const unsigned MAX_VALUE_LENGTH = 1023;
 static const unsigned MAX_NAME_LENGTH = 255;
 static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
-
-/**
- * Return the expiration depth at the given height.
- * @param nHeight Height at which to look.
- * @return The expiration depth at that height.
- */
-static unsigned
-getExpirationDepth (unsigned nHeight)
-{
-  if (nHeight < 24000)
-    return 12000;
-  if (nHeight < 48000)
-    return nHeight - 12000;
-
-  return 36000;
-}
 
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
@@ -53,7 +38,7 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
   if (nHeight == MEMPOOL_HEIGHT)
     nHeight = chainActive.Height ();
 
-  return nPrevHeight + getExpirationDepth (nHeight) <= nHeight;
+  return nPrevHeight + Params ().NameExpirationDepth (nHeight) <= nHeight;
 }
 
 /* ************************************************************************** */

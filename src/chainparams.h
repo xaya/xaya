@@ -92,6 +92,9 @@ public:
     /* Return whether to allow blocks with a "legacy" version.  */
     virtual bool AllowLegacyBlocks(unsigned nHeight) const = 0;
 
+    /* Return the expiration depth for names at the given height.  */
+    virtual unsigned NameExpirationDepth (unsigned nHeight) const = 0;
+
 protected:
     CChainParams() {}
 

@@ -337,6 +337,9 @@ static const CRPCCommand vRPCCommands[] =
     { "hidden",             "reconsiderblock",        &reconsiderblock,        true,      false },
     { "hidden",             "setmocktime",            &setmocktime,            true,      false },
 
+    /* Namecoin functions */
+    { "namecoin",           "name_show",              &name_show,              true,      false,      false },
+
 #ifdef ENABLE_WALLET
     /* Wallet */
     { "wallet",             "addmultisigaddress",     &addmultisigaddress,     true,      true },

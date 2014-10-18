@@ -191,6 +191,16 @@ public:
     {
         return static_cast<int> (nHeight) < AuxpowStartHeight();
     }
+
+    unsigned NameExpirationDepth (unsigned nHeight) const
+    {
+        if (nHeight < 24000)
+            return 12000;
+        if (nHeight < 48000)
+            return nHeight - 12000;
+
+        return 36000;
+    }
 };
 static CMainParams mainParams;
 
