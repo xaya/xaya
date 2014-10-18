@@ -53,7 +53,7 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
   if (nHeight == MEMPOOL_HEIGHT)
     nHeight = chainActive.Height ();
 
-  return nPrevHeight <= nHeight - getExpirationDepth (nHeight);
+  return nPrevHeight + getExpirationDepth (nHeight) <= nHeight;
 }
 
 /* ************************************************************************** */
@@ -293,4 +293,31 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
      takes care of this with the check above already.  */
 
   return true;
+}
+
+void
+ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
+                      CCoinsViewCache& view)
+{
+  assert (nHeight != MEMPOOL_HEIGHT);
+  if (!tx.IsNamecoin ())
+    return;
+
+  /* Changes are encoded in the outputs.  We don't have to do any checks,
+     so simply apply all these.  */
+
+  for (unsigned i = 0; i < tx.vout.size (); ++i)
+    {
+      const CNameScript op(tx.vout[i].scriptPubKey);
+      if (op.isNameOp () && op.isAnyUpdate ())
+        {
+          const valtype& name = op.getOpName ();
+          LogPrintf ("Updating name at height %d: %s\n",
+                     nHeight, ValtypeToString (name).c_str ());
+
+          CNameData data;
+          data.fromScript (nHeight, op);
+          view.SetName (name, data);
+        }
+    }
 }

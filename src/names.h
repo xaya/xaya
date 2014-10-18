@@ -12,6 +12,7 @@
 #include <string>
 
 class CCoinsView;
+class CCoinsViewCache;
 class CNameScript;
 class CLevelDBBatch;
 class CTransaction;
@@ -170,5 +171,15 @@ public:
 bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                            const CCoinsView& view,
                            CValidationState& state);
+
+/**
+ * Apply the changes of a name transaction to the name database.
+ * @param tx The transaction to apply.
+ * @param nHeight Height at which the tx is.  Used for CNameData.
+ * @param view The chain state to update.
+ * @return True in case of success.
+ */
+void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
+                           CCoinsViewCache& view);
 
 #endif // H_BITCOIN_NAMES
