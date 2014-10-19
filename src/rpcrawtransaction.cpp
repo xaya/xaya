@@ -11,6 +11,7 @@
 #include "main.h"
 #include "net.h"
 #include "rpcserver.h"
+#include "script/names.h"
 #include "script/script.h"
 #include "script/sign.h"
 #include "script/standard.h"
@@ -33,6 +34,47 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out, bool fIncludeH
     txnouttype type;
     vector<CTxDestination> addresses;
     int nRequired;
+
+    const CNameScript nameOp(scriptPubKey);
+    if (nameOp.isNameOp ())
+    {
+        Object jsonOp;
+        switch (nameOp.getNameOp ())
+        {
+        case OP_NAME_NEW:
+            jsonOp.push_back (Pair("op", "name_new"));
+            jsonOp.push_back (Pair("hash", HexStr (nameOp.getOpHash ())));
+            break;
+
+        case OP_NAME_FIRSTUPDATE:
+        {
+            const std::string name = ValtypeToString (nameOp.getOpName ());
+            const std::string value = ValtypeToString (nameOp.getOpValue ());
+
+            jsonOp.push_back (Pair("op", "name_firstupdate"));
+            jsonOp.push_back (Pair("name", name));
+            jsonOp.push_back (Pair("value", value));
+            jsonOp.push_back (Pair("rand", HexStr (nameOp.getOpRand ())));
+            break;
+        }
+
+        case OP_NAME_UPDATE:
+        {
+            const std::string name = ValtypeToString (nameOp.getOpName ());
+            const std::string value = ValtypeToString (nameOp.getOpValue ());
+
+            jsonOp.push_back (Pair("op", "name_update"));
+            jsonOp.push_back (Pair("name", name));
+            jsonOp.push_back (Pair("value", value));
+            break;
+        }
+
+        default:
+            assert (false);
+        }
+
+        out.push_back (Pair("nameOp", jsonOp));
+    }
 
     out.push_back(Pair("asm", scriptPubKey.ToString()));
     if (fIncludeHex)
