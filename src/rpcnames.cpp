@@ -106,27 +106,30 @@ name_new (const json_spirit::Array& params, bool fHelp)
 {
   if (fHelp || params.size () != 1)
     throw std::runtime_error (
-      "name_new \"name\"\n"
-      "\nStart registration of the given name.  Must be followed up with"
-      " name_firstupdate to finish the registration.\n"
-      "\nArguments:\n"
-      "1. \"name\"          (string, required) the name to register\n"
-      "\nResult:\n"
-      "[\n"
-      "  \"txid\": xxxxx,   (string) the txid, required for name_firstupdate\n"
-      "  \"rand\": xxxxx,   (string) random value for name_firstupdate\n"
-      "]\n"
-      "\nExamples:\n"
-      + HelpExampleCli ("name_new", "\"myname\"")
-      + HelpExampleRpc ("name_new", "\"myname\"")
+        "name_new \"name\"\n"
+        "\nStart registration of the given name.  Must be followed up with"
+        " name_firstupdate to finish the registration.\n"
+        "\nArguments:\n"
+        "1. \"name\"          (string, required) the name to register\n"
+        "\nResult:\n"
+        "[\n"
+        "  \"txid\": xxxxx,   (string) the txid, required for name_firstupdate\n"
+        "  \"rand\": xxxxx,   (string) random value for name_firstupdate\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_new", "\"myname\"")
+        + HelpExampleRpc ("name_new", "\"myname\"")
       );
 
   const std::string nameStr = params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
 
+  if (name.size () > MAX_NAME_LENGTH)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
+
   valtype rand(20);
   if (!GetRandBytes (&rand[0], rand.size ()))
-    throw std::runtime_error ("Failed to generate random value.");
+    throw std::runtime_error ("failed to generate random value");
 
   valtype toHash(rand);
   toHash.insert (toHash.end (), name.begin (), name.end ());

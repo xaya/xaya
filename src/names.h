@@ -19,6 +19,11 @@ class CLevelDBBatch;
 class CTransaction;
 class CValidationState;
 
+/* Some constants defining name limits.  */
+static const unsigned MAX_VALUE_LENGTH = 1023;
+static const unsigned MAX_NAME_LENGTH = 255;
+static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
+
 /**
  * Construct a valtype (e. g., name) from a string.
  * @param str The string input.

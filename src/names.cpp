@@ -14,10 +14,6 @@
 
 #include "script/names.h"
 
-static const unsigned MAX_VALUE_LENGTH = 1023;
-static const unsigned MAX_NAME_LENGTH = 255;
-static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
-
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
  * heights of MEMPOOL_HEIGHT are supported.  For nHeight == MEMPOOL_HEIGHT,
