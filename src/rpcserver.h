@@ -209,6 +209,8 @@ extern json_spirit::Value getblockchaininfo(const json_spirit::Array& params, bo
 extern json_spirit::Value getnetworkinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value setmocktime(const json_spirit::Array& params, bool fHelp);
 
+extern void SendMoneyToScript(const CScript& scriptPubKey, CAmount nValue, CWalletTx& wtxNew);
+
 extern json_spirit::Value getrawtransaction(const json_spirit::Array& params, bool fHelp); // in rcprawtransaction.cpp
 extern json_spirit::Value listunspent(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value lockunspent(const json_spirit::Array& params, bool fHelp);
@@ -241,5 +243,6 @@ extern bool HTTPReq_REST(AcceptedConnection *conn,
                   bool fRun);
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value name_new(const json_spirit::Array& params, bool fHelp);
 
 #endif // BITCOINRPC_SERVER_H

@@ -8,18 +8,28 @@
 #include "init.h"
 #include "main.h"
 #include "names.h"
+#include "random.h"
 #include "rpcserver.h"
+#include "util.h"
 
-/*
+#include "script/names.h"
+
 #ifdef ENABLE_WALLET
 # include "wallet.h"
 #endif
-*/
 
 #include "json/json_spirit_utils.h"
 #include "json/json_spirit_value.h"
 
 #include <sstream>
+
+/**
+ * Amount to lock in name transactions.  This is not (yet) enforced by the
+ * protocol.  Thus just a constant here for now.
+ */
+static const CAmount LOCKED_AMOUNT = COIN / 100; 
+
+/* ************************************************************************** */
 
 json_spirit::Value
 name_show (const json_spirit::Array& params, bool fHelp)
@@ -86,3 +96,73 @@ name_show (const json_spirit::Array& params, bool fHelp)
 
   return obj;
 }
+
+#ifdef ENABLE_WALLET
+
+/* ************************************************************************** */
+
+json_spirit::Value
+name_new (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 1)
+    throw std::runtime_error (
+      "name_new \"name\"\n"
+      "\nStart registration of the given name.  Must be followed up with"
+      " name_firstupdate to finish the registration.\n"
+      "\nArguments:\n"
+      "1. \"name\"          (string, required) the name to register\n"
+      "\nResult:\n"
+      "[\n"
+      "  \"txid\": xxxxx,   (string) the txid, required for name_firstupdate\n"
+      "  \"rand\": xxxxx,   (string) random value for name_firstupdate\n"
+      "]\n"
+      "\nExamples:\n"
+      + HelpExampleCli ("name_new", "\"myname\"")
+      + HelpExampleRpc ("name_new", "\"myname\"")
+      );
+
+  const std::string nameStr = params[0].get_str ();
+  const valtype name = ValtypeFromString (nameStr);
+
+  valtype rand(20);
+  if (!GetRandBytes (&rand[0], rand.size ()))
+    throw std::runtime_error ("Failed to generate random value.");
+
+  valtype toHash(rand);
+  toHash.insert (toHash.end (), name.begin (), name.end ());
+  const uint160 hash = Hash160 (toHash);
+
+  EnsureWalletIsUnlocked ();
+
+  CReserveKey keyName(pwalletMain);
+  CPubKey pubKey;
+  const bool ok = keyName.GetReservedKey (pubKey);
+  assert (ok);
+  const CScript addrName = GetScriptForDestination (pubKey.GetID ());
+  const CScript newScript = CNameScript::buildNameNew (addrName, hash);
+
+  CWalletTx wtx;
+  std::string strError;
+  strError = pwalletMain->SendMoneyToScript (newScript, LOCKED_AMOUNT, wtx);
+
+  if (strError != "")
+    {
+      keyName.ReturnKey ();
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  keyName.KeepKey ();
+
+  const std::string randStr = HexStr (rand);
+  const std::string txid = wtx.GetHash ().GetHex ();
+  LogPrintf ("name_new: name=%s, rand=%s, tx=%s\n",
+             nameStr.c_str (), randStr.c_str (), txid.c_str ());
+
+  json_spirit::Array res;
+  res.push_back (txid);
+  res.push_back (randStr);
+
+  return res;
+}
+
+#endif // ENABLE_WALLET?
