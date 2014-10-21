@@ -184,6 +184,18 @@ public:
   }
 
   /**
+   * Check if the given script is a name script.  This is a utility method.
+   * @param script The script to parse.
+   * @return True iff it is a name script.
+   */
+  static inline bool
+  isNameScript (const CScript& script)
+  {
+    const CNameScript op(script);
+    return op.isNameOp ();
+  }
+
+  /**
    * Build a NAME_NEW transaction.
    * @param addr The address script to append.
    * @param hash The hash to use.

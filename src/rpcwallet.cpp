@@ -321,10 +321,10 @@ void SendMoney(const CTxDestination &address, CAmount nValue, CWalletTx& wtxNew)
     // Parse Bitcoin address
     CScript scriptPubKey = GetScriptForDestination(address);
 
-    return SendMoneyToScript(scriptPubKey, nValue, wtxNew);
+    return SendMoneyToScript(scriptPubKey, NULL, nValue, wtxNew);
 }
 
-void SendMoneyToScript(const CScript &scriptPubKey, CAmount nValue, CWalletTx& wtxNew)
+void SendMoneyToScript(const CScript &scriptPubKey, const CTxIn* withInput, CAmount nValue, CWalletTx& wtxNew)
 {
     // Check amount
     if (nValue <= 0)
@@ -344,7 +344,7 @@ void SendMoneyToScript(const CScript &scriptPubKey, CAmount nValue, CWalletTx& w
     // Create and send the transaction
     CReserveKey reservekey(pwalletMain);
     CAmount nFeeRequired;
-    if (!pwalletMain->CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired, strError))
+    if (!pwalletMain->CreateTransaction(scriptPubKey, withInput, nValue, wtxNew, reservekey, nFeeRequired, strError))
     {
         if (nValue + nFeeRequired > pwalletMain->GetBalance())
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!", FormatMoney(nFeeRequired));
@@ -929,7 +929,7 @@ Value sendmany(const Array& params, bool fHelp)
     CReserveKey keyChange(pwalletMain);
     CAmount nFeeRequired = 0;
     string strFailReason;
-    bool fCreated = pwalletMain->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, strFailReason);
+    bool fCreated = pwalletMain->CreateTransaction(vecSend, NULL, wtx, keyChange, nFeeRequired, strFailReason);
     if (!fCreated)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, strFailReason);
     if (!pwalletMain->CommitTransaction(wtx, keyChange))

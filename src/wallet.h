@@ -554,8 +554,9 @@ public:
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
     bool CreateTransaction(const std::vector<std::pair<CScript, CAmount> >& vecSend,
+                           const CTxIn* withInput,
                            CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl = NULL);
-    bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue,
+    bool CreateTransaction(CScript scriptPubKey, const CTxIn* withInput, const CAmount& nValue,
                            CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl *coinControl = NULL);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
 

@@ -341,6 +341,7 @@ static const CRPCCommand vRPCCommands[] =
     { "namecoin",           "name_show",              &name_show,              true,      false,      false },
 #ifdef ENABLE_WALLET
     { "namecoin",           "name_new",               &name_new,               false,     false,      true },
+    { "namecoin",           "name_firstupdate",       &name_firstupdate,       false,     false,      true },
 #endif // ENABLE_WALLET
 
 #ifdef ENABLE_WALLET

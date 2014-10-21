@@ -1373,7 +1373,8 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 isminetype mine = IsMine(pcoin->vout[i]);
                 if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
                     !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue > 0 &&
-                    (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
+                    (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i))
+                    && !CNameScript::isNameScript(pcoin->vout[i].scriptPubKey))
                         vCoins.push_back(COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO));
             }
         }
@@ -1554,6 +1555,7 @@ bool CWallet::SelectCoins(const CAmount& nTargetValue, set<pair<const CWalletTx*
 
 
 bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
+                                const CTxIn* withInput,
                                 CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl)
 {
     CAmount nValue = 0;
@@ -1567,14 +1569,29 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
         }
         nValue += s.second;
 
-        const CNameScript nameOp(s.first);
-        if (nameOp.isNameOp ())
-          isNamecoin = true;
+        if (CNameScript::isNameScript (s.first))
+            isNamecoin = true;
     }
     if (vecSend.empty() || nValue < 0)
     {
         strFailReason = _("Transaction amounts must be positive");
         return false;
+    }
+
+    /* If we have an input to include, find its value.  This value will be
+       subtracted later on during coin selection, since the input is added
+       additionally to the selected coins.  */
+    CAmount nInputValue = 0;
+    const CWalletTx* withInputTx = NULL;
+    if (withInput)
+    {
+        withInputTx = GetWalletTx(withInput->prevout.hash);
+        if (!withInputTx)
+        {
+            strFailReason = _("Input tx not found in wallet");
+            return false;
+        }
+        nInputValue = withInputTx->vout[withInput->prevout.n].nValue;
     }
 
     wtxNew.fTimeReceivedIsTxTime = true;
@@ -1615,7 +1632,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                 txNew.vout.clear();
                 wtxNew.fFromMe = true;
 
-                CAmount nTotalValue = nValue + nFeeRet;
+                CAmount nValueToSelect = nValue + nFeeRet - nInputValue;
                 double dPriority = 0;
                 // vouts to the payees
                 BOOST_FOREACH (const PAIRTYPE(CScript, CAmount)& s, vecSend)
@@ -1632,11 +1649,13 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                 // Choose coins to use
                 set<pair<const CWalletTx*,unsigned int> > setCoins;
                 CAmount nValueIn = 0;
-                if (!SelectCoins(nTotalValue, setCoins, nValueIn, coinControl))
+                if (!SelectCoins(nValueToSelect, setCoins, nValueIn, coinControl))
                 {
                     strFailReason = _("Insufficient funds");
                     return false;
                 }
+                if (withInput)
+                    setCoins.insert(std::make_pair(withInputTx, withInput->prevout.n));
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
                 {
                     CAmount nCredit = pcoin.first->vout[pcoin.second].nValue;
@@ -1766,12 +1785,12 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
     return true;
 }
 
-bool CWallet::CreateTransaction(CScript scriptPubKey, const CAmount& nValue,
+bool CWallet::CreateTransaction(CScript scriptPubKey, const CTxIn* withInput, const CAmount& nValue,
                                 CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl)
 {
     vector< pair<CScript, CAmount> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
-    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet, strFailReason, coinControl);
+    return CreateTransaction(vecSend, withInput, wtxNew, reservekey, nFeeRet, strFailReason, coinControl);
 }
 
 /**

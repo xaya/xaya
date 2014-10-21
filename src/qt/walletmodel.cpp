@@ -265,7 +265,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
 
         CWalletTx *newTx = transaction.getTransaction();
         CReserveKey *keyChange = transaction.getPossibleKeyChange();
-        bool fCreated = wallet->CreateTransaction(vecSend, *newTx, *keyChange, nFeeRequired, strFailReason, coinControl);
+        bool fCreated = wallet->CreateTransaction(vecSend, NULL, *newTx, *keyChange, nFeeRequired, strFailReason, coinControl);
         transaction.setTransactionFee(nFeeRequired);
 
         if(!fCreated)

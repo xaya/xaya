@@ -40,6 +40,18 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
 /* ************************************************************************** */
 /* CNameData.  */
 
+bool
+CNameData::isExpired () const
+{
+  return isExpired (chainActive.Height ());
+}
+
+bool
+CNameData::isExpired (unsigned h) const
+{
+  return ::isExpired (nHeight, h);
+}
+
 void
 CNameData::fromScript (unsigned h, const CNameScript& script)
 {
@@ -283,8 +295,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   }
 
   CNameData oldName;
-  if (view.GetName (name, oldName)
-      && !isExpired (oldName.getHeight (), nHeight))
+  if (view.GetName (name, oldName) && !oldName.isExpired (nHeight))
     return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
                                  " on an unexpired name"));
 

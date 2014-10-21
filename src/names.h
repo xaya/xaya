@@ -23,6 +23,7 @@ class CValidationState;
 static const unsigned MAX_VALUE_LENGTH = 1023;
 static const unsigned MAX_NAME_LENGTH = 255;
 static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
+static const unsigned MAX_VALUE_LENGTH_UI = 520;
 
 /**
  * Construct a valtype (e. g., name) from a string.
@@ -120,6 +121,19 @@ public:
   {
     return addr;
   }
+
+  /**
+   * Check if the name is expired at the current chain height.
+   * @return True iff the name is expired.
+   */
+  bool isExpired () const;
+
+  /**
+   * Check if the name is expired at the given height.
+   * @param h The height at which to check.
+   * @return True iff the name is expired at height h.
+   */
+  bool isExpired (unsigned h) const;
 
   /**
    * Set from a name update operation.
