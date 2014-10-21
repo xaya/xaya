@@ -6,6 +6,7 @@
 #define H_BITCOIN_NAMES
 
 #include "serialize.h"
+#include "uint256.h"
 
 #include "script/script.h"
 
@@ -61,6 +62,9 @@ private:
   /** The transaction's height.  Used for expiry.  */
   unsigned nHeight;
 
+  /** The name's last update tx.  Used for name_update and name_show.  */
+  uint256 txid;
+
   /**
    * The name's address (as script).  This is kept here also, because
    * that information is useful to extract on demand (e. g., in name_show).
@@ -77,6 +81,7 @@ public:
   {
     READWRITE (value);
     READWRITE (nHeight);
+    READWRITE (txid);
     READWRITE (addr);
   }
 
@@ -84,7 +89,8 @@ public:
   friend inline bool
   operator== (const CNameData& a, const CNameData& b)
   {
-    return a.value == b.value && a.nHeight == b.nHeight && a.addr == b.addr;
+    return a.value == b.value && a.nHeight == b.nHeight
+            && a.txid == b.txid && a.addr == b.addr;
   }
   friend inline bool
   operator!= (const CNameData& a, const CNameData& b)
@@ -113,6 +119,16 @@ public:
   }
 
   /**
+   * Get the name's update txid.
+   * @return The update txid.
+   */
+  inline const uint256&
+  getUpdateTx () const
+  {
+    return txid;
+  }
+
+  /**
    * Get the address.
    * @return The name's address.
    */
@@ -138,9 +154,10 @@ public:
   /**
    * Set from a name update operation.
    * @param h The height (not available from script).
+   * @param tx The transaction ID.
    * @param script The name script.  Should be a name (first) update.
    */
-  void fromScript (unsigned h, const CNameScript& script);
+  void fromScript (unsigned h, const uint256& tx, const CNameScript& script);
 
 };
 

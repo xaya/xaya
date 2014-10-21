@@ -53,11 +53,12 @@ CNameData::isExpired (unsigned h) const
 }
 
 void
-CNameData::fromScript (unsigned h, const CNameScript& script)
+CNameData::fromScript (unsigned h, const uint256& tx, const CNameScript& script)
 {
   assert (script.isAnyUpdate ());
   value = script.getOpValue ();
   nHeight = h;
+  txid = tx;
   addr = script.getAddress ();
 }
 
@@ -331,7 +332,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
           undo.vnameundo.push_back (opUndo);
 
           CNameData data;
-          data.fromScript (nHeight, op);
+          data.fromScript (nHeight, tx.GetHash (), op);
           view.SetName (name, data);
         }
     }

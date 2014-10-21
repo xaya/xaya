@@ -45,6 +45,7 @@ name_show (const json_spirit::Array& params, bool fHelp)
         "{\n"
         "  \"name\": xxxxx,           (string) the requested name\n"
         "  \"value\": xxxxx,          (string) the name's current value\n"
+        "  \"txid\": xxxxx,           (string) the name's last update tx\n"
         "  \"address\": xxxxx,        (string) the address holding the name\n"
         "  \"height\": xxxxx,         (numeric) the name's last update height\n"
         "  \"expires_in\": xxxxx,     (numeric) expire counter for the name\n"
@@ -67,10 +68,12 @@ name_show (const json_spirit::Array& params, bool fHelp)
     }
 
   const valtype& value = data.getValue ();
+  const uint256& txid = data.getUpdateTx ();
 
   json_spirit::Object obj;
   obj.push_back (json_spirit::Pair ("name", nameStr));
   obj.push_back (json_spirit::Pair ("value", ValtypeToString (value)));
+  obj.push_back (json_spirit::Pair ("txid", txid.GetHex ()));
 
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
