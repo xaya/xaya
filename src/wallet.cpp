@@ -1558,6 +1558,10 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                                 const CTxIn* withInput,
                                 CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl)
 {
+    /* Initialise nFeeRet here so that SendMoney doesn't see an uninitialised
+       value in case we error out earlier.  */
+    nFeeRet = 0;
+
     CAmount nValue = 0;
     bool isNamecoin = false;
     BOOST_FOREACH (const PAIRTYPE(CScript, CAmount)& s, vecSend)
@@ -1591,7 +1595,13 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
             strFailReason = _("Input tx not found in wallet");
             return false;
         }
-        nInputValue = withInputTx->vout[withInput->prevout.n].nValue;
+        const CTxOut& withOut = withInputTx->vout[withInput->prevout.n];
+        if (IsMine (withOut) != ISMINE_SPENDABLE)
+        {
+            strFailReason = _("Input tx is not mine");
+            return false;
+        }
+        nInputValue = withOut.nValue;
     }
 
     wtxNew.fTimeReceivedIsTxTime = true;

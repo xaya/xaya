@@ -155,7 +155,6 @@ name_new (const json_spirit::Array& params, bool fHelp)
 
   const std::string nameStr = params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
-
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -177,9 +176,8 @@ name_new (const json_spirit::Array& params, bool fHelp)
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
   CWalletTx wtx;
-  std::string strError;
-  strError = pwalletMain->SendMoneyToScript (newScript, NULL,
-                                             LOCKED_AMOUNT, wtx);
+  const std::string strError
+    = pwalletMain->SendMoneyToScript (newScript, NULL, LOCKED_AMOUNT, wtx);
 
   if (strError != "")
     {
@@ -222,7 +220,7 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
         "\nExamples:\n"
         + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
         + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
-        + HelpExampleRpc ("name_new", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
+        + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
       );
 
   const std::string nameStr = params[0].get_str ();
@@ -284,15 +282,96 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
       addrName = GetScriptForDestination (pubKeyReserve.GetID ());
     }
 
-  CScript nameScript;
-  nameScript = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
-
-  /* FIXME: Use input tx!  */
+  const CScript nameScript
+    = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
   CWalletTx wtx;
-  std::string strError;
-  strError = pwalletMain->SendMoneyToScript (nameScript, &txIn,
-                                             LOCKED_AMOUNT, wtx);
+  const std::string strError
+    = pwalletMain->SendMoneyToScript (nameScript, &txIn, LOCKED_AMOUNT, wtx);
+
+  if (strError != "")
+    {
+      if (usedKey)
+        keyName.ReturnKey ();
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  if (usedKey)
+    keyName.KeepKey ();
+
+  return wtx.GetHash ().GetHex ();
+}
+
+/* ************************************************************************** */
+
+json_spirit::Value
+name_update (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || (params.size () != 2 && params.size () != 3))
+    throw std::runtime_error (
+        "name_update \"name\" \"value\" [\"toaddress\"]\n"
+        "\nUpdate a name and possibly transfer it.\n"
+        "\nArguments:\n"
+        "1. \"name\"          (string, required) the name to update\n"
+        "4. \"value\"         (string, required) value for the name\n"
+        "5. \"toaddress\"     (string, optional) address to send the name to\n"
+        "\nResult:\n"
+        "\"txid\"             (string) the name_update's txid\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
+        + HelpExampleCli ("name_update", "\"myname\", \"new-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
+        + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
+      );
+
+  const std::string nameStr = params[0].get_str ();
+  const valtype name = ValtypeFromString (nameStr);
+  if (name.size () > MAX_NAME_LENGTH)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
+
+  const std::string valueStr = params[1].get_str ();
+  const valtype value = ValtypeFromString (valueStr);
+  if (value.size () > MAX_VALUE_LENGTH_UI)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
+
+  CNameData oldData;
+  if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
+    throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
+
+  CTxOut prevOut;
+  CTxIn txIn;
+  if (!getNamePrevout (oldData.getUpdateTx (), prevOut, txIn))
+    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+
+  EnsureWalletIsUnlocked ();
+
+  CReserveKey keyName(pwalletMain);
+  CPubKey pubKeyReserve;
+  const bool ok = keyName.GetReservedKey (pubKeyReserve);
+  assert (ok);
+  bool usedKey = false;
+
+  CScript addrName;
+  if (params.size () == 3)
+    {
+      keyName.ReturnKey ();
+      const CBitcoinAddress toAddress(params[2].get_str ());
+      if (!toAddress.IsValid ())
+        throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
+
+      addrName = GetScriptForDestination (toAddress.Get ());
+    }
+  else
+    {
+      usedKey = true;
+      addrName = GetScriptForDestination (pubKeyReserve.GetID ());
+    }
+
+  const CScript nameScript
+    = CNameScript::buildNameUpdate (addrName, name, value);
+
+  CWalletTx wtx;
+  const std::string strError
+    = pwalletMain->SendMoneyToScript (nameScript, &txIn, LOCKED_AMOUNT, wtx);
 
   if (strError != "")
     {
