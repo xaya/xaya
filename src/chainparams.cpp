@@ -51,7 +51,6 @@ static void convertSeed6(std::vector<CAddress> &vSeedsOut, const SeedSpec6 *data
  *    timestamp before)
  * + Contains no strange transactions
  */
-/* FIXME: Update checkpoints.  */
 static Checkpoints::MapCheckpoints mapCheckpoints =
         boost::assign::map_list_of
         (  2016, uint256S("0x0000000000660bad0d9fbde55ba7ee14ddf766ed5f527e3fbca523ac11460b92"))
@@ -63,6 +62,7 @@ static Checkpoints::MapCheckpoints mapCheckpoints =
         ( 14112, uint256S("0x00000000000045d95e0588c47c17d593c7b5cb4fb1e56213d1b3843c1773df2b"))
         ( 16128, uint256S("0x000000000001d9964f9483f9096cf9d6c6c2886ed1e5dec95ad2aeec3ce72fa9"))
         ( 18940, uint256S("0x00000000000087f7fc0c8085217503ba86f796fa4984f7e5a08b6c4c12906c05"))
+        /* FIXME: Add more checkpoints!  */
         ;
 /* FIXME: update checkpoint data.  */
 static const Checkpoints::CCheckpointData data = {
@@ -85,7 +85,6 @@ static const Checkpoints::CCheckpointData dataTestnet = {
         300
     };
 
-/* FIXME: Update.  */
 static Checkpoints::MapCheckpoints mapCheckpointsRegtest =
         boost::assign::map_list_of
         ( 0, uint256S("5287b3809b71433729402429b7d909a853cfac5ed40f09117b242c275e6b2d63"))
@@ -330,7 +329,7 @@ public:
 
     unsigned NameExpirationDepth (unsigned nHeight) const
     {
-        return 100;
+        return 30;
     }
 };
 static CRegTestParams regTestParams;
