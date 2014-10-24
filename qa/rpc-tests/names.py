@@ -9,7 +9,6 @@ from test_framework import BitcoinTestFramework
 from util import assert_equal, sync_blocks, sync_mempools
 
 # TODO: test reorgs when the test framework supports it
-# TODO: test raw tx decoding and creation (-> ANTPY)
 # TODO: test advanced name access when implemented (name_filter & co)
 
 class NameTestFramework (BitcoinTestFramework):
