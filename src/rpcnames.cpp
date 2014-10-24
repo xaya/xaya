@@ -29,6 +29,49 @@
  */
 static const CAmount LOCKED_AMOUNT = COIN / 100; 
 
+/**
+ * Utility routine to construct a "name info" object to return.  This is used
+ * for name_show and also name_list.
+ * @param name The name.
+ * @param value The name's value.
+ * @param txid The txid of the last update.
+ * @param addr The name's address script.
+ * @param height The name's last update height.
+ * @return A JSON object to return.
+ */
+static json_spirit::Object
+getNameInfo (const valtype& name, const valtype& value, const uint256& txid,
+             const CScript& addr, int height)
+{
+  json_spirit::Object obj;
+  obj.push_back (json_spirit::Pair ("name", ValtypeToString (name)));
+  obj.push_back (json_spirit::Pair ("value", ValtypeToString (value)));
+  obj.push_back (json_spirit::Pair ("txid", txid.GetHex ()));
+
+  /* Try to extract the address.  May fail if we can't parse the script
+     as a "standard" script.  */
+  CTxDestination dest;
+  CBitcoinAddress addrParsed;
+  std::string addrStr;
+  if (ExtractDestination (addr, dest) && addrParsed.Set (dest))
+    addrStr = addrParsed.ToString ();
+  else
+    addrStr = "<nonstandard>";
+  obj.push_back (json_spirit::Pair ("address", addrStr));
+
+  /* Calculate expiration data.  */
+  const int curHeight = chainActive.Height ();
+  const int expireDepth = Params ().NameExpirationDepth (curHeight);
+  const int expireHeight = height + expireDepth;
+  const int expiresIn = expireHeight - curHeight;
+  const bool expired = (expiresIn <= 0);
+  obj.push_back (json_spirit::Pair ("height", height));
+  obj.push_back (json_spirit::Pair ("expires_in", expiresIn));
+  obj.push_back (json_spirit::Pair ("expired", expired));
+
+  return obj;
+}
+
 /* ************************************************************************** */
 
 json_spirit::Value
@@ -67,37 +110,8 @@ name_show (const json_spirit::Array& params, bool fHelp)
       throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
     }
 
-  const valtype& value = data.getValue ();
-  const uint256& txid = data.getUpdateTx ();
-
-  json_spirit::Object obj;
-  obj.push_back (json_spirit::Pair ("name", nameStr));
-  obj.push_back (json_spirit::Pair ("value", ValtypeToString (value)));
-  obj.push_back (json_spirit::Pair ("txid", txid.GetHex ()));
-
-  /* Try to extract the address.  May fail if we can't parse the script
-     as a "standard" script.  */
-  CTxDestination dest;
-  CBitcoinAddress addr;
-  std::string addrStr;
-  if (ExtractDestination (data.getAddress (), dest) && addr.Set (dest))
-    addrStr = addr.ToString ();
-  else
-    addrStr = "<nonstandard>";
-  obj.push_back (json_spirit::Pair ("address", addrStr));
-
-  /* Calculate expiration data.  */
-  const int nameHeight = data.getHeight ();
-  const int curHeight = chainActive.Height ();
-  const int expireDepth = Params ().NameExpirationDepth (curHeight);
-  const int expireHeight = nameHeight + expireDepth;
-  const int expiresIn = expireHeight - curHeight;
-  const bool expired = (expiresIn <= 0);
-  obj.push_back (json_spirit::Pair ("height", nameHeight));
-  obj.push_back (json_spirit::Pair ("expires_in", expiresIn));
-  obj.push_back (json_spirit::Pair ("expired", expired));
-
-  return obj;
+  return getNameInfo (name, data.getValue (), data.getUpdateTx (),
+                      data.getAddress (), data.getHeight ());
 }
 
 /* ************************************************************************** */
@@ -129,6 +143,105 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
         }
 
   return false;
+}
+
+/* ************************************************************************** */
+
+json_spirit::Value
+name_list (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 1)
+    throw std::runtime_error (
+        "name_list [\"name\"]\n"
+        "\nShow status of names in the wallet.\n"
+        "\nArguments:\n"
+        "1. \"name\"          (string, optional) only include this name\n"
+        "\nResult:\n"
+        "[\n"
+        "  {\n"
+        "    \"name\": xxxxx,         (string) the requested name\n"
+        "    \"value\": xxxxx,        (string) the name's current value\n"
+        "    \"txid\": xxxxx,         (string) the name's last update tx\n"
+        "    \"address\": xxxxx,      (string) the address holding the name\n"
+        "    \"height\": xxxxx,       (numeric) the name's last update height\n"
+        "    \"expires_in\": xxxxx,   (numeric) expire counter for the name\n"
+        "    \"expired\": xxxxx,      (boolean) whether the name is expired\n"
+        "    \"transferred\": xxxxx,  (boolean) whether the name is transferred\n"
+        "  },\n"
+        "  ...\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_list", "")
+        + HelpExampleCli ("name_list", "\"myname\"")
+        + HelpExampleRpc ("name_list", "")
+      );
+
+  valtype nameFilter;
+  if (params.size () == 1)
+    nameFilter = ValtypeFromString (params[0].get_str ());
+
+  std::map<valtype, int> mapHeights;
+  std::map<valtype, json_spirit::Object> mapObjects;
+
+  BOOST_FOREACH (const PAIRTYPE(const uint256, CWalletTx)& item,
+                 pwalletMain->mapWallet)
+    {
+      const CWalletTx& tx = item.second;
+      if (!tx.IsNamecoin ())
+        continue;
+
+      CNameScript nameOp;
+      bool found = false;
+      BOOST_FOREACH (const CTxOut& txo, tx.vout)
+        {
+          const CNameScript cur(txo.scriptPubKey);
+          if (cur.isNameOp ())
+            {
+              if (found)
+                LogPrintf ("ERROR: wallet contains tx with multiple"
+                           " name outputs");
+              else
+                {
+                  nameOp = cur;
+                  found = true;
+                }
+            }
+        }
+
+      if (!found || !nameOp.isAnyUpdate ())
+        continue;
+
+      const valtype& name = nameOp.getOpName ();
+      if (!nameFilter.empty () && nameFilter != name)
+        continue;
+
+      /* FIXME: Make const once pull request is merged.  */
+      CBlockIndex* pindex;
+      const int depth = tx.GetDepthInMainChain (pindex);
+      if (depth <= 0)
+        continue;
+
+      const std::map<valtype, int>::const_iterator mit = mapHeights.find (name);
+      if (mit != mapHeights.end () && mit->second > pindex->nHeight)
+        continue;
+
+      json_spirit::Object obj
+        = getNameInfo (name, nameOp.getOpValue (), tx.GetHash (),
+                       nameOp.getAddress (), pindex->nHeight);
+
+      const bool mine = IsMine (*pwalletMain, nameOp.getAddress ());
+      obj.push_back (json_spirit::Pair ("transferred", !mine));
+
+      mapHeights[name] = pindex->nHeight;
+      mapObjects[name] = obj;
+    }
+
+  json_spirit::Array res;
+  BOOST_FOREACH (const PAIRTYPE(const valtype, json_spirit::Object)& item,
+                 mapObjects)
+    res.push_back (item.second);
+
+  return res;
 }
 
 /* ************************************************************************** */
