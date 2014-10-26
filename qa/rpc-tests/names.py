@@ -13,33 +13,37 @@ from util import assert_equal, sync_blocks, sync_mempools
 
 class NameTestFramework (BitcoinTestFramework):
 
-  def firstupdateName (self, node, name, newData, value, toAddr = None):
+  def firstupdateName (self, ind, name, newData, value, toAddr = None):
     """
     Utility routine to perform a name_firstupdate command.  The rand
     and txid are taken from 'newData', as it is returned by name_new.
     """
 
+    node = self.nodes[ind]
+
     if toAddr is None:
       return node.name_firstupdate (name, newData[1], newData[0], value)
-    
     return node.name_firstupdate (name, newData[1], newData[0], value, toAddr)
 
-  def generate (self, nodes, ind, blocks):
+  def generate (self, ind, blocks):
     """
     Generate blocks and sync all nodes.
     """
 
-    sync_mempools (nodes)
-    nodes[ind].setgenerate (True, blocks)
-    sync_blocks (nodes)
+    # Sync before to get the mempools up-to-date and sync afterwards
+    # to ensure that all blocks have propagated.
 
-  def checkName (self, node, name, value, expiresIn, expired):
+    self.sync_all ()
+    self.nodes[ind].setgenerate (True, blocks)
+    self.sync_all ()
+
+  def checkName (self, ind, name, value, expiresIn, expired):
     """
     Query a name with name_show and check that certain data fields
     match the expectations.  Returns the full JSON object.
     """
 
-    data = node.name_show (name)
+    data = self.nodes[ind].name_show (name)
     assert_equal (data['name'], name)
     assert_equal (data['value'], value)
     if (expiresIn is not None):
