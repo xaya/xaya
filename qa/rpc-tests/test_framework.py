@@ -53,7 +53,10 @@ class BitcoinTestFramework(object):
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 2, 3)
         self.is_network_split = split
-        self.sync_all()
+
+        # Only sync blocks here.  The mempools might not synchronise
+        # after joining a split network.
+        self.sync_all('blocks')
 
     def split_network(self):
         """
@@ -64,15 +67,23 @@ class BitcoinTestFramework(object):
         wait_bitcoinds()
         self.setup_network(True)
 
-    def sync_all(self):
+    def sync_all(self, mode = 'both'):
+        modes = {'both': {'blocks': True, 'mempool': True},
+                 'blocks': {'blocks': True, 'mempool': False},
+                 'mempool': {'blocks': False, 'mempool': True}}
+        assert mode in modes
         if self.is_network_split:
-            sync_blocks(self.nodes[:2])
-            sync_blocks(self.nodes[2:])
-            sync_mempools(self.nodes[:2])
-            sync_mempools(self.nodes[2:])
+            if modes[mode]['blocks']:
+                    sync_blocks(self.nodes[:2])
+                    sync_blocks(self.nodes[2:])
+            if modes[mode]['mempool']:
+                    sync_mempools(self.nodes[:2])
+                    sync_mempools(self.nodes[2:])
         else:
-            sync_blocks(self.nodes)
-            sync_mempools(self.nodes)
+            if modes[mode]['blocks']:
+                sync_blocks(self.nodes)
+            if modes[mode]['mempool']:
+                sync_mempools(self.nodes)
 
     def join_network(self):
         """
