@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# Copyright (c) 2014 Daniel Kraft
+# Distributed under the MIT/X11 software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+# Test that reorgs (undoing) work for names.
+
+# Add python-bitcoinrpc to module search path:
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
+
+from bitcoinrpc.authproxy import JSONRPCException
+from names import NameTestFramework
+from util import assert_equal
+
+class NameRegistrationTest (NameTestFramework):
+
+  def run_test (self):
+    NameTestFramework.run_test (self)
+
+    # Register a name prior to forking the chain.  This is used
+    # to test unrolling of updates (as opposed to registrations).
+    newA = self.nodes[3].name_new ("a")
+    newBshort = self.nodes[3].name_new ("b")
+    newBlong = self.nodes[0].name_new ("b")
+    newC = self.nodes[3].name_new ("c")
+    self.generate (0, 10)
+    self.firstupdateName (3, "a", newA, "initial value")
+    self.generate (0, 5)
+
+    # Split the network.
+    self.split_network ()
+
+    # Build a long chain that registers "b" (to clash with
+    # the same registration on the short chain).
+    self.generate (0, 2)
+    self.firstupdateName (0, "b", newBlong, "b long")
+    self.generate (0, 2)
+    self.checkName (0, "a", "initial value", None, False)
+    self.checkName (0, "b", "b long", None, False)
+
+    # Build a short chain with an update to "a" and registrations.
+    self.generate (3, 1)
+    self.firstupdateName (3, "b", newBshort, "b short")
+    self.firstupdateName (3, "c", newC, "c registered")
+    self.nodes[3].name_update ("a", "changed value")
+    self.generate (3, 1)
+    self.checkName (3, "a", "changed value", None, False)
+    self.checkName (3, "b", "b short", None, False)
+    self.checkName (3, "c", "c registered", None, False)
+
+    # Join the network and let the long chain prevail.
+    self.join_network ()
+    self.checkName (3, "a", "initial value", None, False)
+    self.checkName (3, "b", "b long", None, False)
+    try:
+      self.nodes[3].name_show ("c")
+      raise AssertionError ("'c' still registered after reorg")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -4)
+
+    # Mine another block.  This should at least perform the
+    # non-conflicting transactions.  It is done on node 3 so
+    # that these tx are actually in the mempool.
+    self.generate (3, 1, False)
+    self.checkName (3, "a", "changed value", None, False)
+    self.checkName (3, "b", "b long", None, False)
+    self.checkName (3, "c", "c registered", None, False)
+
+    # TODO: Check that the conflicting tx is not in the mempool
+    # after proper cleaning has been implemented.
+    assert_equal (self.nodes[0].getrawmempool (), [])
+    #assert_equal (self.nodes[3].getrawmempool (), [])
+
+if __name__ == '__main__':
+  NameRegistrationTest ().main ()

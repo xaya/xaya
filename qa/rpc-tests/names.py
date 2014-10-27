@@ -8,7 +8,6 @@
 from test_framework import BitcoinTestFramework
 from util import assert_equal, sync_blocks, sync_mempools
 
-# TODO: test reorgs when the test framework supports it
 # TODO: test advanced name access when implemented (name_filter & co)
 
 class NameTestFramework (BitcoinTestFramework):
@@ -25,7 +24,7 @@ class NameTestFramework (BitcoinTestFramework):
       return node.name_firstupdate (name, newData[1], newData[0], value)
     return node.name_firstupdate (name, newData[1], newData[0], value, toAddr)
 
-  def generate (self, ind, blocks):
+  def generate (self, ind, blocks, syncBefore = True):
     """
     Generate blocks and sync all nodes.
     """
@@ -33,9 +32,10 @@ class NameTestFramework (BitcoinTestFramework):
     # Sync before to get the mempools up-to-date and sync afterwards
     # to ensure that all blocks have propagated.
 
-    self.sync_all ()
+    if syncBefore:
+        self.sync_all ()
     self.nodes[ind].setgenerate (True, blocks)
-    self.sync_all ()
+    self.sync_all ('blocks')
 
   def checkName (self, ind, name, value, expiresIn, expired):
     """
