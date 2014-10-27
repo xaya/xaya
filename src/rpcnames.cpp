@@ -215,8 +215,7 @@ name_list (const json_spirit::Array& params, bool fHelp)
       if (!nameFilter.empty () && nameFilter != name)
         continue;
 
-      /* FIXME: Make const once pull request is merged.  */
-      CBlockIndex* pindex;
+      const CBlockIndex* pindex;
       const int depth = tx.GetDepthInMainChain (pindex);
       if (depth <= 0)
         continue;
