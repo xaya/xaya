@@ -21,6 +21,7 @@ class NameRegistrationTest (NameTestFramework):
 
     # Perform name_new's.  Check for too long names exception.
     newA = self.nodes[0].name_new ("node-0")
+    newAconfl = self.nodes[1].name_new ("node-0")
     newB = self.nodes[1].name_new ("node-1")
     self.nodes[0].name_new ("x" * 255)
     try:
@@ -39,6 +40,14 @@ class NameRegistrationTest (NameTestFramework):
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -8)
     self.firstupdateName (1, "node-1", newB, "x" * 520)
+
+    # Check for mempool conflict detection with registration of "node-0".
+    self.sync_all ()
+    try:
+      self.firstupdateName (1, "node-0", newAconfl, "foo")
+      raise AssertionError ("name_firstupdate didn't catch conflict")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -25)
     
     # Check that the name appears when the name_new is ripe.
     self.generate (0, 7)

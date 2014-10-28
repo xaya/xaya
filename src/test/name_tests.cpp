@@ -14,6 +14,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <list>
+
 #include <stdint.h>
 
 BOOST_AUTO_TEST_SUITE (name_tests)
@@ -351,6 +353,64 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   BOOST_CHECK (!view.GetName (name, data));
   undo.vnameundo.pop_back ();
   BOOST_CHECK (undo.vnameundo.empty ());
+}
+
+/* ************************************************************************** */
+
+BOOST_AUTO_TEST_CASE (name_mempool)
+{
+  mempool.clear ();
+
+  const valtype name = ValtypeFromString ("test-name");
+  const valtype value = ValtypeFromString ("value");
+  const CScript addr = getTestAddress ();
+
+  const valtype rand1(20, 'a');
+  const valtype rand2(20, 'b');
+
+  const CScript first1
+    = CNameScript::buildNameFirstupdate (addr, name, value, rand1);
+  const CScript first2
+    = CNameScript::buildNameFirstupdate (addr, name, value, rand2);
+
+  /* The constructed tx needs not be valid.  We only test
+     the mempool acceptance and not validation.  */
+
+  CMutableTransaction mtx1;
+  mtx1.SetNamecoin ();
+  mtx1.vout.push_back (CTxOut (COIN, first1));
+
+  CMutableTransaction mtx2;
+  mtx2.SetNamecoin ();
+  mtx2.vout.push_back (CTxOut (COIN, first2));
+
+  BOOST_CHECK (!mempool.registersName (name));
+  BOOST_CHECK (mempool.checkNameOps (mtx1) && mempool.checkNameOps (mtx2));
+
+  const CTxMemPoolEntry entry(mtx1, 0, 0, 0, 100);
+  mempool.addUnchecked (entry.GetTx ().GetHash (), entry);
+  BOOST_CHECK (mempool.registersName (name));
+  BOOST_CHECK (!mempool.checkNameOps (mtx2));
+
+  CCoinsView dummyView;
+  CCoinsViewCache view(&dummyView);
+  mempool.check (&view);
+
+  std::list<CTransaction> removed;
+  mempool.remove (mtx1, removed, true);
+  BOOST_CHECK (!mempool.registersName (name));
+  BOOST_CHECK (mempool.checkNameOps (mtx1) && mempool.checkNameOps (mtx2));
+
+  mempool.addUnchecked (entry.GetTx ().GetHash (), entry);
+  BOOST_CHECK (mempool.registersName (name));
+  BOOST_CHECK (!mempool.checkNameOps (mtx2));
+
+  removed.clear ();
+  mempool.removeConflicts (mtx2, removed);
+  BOOST_CHECK (removed.size () == 1);
+  BOOST_CHECK (removed.front ().GetHash () == mtx1.GetHash ());
+  BOOST_CHECK (!mempool.registersName (name));
+  BOOST_CHECK (mempool.mapTx.empty ());
 }
 
 /* ************************************************************************** */

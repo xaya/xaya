@@ -351,6 +351,13 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
+  {
+    LOCK (mempool.cs);
+    if (mempool.registersName (name))
+      throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                          "this name is already being registered");
+  }
+
   CNameData oldData;
   if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name is already active");

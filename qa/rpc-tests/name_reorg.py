@@ -68,10 +68,9 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "b", "b long", None, False)
     self.checkName (3, "c", "c registered", None, False)
 
-    # TODO: Check that the conflicting tx is not in the mempool
-    # after proper cleaning has been implemented.
+    # Check that the conflicting tx got pruned from the mempool properly.
     assert_equal (self.nodes[0].getrawmempool (), [])
-    #assert_equal (self.nodes[3].getrawmempool (), [])
+    assert_equal (self.nodes[3].getrawmempool (), [])
 
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

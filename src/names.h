@@ -10,6 +10,8 @@
 
 #include "script/script.h"
 
+#include <list>
+#include <map>
 #include <string>
 
 class CBlockUndo;
@@ -18,6 +20,8 @@ class CCoinsViewCache;
 class CNameScript;
 class CLevelDBBatch;
 class CTransaction;
+class CTxMemPool;
+class CTxMemPoolEntry;
 class CValidationState;
 
 /* Some constants defining name limits.  */
@@ -47,6 +51,9 @@ ValtypeToString (const valtype& val)
 {
   return std::string (val.begin (), val.end ());
 }
+
+/* ************************************************************************** */
+/* CNameData.  */
 
 /**
  * Information stored for a name in the database.
@@ -161,6 +168,9 @@ public:
 
 };
 
+/* ************************************************************************** */
+/* CNameCache.  */
+
 /**
  * Cache / record of updates to the name database.  In addition to
  * new names (or updates to them), this also keeps track of deleted names
@@ -215,6 +225,9 @@ public:
 
 };
 
+/* ************************************************************************** */
+/* CNameTxUndo.  */
+
 /**
  * Undo information for one name operation.  This contains either the
  * information that the name was newly created (and should thus be
@@ -263,6 +276,104 @@ public:
   void apply (CCoinsViewCache& view) const;
 
 };
+
+/* ************************************************************************** */
+/* CNameMemPool.  */
+
+/**
+ * Handle the name component of the transaction mempool.  This keeps track
+ * of name operations that are in the mempool and ensures that all transactions
+ * kept are consistent.  E. g., no two transactions are allowed to register
+ * the same name, and name registration transactions are removed if a
+ * conflicting registration makes it into a block.
+ */
+class CNameMemPool
+{
+
+private:
+
+  /** The parent mempool object.  Used to, e. g., remove conflicting tx.  */
+  CTxMemPool& pool;
+
+  /**
+   * Keep track of names that are registered by transactions in the pool.
+   * Map name to registering transaction.
+   */
+  std::map<valtype, uint256> mapNameRegs;
+
+public:
+
+  /**
+   * Construct with reference to parent mempool.
+   * @param p The parent pool.
+   */
+  explicit inline CNameMemPool (CTxMemPool& p)
+    : pool(p), mapNameRegs()
+  {}
+
+  /**
+   * Check whether a particular name is being registered by
+   * some transaction in the mempool.  Does not lock, this is
+   * done by the parent mempool (which calls through afterwards).
+   * @param name The name to check for.
+   * @return True iff there's a matching name registration in the pool.
+   */
+  inline bool
+  registersName (const valtype& name) const
+  {
+    return mapNameRegs.count (name) > 0;
+  }
+
+  /**
+   * Clear all data.
+   */
+  inline void
+  clear ()
+  {
+    mapNameRegs.clear ();
+  }
+
+  /**
+   * Add an entry without checking it.  It should have been checked
+   * already.  If this conflicts with the mempool, it may throw.
+   * @param hash The tx hash.
+   * @param entry The new mempool entry.
+   */
+  void addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry);
+
+  /**
+   * Remove the given mempool entry.  It is assumed that it is present.
+   * @param entry The entry to remove.
+   */
+  void remove (const CTxMemPoolEntry& entry);
+
+  /**
+   * Remove conflicts for the given tx, based on name operations.  I. e.,
+   * if the tx registers a name that conflicts with another registration
+   * in the mempool, detect this and remove the mempool tx accordingly.
+   * @param tx The transaction for which we look for conflicts.
+   * @param removed Put removed tx here.
+   */
+  void removeConflicts (const CTransaction& tx,
+                        std::list<CTransaction>& removed);
+
+  /**
+   * Perform sanity checks.  Throws if it fails.
+   * @param coins The coins view this represents.
+   */
+  void check (const CCoinsView& coins) const;
+
+  /**
+   * Check if a tx can be added (based on name criteria) without
+   * causing a conflict.
+   * @param tx The transaction to check.
+   * @return True if it doesn't conflict.
+   */
+  bool checkTx (const CTransaction& tx) const;
+
+};
+
+/* ************************************************************************** */
 
 /**
  * Check a transaction according to the additional Namecoin rules.  This

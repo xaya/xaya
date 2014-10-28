@@ -11,6 +11,7 @@
 #include "amount.h"
 #include "coins.h"
 #include "primitives/transaction.h"
+#include "names.h"
 #include "sync.h"
 
 class CAutoFile;
@@ -44,6 +45,10 @@ private:
     double dPriority; //! Priority when entering the mempool
     unsigned int nHeight; //! Chain height when entering the mempool
 
+    /* Cache whether this is a name registration and if so, what name.  */
+    bool isNameReg;
+    valtype name;
+
 public:
     CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
                     int64_t _nTime, double _dPriority, unsigned int _nHeight);
@@ -56,6 +61,18 @@ public:
     size_t GetTxSize() const { return nTxSize; }
     int64_t GetTime() const { return nTime; }
     unsigned int GetHeight() const { return nHeight; }
+
+    inline bool
+    isNameRegistration() const
+    {
+        return isNameReg;
+    }
+    inline const valtype&
+    getName() const
+    {
+        assert(isNameReg);
+        return name;
+    }
 };
 
 class CMinerPolicyEstimator;
@@ -92,6 +109,9 @@ private:
 
     CFeeRate minRelayFee; //! Passed to constructor to avoid dependency on main
     uint64_t totalTxSize; //! sum of all mempool tx' byte sizes
+
+    /** Name-related mempool data.  */
+    CNameMemPool names;
 
 public:
     mutable CCriticalSection cs;
@@ -143,6 +163,27 @@ public:
     {
         LOCK(cs);
         return (mapTx.count(hash) != 0);
+    }
+
+    inline bool
+    registersName(const valtype& name) const
+    {
+        AssertLockHeld(cs);
+        return names.registersName(name);
+    }
+
+    /**
+     * Check if a tx can be added to it according to name criteria.
+     * (The non-name criteria are checked in main.cpp and not here, we
+     * leave it there for as little changes as possible.)
+     * @param tx The tx that should be added.
+     * @return True if it doesn't conflict.
+     */
+    inline bool
+    checkNameOps (const CTransaction& tx) const
+    {
+        AssertLockHeld(cs);
+        return names.checkTx (tx);
     }
 
     bool lookup(uint256 hash, CTransaction& result) const;

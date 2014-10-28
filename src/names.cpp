@@ -14,6 +14,8 @@
 
 #include "script/names.h"
 
+#include <set>
+
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
  * heights of MEMPOOL_HEIGHT are supported.  For nHeight == MEMPOOL_HEIGHT,
@@ -148,6 +150,129 @@ CNameTxUndo::apply (CCoinsViewCache& view) const
     view.DeleteName (name);
   else
     view.SetName (name, oldData);
+}
+
+/* ************************************************************************** */
+/* CNameMemPool.  */
+
+void
+CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
+{
+  AssertLockHeld (pool.cs);
+
+  if (entry.isNameRegistration ())
+    {
+      const valtype& name = entry.getName ();
+      assert (mapNameRegs.count (name) == 0);
+      mapNameRegs.insert (std::make_pair (name, hash));
+    }
+}
+
+void
+CNameMemPool::remove (const CTxMemPoolEntry& entry)
+{
+  AssertLockHeld (pool.cs);
+
+  if (entry.isNameRegistration ())
+    {
+      const std::map<valtype, uint256>::iterator mit
+        = mapNameRegs.find (entry.getName ());
+      assert (mit != mapNameRegs.end ());
+      mapNameRegs.erase (mit);
+    }
+}
+
+void
+CNameMemPool::removeConflicts (const CTransaction& tx,
+                               std::list<CTransaction>& removed)
+{
+  AssertLockHeld (pool.cs);
+
+  if (!tx.IsNamecoin ())
+    return;
+
+  BOOST_FOREACH (const CTxOut& txout, tx.vout)
+    {
+      const CNameScript nameOp(txout.scriptPubKey);
+      if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
+        {
+          const valtype& name = nameOp.getOpName ();
+          const std::map<valtype, uint256>::const_iterator mit
+            = mapNameRegs.find (name);
+          if (mit != mapNameRegs.end ())
+            {
+              const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
+                = pool.mapTx.find (mit->second);
+              assert (mit2 != pool.mapTx.end ());
+              pool.remove (mit2->second.GetTx (), removed, true);
+            }
+        }
+    }
+}
+
+void
+CNameMemPool::check (const CCoinsView& coins) const
+{
+  AssertLockHeld (pool.cs);
+
+  const uint256& blockHash = coins.GetBestBlock ();
+  const int nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
+
+  std::set<valtype> nameRegs;
+  BOOST_FOREACH (const PAIRTYPE(const uint256, CTxMemPoolEntry)& entry,
+                 pool.mapTx)
+    {
+      if (entry.second.isNameRegistration ())
+        {
+          const valtype& name = entry.second.getName ();
+
+          const std::map<valtype, uint256>::const_iterator mit
+            = mapNameRegs.find (name);
+          assert (mit != mapNameRegs.end ());
+          assert (mit->second == entry.first);
+
+          assert (nameRegs.count (name) == 0);
+          nameRegs.insert (name);
+
+          /* FIXME: In a rare situation, it could happen that a name
+             expires, a re-registration tx goes in, and then the
+             chain is disconnected so that the name is no longer
+             expired.  In that case, the check below could fail
+             even though things are mostly "fine".  */
+          CNameData data;
+          if (coins.GetName (name, data))
+            assert (data.isExpired (nHeight));
+        }
+
+      /* TODO: Also check name updates against expired names.  For this,
+         think about a way to implement removal of expired outputs from
+         the UTXO set.  If this is done, the check already done against
+         spent outputs should be enough?  */
+    }
+
+  assert (nameRegs.size () == mapNameRegs.size ());
+}
+
+bool
+CNameMemPool::checkTx (const CTransaction& tx) const
+{
+  AssertLockHeld (pool.cs);
+
+  if (!tx.IsNamecoin ())
+    return true;
+
+  BOOST_FOREACH (const CTxOut& txout, tx.vout)
+    {
+      const CNameScript nameOp(txout.scriptPubKey);
+      if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
+        {
+          const valtype& name = nameOp.getOpName ();
+          if (registersName (name))
+            return false;
+        }
+    }
+
+  return true;
 }
 
 /* ************************************************************************** */
