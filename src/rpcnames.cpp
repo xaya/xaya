@@ -4,7 +4,6 @@
 
 #include "base58.h"
 #include "chainparams.h"
-#include "core.h"
 #include "init.h"
 #include "main.h"
 #include "names.h"
