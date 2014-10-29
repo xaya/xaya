@@ -348,10 +348,11 @@ Value listunspent(const Array& params, bool fHelp)
 
 Value createrawtransaction(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 2)
+    if (fHelp || (params.size() != 2 && params.size() != 3))
         throw runtime_error(
-            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,...}\n"
+            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,...} [name operation]\n"
             "\nCreate a transaction spending the given inputs and sending to the given addresses.\n"
+            "Optionally, a name update operation can be performed.\n"
             "Returns hex-encoded raw transaction.\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.\n"
@@ -370,17 +371,28 @@ Value createrawtransaction(const Array& params, bool fHelp)
             "      \"address\": x.xxx   (numeric, required) The key is the bitcoin address, the value is the btc amount\n"
             "      ,...\n"
             "    }\n"
+            "3. \"name operation\"      (string, optional) json object for name operation\n"
+            "    {\n"
+            "      \"op\": \"name_update\",\n"
+            "      \"name\": xxx,       (string, required) the name to update\n"
+            "      \"value\": xxx,      (string, required) the new value\n"
+            "      \"address\": xxx,    (string, required) address to send it to\n"
+            "    }\n"
 
             "\nResult:\n"
             "\"transaction\"            (string) hex string of the transaction\n"
 
             "\nExamples\n"
             + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"address\\\":0.01}\"")
+            + HelpExampleCli("createrawtransaction", "\"[]\" \"{}\" \"{\\\"op\""":\\\"name_update\\\",\\\"name\\\":\\\"my-name\\\",\\\"value\\\":\\\"new value\\\",\\\"address\\\":\\\"NFt4cuHJ97dxfsNZpz5qKxAxnQVAUShwdX\\\"}\"")
             + HelpExampleRpc("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"address\\\":0.01}\"")
         );
 
     LOCK(cs_main);
-    RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    if (params.size() == 2)
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    else
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type)(obj_type));
 
     Array inputs = params[0].get_array();
     Object sendTo = params[1].get_obj();
@@ -419,6 +431,9 @@ Value createrawtransaction(const Array& params, bool fHelp)
         CTxOut out(nAmount, scriptPubKey);
         rawTx.vout.push_back(out);
     }
+
+    if (params.size() == 3)
+        AddRawTxNameOperation(rawTx, params[2].get_obj());
 
     return EncodeHexTx(rawTx);
 }

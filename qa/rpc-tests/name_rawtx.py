@@ -11,6 +11,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
 
 from bitcoinrpc.authproxy import JSONRPCException
+from decimal import Decimal
 from names import NameTestFramework
 from util import assert_equal
 
@@ -43,7 +44,50 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data['name'], "my-name")
     assert_equal (data['value'], "new value")
 
-    # TODO: test raw tx creation
+    # Perform a rawtx name update together with an atomic currency transaction.
+    # We send the test name from 0 to 1 and some coins from 1 to 0.  In other
+    # words, perform an atomic name trade.
+
+    addrA = self.nodes[0].getnewaddress ()
+    addrB = self.nodes[1].getnewaddress ()
+    balanceA = self.nodes[0].getbalance ()
+    balanceB = self.nodes[1].getbalance ()
+
+    unspents = self.nodes[1].listunspent ()
+    assert (len (unspents) > 0)
+    txin = unspents[0]
+
+    inputs = [{"txid": txin['txid'], "vout": txin['vout']}]
+    outputs = {addrA: txin['amount']}
+    nameOp = {"op": "name_update", "name": "my-name",
+              "value": "enjoy", "address": addrB}
+
+    tx = self.nodes[2].createrawtransaction (inputs, outputs, nameOp)
+    signed = self.nodes[0].signrawtransaction (tx)
+    assert not signed['complete']
+    signed = self.nodes[1].signrawtransaction (signed['hex'])
+    assert signed['complete']
+    tx = signed['hex']
+    self.nodes[2].sendrawtransaction (tx)
+    self.generate (3, 1)
+
+    data = self.checkName (3, "my-name", "enjoy", None, False)
+    assert_equal (data['address'], addrB)
+    data = self.nodes[0].name_list ("my-name")
+    assert_equal (len (data), 1)
+    assert_equal (data[0]['name'], "my-name")
+    assert_equal (data[0]['transferred'], True)
+    data = self.nodes[1].name_list ("my-name")
+    assert_equal (len (data), 1)
+    assert_equal (data[0]['name'], "my-name")
+    assert_equal (data[0]['transferred'], False)
+
+    # Node 0 also got a block matured.  Take this into account.
+    # FIXME: Update checks once getbalance no longer includes names.
+    assert_equal (balanceA + txin['amount'] + Decimal ("49.99"),
+                  self.nodes[0].getbalance ())
+    assert_equal (balanceB - txin['amount'] + Decimal ("0.01"),
+                  self.nodes[1].getbalance ())
 
   def decodeNameTx (self, ind, txid):
     """

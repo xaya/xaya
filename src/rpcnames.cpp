@@ -11,6 +11,8 @@
 #include "rpcserver.h"
 #include "util.h"
 
+#include "core/transaction.h"
+
 #include "script/names.h"
 
 #ifdef ENABLE_WALLET
@@ -71,6 +73,90 @@ getNameInfo (const valtype& name, const valtype& value, const uint256& txid,
   return obj;
 }
 
+/**
+ * Helper routine to fetch the name output of a previous transaction.  This
+ * is required for name_firstupdate and name_update.
+ * @param txid Previous transaction ID.
+ * @param txOut Set to the corresponding output.
+ * @param txIn Set to the CTxIn to include in the new tx.
+ * @return True if the output could be found.
+ */
+static bool
+getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
+{
+  CCoins coins;
+  if (!pcoinsTip->GetCoins (txid, coins))
+    return false;
+
+  for (unsigned i = 0; i < coins.vout.size (); ++i)
+    if (!coins.vout[i].IsNull ())
+      if (CNameScript::isNameScript (coins.vout[i].scriptPubKey))
+        {
+          txOut = coins.vout[i];
+          txIn = CTxIn (COutPoint (txid, i));
+          return true;
+        }
+
+  return false;
+}
+
+/**
+ * Implement the rawtx name operation feature.  This routine interprets
+ * the given JSON object describing the desired name operation and then
+ * modifies the transaction accordingly.
+ * @param tx The transaction to extend.
+ * @param obj The name operation "description" as given to the call.
+ */
+void
+AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
+{
+  json_spirit::Value val = json_spirit::find_value (obj, "op");
+  if (val.type () != json_spirit::str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing op key");
+  const std::string op = val.get_str ();
+
+  if (op != "name_update")
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "only name_update is implemented for the rawtx API");
+
+  val = json_spirit::find_value (obj, "name");
+  if (val.type () != json_spirit::str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing name key");
+  const valtype name = ValtypeFromString (val.get_str ());
+
+  val = json_spirit::find_value (obj, "value");
+  if (val.type () != json_spirit::str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing value key");
+  const valtype value = ValtypeFromString (val.get_str ());
+
+  val = json_spirit::find_value (obj, "address");
+  if (val.type () != json_spirit::str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing address key");
+  const CBitcoinAddress toAddress(val.get_str ());
+  if (!toAddress.IsValid ())
+    throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
+  const CScript addr = GetScriptForDestination (toAddress.Get ());
+
+  tx.SetNamecoin ();
+
+  /* Find the transaction input to add.  */
+
+  CNameData oldData;
+  if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
+    throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
+
+  CTxOut prevOut;
+  CTxIn txIn;
+  if (!getNamePrevout (oldData.getUpdateTx (), prevOut, txIn))
+    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+
+  tx.vin.push_back (txIn);
+
+  /* Construct the transaction output.  */
+  const CScript outScript = CNameScript::buildNameUpdate (addr, name, value);
+  tx.vout.push_back (CTxOut (LOCKED_AMOUNT, outScript));
+}
+
 /* ************************************************************************** */
 
 json_spirit::Value
@@ -116,35 +202,6 @@ name_show (const json_spirit::Array& params, bool fHelp)
 /* ************************************************************************** */
 
 #ifdef ENABLE_WALLET
-
-/**
- * Helper routine to fetch the name output of a previous transaction.  This
- * is required for name_firstupdate and name_update.
- * @param txid Previous transaction ID.
- * @param txOut Set to the corresponding output.
- * @param txIn Set to the CTxIn to include in the new tx.
- * @return True if the output could be found.
- */
-static bool
-getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
-{
-  CCoins coins;
-  if (!pcoinsTip->GetCoins (txid, coins))
-    return false;
-
-  for (unsigned i = 0; i < coins.vout.size (); ++i)
-    if (!coins.vout[i].IsNull ())
-      if (CNameScript::isNameScript (coins.vout[i].scriptPubKey))
-        {
-          txOut = coins.vout[i];
-          txIn = CTxIn (COutPoint (txid, i));
-          return true;
-        }
-
-  return false;
-}
-
-/* ************************************************************************** */
 
 json_spirit::Value
 name_list (const json_spirit::Array& params, bool fHelp)

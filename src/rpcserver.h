@@ -30,6 +30,7 @@ namespace RPCServer
 }
 
 class CBlockIndex;
+class CMutableTransaction;
 class CNetAddr;
 
 class AcceptedConnection
@@ -241,6 +242,10 @@ extern bool HTTPReq_REST(AcceptedConnection *conn,
                   const std::string& strURI,
                   const std::map<std::string, std::string>& mapHeaders,
                   bool fRun);
+
+/* In rpcnames.cpp.  */
+
+extern void AddRawTxNameOperation(CMutableTransaction& tx, const json_spirit::Object& obj);
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_list(const json_spirit::Array& params, bool fHelp);
