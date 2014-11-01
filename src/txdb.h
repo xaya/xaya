@@ -38,6 +38,7 @@ public:
     bool GetName(const valtype &name, CNameData &data) const;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
+    bool ValidateNameDB() const;
 };
 
 /** Access to the block database (blocks/index/) */

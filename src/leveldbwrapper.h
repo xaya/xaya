@@ -49,6 +49,22 @@ public:
         batch.Put(slKey, slValue);
     }
 
+    /* Write an empty value.  This is used for the expire-index
+       in the name database.  */
+    template <typename K>
+    void Write(const K& key)
+    {
+        CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+        ssKey.reserve(ssKey.GetSerializeSize(key));
+        ssKey << key;
+        leveldb::Slice slKey(&ssKey[0], ssKey.size());
+
+        char dummy;
+        leveldb::Slice slValue(&dummy, 0);
+
+        batch.Put(slKey, slValue);
+    }
+
     template <typename K>
     void Erase(const K& key)
     {

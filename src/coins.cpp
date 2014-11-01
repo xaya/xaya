@@ -5,6 +5,7 @@
 #include "coins.h"
 
 #include "random.h"
+#include "util.h"
 
 #include <assert.h>
 
@@ -46,6 +47,7 @@ uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return false; }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
 bool CCoinsView::GetStats(CCoinsStats &stats) const { return false; }
+bool CCoinsView::ValidateNameDB() const { return false; }
 
 
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView *viewIn) : base(viewIn) { }
@@ -56,6 +58,7 @@ bool CCoinsViewBacked::GetName(const valtype &name, CNameData &data) const { ret
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return base->BatchWrite(mapCoins, hashBlock, names); }
 bool CCoinsViewBacked::GetStats(CCoinsStats &stats) const { return base->GetStats(stats); }
+bool CCoinsViewBacked::ValidateNameDB() const { return base->ValidateNameDB(); }
 
 CCoinsKeyHasher::CCoinsKeyHasher() : salt(GetRandHash()) {}
 
@@ -151,10 +154,22 @@ bool CCoinsViewCache::GetName(const valtype &name, CNameData& data) const {
 }
 
 void CCoinsViewCache::SetName(const valtype &name, const CNameData& data) {
+    CNameData oldData;
+    if (GetName(name, oldData))
+        cacheNames.removeExpireIndex(name, oldData.getHeight());
+
     cacheNames.set(name, data);
+    cacheNames.addExpireIndex(name, data.getHeight());
 }
 
 void CCoinsViewCache::DeleteName(const valtype &name) {
+    CNameData oldData;
+    if (GetName(name, oldData))
+        cacheNames.removeExpireIndex(name, oldData.getHeight());
+    else
+        LogPrintf("%s : no existing entry for name '%s'",
+                  __func__, ValtypeToString(name).c_str());
+
     cacheNames.remove(name);
 }
 

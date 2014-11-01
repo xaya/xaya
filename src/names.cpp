@@ -106,6 +106,20 @@ CNameCache::remove (const valtype& name)
   deleted.insert (name);
 }
 
+void
+CNameCache::addExpireIndex (const valtype& name, unsigned height)
+{
+  const ExpireEntry entry(height, name);
+  expireIndex[entry] = true;
+}
+
+void
+CNameCache::removeExpireIndex (const valtype& name, unsigned height)
+{
+  const ExpireEntry entry(height, name);
+  expireIndex[entry] = false;
+}
+
 /* Apply all the changes in the passed-in record on top of this one.  */
 void
 CNameCache::apply (const CNameCache& cache)
@@ -117,6 +131,10 @@ CNameCache::apply (const CNameCache& cache)
   for (std::set<valtype>::const_iterator i = cache.deleted.begin ();
        i != cache.deleted.end (); ++i)
     remove (*i);
+
+  for (std::map<ExpireEntry, bool>::const_iterator i
+        = cache.expireIndex.begin (); i != cache.expireIndex.end (); ++i)
+    expireIndex[i->first] = i->second;
 }
 
 /* Write all cached changes to a database batch update object.  */
@@ -130,6 +148,13 @@ CNameCache::writeBatch (CLevelDBBatch& batch) const
   for (std::set<valtype>::const_iterator i = deleted.begin ();
        i != deleted.end (); ++i)
     batch.Erase (std::make_pair ('n', *i));
+
+  for (std::map<ExpireEntry, bool>::const_iterator i = expireIndex.begin ();
+       i != expireIndex.end (); ++i)
+    if (i->second)
+      batch.Write (std::make_pair ('x', i->first));
+    else
+      batch.Erase (std::make_pair ('x', i->first));
 }
 
 /* ************************************************************************** */

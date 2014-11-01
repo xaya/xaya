@@ -252,5 +252,6 @@ extern json_spirit::Value name_list(const json_spirit::Array& params, bool fHelp
 extern json_spirit::Value name_new(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_firstupdate(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_update(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value name_checkdb(const json_spirit::Array& params, bool fHelp);
 
 #endif // BITCOINRPC_SERVER_H

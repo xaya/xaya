@@ -8,6 +8,8 @@
 #include "pow.h"
 #include "uint256.h"
 
+#include "script/names.h"
+
 #include <stdint.h>
 
 #include <boost/thread.hpp>
@@ -166,6 +168,126 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
         batch.Write(make_pair(DB_BLOCK_INDEX, (*it)->GetBlockHash()), CDiskBlockIndex(*it));
     }
     return WriteBatch(batch, true);
+}
+
+bool CCoinsViewDB::ValidateNameDB() const
+{
+    const uint256 blockHash = GetBestBlock();
+    int nHeight;
+    if (blockHash == 0)
+        nHeight = 0;
+    else
+        nHeight = mapBlockIndex.find(blockHash)->second->nHeight;
+
+    /* It seems that there are no "const iterators" for LevelDB.  Since we
+       only need read operations on it, use a const-cast to get around
+       that restriction.  */
+    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    pcursor->SeekToFirst();
+
+    /* Loop over the total database and read interesting
+       things to memory.  We later use that to check
+       everything against each other.  */
+
+    std::map<valtype, unsigned> nameHeightsIndex;
+    std::map<valtype, unsigned> nameHeightsData;
+    std::set<valtype> namesInDB;
+    std::set<valtype> namesInUTXO;
+
+    while (pcursor->Valid())
+    {
+        boost::this_thread::interruption_point();
+        try
+        {
+            const leveldb::Slice slKey = pcursor->key();
+            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(),
+                              SER_DISK, CLIENT_VERSION);
+            char chType;
+            ssKey >> chType;
+
+            const leveldb::Slice slValue = pcursor->value();
+            CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
+                                SER_DISK, CLIENT_VERSION);
+
+            switch (chType)
+            {
+            case 'c':
+            {
+                CCoins coins;
+                ssValue >> coins;
+                BOOST_FOREACH(const CTxOut& txout, coins.vout)
+                    if (!txout.IsNull())
+                    {
+                        const CNameScript nameOp(txout.scriptPubKey);
+                        if (nameOp.isNameOp() && nameOp.isAnyUpdate())
+                        {
+                            const valtype& name = nameOp.getOpName();
+                            if (namesInUTXO.count(name) > 0)
+                                return error("%s : name %s duplicated in UTXO set",
+                                             __func__, ValtypeToString(name).c_str());
+                            namesInUTXO.insert(nameOp.getOpName());
+                        }
+                    }
+                break;
+            }
+
+            case 'n':
+            {
+                valtype name;
+                ssKey >> name;
+                CNameData data;
+                ssValue >> data;
+
+                if (nameHeightsData.count(name) > 0)
+                    return error("%s : name %s duplicated in name index",
+                                 __func__, ValtypeToString(name).c_str());
+                nameHeightsData.insert(std::make_pair(name, data.getHeight()));
+                
+                if (!data.isExpired(nHeight))
+                    namesInDB.insert(name);
+                break;
+            }
+
+            case 'x':
+            {
+                CNameCache::ExpireEntry entry;
+                ssKey >> entry;
+                const valtype& name = entry.second;
+
+                if (nameHeightsIndex.count(name) > 0)
+                    return error("%s : name %s duplicated in expire idnex",
+                                 __func__, ValtypeToString(name).c_str());
+
+                nameHeightsIndex.insert(std::make_pair(name, entry.first));
+                break;
+            }
+
+            default:
+                break;
+            }
+
+            pcursor->Next();
+        } catch (std::exception &e)
+        {
+            return error("%s : Deserialize or I/O error - %s",
+                         __func__, e.what());
+        }
+    }
+
+    /* Now verify the collected data.  */
+
+    assert (nameHeightsData.size() >= namesInDB.size());
+
+    if (nameHeightsIndex != nameHeightsData)
+        return error("%s : name height data mismatch", __func__);
+
+    if (namesInDB != namesInUTXO)
+        return error("%s : names in UTXO mismatch names in the DB", __func__);
+
+    LogPrintf("Checked name database, %d unexpired names, %d total.\n",
+              namesInDB.size(), nameHeightsData.size());
+
+    return true;
 }
 
 bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {

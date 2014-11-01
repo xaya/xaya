@@ -192,6 +192,26 @@ name_show (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
+json_spirit::Value
+name_checkdb (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 0)
+    throw std::runtime_error (
+        "name_checkdb\n"
+        "\nValidate the name DB's consistency.\n"
+        "\nResult:\n"
+        "xxxxx                        (boolean) whether the state is valid\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_checkdb", "")
+        + HelpExampleRpc ("name_checkdb", "")
+      );
+
+  pcoinsTip->Flush ();
+  return pcoinsTip->ValidateNameDB ();
+}
+
+/* ************************************************************************** */
+
 #ifdef ENABLE_WALLET
 
 json_spirit::Value

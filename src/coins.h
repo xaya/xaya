@@ -326,6 +326,9 @@ public:
     //! Calculate statistics about the unspent transaction output set
     virtual bool GetStats(CCoinsStats &stats) const;
 
+    // Validate the name database.
+    virtual bool ValidateNameDB() const;
+
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
 };
@@ -346,6 +349,7 @@ public:
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
+    bool ValidateNameDB() const;
 };
 
 
@@ -384,7 +388,7 @@ protected:
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
 
-    /* Name changes cache.  */
+    /** Name changes cache.  */
     CNameCache cacheNames;
 
 public:
@@ -397,9 +401,11 @@ public:
     uint256 GetBestBlock() const;
     void SetBestBlock(const uint256 &hashBlock);
     bool GetName(const valtype &name, CNameData &data) const;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
+
+    /* Changes to the name database.  */
     void SetName(const valtype &name, const CNameData &data);
     void DeleteName(const valtype &name);
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
 
     /**
      * Return a pointer to CCoins in the cache, or NULL if not found. This is

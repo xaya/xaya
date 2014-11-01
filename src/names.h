@@ -15,6 +15,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <utility>
 
 class CBlockUndo;
 class CCoinsView;
@@ -180,6 +181,11 @@ public:
 class CNameCache
 {
 
+public:
+
+  /** Type for expire-index entries.  */
+  typedef std::pair<unsigned, valtype> ExpireEntry;
+
 private:
 
   /** New or updated names.  */
@@ -187,10 +193,16 @@ private:
   /** Deleted names.  */
   std::set<valtype> deleted;
 
+  /**
+   * Changes to be performed to the expire index.  The entry is mapped
+   * to either "true" (meaning to add it) or "false" (delete).
+   */
+  std::map<ExpireEntry, bool> expireIndex;
+
 public:
 
   CNameCache ()
-    : entries(), deleted()
+    : entries(), deleted(), expireIndex()
   {}
 
   inline void
@@ -198,6 +210,7 @@ public:
   {
     entries.clear ();
     deleted.clear ();
+    expireIndex.clear ();
   }
 
   /* See if the given name is marked as deleted.  */
@@ -217,6 +230,12 @@ public:
 
   /* Delete a name.  If it is in the "entries" set also, remove it there.  */
   void remove (const valtype& name);
+
+  /* Add an expire-index entry.  */
+  void addExpireIndex (const valtype& name, unsigned height);
+
+  /* Remove an expire-index entry.  */
+  void removeExpireIndex (const valtype& name, unsigned height);
 
   /* Apply all the changes in the passed-in record on top of this one.  */
   void apply (const CNameCache& cache);
