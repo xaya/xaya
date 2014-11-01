@@ -65,13 +65,18 @@ class NameTestFramework (BitcoinTestFramework):
     addrB = self.nodes[nameTo].getnewaddress ()
     addrChange = self.nodes[nameTo].getrawchangeaddress ()
 
+    inputs = []
+
     unspents = self.nodes[nameTo].listunspent ()
     assert (len (unspents) > 0)
     txin = unspents[0]
     assert (txin['amount'] >= price)
     change = txin['amount'] - price
+    inputs.append ({"txid": txin['txid'], "vout": txin['vout']})
 
-    inputs = [{"txid": txin['txid'], "vout": txin['vout']}]
+    data = self.nodes[nameFrom].name_show (name)
+    inputs.append ({"txid": data['txid'], "vout": data['vout']})
+
     outputs = {addrA: price, addrChange: change}
     nameOp = {"op": "name_update", "name": name,
               "value": value, "address": addrB}

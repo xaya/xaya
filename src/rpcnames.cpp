@@ -35,19 +35,20 @@ static const CAmount LOCKED_AMOUNT = COIN / 100;
  * for name_show and also name_list.
  * @param name The name.
  * @param value The name's value.
- * @param txid The txid of the last update.
+ * @param outp The last update's outpoint.
  * @param addr The name's address script.
  * @param height The name's last update height.
  * @return A JSON object to return.
  */
 static json_spirit::Object
-getNameInfo (const valtype& name, const valtype& value, const uint256& txid,
+getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
              const CScript& addr, int height)
 {
   json_spirit::Object obj;
   obj.push_back (json_spirit::Pair ("name", ValtypeToString (name)));
   obj.push_back (json_spirit::Pair ("value", ValtypeToString (value)));
-  obj.push_back (json_spirit::Pair ("txid", txid.GetHex ()));
+  obj.push_back (json_spirit::Pair ("txid", outp.hash.GetHex ()));
+  obj.push_back (json_spirit::Pair ("vout", static_cast<int> (outp.n)));
 
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
@@ -75,7 +76,7 @@ getNameInfo (const valtype& name, const valtype& value, const uint256& txid,
 
 /**
  * Helper routine to fetch the name output of a previous transaction.  This
- * is required for name_firstupdate and name_update.
+ * is required for name_firstupdate.
  * @param txid Previous transaction ID.
  * @param txOut Set to the corresponding output.
  * @param txIn Set to the CTxIn to include in the new tx.
@@ -89,13 +90,13 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
     return false;
 
   for (unsigned i = 0; i < coins.vout.size (); ++i)
-    if (!coins.vout[i].IsNull ())
-      if (CNameScript::isNameScript (coins.vout[i].scriptPubKey))
-        {
-          txOut = coins.vout[i];
-          txIn = CTxIn (COutPoint (txid, i));
-          return true;
-        }
+    if (!coins.vout[i].IsNull ()
+        && CNameScript::isNameScript (coins.vout[i].scriptPubKey))
+      {
+        txOut = coins.vout[i];
+        txIn = CTxIn (COutPoint (txid, i));
+        return true;
+      }
 
   return false;
 }
@@ -139,20 +140,10 @@ AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
 
   tx.SetNamecoin ();
 
-  /* Find the transaction input to add.  */
+  /* We do not add the name input.  This has to be done explicitly,
+     but is easy from the name_show output.  That way, createrawtransaction
+     doesn't depend on the chainstate at all.  */
 
-  CNameData oldData;
-  if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
-
-  CTxOut prevOut;
-  CTxIn txIn;
-  if (!getNamePrevout (oldData.getUpdateTx (), prevOut, txIn))
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
-
-  tx.vin.push_back (txIn);
-
-  /* Construct the transaction output.  */
   const CScript outScript = CNameScript::buildNameUpdate (addr, name, value);
   tx.vout.push_back (CTxOut (LOCKED_AMOUNT, outScript));
 }
@@ -195,7 +186,7 @@ name_show (const json_spirit::Array& params, bool fHelp)
       throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
     }
 
-  return getNameInfo (name, data.getValue (), data.getUpdateTx (),
+  return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
                       data.getAddress (), data.getHeight ());
 }
 
@@ -247,24 +238,24 @@ name_list (const json_spirit::Array& params, bool fHelp)
         continue;
 
       CNameScript nameOp;
-      bool found = false;
-      BOOST_FOREACH (const CTxOut& txo, tx.vout)
+      int nOut = -1;
+      for (unsigned i = 0; i < tx.vout.size (); ++i)
         {
-          const CNameScript cur(txo.scriptPubKey);
+          const CNameScript cur(tx.vout[i].scriptPubKey);
           if (cur.isNameOp ())
             {
-              if (found)
+              if (nOut != -1)
                 LogPrintf ("ERROR: wallet contains tx with multiple"
                            " name outputs");
               else
                 {
                   nameOp = cur;
-                  found = true;
+                  nOut = i;
                 }
             }
         }
 
-      if (!found || !nameOp.isAnyUpdate ())
+      if (nOut == -1 || !nameOp.isAnyUpdate ())
         continue;
 
       const valtype& name = nameOp.getOpName ();
@@ -281,7 +272,8 @@ name_list (const json_spirit::Array& params, bool fHelp)
         continue;
 
       json_spirit::Object obj
-        = getNameInfo (name, nameOp.getOpValue (), tx.GetHash (),
+        = getNameInfo (name, nameOp.getOpValue (),
+                       COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress (), pindex->nHeight);
 
       const bool mine = IsMine (*pwalletMain, nameOp.getAddress ());
@@ -512,10 +504,8 @@ name_update (const json_spirit::Array& params, bool fHelp)
   if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
 
-  CTxOut prevOut;
-  CTxIn txIn;
-  if (!getNamePrevout (oldData.getUpdateTx (), prevOut, txIn))
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+  const COutPoint outp = oldData.getUpdateOutpoint ();
+  const CTxIn txIn(outp);
 
   EnsureWalletIsUnlocked ();
 

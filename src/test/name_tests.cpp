@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   CNameData data, data2;
   CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
   const CNameScript nameOp(updateScript);
-  data.fromScript (42, uint256 (), nameOp);
+  data.fromScript (42, COutPoint (uint256 (), 0), nameOp);
 
   CCoinsViewCache& view = *pcoinsTip;
 
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const uint256 inUpdate = addTestCoin (scrUpdate, 100000, view);
 
   CNameData data1;
-  data1.fromScript (100000, inFirst, CNameScript (scrFirst));
+  data1.fromScript (100000, COutPoint (inFirst, 0), CNameScript (scrFirst));
   view.SetName (name1, data1);
 
   /* ****************************************************** */

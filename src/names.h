@@ -8,6 +8,8 @@
 #include "serialize.h"
 #include "uint256.h"
 
+#include "core/transaction.h"
+
 #include "script/script.h"
 
 #include <list>
@@ -19,7 +21,6 @@ class CCoinsView;
 class CCoinsViewCache;
 class CNameScript;
 class CLevelDBBatch;
-class CTransaction;
 class CTxMemPool;
 class CTxMemPoolEntry;
 class CValidationState;
@@ -69,8 +70,8 @@ private:
   /** The transaction's height.  Used for expiry.  */
   unsigned nHeight;
 
-  /** The name's last update tx.  Used for name_update and name_show.  */
-  uint256 txid;
+  /** The name's last update outpoint.  */
+  COutPoint prevout;
 
   /**
    * The name's address (as script).  This is kept here also, because
@@ -88,7 +89,7 @@ public:
   {
     READWRITE (value);
     READWRITE (nHeight);
-    READWRITE (txid);
+    READWRITE (prevout);
     READWRITE (addr);
   }
 
@@ -97,7 +98,7 @@ public:
   operator== (const CNameData& a, const CNameData& b)
   {
     return a.value == b.value && a.nHeight == b.nHeight
-            && a.txid == b.txid && a.addr == b.addr;
+            && a.prevout == b.prevout && a.addr == b.addr;
   }
   friend inline bool
   operator!= (const CNameData& a, const CNameData& b)
@@ -126,13 +127,13 @@ public:
   }
 
   /**
-   * Get the name's update txid.
-   * @return The update txid.
+   * Get the name's update outpoint.
+   * @return The update outpoint.
    */
-  inline const uint256&
-  getUpdateTx () const
+  inline const COutPoint&
+  getUpdateOutpoint () const
   {
-    return txid;
+    return prevout;
   }
 
   /**
@@ -161,10 +162,10 @@ public:
   /**
    * Set from a name update operation.
    * @param h The height (not available from script).
-   * @param tx The transaction ID.
+   * @param out The update outpoint.
    * @param script The name script.  Should be a name (first) update.
    */
-  void fromScript (unsigned h, const uint256& tx, const CNameScript& script);
+  void fromScript (unsigned h, const COutPoint& out, const CNameScript& script);
 
 };
 

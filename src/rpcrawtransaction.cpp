@@ -352,7 +352,8 @@ Value createrawtransaction(const Array& params, bool fHelp)
         throw runtime_error(
             "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,...} [name operation]\n"
             "\nCreate a transaction spending the given inputs and sending to the given addresses.\n"
-            "Optionally, a name update operation can be performed.\n"
+            "Optionally, a name update operation can be performed.  The name input must be added\n"
+            "manually.  (name_show gives the necessary data.)\n"
             "Returns hex-encoded raw transaction.\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.\n"
@@ -384,7 +385,7 @@ Value createrawtransaction(const Array& params, bool fHelp)
 
             "\nExamples\n"
             + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"address\\\":0.01}\"")
-            + HelpExampleCli("createrawtransaction", "\"[]\" \"{}\" \"{\\\"op\""":\\\"name_update\\\",\\\"name\\\":\\\"my-name\\\",\\\"value\\\":\\\"new value\\\",\\\"address\\\":\\\"NFt4cuHJ97dxfsNZpz5qKxAxnQVAUShwdX\\\"}\"")
+            + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{}\" \"{\\\"op\""":\\\"name_update\\\",\\\"name\\\":\\\"my-name\\\",\\\"value\\\":\\\"new value\\\",\\\"address\\\":\\\"NFt4cuHJ97dxfsNZpz5qKxAxnQVAUShwdX\\\"}\"")
             + HelpExampleRpc("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"address\\\":0.01}\"")
         );
 

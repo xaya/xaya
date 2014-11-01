@@ -10,8 +10,6 @@
 #include "txmempool.h"
 #include "undo.h"
 
-#include "core/transaction.h"
-
 #include "script/names.h"
 
 #include <set>
@@ -55,12 +53,13 @@ CNameData::isExpired (unsigned h) const
 }
 
 void
-CNameData::fromScript (unsigned h, const uint256& tx, const CNameScript& script)
+CNameData::fromScript (unsigned h, const COutPoint& out,
+                       const CNameScript& script)
 {
   assert (script.isAnyUpdate ());
   value = script.getOpValue ();
   nHeight = h;
-  txid = tx;
+  prevout = out;
   addr = script.getAddress ();
 }
 
@@ -215,8 +214,12 @@ CNameMemPool::check (const CCoinsView& coins) const
 {
   AssertLockHeld (pool.cs);
 
-  const uint256& blockHash = coins.GetBestBlock ();
-  const int nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
+  const uint256 blockHash = coins.GetBestBlock ();
+  int nHeight;
+  if (blockHash == 0)
+    nHeight = 0;
+  else
+    nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   BOOST_FOREACH (const PAIRTYPE(const uint256, CTxMemPoolEntry)& entry,
@@ -457,7 +460,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
           undo.vnameundo.push_back (opUndo);
 
           CNameData data;
-          data.fromScript (nHeight, tx.GetHash (), op);
+          data.fromScript (nHeight, COutPoint (tx.GetHash (), i), op);
           view.SetName (name, data);
         }
     }
