@@ -18,6 +18,8 @@
 #include "wallet_ismine.h"
 #include "walletdb.h"
 
+#include "script/names.h"
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -129,6 +131,7 @@ static void WriteOrderPos(const int64_t& nOrderPos, mapValue_t& mapValue)
 struct COutputEntry
 {
     CTxDestination destination;
+    std::string nameOp;
     CAmount amount;
     int vout;
 };
@@ -163,10 +166,12 @@ public:
     mutable bool fAvailableWatchCreditCached;
     mutable bool fChangeCached;
     mutable CAmount nDebitCached;
+    mutable CAmount nDebitWithNamesCached;
     mutable CAmount nCreditCached;
     mutable CAmount nImmatureCreditCached;
     mutable CAmount nAvailableCreditCached;
     mutable CAmount nWatchDebitCached;
+    mutable CAmount nWatchDebitWithNamesCached;
     mutable CAmount nWatchCreditCached;
     mutable CAmount nImmatureWatchCreditCached;
     mutable CAmount nAvailableWatchCreditCached;
@@ -212,10 +217,12 @@ public:
         fAvailableWatchCreditCached = false;
         fChangeCached = false;
         nDebitCached = 0;
+        nDebitWithNamesCached = 0;
         nCreditCached = 0;
         nImmatureCreditCached = 0;
         nAvailableCreditCached = 0;
         nWatchDebitCached = 0;
+        nWatchDebitWithNamesCached = 0;
         nWatchCreditCached = 0;
         nAvailableWatchCreditCached = 0;
         nImmatureWatchCreditCached = 0;
@@ -287,7 +294,7 @@ public:
     }
 
     //! filter decides which addresses will count towards the debit
-    CAmount GetDebit(const isminefilter& filter) const;
+    CAmount GetDebit(const isminefilter& filter, bool fExcludeNames = true) const;
     CAmount GetCredit(const isminefilter& filter) const;
     CAmount GetImmatureCredit(bool fUseCache=true) const;
     CAmount GetAvailableCredit(bool fUseCache=true) const;
@@ -578,7 +585,7 @@ public:
     std::set<CTxDestination> GetAccountAddresses(std::string strAccount) const;
 
     isminetype IsMine(const CTxIn& txin) const;
-    CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
+    CAmount GetDebit(const CTxIn& txin, const isminefilter& filter, bool fExcludeNames = true) const;
     isminetype IsMine(const CTxOut& txout) const
     {
         return ::IsMine(*this, txout.scriptPubKey);
@@ -587,6 +594,10 @@ public:
     {
         if (!MoneyRange(txout.nValue))
             throw std::runtime_error("CWallet::GetCredit(): value out of range");
+
+        if (CNameScript::isNameScript (txout.scriptPubKey))
+            return 0;
+
         return ((IsMine(txout) & filter) ? txout.nValue : 0);
     }
     bool IsChange(const CTxOut& txout) const;
@@ -606,14 +617,14 @@ public:
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const
     {
-        return (GetDebit(tx, ISMINE_ALL) > 0);
+        return (GetDebit(tx, ISMINE_ALL, false) > 0);
     }
-    CAmount GetDebit(const CTransaction& tx, const isminefilter& filter) const
+    CAmount GetDebit(const CTransaction& tx, const isminefilter& filter, bool fExcludeNames = true) const
     {
         CAmount nDebit = 0;
         BOOST_FOREACH(const CTxIn& txin, tx.vin)
         {
-            nDebit += GetDebit(txin, filter);
+            nDebit += GetDebit(txin, filter, fExcludeNames);
             if (!MoneyRange(nDebit))
                 throw std::runtime_error("CWallet::GetDebit(): value out of range");
         }

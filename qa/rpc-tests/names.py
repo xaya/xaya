@@ -8,7 +8,6 @@
 from test_framework import BitcoinTestFramework
 from util import assert_equal, sync_blocks, sync_mempools
 
-# TODO: test wallet handling of name outputs
 # TODO: test mempool / UTXO handling and name expiry
 # TODO: test advanced name access when implemented (name_filter & co)
 
@@ -53,3 +52,35 @@ class NameTestFramework (BitcoinTestFramework):
     assert_equal (data['expired'], expired)
 
     return data
+
+  def atomicTrade (self, name, value, price, nameFrom, nameTo):
+    """
+    Perform an atomic name trade, sending 'name' from the first to the
+    second node (referenced by their index).  Also send 'price' (we assume
+    that it is less than each unspent output in 'listunspent') the
+    other way round.  Returned is the txid.
+    """
+
+    addrA = self.nodes[nameFrom].getnewaddress ()
+    addrB = self.nodes[nameTo].getnewaddress ()
+    addrChange = self.nodes[nameTo].getrawchangeaddress ()
+
+    unspents = self.nodes[nameTo].listunspent ()
+    assert (len (unspents) > 0)
+    txin = unspents[0]
+    assert (txin['amount'] >= price)
+    change = txin['amount'] - price
+
+    inputs = [{"txid": txin['txid'], "vout": txin['vout']}]
+    outputs = {addrA: price, addrChange: change}
+    nameOp = {"op": "name_update", "name": name,
+              "value": value, "address": addrB}
+
+    tx = self.nodes[nameFrom].createrawtransaction (inputs, outputs, nameOp)
+    signed = self.nodes[nameFrom].signrawtransaction (tx)
+    assert not signed['complete']
+    signed = self.nodes[nameTo].signrawtransaction (signed['hex'])
+    assert signed['complete']
+    tx = signed['hex']
+    
+    return self.nodes[nameFrom].sendrawtransaction (tx)

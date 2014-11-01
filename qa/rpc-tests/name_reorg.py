@@ -42,7 +42,7 @@ class NameRegistrationTest (NameTestFramework):
 
     # Build a short chain with an update to "a" and registrations.
     self.generate (3, 1)
-    self.firstupdateName (3, "b", newBshort, "b short")
+    txidB = self.firstupdateName (3, "b", newBshort, "b short")
     self.firstupdateName (3, "c", newC, "c registered")
     self.nodes[3].name_update ("a", "changed value")
     self.generate (3, 1)
@@ -68,9 +68,12 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "b", "b long", None, False)
     self.checkName (3, "c", "c registered", None, False)
 
-    # Check that the conflicting tx got pruned from the mempool properly.
+    # Check that the conflicting tx got pruned from the mempool properly
+    # and is marked as conflicted in the wallet.
     assert_equal (self.nodes[0].getrawmempool (), [])
     assert_equal (self.nodes[3].getrawmempool (), [])
+    data = self.nodes[3].gettransaction (txidB)
+    assert_equal (data['confirmations'], -1)
 
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

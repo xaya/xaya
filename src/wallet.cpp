@@ -9,7 +9,6 @@
 #include "checkpoints.h"
 #include "coincontrol.h"
 #include "net.h"
-#include "script/names.h"
 #include "script/script.h"
 #include "script/sign.h"
 #include "timedata.h"
@@ -749,7 +748,7 @@ isminetype CWallet::IsMine(const CTxIn &txin) const
     return ISMINE_NO;
 }
 
-CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter) const
+CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter, bool fExcludeNames) const
 {
     {
         LOCK(cs_wallet);
@@ -758,8 +757,15 @@ CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter) const
         {
             const CWalletTx& prev = (*mi).second;
             if (txin.prevout.n < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.n]) & filter)
-                    return prev.vout[txin.prevout.n].nValue;
+            {
+                const CTxOut& prevout = prev.vout[txin.prevout.n];
+                if (fExcludeNames
+                    && CNameScript::isNameScript(prevout.scriptPubKey))
+                    return 0;
+
+                if (IsMine(prevout) & filter)
+                    return prevout.nValue;
+            }
         }
     }
     return 0;
@@ -841,10 +847,11 @@ void CWalletTx::GetAmounts(list<COutputEntry>& listReceived,
     strSentAccount = strFromAccount;
 
     // Compute fee:
-    CAmount nDebit = GetDebit(filter);
-    if (nDebit > 0) // debit>0 means we signed/sent this transaction
+    const bool isFromMe = IsFromMe(filter);
+    if (isFromMe)
     {
-        CAmount nValueOut = GetValueOut();
+        const CAmount nDebit = GetDebit(filter);
+        const CAmount nValueOut = GetValueOut(true);
         nFee = nDebit - nValueOut;
     }
 
@@ -853,13 +860,14 @@ void CWalletTx::GetAmounts(list<COutputEntry>& listReceived,
     {
         const CTxOut& txout = vout[i];
         isminetype fIsMine = pwallet->IsMine(txout);
+        const CNameScript nameOp(txout.scriptPubKey);
         // Only need to handle txouts if AT LEAST one of these is true:
         //   1) they debit from us (sent)
         //   2) the output is to us (received)
-        if (nDebit > 0)
+        if (isFromMe)
         {
-            // Don't report 'change' txouts
-            if (pwallet->IsChange(txout))
+            // Don't report 'change' txouts, but keep names in all cases
+            if (pwallet->IsChange(txout) && !nameOp.isNameOp())
                 continue;
         }
         else if (!(fIsMine & filter))
@@ -874,14 +882,26 @@ void CWalletTx::GetAmounts(list<COutputEntry>& listReceived,
             address = CNoDestination();
         }
 
-        COutputEntry output = {address, txout.nValue, (int)i};
+        COutputEntry output = {address, "", txout.nValue, (int)i};
+
+        // If we have a name script, set the "name" parameter.
+        if (nameOp.isNameOp())
+        {
+            if (nameOp.isAnyUpdate())
+                output.nameOp = "update: " + ValtypeToString(nameOp.getOpName());
+            else
+                output.nameOp = "new: " + HexStr(nameOp.getOpHash());
+            output.amount = 0;
+        }
 
         // If we are debited by the transaction, add the output as a "sent" entry
-        if (nDebit > 0)
+        if (isFromMe)
             listSent.push_back(output);
 
         // If we are receiving the output, add it as a "received" entry
-        if (fIsMine & filter)
+        // For names, only do this if we did not also add it as "sent"
+        if ((fIsMine & filter)
+            && (!nameOp.isNameOp() || !isFromMe))
             listReceived.push_back(output);
     }
 
@@ -1016,7 +1036,7 @@ set<uint256> CWalletTx::GetConflicts() const
     return result;
 }
 
-CAmount CWalletTx::GetDebit(const isminefilter& filter) const
+CAmount CWalletTx::GetDebit(const isminefilter& filter, bool fExcludeNames) const
 {
     if (vin.empty())
         return 0;
@@ -1024,25 +1044,23 @@ CAmount CWalletTx::GetDebit(const isminefilter& filter) const
     CAmount debit = 0;
     if(filter & ISMINE_SPENDABLE)
     {
-        if (fDebitCached)
-            debit += nDebitCached;
-        else
+        if (!fDebitCached)
         {
-            nDebitCached = pwallet->GetDebit(*this, ISMINE_SPENDABLE);
+            nDebitCached = pwallet->GetDebit(*this, ISMINE_SPENDABLE, true);
+            nDebitWithNamesCached = pwallet->GetDebit(*this, ISMINE_SPENDABLE, false);
             fDebitCached = true;
-            debit += nDebitCached;
         }
+        debit += (fExcludeNames ? nDebitCached : nDebitWithNamesCached);
     }
     if(filter & ISMINE_WATCH_ONLY)
     {
-        if(fWatchDebitCached)
-            debit += nWatchDebitCached;
-        else
+        if (!fWatchDebitCached)
         {
-            nWatchDebitCached = pwallet->GetDebit(*this, ISMINE_WATCH_ONLY);
+            nWatchDebitCached = pwallet->GetDebit(*this, ISMINE_WATCH_ONLY, true);
+            nWatchDebitWithNamesCached = pwallet->GetDebit(*this, ISMINE_WATCH_ONLY, false);
             fWatchDebitCached = true;
-            debit += nWatchDebitCached;
         }
+        debit += (fExcludeNames ? nWatchDebitCached : nWatchDebitWithNamesCached);
     }
     return debit;
 }
@@ -1679,7 +1697,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                     dPriority += (double)nCredit * age;
                 }
 
-                CAmount nChange = nValueIn - nValue - nFeeRet;
+                const CAmount nChange = nValueIn - nValueToSelect - nFeeRet;
 
                 if (nChange > 0)
                 {

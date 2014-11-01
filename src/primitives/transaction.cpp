@@ -5,6 +5,8 @@
 
 #include "primitives/transaction.h"
 
+#include "script/names.h"
+
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
@@ -93,12 +95,13 @@ CTransaction& CTransaction::operator=(const CTransaction &tx) {
     return *this;
 }
 
-CAmount CTransaction::GetValueOut() const
+CAmount CTransaction::GetValueOut(bool fExcludeNames) const
 {
     CAmount nValueOut = 0;
     for (std::vector<CTxOut>::const_iterator it(vout.begin()); it != vout.end(); ++it)
     {
-        nValueOut += it->nValue;
+        if (!fExcludeNames || !CNameScript::isNameScript(it->scriptPubKey))
+            nValueOut += it->nValue;
         if (!MoneyRange(it->nValue) || !MoneyRange(nValueOut))
             throw std::runtime_error("CTransaction::GetValueOut(): value out of range");
     }
