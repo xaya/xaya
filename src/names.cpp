@@ -79,6 +79,30 @@ CNameCache::get (const valtype& name, CNameData& data) const
   return true;
 }
 
+void
+CNameCache::updateNamesForHeight (unsigned nHeight,
+                                  std::set<valtype>& names) const
+{
+  /* Seek in the map of cached entries to the first one corresponding
+     to our height.  */
+
+  const ExpireEntry seekEntry(nHeight, valtype ());
+  std::map<ExpireEntry, bool>::const_iterator it;
+
+  for (it = expireIndex.lower_bound (seekEntry); it != expireIndex.end (); ++it)
+    {
+      const ExpireEntry& cur = it->first;
+      assert (cur.first >= nHeight);
+      if (cur.first > nHeight)
+        break;
+
+      if (it->second)
+        names.insert (cur.second);
+      else
+        names.erase (cur.second);
+    }
+}
+
 /* Insert (or update) a name.  If it is marked as "deleted", this also
    removes the "deleted" mark.  */
 void
@@ -489,4 +513,23 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
           view.SetName (name, data);
         }
     }
+}
+
+void
+CheckNameDB (bool disconnect)
+{
+  const int option = GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
+
+  if (option == -1)
+    return;
+
+  assert (option >= 0);
+  if (option != 0)
+    {
+      if (disconnect || chainActive.Height () % option != 0)
+        return;
+    }
+
+  pcoinsTip->Flush ();
+  assert (pcoinsTip->ValidateNameDB ());
 }

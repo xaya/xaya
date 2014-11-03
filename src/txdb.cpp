@@ -60,6 +60,55 @@ bool CCoinsViewDB::GetName(const valtype &name, CNameData& data) const {
     return db.Read(std::make_pair('n', name), data);
 }
 
+bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const {
+    names.clear();
+
+    /* It seems that there are no "const iterators" for LevelDB.  Since we
+       only need read operations on it, use a const-cast to get around
+       that restriction.  */
+    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+
+    const CNameCache::ExpireEntry seekEntry(nHeight, valtype ());
+    const std::pair<char, CNameCache::ExpireEntry> seekKey('x', seekEntry);
+    CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
+    seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
+    seekKeyStream << seekKey;
+    leveldb::Slice slKey(&seekKeyStream[0], seekKeyStream.size());
+
+    for (pcursor->Seek(slKey); pcursor->Valid(); pcursor->Next())
+    {
+        try
+        {
+            slKey = pcursor->key();
+            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(), SER_DISK, CLIENT_VERSION);
+            char chType;
+            ssKey >> chType;
+
+            if (chType != 'x')
+              break;
+
+            CNameCache::ExpireEntry entry;
+            ssKey >> entry;
+
+            assert (entry.first >= nHeight);
+            if (entry.first > nHeight)
+              break;
+
+            const valtype& name = entry.second;
+            if (names.count(name) > 0)
+                return error("%s : duplicate name '%s' in expire index",
+                             __func__, ValtypeToString(name).c_str());
+            names.insert(name);
+        } catch (const std::exception &e)
+        {
+            return error("%s : Deserialize or I/O error - %s",
+                         __func__, e.what());
+        }
+    }
+
+    return true;
+}
+
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {
     CLevelDBBatch batch;
     size_t count = 0;

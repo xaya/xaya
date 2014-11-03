@@ -200,6 +200,11 @@ public:
 
         return 36000;
     }
+
+    int DefaultCheckNameDB () const
+    {
+        return -1;
+    }
 };
 static CMainParams mainParams;
 
@@ -330,6 +335,11 @@ public:
     unsigned NameExpirationDepth (unsigned nHeight) const
     {
         return 30;
+    }
+
+    int DefaultCheckNameDB () const
+    {
+        return 0;
     }
 };
 static CRegTestParams regTestParams;

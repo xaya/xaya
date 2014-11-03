@@ -83,29 +83,67 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 BOOST_AUTO_TEST_CASE (name_database)
 {
-  const valtype name = ValtypeFromString ("database-test-name");
+  const valtype name1 = ValtypeFromString ("database-test-name-1");
+  const valtype name2 = ValtypeFromString ("database-test-name-2");
   const valtype value = ValtypeFromString ("my-value");
   const CScript addr = getTestAddress ();
 
-  CNameData data, data2;
-  CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
+  CNameData dataHeight1, dataHeight42, data2;
+  CScript updateScript = CNameScript::buildNameUpdate (addr, name1, value);
   const CNameScript nameOp(updateScript);
-  data.fromScript (42, COutPoint (uint256 (), 0), nameOp);
+  dataHeight1.fromScript (1, COutPoint (uint256 (), 0), nameOp);
+  dataHeight42.fromScript (42, COutPoint (uint256 (), 0), nameOp);
+
+  std::set<valtype> setExpected, setRet;
 
   CCoinsViewCache& view = *pcoinsTip;
 
-  BOOST_CHECK (!view.GetName (name, data2));
-  view.SetName (name, data);
-  BOOST_CHECK (view.GetName (name, data2));
-  BOOST_CHECK (data == data2);
-  BOOST_CHECK (view.Flush ());
-  BOOST_CHECK (view.GetName (name, data2));
-  BOOST_CHECK (data == data2);
+  setExpected.clear ();
+  setRet.clear ();
+  setRet.insert (name1);
+  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (setRet == setExpected);
 
-  view.DeleteName (name);
-  BOOST_CHECK (!view.GetName (name, data2));
+  BOOST_CHECK (!view.GetName (name1, data2));
+  view.SetName (name1, dataHeight42);
+  BOOST_CHECK (view.GetName (name1, data2));
+  BOOST_CHECK (dataHeight42 == data2);
+
+  BOOST_CHECK (view.GetNamesForHeight (1, setRet));
+  BOOST_CHECK (setRet == setExpected);
+  setExpected.insert (name1);
+  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (setRet == setExpected);
+
   BOOST_CHECK (view.Flush ());
-  BOOST_CHECK (!view.GetName (name, data2));
+  BOOST_CHECK (view.GetName (name1, data2));
+  BOOST_CHECK (dataHeight42 == data2);
+
+  view.SetName (name2, dataHeight42);
+  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  setExpected.insert (name2);
+  BOOST_CHECK (setRet == setExpected);
+
+  view.DeleteName (name1);
+  BOOST_CHECK (!view.GetName (name1, data2));
+  BOOST_CHECK (view.Flush ());
+  BOOST_CHECK (!view.GetName (name1, data2));
+
+  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  setExpected.erase (name1);
+  BOOST_CHECK (setRet == setExpected);
+
+  view.SetName (name2, dataHeight1);
+  BOOST_CHECK (view.Flush ());
+  view.SetName (name1, dataHeight1);
+
+  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  setExpected.clear ();
+  BOOST_CHECK (setRet == setExpected);
+  BOOST_CHECK (view.GetNamesForHeight (1, setRet));
+  setExpected.insert (name1);
+  setExpected.insert (name2);
+  BOOST_CHECK (setRet == setExpected);
 }
 
 /* ************************************************************************** */

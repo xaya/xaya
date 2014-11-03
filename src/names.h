@@ -224,6 +224,12 @@ public:
      in entries, and doesn't care about deleted data.  */
   bool get (const valtype& name, CNameData& data) const;
 
+  /* Query the cached changes to the expire index.  In particular,
+     for a given height and a given set of names that were indexed to
+     this update height, apply possible changes to the set that
+     are represented by the cached expire index changes.  */
+  void updateNamesForHeight (unsigned nHeight, std::set<valtype>& names) const;
+
   /* Insert (or update) a name.  If it is marked as "deleted", this also
      removes the "deleted" mark.  */
   void set (const valtype& name, const CNameData& data);
@@ -419,5 +425,13 @@ bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
  */
 void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                            CCoinsViewCache& view, CBlockUndo& undo);
+
+/**
+ * Check the name database consistency.  This calls CCoinsView::ValidateNameDB,
+ * but only if applicable depending on the -checknamedb setting.  If it fails,
+ * this throws an assertion failure.
+ * @param disconnect Whether we are disconnecting blocks.
+ */
+void CheckNameDB (bool disconnect);
 
 #endif // H_BITCOIN_NAMES

@@ -60,6 +60,8 @@ public:
     bool MiningRequiresPeers() const { return fMiningRequiresPeers; }
     /** Default value for -checkmempool argument */
     bool DefaultCheckMemPool() const { return fDefaultCheckMemPool; }
+    /** Default value for -checknamedb argument */
+    virtual int DefaultCheckNameDB() const = 0;
     /** Allow mining of a min-difficulty block */
     bool AllowMinDifficultyBlocks() const { return fAllowMinDifficultyBlocks; }
     /** Skip proof-of-work check: allow mining of any difficulty block */

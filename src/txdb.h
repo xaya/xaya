@@ -36,6 +36,7 @@ public:
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
     bool GetName(const valtype &name, CNameData &data) const;
+    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& data) const;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
     bool ValidateNameDB() const;
