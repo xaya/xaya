@@ -1,0 +1,19 @@
+Important changes compared to namecoind 0.3:
+============================================
+
+* The output of commands like name_show now contains the fields "expired"
+  and "transferred" always, with values set to true/false.  Previously,
+  for "false" the field was missing, and for "true" it was set to 1.
+
+* name_show and similar commands include more output fields now, in particular
+  the full reference to the name's unspent output ("txid" plus now also "vout").
+  Also new is "height", the last update height (in addition to expiration info).
+
+* name_firstupdate expects to be always passed the previous (name_new)
+  txid.  This was optional before if the client was not restarted.
+
+* When using createrawtransaction to build NAME_UPDATE operations, note that
+  the name is not automatically added as input anymore (only an output script
+  is created).  Use the extended name_show output to include the name output
+  as tx input.  This enables createrawtransaction to work fully independently
+  of the chain state.
