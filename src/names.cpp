@@ -515,6 +515,96 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
     }
 }
 
+bool
+ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo)
+{
+  /* The genesis block contains no name expirations.  */
+  if (nHeight == 0)
+    return true;
+
+  /* Otherwise, find out at which update heights names have expired
+     since the last block.  If the expiration depth changes, this could
+     be multiple heights at once.  */
+
+  const unsigned expDepthOld = Params ().NameExpirationDepth (nHeight - 1);
+  const unsigned expDepthNow = Params ().NameExpirationDepth (nHeight);
+
+  if (expDepthNow > nHeight)
+    return true;
+
+  /* Both are inclusive!  The last expireTo was nHeight - 1 - expDepthOld,
+     now we start at this value + 1.  */
+  const unsigned expireFrom = nHeight - expDepthOld;
+  const unsigned expireTo = nHeight - expDepthNow;
+  assert (expireFrom <= expireTo);
+
+  /* Find all names that expire at those depths.  Note that GetNamesForHeight
+     clears the output set, to we union all sets here.  */
+  std::set<valtype> expiringNames;
+  for (unsigned h = expireFrom; h <= expireTo; ++h)
+    {
+      std::set<valtype> newNames;
+      view.GetNamesForHeight (h, newNames);
+      expiringNames.insert (newNames.begin (), newNames.end ());
+    }
+
+  /* Expire all those names.  */
+  for (std::set<valtype>::const_iterator i = expiringNames.begin ();
+       i != expiringNames.end (); ++i)
+    {
+      CNameData data;
+      if (!view.GetName (*i, data))
+        return error ("%s : name '%s' not found in the database",
+                      __func__, ValtypeToString (*i).c_str ());
+      if (!data.isExpired (nHeight))
+        return error ("%s : name is not actually expired", __func__);
+
+      const COutPoint& out = data.getUpdateOutpoint ();
+      CCoinsModifier coins = view.ModifyCoins (out.hash);
+
+      if (!coins->IsAvailable (out.n))
+        return error ("%s : name coin is not available", __func__);
+      const CNameScript nameOp(coins->vout[out.n].scriptPubKey);
+      if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
+          || nameOp.getOpName () != *i)
+        return error ("%s : name coin to be expired is wrong script", __func__);
+
+      CTxInUndo txUndo;
+      if (!coins->Spend (out, txUndo))
+        return error ("%s : failed to spend name coin", __func__);
+
+      undo.vexpired.push_back (txUndo);
+    }
+
+  return true;
+}
+
+bool
+UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view)
+{
+  std::vector<CTxInUndo>::const_reverse_iterator i;
+  for (i = undo.vexpired.rbegin (); i != undo.vexpired.rend (); ++i)
+    {
+      const CNameScript nameOp(i->txout.scriptPubKey);
+      if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
+        return error ("%s : wrong script to be unexpired", __func__);
+      const valtype& name = nameOp.getOpName ();
+
+      CNameData data;
+      if (!view.GetName (nameOp.getOpName (), data))
+        return error ("%s : no data for name '%s' to be unexpired",
+                      __func__, ValtypeToString (name).c_str ());
+      if (!data.isExpired (nHeight))
+        return error ("%s : name '%s' to be unexpired is not expired in the DB",
+                      __func__, ValtypeToString (name).c_str ());
+
+      if (!ApplyTxInUndo (*i, view, data.getUpdateOutpoint ()))
+        return error ("%s : failed to undo name coin spending", __func__);
+    }
+
+  return true;
+}
+
 void
 CheckNameDB (bool disconnect)
 {

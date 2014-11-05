@@ -347,6 +347,8 @@ bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex);
 
 /** Functions for validating blocks and updating the block tree */
 
+bool ApplyTxInUndo(const CTxInUndo& undo, CCoinsViewCache& view, const COutPoint& out);
+
 /** Undo the effects of this block (with given index) on the UTXO set represented by coins.
  *  In case pfClean is provided, operation will try to be tolerant about errors, and *pfClean
  *  will be true if no problems were found. Otherwise, the return value will be false in case

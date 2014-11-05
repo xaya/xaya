@@ -73,7 +73,11 @@ class CBlockUndo
 {
 public:
     std::vector<CTxUndo> vtxundo; // for all but the coinbase
-    std::vector<CNameTxUndo> vnameundo; // stack of operations (as necessary)
+
+    /** Stack of operations done to the name database.  */
+    std::vector<CNameTxUndo> vnameundo;
+    /** Undo information for expired name coins.  */
+    std::vector<CTxInUndo> vexpired;
 
     ADD_SERIALIZE_METHODS;
 
@@ -81,6 +85,7 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(vtxundo);
         READWRITE(vnameundo);
+        READWRITE(vexpired);
     }
 };
 

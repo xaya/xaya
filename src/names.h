@@ -421,10 +421,30 @@ bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
  * @param nHeight Height at which the tx is.  Used for CNameData.
  * @param view The chain state to update.
  * @param undo Record undo information here.
- * @return True in case of success.
  */
 void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                            CCoinsViewCache& view, CBlockUndo& undo);
+
+/**
+ * Expire all names at the given height.  This removes their coins
+ * from the UTXO set.
+ * @param height The new block height.
+ * @param view The coins view to update.
+ * @param undo The block undo object to record undo information.
+ * @return True if successful.
+ */
+bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo);
+
+/**
+ * Undo name coin expirations.  This also does some checks verifying
+ * that all is fine.
+ * @param nHeight The height at which the names were expired.
+ * @param undo The block undo object to use.
+ * @param view The coins view to update.
+ * @return True if successful.
+ */
+bool UnexpireNames (unsigned nHeight, const CBlockUndo& undo,
+                    CCoinsViewCache& view);
 
 /**
  * Check the name database consistency.  This calls CCoinsView::ValidateNameDB,
