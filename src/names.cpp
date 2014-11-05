@@ -582,6 +582,10 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo)
 bool
 UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view)
 {
+  /* The genesis block contains no name expirations.  */
+  if (nHeight == 0)
+    return true;
+
   std::vector<CTxInUndo>::const_reverse_iterator i;
   for (i = undo.vexpired.rbegin (); i != undo.vexpired.rend (); ++i)
     {
@@ -594,8 +598,9 @@ UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view)
       if (!view.GetName (nameOp.getOpName (), data))
         return error ("%s : no data for name '%s' to be unexpired",
                       __func__, ValtypeToString (name).c_str ());
-      if (!data.isExpired (nHeight))
-        return error ("%s : name '%s' to be unexpired is not expired in the DB",
+      if (!data.isExpired (nHeight) || data.isExpired (nHeight - 1))
+        return error ("%s : name '%s' to be unexpired is not expired in the DB"
+                      " or it was already expired before the current height",
                       __func__, ValtypeToString (name).c_str ());
 
       if (!ApplyTxInUndo (*i, view, data.getUpdateOutpoint ()))
