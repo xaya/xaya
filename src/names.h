@@ -12,6 +12,7 @@
 
 #include "script/script.h"
 
+#include <algorithm>
 #include <list>
 #include <map>
 #include <string>
@@ -183,8 +184,83 @@ class CNameCache
 
 public:
 
-  /** Type for expire-index entries.  */
-  typedef std::pair<unsigned, valtype> ExpireEntry;
+  /**
+   * Type for expire-index entries.  We have to make sure that
+   * it is serialised in such a way that ordering is done correctly
+   * by height.  This is not true if we use a std::pair, since then
+   * the height is serialised as byte-array with little-endian order,
+   * which does not correspond to the ordering by actual value.
+   */
+  class ExpireEntry
+  {
+  public:
+
+    unsigned nHeight;
+    valtype name;
+
+    inline ExpireEntry ()
+      : nHeight(0), name()
+    {}
+
+    inline ExpireEntry (unsigned h, const valtype& n)
+      : nHeight(h), name(n)
+    {}
+
+    /* Default copy and assignment.  */
+
+    inline size_t
+    GetSerializeSize (int nType, int nVersion) const
+    {
+      return sizeof (nHeight) + ::GetSerializeSize (name, nType, nVersion);
+    }
+
+    template<typename Stream>
+      inline void
+      Serialize (Stream& s, int nType, int nVersion) const
+    {
+      /* Flip the byte order of nHeight to big endian.  */
+      unsigned nHeightFlipped = nHeight;
+      char* heightPtr = reinterpret_cast<char*> (&nHeightFlipped);
+      std::reverse (heightPtr, heightPtr + sizeof (nHeightFlipped));
+
+      WRITEDATA (s, nHeightFlipped);
+      ::Serialize (s, name, nType, nVersion);
+    }
+
+    template<typename Stream>
+      inline void
+      Unserialize (Stream& s, int nType, int nVersion)
+    {
+      READDATA (s, nHeight);
+      ::Unserialize (s, name, nType, nVersion);
+
+      /* Unflip the byte order.  */
+      char* heightPtr = reinterpret_cast<char*> (&nHeight);
+      std::reverse (heightPtr, heightPtr + sizeof (nHeight));
+    }
+
+    friend inline bool
+    operator== (const ExpireEntry& a, const ExpireEntry& b)
+    {
+      return a.nHeight == b.nHeight && a.name == b.name;
+    }
+
+    friend inline bool
+    operator!= (const ExpireEntry& a, const ExpireEntry& b)
+    {
+      return !(a == b);
+    }
+
+    friend inline bool
+    operator< (const ExpireEntry& a, const ExpireEntry& b)
+    {
+      if (a.nHeight != b.nHeight)
+        return a.nHeight < b.nHeight;
+
+      return a.name < b.name;
+    }
+
+  };
 
 private:
 

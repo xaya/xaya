@@ -92,14 +92,14 @@ CNameCache::updateNamesForHeight (unsigned nHeight,
   for (it = expireIndex.lower_bound (seekEntry); it != expireIndex.end (); ++it)
     {
       const ExpireEntry& cur = it->first;
-      assert (cur.first >= nHeight);
-      if (cur.first > nHeight)
+      assert (cur.nHeight >= nHeight);
+      if (cur.nHeight > nHeight)
         break;
 
       if (it->second)
-        names.insert (cur.second);
+        names.insert (cur.name);
       else
-        names.erase (cur.second);
+        names.erase (cur.name);
     }
 }
 

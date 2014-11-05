@@ -90,11 +90,11 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
             CNameCache::ExpireEntry entry;
             ssKey >> entry;
 
-            assert (entry.first >= nHeight);
-            if (entry.first > nHeight)
+            assert (entry.nHeight >= nHeight);
+            if (entry.nHeight > nHeight)
               break;
 
-            const valtype& name = entry.second;
+            const valtype& name = entry.name;
             if (names.count(name) > 0)
                 return error("%s : duplicate name '%s' in expire index",
                              __func__, ValtypeToString(name).c_str());
@@ -301,13 +301,13 @@ bool CCoinsViewDB::ValidateNameDB() const
             {
                 CNameCache::ExpireEntry entry;
                 ssKey >> entry;
-                const valtype& name = entry.second;
+                const valtype& name = entry.name;
 
                 if (nameHeightsIndex.count(name) > 0)
                     return error("%s : name %s duplicated in expire idnex",
                                  __func__, ValtypeToString(name).c_str());
 
-                nameHeightsIndex.insert(std::make_pair(name, entry.first));
+                nameHeightsIndex.insert(std::make_pair(name, entry.nHeight));
                 break;
             }
 

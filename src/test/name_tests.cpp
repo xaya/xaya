@@ -88,11 +88,17 @@ BOOST_AUTO_TEST_CASE (name_database)
   const valtype value = ValtypeFromString ("my-value");
   const CScript addr = getTestAddress ();
 
-  CNameData dataHeight1, dataHeight42, data2;
+  /* Choose two height values.  To verify that serialisation of the
+     expiration entries works as it should, make sure that the values
+     are ordered wrongly when serialised in little-endian.  */
+  const unsigned height1 = 0x00ff;
+  const unsigned height2 = 0x0142;
+
+  CNameData dataHeight1, dataHeight2, data2;
   CScript updateScript = CNameScript::buildNameUpdate (addr, name1, value);
   const CNameScript nameOp(updateScript);
-  dataHeight1.fromScript (1, COutPoint (uint256 (), 0), nameOp);
-  dataHeight42.fromScript (42, COutPoint (uint256 (), 0), nameOp);
+  dataHeight1.fromScript (height1, COutPoint (uint256 (), 0), nameOp);
+  dataHeight2.fromScript (height2, COutPoint (uint256 (), 0), nameOp);
 
   std::set<valtype> setExpected, setRet;
 
@@ -101,26 +107,26 @@ BOOST_AUTO_TEST_CASE (name_database)
   setExpected.clear ();
   setRet.clear ();
   setRet.insert (name1);
-  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   BOOST_CHECK (setRet == setExpected);
 
   BOOST_CHECK (!view.GetName (name1, data2));
-  view.SetName (name1, dataHeight42);
+  view.SetName (name1, dataHeight2);
   BOOST_CHECK (view.GetName (name1, data2));
-  BOOST_CHECK (dataHeight42 == data2);
+  BOOST_CHECK (dataHeight2 == data2);
 
-  BOOST_CHECK (view.GetNamesForHeight (1, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height1, setRet));
   BOOST_CHECK (setRet == setExpected);
   setExpected.insert (name1);
-  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   BOOST_CHECK (setRet == setExpected);
 
   BOOST_CHECK (view.Flush ());
   BOOST_CHECK (view.GetName (name1, data2));
-  BOOST_CHECK (dataHeight42 == data2);
+  BOOST_CHECK (dataHeight2 == data2);
 
-  view.SetName (name2, dataHeight42);
-  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  view.SetName (name2, dataHeight2);
+  BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   setExpected.insert (name2);
   BOOST_CHECK (setRet == setExpected);
 
@@ -129,7 +135,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   BOOST_CHECK (view.Flush ());
   BOOST_CHECK (!view.GetName (name1, data2));
 
-  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   setExpected.erase (name1);
   BOOST_CHECK (setRet == setExpected);
 
@@ -137,10 +143,10 @@ BOOST_AUTO_TEST_CASE (name_database)
   BOOST_CHECK (view.Flush ());
   view.SetName (name1, dataHeight1);
 
-  BOOST_CHECK (view.GetNamesForHeight (42, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   setExpected.clear ();
   BOOST_CHECK (setRet == setExpected);
-  BOOST_CHECK (view.GetNamesForHeight (1, setRet));
+  BOOST_CHECK (view.GetNamesForHeight (height1, setRet));
   setExpected.insert (name1);
   setExpected.insert (name2);
   BOOST_CHECK (setRet == setExpected);
