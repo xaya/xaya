@@ -8,9 +8,6 @@
 from test_framework import BitcoinTestFramework
 from util import assert_equal, sync_blocks, sync_mempools
 
-# TODO: test mempool / UTXO handling and name expiry
-# TODO: test advanced name access when implemented (name_filter & co)
-
 class NameTestFramework (BitcoinTestFramework):
 
   def firstupdateName (self, ind, name, newData, value, toAddr = None):

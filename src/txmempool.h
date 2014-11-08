@@ -47,6 +47,7 @@ private:
 
     /* Cache whether this is a name registration and if so, what name.  */
     bool isNameReg;
+    bool isNameUpd;
     valtype name;
 
 public:
@@ -67,10 +68,15 @@ public:
     {
         return isNameReg;
     }
+    inline bool
+    isNameUpdate() const
+    {
+        return isNameUpd;
+    }
     inline const valtype&
     getName() const
     {
-        assert(isNameReg);
+        assert(isNameReg || isNameUpd);
         return name;
     }
 };
@@ -143,6 +149,22 @@ public:
     unsigned int GetTransactionsUpdated() const;
     void AddTransactionsUpdated(unsigned int n);
 
+    /* Remove entries that conflict with name expirations / unexpirations.  */
+    inline void
+    removeUnexpireConflicts (const std::set<valtype>& unexpired,
+                             std::list<CTransaction>& removed)
+    {
+        LOCK(cs);
+        names.removeUnexpireConflicts (unexpired, removed);
+    }
+    inline void
+    removeExpireConflicts (const std::set<valtype>& expired,
+                           std::list<CTransaction>& removed)
+    {
+        LOCK(cs);
+        names.removeExpireConflicts (expired, removed);
+    }
+
     /** Affect CreateNewBlock prioritisation of transactions */
     void PrioritiseTransaction(const uint256 hash, const std::string strHash, double dPriorityDelta, const CAmount& nFeeDelta);
     void ApplyDeltas(const uint256 hash, double &dPriorityDelta, CAmount &nFeeDelta);
@@ -170,6 +192,12 @@ public:
     {
         AssertLockHeld(cs);
         return names.registersName(name);
+    }
+    inline bool
+    updatesName(const valtype& name) const
+    {
+        AssertLockHeld(cs);
+        return names.updatesName(name);
     }
 
     /**

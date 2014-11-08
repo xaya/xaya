@@ -20,7 +20,7 @@ using namespace std;
 
 CTxMemPoolEntry::CTxMemPoolEntry():
     nFee(0), nTxSize(0), nModSize(0), nTime(0), dPriority(0.0),
-    isNameReg(false)
+    isNameReg(false), isNameUpd(false)
 {
     nHeight = MEMPOOL_HEIGHT;
 }
@@ -29,7 +29,7 @@ CTxMemPoolEntry::CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
                                  int64_t _nTime, double _dPriority,
                                  unsigned int _nHeight):
     tx(_tx), nFee(_nFee), nTime(_nTime), dPriority(_dPriority), nHeight(_nHeight),
-    isNameReg(false)
+    isNameReg(false), isNameUpd(false)
 {
     nTxSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
@@ -40,11 +40,18 @@ CTxMemPoolEntry::CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
         {
             const CNameScript nameOp(txout.scriptPubKey);
-            if (nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_FIRSTUPDATE)
+            if (nameOp.isNameOp() && nameOp.isAnyUpdate ())
             {
-                assert(!isNameReg);
-                isNameReg = true;
+                assert(!isNameReg && !isNameUpd);
                 name = nameOp.getOpName();
+
+                if (nameOp.getNameOp() == OP_NAME_FIRSTUPDATE)
+                    isNameReg = true;
+                else
+                {
+                    assert (nameOp.getNameOp() == OP_NAME_UPDATE);
+                    isNameUpd = true;
+                }
             }
         }
     }

@@ -61,7 +61,7 @@ class BitcoinTestFramework(object):
         if not split:
             connect_nodes_bi(self.nodes, 1, 2)
             sync_blocks(self.nodes[1:3])
-            sync_mempools(self.nodes[1:3])
+            # Don't sync mempools (see below).
 
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 2, 3)
@@ -87,11 +87,11 @@ class BitcoinTestFramework(object):
         assert mode in modes
         if self.is_network_split:
             if modes[mode]['blocks']:
-                    sync_blocks(self.nodes[:2])
-                    sync_blocks(self.nodes[2:])
+                sync_blocks(self.nodes[:2])
+                sync_blocks(self.nodes[2:])
             if modes[mode]['mempool']:
-                    sync_mempools(self.nodes[:2])
-                    sync_mempools(self.nodes[2:])
+                sync_mempools(self.nodes[:2])
+                sync_mempools(self.nodes[2:])
         else:
             if modes[mode]['blocks']:
                 sync_blocks(self.nodes)

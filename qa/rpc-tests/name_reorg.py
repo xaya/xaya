@@ -3,7 +3,8 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-# Test that reorgs (undoing) work for names.
+# Test that reorgs (undoing) work for names.  This also checks that
+# cleaning the mempool with respect to conflicting name registrations works.
 
 # Add python-bitcoinrpc to module search path:
 import os

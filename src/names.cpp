@@ -12,8 +12,6 @@
 
 #include "script/names.h"
 
-#include <set>
-
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
  * heights of MEMPOOL_HEIGHT are supported.  For nHeight == MEMPOOL_HEIGHT,
@@ -214,6 +212,12 @@ CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
       assert (mapNameRegs.count (name) == 0);
       mapNameRegs.insert (std::make_pair (name, hash));
     }
+  if (entry.isNameUpdate ())
+    {
+      const valtype& name = entry.getName ();
+      assert (mapNameUpdates.count (name) == 0);
+      mapNameUpdates.insert (std::make_pair (name, hash));
+    }
 }
 
 void
@@ -227,6 +231,13 @@ CNameMemPool::remove (const CTxMemPoolEntry& entry)
         = mapNameRegs.find (entry.getName ());
       assert (mit != mapNameRegs.end ());
       mapNameRegs.erase (mit);
+    }
+  if (entry.isNameUpdate ())
+    {
+      const std::map<valtype, uint256>::iterator mit
+        = mapNameUpdates.find (entry.getName ());
+      assert (mit != mapNameUpdates.end ());
+      mapNameUpdates.erase (mit);
     }
 }
 
@@ -259,6 +270,46 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
 }
 
 void
+CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
+                                       std::list<CTransaction>& removed)
+{
+  AssertLockHeld (pool.cs);
+
+  BOOST_FOREACH (const valtype& name, unexpired)
+    {
+      const std::map<valtype, uint256>::const_iterator mit
+        = mapNameRegs.find (name);
+      if (mit != mapNameRegs.end ())
+        {
+          const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
+            = pool.mapTx.find (mit->second);
+          assert (mit2 != pool.mapTx.end ());
+          pool.remove (mit2->second.GetTx (), removed, true);
+        }
+    }
+}
+
+void
+CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
+                                     std::list<CTransaction>& removed)
+{
+  AssertLockHeld (pool.cs);
+
+  BOOST_FOREACH (const valtype& name, expired)
+    {
+      const std::map<valtype, uint256>::const_iterator mit
+        = mapNameUpdates.find (name);
+      if (mit != mapNameUpdates.end ())
+        {
+          const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
+            = pool.mapTx.find (mit->second);
+          assert (mit2 != pool.mapTx.end ());
+          pool.remove (mit2->second.GetTx (), removed, true);
+        }
+    }
+}
+
+void
 CNameMemPool::check (const CCoinsView& coins) const
 {
   AssertLockHeld (pool.cs);
@@ -271,6 +322,7 @@ CNameMemPool::check (const CCoinsView& coins) const
     nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
+  std::set<valtype> nameUpdates;
   BOOST_FOREACH (const PAIRTYPE(const uint256, CTxMemPoolEntry)& entry,
                  pool.mapTx)
     {
@@ -286,23 +338,32 @@ CNameMemPool::check (const CCoinsView& coins) const
           assert (nameRegs.count (name) == 0);
           nameRegs.insert (name);
 
-          /* FIXME: In a rare situation, it could happen that a name
-             expires, a re-registration tx goes in, and then the
-             chain is disconnected so that the name is no longer
-             expired.  In that case, the check below could fail
-             even though things are mostly "fine".  */
           CNameData data;
           if (coins.GetName (name, data))
             assert (data.isExpired (nHeight));
         }
 
-      /* TODO: Also check name updates against expired names.  For this,
-         think about a way to implement removal of expired outputs from
-         the UTXO set.  If this is done, the check already done against
-         spent outputs should be enough?  */
+      if (entry.second.isNameUpdate ())
+        {
+          const valtype& name = entry.second.getName ();
+
+          const std::map<valtype, uint256>::const_iterator mit
+            = mapNameUpdates.find (name);
+          assert (mit != mapNameUpdates.end ());
+          assert (mit->second == entry.first);
+
+          assert (nameUpdates.count (name) == 0);
+          nameUpdates.insert (name);
+
+          CNameData data;
+          if (!coins.GetName (name, data))
+            assert (false);
+          assert (!data.isExpired (nHeight));
+        }
     }
 
   assert (nameRegs.size () == mapNameRegs.size ());
+  assert (nameUpdates.size () == mapNameUpdates.size ());
 }
 
 bool
@@ -313,13 +374,21 @@ CNameMemPool::checkTx (const CTransaction& tx) const
   if (!tx.IsNamecoin ())
     return true;
 
+  /* In principle, multiple name_updates could be performed within the
+     mempool at once (building upon each other).  This is disallowed, though,
+     since the current mempool implementation does not like it.  (We keep
+     track of only a single update tx for each name.)  */
+
   BOOST_FOREACH (const CTxOut& txout, tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
-      if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
+      if (nameOp.isNameOp () && nameOp.isAnyUpdate ())
         {
           const valtype& name = nameOp.getOpName ();
-          if (registersName (name))
+          if (nameOp.getNameOp () == OP_NAME_FIRSTUPDATE
+              && registersName (name))
+            return false;
+          if (nameOp.getNameOp () == OP_NAME_UPDATE && updatesName (name))
             return false;
         }
     }
@@ -516,8 +585,11 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
 }
 
 bool
-ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo)
+ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
+             std::set<valtype>& names)
 {
+  names.clear ();
+
   /* The genesis block contains no name expirations.  */
   if (nHeight == 0)
     return true;
@@ -540,17 +612,16 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo)
 
   /* Find all names that expire at those depths.  Note that GetNamesForHeight
      clears the output set, to we union all sets here.  */
-  std::set<valtype> expiringNames;
   for (unsigned h = expireFrom; h <= expireTo; ++h)
     {
       std::set<valtype> newNames;
       view.GetNamesForHeight (h, newNames);
-      expiringNames.insert (newNames.begin (), newNames.end ());
+      names.insert (newNames.begin (), newNames.end ());
     }
 
   /* Expire all those names.  */
-  for (std::set<valtype>::const_iterator i = expiringNames.begin ();
-       i != expiringNames.end (); ++i)
+  for (std::set<valtype>::const_iterator i = names.begin ();
+       i != names.end (); ++i)
     {
       CNameData data;
       if (!view.GetName (*i, data))
@@ -580,8 +651,11 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo)
 }
 
 bool
-UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view)
+UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view,
+               std::set<valtype>& names)
 {
+  names.clear ();
+
   /* The genesis block contains no name expirations.  */
   if (nHeight == 0)
     return true;
@@ -592,7 +666,12 @@ UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view)
       const CNameScript nameOp(i->txout.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
         return error ("%s : wrong script to be unexpired", __func__);
+
       const valtype& name = nameOp.getOpName ();
+      if (names.count (name) > 0)
+        return error ("%s : name '%s' unexpired twice",
+                      __func__, ValtypeToString (name).c_str ());
+      names.insert (name);
 
       CNameData data;
       if (!view.GetName (nameOp.getOpName (), data))

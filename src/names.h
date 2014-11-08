@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -403,6 +404,9 @@ private:
    */
   std::map<valtype, uint256> mapNameRegs;
 
+  /** Map pending name updates to transaction IDs.  */
+  std::map<valtype, uint256> mapNameUpdates;
+
 public:
 
   /**
@@ -410,7 +414,7 @@ public:
    * @param p The parent pool.
    */
   explicit inline CNameMemPool (CTxMemPool& p)
-    : pool(p), mapNameRegs()
+    : pool(p), mapNameRegs(), mapNameUpdates()
   {}
 
   /**
@@ -427,12 +431,24 @@ public:
   }
 
   /**
+   * Check whether a particular name has a pending update.  Does not lock.
+   * @param name The name to check for.
+   * @return True iff there's a matching name update in the pool.
+   */
+  inline bool
+  updatesName (const valtype& name) const
+  {
+    return mapNameUpdates.count (name) > 0;
+  }
+
+  /**
    * Clear all data.
    */
   inline void
   clear ()
   {
     mapNameRegs.clear ();
+    mapNameUpdates.clear ();
   }
 
   /**
@@ -458,6 +474,23 @@ public:
    */
   void removeConflicts (const CTransaction& tx,
                         std::list<CTransaction>& removed);
+
+  /**
+   * Remove conflicts in the mempool due to unexpired names.  This removes
+   * conflicting name registrations that are no longer possible.
+   * @param unexpired The set of unexpired names.
+   * @param removed Put removed tx here.
+   */
+  void removeUnexpireConflicts (const std::set<valtype>& unexpired,
+                                std::list<CTransaction>& removed);
+  /**
+   * Remove conflicts in the mempool due to expired names.  This removes
+   * conflicting name updates that are no longer possible.
+   * @param expired The set of expired names.
+   * @param removed Put removed tx here.
+   */
+  void removeExpireConflicts (const std::set<valtype>& expired,
+                              std::list<CTransaction>& removed);
 
   /**
    * Perform sanity checks.  Throws if it fails.
@@ -507,9 +540,11 @@ void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
  * @param height The new block height.
  * @param view The coins view to update.
  * @param undo The block undo object to record undo information.
+ * @param names List all expired names here.
  * @return True if successful.
  */
-bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo);
+bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
+                  std::set<valtype>& names);
 
 /**
  * Undo name coin expirations.  This also does some checks verifying
@@ -517,10 +552,11 @@ bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo);
  * @param nHeight The height at which the names were expired.
  * @param undo The block undo object to use.
  * @param view The coins view to update.
+ * @param names List all unexpired names here.
  * @return True if successful.
  */
 bool UnexpireNames (unsigned nHeight, const CBlockUndo& undo,
-                    CCoinsViewCache& view);
+                    CCoinsViewCache& view, std::set<valtype>& names);
 
 /**
  * Check the name database consistency.  This calls CCoinsView::ValidateNameDB,

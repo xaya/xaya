@@ -443,40 +443,45 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
   CCoins coins;
 
   /* None of the two names should be expired.  */
-  BOOST_CHECK (ExpireNames (135999, view, undo1));
+  BOOST_CHECK (ExpireNames (135999, view, undo1, setExpired));
   BOOST_CHECK (undo1.vexpired.empty ());
+  BOOST_CHECK (setExpired.empty ());
   BOOST_CHECK (view.GetCoins (coinId1, coins));
   BOOST_CHECK (coins == coin1);
   BOOST_CHECK (view.GetCoins (coinId2, coins));
   BOOST_CHECK (coins == coin2);
 
   /* The first name expires.  */
-  BOOST_CHECK (ExpireNames (136000, view, undo1));
+  BOOST_CHECK (ExpireNames (136000, view, undo1, setExpired));
   BOOST_CHECK (undo1.vexpired.size () == 1);
   BOOST_CHECK (undo1.vexpired[0].txout == coin1.vout[0]);
+  BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name1);
   BOOST_CHECK (!view.GetCoins (coinId1, coins));
   BOOST_CHECK (view.GetCoins (coinId2, coins));
   BOOST_CHECK (coins == coin2);
 
   /* Also the second name expires.  */
-  BOOST_CHECK (ExpireNames (136010, view, undo2));
+  BOOST_CHECK (ExpireNames (136010, view, undo2, setExpired));
   BOOST_CHECK (undo2.vexpired.size () == 1);
   BOOST_CHECK (undo2.vexpired[0].txout == coin2.vout[0]);
+  BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name2);
   BOOST_CHECK (!view.GetCoins (coinId1, coins));
   BOOST_CHECK (!view.GetCoins (coinId2, coins));
 
   /* Undo the second expiration.  */
-  BOOST_CHECK (UnexpireNames (136010, undo2, view));
+  BOOST_CHECK (UnexpireNames (136010, undo2, view, setExpired));
+  BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name2);
   BOOST_CHECK (!view.GetCoins (coinId1, coins));
   BOOST_CHECK (view.GetCoins (coinId2, coins));
   BOOST_CHECK (coins == coin2);
 
   /* Undoing at the wrong height should fail.  */
-  BOOST_CHECK (!UnexpireNames (136001, undo1, view));
-  BOOST_CHECK (!UnexpireNames (135999, undo1, view));
+  BOOST_CHECK (!UnexpireNames (136001, undo1, view, setExpired));
+  BOOST_CHECK (!UnexpireNames (135999, undo1, view, setExpired));
 
   /* Undo the first expiration.  */
-  BOOST_CHECK (UnexpireNames (136000, undo1, view));
+  BOOST_CHECK (UnexpireNames (136000, undo1, view, setExpired));
+  BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name1);
   BOOST_CHECK (view.GetCoins (coinId1, coins));
   BOOST_CHECK (coins == coin1);
   BOOST_CHECK (view.GetCoins (coinId2, coins));
@@ -489,55 +494,130 @@ BOOST_AUTO_TEST_CASE (name_mempool)
 {
   mempool.clear ();
 
-  const valtype name = ValtypeFromString ("test-name");
+  const valtype nameReg = ValtypeFromString ("name-reg");
+  const valtype nameUpd = ValtypeFromString ("name-upd");
   const valtype value = ValtypeFromString ("value");
+  const valtype valueA = ValtypeFromString ("value-a");
+  const valtype valueB = ValtypeFromString ("value-b");
   const CScript addr = getTestAddress ();
 
   const valtype rand1(20, 'a');
   const valtype rand2(20, 'b');
 
   const CScript first1
-    = CNameScript::buildNameFirstupdate (addr, name, value, rand1);
+    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand1);
   const CScript first2
-    = CNameScript::buildNameFirstupdate (addr, name, value, rand2);
+    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand2);
+  const CScript upd1 = CNameScript::buildNameUpdate (addr, nameUpd, valueA);
+  const CScript upd2 = CNameScript::buildNameUpdate (addr, nameUpd, valueB);
 
   /* The constructed tx needs not be valid.  We only test
      the mempool acceptance and not validation.  */
 
-  CMutableTransaction mtx1;
-  mtx1.SetNamecoin ();
-  mtx1.vout.push_back (CTxOut (COIN, first1));
+  CMutableTransaction txReg1;
+  txReg1.SetNamecoin ();
+  txReg1.vout.push_back (CTxOut (COIN, first1));
+  CMutableTransaction txReg2;
+  txReg2.SetNamecoin ();
+  txReg2.vout.push_back (CTxOut (COIN, first2));
 
-  CMutableTransaction mtx2;
-  mtx2.SetNamecoin ();
-  mtx2.vout.push_back (CTxOut (COIN, first2));
+  CMutableTransaction txUpd1;
+  txUpd1.SetNamecoin ();
+  txUpd1.vout.push_back (CTxOut (COIN, upd1));
+  CMutableTransaction txUpd2;
+  txUpd2.SetNamecoin ();
+  txUpd2.vout.push_back (CTxOut (COIN, upd2));
 
-  BOOST_CHECK (!mempool.registersName (name));
-  BOOST_CHECK (mempool.checkNameOps (mtx1) && mempool.checkNameOps (mtx2));
+  /* For an empty mempool, all tx should be fine.  */
+  BOOST_CHECK (!mempool.registersName (nameReg));
+  BOOST_CHECK (!mempool.updatesName (nameUpd));
+  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
+  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
 
-  const CTxMemPoolEntry entry(mtx1, 0, 0, 0, 100);
-  mempool.addUnchecked (entry.GetTx ().GetHash (), entry);
-  BOOST_CHECK (mempool.registersName (name));
-  BOOST_CHECK (!mempool.checkNameOps (mtx2));
+  /* Add a name registration.  */
+  const CTxMemPoolEntry entryReg(txReg1, 0, 0, 0, 100);
+  BOOST_CHECK (entryReg.isNameRegistration () && !entryReg.isNameUpdate ());
+  BOOST_CHECK (entryReg.getName () == nameReg);
+  mempool.addUnchecked (entryReg.GetTx ().GetHash (), entryReg);
+  BOOST_CHECK (mempool.registersName (nameReg));
+  BOOST_CHECK (!mempool.updatesName (nameReg));
+  BOOST_CHECK (!mempool.checkNameOps (txReg2) && mempool.checkNameOps (txUpd1));
 
+  /* Add a name update.  */
+  const CTxMemPoolEntry entryUpd(txUpd1, 0, 0, 0, 100);
+  BOOST_CHECK (!entryUpd.isNameRegistration () && entryUpd.isNameUpdate ());
+  BOOST_CHECK (entryUpd.getName () == nameUpd);
+  mempool.addUnchecked (entryUpd.GetTx ().GetHash (), entryUpd);
+  BOOST_CHECK (!mempool.registersName (nameUpd));
+  BOOST_CHECK (mempool.updatesName (nameUpd));
+  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+
+  /* Run mempool sanity check.  */
   CCoinsView dummyView;
   CCoinsViewCache view(&dummyView);
+  const CNameScript nameOp(upd1);
+  CNameData data;
+  data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
+  view.SetName (nameUpd, data);
+  mempool.setSanityCheck (true);
   mempool.check (&view);
 
-  std::list<CTransaction> removed;
-  mempool.remove (mtx1, removed, true);
-  BOOST_CHECK (!mempool.registersName (name));
-  BOOST_CHECK (mempool.checkNameOps (mtx1) && mempool.checkNameOps (mtx2));
+  /* Remove the transactions again.  */
 
-  mempool.addUnchecked (entry.GetTx ().GetHash (), entry);
-  BOOST_CHECK (mempool.registersName (name));
-  BOOST_CHECK (!mempool.checkNameOps (mtx2));
+  std::list<CTransaction> removed;
+  mempool.remove (txReg1, removed, true);
+  BOOST_CHECK (!mempool.registersName (nameReg));
+  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
+  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+  BOOST_CHECK (removed.size () == 1);
+
+  mempool.remove (txUpd1, removed, true);
+  BOOST_CHECK (!mempool.updatesName (nameUpd));
+  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
+  BOOST_CHECK (mempool.checkNameOps (txReg1));
+  BOOST_CHECK (removed.size () == 2);
+
+  /* Check removing of conflicted name registrations.  */
+
+  mempool.addUnchecked (entryReg.GetTx ().GetHash (), entryReg);
+  BOOST_CHECK (mempool.registersName (nameReg));
+  BOOST_CHECK (!mempool.checkNameOps (txReg2));
 
   removed.clear ();
-  mempool.removeConflicts (mtx2, removed);
+  mempool.removeConflicts (txReg2, removed);
   BOOST_CHECK (removed.size () == 1);
-  BOOST_CHECK (removed.front ().GetHash () == mtx1.GetHash ());
-  BOOST_CHECK (!mempool.registersName (name));
+  BOOST_CHECK (removed.front ().GetHash () == txReg1.GetHash ());
+  BOOST_CHECK (!mempool.registersName (nameReg));
+  BOOST_CHECK (mempool.mapTx.empty ());
+
+  /* Check removing of conflicts after name expiration.  */
+
+  mempool.addUnchecked (entryUpd.GetTx ().GetHash (), entryUpd);
+  BOOST_CHECK (mempool.updatesName (nameUpd));
+  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+
+  std::set<valtype> names;
+  names.insert (nameUpd);
+  removed.clear ();
+  mempool.removeExpireConflicts (names, removed);
+  BOOST_CHECK (removed.size () == 1);
+  BOOST_CHECK (removed.front ().GetHash () == txUpd1.GetHash ());
+  BOOST_CHECK (!mempool.updatesName (nameUpd));
+  BOOST_CHECK (mempool.mapTx.empty ());
+
+  /* Check removing of conflicts after name unexpiration.  */
+
+  mempool.addUnchecked (entryReg.GetTx ().GetHash (), entryReg);
+  BOOST_CHECK (mempool.registersName (nameReg));
+  BOOST_CHECK (!mempool.checkNameOps (txReg2));
+
+  names.clear ();
+  names.insert (nameReg);
+  removed.clear ();
+  mempool.removeUnexpireConflicts (names, removed);
+  BOOST_CHECK (removed.size () == 1);
+  BOOST_CHECK (removed.front ().GetHash () == txReg1.GetHash ());
+  BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.mapTx.empty ());
 }
 

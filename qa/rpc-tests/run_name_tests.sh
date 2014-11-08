@@ -1,5 +1,8 @@
 #!/bin/sh
 
+echo "\nName expiration..."
+./name_expiration.py
+
 echo "\nName list..."
 ./name_list.py
 
