@@ -129,6 +129,16 @@ class NameRegistrationTest (NameTestFramework):
       raise AssertionError ("wrong node could update sent name")
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -4)
+
+    # Reject update when another update is pending.
+    self.nodes[1].name_update ("test-name", "value")
+    try:
+      self.nodes[1].name_update ("test-name", "new value")
+      raise AssertionError ("name_update didn't catch pending other update")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -25)
+    self.generate (0, 1)
+    data = self.checkName (0, "test-name", "value", 30, False)
     
     # Update failing after expiry.  Re-registration possible.
     self.checkName (1, "node-1", "x" * 520, None, True)

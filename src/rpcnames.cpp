@@ -520,6 +520,16 @@ name_update (const json_spirit::Array& params, bool fHelp)
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
+  /* Reject updates to a name for which the mempool already has
+     a pending update.  This is not a hard rule enforced by network
+     rules, but it is necessary with the current mempool implementation.  */
+  {
+    LOCK (mempool.cs);
+    if (mempool.updatesName (name))
+      throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                          "there is already a pending update for this name");
+  }
+
   CNameData oldData;
   if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
