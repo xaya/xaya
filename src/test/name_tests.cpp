@@ -81,6 +81,27 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 /* ************************************************************************** */
 
+class CTestNameWalker : public CNameWalker
+{
+
+public:
+
+  std::set<valtype> names;
+  bool single;
+
+  bool nextName (const valtype& name, const CNameData& data);
+
+};
+
+bool
+CTestNameWalker::nextName (const valtype& name, const CNameData&)
+{
+  assert (names.count (name) == 0);
+  names.insert (name);
+
+  return !single;
+}
+
 BOOST_AUTO_TEST_CASE (name_database)
 {
   const valtype name1 = ValtypeFromString ("database-test-name-1");
@@ -150,6 +171,29 @@ BOOST_AUTO_TEST_CASE (name_database)
   setExpected.insert (name1);
   setExpected.insert (name2);
   BOOST_CHECK (setRet == setExpected);
+
+  /* Test name walking.  */
+
+  CTestNameWalker walker;
+  walker.single = false;
+  view.Flush ();
+  view.WalkNames (valtype (), walker);
+  setExpected.clear ();
+  setExpected.insert (name1);
+  setExpected.insert (name2);
+  BOOST_CHECK (walker.names == setExpected);
+
+  walker.names.clear ();
+  view.WalkNames (name2, walker);
+  setExpected.erase (name1);
+  BOOST_CHECK (walker.names == setExpected);
+
+  walker.names.clear ();
+  walker.single = true;
+  view.WalkNames (valtype (), walker);
+  setExpected.clear ();
+  setExpected.insert (name1);
+  BOOST_CHECK (walker.names == setExpected);
 }
 
 /* ************************************************************************** */

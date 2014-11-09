@@ -15,7 +15,7 @@ from bitcoinrpc.authproxy import JSONRPCException
 from names import NameTestFramework
 from util import assert_equal
 
-class NameRegistrationTest (NameTestFramework):
+class NameExpirationTest (NameTestFramework):
 
   def checkUTXO (self, ind, name, shouldBeThere):
     """
@@ -109,4 +109,4 @@ class NameRegistrationTest (NameTestFramework):
     assert_equal (data['confirmations'], -1)
 
 if __name__ == '__main__':
-  NameRegistrationTest ().main ()
+  NameExpirationTest ().main ()

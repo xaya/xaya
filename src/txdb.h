@@ -37,6 +37,7 @@ public:
     uint256 GetBestBlock() const;
     bool GetName(const valtype &name, CNameData &data) const;
     bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& data) const;
+    void WalkNames(const valtype& start, CNameWalker& walker) const;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
     bool ValidateNameDB() const;

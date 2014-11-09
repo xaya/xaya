@@ -87,9 +87,7 @@ class NameListTest (NameTestFramework):
     Check a name_list entry for the expected data.
     """
 
-    assert_equal (data['name'], name)
-    assert_equal (data['value'], value)
-    assert_equal (data['expired'], expired)
+    self.checkNameData (data, name, value, None, expired)
     assert_equal (data['transferred'], transferred)
 
 if __name__ == '__main__':

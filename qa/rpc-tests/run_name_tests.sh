@@ -15,5 +15,8 @@ echo "\nName registration..."
 echo "\nName reorgs..."
 ./name_reorg.py
 
+echo "\nName scanning..."
+./name_scanning.py
+
 echo "\nName wallet..."
 ./name_wallet.py

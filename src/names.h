@@ -173,6 +173,28 @@ public:
 };
 
 /* ************************************************************************** */
+/* CNameWalker.  */
+
+/**
+ * Interface for objects that "consume" name database entries while iterating
+ * over the database.  This is used by name_scan and name_filter.
+ */
+class CNameWalker
+{
+
+public:
+
+  /**
+   * Called for each name.
+   * @param name The name.
+   * @param data The name's data.
+   * @return True if the iteration should continue.
+   */
+  virtual bool nextName (const valtype& name, const CNameData& data) = 0;
+
+};
+
+/* ************************************************************************** */
 /* CNameCache.  */
 
 /**
@@ -288,6 +310,12 @@ public:
     entries.clear ();
     deleted.clear ();
     expireIndex.clear ();
+  }
+
+  inline bool
+  empty () const
+  {
+    return entries.empty () && deleted.empty ();
   }
 
   /* See if the given name is marked as deleted.  */

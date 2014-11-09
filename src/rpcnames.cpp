@@ -75,6 +75,50 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
 }
 
 /**
+ * Return name info object for a CNameData object.
+ * @param name The name.
+ * @param data The name's data.
+ * @return A JSON object to return.
+ */
+static json_spirit::Object
+getNameInfo (const valtype& name, const CNameData& data)
+{
+  return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
+                     data.getAddress (), data.getHeight ());
+}
+
+/**
+ * Return the help string description to use for name info objects.
+ * @param indent Indentation at the line starts.
+ * @param trailing Trailing string (e. g., comma for an array of these objects).
+ * @return The description string.
+ */
+static std::string
+getNameInfoHelp (const std::string& indent, const std::string& trailing)
+{
+  std::ostringstream res;
+
+  res << indent << "{" << std::endl;
+  res << indent << "  \"name\": xxxxx,           "
+      << "(string) the requested name" << std::endl;
+  res << indent << "  \"value\": xxxxx,          "
+      << "(string) the name's current value" << std::endl;
+  res << indent << "  \"txid\": xxxxx,           "
+      << "(string) the name's last update tx" << std::endl;
+  res << indent << "  \"address\": xxxxx,        "
+      << "(string) the address holding the name" << std::endl;
+  res << indent << "  \"height\": xxxxx,         "
+      << "(numeric) the name's last update height" << std::endl;
+  res << indent << "  \"expires_in\": xxxxx,     "
+      << "(numeric) expire counter for the name" << std::endl;
+  res << indent << "  \"expired\": xxxxx,        "
+      << "(boolean) whether the name is expired" << std::endl;
+  res << indent << "}" << trailing << std::endl;
+
+  return res.str ();
+}
+
+/**
  * Helper routine to fetch the name output of a previous transaction.  This
  * is required for name_firstupdate.
  * @param txid Previous transaction ID.
@@ -161,15 +205,7 @@ name_show (const json_spirit::Array& params, bool fHelp)
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
-        "{\n"
-        "  \"name\": xxxxx,           (string) the requested name\n"
-        "  \"value\": xxxxx,          (string) the name's current value\n"
-        "  \"txid\": xxxxx,           (string) the name's last update tx\n"
-        "  \"address\": xxxxx,        (string) the address holding the name\n"
-        "  \"height\": xxxxx,         (numeric) the name's last update height\n"
-        "  \"expires_in\": xxxxx,     (numeric) expire counter for the name\n"
-        "  \"expired\": xxxxx,        (boolean) whether the name is expired\n"
-        "}\n"
+        + getNameInfoHelp ("", "") +
         "\nExamples:\n"
         + HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
@@ -186,8 +222,104 @@ name_show (const json_spirit::Array& params, bool fHelp)
       throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
     }
 
-  return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
-                      data.getAddress (), data.getHeight ());
+  return getNameInfo (name, data);
+}
+
+/* ************************************************************************** */
+
+/**
+ * CNameWalker object used for name_scan.
+ */
+class CNameScanWalker : public CNameWalker
+{
+
+private:
+
+  /** Build up the result array.  */
+  json_spirit::Array res;
+
+  /** Count remaining names to return.  */
+  unsigned count;
+
+public:
+
+  /**
+   * Construct the object, given the count.
+   * @param c The count to return.
+   */
+  explicit inline CNameScanWalker (unsigned c)
+    : res(), count(c)
+  {}
+
+  /**
+   * Return the result array.
+   * @return The result array.
+   */
+  inline const json_spirit::Array&
+  getArray () const
+  {
+    return res;
+  }
+
+  /**
+   * Register a new name.
+   * @param name The name.
+   * @param data The name's data.
+   * @return True if there's still remaining count.
+   */
+  bool nextName (const valtype& name, const CNameData& data);
+
+};
+
+bool
+CNameScanWalker::nextName (const valtype& name, const CNameData& data)
+{
+  res.push_back (getNameInfo (name, data));
+
+  assert (count > 0);
+  --count;
+
+  return count > 0;
+}
+
+json_spirit::Value
+name_scan (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 2)
+    throw std::runtime_error (
+        "name_scan (\"start\" (\"count\"))\n"
+        "\nList names in the database.\n"
+        "\nArguments:\n"
+        "1. \"start\"       (string, optional) skip initially to this name\n"
+        "2. \"count\"       (numeric, optional, default=500) stop after this many names\n"
+        "\nResult:\n"
+        "[\n"
+        + getNameInfoHelp ("  ", ",") +
+        "  ...\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_scan", "")
+        + HelpExampleCli ("name_scan", "\"d/abc\"")
+        + HelpExampleCli ("name_scan", "\"d/abc\" 10")
+        + HelpExampleRpc ("name_scan", "\"d/abc\"")
+      );
+
+  valtype start;
+  if (params.size () >= 1)
+    start = ValtypeFromString (params[0].get_str ());
+
+  int count = 500;
+  if (params.size () >= 2)
+    count = params[1].get_int ();
+
+  if (count <= 0)
+    return json_spirit::Array ();
+
+  CNameScanWalker walker(count);
+  pcoinsTip->Flush ();
+  pcoinsTip->WalkNames (start, walker);
+
+  return walker.getArray ();
 }
 
 /* ************************************************************************** */
@@ -219,22 +351,13 @@ name_list (const json_spirit::Array& params, bool fHelp)
 {
   if (fHelp || params.size () > 1)
     throw std::runtime_error (
-        "name_list [\"name\"]\n"
+        "name_list (\"name\")\n"
         "\nShow status of names in the wallet.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, optional) only include this name\n"
         "\nResult:\n"
         "[\n"
-        "  {\n"
-        "    \"name\": xxxxx,         (string) the requested name\n"
-        "    \"value\": xxxxx,        (string) the name's current value\n"
-        "    \"txid\": xxxxx,         (string) the name's last update tx\n"
-        "    \"address\": xxxxx,      (string) the address holding the name\n"
-        "    \"height\": xxxxx,       (numeric) the name's last update height\n"
-        "    \"expires_in\": xxxxx,   (numeric) expire counter for the name\n"
-        "    \"expired\": xxxxx,      (boolean) whether the name is expired\n"
-        "    \"transferred\": xxxxx,  (boolean) whether the name is transferred\n"
-        "  },\n"
+        + getNameInfoHelp ("  ", ",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -386,7 +509,7 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
 {
   if (fHelp || (params.size () != 4 && params.size () != 5))
     throw std::runtime_error (
-        "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" [\"toaddress\"]\n"
+        "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
         "\nFinish the registration of a name.  Depends on name_new being"
         " already issued.\n"
         "\nArguments:\n"
@@ -496,7 +619,7 @@ name_update (const json_spirit::Array& params, bool fHelp)
 {
   if (fHelp || (params.size () != 2 && params.size () != 3))
     throw std::runtime_error (
-        "name_update \"name\" \"value\" [\"toaddress\"]\n"
+        "name_update \"name\" \"value\" (\"toaddress\")\n"
         "\nUpdate a name and possibly transfer it.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to update\n"

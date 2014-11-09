@@ -42,13 +42,20 @@ class NameTestFramework (BitcoinTestFramework):
     """
 
     data = self.nodes[ind].name_show (name)
+    self.checkNameData (data, name, value, expiresIn, expired)
+
+    return data
+
+  def checkNameData (self, data, name, value, expiresIn, expired):
+    """
+    Check a name info object against expected data.
+    """
+
     assert_equal (data['name'], name)
     assert_equal (data['value'], value)
     if (expiresIn is not None):
       assert_equal (data['expires_in'], expiresIn)
     assert_equal (data['expired'], expired)
-
-    return data
 
   def atomicTrade (self, name, value, price, nameFrom, nameTo):
     """

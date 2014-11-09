@@ -46,6 +46,7 @@ bool CCoinsView::HaveCoins(const uint256 &txid) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return false; }
 bool CCoinsView::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return false; }
+void CCoinsView::WalkNames(const valtype& start, CNameWalker& walker) const { assert (false); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
 bool CCoinsView::GetStats(CCoinsStats &stats) const { return false; }
 bool CCoinsView::ValidateNameDB() const { return false; }
@@ -57,6 +58,7 @@ bool CCoinsViewBacked::HaveCoins(const uint256 &txid) const { return base->HaveC
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 bool CCoinsViewBacked::GetName(const valtype &name, CNameData &data) const { return base->GetName(name, data); }
 bool CCoinsViewBacked::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return base->GetNamesForHeight(nHeight, names); }
+void CCoinsViewBacked::WalkNames(const valtype& start, CNameWalker& walker) const { base->WalkNames(start, walker); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return base->BatchWrite(mapCoins, hashBlock, names); }
 bool CCoinsViewBacked::GetStats(CCoinsStats &stats) const { return base->GetStats(stats); }
@@ -164,6 +166,16 @@ bool CCoinsViewCache::GetNamesForHeight(unsigned nHeight, std::set<valtype>& nam
 
     cacheNames.updateNamesForHeight(nHeight, names);
     return true;
+}
+
+void CCoinsViewCache::WalkNames(const valtype& start, CNameWalker& walker) const {
+    /* Before using this function, callers should flush the cache.  We don't
+       want to deal with combining the backing data store with the cached
+       updates.  This is not worth the effort compared to just flushing
+       every time a name_scan or name_filter is required.  */
+    assert (cacheNames.empty ());
+
+    base->WalkNames (start, walker);
 }
 
 void CCoinsViewCache::SetName(const valtype &name, const CNameData& data) {

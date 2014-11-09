@@ -350,7 +350,7 @@ Value createrawtransaction(const Array& params, bool fHelp)
 {
     if (fHelp || (params.size() != 2 && params.size() != 3))
         throw runtime_error(
-            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,...} [name operation]\n"
+            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,...} (name operation)\n"
             "\nCreate a transaction spending the given inputs and sending to the given addresses.\n"
             "Optionally, a name update operation can be performed.  The name input must be added\n"
             "manually.  (name_show gives the necessary data.)\n"

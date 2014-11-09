@@ -109,6 +109,48 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
     return true;
 }
 
+void CCoinsViewDB::WalkNames(const valtype& start, CNameWalker& walker) const {
+    /* It seems that there are no "const iterators" for LevelDB.  Since we
+       only need read operations on it, use a const-cast to get around
+       that restriction.  */
+    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+
+    const std::pair<char, valtype> seekKey('n', start);
+    CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
+    seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
+    seekKeyStream << seekKey;
+    leveldb::Slice slKey(&seekKeyStream[0], seekKeyStream.size());
+
+    for (pcursor->Seek(slKey); pcursor->Valid(); pcursor->Next())
+    {
+        try
+        {
+            slKey = pcursor->key();
+            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(), SER_DISK, CLIENT_VERSION);
+            char chType;
+            ssKey >> chType;
+
+            if (chType != 'n')
+                break;
+
+            valtype name;
+            ssKey >> name;
+
+            const leveldb::Slice& slValue = pcursor->value();
+            CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(), SER_DISK, CLIENT_VERSION);
+
+            CNameData data;
+            ssValue >> data;
+
+            if (!walker.nextName (name, data))
+                break;
+        } catch (const std::exception &e)
+        {
+            LogPrintf("%s : Deserialize or I/O error - %s", __func__, e.what());
+        }
+    }
+}
+
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {
     CLevelDBBatch batch;
     size_t count = 0;
