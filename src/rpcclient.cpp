@@ -90,6 +90,9 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "prioritisetransaction", 1 },
     { "prioritisetransaction", 2 },
     { "name_scan", 1 },
+    { "name_filter", 1 },
+    { "name_filter", 2 },
+    { "name_filter", 3 },
 };
 
 class CRPCConvertTable

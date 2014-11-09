@@ -249,6 +249,7 @@ extern void AddRawTxNameOperation(CMutableTransaction& tx, const json_spirit::Ob
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_scan(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value name_filter(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_list(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_new(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_firstupdate(const json_spirit::Array& params, bool fHelp);

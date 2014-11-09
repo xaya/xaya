@@ -22,6 +22,8 @@
 #include "json/json_spirit_utils.h"
 #include "json/json_spirit_value.h"
 
+#include <boost/xpressive/xpressive_dynamic.hpp>
+
 #include <sstream>
 
 /**
@@ -320,6 +322,181 @@ name_scan (const json_spirit::Array& params, bool fHelp)
   pcoinsTip->WalkNames (start, walker);
 
   return walker.getArray ();
+}
+
+/* ************************************************************************** */
+
+/**
+ * CNameWalker object used for name_filter.
+ */
+class CNameFilterWalker : public CNameWalker
+{
+
+private:
+
+  /** Whether we have a regexp to use.  */
+  bool haveRegexp;
+  /** The regexp to apply.  */
+  boost::xpressive::sregex regexp;
+
+  /** Maxage of 0 if no filtering.  */
+  int maxage;
+
+  /** From index (starting at 0).  */
+  int from;
+
+  /** Number of entries to return (0 means all).  */
+  int nb;
+
+  /** Collect only statistics?  */
+  bool stats;
+
+  /** In non-stats mode, build up the result here.  */
+  json_spirit::Array names;
+  /** Count names in stats mode.  */
+  unsigned count;
+
+public:
+
+  /**
+   * Construct the object from the name_filter parameters.
+   * @param params The parameters given to name_filter.
+   */
+  explicit CNameFilterWalker (const json_spirit::Array& params);
+
+  /**
+   * Return the constructed result.
+   * @return The name_filter result.
+   */
+  json_spirit::Value getResult () const;
+
+  /**
+   * Register a new name.
+   * @param name The name.
+   * @param data The name's data.
+   * @return True if there's still remaining count.
+   */
+  bool nextName (const valtype& name, const CNameData& data);
+
+};
+
+CNameFilterWalker::CNameFilterWalker (const json_spirit::Array& params)
+  : haveRegexp(false), regexp(), maxage(36000), from(0), nb(0), stats(false),
+    names(), count(0)
+{
+  if (params.size () >= 1)
+    {
+      haveRegexp = true;
+      regexp = boost::xpressive::sregex::compile (params[0].get_str ());
+    }
+
+  if (params.size () >= 2)
+    maxage = params[1].get_int ();
+  if (maxage < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "'maxage' should be non-negative");
+  if (params.size () >= 3)
+    from = params[2].get_int ();
+  if (from < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "'from' should be non-negative");
+
+  if (params.size () >= 4)
+    nb = params[3].get_int ();
+  if (nb < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "'nb' should be non-negative");
+
+  if (params.size () >= 5)
+    {
+      if (params[4].get_str () != "stat")
+        throw JSONRPCError (RPC_INVALID_PARAMETER,
+                            "fifth argument must be the literal string 'stat'");
+      stats = true;
+    }
+}
+
+json_spirit::Value
+CNameFilterWalker::getResult () const
+{
+  if (stats)
+    {
+      json_spirit::Object res;
+      res.push_back (json_spirit::Pair ("blocks", chainActive.Height ()));
+      res.push_back (json_spirit::Pair ("count", static_cast<int> (count)));
+
+      return res;
+    }
+
+  return names;
+}
+
+bool
+CNameFilterWalker::nextName (const valtype& name, const CNameData& data)
+{
+  const int age = chainActive.Height () - data.getHeight ();
+  assert (age >= 0);
+  if (maxage != 0 && age >= maxage)
+    return true;
+
+  if (haveRegexp)
+    {
+      const std::string nameStr = ValtypeToString (name);
+      boost::xpressive::smatch matches;
+      if (!boost::xpressive::regex_search (nameStr, matches, regexp))
+        return true;
+    }
+
+  if (from > 0)
+    {
+      --from;
+      return true;
+    }
+  assert (from == 0);
+
+  if (stats)
+    ++count;
+  else
+    names.push_back (getNameInfo (name, data));
+
+  if (nb > 0)
+    {
+      --nb;
+      if (nb == 0)
+        return false;
+    }
+
+  return true;
+}
+
+json_spirit::Value
+name_filter (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 5)
+    throw std::runtime_error (
+        "name_filter (\"regexp\" (\"maxage\" (\"from\" (\"nb\" (\"stat\")))))\n"
+        "\nScan and list names matching a regular expression.\n"
+        "\nArguments:\n"
+        "1. \"regexp\"      (string, optional) filter names with this regexp\n"
+        "2. \"maxage\"      (numeric, optional, default=36000) only consider names updated in the last \"maxage\" blocks; 0 means all names\n"
+        "3. \"from\"        (numeric, optional, default=0) return from this position onward; index starts at 0\n"
+        "4. \"nb\"          (numeric, optional, default=0) return only \"nb\" entries; 0 means all\n"
+        "5. \"stat\"        (string, optional) if set to the string \"stat\", print statistics instead of returning the names\n"
+        "\nResult:\n"
+        "[\n"
+        + getNameInfoHelp ("  ", ",") +
+        "  ...\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_filter", "\"\" 5")
+        + HelpExampleCli ("name_filter", "\"^id/\"")
+        + HelpExampleCli ("name_filter", "\"^id/\" 36000 0 0 \"stat\"")
+        + HelpExampleRpc ("name_scan", "\"^d/\"")
+      );
+
+  CNameFilterWalker walker(params);
+  pcoinsTip->Flush ();
+  pcoinsTip->WalkNames (valtype (), walker);
+
+  return walker.getResult ();
 }
 
 /* ************************************************************************** */

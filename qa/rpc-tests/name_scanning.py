@@ -22,6 +22,9 @@ class NameScanningTest (NameTestFramework):
     # Initially, all should be empty.
     assert_equal (self.nodes[0].name_scan (), [])
     assert_equal (self.nodes[0].name_scan ("foo", 10), [])
+    assert_equal (self.nodes[0].name_filter (), [])
+    assert_equal (self.nodes[0].name_filter ("", 0, 0, 0, "stat"),
+                  {"blocks": 200,"count": 0})
 
     # Register some names with various data, heights and expiration status.
 
@@ -45,17 +48,44 @@ class NameScanningTest (NameTestFramework):
     self.checkNameData (scan[2], "c", "value c", 11, False)
 
     # Check for expected names in various name_scan calls.
-    self.checkScan (self.nodes[3].name_scan (), ["a", "b", "c"])
-    self.checkScan (self.nodes[3].name_scan ("", 0), [])
-    self.checkScan (self.nodes[3].name_scan ("", -1), [])
-    self.checkScan (self.nodes[3].name_scan ("b"), ["b", "c"])
-    self.checkScan (self.nodes[3].name_scan ("z"), [])
-    self.checkScan (self.nodes[3].name_scan ("", 2), ["a", "b"])
-    self.checkScan (self.nodes[3].name_scan ("b", 1), ["b"])
+    self.checkList (self.nodes[3].name_scan (), ["a", "b", "c"])
+    self.checkList (self.nodes[3].name_scan ("", 0), [])
+    self.checkList (self.nodes[3].name_scan ("", -1), [])
+    self.checkList (self.nodes[3].name_scan ("b"), ["b", "c"])
+    self.checkList (self.nodes[3].name_scan ("z"), [])
+    self.checkList (self.nodes[3].name_scan ("", 2), ["a", "b"])
+    self.checkList (self.nodes[3].name_scan ("b", 1), ["b"])
 
-  def checkScan (self, data, names):
+    # Check the expected name_filter data values.
+    scan = self.nodes[3].name_scan ()
+    assert_equal (len (scan), 3)
+    self.checkNameData (scan[0], "a", "value a", 11, False)
+    self.checkNameData (scan[1], "b", "value b", -4, True)
+    self.checkNameData (scan[2], "c", "value c", 11, False)
+
+    # Check for expected names in various name_filter calls.
+    height = self.nodes[3].getblockcount ()
+    self.checkList (self.nodes[3].name_filter (), ["a", "b", "c"])
+    self.checkList (self.nodes[3].name_filter ("[ac]"), ["a", "c"])
+    self.checkList (self.nodes[3].name_filter ("", 10), [])
+    self.checkList (self.nodes[3].name_filter ("", 30), ["a", "c"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 0, 0), ["a", "b", "c"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 0, 1), ["a"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 1, 3), ["b", "c"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 3, 3), [])
+    assert_equal (self.nodes[3].name_filter ("", 30, 0, 0, "stat"),
+                  {"blocks": height, "count": 2})
+
+    # Check test for "stat" argument.
+    try:
+      self.nodes[3].name_filter ("", 0, 0, 0, "string")
+      raise AssertionError ("wrong check for 'stat' argument")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -8)
+
+  def checkList (self, data, names):
     """
-    Check that the name_scan result in 'data' contains the names
+    Check that the result in 'data' contains the names
     given in the array 'names'.
     """
 
