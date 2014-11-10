@@ -639,8 +639,7 @@ name_new (const json_spirit::Array& params, bool fHelp)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
   valtype rand(20);
-  if (!GetRandBytes (&rand[0], rand.size ()))
-    throw std::runtime_error ("failed to generate random value");
+  GetRandBytes (&rand[0], rand.size ());
 
   valtype toHash(rand);
   toHash.insert (toHash.end (), name.begin (), name.end ());
