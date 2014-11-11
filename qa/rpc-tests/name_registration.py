@@ -3,7 +3,7 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-# RPC test for basic name registration.
+# RPC test for basic name registration and access (name_show, name_history).
 
 # Add python-bitcoinrpc to module search path:
 import os
@@ -31,6 +31,13 @@ class NameRegistrationTest (NameTestFramework):
       assert_equal (exc.error['code'], -8)
     self.generate (0, 5)
 
+    # Check for exception with name_history and without -namehistory.
+    try:
+      self.nodes[0].name_history ("node-0")
+      raise AssertionError ("name_history without -namehistory works")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -1)
+
     # first_update the names.  Check for too long values.
     addrA = self.nodes[0].getnewaddress ()
     txidA = self.firstupdateName (0, "node-0", newA, "value-0", addrA)
@@ -50,9 +57,15 @@ class NameRegistrationTest (NameTestFramework):
       assert_equal (exc.error['code'], -25)
     
     # Check that the name appears when the name_new is ripe.
+
     self.generate (0, 7)
     try:
       self.nodes[1].name_show ("node-0")
+      raise AssertionError ("name available when it should not yet be")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -4)
+    try:
+      self.nodes[1].name_history ("node-0")
       raise AssertionError ("name available when it should not yet be")
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -4)
@@ -62,6 +75,9 @@ class NameRegistrationTest (NameTestFramework):
     assert_equal (data['address'], addrA)
     assert_equal (data['txid'], txidA)
     assert_equal (data['height'], 213)
+
+    self.checkNameHistory (1, "node-0", ["value-0"])
+    self.checkNameHistory (1, "node-1", ["x" * 520])
 
     # Check for error with rand mismatch (wrong name)
     newA = self.nodes[0].name_new ("test-name")
@@ -97,6 +113,7 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (1, "node-0", "value-0", 0, True)
     self.generate (0, 1)
     self.checkName (1, "node-0", "stolen", 30, False)
+    self.checkNameHistory (1, "node-0", ["value-0", "stolen"])
 
     # Check basic updating.
     try:
@@ -108,6 +125,7 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (0, "test-name", "test-value", None, False)
     self.generate (0, 1)
     self.checkName (1, "test-name", "x" * 520, 30, False)
+    self.checkNameHistory (1, "test-name", ["test-value", "x" * 520])
 
     addrB = self.nodes[1].getnewaddress ()
     self.nodes[0].name_update ("test-name", "sent", addrB)
@@ -117,6 +135,8 @@ class NameRegistrationTest (NameTestFramework):
     self.nodes[1].name_update ("test-name", "updated")
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "updated", 30, False)
+    self.checkNameHistory (1, "test-name",
+                           ["test-value", "x" * 520, "sent", "updated"])
 
     # Invalid updates.
     try:
@@ -139,6 +159,8 @@ class NameRegistrationTest (NameTestFramework):
       assert_equal (exc.error['code'], -25)
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "value", 30, False)
+    self.checkNameHistory (1, "test-name", ["test-value", "x" * 520, "sent",
+                                            "updated", "value"])
     
     # Update failing after expiry.  Re-registration possible.
     self.checkName (1, "node-1", "x" * 520, None, True)
@@ -153,6 +175,7 @@ class NameRegistrationTest (NameTestFramework):
     self.firstupdateName (0, "node-1", newSteal, "reregistered")
     self.generate (0, 10)
     self.checkName (1, "node-1", "reregistered", 23, False)
+    self.checkNameHistory (1, "node-1", ["x" * 520, "reregistered"])
 
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

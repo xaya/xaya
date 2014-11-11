@@ -77,6 +77,19 @@ CNameCache::get (const valtype& name, CNameData& data) const
   return true;
 }
 
+bool
+CNameCache::getHistory (const valtype& name, CNameHistory& res) const
+{
+  assert (fNameHistory);
+
+  const std::map<valtype, CNameHistory>::const_iterator i = history.find (name);
+  if (i == history.end ())
+    return false;
+
+  res = i->second;
+  return true;
+}
+
 void
 CNameCache::updateNamesForHeight (unsigned nHeight,
                                   std::set<valtype>& names) const
@@ -117,6 +130,18 @@ CNameCache::set (const valtype& name, const CNameData& data)
     entries.insert (std::make_pair (name, data));
 }
 
+void
+CNameCache::setHistory (const valtype& name, const CNameHistory& data)
+{
+  assert (fNameHistory);
+
+  const std::map<valtype, CNameHistory>::iterator ei = history.find (name);
+  if (ei != history.end ())
+    ei->second = data;
+  else
+    history.insert (std::make_pair (name, data));
+}
+
 /* Delete a name.  If it is in the "entries" set also, remove it there.  */
 void
 CNameCache::remove (const valtype& name)
@@ -154,6 +179,10 @@ CNameCache::apply (const CNameCache& cache)
        i != cache.deleted.end (); ++i)
     remove (*i);
 
+  for (std::map<valtype, CNameHistory>::const_iterator i
+        = cache.history.begin (); i != cache.history.end (); ++i)
+    setHistory (i->first, i->second);
+
   for (std::map<ExpireEntry, bool>::const_iterator i
         = cache.expireIndex.begin (); i != cache.expireIndex.end (); ++i)
     expireIndex[i->first] = i->second;
@@ -170,6 +199,14 @@ CNameCache::writeBatch (CLevelDBBatch& batch) const
   for (std::set<valtype>::const_iterator i = deleted.begin ();
        i != deleted.end (); ++i)
     batch.Erase (std::make_pair ('n', *i));
+
+  assert (fNameHistory || history.empty ());
+  for (std::map<valtype, CNameHistory>::const_iterator i = history.begin ();
+       i != history.end (); ++i)
+    if (i->second.empty ())
+      batch.Erase (std::make_pair ('h', i->first));
+    else
+      batch.Write (std::make_pair ('h', i->first), i->second);
 
   for (std::map<ExpireEntry, bool>::const_iterator i = expireIndex.begin ();
        i != expireIndex.end (); ++i)
@@ -195,7 +232,7 @@ CNameTxUndo::apply (CCoinsViewCache& view) const
   if (isNew)
     view.DeleteName (name);
   else
-    view.SetName (name, oldData);
+    view.SetName (name, oldData, true);
 }
 
 /* ************************************************************************** */
@@ -579,7 +616,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
 
           CNameData data;
           data.fromScript (nHeight, COutPoint (tx.GetHash (), i), op);
-          view.SetName (name, data);
+          view.SetName (name, data, false);
         }
     }
 }

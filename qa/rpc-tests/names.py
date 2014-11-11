@@ -57,6 +57,21 @@ class NameTestFramework (BitcoinTestFramework):
       assert_equal (data['expires_in'], expiresIn)
     assert_equal (data['expired'], expired)
 
+  def checkNameHistory (self, ind, name, values):
+    """
+    Query for the name_history of 'name' and check that its historical
+    values, in order of increasing height, are the ones in 'values'.
+    """
+
+    data = self.nodes[ind].name_history (name)
+
+    valuesFound = []
+    for e in data:
+      assert_equal (e['name'], name)
+      valuesFound.append (e['value'])
+
+    assert_equal (valuesFound, values)
+
   def atomicTrade (self, name, value, price, nameFrom, nameTo):
     """
     Perform an atomic name trade, sending 'name' from the first to the

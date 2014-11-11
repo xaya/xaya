@@ -77,6 +77,8 @@ class NameExpirationTest (NameTestFramework):
     self.generate (2, 1)
     self.checkName (2, "name-long", "value 2", 30, False)
     self.checkName (2, "name-short", "renewed", 30, False)
+    self.checkNameHistory (2, "name-long", ["value", "value 2"])
+    self.checkNameHistory (2, "name-short", ["value", "renewed"])
 
     # Create a longer chain on the other part of the network.  Let name-short
     # expire there but renew name-long instead.
@@ -84,6 +86,8 @@ class NameExpirationTest (NameTestFramework):
     self.generate (1, 5)
     self.checkName (1, "name-long", "renewed", 26, False)
     self.checkName (1, "name-short", "value", -1, True)
+    self.checkNameHistory (1, "name-long", ["value", "renewed"])
+    self.checkNameHistory (1, "name-short", ["value"])
     self.checkUTXO (1, "name-long", True)
     self.checkUTXO (1, "name-short", False)
 
@@ -96,6 +100,8 @@ class NameExpirationTest (NameTestFramework):
     # Test the expected situation of the long chain.
     self.checkName (2, "name-long", "renewed", 26, False)
     self.checkName (2, "name-short", "value", -1, True)
+    self.checkNameHistory (2, "name-long", ["value", "renewed"])
+    self.checkNameHistory (2, "name-short", ["value"])
     self.checkUTXO (2, "name-long", True)
     self.checkUTXO (2, "name-short", False)
 

@@ -173,6 +173,80 @@ public:
 };
 
 /* ************************************************************************** */
+/* CNameHistory.  */
+
+/**
+ * Keep track of a name's history.  This is a stack of old CNameData
+ * objects that have been obsoleted.
+ */
+class CNameHistory
+{
+
+private:
+
+  /** The actual data.  */
+  std::vector<CNameData> data;
+
+public:
+
+  ADD_SERIALIZE_METHODS;
+
+  template<typename Stream, typename Operation>
+    inline void SerializationOp (Stream& s, Operation ser_action,
+                                 int nType, int nVersion)
+  {
+    READWRITE (data);
+  }
+
+  /**
+   * Check if the stack is empty.  This is used to decide when to fully
+   * delete an entry in the database.
+   * @return True iff the data stack is empty.
+   */
+  inline bool
+  empty () const
+  {
+    return data.empty ();
+  }
+
+  /**
+   * Access the data in a read-only way.
+   * @return The data stack.
+   */
+  inline const std::vector<CNameData>&
+  getData () const
+  {
+    return data;
+  }
+
+  /**
+   * Push a new entry onto the data stack.  The new entry's height should
+   * be at least as high as the stack top entry's.  If not, fail.
+   * @param entry The new entry to push onto the stack.
+   */
+  inline void
+  push (const CNameData& entry)
+  {
+    assert (data.empty () || data.back ().getHeight () <= entry.getHeight ());
+    data.push_back (entry);
+  }
+
+  /**
+   * Pop the top entry off the stack.  This is used when undoing name
+   * changes.  The name's new value is passed as argument and should
+   * match the removed entry.  If not, fail.
+   * @param entry The name's value after undoing.
+   */
+  inline void
+  pop (const CNameData& entry)
+  {
+    assert (!data.empty () && data.back () == entry);
+    data.pop_back ();
+  }
+
+};
+
+/* ************************************************************************** */
 /* CNameWalker.  */
 
 /**
@@ -293,6 +367,12 @@ private:
   std::set<valtype> deleted;
 
   /**
+   * New or updated history stacks.  If they are empty, the corresponding
+   * database entry is deleted instead.
+   */
+  std::map<valtype, CNameHistory> history;
+
+  /**
    * Changes to be performed to the expire index.  The entry is mapped
    * to either "true" (meaning to add it) or "false" (delete).
    */
@@ -300,22 +380,31 @@ private:
 
 public:
 
-  CNameCache ()
-    : entries(), deleted(), expireIndex()
-  {}
-
   inline void
   clear ()
   {
     entries.clear ();
     deleted.clear ();
+    history.clear ();
     expireIndex.clear ();
   }
 
+  /**
+   * Check if the cache is "clean" (no cached changes).  This also
+   * performs internal checks and fails with an assertion if the
+   * internal state is inconsistent.
+   * @return True iff no changes are cached.
+   */
   inline bool
   empty () const
   {
-    return entries.empty () && deleted.empty ();
+    if (entries.empty () && deleted.empty ())
+      {
+        assert (history.empty () && expireIndex.empty ());
+        return true;
+      }
+
+    return false;
   }
 
   /* See if the given name is marked as deleted.  */
@@ -329,6 +418,14 @@ public:
      in entries, and doesn't care about deleted data.  */
   bool get (const valtype& name, CNameData& data) const;
 
+  /**
+   * Query for an history entry.
+   * @param name The name to look up.
+   * @param res Put the resulting history entry here.
+   * @return True iff the name was found in the cache.
+   */
+  bool getHistory (const valtype& name, CNameHistory& res) const;
+
   /* Query the cached changes to the expire index.  In particular,
      for a given height and a given set of names that were indexed to
      this update height, apply possible changes to the set that
@@ -338,6 +435,13 @@ public:
   /* Insert (or update) a name.  If it is marked as "deleted", this also
      removes the "deleted" mark.  */
   void set (const valtype& name, const CNameData& data);
+
+  /**
+   * Set a name history entry.
+   * @param name The name to modify.
+   * @param data The new history entry.
+   */
+  void setHistory (const valtype& name, const CNameHistory& data);
 
   /* Delete a name.  If it is in the "entries" set also, remove it there.  */
   void remove (const valtype& name);

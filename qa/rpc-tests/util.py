@@ -72,12 +72,15 @@ def initialize_datadir(dirname, n):
         f.write("rpcport="+str(rpc_port(n))+"\n");
     return datadir
 
-def initialize_chain(test_dir):
+def initialize_chain(test_dir, extra_args = None):
     """
     Create (or copy from cache) a 200-block-long chain and
     4 wallets.
     namecoind and namecoin-cli must be in search path.
     """
+
+    if extra_args is not None:
+        assert len (extra_args) == 4
 
     if not os.path.isdir(os.path.join("cache", "node0")):
         devnull = open("/dev/null", "w+")
@@ -85,6 +88,8 @@ def initialize_chain(test_dir):
         for i in range(4):
             datadir=initialize_datadir("cache", i)
             args = [ os.getenv("NAMECOIND", "namecoind"), "-keypool=1", "-datadir="+datadir, "-discover=0" ]
+            if (extra_args is not None) and (extra_args[i] is not None):
+                args.extend(extra_args[i])
             if i > 0:
                 args.append("-connect=127.0.0.1:"+str(p2p_port(0)))
             bitcoind_processes[i] = subprocess.Popen(args)

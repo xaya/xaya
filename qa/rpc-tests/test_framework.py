@@ -20,6 +20,8 @@ from util import *
 
 class BitcoinTestFramework(object):
 
+    numNodes = 4
+
     # These may be over-ridden by subclasses:
     def run_test(self):
         for node in self.nodes:
@@ -31,21 +33,32 @@ class BitcoinTestFramework(object):
 
     def getExtraArgs(self, n):
         """
-        Provide extra args to pass to node n when starting it.  None by
-        default, but can be overridden in a subclass to build a
-        custom-configured network.
+        Provide extra args to pass to node n when starting it.  By default,
+        only set -namehistory for nodes 1 and 2, so that we can test
+        both cases (with history and without).  Subclasses can override
+        this method to build a custom-configured network.
         """
+
+        # We choose nodes 1 and 2 to keep -namehistory, because this allows
+        # us to test both nodes with it and without it in both split
+        # network parts (0/1 vs 2/3).
+
+        if n == 1 or n == 2:
+            return ["-namehistory"]
 
         return None
 
     def setup_chain(self):
         print("Initializing test directory "+self.options.tmpdir)
-        initialize_chain(self.options.tmpdir)
+        extraArgs = []
+        for i in range(self.numNodes):
+            extraArgs.append(self.getExtraArgs(i))
+        initialize_chain(self.options.tmpdir, extraArgs)
 
     def setup_nodes(self):
         numNodes = 4
         extraArgs = []
-        for i in range(numNodes):
+        for i in range(self.numNodes):
             extraArgs.append(self.getExtraArgs(i))
         return start_nodes(numNodes, self.options.tmpdir, extraArgs)
 

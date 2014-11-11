@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   BOOST_CHECK (setRet == setExpected);
 
   BOOST_CHECK (!view.GetName (name1, data2));
-  view.SetName (name1, dataHeight2);
+  view.SetName (name1, dataHeight2, false);
   BOOST_CHECK (view.GetName (name1, data2));
   BOOST_CHECK (dataHeight2 == data2);
 
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   BOOST_CHECK (view.GetName (name1, data2));
   BOOST_CHECK (dataHeight2 == data2);
 
-  view.SetName (name2, dataHeight2);
+  view.SetName (name2, dataHeight2, false);
   BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   setExpected.insert (name2);
   BOOST_CHECK (setRet == setExpected);
@@ -160,9 +160,9 @@ BOOST_AUTO_TEST_CASE (name_database)
   setExpected.erase (name1);
   BOOST_CHECK (setRet == setExpected);
 
-  view.SetName (name2, dataHeight1);
+  view.SetName (name2, dataHeight1, false);
   BOOST_CHECK (view.Flush ());
-  view.SetName (name1, dataHeight1);
+  view.SetName (name1, dataHeight1, false);
 
   BOOST_CHECK (view.GetNamesForHeight (height2, setRet));
   setExpected.clear ();
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   CNameData data1;
   data1.fromScript (100000, COutPoint (inFirst, 0), CNameScript (scrFirst));
-  view.SetName (name1, data1);
+  view.SetName (name1, data1, false);
 
   /* ****************************************************** */
   /* Try out the Namecoin / non-Namecoin tx version check.  */
@@ -382,6 +382,9 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
 BOOST_AUTO_TEST_CASE (name_updates_undo)
 {
+  /* Enable name history to test this on the go.  */
+  fNameHistory = true;
+
   const valtype name = ValtypeFromString ("database-test-name");
   const valtype value1 = ValtypeFromString ("old-value");
   const valtype value2 = ValtypeFromString ("new-value");
@@ -391,6 +394,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   CCoinsViewCache view(&dummyView);
   CBlockUndo undo;
   CNameData data;
+  CNameHistory history;
 
   const valtype rand(20, 'x');
   valtype toHash(rand);
@@ -411,6 +415,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   ApplyNameTransaction (mtx, 100, view, undo);
   BOOST_CHECK (!view.GetName (name, data));
   BOOST_CHECK (undo.vnameundo.empty ());
+  BOOST_CHECK (!view.GetNameHistory (name, history));
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, scrFirst));
@@ -419,7 +424,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   BOOST_CHECK (data.getHeight () == 200);
   BOOST_CHECK (data.getValue () == value1);
   BOOST_CHECK (data.getAddress () == addr);
+  BOOST_CHECK (!view.GetNameHistory (name, history));
   BOOST_CHECK (undo.vnameundo.size () == 1);
+  const CNameData firstData = data;
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
@@ -428,6 +435,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   BOOST_CHECK (data.getHeight () == 300);
   BOOST_CHECK (data.getValue () == value2);
   BOOST_CHECK (data.getAddress () == addr);
+  BOOST_CHECK (view.GetNameHistory (name, history));
+  BOOST_CHECK (history.getData ().size () == 1);
+  BOOST_CHECK (history.getData ().back () == firstData);
   BOOST_CHECK (undo.vnameundo.size () == 2);
 
   undo.vnameundo.back ().apply (view);
@@ -435,10 +445,12 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   BOOST_CHECK (data.getHeight () == 200);
   BOOST_CHECK (data.getValue () == value1);
   BOOST_CHECK (data.getAddress () == addr);
+  BOOST_CHECK (!view.GetNameHistory (name, history) || history.empty ());
   undo.vnameundo.pop_back ();
 
   undo.vnameundo.back ().apply (view);
   BOOST_CHECK (!view.GetName (name, data));
+  BOOST_CHECK (!view.GetNameHistory (name, history) || history.empty ());
   undo.vnameundo.pop_back ();
   BOOST_CHECK (undo.vnameundo.empty ());
 }
@@ -467,10 +479,10 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
 
   CNameData data;
   data.fromScript (100000, COutPoint (coinId1, 0), op1);
-  view.SetName (name1, data);
+  view.SetName (name1, data, false);
   BOOST_CHECK (!data.isExpired (135999) && data.isExpired (136000));
   data.fromScript (100010, COutPoint (coinId2, 0), op2);
-  view.SetName (name2, data);
+  view.SetName (name2, data, false);
   BOOST_CHECK (!data.isExpired (136009) && data.isExpired (136010));
 
   std::set<valtype> setExpired;
@@ -602,7 +614,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   const CNameScript nameOp(upd1);
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
-  view.SetName (nameUpd, data);
+  view.SetName (nameUpd, data, false);
   mempool.setSanityCheck (true);
   mempool.check (&view);
 

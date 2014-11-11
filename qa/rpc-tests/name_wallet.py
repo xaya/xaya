@@ -34,7 +34,12 @@ class NameWalletTest (NameTestFramework):
   # Set paytxfee to some value so that no estimated fees
   # are used and the amounts are predictable for the tests.
   def getExtraArgs(self, n):
-    return ["-paytxfee=%s" % txFee]
+    sup = NameTestFramework.getExtraArgs (self, n)
+    if sup is None:
+      sup = []
+
+    sup.append ("-paytxfee=%s" % txFee)
+    return sup
 
   def checkBalance (self, ind, spent):
     """

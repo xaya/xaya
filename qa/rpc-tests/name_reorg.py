@@ -40,6 +40,8 @@ class NameRegistrationTest (NameTestFramework):
     self.generate (0, 2)
     self.checkName (0, "a", "initial value", None, False)
     self.checkName (0, "b", "b long", None, False)
+    self.checkNameHistory (1, "a", ["initial value"])
+    self.checkNameHistory (1, "b", ["b long"])
 
     # Build a short chain with an update to "a" and registrations.
     self.generate (3, 1)
@@ -50,13 +52,23 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "a", "changed value", None, False)
     self.checkName (3, "b", "b short", None, False)
     self.checkName (3, "c", "c registered", None, False)
+    self.checkNameHistory (2, "a", ["initial value", "changed value"])
+    self.checkNameHistory (2, "b", ["b short"])
+    self.checkNameHistory (2, "c", ["c registered"])
 
     # Join the network and let the long chain prevail.
     self.join_network ()
     self.checkName (3, "a", "initial value", None, False)
     self.checkName (3, "b", "b long", None, False)
+    self.checkNameHistory (2, "a", ["initial value"])
+    self.checkNameHistory (2, "b", ["b long"])
     try:
       self.nodes[3].name_show ("c")
+      raise AssertionError ("'c' still registered after reorg")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -4)
+    try:
+      self.nodes[2].name_history ("c")
       raise AssertionError ("'c' still registered after reorg")
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -4)
@@ -68,6 +80,9 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "a", "changed value", None, False)
     self.checkName (3, "b", "b long", None, False)
     self.checkName (3, "c", "c registered", None, False)
+    self.checkNameHistory (2, "a", ["initial value", "changed value"])
+    self.checkNameHistory (2, "b", ["b long"])
+    self.checkNameHistory (2, "c", ["c registered"])
 
     # Check that the conflicting tx got pruned from the mempool properly
     # and is marked as conflicted in the wallet.

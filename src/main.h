@@ -124,6 +124,7 @@ extern bool fImporting;
 extern bool fReindex;
 extern int nScriptCheckThreads;
 extern bool fTxIndex;
+extern bool fNameHistory;
 extern bool fIsBareMultisigStd;
 extern unsigned int nCoinCacheSize;
 extern CFeeRate minRelayTxFee;

@@ -53,6 +53,7 @@ int nScriptCheckThreads = 0;
 bool fImporting = false;
 bool fReindex = false;
 bool fTxIndex = false;
+bool fNameHistory = false;
 bool fIsBareMultisigStd = true;
 unsigned int nCoinCacheSize = 5000;
 
@@ -3080,6 +3081,10 @@ bool static LoadBlockIndexDB()
     pblocktree->ReadFlag("txindex", fTxIndex);
     LogPrintf("LoadBlockIndexDB(): transaction index %s\n", fTxIndex ? "enabled" : "disabled");
 
+    // Check whether we have the name history
+    pblocktree->ReadFlag("namehistory", fNameHistory);
+    LogPrintf("LoadBlockIndexDB(): name history %s\n", fNameHistory ? "enabled" : "disabled");
+
     // Load pointer to end of best chain
     BlockMap::iterator it = mapBlockIndex.find(pcoinsTip->GetBestBlock());
     if (it == mapBlockIndex.end())
@@ -3211,6 +3216,8 @@ bool InitBlockIndex() {
     // Use the provided setting for -txindex in the new database
     fTxIndex = GetBoolArg("-txindex", false);
     pblocktree->WriteFlag("txindex", fTxIndex);
+    fNameHistory = GetBoolArg("-namehistory", false);
+    pblocktree->WriteFlag("namehistory", fNameHistory);
     LogPrintf("Initializing databases...\n");
 
     // Only add the genesis block if not reindexing (in which case we reuse the one already on disk)

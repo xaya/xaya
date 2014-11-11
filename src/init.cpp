@@ -284,6 +284,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += "  -sysperms              " + _("Create new files with system default permissions, instead of umask 077 (only effective with disabled wallet functionality)") + "\n";
 #endif
     strUsage += "  -txindex               " + strprintf(_("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)"), 0) + "\n";
+    strUsage += "  -namehistory           " + strprintf(_("Keep track of the full name history (default: %u)"), 0) + "\n";
 
     strUsage += "\n" + _("Connection options:") + "\n";
     strUsage += "  -addnode=<ip>          " + _("Add a node to connect to and attempt to keep the connection open") + "\n";
@@ -1068,6 +1069,11 @@ bool AppInit2(boost::thread_group& threadGroup)
                 // Check for changed -txindex state
                 if (fTxIndex != GetBoolArg("-txindex", false)) {
                     strLoadError = _("You need to rebuild the database using -reindex to change -txindex");
+                    break;
+                }
+                // Check for changed -namehistory state
+                if (fNameHistory != GetBoolArg("-namehistory", false)) {
+                    strLoadError = _("You need to rebuild the database using -reindex to change -namehistory");
                     break;
                 }
 

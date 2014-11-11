@@ -229,6 +229,54 @@ name_show (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
+json_spirit::Value
+name_history (const json_spirit::Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 1)
+    throw std::runtime_error (
+        "name_history \"name\"\n"
+        "\nLook up the current and all past data for the given name."
+        "  -namehistory must be enabled.\n"
+        "\nArguments:\n"
+        "1. \"name\"          (string, required) the name to query for\n"
+        "\nResult:\n"
+        "[\n"
+        + getNameInfoHelp ("  ", ",") +
+        "  ...\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("name_history", "\"myname\"")
+        + HelpExampleRpc ("name_history", "\"myname\"")
+      );
+
+  if (!fNameHistory)
+    throw std::runtime_error ("-namehistory is not enabled");
+
+  const std::string nameStr = params[0].get_str ();
+  const valtype name = ValtypeFromString (nameStr);
+
+  CNameData data;
+  if (!pcoinsTip->GetName (name, data))
+    {
+      std::ostringstream msg;
+      msg << "name not found: '" << nameStr << "'";
+      throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
+    }
+
+  CNameHistory history;
+  if (!pcoinsTip->GetNameHistory (name, history))
+    assert (history.empty ());
+
+  json_spirit::Array res;
+  BOOST_FOREACH (const CNameData& entry, history.getData ())
+    res.push_back (getNameInfo (name, entry));
+  res.push_back (getNameInfo (name, data));
+
+  return res;
+}
+
+/* ************************************************************************** */
+
 /**
  * CNameWalker object used for name_scan.
  */

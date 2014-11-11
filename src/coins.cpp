@@ -4,6 +4,7 @@
 
 #include "coins.h"
 
+#include "main.h"
 #include "random.h"
 #include "util.h"
 
@@ -45,6 +46,7 @@ bool CCoinsView::GetCoins(const uint256 &txid, CCoins &coins) const { return fal
 bool CCoinsView::HaveCoins(const uint256 &txid) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return false; }
+bool CCoinsView::GetNameHistory(const valtype &name, CNameHistory &data) const { return false; }
 bool CCoinsView::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return false; }
 void CCoinsView::WalkNames(const valtype& start, CNameWalker& walker) const { assert (false); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
@@ -57,6 +59,7 @@ bool CCoinsViewBacked::GetCoins(const uint256 &txid, CCoins &coins) const { retu
 bool CCoinsViewBacked::HaveCoins(const uint256 &txid) const { return base->HaveCoins(txid); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 bool CCoinsViewBacked::GetName(const valtype &name, CNameData &data) const { return base->GetName(name, data); }
+bool CCoinsViewBacked::GetNameHistory(const valtype &name, CNameHistory &data) const { return base->GetNameHistory(name, data); }
 bool CCoinsViewBacked::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return base->GetNamesForHeight(nHeight, names); }
 void CCoinsViewBacked::WalkNames(const valtype& start, CNameWalker& walker) const { base->WalkNames(start, walker); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
@@ -157,6 +160,16 @@ bool CCoinsViewCache::GetName(const valtype &name, CNameData& data) const {
     return base->GetName(name, data);
 }
 
+bool CCoinsViewCache::GetNameHistory(const valtype &name, CNameHistory& data) const {
+    if (cacheNames.getHistory(name, data))
+        return true;
+
+    /* Note: This does not attempt to cache backend queries.  The cache
+       only keeps track of changes!  */
+
+    return base->GetNameHistory(name, data);
+}
+
 bool CCoinsViewCache::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const {
     /* Query the base view first, and then apply the cached changes (if
        there are any).  */
@@ -178,10 +191,41 @@ void CCoinsViewCache::WalkNames(const valtype& start, CNameWalker& walker) const
     base->WalkNames (start, walker);
 }
 
-void CCoinsViewCache::SetName(const valtype &name, const CNameData& data) {
+/* undo is set if the change is due to disconnecting blocks / going back in
+   time.  The ordinary case (!undo) means that we update the name normally,
+   going forward in time.  This is important for keeping track of the
+   name history.  */
+void CCoinsViewCache::SetName(const valtype &name, const CNameData& data, bool undo) {
     CNameData oldData;
     if (GetName(name, oldData))
+    {
         cacheNames.removeExpireIndex(name, oldData.getHeight());
+
+        /* Update the name history.  If we are undoing, we expect that
+           the top history item matches the data being set now.  If we
+           are not undoing, push the overwritten data onto the history stack.
+           Note that we only have to do this if the name already existed
+           in the database.  Otherwise, no special action is required
+           for the name history.  */
+        if (fNameHistory)
+        {
+            CNameHistory history;
+            if (!GetNameHistory(name, history))
+            {
+                /* Ensure that the history stack is indeed (still) empty
+                   and was not modified by the failing GetNameHistory call.  */
+                assert(history.empty());
+            }
+
+            if (undo)
+                history.pop(data);
+            else
+                history.push(oldData);
+
+            cacheNames.setHistory(name, history);
+        }
+    } else
+        assert (!undo);
 
     cacheNames.set(name, data);
     cacheNames.addExpireIndex(name, data.getHeight());
@@ -192,8 +236,14 @@ void CCoinsViewCache::DeleteName(const valtype &name) {
     if (GetName(name, oldData))
         cacheNames.removeExpireIndex(name, oldData.getHeight());
     else
-        LogPrintf("%s : no existing entry for name '%s'",
-                  __func__, ValtypeToString(name).c_str());
+        assert(false);
+
+    if (fNameHistory)
+    {
+        /* When deleting a name, the history should already be clean.  */
+        CNameHistory history;
+        assert (!GetNameHistory(name, history) || history.empty());
+    }
 
     cacheNames.remove(name);
 }

@@ -248,6 +248,7 @@ extern bool HTTPReq_REST(AcceptedConnection *conn,
 extern void AddRawTxNameOperation(CMutableTransaction& tx, const json_spirit::Object& obj);
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value name_history(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_scan(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_filter(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_list(const json_spirit::Array& params, bool fHelp);
