@@ -27,12 +27,6 @@
 #include <sstream>
 
 /**
- * Amount to lock in name transactions.  This is not (yet) enforced by the
- * protocol.  Thus just a constant here for now.
- */
-static const CAmount LOCKED_AMOUNT = COIN / 100; 
-
-/**
  * Utility routine to construct a "name info" object to return.  This is used
  * for name_show and also name_list.
  * @param name The name.
@@ -191,7 +185,7 @@ AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
      doesn't depend on the chainstate at all.  */
 
   const CScript outScript = CNameScript::buildNameUpdate (addr, name, value);
-  tx.vout.push_back (CTxOut (LOCKED_AMOUNT, outScript));
+  tx.vout.push_back (CTxOut (NAME_LOCKED_AMOUNT, outScript));
 }
 
 /* ************************************************************************** */
@@ -704,7 +698,7 @@ name_new (const json_spirit::Array& params, bool fHelp)
 
   CWalletTx wtx;
   const std::string strError
-    = pwalletMain->SendMoneyToScript (newScript, NULL, LOCKED_AMOUNT, wtx);
+    = pwalletMain->SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, wtx);
 
   if (strError != "")
     {
@@ -821,7 +815,8 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
 
   CWalletTx wtx;
   const std::string strError
-    = pwalletMain->SendMoneyToScript (nameScript, &txIn, LOCKED_AMOUNT, wtx);
+    = pwalletMain->SendMoneyToScript (nameScript, &txIn,
+                                      NAME_LOCKED_AMOUNT, wtx);
 
   if (strError != "")
     {
@@ -913,7 +908,8 @@ name_update (const json_spirit::Array& params, bool fHelp)
 
   CWalletTx wtx;
   const std::string strError
-    = pwalletMain->SendMoneyToScript (nameScript, &txIn, LOCKED_AMOUNT, wtx);
+    = pwalletMain->SendMoneyToScript (nameScript, &txIn,
+                                      NAME_LOCKED_AMOUNT, wtx);
 
   if (strError != "")
     {

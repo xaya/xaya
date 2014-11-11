@@ -294,12 +294,22 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* ************************** */
   /* Test NAME_NEW validation.  */
 
+  /* Basic verification of NAME_NEW.  */
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrNew));
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
   mtx.vin.push_back (CTxIn (COutPoint (inNew, 0)));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
+
+  /* Greedy names.  */
+  mtx.vin.clear ();
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
+  BOOST_CHECK (CheckNameTransaction (mtx, MEMPOOL_HEIGHT, view, state));
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
+  BOOST_CHECK (!CheckNameTransaction (mtx, MEMPOOL_HEIGHT, view, state));
 
   /* ***************************** */
   /* Test NAME_UPDATE validation.  */
@@ -318,6 +328,14 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vin.push_back (CTxIn (COutPoint (inFirst, 0)));
   BOOST_CHECK (CheckNameTransaction (mtx, 135999, view, state));
   BOOST_CHECK (!CheckNameTransaction (mtx, 136000, view, state));
+
+  /* Check for "greedy" names conditions.  */
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
+  BOOST_CHECK (CheckNameTransaction (mtx, 110000, view, state));
+  BOOST_CHECK (CheckNameTransaction (mtx, MEMPOOL_HEIGHT, view, state));
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
+  BOOST_CHECK (CheckNameTransaction (mtx, 110000, view, state));
+  BOOST_CHECK (!CheckNameTransaction (mtx, MEMPOOL_HEIGHT, view, state));
 
   /* Value length limits.  */
   mtx = CMutableTransaction (baseTx);
@@ -361,6 +379,14 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* Expiry and re-registration of a name.  */
   BOOST_CHECK (!CheckNameTransaction (mtx, 135999, view, state));
   BOOST_CHECK (CheckNameTransaction (mtx, 136000, view, state));
+
+  /* "Greedy" names.  */
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
+  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
+  BOOST_CHECK (CheckNameTransaction (mtx, MEMPOOL_HEIGHT, viewClean, state));
+  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
+  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
+  BOOST_CHECK (!CheckNameTransaction (mtx, MEMPOOL_HEIGHT, viewClean, state));
 
   /* Rand mismatch (wrong name activated).  */
   mtx.vout.clear ();

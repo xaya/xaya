@@ -498,6 +498,13 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     return state.Invalid (error ("CheckNameTransaction: Namecoin tx has no"
                                  " name outputs"));
 
+  /* For now, only reject "greedy" names in the mempool.  This will be
+     changed with a softfork in the future.  */
+  if (nHeight == MEMPOOL_HEIGHT
+      && tx.vout[nameOut].nValue < NAME_LOCKED_AMOUNT)
+    return state.Invalid (error ("%s: rejecting greedy name from mempool",
+                                 __func__));
+
   /* Handle NAME_NEW now, since this is easy and different from the other
      operations.  */
 
@@ -540,6 +547,10 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         return state.Invalid (error ("CheckNameTransaction: NAME_UPDATE name"
                                      " mismatch to prev tx"));
 
+      /* This is actually redundant, since expired names are removed
+         from the UTXO set and thus not available to be spent anyway.
+         But it does not hurt to enforce this here, too.  It is also
+         exercised by the unit tests.  */
       if (isExpired (coinsIn.nHeight, nHeight))
         return state.Invalid (error ("CheckNameTransaction: trying to update"
                                      " expired name"));
