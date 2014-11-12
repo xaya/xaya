@@ -141,7 +141,7 @@ public:
         genesis.vtx.push_back(txNew);
         genesis.hashPrevBlock.SetNull();
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-        genesis.nVersion = 1;
+        genesis.nVersion.SetGenesisVersion(1);
         genesis.nTime    = 1231006505;
         genesis.nBits    = 0x1d00ffff;
         genesis.nNonce   = 2083236893;

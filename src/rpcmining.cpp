@@ -553,7 +553,7 @@ Value getblocktemplate(const Array& params, bool fHelp)
 
     Object result;
     result.push_back(Pair("capabilities", aCaps));
-    result.push_back(Pair("version", pblock->nVersion));
+    result.push_back(Pair("version", pblock->nVersion.GetFullVersion()));
     result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));

@@ -79,6 +79,10 @@ public:
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
+
+    /* Return the auxpow chain ID.  */
+    inline int32_t AuxpowChainId () const { return 0x0001; }
+
 protected:
     CChainParams() {}
 

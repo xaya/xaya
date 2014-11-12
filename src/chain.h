@@ -133,7 +133,7 @@ public:
     unsigned int nStatus;
 
     //! block header
-    int nVersion;
+    CBlockVersion nVersion;
     uint256 hashMerkleRoot;
     unsigned int nTime;
     unsigned int nBits;
@@ -157,7 +157,7 @@ public:
         nStatus = 0;
         nSequenceId = 0;
 
-        nVersion       = 0;
+        nVersion.SetNull();
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;

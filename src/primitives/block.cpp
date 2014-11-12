@@ -5,9 +5,17 @@
 
 #include "primitives/block.h"
 
+#include "chainparams.h"
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
+
+void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
+{
+    assert(nBaseVersion >= 1 && nBaseVersion < VERSION_AUXPOW);
+    assert(!IsAuxpow());
+    nVersion = nBaseVersion | (Params ().AuxpowChainId () * VERSION_CHAIN_START);
+}
 
 uint256 CBlockHeader::GetHash() const
 {
@@ -113,7 +121,7 @@ std::string CBlock::ToString() const
     std::stringstream s;
     s << strprintf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
         GetHash().ToString(),
-        nVersion,
+        nVersion.GetFullVersion(),
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         nTime, nBits, nNonce,

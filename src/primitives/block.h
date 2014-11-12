@@ -13,6 +13,91 @@
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 
+/**
+ * Encapsulate a block version.  This takes care of building it up
+ * from a base version, the modifier flags (like auxpow) and
+ * also the auxpow chain ID.
+ */
+class CBlockVersion
+{
+
+private:
+
+    /* Modifiers to the version.  */
+    static const int32_t VERSION_AUXPOW = (1 << 8);
+
+    /** Bits above are reserved for the auxpow chain ID.  */
+    static const int32_t VERSION_CHAIN_START = (1 << 16);
+
+    /** The version as integer.  Should not be accessed directly.  */
+    int32_t nVersion;
+
+public:
+
+    inline CBlockVersion()
+    {
+        SetNull();
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(this->nVersion);
+    }
+
+    inline void SetNull()
+    {
+        nVersion = 0;
+    }
+
+    /**
+     * Set the base version (apart from chain ID and auxpow flag) to
+     * the one given.  This should only be called when auxpow is not yet
+     * set, to initialise a block!
+     * @param nBaseVersion The base version.
+     */
+    void SetBaseVersion(int32_t nBaseVersion);
+
+    /**
+     * Extract the base version (without modifiers and chain ID).
+     * @return The base version./
+     */
+    inline int32_t GetBaseVersion() const
+    {
+        return nVersion % VERSION_AUXPOW;
+    }
+
+    /**
+     * Set the genesis block version.  This must be a literal write
+     * through, to get the correct historic version.
+     * @param nGenesisVersion The version to set.
+     */
+    inline void SetGenesisVersion(int32_t nGenesisVersion)
+    {
+        nVersion = nGenesisVersion;
+    }
+
+    /**
+     * Extract the full version.  Used for RPC results and debug prints.
+     * @return The full version.
+     */
+    inline int32_t GetFullVersion() const
+    {
+        return nVersion;
+    }
+
+    /**
+     * Check if the auxpow flag is set in the version.
+     * @return True iff this block version is marked as auxpow.
+     */
+    inline bool IsAuxpow() const
+    {
+        return nVersion & VERSION_AUXPOW;
+    }
+
+};
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -25,7 +110,7 @@ class CBlockHeader
 public:
     // header
     static const int32_t CURRENT_VERSION=3;
-    int32_t nVersion;
+    CBlockVersion nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
     uint32_t nTime;
@@ -42,7 +127,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
-        nVersion = this->nVersion;
+        nVersion = this->nVersion.GetBaseVersion();
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
@@ -52,7 +137,7 @@ public:
 
     void SetNull()
     {
-        nVersion = CBlockHeader::CURRENT_VERSION;
+        nVersion.SetBaseVersion(CBlockHeader::CURRENT_VERSION);
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
         nTime = 0;
