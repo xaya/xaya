@@ -88,7 +88,7 @@ def initialize_chain(test_dir, extra_args = None):
         for i in range(4):
             datadir=initialize_datadir("cache", i)
             args = [ os.getenv("NAMECOIND", "namecoind"), "-keypool=1", "-datadir="+datadir, "-discover=0" ]
-            if (extra_args is not None) and (extra_args[i] is not None):
+            if extra_args is not None:
                 args.extend(extra_args[i])
             if i > 0:
                 args.append("-connect=127.0.0.1:"+str(p2p_port(0)))
@@ -168,8 +168,8 @@ def start_node(i, dirname, extra_args=None, rpchost=None):
     Start a namecoind and return RPC connection to it
     """
     datadir = os.path.join(dirname, "node"+str(i))
-    args = [ os.getenv("BITCOIND", "namecoind"), "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest" ]
-    if extra_args is not None: args.extend(extra_args)
+    args = [ os.getenv("NAMECOIND", "namecoind"), "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest" ]
+    args.extend(extra_args)
     bitcoind_processes[i] = subprocess.Popen(args)
     devnull = open("/dev/null", "w+")
     subprocess.check_call([ os.getenv("NAMECOINCLI", "namecoin-cli"), "-datadir="+datadir] +
@@ -185,7 +185,7 @@ def start_nodes(num_nodes, dirname, extra_args=None, rpchost=None):
     """
     Start multiple namecoinds, return RPC connections to them
     """
-    if extra_args is None: extra_args = [ None for i in range(num_nodes) ]
+    if extra_args is None: extra_args = [ [] for i in range(num_nodes) ]
     return [ start_node(i, dirname, extra_args[i], rpchost) for i in range(num_nodes) ]
 
 def log_filename(dirname, n_node, logname):

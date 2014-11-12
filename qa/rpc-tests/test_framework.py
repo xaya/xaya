@@ -46,7 +46,7 @@ class BitcoinTestFramework(object):
         if n == 1 or n == 2:
             return ["-namehistory"]
 
-        return None
+        return []
 
     def setup_chain(self):
         print("Initializing test directory "+self.options.tmpdir)
