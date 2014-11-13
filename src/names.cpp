@@ -656,7 +656,13 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
      now we start at this value + 1.  */
   const unsigned expireFrom = nHeight - expDepthOld;
   const unsigned expireTo = nHeight - expDepthNow;
-  assert (expireFrom <= expireTo);
+
+  /* It is possible that expireFrom = expireTo + 1, in case that the
+     expiration period is raised together with the block height.  In this
+     case, no names expire in the current step.  This case means that
+     the absolute expiration height "n - expirationDepth(n)" is
+     flat -- which is fine.  */
+  assert (expireFrom <= expireTo + 1);
 
   /* Find all names that expire at those depths.  Note that GetNamesForHeight
      clears the output set, to we union all sets here.  */

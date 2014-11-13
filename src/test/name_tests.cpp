@@ -264,6 +264,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   CValidationState state;
   CMutableTransaction mtx;
   CScript scr;
+  std::string reason;
 
   mtx.vin.push_back (CTxIn (COutPoint (inCoin, 0)));
   mtx.vout.push_back (CTxOut (COIN, addr));
@@ -301,6 +302,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
   mtx.vin.push_back (CTxIn (COutPoint (inNew, 0)));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
+  BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* Greedy names.  */
   mtx.vin.clear ();
@@ -322,6 +324,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vin.push_back (CTxIn (COutPoint (inUpdate, 0)));
   BOOST_CHECK (CheckNameTransaction (mtx, 135999, view, state));
   BOOST_CHECK (!CheckNameTransaction (mtx, 136000, view, state));
+  BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* Check update of FIRSTUPDATE output, plus expiry.  */
   mtx.vin.clear ();
@@ -371,6 +374,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state));
   mtx.vin.push_back (CTxIn (COutPoint (inNew, 0)));
   BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
+  BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* Maturity of prev out, acceptable for mempool.  */
   BOOST_CHECK (!CheckNameTransaction (mtx, 100011, viewClean, state));
