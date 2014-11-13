@@ -73,6 +73,7 @@ BITCOIN_CORE_H = \
   addrman.h \
   alert.h \
   allocators.h \
+  auxpow.h \
   amount.h \
   arith_uint256.h \
   base58.h \
@@ -233,6 +234,7 @@ libbitcoin_common_a_SOURCES = \
   allocators.cpp \
   arith_uint256.cpp \
   amount.cpp \
+  auxpow.cpp \
   base58.cpp \
   chainparams.cpp \
   coins.cpp \

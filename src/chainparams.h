@@ -83,6 +83,9 @@ public:
     /* Return the auxpow chain ID.  */
     inline int32_t AuxpowChainId () const { return 0x0001; }
 
+    /* Return start height of auxpow and the retarget interval change.  */
+    virtual int AuxpowStartHeight() const = 0;
+
 protected:
     CChainParams() {}
 

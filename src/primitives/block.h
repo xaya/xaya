@@ -10,6 +10,8 @@
 #include "serialize.h"
 #include "uint256.h"
 
+#include <boost/shared_ptr.hpp>
+
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 
@@ -69,6 +71,15 @@ public:
     }
 
     /**
+     * Extract the chain ID.
+     * @return The chain ID encoded in the version.
+     */
+    inline int32_t GetChainId() const
+    {
+        return nVersion / VERSION_CHAIN_START;
+    }
+
+    /**
      * Set the genesis block version.  This must be a literal write
      * through, to get the correct historic version.
      * @param nGenesisVersion The version to set.
@@ -96,7 +107,24 @@ public:
         return nVersion & VERSION_AUXPOW;
     }
 
+    /**
+     * Check whether this is a "legacy" block without chain ID.
+     * @return True iff it is.
+     */
+    inline bool IsLegacy() const
+    {
+        return nVersion == 1;
+    }
+
 };
+
+/* There's a circular dependency between CBlockHeader ans CAuxPow.
+   These forward-declarations help us resolve it.  */
+class CAuxPow;
+template<typename Stream, typename Operation>
+  void ReadWriteAuxPow(Stream& s, Operation ser_action,
+                       boost::shared_ptr<CAuxPow>& auxpow,
+                       int nType, const CBlockVersion& nBlockVersion);
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -117,6 +145,9 @@ public:
     uint32_t nBits;
     uint32_t nNonce;
 
+    // auxpow (if this is a merge-minded block)
+    boost::shared_ptr<CAuxPow> auxpow;
+
     CBlockHeader()
     {
         SetNull();
@@ -133,6 +164,8 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+
+        ReadWriteAuxPow(s, ser_action, auxpow, nType, this->nVersion);
     }
 
     void SetNull()
@@ -143,6 +176,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        auxpow.reset();
     }
 
     bool IsNull() const
@@ -203,6 +237,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        block.auxpow         = auxpow;
         return block;
     }
 
