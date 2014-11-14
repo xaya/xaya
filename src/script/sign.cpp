@@ -15,8 +15,6 @@
 
 using namespace std;
 
-typedef vector<unsigned char> valtype;
-
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
     CKey key;

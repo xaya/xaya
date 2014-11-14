@@ -17,6 +17,8 @@
 
 static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520; // bytes
 
+typedef std::vector<unsigned char> valtype;
+
 template <typename T>
 std::vector<unsigned char> ToByteVector(const T& in)
 {

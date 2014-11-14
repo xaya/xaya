@@ -16,7 +16,13 @@
 
 using namespace std;
 
-typedef vector<unsigned char> valtype;
+static const valtype vchFalse(0);
+static const valtype vchZero(0);
+static const valtype vchTrue(1, 1);
+static const CScriptNum bnZero(0);
+static const CScriptNum bnOne(1);
+static const CScriptNum bnFalse(0);
+static const CScriptNum bnTrue(1);
 
 namespace {
 
