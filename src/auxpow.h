@@ -17,6 +17,9 @@
 
 class CBlockIndex;
 
+/** Header for merge-mining data in the coinbase.  */
+static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
+
 /* Because it is needed for auxpow, the definition of CMerkleTx is moved
    here from wallet.h.  The implementations of the various methods are
    not needed and stay in wallet.cpp.  */
@@ -89,7 +92,8 @@ public:
 class CAuxPow : public CMerkleTx
 {
 
-private:
+/* Public for the unit tests.  */
+public:
 
   /** The merkle branch connecting the aux block to our coinbase.  */
   std::vector<uint256> vChainMerkleBranch;
@@ -102,6 +106,7 @@ private:
 
 public:
 
+  /* Prevent accidental conversion.  */
   inline explicit CAuxPow (const CTransaction& txIn)
     : CMerkleTx (txIn)
   {}
@@ -144,6 +149,16 @@ public:
   {
     return parentBlock.GetHash ();
   }
+
+  /**
+   * Calculate the expected index in the merkle tree.  This is also used
+   * for the test-suite.
+   * @param nNonce The coinbase's nonce value.
+   * @param nChainId The chain ID.
+   * @param h The merkle block height.
+   * @return The expected index for the aux hash.
+   */
+  static int getExpectedIndex (int nNonce, int nChainId, unsigned h);
 
 };
 

@@ -14,8 +14,6 @@
 
 #include <algorithm>
 
-static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
-
 bool
 CAuxPow::check (const uint256& hashAuxBlock, int nChainId) const
 {
@@ -80,25 +78,33 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId) const
 
     int nSize;
     memcpy(&nSize, &pc[0], 4);
-    if (nSize != (1 << vChainMerkleBranch.size()))
+    const unsigned merkleHeight = vChainMerkleBranch.size ();
+    if (nSize != (1 << merkleHeight))
         return error("Aux POW merkle branch size does not match parent coinbase");
 
     int nNonce;
     memcpy(&nNonce, &pc[4], 4);
 
-    // Choose a pseudo-random slot in the chain merkle tree
-    // but have it be fixed for a size/nonce/chain combination.
-    //
-    // This prevents the same work from being used twice for the
-    // same chain while reducing the chance that two chains clash
-    // for the same slot.
-    unsigned int rand = nNonce;
-    rand = rand * 1103515245 + 12345;
-    rand += nChainId;
-    rand = rand * 1103515245 + 12345;
-
-    if (nChainIndex != static_cast<int> (rand % nSize))
+    if (nChainIndex != getExpectedIndex (nNonce, nChainId, merkleHeight))
         return error("Aux POW wrong index");
 
     return true;
+}
+
+int
+CAuxPow::getExpectedIndex (int nNonce, int nChainId, unsigned h)
+{
+  // Choose a pseudo-random slot in the chain merkle tree
+  // but have it be fixed for a size/nonce/chain combination.
+  //
+  // This prevents the same work from being used twice for the
+  // same chain while reducing the chance that two chains clash
+  // for the same slot.
+
+  unsigned rand = nNonce;
+  rand = rand * 1103515245 + 12345;
+  rand += nChainId;
+  rand = rand * 1103515245 + 12345;
+
+  return rand % (1 << h);
 }

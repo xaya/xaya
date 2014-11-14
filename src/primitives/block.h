@@ -54,14 +54,6 @@ public:
     }
 
     /**
-     * Set the base version (apart from chain ID and auxpow flag) to
-     * the one given.  This should only be called when auxpow is not yet
-     * set, to initialise a block!
-     * @param nBaseVersion The base version.
-     */
-    void SetBaseVersion(int32_t nBaseVersion);
-
-    /**
      * Extract the base version (without modifiers and chain ID).
      * @return The base version./
      */
@@ -71,12 +63,39 @@ public:
     }
 
     /**
+     * Set the base version (apart from chain ID and auxpow flag) to
+     * the one given.  This should only be called when auxpow is not yet
+     * set, to initialise a block!
+     * @param nBaseVersion The base version.
+     */
+    void SetBaseVersion(int32_t nBaseVersion);
+
+    /**
      * Extract the chain ID.
      * @return The chain ID encoded in the version.
      */
     inline int32_t GetChainId() const
     {
         return nVersion / VERSION_CHAIN_START;
+    }
+
+    /**
+     * Set the chain ID.  This is used for the test suite.
+     * @param ch The chain ID to set.
+     */
+    inline void SetChainId(int32_t chainId)
+    {
+        nVersion %= VERSION_CHAIN_START;
+        nVersion |= chainId * VERSION_CHAIN_START;
+    }
+
+    /**
+     * Extract the full version.  Used for RPC results and debug prints.
+     * @return The full version.
+     */
+    inline int32_t GetFullVersion() const
+    {
+        return nVersion;
     }
 
     /**
@@ -90,21 +109,24 @@ public:
     }
 
     /**
-     * Extract the full version.  Used for RPC results and debug prints.
-     * @return The full version.
-     */
-    inline int32_t GetFullVersion() const
-    {
-        return nVersion;
-    }
-
-    /**
      * Check if the auxpow flag is set in the version.
      * @return True iff this block version is marked as auxpow.
      */
     inline bool IsAuxpow() const
     {
         return nVersion & VERSION_AUXPOW;
+    }
+
+    /**
+     * Set the auxpow flag.  This is used for testing.
+     * @param auxpow Whether to mark auxpow as true.
+     */
+    inline void SetAuxpow (bool auxpow)
+    {
+        if (auxpow)
+            nVersion |= VERSION_AUXPOW;
+        else
+            nVersion &= ~VERSION_AUXPOW;
     }
 
     /**
@@ -190,6 +212,13 @@ public:
     {
         return (int64_t)nTime;
     }
+
+    /**
+     * Set the block's auxpow (or unset it).  This takes care of updating
+     * the version accordingly.
+     * @param apow Pointer to the auxpow to use or NULL.
+     */
+    void SetAuxpow (CAuxPow* apow);
 };
 
 

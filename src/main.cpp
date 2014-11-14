@@ -1172,12 +1172,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock
 // CBlock and CBlockIndex
 //
 
-/**
- * Check proof-of-work of a block header, taking auxpow into account.
- * @param block The block header.
- * @return True iff the PoW is correct.
- */
-static bool CheckProofOfWork(const CBlockHeader& block)
+bool CheckProofOfWork(const CBlockHeader& block)
 {
     /* Except for legacy blocks with full version 1, ensure that
        the chain ID is correct.  Legacy blocks are not allowed since

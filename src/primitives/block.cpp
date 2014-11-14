@@ -5,6 +5,7 @@
 
 #include "primitives/block.h"
 
+#include "auxpow.h"
 #include "chainparams.h"
 #include "hash.h"
 #include "tinyformat.h"
@@ -20,6 +21,19 @@ void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
 uint256 CBlockHeader::GetHash() const
 {
     return Hash(BEGIN(nVersion), END(nNonce));
+}
+
+void CBlockHeader::SetAuxpow (CAuxPow* apow)
+{
+    if (apow)
+    {
+        auxpow.reset(apow);
+        nVersion.SetAuxpow(true);
+    } else
+    {
+        auxpow.reset();
+        nVersion.SetAuxpow(false);
+    }
 }
 
 uint256 CBlock::BuildMerkleTree(bool* fMutated) const
