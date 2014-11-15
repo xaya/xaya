@@ -1,0 +1,28 @@
+* work around historic bugs
+
+* prevent name_new stealing in mempool
+
+* test multisig/P2SH with names
+
+* merge-mining RPC calls
+
+* soft fork in namecoind:
+  - limit DB locks / unique tx
+  - disallow greedy names
+  - enforce nametx-version also for name *outputs*
+
+* upgrade to new version at fixed height:
+  - blocks version=2 via majority rule soft fork (BIP34)
+  - P2SH as enforced soft fork (BIP16)
+  - strict BIP30 as enforced soft fork
+  - allow larger blocks (DB locks)
+  - name_new format change?
+  - more differences???
+
+* reenable some of the disabled tests, new alert keys?
+
+* fix testnet and other not-yet-updated configurations / FIXMEs
+
+* make dust spam unspendable?
+
+* dropexpirednames=1 to also remove expired names from the name database?
