@@ -42,9 +42,16 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return pindexLast->nBits;
     }
 
+    /* Adapt the retargeting interval after merge-mining start
+       according to the changed Namecoin rules.  */
+    int nBlocksBack = Params().Interval() - 1;
+    if (pindexLast->nHeight >= Params().AuxpowStartHeight()
+        && (pindexLast->nHeight + 1 > Params().Interval()))
+        nBlocksBack = Params().Interval();
+
     // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < Params().Interval()-1; i++)
+    for (int i = 0; pindexFirst && i < nBlocksBack; i++)
         pindexFirst = pindexFirst->pprev;
     assert(pindexFirst);
 
