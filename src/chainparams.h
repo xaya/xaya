@@ -12,7 +12,9 @@
 #include "protocol.h"
 #include "arith_uint256.h"
 
+#include <map>
 #include <vector>
+#include <utility>
 
 typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
@@ -39,6 +41,22 @@ public:
         EXT_SECRET_KEY,
 
         MAX_BASE58_TYPES
+    };
+
+    enum BugType {
+        /* Tx is valid and all nameops should be performed.  */
+        BUG_FULLY_APPLY,
+        /* Don't apply the name operations but put the names into the UTXO
+           set.  This is done for libcoin's "d/bitcoin" stealing.  It is
+           then used as input into the "d/wav" stealing, thus needs to be in
+           the UTXO set.  We don't want the name to show up in the name
+           database, though.  */
+        BUG_IN_UTXO,
+        /* Don't apply the name operations and don't put the names into the
+           UTXO set.  They are immediately unspendable.  This is used for the
+           "d/wav" stealing output (which is not used later on) and also
+           for the NAME_FIRSTUPDATE's that are in non-Namecoin tx.  */
+        BUG_FULLY_IGNORE,
     };
 
     const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
@@ -95,7 +113,15 @@ public:
     virtual bool AllowLegacyBlocks(unsigned nHeight) const = 0;
 
     /* Return the expiration depth for names at the given height.  */
-    virtual unsigned NameExpirationDepth (unsigned nHeight) const = 0;
+    virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
+
+    /* Return whether to allow lenient NAME_NEW version check.  */
+    virtual bool LenientVersionCheck(unsigned nHeight) const = 0;
+
+    /* Check whether the given tx is a "historic relic" for which to
+       skip the validity check.  Return also the "type" of the bug,
+       which determines further actions.  */
+    bool IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const;
 
 protected:
     CChainParams() {}
@@ -126,6 +152,17 @@ protected:
     bool fMineBlocksOnDemand;
     bool fSkipProofOfWorkCheck;
     bool fTestnetToBeDeprecatedFieldRPC;
+
+    /* Map (block height, txid) pairs for buggy transactions onto their
+       bug type value.  */
+    std::map<std::pair<unsigned, uint256>, BugType> mapHistoricBugs;
+
+    /* Utility routine to insert into historic bug map.  */
+    inline void addBug(unsigned nHeight, const char* txid, BugType type)
+    {
+        std::pair<unsigned, uint256> key(nHeight, uint256(txid));
+        mapHistoricBugs.insert(std::make_pair(key, type));
+    }
 };
 
 /** 

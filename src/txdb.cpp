@@ -340,6 +340,7 @@ bool CCoinsViewDB::ValidateNameDB() const
                                  __func__, ValtypeToString(name).c_str());
                 nameHeightsData.insert(std::make_pair(name, data.getHeight()));
                 
+                assert(namesInDB.count(name) == 0);
                 if (!data.isExpired(nHeight))
                     namesInDB.insert(name);
                 break;
@@ -390,8 +391,14 @@ bool CCoinsViewDB::ValidateNameDB() const
     if (nameHeightsIndex != nameHeightsData)
         return error("%s : name height data mismatch", __func__);
 
-    if (namesInDB != namesInUTXO)
-        return error("%s : names in UTXO mismatch names in the DB", __func__);
+    BOOST_FOREACH(const valtype& name, namesInDB)
+        if (namesInUTXO.count(name) == 0)
+            return error("%s : name '%s' in DB but not UTXO set",
+                         __func__, ValtypeToString(name).c_str());
+    BOOST_FOREACH(const valtype& name, namesInUTXO)
+        if (namesInDB.count(name) == 0)
+            return error("%s : name '%s' in UTXO set but not DB",
+                         __func__, ValtypeToString(name).c_str());
 
     if (fNameHistory)
     {

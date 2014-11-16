@@ -1723,7 +1723,14 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
         if (outsBlock.nVersion < 0)
             outs->nVersion = outsBlock.nVersion;
         if (*outs != outsBlock)
-            fClean = fClean && error("DisconnectBlock(): added transaction mismatch? database corrupted");
+        {
+            /* This may be due to a historic bug.  For them, some names
+               are marked immediately as unspendable.  They fail this check
+               when undoing, thus ignore them here.  */
+            CChainParams::BugType type;
+            if (!Params ().IsHistoricBug (tx.GetHash (), pindex->nHeight, type) || type != CChainParams::BUG_FULLY_IGNORE)
+                fClean = fClean && error("DisconnectBlock(): added transaction mismatch? database corrupted");
+        }
 
         // remove outputs
         outs->Clear();

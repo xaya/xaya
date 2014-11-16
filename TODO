@@ -1,8 +1,10 @@
-* work around historic bugs
-
 * prevent name_new stealing in mempool
 
 * test multisig/P2SH with names
+
+* fix testnet and other not-yet-updated configurations / FIXMEs
+
+* test CBlockVersion for being a standard-layout class
 
 * merge-mining RPC calls
 
@@ -10,6 +12,8 @@
   - limit DB locks / unique tx
   - disallow greedy names
   - enforce nametx-version also for name *outputs*
+  - what about 774d4c446cecfc40b1c02fdc5a13be6d2007233f9d91daefab6b3c2e70042f05?
+    could this still happen?  why is it accepted in the code at all?
 
 * upgrade to new version at fixed height:
   - blocks version=2 via majority rule soft fork (BIP34)
@@ -20,8 +24,6 @@
   - more differences???
 
 * reenable some of the disabled tests, new alert keys?
-
-* fix testnet and other not-yet-updated configurations / FIXMEs
 
 * make dust spam unspendable?
 

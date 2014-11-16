@@ -440,6 +440,14 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                       const CCoinsView& view,
                       CValidationState& state)
 {
+  const std::string strTxid = tx.GetHash ().GetHex ();
+  const char* txid = strTxid.c_str ();
+
+  /* Ignore historic bugs.  */
+  CChainParams::BugType type;
+  if (Params ().IsHistoricBug (tx.GetHash (), nHeight, type))
+    return true;
+
   /* As a first step, try to locate inputs and outputs of the transaction
      that are name scripts.  At most one input and output should be
      a name operation.  */
@@ -452,14 +460,14 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       const COutPoint& prevout = tx.vin[i].prevout;
       CCoins coins;
       if (!view.GetCoins (prevout.hash, coins))
-        return error ("CheckNameTransaction: failed to fetch input coins");
+        return error ("%s: failed to fetch input coins for %s", __func__, txid);
 
       const CNameScript op(coins.vout[prevout.n].scriptPubKey);
       if (op.isNameOp ())
         {
           if (nameIn != -1)
-            return state.Invalid (error ("CheckNameTransaction: multiple name"
-                                         " inputs into transaction"));
+            return state.Invalid (error ("%s: multiple name inputs into"
+                                         " transaction %s", __func__, txid));
           nameIn = i;
           nameOpIn = op;
           coinsIn = coins;
@@ -474,8 +482,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp ())
         {
           if (nameOut != -1)
-            return state.Invalid (error ("CheckNameTransaction: multiple name"
-                                         " outputs from transaction"));
+            return state.Invalid (error ("%s: multiple name outputs from"
+                                         " transaction %s", __func__, txid));
           nameOut = i;
           nameOpOut = op;
         }
@@ -487,16 +495,32 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   if (!tx.IsNamecoin ())
     {
-      if (nameIn != -1 || nameOut != -1)
-        return state.Invalid (error ("CheckNameTransaction: non-Namecoin tx"
-                                     " has name inputs/outputs"));
+      if (nameIn != -1)
+        return state.Invalid (error ("%s: non-Namecoin tx %s has name inputs",
+                                     __func__, txid));
+
+      /* Possibly allow NAME_NEW's with non-Namecoin version.  Multiple
+         of these appear in the blockchain, as they were accepted by the
+         old client.  */
+      if (nameOut != -1)
+        {
+          if (Params ().LenientVersionCheck (nHeight)
+              && nameOpOut.getNameOp () == OP_NAME_NEW)
+            LogPrintf ("WARNING: %s : non-Namecoin tx %s at height %u has name"
+                       " outputs\n", __func__, txid, nHeight);
+          else
+            return state.Invalid (error ("%s: non-Namecoin tx %s at height %u"
+                                         " has name outputs",
+                                         __func__, txid, nHeight));
+        }
+
       return true;
     }
 
   assert (tx.IsNamecoin ());
   if (nameOut == -1)
-    return state.Invalid (error ("CheckNameTransaction: Namecoin tx has no"
-                                 " name outputs"));
+    return state.Invalid (error ("%s: Namecoin tx %s has no name outputs",
+                                 __func__, txid));
 
   /* For now, only reject "greedy" names in the mempool.  This will be
      changed with a softfork in the future.  */
@@ -544,8 +568,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                                      " prev input that is no update"));
 
       if (name != nameOpIn.getOpName ())
-        return state.Invalid (error ("CheckNameTransaction: NAME_UPDATE name"
-                                     " mismatch to prev tx"));
+        return state.Invalid (error ("%s: NAME_UPDATE name mismatch to prev tx"
+                                     " found in %s", __func__, txid));
 
       /* This is actually redundant, since expired names are removed
          from the UTXO set and thus not available to be spent anyway.
@@ -606,6 +630,36 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                       CCoinsViewCache& view, CBlockUndo& undo)
 {
   assert (nHeight != MEMPOOL_HEIGHT);
+
+  /* Handle historic bugs that should *not* be applied.  Names that are
+     outputs should be marked as unspendable in this case.  Otherwise,
+     we get an inconsistency between the UTXO set and the name database.  */
+  CChainParams::BugType type;
+  const uint256 txHash = tx.GetHash ();
+  if (Params ().IsHistoricBug (txHash, nHeight, type)
+      && type != CChainParams::BUG_FULLY_APPLY)
+    {
+      if (type == CChainParams::BUG_FULLY_IGNORE)
+        {
+          CCoinsModifier coins = view.ModifyCoins (txHash);
+          for (unsigned i = 0; i < tx.vout.size (); ++i)
+            {
+              const CNameScript op(tx.vout[i].scriptPubKey);
+              if (op.isNameOp () && op.isAnyUpdate ())
+                {
+                  if (!coins->IsAvailable (i) || !coins->Spend (i))
+                    LogPrintf ("ERROR: %s : spending buggy name output failed",
+                               __func__);
+                }
+            }
+        }
+
+      return;
+    }
+
+  /* This check must be done *after* the historic bug fixing above!  Some
+     of the names that must be handled above are actually produced by
+     transactions *not* marked as Namecoin tx.  */
   if (!tx.IsNamecoin ())
     return;
 
@@ -618,8 +672,9 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp () && op.isAnyUpdate ())
         {
           const valtype& name = op.getOpName ();
-          LogPrintf ("Updating name at height %d: %s\n",
-                     nHeight, ValtypeToString (name).c_str ());
+          if (fDebug)
+            LogPrintf ("Updating name at height %d: %s\n",
+                       nHeight, ValtypeToString (name).c_str ());
 
           CNameTxUndo opUndo;
           opUndo.fromOldState (name, view);
@@ -677,18 +732,28 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
   for (std::set<valtype>::const_iterator i = names.begin ();
        i != names.end (); ++i)
     {
+      const std::string nameStr = ValtypeToString (*i);
+
       CNameData data;
       if (!view.GetName (*i, data))
         return error ("%s : name '%s' not found in the database",
-                      __func__, ValtypeToString (*i).c_str ());
+                      __func__, nameStr.c_str ());
       if (!data.isExpired (nHeight))
-        return error ("%s : name is not actually expired", __func__);
+        return error ("%s : name '%s' is not actually expired",
+                      __func__, nameStr.c_str ());
+
+      /* Special rule:  When d/postmortem expires (the name used by
+         libcoin in the name-stealing demonstration), it's coin
+         is already spent.  Ignore.  */
+      if (nHeight == 175868 && nameStr == "d/postmortem")
+        continue;
 
       const COutPoint& out = data.getUpdateOutpoint ();
       CCoinsModifier coins = view.ModifyCoins (out.hash);
 
       if (!coins->IsAvailable (out.n))
-        return error ("%s : name coin is not available", __func__);
+        return error ("%s : name coin for '%s' is not available",
+                      __func__, nameStr.c_str ());
       const CNameScript nameOp(coins->vout[out.n].scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
           || nameOp.getOpName () != *i)
@@ -696,7 +761,8 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
 
       CTxInUndo txUndo;
       if (!coins->Spend (out, txUndo))
-        return error ("%s : failed to spend name coin", __func__);
+        return error ("%s : failed to spend name coin for '%s'",
+                      __func__, nameStr.c_str ());
 
       undo.vexpired.push_back (txUndo);
     }
@@ -759,5 +825,20 @@ CheckNameDB (bool disconnect)
     }
 
   pcoinsTip->Flush ();
-  assert (pcoinsTip->ValidateNameDB ());
+  const bool ok = pcoinsTip->ValidateNameDB ();
+
+  /* The DB is inconsistent (mismatch between UTXO set and names DB) between
+     (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's
+     "name stealing" bug.  For instance, d/postmortem is removed from
+     the UTXO set shortly after registration (when it is used to steal
+     names), but it remains in the name DB until it expires.  */
+  if (!ok)
+    {
+      const unsigned nHeight = chainActive.Height ();
+      LogPrintf ("ERROR: %s : name database is inconsistent\n", __func__);
+      if (nHeight >= 139000 && nHeight <= 180000)
+        LogPrintf ("This is expected due to 'name stealing'.\n");
+      else
+        assert (false);
+    }
 }

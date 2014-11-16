@@ -22,6 +22,21 @@ struct SeedSpec6 {
 
 #include "chainparamsseeds.h"
 
+bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const
+{
+    const std::pair<unsigned, uint256> key(nHeight, txid);
+    std::map<std::pair<unsigned, uint256>, BugType>::const_iterator mi;
+
+    mi = mapHistoricBugs.find (key);
+    if (mi != mapHistoricBugs.end ())
+    {
+        type = mi->second;
+        return true;
+    }
+
+    return false;
+}
+
 /**
  * Main network
  */
@@ -169,6 +184,26 @@ public:
         fMineBlocksOnDemand = false;
         fSkipProofOfWorkCheck = false;
         fTestnetToBeDeprecatedFieldRPC = false;
+
+        /* These transactions have name outputs but a non-Namecoin tx version.
+           They contain NAME_NEWs, which are fine, and also NAME_FIRSTUPDATE.
+           The latter are not interpreted by namecoind, thus also ignore
+           them for us here.  *Just* NAME_NEW outputs are handled by
+           special "lenient version checks".  Below are only those transactions
+           that also have name registrations.  */
+        addBug(98423, "bff3ed6873e5698b97bf0c28c29302b59588590b747787c7d1ef32decdabe0d1", BUG_FULLY_IGNORE);
+        addBug(98424, "e9b211007e5cac471769212ca0f47bb066b81966a8e541d44acf0f8a1bd24976", BUG_FULLY_IGNORE);
+        addBug(98425, "8aa2b0fc7d1033de28e0192526765a72e9df0c635f7305bdc57cb451ed01a4ca", BUG_FULLY_IGNORE);
+
+        /* This transaction has both a NAME_NEW and a NAME_FIRSTUPDATE as
+           inputs.  It is fine to accept it as valid and just process the
+           NAME_FIRSTUPDATE.  (NAME_NEW has no special side-effect in applying
+           anyway.)  */
+        addBug(99381, "774d4c446cecfc40b1c02fdc5a13be6d2007233f9d91daefab6b3c2e70042f05", BUG_FULLY_APPLY);
+
+        /* These were libcoin's name stealing bugs.  */
+        addBug(139872, "2f034f2499c136a2c5a922ca4be65c1292815c753bbb100a2a26d5ad532c3919", BUG_IN_UTXO);
+        addBug(139936, "c3e76d5384139228221cce60250397d1b87adf7366086bc8d6b5e6eee03c55c7", BUG_FULLY_IGNORE);
     }
 
     const Checkpoints::CCheckpointData& Checkpoints() const 
@@ -203,6 +238,12 @@ public:
             return nHeight - 12000;
 
         return 36000;
+    }
+
+    bool LenientVersionCheck(unsigned) const
+    {
+        /* FIXME: Update after soft fork.  */
+        return true;
     }
 
     int DefaultCheckNameDB () const
@@ -261,6 +302,8 @@ public:
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = true;
+
+        mapHistoricBugs.clear();
     }
     const Checkpoints::CCheckpointData& Checkpoints() const 
     {
@@ -280,6 +323,11 @@ public:
     bool AllowLegacyBlocks(unsigned) const
     {
         return true;
+    }
+
+    bool LenientVersionCheck(unsigned) const
+    {
+        return false;
     }
 };
 static CTestNetParams testNetParams;
@@ -364,6 +412,8 @@ public:
         fDefaultCheckMemPool = true;
         fAllowMinDifficultyBlocks = false;
         fMineBlocksOnDemand = true;
+
+        mapHistoricBugs.clear();
     }
 
     const Checkpoints::CCheckpointData& Checkpoints() const 
@@ -380,6 +430,11 @@ public:
            rely on loading predefined block data work.  (In particular,
            miner_tests.cpp.)  */
         return true;
+    }
+
+    bool LenientVersionCheck(unsigned) const
+    {
+        return false;
     }
 
     //! Published setters to allow changing values in unit test cases

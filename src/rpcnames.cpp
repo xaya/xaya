@@ -550,6 +550,8 @@ name_checkdb (const json_spirit::Array& params, bool fHelp)
     throw std::runtime_error (
         "name_checkdb\n"
         "\nValidate the name DB's consistency.\n"
+        "\nRoughly between blocks 139,000 and 180,000, this call is expected\n"
+        "to fail due to the historic 'name stealing' bug.\n"
         "\nResult:\n"
         "xxxxx                        (boolean) whether the state is valid\n"
         "\nExamples:\n"
