@@ -68,24 +68,27 @@ static void convertSeed6(std::vector<CAddress> &vSeedsOut, const SeedSpec6 *data
  */
 static Checkpoints::MapCheckpoints mapCheckpoints =
         boost::assign::map_list_of
-        (  2016, uint256S("0x0000000000660bad0d9fbde55ba7ee14ddf766ed5f527e3fbca523ac11460b92"))
-        (  4032, uint256S("0x0000000000493b5696ad482deb79da835fe2385304b841beef1938655ddbc411"))
-        (  6048, uint256S("0x000000000027939a2e1d8bb63f36c47da858e56d570f143e67e85068943470c9"))
-        (  8064, uint256S("0x000000000003a01f708da7396e54d081701ea406ed163e519589717d8b7c95a5"))
-        ( 10080, uint256S("0x0x00000000000fed3899f818b2228b4f01b9a0a7eeee907abd172852df71c64b06"))
-        ( 12096, uint256S("0x0000000000006c06988ff361f124314f9f4bb45b6997d90a7ee4cedf434c670f"))
-        ( 14112, uint256S("0x00000000000045d95e0588c47c17d593c7b5cb4fb1e56213d1b3843c1773df2b"))
-        ( 16128, uint256S("0x000000000001d9964f9483f9096cf9d6c6c2886ed1e5dec95ad2aeec3ce72fa9"))
-        ( 18940, uint256S("0x00000000000087f7fc0c8085217503ba86f796fa4984f7e5a08b6c4c12906c05"))
-        /* FIXME: Add more checkpoints!  */
+        (  2016, uint256S("0000000000660bad0d9fbde55ba7ee14ddf766ed5f527e3fbca523ac11460b92"))
+        (  4032, uint256S("0000000000493b5696ad482deb79da835fe2385304b841beef1938655ddbc411"))
+        (  6048, uint256S("000000000027939a2e1d8bb63f36c47da858e56d570f143e67e85068943470c9"))
+        (  8064, uint256S("000000000003a01f708da7396e54d081701ea406ed163e519589717d8b7c95a5"))
+        ( 10080, uint256S("00000000000fed3899f818b2228b4f01b9a0a7eeee907abd172852df71c64b06"))
+        ( 12096, uint256S("0000000000006c06988ff361f124314f9f4bb45b6997d90a7ee4cedf434c670f"))
+        ( 14112, uint256S("00000000000045d95e0588c47c17d593c7b5cb4fb1e56213d1b3843c1773df2b"))
+        ( 16128, uint256S("000000000001d9964f9483f9096cf9d6c6c2886ed1e5dec95ad2aeec3ce72fa9"))
+        ( 18940, uint256S("00000000000087f7fc0c8085217503ba86f796fa4984f7e5a08b6c4c12906c05"))
+        ( 30240, uint256S("e1c8c862ff342358384d4c22fa6ea5f669f3e1cdcf34111f8017371c3c0be1da"))
+        ( 57000, uint256S("aa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203"))
+        (112896, uint256S("73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf"))
+        (182000, uint256S("d47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9"))
+        (193000, uint256S("3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58"))
         ;
-/* FIXME: update checkpoint data.  */
 static const Checkpoints::CCheckpointData data = {
         &mapCheckpoints,
-        1397080064, // * UNIX timestamp of last checkpoint block
-        36544669,   // * total number of transactions between genesis and last checkpoint
+        1409050213, // * UNIX timestamp of last checkpoint block
+        1441814,    // * total number of transactions between genesis and last checkpoint
                     //   (the tx=... number in the SetBestChain debug.log lines)
-        60000.0     // * estimated number of transactions per day after checkpoint
+        1635.0      // * estimated number of transactions per day after checkpoint
     };
 
 /* FIXME: Update.  */
