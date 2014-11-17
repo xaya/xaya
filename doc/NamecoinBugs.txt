@@ -1,0 +1,92 @@
+Historic Namecoin Bugs
+======================
+
+The Namecoin blockchain contains some transactions that must be considered
+"buggy".  Nevertheless, it is, of course, important to work around these
+in order to support validating the full blockchain.  This file tries to
+document the historic transactions that need workarounds.
+
+Non-Namecoin Transaction Version
+--------------------------------
+
+The original client correctly prevents name outputs from being spent by
+transactions not flagged as "Namecoin transaction" (version 0x7100).  In
+other words, such transactions must not have name *inputs*.  However,
+it does not check the *outputs*.  Consequently, the blockchain contains
+some transactions with version 1 that, nevertheless, contain name outputs.
+Most of them are NAME_NEW outputs, but some are also name updates.  Note
+that NAME_NEW's work fine in such transactions, while name updates are
+ignored (i. e., the name database not updated).  This is because the
+routine that processes name operations returns early when the version
+is not set to 0x7100.
+
+NAME_NEW's are contained in quite a number of transactions.  Transactions
+(and the block heights they are in) containing name updates are the following:
+
+98,423 / bff3ed6873e5698b97bf0c28c29302b59588590b747787c7d1ef32decdabe0d1:
+  NAME_FIRSTUPDATE of "test/bitcoin-ruby-3"
+
+98,424 / e9b211007e5cac471769212ca0f47bb066b81966a8e541d44acf0f8a1bd24976:
+  NAME_UPDATE of "test-bitcoin-ruby-4"
+  the tx input is not a name coin at all
+
+98,425 / 8aa2b0fc7d1033de28e0192526765a72e9df0c635f7305bdc57cb451ed01a4ca:
+  NAME_FIRSTUPDATE of "test/bitcoin-ruby-5"
+
+Argument Concatenation
+----------------------
+
+The code that parses name scripts (DecodeNameScript in the old client) did
+not correctly clear the "intent out" argument containing the list of
+decoded arguments.  As a consequence, if a transaction has more than one
+name input, the arguments would get concatenated.  The only transaction
+that actually exercises this behaviour is:
+
+99,381 / 774d4c446cecfc40b1c02fdc5a13be6d2007233f9d91daefab6b3c2e70042f05
+
+It contains both a NAME_NEW and a NAME_FIRSTUPDATE as inputs.  It updates
+"test/foo3" to "more testing" in its output.  Usually, transactions with
+more than one name input (or output) are considered invalid.  In this
+case, however, decoding the second name input updates all the variables
+(so that later processing performs the NAME_UPDATE), but it is not counted
+since the final argument number check fails.  Hence, this transaction
+is accepted.  The original client does not perform the NAME_UPDATE since
+the check introduced due to the "name stealing" bug fails with the buggy
+(concatenated) arguments.  Before the "name stealing" bug was fixed, the
+update was performed, though.  I think it makes sense to do the name update.
+
+This issue was finally fixed in the hardfork at 150,000.  After this point,
+no argument concatenation is done any more.
+
+libcoin's "Name Stealing"
+-------------------------
+
+Michael Gronager (aka "libcoin") discovered a critical flaw in Namecoin's
+validation of name updates in late 2013.  The code accepted *any* name update,
+and did not validate that the input and output names were actually the same.
+In other words, one could register an arbitrary throw-away name and then
+use it to update ("steal") another name.
+
+This was only exploited in a proof-of-concept by Michael himself, with
+these transactions:
+
+139,872 / 2f034f2499c136a2c5a922ca4be65c1292815c753bbb100a2a26d5ad532c3919:
+  update of "d/bitcoin" (the first ever name registered) to the value of
+  "Namecoin died October the 15th 2013, coinslayer"
+
+139,936 / c3e76d5384139228221cce60250397d1b87adf7366086bc8d6b5e6eee03c55c7:
+  update of "d/wav" (after being challenged by phelix)
+
+The name coin used for both of them was the one of "d/postmortem" as
+registered at 139,868.  After the first of these transactions and until
+"d/postmortem" actually expired, the names as seen in the UTXO set
+and the name database were inconsistent.  The name database still contained
+"d/postmortem", while the UTXO set only contained (briefly) *two* coins
+for "d/bitcoin" and later two for "d/wav".  The rebased client immediately
+spends the duplicate "d/wav" coin, though.  This is fine since the
+name coin expired afterwards and can also not be spent by the old
+client anymore.
+
+This issue was fixed in the hardfork at 150,000.  Before, such transactions
+were accepted but the name updates not actually performed.  After this point,
+strict checks are performed that the name of the input and output matches.

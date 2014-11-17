@@ -188,6 +188,9 @@ public:
         fSkipProofOfWorkCheck = false;
         fTestnetToBeDeprecatedFieldRPC = false;
 
+        /* See also doc/NamecoinBugs.txt for more explanation on the
+           historical bugs added below.  */
+
         /* These transactions have name outputs but a non-Namecoin tx version.
            They contain NAME_NEWs, which are fine, and also NAME_FIRSTUPDATE.
            The latter are not interpreted by namecoind, thus also ignore
@@ -199,9 +202,10 @@ public:
         addBug(98425, "8aa2b0fc7d1033de28e0192526765a72e9df0c635f7305bdc57cb451ed01a4ca", BUG_FULLY_IGNORE);
 
         /* This transaction has both a NAME_NEW and a NAME_FIRSTUPDATE as
-           inputs.  It is fine to accept it as valid and just process the
-           NAME_FIRSTUPDATE.  (NAME_NEW has no special side-effect in applying
-           anyway.)  */
+           inputs.  This was accepted due to the "argument concatenation" bug.
+           It is fine to accept it as valid and just process the NAME_UPDATE
+           output that builds on the NAME_FIRSTUPDATE input.  (NAME_NEW has no
+           special side-effect in applying anyway.)  */
         addBug(99381, "774d4c446cecfc40b1c02fdc5a13be6d2007233f9d91daefab6b3c2e70042f05", BUG_FULLY_APPLY);
 
         /* These were libcoin's name stealing bugs.  */
