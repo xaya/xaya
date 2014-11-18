@@ -4,8 +4,6 @@
 
 * fix not-yet-updated configurations (FIXMEs in chainparams.cpp)
 
-* test CBlockVersion for being a standard-layout class
-
 * merge-mining RPC calls
 
 * soft fork in namecoind:
