@@ -12,15 +12,13 @@
 #include "utilmoneystr.h"
 #include "version.h"
 
-#include "script/names.h"
-
 #include <boost/circular_buffer.hpp>
 
 using namespace std;
 
 CTxMemPoolEntry::CTxMemPoolEntry():
     nFee(0), nTxSize(0), nModSize(0), nTime(0), dPriority(0.0),
-    isNameReg(false), isNameUpd(false)
+    nameOp()
 {
     nHeight = MEMPOOL_HEIGHT;
 }
@@ -29,7 +27,7 @@ CTxMemPoolEntry::CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
                                  int64_t _nTime, double _dPriority,
                                  unsigned int _nHeight):
     tx(_tx), nFee(_nFee), nTime(_nTime), dPriority(_dPriority), nHeight(_nHeight),
-    isNameReg(false), isNameUpd(false)
+    nameOp()
 {
     nTxSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
@@ -39,21 +37,15 @@ CTxMemPoolEntry::CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
     {
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
         {
-            const CNameScript nameOp(txout.scriptPubKey);
-            if (nameOp.isNameOp() && nameOp.isAnyUpdate ())
-            {
-                assert(!isNameReg && !isNameUpd);
-                name = nameOp.getOpName();
+            const CNameScript curNameOp(txout.scriptPubKey);
+            if (!curNameOp.isNameOp())
+                continue;
 
-                if (nameOp.getNameOp() == OP_NAME_FIRSTUPDATE)
-                    isNameReg = true;
-                else
-                {
-                    assert (nameOp.getNameOp() == OP_NAME_UPDATE);
-                    isNameUpd = true;
-                }
-            }
+            assert(!nameOp.isNameOp());
+            nameOp = curNameOp;
         }
+
+        assert(nameOp.isNameOp());
     }
 }
 

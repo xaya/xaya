@@ -1,8 +1,8 @@
-* prevent name_new stealing in mempool
-
 * test multisig/P2SH with names
 
 * fix not-yet-updated configurations (FIXMEs in chainparams.cpp)
+
+* fix wallet privkey import/export and encryption compatibility
 
 * merge-mining RPC calls
 

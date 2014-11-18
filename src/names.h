@@ -545,6 +545,13 @@ private:
   /** Map pending name updates to transaction IDs.  */
   std::map<valtype, uint256> mapNameUpdates;
 
+  /**
+   * Map NAME_NEW hashes to the corresponding transaction IDs.  This is
+   * data that is kept only in memory but never cleared (until a restart).
+   * It is used to prevent "name_new stealing", at least in a "soft" way.
+   */
+  std::map<valtype, uint256> mapNameNews;
+
 public:
 
   /**
@@ -552,7 +559,7 @@ public:
    * @param p The parent pool.
    */
   explicit inline CNameMemPool (CTxMemPool& p)
-    : pool(p), mapNameRegs(), mapNameUpdates()
+    : pool(p), mapNameRegs(), mapNameUpdates(), mapNameNews()
   {}
 
   /**
@@ -587,6 +594,7 @@ public:
   {
     mapNameRegs.clear ();
     mapNameUpdates.clear ();
+    mapNameNews.clear ();
   }
 
   /**

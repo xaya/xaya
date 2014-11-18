@@ -13,6 +13,7 @@
 #include "primitives/transaction.h"
 #include "names.h"
 #include "sync.h"
+#include "script/names.h"
 
 class CAutoFile;
 
@@ -45,10 +46,8 @@ private:
     double dPriority; //! Priority when entering the mempool
     unsigned int nHeight; //! Chain height when entering the mempool
 
-    /* Cache whether this is a name registration and if so, what name.  */
-    bool isNameReg;
-    bool isNameUpd;
-    valtype name;
+    /* Cache name operation (if any) performed by this tx.  */
+    CNameScript nameOp;
 
 public:
     CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
@@ -64,20 +63,29 @@ public:
     unsigned int GetHeight() const { return nHeight; }
 
     inline bool
+    isNameNew() const
+    {
+        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_NEW;
+    }
+    inline bool
     isNameRegistration() const
     {
-        return isNameReg;
+        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_FIRSTUPDATE;
     }
     inline bool
     isNameUpdate() const
     {
-        return isNameUpd;
+        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_UPDATE;
+    }
+    inline const valtype&
+    getNameNewHash() const
+    {
+        return nameOp.getOpHash();
     }
     inline const valtype&
     getName() const
     {
-        assert(isNameReg || isNameUpd);
-        return name;
+        return nameOp.getOpName();
     }
 };
 

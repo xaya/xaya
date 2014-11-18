@@ -243,12 +243,24 @@ CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
 {
   AssertLockHeld (pool.cs);
 
+  if (entry.isNameNew ())
+    {
+      const valtype& newHash = entry.getNameNewHash ();
+      const std::map<valtype, uint256>::const_iterator mit
+        = mapNameNews.find (newHash);
+      if (mit != mapNameNews.end ())
+        assert (mit->second == hash);
+      else
+        mapNameNews.insert (std::make_pair (newHash, hash));
+    }
+
   if (entry.isNameRegistration ())
     {
       const valtype& name = entry.getName ();
       assert (mapNameRegs.count (name) == 0);
       mapNameRegs.insert (std::make_pair (name, hash));
     }
+
   if (entry.isNameUpdate ())
     {
       const valtype& name = entry.getName ();
@@ -363,6 +375,16 @@ CNameMemPool::check (const CCoinsView& coins) const
   BOOST_FOREACH (const PAIRTYPE(const uint256, CTxMemPoolEntry)& entry,
                  pool.mapTx)
     {
+      if (entry.second.isNameNew ())
+        {
+          const valtype& newHash = entry.second.getNameNewHash ();
+          const std::map<valtype, uint256>::const_iterator mit
+            = mapNameNews.find (newHash);
+
+          assert (mit != mapNameNews.end ());
+          assert (mit->second == entry.first);
+        }
+
       if (entry.second.isNameRegistration ())
         {
           const valtype& name = entry.second.getName ();
@@ -419,14 +441,39 @@ CNameMemPool::checkTx (const CTransaction& tx) const
   BOOST_FOREACH (const CTxOut& txout, tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
-      if (nameOp.isNameOp () && nameOp.isAnyUpdate ())
+      if (!nameOp.isNameOp ())
+        continue;
+
+      switch (nameOp.getNameOp ())
         {
-          const valtype& name = nameOp.getOpName ();
-          if (nameOp.getNameOp () == OP_NAME_FIRSTUPDATE
-              && registersName (name))
-            return false;
-          if (nameOp.getNameOp () == OP_NAME_UPDATE && updatesName (name))
-            return false;
+        case OP_NAME_NEW:
+          {
+            const valtype& newHash = nameOp.getOpHash ();
+            std::map<valtype, uint256>::const_iterator mi;
+            mi = mapNameNews.find (newHash);
+            if (mi != mapNameNews.end () && mi->second != tx.GetHash ())
+              return false;
+            break;
+          }
+
+        case OP_NAME_FIRSTUPDATE:
+          {
+            const valtype& name = nameOp.getOpName ();
+            if (registersName (name))
+              return false;
+            break;
+          }
+
+        case OP_NAME_UPDATE:
+          {
+            const valtype& name = nameOp.getOpName ();
+            if (updatesName (name))
+              return false;
+            break;
+          }
+
+        default:
+          assert (false);
         }
     }
 

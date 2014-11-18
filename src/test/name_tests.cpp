@@ -590,6 +590,18 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   const valtype rand1(20, 'a');
   const valtype rand2(20, 'b');
 
+  const uint160 hash1 = Hash160 (rand1);
+  const uint160 hash2 = Hash160 (rand2);
+  const valtype vchHash1(hash1.begin (), hash1.end ());
+  const valtype vchHash2(hash2.begin (), hash2.end ());
+  const CScript addr2 = (CScript (addr) << OP_RETURN);
+
+  const CScript new1
+    = CNameScript::buildNameNew (addr, hash1);
+  const CScript new1p
+    = CNameScript::buildNameNew (addr2, hash1);
+  const CScript new2
+    = CNameScript::buildNameNew (addr, hash2);
   const CScript first1
     = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand1);
   const CScript first2
@@ -599,6 +611,16 @@ BOOST_AUTO_TEST_CASE (name_mempool)
 
   /* The constructed tx needs not be valid.  We only test
      the mempool acceptance and not validation.  */
+
+  CMutableTransaction txNew1;
+  txNew1.SetNamecoin ();
+  txNew1.vout.push_back (CTxOut (COIN, new1));
+  CMutableTransaction txNew1p;
+  txNew1p.SetNamecoin ();
+  txNew1p.vout.push_back (CTxOut (COIN, new1p));
+  CMutableTransaction txNew2;
+  txNew2.SetNamecoin ();
+  txNew2.vout.push_back (CTxOut (COIN, new2));
 
   CMutableTransaction txReg1;
   txReg1.SetNamecoin ();
@@ -614,11 +636,39 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   txUpd2.SetNamecoin ();
   txUpd2.vout.push_back (CTxOut (COIN, upd2));
 
+  /* Build an invalid transaction.  It should not crash (assert fail)
+     the mempool check.  */
+
+  CMutableTransaction txInvalid;
+  txInvalid.SetNamecoin ();
+  mempool.checkNameOps (txInvalid);
+
+  txInvalid.vout.push_back (CTxOut (COIN, new1));
+  txInvalid.vout.push_back (CTxOut (COIN, new2));
+  txInvalid.vout.push_back (CTxOut (COIN, first1));
+  txInvalid.vout.push_back (CTxOut (COIN, first2));
+  txInvalid.vout.push_back (CTxOut (COIN, upd1));
+  txInvalid.vout.push_back (CTxOut (COIN, upd2));
+  mempool.checkNameOps (txInvalid);
+
   /* For an empty mempool, all tx should be fine.  */
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (!mempool.updatesName (nameUpd));
+  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew1p)
+                && mempool.checkNameOps (txNew2));
   BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
+
+  /* Add name_new's with "stealing" check.  */
+  const CTxMemPoolEntry entryNew1(txNew1, 0, 0, 0, 100);
+  const CTxMemPoolEntry entryNew2(txNew2, 0, 0, 0, 100);
+  BOOST_CHECK (entryNew1.isNameNew () && entryNew2.isNameNew ());
+  BOOST_CHECK (entryNew1.getNameNewHash () == vchHash1
+                && entryNew2.getNameNewHash () == vchHash2);
+  mempool.addUnchecked (entryNew1.GetTx ().GetHash (), entryNew1);
+  mempool.addUnchecked (entryNew2.GetTx ().GetHash (), entryNew2);
+  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
+  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
 
   /* Add a name registration.  */
   const CTxMemPoolEntry entryReg(txReg1, 0, 0, 0, 100);
@@ -662,6 +712,13 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
   BOOST_CHECK (mempool.checkNameOps (txReg1));
   BOOST_CHECK (removed.size () == 2);
+
+  removed.clear ();
+  mempool.remove (txNew1, removed, true);
+  mempool.remove (txNew2, removed, true);
+  BOOST_CHECK (removed.size () == 2);
+  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
+  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
 
   /* Check removing of conflicted name registrations.  */
 
