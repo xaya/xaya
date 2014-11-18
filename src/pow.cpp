@@ -23,8 +23,16 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     // Only change once per interval
     if ((pindexLast->nHeight+1) % Params().Interval() != 0)
     {
-        if (Params().AllowMinDifficultyBlocks())
+        if (Params().AllowMinDifficultyBlocks(*pblock))
         {
+            /* khal's port of this code from Bitcoin to the old namecoind
+               has a bug:  Comparison of block times is done by an unsigned
+               difference.  Consequently, the minimum difficulty is also
+               applied if the block's timestamp is earlier than the preceding
+               block's.  Reproduce this.  */
+            if (pblock->GetBlockTime() < pindexLast->GetBlockTime())
+                return nProofOfWorkLimit;
+
             // Special difficulty rule for testnet:
             // If the new block's timestamp is more than 2* 10 minutes
             // then allow mining of a min-difficulty block.

@@ -81,7 +81,7 @@ public:
     /** Default value for -checknamedb argument */
     virtual int DefaultCheckNameDB() const = 0;
     /** Allow mining of a min-difficulty block */
-    bool AllowMinDifficultyBlocks() const { return fAllowMinDifficultyBlocks; }
+    bool AllowMinDifficultyBlocks(const CBlockHeader& block) const;
     /** Skip proof-of-work check: allow mining of any difficulty block */
     bool SkipProofOfWorkCheck() const { return fSkipProofOfWorkCheck; }
     /** Make standard checks */
@@ -148,6 +148,7 @@ protected:
     bool fMiningRequiresPeers;
     bool fDefaultCheckMemPool;
     bool fAllowMinDifficultyBlocks;
+    unsigned nMinDifficultySince;
     bool fRequireStandard;
     bool fMineBlocksOnDemand;
     bool fSkipProofOfWorkCheck;
