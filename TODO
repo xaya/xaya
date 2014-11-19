@@ -1,16 +1,14 @@
-* test multisig/P2SH with names
-
 * fix not-yet-updated configurations (FIXMEs in chainparams.cpp)
 
-* fix wallet privkey import/export and encryption compatibility
-
-* merge-mining RPC calls
+* add "getauxblock" + regtests
 
 * soft fork in namecoind:
   - limit DB locks / unique tx
   - disallow greedy names
   - enforce nametx-version also for name *outputs*
   - update fee logic?
+
+* decide about exact P2SH behaviour, implement it, add regtests for names
 
 * upgrade to new version at fixed height:
   - blocks version=2 via majority rule soft fork (BIP34)
