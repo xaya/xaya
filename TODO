@@ -1,5 +1,3 @@
-* fix not-yet-updated configurations (FIXMEs in chainparams.cpp)
-
 * add "getauxblock" + regtests
 
 * soft fork in namecoind:
@@ -7,6 +5,8 @@
   - disallow greedy names
   - enforce nametx-version also for name *outputs*
   - update fee logic?
+
+* handle seed nodes / DNS seeds
 
 * decide about exact P2SH behaviour, implement it, add regtests for names
 

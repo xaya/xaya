@@ -25,3 +25,11 @@ Important changes compared to namecoind 0.3:
   is created).  Use the extended name_show output to include the name output
   as tx input.  This enables createrawtransaction to work fully independently
   of the chain state.
+
+* The private key export format was changed.  The old client uses the same
+  format as Bitcoin private keys, while the new format is consistent with
+  usual rules (address version + 128).  Old private keys can still be imported
+  due to a compatibility rule.  The same is true for (encrypted) wallets:
+  The storage format for encrypted private keys in the wallet is now
+  harmonised with Bitcoin's format (the old client used a hack).  Wallets
+  can be ported from the old to the new client, but not the other way.
