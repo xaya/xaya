@@ -1,10 +1,10 @@
 *.tar.gz
 
 *.exe
-src/bitcoin
-src/bitcoind
-src/bitcoin-cli
-src/bitcoin-tx
+src/namecoin
+src/namecoind
+src/namecoin-cli
+src/namecoin-tx
 src/test/test_bitcoin
 src/qt/test/test_bitcoin-qt
 
