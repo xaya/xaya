@@ -669,8 +669,8 @@ name_new (const json_spirit::Array& params, bool fHelp)
         "1. \"name\"          (string, required) the name to register\n"
         "\nResult:\n"
         "[\n"
-        "  \"txid\": xxxxx,   (string) the txid, required for name_firstupdate\n"
-        "  \"rand\": xxxxx,   (string) random value for name_firstupdate\n"
+        "  xxxxx,   (string) the txid, required for name_firstupdate\n"
+        "  xxxxx    (string) random value for name_firstupdate\n"
         "]\n"
         "\nExamples:\n"
         + HelpExampleCli ("name_new", "\"myname\"")

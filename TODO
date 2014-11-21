@@ -1,5 +1,3 @@
-* add "getauxblock" + regtests
-
 * soft fork in namecoind:
   - limit DB locks / unique tx
   - disallow greedy names
