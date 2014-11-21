@@ -5,23 +5,9 @@
 
 #include "primitives/block.h"
 
-#include "auxpow.h"
-#include "chainparams.h"
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
-
-void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
-{
-    assert(nBaseVersion >= 1 && nBaseVersion < VERSION_AUXPOW);
-    assert(!IsAuxpow());
-    nVersion = nBaseVersion | (Params ().AuxpowChainId () * VERSION_CHAIN_START);
-}
-
-uint256 CBlockHeader::GetHash() const
-{
-    return Hash(BEGIN(nVersion), END(nNonce));
-}
 
 void CBlockHeader::SetAuxpow (CAuxPow* apow)
 {

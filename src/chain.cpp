@@ -5,7 +5,6 @@
 
 #include "chain.h"
 
-#include "auxpow.h"
 #include "main.h"
 
 using namespace std;

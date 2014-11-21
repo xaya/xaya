@@ -10,11 +10,12 @@
 #include "serialize.h"
 #include "uint256.h"
 
-#include "primitives/block.h"
+#include "primitives/pureheader.h"
 #include "primitives/transaction.h"
 
 #include <vector>
 
+class CBlock;
 class CBlockIndex;
 
 /** Header for merge-mining data in the coinbase.  */
@@ -102,7 +103,7 @@ public:
   int nChainIndex;
 
   /** Parent block header (on which the real PoW is done).  */
-  CBlockHeader parentBlock;
+  CPureBlockHeader parentBlock;
 
 public:
 
@@ -161,26 +162,5 @@ public:
   static int getExpectedIndex (int nNonce, int nChainId, unsigned h);
 
 };
-
-/* Implement serialisation of auxpow in the block header.  Since this
-   depends on CAuxPow being available, it can not be defined there.  */
-template<typename Stream, typename Operation>
-  void
-  ReadWriteAuxPow (Stream& s, Operation ser_action,
-                   boost::shared_ptr<CAuxPow>& auxpow,
-                   int nType, const CBlockVersion& nBlockVersion)
-{
-  const int nVersion = nBlockVersion.GetBaseVersion ();
-
-  if (nBlockVersion.IsAuxpow ())
-    {
-      if (ser_action.ForRead ())
-        auxpow.reset (new CAuxPow());
-      assert (auxpow);
-      READWRITE (*auxpow);
-    }
-  else if (ser_action.ForRead ())
-    auxpow.reset ();
-}
 
 #endif // BITCOIN_AUXPOW_H

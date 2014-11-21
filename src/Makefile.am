@@ -109,6 +109,7 @@ BITCOIN_CORE_H = \
   noui.h \
   pow.h \
   primitives/block.h \
+  primitives/pureheader.h \
   primitives/transaction.h \
   protocol.h \
   pubkey.h \
@@ -240,6 +241,7 @@ libbitcoin_common_a_SOURCES = \
   coins.cpp \
   compressor.cpp \
   primitives/block.cpp \
+  primitives/pureheader.cpp \
   primitives/transaction.cpp \
   core_read.cpp \
   core_write.cpp \
