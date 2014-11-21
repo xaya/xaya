@@ -4,6 +4,7 @@
   - limit DB locks / unique tx
   - disallow greedy names
   - enforce nametx-version also for name *outputs*
+  - disallow auxpow parent blocks with auxpow
   - update fee logic?
 
 * handle seed nodes / DNS seeds
