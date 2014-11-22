@@ -151,6 +151,18 @@ public:
   }
 
   /**
+   * Return parent block.  This is only used for the temporary parentblock
+   * auxpow version check.
+   * @return The parent block.
+   */
+  /* FIXME: Remove after the hardfork.  */
+  inline const CPureBlockHeader&
+  getParentBlock () const
+  {
+    return parentBlock;
+  }
+
+  /**
    * Calculate the expected index in the merkle tree.  This is also used
    * for the test-suite.
    * @param nNonce The coinbase's nonce value.
