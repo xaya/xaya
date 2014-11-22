@@ -104,6 +104,16 @@ class GetAuxBlockTest (BitcoinTestFramework):
     assert t['amount'] >= Decimal ("25")
     assert_equal (t['confirmations'], 1)
 
+    # Verify the coinbase script.  Ensure that it includes the block height
+    # to make the coinbase tx unique.  The expected block height is around
+    # 200, so that the serialisation of the CScriptNum ends in an extra 00.
+    # The vector has length 2, which makes up for 02XX00 as the serialised
+    # height.  Check this.
+    blk = self.nodes[1].getblock (auxblock['hash'])
+    tx = self.nodes[1].getrawtransaction (blk['tx'][0], 1)
+    coinbase = tx['vin'][0]['coinbase']
+    assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
+
   def computeAuxpow (self, block, target, ok):
     """
     Build an auxpow object (serialised as hex string) that solves

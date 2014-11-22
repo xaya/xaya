@@ -787,6 +787,7 @@ Value getauxblock(const Array& params, bool fHelp)
         static const CBlockIndex* pindexPrev = NULL;
         static uint64_t nStart;
         static CBlockTemplate* pblocktemplate;
+        static unsigned nExtraNonce = 0;
 
         // Update block
         if (pindexPrev != chainActive.Tip()
@@ -812,6 +813,7 @@ Value getauxblock(const Array& params, bool fHelp)
 
             // Finalise it by setting the version and building the merkle root
             CBlock* pblock = &pblocktemplate->block;
+            IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
             pblock->nVersion.SetAuxpow(true);
             pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
