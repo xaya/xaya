@@ -33,3 +33,8 @@ Important changes compared to namecoind 0.3:
   The storage format for encrypted private keys in the wallet is now
   harmonised with Bitcoin's format (the old client used a hack).  Wallets
   can be ported from the old to the new client, but not the other way.
+
+* "getwork" and "getworkaux" are removed (in accordance with the modern
+  Bitcoin code).  "getauxblock" has more return fields and the "target"
+  variable (which was in reversed byte order, not matching the "target"
+  returned by "getblocktemplate") is deprecated and renamed to "_target".
