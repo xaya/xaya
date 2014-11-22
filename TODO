@@ -1,7 +1,8 @@
 * soft fork in namecoind:
+  + prevent "name_new stealing" in memory pool
+  + enforce nametx-version also for name *outputs*
   - limit DB locks / unique tx
   - disallow greedy names
-  - enforce nametx-version also for name *outputs*
   - disallow auxpow parent blocks with auxpow
   - update fee logic?
 
