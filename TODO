@@ -2,7 +2,7 @@
   + prevent "name_new stealing" in memory pool
   + enforce nametx-version also for name *outputs*
   + disallow auxpow parent blocks with auxpow
-  - limit DB locks / unique tx
+  + limit DB locks / unique tx
   - disallow greedy names
   - update fee logic?
 

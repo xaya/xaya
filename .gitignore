@@ -1,7 +1,9 @@
 *.tar.gz
 
 *.exe
-src/namecoin
+src/bitcoind
+src/bitcoin-cli
+src/bitcoin-tx
 src/namecoind
 src/namecoin-cli
 src/namecoin-tx
