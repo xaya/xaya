@@ -3,8 +3,8 @@
   + enforce nametx-version also for name *outputs*
   + disallow auxpow parent blocks with auxpow
   + limit DB locks / unique tx
+  + harmonise fees
   - disallow greedy names
-  - update fee logic?
 
 * handle seed nodes / DNS seeds
 
