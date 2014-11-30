@@ -6,6 +6,9 @@ echo "\nName expiration..."
 echo "\nName list..."
 ./name_list.py
 
+echo "\nName multisig..."
+./name_multisig.py
+
 echo "\nName rawtx operations..."
 ./name_rawtx.py
 

@@ -1,11 +1,11 @@
+* decide about P2SH address version, merge branch
+
 * after softfork height:
   - fully disallow wrong-version tx (make "historic bugs")
   - get rid of "LenientVersionCheck" entirely
   - make also greedy names "historic bugs"?
 
 * handle seed nodes / DNS seeds
-
-* decide about exact P2SH behaviour, implement it, add regtests for names
 
 * upgrade to new version at fixed height:
   - blocks version=2 via majority rule soft fork (BIP34)
