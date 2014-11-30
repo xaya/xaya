@@ -57,19 +57,19 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
         mTemplates.insert(make_pair(TX_NULL_DATA, CScript() << OP_RETURN));
     }
 
+    // If we have a name script, strip the prefix
+    const CNameScript nameOp(scriptPubKey);
+    const CScript& script1 = nameOp.getAddress();
+
     // Shortcut for pay-to-script-hash, which are more constrained than the other types:
     // it is always OP_HASH160 20 [20 byte hash] OP_EQUAL
-    if (scriptPubKey.IsPayToScriptHash())
+    if (script1.IsPayToScriptHash(false))
     {
         typeRet = TX_SCRIPTHASH;
-        vector<unsigned char> hashBytes(scriptPubKey.begin()+2, scriptPubKey.begin()+22);
+        vector<unsigned char> hashBytes(script1.begin()+2, script1.begin()+22);
         vSolutionsRet.push_back(hashBytes);
         return true;
     }
-
-    // If we have a name script, strip the prefix
-    const CNameScript nameOp(scriptPubKey);
-    const CScript& script1 = nameOp.getAddress ();
 
     // Scan templates
     BOOST_FOREACH(const PAIRTYPE(txnouttype, CScript)& tplate, mTemplates)

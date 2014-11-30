@@ -805,7 +805,7 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const CCoinsViewCache& in
     for (unsigned int i = 0; i < tx.vin.size(); i++)
     {
         const CTxOut &prevout = inputs.GetOutputFor(tx.vin[i]);
-        if (prevout.scriptPubKey.IsPayToScriptHash())
+        if (prevout.scriptPubKey.IsPayToScriptHash(true))
             nSigOps += prevout.scriptPubKey.GetSigOpCount(tx.vin[i].scriptSig);
     }
     return nSigOps;

@@ -8,6 +8,7 @@
 #include "script/script.h"
 #include "script/script_error.h"
 #include "script/sign.h"
+#include "script/names.h"
 
 #ifdef ENABLE_WALLET
 #include "wallet_ismine.h"
@@ -213,29 +214,35 @@ BOOST_AUTO_TEST_CASE(is)
     uint160 dummy;
     CScript p2sh;
     p2sh << OP_HASH160 << ToByteVector(dummy) << OP_EQUAL;
-    BOOST_CHECK(p2sh.IsPayToScriptHash());
+    BOOST_CHECK(p2sh.IsPayToScriptHash(true));
+    BOOST_CHECK(p2sh.IsPayToScriptHash(false));
+
+    // Test stripping of name prefixes.
+    const CScript withName = CNameScript::buildNameNew(p2sh, dummy);
+    BOOST_CHECK(withName.IsPayToScriptHash(true));
+    BOOST_CHECK(!withName.IsPayToScriptHash(false));
 
     // Not considered pay-to-script-hash if using one of the OP_PUSHDATA opcodes:
     static const unsigned char direct[] =    { OP_HASH160, 20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, OP_EQUAL };
-    BOOST_CHECK(CScript(direct, direct+sizeof(direct)).IsPayToScriptHash());
+    BOOST_CHECK(CScript(direct, direct+sizeof(direct)).IsPayToScriptHash(true));
     static const unsigned char pushdata1[] = { OP_HASH160, OP_PUSHDATA1, 20, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, OP_EQUAL };
-    BOOST_CHECK(!CScript(pushdata1, pushdata1+sizeof(pushdata1)).IsPayToScriptHash());
+    BOOST_CHECK(!CScript(pushdata1, pushdata1+sizeof(pushdata1)).IsPayToScriptHash(true));
     static const unsigned char pushdata2[] = { OP_HASH160, OP_PUSHDATA2, 20,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, OP_EQUAL };
-    BOOST_CHECK(!CScript(pushdata2, pushdata2+sizeof(pushdata2)).IsPayToScriptHash());
+    BOOST_CHECK(!CScript(pushdata2, pushdata2+sizeof(pushdata2)).IsPayToScriptHash(true));
     static const unsigned char pushdata4[] = { OP_HASH160, OP_PUSHDATA4, 20,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, OP_EQUAL };
-    BOOST_CHECK(!CScript(pushdata4, pushdata4+sizeof(pushdata4)).IsPayToScriptHash());
+    BOOST_CHECK(!CScript(pushdata4, pushdata4+sizeof(pushdata4)).IsPayToScriptHash(true));
 
     CScript not_p2sh;
-    BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
+    BOOST_CHECK(!not_p2sh.IsPayToScriptHash(true));
 
     not_p2sh.clear(); not_p2sh << OP_HASH160 << ToByteVector(dummy) << ToByteVector(dummy) << OP_EQUAL;
-    BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
+    BOOST_CHECK(!not_p2sh.IsPayToScriptHash(true));
 
     not_p2sh.clear(); not_p2sh << OP_NOP << ToByteVector(dummy) << OP_EQUAL;
-    BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
+    BOOST_CHECK(!not_p2sh.IsPayToScriptHash(true));
 
     not_p2sh.clear(); not_p2sh << OP_HASH160 << ToByteVector(dummy) << OP_CHECKSIG;
-    BOOST_CHECK(!not_p2sh.IsPayToScriptHash());
+    BOOST_CHECK(!not_p2sh.IsPayToScriptHash(true));
 }
 
 BOOST_AUTO_TEST_CASE(switchover)

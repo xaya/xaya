@@ -1113,7 +1113,7 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, unsigne
         return set_error(serror, SCRIPT_ERR_EVAL_FALSE);
 
     // Additional validation for spend-to-script-hash transactions:
-    if ((flags & SCRIPT_VERIFY_P2SH) && scriptPubKey.IsPayToScriptHash())
+    if ((flags & SCRIPT_VERIFY_P2SH) && scriptPubKey.IsPayToScriptHash(true))
     {
         // scriptSig must be literals-only or validation fails
         if (!scriptSig.IsPushOnly())

@@ -582,7 +582,12 @@ public:
      */
     unsigned int GetSigOpCount(const CScript& scriptSig) const;
 
-    bool IsPayToScriptHash() const;
+    /**
+     * Check if the script is P2SH.  Optionally, strip a possible
+     * name prefix before performing the strict check from Bitcoin.
+     * @param allowName Strip name scripts before checking?
+     */
+    bool IsPayToScriptHash(bool allowNames) const;
 
     /** Called by IsStandardTx and P2SH/BIP62 VerifyScript (which makes it consensus-critical). */
     bool IsPushOnly() const;
