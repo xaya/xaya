@@ -8,6 +8,7 @@
 
 #include "amount.h"
 #include "rpcprotocol.h"
+#include "script/script.h"
 #include "uint256.h"
 
 #include <list>
@@ -31,6 +32,7 @@ namespace RPCServer
 
 class CBlockIndex;
 class CMutableTransaction;
+class CNameData;
 class CNetAddr;
 
 class AcceptedConnection
@@ -246,6 +248,7 @@ extern bool HTTPReq_REST(AcceptedConnection *conn,
 /* In rpcnames.cpp.  */
 
 extern void AddRawTxNameOperation(CMutableTransaction& tx, const json_spirit::Object& obj);
+extern json_spirit::Object getNameInfo(const valtype& name, const CNameData& data);
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_history(const json_spirit::Array& params, bool fHelp);

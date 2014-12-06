@@ -9,8 +9,11 @@
 
 from test_framework import BitcoinTestFramework
 from util import *
-import json
 import auxpow
+
+import binascii
+import json
+import urllib
 
 try:
     import http.client as httplib
@@ -111,6 +114,57 @@ class RESTTest (BitcoinTestFramework):
         json_obj = json.loads(json_string)
         for tx in txs:
             assert_equal(tx in json_obj['tx'], True)
+
+        # Test name handling.
+        self.name_tests(url)
+
+    def name_tests(self, url):
+        """
+        Run REST tests specific to names.
+        """
+
+        # Start by registering a test name.
+        name = "d/some weird.name++"
+        binData = binascii.unhexlify("0001")
+        value = "correct value\nwith newlines\nand binary: " + binData
+        newData = self.nodes[0].name_new(name)
+        self.nodes[0].setgenerate(True, 10)
+        self.nodes[0].name_firstupdate(name, newData[1], newData[0], value)
+        self.nodes[0].setgenerate(True, 5)
+        nameData = self.nodes[0].name_show(name)
+        assert_equal(nameData['name'], name)
+        assert_equal(nameData['value'], value)
+
+        # Different variants of the encoded name that should all work.
+        variants = [urllib.quote_plus(name), "d/some+weird.name%2b%2B"]
+
+        for encName in variants:
+
+            # Query JSON data of the name.
+            query = '/rest/name/' + encName + self.FORMAT_SEPARATOR + 'json'
+            res = http_get_call(url.hostname, url.port, query, True)
+            assert_equal(res.status, 200)
+            data = json.loads(res.read())
+            assert_equal(data, nameData)
+
+            # Query plain value.
+            query = '/rest/name/' + encName + self.FORMAT_SEPARATOR + 'bin'
+            res = http_get_call(url.hostname, url.port, query, True)
+            assert_equal(res.status, 200)
+            assert_equal(res.read(), value)
+
+            # Query hex value.
+            query = '/rest/name/' + encName + self.FORMAT_SEPARATOR + 'hex'
+            res = http_get_call(url.hostname, url.port, query, True)
+            assert_equal(res.status, 200)
+            assert_equal(res.read(), binascii.hexlify(value) + "\n")
+
+        # Check invalid encoded names.
+        invalid = ['%', '%2', '%2x', '%x2']
+        for encName in invalid:
+            query = '/rest/name/' + encName + self.FORMAT_SEPARATOR + 'bin'
+            res = http_get_call(url.hostname, url.port, query, True)
+            assert_equal(res.status, httplib.BAD_REQUEST)
 
 if __name__ == '__main__':
     RESTTest ().main ()

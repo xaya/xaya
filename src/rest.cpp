@@ -6,6 +6,7 @@
 #include "primitives/block.h"
 #include "primitives/transaction.h"
 #include "main.h"
+#include "names.h"
 #include "rpcserver.h"
 #include "streams.h"
 #include "sync.h"
@@ -52,15 +53,21 @@ static RestErr RESTERR(enum HTTPStatusCode status, string message)
     return re;
 }
 
-static enum RetFormat ParseDataFormat(vector<string>& params, const string strReq)
+static enum RetFormat ParseDataFormat(std::string& param, const std::string& strReq)
 {
-    boost::split(params, strReq, boost::is_any_of("."));
-    if (params.size() > 1) {
-        for (unsigned int i = 0; i < ARRAYLEN(rf_names); i++)
-            if (params[1] == rf_names[i].name)
-                return rf_names[i].rf;
+    const std::string::size_type pos = strReq.rfind('.');
+    if (pos == std::string::npos)
+    {
+        param = strReq;
+        return rf_names[0].rf;
     }
 
+    param = strReq.substr(0, pos);
+    const std::string suff(strReq, pos + 1);
+
+    for (unsigned int i = 0; i < ARRAYLEN(rf_names); i++)
+        if (suff == rf_names[i].name)
+            return rf_names[i].rf;
     return rf_names[0].rf;
 }
 
@@ -89,15 +96,63 @@ static bool ParseHashStr(const string& strReq, uint256& v)
     return true;
 }
 
+static bool DecodeName(valtype& decoded, const std::string& encoded)
+{
+    decoded.clear();
+    for (std::string::const_iterator i = encoded.begin(); i != encoded.end(); ++i)
+    {
+        switch (*i)
+        {
+        case '+':
+            decoded.push_back(' ');
+            continue;
+
+        case '%':
+        {
+            if (i + 2 >= encoded.end())
+                return false;
+            const std::string hexStr(i + 1, i + 3);
+            i += 2;
+
+            int intChar = 0;
+            BOOST_FOREACH(char c, hexStr)
+            {
+                intChar <<= 4;
+
+                if (c >= '0' && c <= '9')
+                    intChar += c - '0';
+                else
+                {
+                    c |= (1 << 5);
+                    if (c >= 'a' && c <= 'f')
+                        intChar += c - 'a' + 10;
+                    else
+                        return false;
+                }
+            }
+
+            decoded.push_back(static_cast<char>(intChar));
+            continue;
+        }
+
+        default:
+            decoded.push_back(*i);
+            continue;
+        }
+    }
+
+    return true;
+}
+
 static bool rest_headers(AcceptedConnection* conn,
                          const std::string& strReq,
                          const std::map<std::string, std::string>& mapHeaders,
                          bool fRun)
 {
-    vector<string> params;
-    enum RetFormat rf = ParseDataFormat(params, strReq);
+    std::string param;
+    enum RetFormat rf = ParseDataFormat(param, strReq);
     vector<string> path;
-    boost::split(path, params[0], boost::is_any_of("/"));
+    boost::split(path, param, boost::is_any_of("/"));
 
     if (path.size() != 2)
         throw RESTERR(HTTP_BAD_REQUEST, "No header count specified. Use /rest/headers/<count>/<hash>.<ext>.");
@@ -158,10 +213,9 @@ static bool rest_block(AcceptedConnection* conn,
                        bool fRun,
                        bool showTxDetails)
 {
-    vector<string> params;
-    enum RetFormat rf = ParseDataFormat(params, strReq);
+    std::string hashStr;
+    enum RetFormat rf = ParseDataFormat(hashStr, strReq);
 
-    string hashStr = params[0];
     uint256 hash;
     if (!ParseHashStr(hashStr, hash))
         throw RESTERR(HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
@@ -231,10 +285,9 @@ static bool rest_tx(AcceptedConnection* conn,
                     const std::map<std::string, std::string>& mapHeaders,
                     bool fRun)
 {
-    vector<string> params;
-    enum RetFormat rf = ParseDataFormat(params, strReq);
+    std::string hashStr;
+    enum RetFormat rf = ParseDataFormat(hashStr, strReq);
 
-    string hashStr = params[0];
     uint256 hash;
     if (!ParseHashStr(hashStr, hash))
         throw RESTERR(HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
@@ -277,6 +330,58 @@ static bool rest_tx(AcceptedConnection* conn,
     return true; // continue to process further HTTP reqs on this cxn
 }
 
+static bool rest_name(AcceptedConnection* conn,
+                      const::string& strReq,
+                      const std::map<std::string, std::string>& mapHeaders,
+                      bool fRun)
+{
+    std::string encodedName;
+    const enum RetFormat rf = ParseDataFormat(encodedName, strReq);
+
+    valtype plainName;
+    if (!DecodeName(plainName, encodedName))
+        throw RESTERR(HTTP_BAD_REQUEST, "Invalid encoded name: " + encodedName);
+
+    CNameData data;
+    if (!pcoinsTip->GetName(plainName, data))
+        throw RESTERR(HTTP_NOT_FOUND, "'" + ValtypeToString(plainName) + "' not found");
+
+    switch (rf)
+    {
+    case RF_BINARY:
+    {
+        const std::string binVal = ValtypeToString(data.getValue());
+        conn->stream() << HTTPReplyHeader(HTTP_OK, fRun, binVal.size(),
+                                          "text/plain")
+                       << binVal << std::flush;
+        return true;
+    }
+
+    case RF_HEX:
+    {
+        const valtype& binVal = data.getValue();
+        const std::string hexVal = HexStr(binVal.begin(), binVal.end()) + "\n";
+        conn->stream() << HTTPReply(HTTP_OK, hexVal, fRun, false, "text/plain")
+                       << std::flush;
+        return true;
+    }
+
+    case RF_JSON:
+    {
+        const Object obj = getNameInfo(plainName, data);
+        const std::string strJSON = write_string(Value(obj), false) + "\n";
+        conn->stream() << HTTPReply(HTTP_OK, strJSON, fRun) << std::flush;
+        return true;
+    }
+
+    default:
+        throw RESTERR(HTTP_NOT_FOUND, "output format not found (available: " + AvailableDataFormatsString() + ")");
+    }
+
+    // not reached
+    return true; // continue to process further HTTP reqs on this cxn
+}
+
 static const struct {
     const char* prefix;
     bool (*handler)(AcceptedConnection* conn,
@@ -288,6 +393,7 @@ static const struct {
       {"/rest/block/notxdetails/", rest_block_notxdetails},
       {"/rest/block/", rest_block_extended},
       {"/rest/headers/", rest_headers},
+      {"/rest/name/", rest_name},
 };
 
 bool HTTPReq_REST(AcceptedConnection* conn,

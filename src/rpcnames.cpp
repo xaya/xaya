@@ -76,7 +76,7 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
  * @param data The name's data.
  * @return A JSON object to return.
  */
-static json_spirit::Object
+json_spirit::Object
 getNameInfo (const valtype& name, const CNameData& data)
 {
   return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
