@@ -11,7 +11,7 @@
 #include "rpcserver.h"
 #include "util.h"
 
-#include "core/transaction.h"
+#include "primitives/transaction.h"
 
 #include "script/names.h"
 

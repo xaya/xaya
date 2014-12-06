@@ -8,7 +8,7 @@
 #include "serialize.h"
 #include "uint256.h"
 
-#include "core/transaction.h"
+#include "primitives/transaction.h"
 
 #include "script/script.h"
 

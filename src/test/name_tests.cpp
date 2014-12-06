@@ -8,7 +8,7 @@
 #include "names.h"
 #include "txmempool.h"
 
-#include "core/transaction.h"
+#include "primitives/transaction.h"
 
 #include "script/names.h"
 

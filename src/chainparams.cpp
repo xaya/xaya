@@ -5,7 +5,7 @@
 
 #include "chainparams.h"
 
-#include "core/block.h"
+#include "primitives/block.h"
 #include "random.h"
 #include "util.h"
 #include "utilstrencodings.h"
