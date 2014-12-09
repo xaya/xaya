@@ -163,7 +163,7 @@ def _rpchost_to_args(rpchost):
         rv += ['-rpcport=' + rpcport]
     return rv
 
-def start_node(i, dirname, extra_args=None, rpchost=None):
+def start_node(i, dirname, extra_args=[], rpchost=None):
     """
     Start a namecoind and return RPC connection to it
     """
