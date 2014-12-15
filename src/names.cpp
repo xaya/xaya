@@ -485,10 +485,15 @@ CNameMemPool::checkTx (const CTransaction& tx) const
 bool
 CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                       const CCoinsView& view,
-                      CValidationState& state)
+                      CValidationState& state, unsigned flags)
 {
   const std::string strTxid = tx.GetHash ().GetHex ();
   const char* txid = strTxid.c_str ();
+
+  /* Set height to MEMPOOL_HEIGHT if the SCRIPT_VERIFY_NAMES_MEMPOOL flag
+     is set.  */
+  if (flags & SCRIPT_VERIFY_NAMES_MEMPOOL)
+    nHeight = MEMPOOL_HEIGHT;
 
   /* Ignore historic bugs.  */
   CChainParams::BugType type;
@@ -571,7 +576,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   /* For now, only reject "greedy" names in the mempool.  This will be
      changed with a softfork in the future.  */
-  if (nHeight == MEMPOOL_HEIGHT
+  if ((flags & SCRIPT_VERIFY_NAMES_MEMPOOL)
       && tx.vout[nameOut].nValue < NAME_LOCKED_AMOUNT)
     return state.Invalid (error ("%s: rejecting greedy name from mempool",
                                  __func__));
@@ -638,7 +643,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   /* Maturity of NAME_NEW is checked only if we're not adding
      to the mempool.  */
-  if (nHeight != MEMPOOL_HEIGHT)
+  if (!(flags & SCRIPT_VERIFY_NAMES_MEMPOOL))
     {
       assert (static_cast<unsigned> (coinsIn.nHeight) != MEMPOOL_HEIGHT);
       if (coinsIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)

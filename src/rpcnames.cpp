@@ -699,14 +699,7 @@ name_new (const json_spirit::Array& params, bool fHelp)
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
   CWalletTx wtx;
-  const std::string strError
-    = pwalletMain->SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, wtx);
-
-  if (strError != "")
-    {
-      keyName.ReturnKey ();
-      throw JSONRPCError (RPC_WALLET_ERROR, strError);
-    }
+  SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, wtx);
 
   keyName.KeepKey ();
 
@@ -816,16 +809,7 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
     = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
   CWalletTx wtx;
-  const std::string strError
-    = pwalletMain->SendMoneyToScript (nameScript, &txIn,
-                                      NAME_LOCKED_AMOUNT, wtx);
-
-  if (strError != "")
-    {
-      if (usedKey)
-        keyName.ReturnKey ();
-      throw JSONRPCError (RPC_WALLET_ERROR, strError);
-    }
+  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, wtx);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -909,16 +893,7 @@ name_update (const json_spirit::Array& params, bool fHelp)
     = CNameScript::buildNameUpdate (addrName, name, value);
 
   CWalletTx wtx;
-  const std::string strError
-    = pwalletMain->SendMoneyToScript (nameScript, &txIn,
-                                      NAME_LOCKED_AMOUNT, wtx);
-
-  if (strError != "")
-    {
-      if (usedKey)
-        keyName.ReturnKey ();
-      throw JSONRPCError (RPC_WALLET_ERROR, strError);
-    }
+  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, wtx);
 
   if (usedKey)
     keyName.KeepKey ();

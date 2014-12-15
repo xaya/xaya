@@ -664,11 +664,12 @@ public:
  * @param nHeight Height at which the tx will be.  May be MEMPOOL_HEIGHT.
  * @param view The current chain state.
  * @param state Resulting validation state.
+ * @param flags Verification flags.
  * @return True in case of success.
  */
 bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                            const CCoinsView& view,
-                           CValidationState& state);
+                           CValidationState& state, unsigned flags);
 
 /**
  * Apply the changes of a name transaction to the name database.

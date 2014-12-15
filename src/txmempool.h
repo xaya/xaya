@@ -126,6 +126,11 @@ private:
 
     /** Name-related mempool data.  */
     CNameMemPool names;
+    /**
+     * Whether tx verification is turned off when checking mempool consistency.
+     * This is done for Namecoin unit tests.
+     */
+    bool fCheckInputs;
 
 public:
     mutable CCriticalSection cs;
@@ -143,7 +148,7 @@ public:
      * check does nothing.
      */
     void check(const CCoinsViewCache *pcoins) const;
-    void setSanityCheck(bool _fSanityCheck) { fSanityCheck = _fSanityCheck; }
+    void setSanityCheck(bool _fSanityCheck, bool _fCheckInputs = true) { fSanityCheck = _fSanityCheck; fCheckInputs = _fCheckInputs; }
 
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry);
     void remove(const CTransaction &tx, std::list<CTransaction>& removed, bool fRecursive = false);
