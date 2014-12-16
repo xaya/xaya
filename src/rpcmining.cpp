@@ -764,11 +764,11 @@ Value getauxblock(const Array& params, bool fHelp)
             + HelpExampleRpc("getauxblock", "")
             );
 
-    if (vNodes.empty())
+    if (vNodes.empty() && !Params().MineBlocksOnDemand())
         throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED,
                            "Namecoin is not connected!");
 
-    if (IsInitialBlockDownload())
+    if (IsInitialBlockDownload() && !Params().MineBlocksOnDemand())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                            "Namecoin is downloading blocks...");
     
