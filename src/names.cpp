@@ -397,9 +397,12 @@ CNameMemPool::check (const CCoinsView& coins) const
           assert (nameRegs.count (name) == 0);
           nameRegs.insert (name);
 
+          /* The old name should be expired already.  Note that we use
+             nHeight+1 for the check, because that's the height at which
+             the mempool tx will actually be mined.  */
           CNameData data;
           if (coins.GetName (name, data))
-            assert (data.isExpired (nHeight));
+            assert (data.isExpired (nHeight + 1));
         }
 
       if (entry.second.isNameUpdate ())
@@ -414,10 +417,11 @@ CNameMemPool::check (const CCoinsView& coins) const
           assert (nameUpdates.count (name) == 0);
           nameUpdates.insert (name);
 
+          /* As above, use nHeight+1 for the expiration check.  */
           CNameData data;
           if (!coins.GetName (name, data))
             assert (false);
-          assert (!data.isExpired (nHeight));
+          assert (!data.isExpired (nHeight + 1));
         }
     }
 
@@ -489,11 +493,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 {
   const std::string strTxid = tx.GetHash ().GetHex ();
   const char* txid = strTxid.c_str ();
-
-  /* Set height to MEMPOOL_HEIGHT if the SCRIPT_VERIFY_NAMES_MEMPOOL flag
-     is set.  */
-  if (flags & SCRIPT_VERIFY_NAMES_MEMPOOL)
-    nHeight = MEMPOOL_HEIGHT;
+  const bool fMempool = (flags & SCRIPT_VERIFY_NAMES_MEMPOOL);
 
   /* Ignore historic bugs.  */
   CChainParams::BugType type;
@@ -576,8 +576,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   /* For now, only reject "greedy" names in the mempool.  This will be
      changed with a softfork in the future.  */
-  if ((flags & SCRIPT_VERIFY_NAMES_MEMPOOL)
-      && tx.vout[nameOut].nValue < NAME_LOCKED_AMOUNT)
+  if (fMempool && tx.vout[nameOut].nValue < NAME_LOCKED_AMOUNT)
     return state.Invalid (error ("%s: rejecting greedy name from mempool",
                                  __func__));
 
@@ -643,7 +642,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   /* Maturity of NAME_NEW is checked only if we're not adding
      to the mempool.  */
-  if (!(flags & SCRIPT_VERIFY_NAMES_MEMPOOL))
+  if (!fMempool)
     {
       assert (static_cast<unsigned> (coinsIn.nHeight) != MEMPOOL_HEIGHT);
       if (coinsIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)

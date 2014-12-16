@@ -1713,6 +1713,14 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
     if (blockUndo.vtxundo.size() + 1 != block.vtx.size())
         return error("DisconnectBlock(): block and undo data inconsistent");
 
+    /* Undo name expirations.  We use nHeight+1 here in sync with
+       the call to ExpireNames, because that's the height at which a
+       possible name_update could be (thus it counts for spendability
+       of the name).  This is done first to match the order
+       in which names are expired when connecting blocks.  */
+    if (!UnexpireNames (pindex->nHeight + 1, blockUndo, view, unexpiredNames))
+      fClean = false;
+
     // undo transactions in reverse order
     for (int i = block.vtx.size() - 1; i >= 0; i--) {
         const CTransaction &tx = block.vtx[i];
@@ -1763,10 +1771,6 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
     for (nameUndoIter = blockUndo.vnameundo.rbegin ();
          nameUndoIter != blockUndo.vnameundo.rend (); ++nameUndoIter)
       nameUndoIter->apply (view);
-
-    // undo name expirations
-    if (!UnexpireNames (pindex->nHeight, blockUndo, view, unexpiredNames))
-      fClean = false;
 
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
@@ -1871,11 +1875,6 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     CBlockUndo blockundo;
 
-    /* Remove expired names from the UTXO set.  They become permanently
-       unspendable.  */
-    if (!ExpireNames(pindex->nHeight, view, blockundo, expiredNames))
-        return error("%s : ExpireNames failed", __func__);
-
     CCheckQueueControl<CScriptCheck> control(fScriptChecks && nScriptCheckThreads ? &scriptcheckqueue : NULL);
 
     int64_t nTimeStart = GetTimeMicros();
@@ -1947,6 +1946,14 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     if (fJustCheck)
         return true;
+
+    /* Remove expired names from the UTXO set.  They become permanently
+       unspendable.  Note that we use nHeight+1 here because a possible
+       spending transaction would be at least at that height.  This has
+       to be done after checking the transactions themselves, because
+       spending a name would still be valid in the current block.  */
+    if (!ExpireNames(pindex->nHeight + 1, view, blockundo, expiredNames))
+        return error("%s : ExpireNames failed", __func__);
 
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull() || !pindex->IsValid(BLOCK_VALID_SCRIPTS))
