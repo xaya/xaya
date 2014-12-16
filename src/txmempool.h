@@ -11,7 +11,7 @@
 #include "amount.h"
 #include "coins.h"
 #include "primitives/transaction.h"
-#include "names.h"
+#include "names/main.h"
 #include "sync.h"
 #include "script/names.h"
 

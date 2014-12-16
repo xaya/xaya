@@ -6,7 +6,7 @@
 #include "chainparams.h"
 #include "init.h"
 #include "main.h"
-#include "names.h"
+#include "names/common.h"
 #include "random.h"
 #include "rpcserver.h"
 #include "util.h"

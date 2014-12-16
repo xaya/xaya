@@ -5,7 +5,7 @@
 #include "base58.h"
 #include "coins.h"
 #include "main.h"
-#include "names.h"
+#include "names/main.h"
 #include "txmempool.h"
 
 #include "primitives/transaction.h"

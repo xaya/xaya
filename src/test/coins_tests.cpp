@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "coins.h"
-#include "names.h"
 #include "random.h"
 #include "uint256.h"
 
@@ -11,6 +10,8 @@
 #include <map>
 
 #include <boost/test/unit_test.hpp>
+
+class CNameCache;
 
 namespace
 {

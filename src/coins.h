@@ -7,7 +7,7 @@
 #define BITCOIN_COINS_H
 
 #include "compressor.h"
-#include "names.h"
+#include "names/common.h"
 #include "serialize.h"
 #include "uint256.h"
 
