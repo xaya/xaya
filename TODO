@@ -1,10 +1,11 @@
 * soft fork in namecoind:
-  + prevent "name_new stealing" in memory pool
-  + enforce nametx-version also for name *outputs*
-  + disallow auxpow parent blocks with auxpow
-  + limit DB locks / unique tx
-  + harmonise fees
+  - nametx version softfork
   - disallow greedy names
+
+* after softfork height:
+  - fully disallow wrong-version tx (make "historic bugs")
+  - get rid of "LenientVersionCheck" entirely
+  - make also greedy names "historic bugs"?
 
 * handle seed nodes / DNS seeds
 

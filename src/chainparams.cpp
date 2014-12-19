@@ -263,10 +263,9 @@ public:
         return 36000;
     }
 
-    bool LenientVersionCheck(unsigned) const
+    bool LenientVersionCheck(unsigned nHeight) const
     {
-        /* FIXME: Update after soft fork.  */
-        return true;
+        return (nHeight < 212500);
     }
 
     int DefaultCheckNameDB () const
