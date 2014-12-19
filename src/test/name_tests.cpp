@@ -306,14 +306,11 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   /* Greedy names.  */
   mtx.vin.clear ();
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state,
-                                     SCRIPT_VERIFY_NAMES_MEMPOOL));
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state,
-                                      SCRIPT_VERIFY_NAMES_MEMPOOL));
+  mtx.vout[1].nValue = COIN / 100;
+  BOOST_CHECK (CheckNameTransaction (mtx, 212500, view, state, 0));
+  mtx.vout[1].nValue = COIN / 100 - 1;
+  BOOST_CHECK (CheckNameTransaction (mtx, 212499, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, view, state, 0));
 
   /* ***************************** */
   /* Test NAME_UPDATE validation.  */
@@ -334,15 +331,10 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 135999, view, state, 0));
   BOOST_CHECK (!CheckNameTransaction (mtx, 136000, view, state, 0));
 
-  /* Check for "greedy" names conditions.  */
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
-  BOOST_CHECK (CheckNameTransaction (mtx, 110000, view, state, 0));
-  BOOST_CHECK (CheckNameTransaction (mtx, 110000, view, state,
-                                     SCRIPT_VERIFY_NAMES_MEMPOOL));
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
-  BOOST_CHECK (CheckNameTransaction (mtx, 110000, view, state, 0));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, view, state,
-                                      SCRIPT_VERIFY_NAMES_MEMPOOL));
+  /* No check for greedy names, since the test names are expired
+     already at the greedy-name fork height.  Should not matter
+     too much, though, as the checks are there for NAME_NEW
+     and NAME_FIRSTUPDATE.  */
 
   /* Value length limits.  */
   mtx = CMutableTransaction (baseTx);
@@ -390,14 +382,11 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 136000, view, state, 0));
 
   /* "Greedy" names.  */
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT;
-  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state,
-                                     SCRIPT_VERIFY_NAMES_MEMPOOL));
-  mtx.vout[1].nValue = NAME_LOCKED_AMOUNT - 1;
-  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state,
-                                      SCRIPT_VERIFY_NAMES_MEMPOOL));
+  mtx.vout[1].nValue = COIN / 100;
+  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewClean, state, 0));
+  mtx.vout[1].nValue = COIN / 100 - 1;
+  BOOST_CHECK (CheckNameTransaction (mtx, 212499, viewClean, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewClean, state, 0));
 
   /* Rand mismatch (wrong name activated).  */
   mtx.vout.clear ();

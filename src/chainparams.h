@@ -6,6 +6,7 @@
 #ifndef BITCOIN_CHAINPARAMS_H
 #define BITCOIN_CHAINPARAMS_H
 
+#include "amount.h"
 #include "chainparamsbase.h"
 #include "checkpoints.h"
 #include "primitives/block.h"
@@ -114,6 +115,9 @@ public:
 
     /* Return the expiration depth for names at the given height.  */
     virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
+
+    /* Return minimum locked amount in a name.  */
+    virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
     /* Return whether to allow lenient NAME_NEW version check.  */
     virtual bool LenientVersionCheck(unsigned nHeight) const = 0;

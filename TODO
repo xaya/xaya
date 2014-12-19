@@ -1,7 +1,3 @@
-* soft fork in namecoind:
-  - nametx version softfork
-  - disallow greedy names
-
 * after softfork height:
   - fully disallow wrong-version tx (make "historic bugs")
   - get rid of "LenientVersionCheck" entirely

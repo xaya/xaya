@@ -28,12 +28,6 @@ static const unsigned MAX_NAME_LENGTH = 255;
 static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
 static const unsigned MAX_VALUE_LENGTH_UI = 520;
 
-/**
- * Amount to lock in name transactions.  This is not (yet) enforced by the
- * protocol, but for acceptance to the mempool.
- */
-static const CAmount NAME_LOCKED_AMOUNT = COIN / 100; 
-
 /* ************************************************************************** */
 /* CNameTxUndo.  */
 

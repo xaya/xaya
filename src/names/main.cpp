@@ -434,11 +434,9 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     return state.Invalid (error ("%s: Namecoin tx %s has no name outputs",
                                  __func__, txid));
 
-  /* For now, only reject "greedy" names in the mempool.  This will be
-     changed with a softfork in the future.  */
-  if (fMempool && tx.vout[nameOut].nValue < NAME_LOCKED_AMOUNT)
-    return state.Invalid (error ("%s: rejecting greedy name from mempool",
-                                 __func__));
+  /* Reject "greedy names".  */
+  if (tx.vout[nameOut].nValue < Params().MinNameCoinAmount(nHeight))
+    return state.Invalid (error ("%s: greedy name", __func__));
 
   /* Handle NAME_NEW now, since this is easy and different from the other
      operations.  */

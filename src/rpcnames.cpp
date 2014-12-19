@@ -26,6 +26,9 @@
 
 #include <sstream>
 
+/** The amount of coins to lock in created transactions.  */
+static const CAmount NAME_LOCKED_AMOUNT = COIN / 100;
+
 /**
  * Utility routine to construct a "name info" object to return.  This is used
  * for name_show and also name_list.
