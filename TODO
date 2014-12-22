@@ -1,5 +1,3 @@
-* decide about P2SH address version, merge branch
-
 * after softfork height:
   - fully disallow wrong-version tx (make "historic bugs")
   - get rid of "LenientVersionCheck" entirely
