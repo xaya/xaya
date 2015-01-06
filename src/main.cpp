@@ -1089,7 +1089,13 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
         // There is a similar check in CreateNewBlock() to prevent creating
         // invalid blocks, however allowing such transactions into the mempool
         // can be exploited as a DoS attack.
-        if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true))
+        //
+        // Namecoin actually allows some scripts into the mempool that would
+        // not (yet) be valid in a block, namely premature NAME_FIRSTUPDATE's.
+        // Thus add the mempool-flag here.
+        const unsigned flags
+          = MANDATORY_SCRIPT_VERIFY_FLAGS | SCRIPT_VERIFY_NAMES_MEMPOOL;
+        if (!CheckInputs(tx, state, view, true, flags, true))
         {
             return error("AcceptToMemoryPool: BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s", hash.ToString());
         }
