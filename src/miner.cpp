@@ -409,7 +409,7 @@ CBlockTemplate* CreateNewBlockWithKey(CReserveKey& reservekey)
     return CreateNewBlock(scriptPubKey);
 }
 
-static bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
+bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 {
     LogPrintf("%s\n", pblock->ToString());
     LogPrintf("generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue));

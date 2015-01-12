@@ -22,6 +22,18 @@ BOOST_AUTO_TEST_SUITE (auxpow_tests)
 /* ************************************************************************** */
 
 /**
+ * Tamper with a uint256 (modify it).
+ * @param num The number to modify.
+ */
+static void
+tamperWith (uint256& num)
+{
+  arith_uint256 modifiable = UintToArith256 (num);
+  modifiable += 1;
+  num = ArithToUint256 (modifiable);
+}
+
+/**
  * Utility class to construct auxpow's and manipulate them.  This is used
  * to simulate various scenarios.
  */
@@ -126,7 +138,7 @@ CAuxpowBuilder::buildAuxpowChain (const uint256& hashAux, unsigned h, int index)
   /* Just use "something" for the branch.  Doesn't really matter.  */
   auxpowChainMerkleBranch.clear ();
   for (unsigned i = 0; i < h; ++i)
-    auxpowChainMerkleBranch.push_back (uint256 (i));
+    auxpowChainMerkleBranch.push_back (ArithToUint256 (arith_uint256 (i)));
 
   const uint256 hash
     = CBlock::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch, index);
@@ -192,7 +204,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
   CAuxpowBuilder builder(5, 42);
   CAuxPow auxpow;
 
-  const uint256 hashAux(12345);
+  const uint256 hashAux = ArithToUint256 (arith_uint256(12345));
   const int ourChainId = Params ().AuxpowChainId ();
   const unsigned height = 30;
   const int nonce = 7;
@@ -212,7 +224,9 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
 
   /* Check that the auxpow is invalid if we change either the aux block's
      hash or the chain ID.  */
-  BOOST_CHECK (!builder.get ().check (hashAux + 1, ourChainId));
+  uint256 modifiedAux(hashAux);
+  tamperWith (modifiedAux);
+  BOOST_CHECK (!builder.get ().check (modifiedAux, ourChainId));
   BOOST_CHECK (!builder.get ().check (hashAux, ourChainId + 1));
 
   /* Non-coinbase parent tx should fail.  Note that we can't just copy
@@ -246,7 +260,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
   /* Verify that we compare correctly to the parent block's merkle root.  */
   builder2 = builder;
   BOOST_CHECK (builder2.get ().check (hashAux, ourChainId));
-  builder2.parentBlock.hashMerkleRoot = 1234;
+  tamperWith (builder2.parentBlock.hashMerkleRoot);
   BOOST_CHECK (!builder2.get ().check (hashAux, ourChainId));
 
   /* Build a non-header legacy version and check that it is also accepted.  */
@@ -262,7 +276,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
   /* However, various attempts at smuggling two roots in should be detected.  */
 
   const valtype wrongAuxRoot
-    = builder2.buildAuxpowChain (hashAux + 1, height, index);
+    = builder2.buildAuxpowChain (modifiedAux, height, index);
   valtype data2
     = CAuxpowBuilder::buildCoinbaseData (false, wrongAuxRoot, height, nonce);
   builder2.setCoinbase (CScript () << data << data2);
@@ -335,13 +349,13 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
   if (nBits == -1)
     nBits = block.nBits;
 
-  uint256 target;
+  arith_uint256 target;
   target.SetCompact (nBits);
 
   block.nNonce = 0;
   while (true)
     {
-      const bool nowOk = (block.GetHash () <= target);
+      const bool nowOk = (UintToArith256 (block.GetHash ()) <= target);
       if ((ok && nowOk) || (!ok && !nowOk))
         break;
 
@@ -356,7 +370,7 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
 
 BOOST_AUTO_TEST_CASE (auxpow_pow)
 {
-  const uint256 target(~uint256(0) >> 1);
+  const arith_uint256 target = (~arith_uint256(0) >> 1);
   ModifiableParams ()->setProofOfWorkLimit (target);
   CBlockHeader block;
   block.nBits = target.GetCompact ();
@@ -441,7 +455,7 @@ BOOST_AUTO_TEST_CASE (auxpow_pow)
   mineBlock (builder.parentBlock, true, block.nBits);
   block.SetAuxpow (new CAuxPow (builder.get ()));
   BOOST_CHECK (CheckProofOfWork (block));
-  block.hashMerkleRoot += 1;
+  tamperWith (block.hashMerkleRoot);
   BOOST_CHECK (!CheckProofOfWork (block));
 }
 

@@ -173,9 +173,9 @@ public:
 
     void SetNull()
     {
-        nVersion.SetBaseVersion(CPureBlockHeader::CURRENT_VERSION);
-        hashPrevBlock = 0;
-        hashMerkleRoot = 0;
+        nVersion.SetNull();
+        hashPrevBlock.SetNull();
+        hashMerkleRoot.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = 0;
