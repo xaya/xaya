@@ -270,7 +270,7 @@ bool CCoinsViewDB::ValidateNameDB() const
 {
     const uint256 blockHash = GetBestBlock();
     int nHeight;
-    if (blockHash == 0)
+    if (blockHash.IsNull())
         nHeight = 0;
     else
         nHeight = mapBlockIndex.find(blockHash)->second->nHeight;

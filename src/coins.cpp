@@ -6,6 +6,7 @@
 
 #include "main.h"
 #include "random.h"
+#include "undo.h"
 #include "util.h"
 
 #include <assert.h>
@@ -33,12 +34,24 @@ void CCoins::CalcMaskSize(unsigned int &nBytes, unsigned int &nNonzeroBytes) con
     nBytes += nLastUsedByte;
 }
 
-bool CCoins::Spend(uint32_t nPos) 
+bool CCoins::Spend(uint32_t nPos, CTxInUndo* undo)
 {
     if (nPos >= vout.size() || vout[nPos].IsNull())
         return false;
+
+    if (undo)
+        *undo = CTxInUndo(vout[nPos]);
+
     vout[nPos].SetNull();
     Cleanup();
+
+    if (undo && vout.empty())
+    {
+        undo->nHeight = nHeight;
+        undo->fCoinBase = fCoinBase;
+        undo->nVersion = nVersion;
+    }
+
     return true;
 }
 

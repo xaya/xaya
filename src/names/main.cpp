@@ -7,6 +7,7 @@
 #include "chainparams.h"
 #include "coins.h"
 #include "leveldbwrapper.h"
+#include "../main.h"
 #include "script/names.h"
 #include "txmempool.h"
 #include "undo.h"
@@ -225,7 +226,7 @@ CNameMemPool::check (const CCoinsView& coins) const
 
   const uint256 blockHash = coins.GetBestBlock ();
   int nHeight;
-  if (blockHash == 0)
+  if (blockHash.IsNull())
     nHeight = 0;
   else
     nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
@@ -669,10 +670,9 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
         return error ("%s : name coin to be expired is wrong script", __func__);
 
       CTxInUndo txUndo;
-      if (!coins->Spend (out, txUndo))
+      if (!coins->Spend (out.n, &txUndo))
         return error ("%s : failed to spend name coin for '%s'",
                       __func__, nameStr.c_str ());
-
       undo.vexpired.push_back (txUndo);
     }
 

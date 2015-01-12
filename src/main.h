@@ -43,6 +43,7 @@ class CBlockTreeDB;
 class CBloomFilter;
 class CInv;
 class CScriptCheck;
+class CTxInUndo;
 class CValidationInterface;
 class CValidationState;
 

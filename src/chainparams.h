@@ -165,7 +165,7 @@ protected:
     /* Utility routine to insert into historic bug map.  */
     inline void addBug(unsigned nHeight, const char* txid, BugType type)
     {
-        std::pair<unsigned, uint256> key(nHeight, uint256(txid));
+        std::pair<unsigned, uint256> key(nHeight, uint256S(txid));
         mapHistoricBugs.insert(std::make_pair(key, type));
     }
 };

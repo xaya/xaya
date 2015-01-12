@@ -17,6 +17,8 @@
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
 
+class CTxInUndo;
+
 /** 
  * Pruned version of CTransaction: only retains metadata and unspent transaction outputs
  *
@@ -238,7 +240,7 @@ public:
     }
 
     //! mark a vout spent
-    bool Spend(uint32_t nPos);
+    bool Spend(uint32_t nPos, CTxInUndo* undo = NULL);
 
     //! check whether a particular output is still available
     bool IsAvailable(unsigned int nPos) const {

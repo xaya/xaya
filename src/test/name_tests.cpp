@@ -7,9 +7,8 @@
 #include "main.h"
 #include "names/main.h"
 #include "txmempool.h"
-
+#include "undo.h"
 #include "primitives/transaction.h"
-
 #include "script/names.h"
 
 #include <boost/test/unit_test.hpp>
@@ -360,7 +359,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* ********************************** */
   /* Test NAME_FIRSTUPDATE validation.  */
 
-  CCoinsViewCache viewClean(view);
+  CCoinsViewCache viewClean(&view);
   viewClean.DeleteName (name1);
 
   /* Basic valid transaction.  */
@@ -685,8 +684,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (!mempool.checkNameOps (txUpd2));
 
   /* Run mempool sanity check.  */
-  CCoinsView dummyView;
-  CCoinsViewCache view(&dummyView);
+  CCoinsViewCache view(pcoinsTip);
   const CNameScript nameOp(upd1);
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);

@@ -1472,14 +1472,9 @@ void UpdateCoins(const CTransaction& tx, CValidationState &state, CCoinsViewCach
             if (nPos >= coins->vout.size() || coins->vout[nPos].IsNull())
                 assert(false);
             // mark an outpoint spent, and construct undo information
-            txundo.vprevout.push_back(CTxInUndo(coins->vout[nPos]));
-            coins->Spend(nPos);
-            if (coins->vout.size() == 0) {
-                CTxInUndo& undo = txundo.vprevout.back();
-                undo.nHeight = coins->nHeight;
-                undo.fCoinBase = coins->fCoinBase;
-                undo.nVersion = coins->nVersion;
-            }
+            CTxInUndo undo;
+            coins->Spend(nPos, &undo);
+            txundo.vprevout.push_back(undo);
         }
     }
 
