@@ -11,6 +11,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
 
 from bitcoinrpc.authproxy import JSONRPCException
+from decimal import Decimal
 from names import NameTestFramework
 from util import assert_equal
 import binascii
@@ -47,10 +48,17 @@ class NameMultisigTest (NameTestFramework):
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -4)
 
+    # Find some other input to add as fee.
+    unspents = self.nodes[0].listunspent ()
+    assert len (unspents) > 0
+    feeInput = unspents[0]
+    changeAddr = self.nodes[0].getnewaddress ()
+    changeAmount = feeInput['amount'] - Decimal ("0.01")
+
     # Construct the name update as raw transaction.
     addr = self.nodes[2].getnewaddress ()
-    inputs = [{"txid": data['txid'], "vout": data['vout']}]
-    outputs = {}
+    inputs = [{"txid": data['txid'], "vout": data['vout']}, feeInput]
+    outputs = {changeAddr: changeAmount}
     op = {"op": "name_update", "name": "name",
           "value": "it worked", "address": addr}
     txRaw = self.nodes[3].createrawtransaction (inputs, outputs, op)
