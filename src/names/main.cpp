@@ -411,21 +411,10 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (nameIn != -1)
         return state.Invalid (error ("%s: non-Namecoin tx %s has name inputs",
                                      __func__, txid));
-
-      /* Possibly allow NAME_NEW's with non-Namecoin version.  Multiple
-         of these appear in the blockchain, as they were accepted by the
-         old client.  */
       if (nameOut != -1)
-        {
-          if (Params ().LenientVersionCheck (nHeight)
-              && nameOpOut.getNameOp () == OP_NAME_NEW)
-            LogPrintf ("WARNING: %s : non-Namecoin tx %s at height %u has name"
-                       " outputs\n", __func__, txid, nHeight);
-          else
-            return state.Invalid (error ("%s: non-Namecoin tx %s at height %u"
-                                         " has name outputs",
-                                         __func__, txid, nHeight));
-        }
+        return state.Invalid (error ("%s: non-Namecoin tx %s at height %u"
+                                     " has name outputs",
+                                     __func__, txid, nHeight));
 
       return true;
     }

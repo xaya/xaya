@@ -1,8 +1,3 @@
-* after softfork height:
-  - fully disallow wrong-version tx (make "historic bugs")
-  - get rid of "LenientVersionCheck" entirely
-  - make also greedy names "historic bugs"?
-
 * handle seed nodes / DNS seeds
 
 * upgrade to new version at fixed height:
@@ -13,6 +8,7 @@
   - no need to disallow auxpow parent blocks with auxpow-flag in the version
     any more; instead, the auxpow is simply never loaded for them
   - name_new format change?
+  - make NamecoinTxVersion a flag?
   - more differences???
 
 * reenable some of the disabled tests, new alert keys?

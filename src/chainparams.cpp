@@ -210,12 +210,29 @@ public:
         /* These transactions have name outputs but a non-Namecoin tx version.
            They contain NAME_NEWs, which are fine, and also NAME_FIRSTUPDATE.
            The latter are not interpreted by namecoind, thus also ignore
-           them for us here.  *Just* NAME_NEW outputs are handled by
-           special "lenient version checks".  Below are only those transactions
-           that also have name registrations.  */
+           them for us here.  */
         addBug(98423, "bff3ed6873e5698b97bf0c28c29302b59588590b747787c7d1ef32decdabe0d1", BUG_FULLY_IGNORE);
         addBug(98424, "e9b211007e5cac471769212ca0f47bb066b81966a8e541d44acf0f8a1bd24976", BUG_FULLY_IGNORE);
         addBug(98425, "8aa2b0fc7d1033de28e0192526765a72e9df0c635f7305bdc57cb451ed01a4ca", BUG_FULLY_IGNORE);
+
+        /* These are non-Namecoin tx that contain just NAME_NEWs.  Those were
+           handled with a special rule previously, but now they are fully
+           disallowed and we handle the few exceptions here.  It is fine to
+           "ignore" them, as their outputs need no special Namecoin handling
+           before they are reused in a NAME_FIRSTUPDATE.  */
+        addBug(98318, "0ae5e958ff05ad8e273222656d98d076097def6d36f781a627c584b859f4727b", BUG_FULLY_IGNORE);
+        addBug(98321, "aca8ce46da1bbb9bb8e563880efcd9d6dd18342c446d6f0e3d4b964a990d1c27", BUG_FULLY_IGNORE);
+        addBug(98424, "c29b0d9d478411462a8ac29946bf6fdeca358a77b4be15cd921567eb66852180", BUG_FULLY_IGNORE);
+        addBug(98425, "221719b360f0c83fa5b1c26fb6b67c5e74e4e7c6aa3dce55025da6759f5f7060", BUG_FULLY_IGNORE);
+        addBug(193518, "597370b632efb35d5ed554c634c7af44affa6066f2a87a88046532d4057b46f8", BUG_FULLY_IGNORE);
+        addBug(195605, "0bb8c7807a9756aefe62c271770b313b31dee73151f515b1ac2066c50eaeeb91", BUG_FULLY_IGNORE);
+        addBug(195639, "3181930765b970fc43cd31d53fc6fc1da9439a28257d9067c3b5912d23eab01c", BUG_FULLY_IGNORE);
+        addBug(195639, "e815e7d774937d96a4b265ed4866b7e3dc8d9f2acb8563402e216aba6edd1e9e", BUG_FULLY_IGNORE);
+        addBug(195639, "cdfe6eda068e09fe760a70bec201feb041b8c660d0e98cbc05c8aa4106eae6ab", BUG_FULLY_IGNORE);
+        addBug(195641, "1e29e937b2a9e1f18af500371b8714157cf5ac7c95461913e08ce402de64ae75", BUG_FULLY_IGNORE);
+        addBug(195648, "d44ed6c0fac251931465f9123ada8459ec954cc6c7b648a56c9326ff7b13f552", BUG_FULLY_IGNORE);
+        addBug(197711, "dd77aea50a189935d0ef36a04856805cd74600a53193c539eb90c1e1c0f9ecac", BUG_FULLY_IGNORE);
+        addBug(204151, "f31875dfaf94bd3a93cfbed0e22d405d1f2e49b4d0750cb13812adc5e57f1e47", BUG_FULLY_IGNORE);
 
         /* This transaction has both a NAME_NEW and a NAME_FIRSTUPDATE as
            inputs.  This was accepted due to the "argument concatenation" bug.
@@ -269,11 +286,6 @@ public:
             return 0;
 
         return COIN / 100;
-    }
-
-    bool LenientVersionCheck(unsigned nHeight) const
-    {
-        return (nHeight < 212500);
     }
 
     int DefaultCheckNameDB () const
@@ -370,11 +382,6 @@ public:
     CAmount MinNameCoinAmount(unsigned) const
     {
         return COIN / 100;
-    }
-
-    bool LenientVersionCheck(unsigned) const
-    {
-        return false;
     }
 };
 static CTestNetParams testNetParams;
@@ -478,11 +485,6 @@ public:
            rely on loading predefined block data work.  (In particular,
            miner_tests.cpp.)  */
         return true;
-    }
-
-    bool LenientVersionCheck(unsigned) const
-    {
-        return false;
     }
 
     //! Published setters to allow changing values in unit test cases

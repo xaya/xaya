@@ -119,9 +119,6 @@ public:
     /* Return minimum locked amount in a name.  */
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
-    /* Return whether to allow lenient NAME_NEW version check.  */
-    virtual bool LenientVersionCheck(unsigned nHeight) const = 0;
-
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,
        which determines further actions.  */
