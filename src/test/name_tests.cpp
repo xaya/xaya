@@ -573,6 +573,7 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
 
 BOOST_AUTO_TEST_CASE (name_mempool)
 {
+  LOCK(mempool.cs);
   mempool.clear ();
 
   const valtype nameReg = ValtypeFromString ("name-reg");
