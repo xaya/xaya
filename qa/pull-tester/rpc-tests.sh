@@ -31,6 +31,16 @@ testScripts=(
 
     # auxpow tests
     'getauxblock.py'
+
+    # name tests
+    'name_expiration.py'
+    'name_list.py'
+    'name_multisig.py'
+    'name_rawtx.py'
+    'name_registration.py'
+    'name_reorg.py'
+    'name_scanning.py'
+    'name_wallet.py'
 );
 if [ "x${ENABLE_BITCOIND}${ENABLE_UTILS}${ENABLE_WALLET}" = "x111" ]; then
     for (( i = 0; i < ${#testScripts[@]}; i++ ))
