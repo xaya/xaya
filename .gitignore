@@ -77,7 +77,9 @@ src/qt/test/moc*.cpp
 *.qm
 Makefile
 bitcoin-qt
+namecoin-qt
 Bitcoin-Qt.app
+Namecoin-Qt.app
 
 # Unit-tests
 Makefile.test
