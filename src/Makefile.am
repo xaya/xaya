@@ -375,6 +375,7 @@ libbitcoinconsensus_la_SOURCES = \
   pubkey.cpp \
   script/bitcoinconsensus.cpp \
   script/interpreter.cpp \
+  script/names.cpp \
   script/script.cpp \
   uint256.cpp \
   utilstrencodings.cpp
