@@ -2,6 +2,7 @@
 
 * upgrade to new version at fixed height:
   - blocks version=2 via majority rule soft fork (BIP34)
+  - blocks version=3 via majority rule soft fork (BIP66)
   - P2SH as enforced soft fork (BIP16)
   - strict BIP30 as enforced soft fork
   - allow larger blocks (DB locks)

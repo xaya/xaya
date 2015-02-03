@@ -183,8 +183,7 @@ public:
         assert(hashGenesisBlock == uint256S("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770"));
         assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
 
-        /* FIXME: DNS seeds?  */
-        //vSeeds.push_back(CDNSSeedData("bitcoin.sipa.be", "seed.bitcoin.sipa.be"));
+        vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
@@ -336,7 +335,7 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        /* FIXME: DNS seeds?  */
+        /* FIXME: DNS seeds for testnet?  */
         //vSeeds.push_back(CDNSSeedData("bitcoin.schildbach.de", "testnet-seed.bitcoin.schildbach.de"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
