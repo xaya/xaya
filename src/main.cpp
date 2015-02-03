@@ -1835,7 +1835,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     unsigned int flags = fStrictPayToScriptHash ? SCRIPT_VERIFY_P2SH : SCRIPT_VERIFY_NONE;
 
     // Start enforcing the DERSIG (BIP66) rules, for block.nVersion=3 blocks, when 75% of the network has upgraded:
-    if (block.nVersion >= 3 && IsSuperMajority(3, pindex->pprev, Params().EnforceBlockUpgradeMajority())) {
+    if (block.nVersion.GetBaseVersion() >= 3 && IsSuperMajority(3, pindex->pprev, Params().EnforceBlockUpgradeMajority())) {
         flags |= SCRIPT_VERIFY_DERSIG;
     }
 
@@ -2684,7 +2684,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     }
 
     // Reject block.nVersion=2 blocks when 95% (75% on testnet) of the network has upgraded:
-    if (block.nVersion < 3 && IsSuperMajority(3, pindexPrev, Params().RejectBlockOutdatedMajority()))
+    if (block.nVersion.GetBaseVersion() < 3 && IsSuperMajority(3, pindexPrev, Params().RejectBlockOutdatedMajority()))
     {
         return state.Invalid(error("%s : rejected nVersion=2 block", __func__),
                              REJECT_OBSOLETE, "bad-version");
