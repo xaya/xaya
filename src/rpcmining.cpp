@@ -774,9 +774,18 @@ Value getauxblock(const Array& params, bool fHelp)
     
     /* This should never fail, since the chain is already
        past the point of merge-mining start.  Check nevertheless.  */
-    if (chainActive.Height() + 1 < Params().AuxpowStartHeight())
-        throw std::runtime_error("getauxblock method is not yet available");
+    {
+        LOCK(cs_main);
+        if (chainActive.Height() + 1 < Params().AuxpowStartHeight())
+            throw std::runtime_error("getauxblock method is not yet available");
+    }
 
+    /* The variables below are used to keep track of created and not yet
+       submitted auxpow blocks.  Lock them, just in case.  In principle
+       there's only one RPC thread, so it should be fine without locking
+       as well.  But it cannot hurt to be safe.  */
+    static CCriticalSection cs_auxblockCache;
+    LOCK(cs_auxblockCache);
     static std::map<uint256, CBlock*> mapNewBlock;
     static std::vector<CBlockTemplate*> vNewBlockTemplate;
 
@@ -790,6 +799,8 @@ Value getauxblock(const Array& params, bool fHelp)
         static unsigned nExtraNonce = 0;
 
         // Update block
+        {
+        LOCK(cs_main);
         if (pindexPrev != chainActive.Tip()
             || (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast
                 && GetTime() - nStart > 60))
@@ -802,14 +813,16 @@ Value getauxblock(const Array& params, bool fHelp)
                     delete pbt;
                 vNewBlockTemplate.clear();
             }
-            nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
-            pindexPrev = chainActive.Tip();
-            nStart = GetTime();
 
             // Create new block with nonce = 0 and extraNonce = 1
             pblocktemplate = CreateNewBlockWithKey(*pminingKey);
             if (!pblocktemplate)
                 throw JSONRPCError(RPC_OUT_OF_MEMORY, "out of memory");
+
+            // Update state only when CreateNewBlock succeeded
+            nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
+            pindexPrev = chainActive.Tip();
+            nStart = GetTime();
 
             // Finalise it by setting the version and building the merkle root
             CBlock* pblock = &pblocktemplate->block;
@@ -820,6 +833,7 @@ Value getauxblock(const Array& params, bool fHelp)
             // Save
             mapNewBlock[pblock->GetHash()] = pblock;
             vNewBlockTemplate.push_back(pblocktemplate);
+        }
         }
 
         const CBlock& block = pblocktemplate->block;
@@ -842,7 +856,8 @@ Value getauxblock(const Array& params, bool fHelp)
         return result;
     }
 
-    /* Submit a block instead.  */
+    /* Submit a block instead.  Note that this need not lock cs_main,
+       since ProcessBlockFound below locks it instead.  */
 
     assert(params.size() == 2);
     uint256 hash;
