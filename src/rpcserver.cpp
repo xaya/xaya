@@ -308,7 +308,7 @@ static const CRPCCommand vRPCCommands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  true,      false },
     { "mining",             "submitblock",            &submitblock,            true,      false },
 #ifdef ENABLE_WALLET
-    { "mining",             "getauxblock",            &getauxblock,            true,      false },
+    { "mining",             "getauxblock",            &getauxblock,            false,     true },
 #endif // ENABLE_WALLET
 
 #ifdef ENABLE_WALLET
