@@ -338,16 +338,16 @@ static const CRPCCommand vRPCCommands[] =
     { "hidden",             "setmocktime",            &setmocktime,            true,      false },
 
     /* Namecoin functions */
-    { "namecoin",           "name_show",              &name_show,              true,      false,      false },
-    { "namecoin",           "name_history",           &name_history,           true,      false,      false },
-    { "namecoin",           "name_scan",              &name_scan,              true,      false,      false },
-    { "namecoin",           "name_filter",            &name_filter,            true,      false,      false },
-    { "namecoin",           "name_checkdb",           &name_checkdb,           true,      false,      false },
+    { "namecoin",           "name_show",              &name_show,              false,     false },
+    { "namecoin",           "name_history",           &name_history,           false,     false },
+    { "namecoin",           "name_scan",              &name_scan,              false,     false },
+    { "namecoin",           "name_filter",            &name_filter,            false,     false },
+    { "namecoin",           "name_checkdb",           &name_checkdb,           false,     false },
 #ifdef ENABLE_WALLET
-    { "namecoin",           "name_list",              &name_list,              true,      false,      true },
-    { "namecoin",           "name_new",               &name_new,               false,     false,      true },
-    { "namecoin",           "name_firstupdate",       &name_firstupdate,       false,     false,      true },
-    { "namecoin",           "name_update",            &name_update,            false,     false,      true },
+    { "namecoin",           "name_list",              &name_list,              false,     true },
+    { "namecoin",           "name_new",               &name_new,               false,     true },
+    { "namecoin",           "name_firstupdate",       &name_firstupdate,       false,     true },
+    { "namecoin",           "name_update",            &name_update,            false,     true },
 #endif // ENABLE_WALLET
 
 #ifdef ENABLE_WALLET

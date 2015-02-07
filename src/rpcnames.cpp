@@ -128,6 +128,8 @@ getNameInfoHelp (const std::string& indent, const std::string& trailing)
 static bool
 getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 {
+  AssertLockHeld (cs_main);
+
   CCoins coins;
   if (!pcoinsTip->GetCoins (txid, coins))
     return false;
@@ -214,12 +216,15 @@ name_show (const json_spirit::Array& params, bool fHelp)
   const valtype name = ValtypeFromString (nameStr);
 
   CNameData data;
-  if (!pcoinsTip->GetName (name, data))
-    {
-      std::ostringstream msg;
-      msg << "name not found: '" << nameStr << "'";
-      throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
-    }
+  {
+    LOCK (cs_main);
+    if (!pcoinsTip->GetName (name, data))
+      {
+        std::ostringstream msg;
+        msg << "name not found: '" << nameStr << "'";
+        throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
+      }
+  }
 
   return getNameInfo (name, data);
 }
@@ -253,16 +258,21 @@ name_history (const json_spirit::Array& params, bool fHelp)
   const valtype name = ValtypeFromString (nameStr);
 
   CNameData data;
-  if (!pcoinsTip->GetName (name, data))
-    {
-      std::ostringstream msg;
-      msg << "name not found: '" << nameStr << "'";
-      throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
-    }
-
   CNameHistory history;
-  if (!pcoinsTip->GetNameHistory (name, history))
-    assert (history.empty ());
+
+  {
+    LOCK (cs_main);
+
+    if (!pcoinsTip->GetName (name, data))
+      {
+        std::ostringstream msg;
+        msg << "name not found: '" << nameStr << "'";
+        throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
+      }
+
+    if (!pcoinsTip->GetNameHistory (name, history))
+      assert (history.empty ());
+  }
 
   json_spirit::Array res;
   BOOST_FOREACH (const CNameData& entry, history.getData ())
@@ -363,8 +373,11 @@ name_scan (const json_spirit::Array& params, bool fHelp)
     return json_spirit::Array ();
 
   CNameScanWalker walker(count);
-  pcoinsTip->Flush ();
-  pcoinsTip->WalkNames (start, walker);
+  {
+    LOCK (cs_main);
+    pcoinsTip->Flush ();
+    pcoinsTip->WalkNames (start, walker);
+  }
 
   return walker.getArray ();
 }
@@ -462,6 +475,8 @@ CNameFilterWalker::CNameFilterWalker (const json_spirit::Array& params)
 json_spirit::Value
 CNameFilterWalker::getResult () const
 {
+  AssertLockHeld (cs_main);
+
   if (stats)
     {
       json_spirit::Object res;
@@ -477,6 +492,8 @@ CNameFilterWalker::getResult () const
 bool
 CNameFilterWalker::nextName (const valtype& name, const CNameData& data)
 {
+  AssertLockHeld (cs_main);
+
   const int age = chainActive.Height () - data.getHeight ();
   assert (age >= 0);
   if (maxage != 0 && age >= maxage)
@@ -537,6 +554,10 @@ name_filter (const json_spirit::Array& params, bool fHelp)
         + HelpExampleRpc ("name_scan", "\"^d/\"")
       );
 
+  /* The lock must be held throughout the call, since walker.getResult()
+     uses chainActive for the block height in stats mode.  */
+  LOCK (cs_main);
+
   CNameFilterWalker walker(params);
   pcoinsTip->Flush ();
   pcoinsTip->WalkNames (valtype (), walker);
@@ -562,6 +583,7 @@ name_checkdb (const json_spirit::Array& params, bool fHelp)
         + HelpExampleRpc ("name_checkdb", "")
       );
 
+  LOCK (cs_main);
   pcoinsTip->Flush ();
   return pcoinsTip->ValidateNameDB ();
 }
@@ -597,6 +619,8 @@ name_list (const json_spirit::Array& params, bool fHelp)
   std::map<valtype, int> mapHeights;
   std::map<valtype, json_spirit::Object> mapObjects;
 
+  {
+  LOCK2 (cs_main, pwalletMain->cs_wallet);
   BOOST_FOREACH (const PAIRTYPE(const uint256, CWalletTx)& item,
                  pwalletMain->mapWallet)
     {
@@ -649,6 +673,7 @@ name_list (const json_spirit::Array& params, bool fHelp)
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;
     }
+  }
 
   json_spirit::Array res;
   BOOST_FOREACH (const PAIRTYPE(const valtype, json_spirit::Object)& item,
@@ -691,6 +716,10 @@ name_new (const json_spirit::Array& params, bool fHelp)
   valtype toHash(rand);
   toHash.insert (toHash.end (), name.begin (), name.end ());
   const uint160 hash = Hash160 (toHash);
+
+  /* No explicit locking should be necessary.  CReserveKey takes care
+     of locking the wallet, and CommitTransaction (called when sending
+     the tx) locks cs_main as necessary.  */
 
   EnsureWalletIsUnlocked ();
 
@@ -765,14 +794,20 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
                           "this name is already being registered");
   }
 
-  CNameData oldData;
-  if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name is already active");
+  {
+    LOCK (cs_main);
+    CNameData oldData;
+    if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+      throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name is already active");
+  }
 
   CTxOut prevOut;
   CTxIn txIn;
-  if (!getNamePrevout (prevTxid, prevOut, txIn))
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+  {
+    LOCK (cs_main);
+    if (!getNamePrevout (prevTxid, prevOut, txIn))
+      throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+  }
 
   const CNameScript prevNameOp(prevOut.scriptPubKey);
   assert (prevNameOp.isNameOp ());
@@ -783,6 +818,8 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
   toHash.insert (toHash.end (), name.begin (), name.end ());
   if (uint160 (prevNameOp.getOpHash ()) != Hash160 (toHash))
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "rand value is wrong");
+
+  /* No more locking required, similarly to name_new.  */
 
   EnsureWalletIsUnlocked ();
 
@@ -862,11 +899,17 @@ name_update (const json_spirit::Array& params, bool fHelp)
   }
 
   CNameData oldData;
-  if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name can not be updated");
+  {
+    LOCK (cs_main);
+    if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
+      throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                          "this name can not be updated");
+  }
 
   const COutPoint outp = oldData.getUpdateOutpoint ();
   const CTxIn txIn(outp);
+
+  /* No more locking required, similarly to name_new.  */
 
   EnsureWalletIsUnlocked ();
 
