@@ -280,6 +280,32 @@ static bool rest_block_notxdetails(AcceptedConnection* conn,
     return rest_block(conn, strReq, mapHeaders, fRun, false);
 }
 
+static bool rest_chaininfo(AcceptedConnection* conn,
+                                   const std::string& strReq,
+                                   const std::map<std::string, std::string>& mapHeaders,
+                                   bool fRun)
+{
+    std::string param;
+    enum RetFormat rf = ParseDataFormat(param, strReq);
+    
+    switch (rf) {
+    case RF_JSON: {
+        Array rpcParams;
+        Value chainInfoObject = getblockchaininfo(rpcParams, false);
+        
+        string strJSON = write_string(chainInfoObject, false) + "\n";
+        conn->stream() << HTTPReply(HTTP_OK, strJSON, fRun) << std::flush;
+        return true;
+    }
+    default: {
+        throw RESTERR(HTTP_NOT_FOUND, "output format not found (available: json)");
+    }
+    }
+    
+    // not reached
+    return true; // continue to process further HTTP reqs on this cxn
+}
+
 static bool rest_tx(AcceptedConnection* conn,
                     const std::string& strReq,
                     const std::map<std::string, std::string>& mapHeaders,
@@ -392,6 +418,7 @@ static const struct {
       {"/rest/tx/", rest_tx},
       {"/rest/block/notxdetails/", rest_block_notxdetails},
       {"/rest/block/", rest_block_extended},
+      {"/rest/chaininfo", rest_chaininfo},
       {"/rest/headers/", rest_headers},
       {"/rest/name/", rest_name},
 };
