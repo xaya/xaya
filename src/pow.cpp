@@ -20,8 +20,8 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     if (pindexLast == NULL)
         return nProofOfWorkLimit;
 
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % Params().Interval() != 0)
+    // Only change once per difficulty adjustment interval
+    if ((pindexLast->nHeight+1) % Params().DifficultyAdjustmentInterval() != 0)
     {
         if (Params().AllowMinDifficultyBlocks(*pblock))
         {
@@ -42,7 +42,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             {
                 // Return the last non-special-min-difficulty-rules-block
                 const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % Params().Interval() != 0 && pindex->nBits == nProofOfWorkLimit)
+                while (pindex->pprev && pindex->nHeight % Params().DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
                     pindex = pindex->pprev;
                 return pindex->nBits;
             }
@@ -52,10 +52,10 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
     /* Adapt the retargeting interval after merge-mining start
        according to the changed Namecoin rules.  */
-    int nBlocksBack = Params().Interval() - 1;
+    int nBlocksBack = Params().DifficultyAdjustmentInterval() - 1;
     if (pindexLast->nHeight >= Params().AuxpowStartHeight()
-        && (pindexLast->nHeight + 1 > Params().Interval()))
-        nBlocksBack = Params().Interval();
+        && (pindexLast->nHeight + 1 > Params().DifficultyAdjustmentInterval()))
+        nBlocksBack = Params().DifficultyAdjustmentInterval();
 
     // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
