@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "checkpoints.h"
+#include "core_io.h"
 #include "main.h"
 #include "rpcserver.h"
 #include "sync.h"
@@ -50,6 +51,34 @@ double GetDifficulty(const CBlockIndex* blockindex)
     return dDiff;
 }
 
+static Object AuxpowToJSON(const CAuxPow& auxpow)
+{
+    Object tx;
+    tx.push_back(Pair("hex", EncodeHexTx(auxpow)));
+    TxToJSON(auxpow, auxpow.parentBlock.GetHash(), tx);
+
+    Object result;
+    result.push_back(Pair("tx", tx));
+    result.push_back(Pair("index", auxpow.nIndex));
+    result.push_back(Pair("chainindex", auxpow.nChainIndex));
+
+    Array branch;
+    BOOST_FOREACH(const uint256& node, auxpow.vMerkleBranch)
+        branch.push_back(node.GetHex());
+    result.push_back(Pair("merklebranch", branch));
+
+    branch.clear();
+    BOOST_FOREACH(const uint256& node, auxpow.vChainMerkleBranch)
+        branch.push_back(node.GetHex());
+    result.push_back(Pair("chainmerklebranch", branch));
+
+    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
+    ssParent << auxpow.parentBlock;
+    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
+    result.push_back(Pair("parentblock", strHex));
+
+    return result;
+}
 
 Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool txDetails = false)
 {
@@ -82,6 +111,9 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool txDe
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
+
+    if (block.auxpow)
+        result.push_back(Pair("auxpow", AuxpowToJSON(*block.auxpow)));
 
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));

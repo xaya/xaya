@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2014 Daniel Kraft
+# Copyright (c) 2014-2015 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -92,6 +92,18 @@ class GetAuxBlockTest (BitcoinTestFramework):
     height = self.nodes[1].getblockcount ()
     assert_equal (height, auxblock['height'])
     assert_equal (self.nodes[1].getblockhash (height), auxblock['hash'])
+
+    # Call getblock and verify the auxpow field.
+    data = self.nodes[1].getblock (auxblock['hash'])
+    assert 'auxpow' in data
+    auxJson = data['auxpow']
+    assert_equal (auxJson['index'], 0)
+    assert_equal (auxJson['parentblock'], apow[-160:])
+
+    # Check that previous blocks don't have 'auxpow' in their getblock JSON.
+    oldHash = self.nodes[1].getblockhash (100)
+    data = self.nodes[1].getblock (oldHash)
+    assert 'auxpow' not in data
 
     # Check that it paid correctly to the first node.
     t = self.nodes[0].listtransactions ("", 1)
