@@ -212,6 +212,10 @@ name_show (const json_spirit::Array& params, bool fHelp)
         + HelpExampleRpc ("name_show", "\"myname\"")
       );
 
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                       "Namecoin is downloading blocks...");
+
   const std::string nameStr = params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
 
@@ -253,6 +257,10 @@ name_history (const json_spirit::Array& params, bool fHelp)
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
+
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                       "Namecoin is downloading blocks...");
 
   const std::string nameStr = params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -360,6 +368,10 @@ name_scan (const json_spirit::Array& params, bool fHelp)
         + HelpExampleCli ("name_scan", "\"d/abc\" 10")
         + HelpExampleRpc ("name_scan", "\"d/abc\"")
       );
+
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                       "Namecoin is downloading blocks...");
 
   valtype start;
   if (params.size () >= 1)
@@ -553,6 +565,10 @@ name_filter (const json_spirit::Array& params, bool fHelp)
         + HelpExampleCli ("name_filter", "\"^id/\" 36000 0 0 \"stat\"")
         + HelpExampleRpc ("name_scan", "\"^d/\"")
       );
+
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                       "Namecoin is downloading blocks...");
 
   /* The lock must be held throughout the call, since walker.getResult()
      uses chainActive for the block height in stats mode.  */
