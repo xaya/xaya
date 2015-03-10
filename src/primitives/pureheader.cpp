@@ -18,5 +18,5 @@ void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
 
 uint256 CPureBlockHeader::GetHash() const
 {
-    return Hash(BEGIN(nVersion), END(nNonce));
+    return SerializeHash(*this);
 }
