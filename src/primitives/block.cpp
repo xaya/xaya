@@ -8,6 +8,7 @@
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
+#include "crypto/common.h"
 
 void CBlockHeader::SetAuxpow (CAuxPow* apow)
 {
