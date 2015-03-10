@@ -5,6 +5,7 @@
 #ifndef H_BITCOIN_NAMES_COMMON
 #define H_BITCOIN_NAMES_COMMON
 
+#include "compat/endian.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
 #include "serialize.h"
@@ -300,11 +301,9 @@ public:
       Serialize (Stream& s, int nType, int nVersion) const
     {
       /* Flip the byte order of nHeight to big endian.  */
-      unsigned nHeightFlipped = nHeight;
-      char* heightPtr = reinterpret_cast<char*> (&nHeightFlipped);
-      std::reverse (heightPtr, heightPtr + sizeof (nHeightFlipped));
+      const uint32_t nHeightFlipped = htobe32 (nHeight);
 
-      WRITEDATA (s, nHeightFlipped);
+      ::Serialize (s, nHeightFlipped, nType, nVersion);
       ::Serialize (s, name, nType, nVersion);
     }
 
@@ -312,12 +311,13 @@ public:
       inline void
       Unserialize (Stream& s, int nType, int nVersion)
     {
-      READDATA (s, nHeight);
+      uint32_t nHeightFlipped;
+
+      ::Unserialize (s, nHeightFlipped, nType, nVersion);
       ::Unserialize (s, name, nType, nVersion);
 
       /* Unflip the byte order.  */
-      char* heightPtr = reinterpret_cast<char*> (&nHeight);
-      std::reverse (heightPtr, heightPtr + sizeof (nHeight));
+      nHeight = be32toh (nHeightFlipped);
     }
 
     friend inline bool

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2015 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,13 +11,15 @@
 #include "primitives/transaction.h"
 #include "script/names.h"
 
+#include "test/test_bitcoin.h"
+
 #include <boost/test/unit_test.hpp>
 
 #include <list>
 
 #include <stdint.h>
 
-BOOST_AUTO_TEST_SUITE (name_tests)
+BOOST_FIXTURE_TEST_SUITE (name_tests, TestingSetup)
 
 /**
  * Utility function that returns a sample address script to use in the tests.
