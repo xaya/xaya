@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <vector>
 
-BOOST_FIXTURE_TEST_SUITE (auxpow_tests, TestingSetup)
+BOOST_FIXTURE_TEST_SUITE (auxpow_tests, BasicTestingSetup)
 
 /* ************************************************************************** */
 
@@ -179,23 +179,6 @@ CAuxpowBuilder::buildCoinbaseData (bool header, const valtype& auxRoot,
   res.insert (res.end (), UBEGIN (nonce), UEND (nonce));
 
   return res;
-}
-
-/* ************************************************************************** */
-
-BOOST_AUTO_TEST_CASE (cblockversion)
-{
-  /* Simple check to make sure that CBlockVersion behaves like the int32_t
-     that backs it.  This is necessary because of the way CBlockHeader::GetHash
-     calculates the hash.  */
-
-  CBlockVersion nVersion;
-  const int32_t nVersionRaw = 0x12345678;
-  nVersion.SetGenesisVersion (nVersionRaw);
-
-  BOOST_CHECK (sizeof (nVersion) == sizeof (nVersionRaw));
-  BOOST_CHECK (std::equal (BEGIN (nVersion), END (nVersion),
-                           BEGIN (nVersionRaw)));
 }
 
 /* ************************************************************************** */
@@ -371,8 +354,10 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
 
 BOOST_AUTO_TEST_CASE (auxpow_pow)
 {
+  /* Use regtest parameters to allow mining with easy difficulty.  */
+  SelectParams (CBaseChainParams::REGTEST);
+
   const arith_uint256 target = (~arith_uint256(0) >> 1);
-  ModifiableParams ()->setProofOfWorkLimit (target);
   CBlockHeader block;
   block.nBits = target.GetCompact ();
 

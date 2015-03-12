@@ -170,7 +170,6 @@ public:
         fAllowMinDifficultyBlocks = false;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
-        fSkipProofOfWorkCheck = false;
         fTestnetToBeDeprecatedFieldRPC = false;
     }
 
@@ -321,61 +320,7 @@ public:
 };
 static CRegTestParams regTestParams;
 
-/**
- * Unit test
- */
-class CUnitTestParams : public CMainParams, public CModifiableParams {
-public:
-    CUnitTestParams() {
-        strNetworkID = "unittest";
-        nDefaultPort = 18445;
-        vFixedSeeds.clear(); //! Unit test mode doesn't have any fixed seeds.
-        vSeeds.clear();  //! Unit test mode doesn't have any DNS seeds.
-
-        fRequireRPCPassword = false;
-        fMiningRequiresPeers = false;
-        fDefaultCheckMemPool = true;
-        fAllowMinDifficultyBlocks = false;
-        fMineBlocksOnDemand = true;
-    }
-
-    const Checkpoints::CCheckpointData& Checkpoints() const 
-    {
-        // UnitTest share the same checkpoints as MAIN
-        return data;
-    }
-
-    /* StrictChainId() = true inherited from CMainParams.  */
-
-    bool AllowLegacyBlocks(unsigned) const
-    {
-        /* Allow legacy blocks.  This is to make the unit tests that
-           rely on loading predefined block data work.  (In particular,
-           miner_tests.cpp.)  */
-        return true;
-    }
-
-    //! Published setters to allow changing values in unit test cases
-    virtual void setSubsidyHalvingInterval(int anSubsidyHalvingInterval)  { nSubsidyHalvingInterval=anSubsidyHalvingInterval; }
-    virtual void setEnforceBlockUpgradeMajority(int anEnforceBlockUpgradeMajority)  { nEnforceBlockUpgradeMajority=anEnforceBlockUpgradeMajority; }
-    virtual void setRejectBlockOutdatedMajority(int anRejectBlockOutdatedMajority)  { nRejectBlockOutdatedMajority=anRejectBlockOutdatedMajority; }
-    virtual void setToCheckBlockUpgradeMajority(int anToCheckBlockUpgradeMajority)  { nToCheckBlockUpgradeMajority=anToCheckBlockUpgradeMajority; }
-    virtual void setDefaultCheckMemPool(bool afDefaultCheckMemPool)  { fDefaultCheckMemPool=afDefaultCheckMemPool; }
-    virtual void setAllowMinDifficultyBlocks(bool afAllowMinDifficultyBlocks) {  fAllowMinDifficultyBlocks=afAllowMinDifficultyBlocks; }
-    virtual void setSkipProofOfWorkCheck(bool afSkipProofOfWorkCheck) { fSkipProofOfWorkCheck = afSkipProofOfWorkCheck; }
-    virtual void setProofOfWorkLimit(const arith_uint256& limit) { bnProofOfWorkLimit = limit; }
-};
-static CUnitTestParams unitTestParams;
-
-
 static CChainParams *pCurrentParams = 0;
-
-CModifiableParams *ModifiableParams()
-{
-   assert(pCurrentParams);
-   assert(pCurrentParams==&unitTestParams);
-   return (CModifiableParams*)&unitTestParams;
-}
 
 const CChainParams &Params() {
     assert(pCurrentParams);
@@ -390,8 +335,6 @@ CChainParams &Params(CBaseChainParams::Network network) {
             return testNetParams;
         case CBaseChainParams::REGTEST:
             return regTestParams;
-        case CBaseChainParams::UNITTEST:
-            return unitTestParams;
         default:
             assert(false && "Unimplemented network");
             return mainParams;

@@ -2510,8 +2510,11 @@ bool FindBlockPos(CValidationState &state, CDiskBlockPos &pos, unsigned int nAdd
     }
 
     nLastBlockFile = nFile;
-    vinfoBlockFile[nFile].nSize += nAddSize;
     vinfoBlockFile[nFile].AddBlock(nHeight, nTime);
+    if (fKnown)
+        vinfoBlockFile[nFile].nSize = std::max(pos.nPos + nAddSize, vinfoBlockFile[nFile].nSize);
+    else
+        vinfoBlockFile[nFile].nSize += nAddSize;
 
     if (!fKnown) {
         unsigned int nOldChunks = (pos.nPos + BLOCKFILE_CHUNK_SIZE - 1) / BLOCKFILE_CHUNK_SIZE;
@@ -2656,8 +2659,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
                          REJECT_INVALID, "late-legacy-block");
 
     // Check proof of work
-    if ((!Params().SkipProofOfWorkCheck()) &&
-       (block.nBits != GetNextWorkRequired(pindexPrev, &block)))
+    if ((block.nBits != GetNextWorkRequired(pindexPrev, &block)))
         return state.DoS(100, error("%s: incorrect proof of work", __func__),
                          REJECT_INVALID, "bad-diffbits");
 
