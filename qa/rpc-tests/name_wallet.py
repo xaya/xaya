@@ -20,11 +20,9 @@ txFee = Decimal ("0.001")
 initialBalance = Decimal ("1250")
 zero = Decimal ("0")
 
-# For some reason, the fee sent is twice the specified -paytxfee.
-# This is also true for pure currency transactions of 0.01 NMC.
-newFee = nameFee + 2 * txFee
-firstFee = 2 * txFee
-updFee = 2 * txFee
+newFee = nameFee + txFee
+firstFee = txFee
+updFee = txFee
 
 class NameWalletTest (NameTestFramework):
 

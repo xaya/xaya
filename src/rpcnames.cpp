@@ -731,7 +731,7 @@ name_new (const json_spirit::Array& params, bool fHelp)
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
   CWalletTx wtx;
-  SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, wtx);
+  SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, false, wtx);
 
   keyName.KeepKey ();
 
@@ -849,7 +849,7 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
     = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
   CWalletTx wtx;
-  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, wtx);
+  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, false, wtx);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -939,7 +939,7 @@ name_update (const json_spirit::Array& params, bool fHelp)
     = CNameScript::buildNameUpdate (addrName, name, value);
 
   CWalletTx wtx;
-  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, wtx);
+  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, false, wtx);
 
   if (usedKey)
     keyName.KeepKey ();
