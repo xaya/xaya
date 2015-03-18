@@ -239,6 +239,10 @@ struct CBlockReject {
  * and we're no longer holding the node's locks.
  */
 struct CNodeState {
+    //! The peer's address
+    CService address;
+    //! Whether we have a fully established connection.
+    bool fCurrentlyConnected;
     //! Accumulated misbehaviour score for this peer.
     int nMisbehavior;
     //! Whether this peer should be disconnected and banned (unless whitelisted).
@@ -263,6 +267,7 @@ struct CNodeState {
     bool fPreferredDownload;
 
     CNodeState() {
+        fCurrentlyConnected = false;
         nMisbehavior = 0;
         fShouldBan = false;
         pindexBestKnownBlock = NULL;
@@ -306,6 +311,7 @@ void InitializeNode(NodeId nodeid, const CNode *pnode) {
     LOCK(cs_main);
     CNodeState &state = mapNodeState.insert(std::make_pair(nodeid, CNodeState())).first->second;
     state.name = pnode->addrName;
+    state.address = pnode->addr;
 }
 
 void FinalizeNode(NodeId nodeid) {
@@ -314,6 +320,10 @@ void FinalizeNode(NodeId nodeid) {
 
     if (state->fSyncStarted)
         nSyncStarted--;
+
+    if (state->nMisbehavior == 0 && state->fCurrentlyConnected) {
+        AddressCurrentlyConnected(state->address);
+    }
 
     BOOST_FOREACH(const QueuedBlock& entry, state->vBlocksInFlight)
         mapBlocksInFlight.erase(entry.hash);
@@ -2367,7 +2377,7 @@ bool InvalidateBlock(CValidationState& state, CBlockIndex *pindex) {
     BlockMap::iterator it = mapBlockIndex.begin();
     while (it != mapBlockIndex.end()) {
         if (it->second->IsValid(BLOCK_VALID_TRANSACTIONS) && it->second->nChainTx && setBlockIndexCandidates.value_comp()(chainActive.Tip(), it->second)) {
-            setBlockIndexCandidates.insert(pindex);
+            setBlockIndexCandidates.insert(it->second);
         }
         it++;
     }
@@ -3690,6 +3700,12 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     else if (strCommand == "verack")
     {
         pfrom->SetRecvVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
+
+        // Mark this node as currently connected, so we update its timestamp later.
+        if (pfrom->fNetworkNode) {
+            LOCK(cs_main);
+            State(pfrom->GetId())->fCurrentlyConnected = true;
+        }
     }
 
 
@@ -4333,11 +4349,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         LogPrint("net", "Unknown command \"%s\" from peer=%d\n", SanitizeString(strCommand), pfrom->id);
     }
 
-
-    // Update the last seen time for this node's address
-    if (pfrom->fNetworkNode)
-        if (strCommand == "version" || strCommand == "addr" || strCommand == "inv" || strCommand == "getdata" || strCommand == "ping")
-            AddressCurrentlyConnected(pfrom->addr);
 
 
     return true;
