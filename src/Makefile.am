@@ -208,6 +208,7 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/db.cpp \
   crypter.cpp \
   wallet/rpcdump.cpp \
+  wallet/rpcnames.cpp \
   wallet/rpcwallet.cpp \
   wallet/wallet.cpp \
   wallet/wallet_ismine.cpp \

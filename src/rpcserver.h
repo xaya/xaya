@@ -34,6 +34,7 @@ class CBlockIndex;
 class CMutableTransaction;
 class CNameData;
 class CNetAddr;
+class COutPoint;
 class CTxIn;
 class CWalletTx;
 
@@ -250,7 +251,9 @@ extern bool HTTPReq_REST(AcceptedConnection *conn,
 /* In rpcnames.cpp.  */
 
 extern void AddRawTxNameOperation(CMutableTransaction& tx, const json_spirit::Object& obj);
+extern json_spirit::Object getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr, int height);
 extern json_spirit::Object getNameInfo(const valtype& name, const CNameData& data);
+extern std::string getNameInfoHelp(const std::string& indent, const std::string& trailing);
 
 extern json_spirit::Value name_show(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value name_history(const json_spirit::Array& params, bool fHelp);

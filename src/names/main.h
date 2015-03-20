@@ -1,10 +1,11 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2015 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef H_BITCOIN_NAMES_MAIN
 #define H_BITCOIN_NAMES_MAIN
 
+#include "amount.h"
 #include "names/common.h"
 #include "primitives/transaction.h"
 #include "serialize.h"
@@ -27,6 +28,9 @@ static const unsigned MAX_VALUE_LENGTH = 1023;
 static const unsigned MAX_NAME_LENGTH = 255;
 static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
 static const unsigned MAX_VALUE_LENGTH_UI = 520;
+
+/** The amount of coins to lock in created transactions.  */
+static const CAmount NAME_LOCKED_AMOUNT = COIN / 100;
 
 /* ************************************************************************** */
 /* CNameTxUndo.  */
