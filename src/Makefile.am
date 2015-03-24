@@ -89,7 +89,6 @@ BITCOIN_CORE_H = \
   compat.h \
   compressor.h \
   core_io.h \
-  crypter.h \
   wallet/db.h \
   eccryptoverify.h \
   ecwrapper.h \
@@ -142,6 +141,7 @@ BITCOIN_CORE_H = \
   utilstrencodings.h \
   utiltime.h \
   version.h \
+  wallet/crypter.h \
   wallet/walletdb.h \
   wallet/wallet.h \
   wallet/wallet_ismine.h \
@@ -200,8 +200,8 @@ libbitcoin_server_a_SOURCES = \
 # when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(BITCOIN_INCLUDES)
 libbitcoin_wallet_a_SOURCES = \
+  wallet/crypter.cpp \
   wallet/db.cpp \
-  crypter.cpp \
   wallet/rpcdump.cpp \
   wallet/rpcwallet.cpp \
   wallet/wallet.cpp \
