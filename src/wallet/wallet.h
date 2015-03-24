@@ -10,11 +10,11 @@
 #include "auxpow.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
-#include "crypter.h"
 #include "key.h"
 #include "keystore.h"
 #include "main.h"
 #include "ui_interface.h"
+#include "wallet/crypter.h"
 #include "wallet/wallet_ismine.h"
 #include "wallet/walletdb.h"
 
@@ -701,7 +701,7 @@ public:
     void Flush(bool shutdown=false);
 
     //! Verify the wallet database and perform salvage if required
-    static bool Verify(const std::string walletFile, std::string& warningString, std::string& errorString);
+    static bool Verify(const std::string& walletFile, std::string& warningString, std::string& errorString);
     
     /** 
      * Address book entry changed.
