@@ -361,9 +361,10 @@ bool TestBlockValidity(CValidationState &state, const CBlock& block, CBlockIndex
 /**
  * Check proof-of-work of a block header, taking auxpow into account.
  * @param block The block header.
+ * @param params Consensus parameters.
  * @return True iff the PoW is correct.
  */
-bool CheckProofOfWork(const CBlockHeader& block);
+bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params);
 
 /** Store block on disk. If dbp is provided, the file is known to already reside on disk */
 bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex **pindex, CDiskBlockPos* dbp = NULL);

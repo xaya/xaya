@@ -777,7 +777,7 @@ Value getauxblock(const Array& params, bool fHelp)
        past the point of merge-mining start.  Check nevertheless.  */
     {
         LOCK(cs_main);
-        if (chainActive.Height() + 1 < Params().AuxpowStartHeight())
+        if (chainActive.Height() + 1 < Params().GetConsensus().nAuxpowStartHeight)
             throw std::runtime_error("getauxblock method is not yet available");
     }
 

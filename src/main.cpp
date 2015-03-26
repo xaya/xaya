@@ -1120,14 +1120,14 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock
 // CBlock and CBlockIndex
 //
 
-bool CheckProofOfWork(const CBlockHeader& block)
+bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
     /* Except for legacy blocks with full version 1, ensure that
        the chain ID is correct.  Legacy blocks are not allowed since
        the merge-mining start, which is checked in AcceptBlockHeader
        where the height is known.  */
-    if (!block.nVersion.IsLegacy() && Params().StrictChainId()
-        && block.nVersion.GetChainId() != Params().AuxpowChainId())
+    if (!block.nVersion.IsLegacy() && params.fStrictChainId
+        && block.nVersion.GetChainId() != params.nAuxpowChainId)
         return error("%s : block does not have our chain ID", __func__);
 
     /* If there is no auxpow, just check the block hash.  */
@@ -1137,7 +1137,7 @@ bool CheckProofOfWork(const CBlockHeader& block)
             return error("%s : no auxpow on block with auxpow version",
                          __func__);
 
-        if (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus()))
+        if (!CheckProofOfWork(block.GetHash(), block.nBits, params))
             return error("%s : non-AUX proof of work failed", __func__);
 
         return true;
@@ -1147,9 +1147,9 @@ bool CheckProofOfWork(const CBlockHeader& block)
     if (!block.nVersion.IsAuxpow())
         return error("%s : auxpow on block with non-auxpow version", __func__);
 
-    if (!block.auxpow->check(block.GetHash(), block.nVersion.GetChainId()))
+    if (!block.auxpow->check(block.GetHash(), block.nVersion.GetChainId(), params))
         return error("%s : AUX POW is not valid", __func__);
-    if (!CheckProofOfWork(block.auxpow->getParentBlockHash(), block.nBits, Params().GetConsensus()))
+    if (!CheckProofOfWork(block.auxpow->getParentBlockHash(), block.nBits, params))
         return error("%s : AUX proof of work failed", __func__);
 
     return true;
@@ -1198,7 +1198,7 @@ static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos)
     }
 
     // Check the header
-    if (!CheckProofOfWork(block))
+    if (!CheckProofOfWork(block, Params().GetConsensus()))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -2518,7 +2518,7 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool fCheckPOW)
 {
     // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckProofOfWork(block))
+    if (fCheckPOW && !CheckProofOfWork(block, Params().GetConsensus()))
         return state.DoS(50, error("CheckBlockHeader(): proof of work failed"),
                          REJECT_INVALID, "high-hash");
 
@@ -2601,7 +2601,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     int nHeight = pindexPrev->nHeight+1;
 
     // Disallow legacy blocks after merge-mining start.
-    if (!Params().AllowLegacyBlocks(nHeight)
+    if (!Params().GetConsensus().AllowLegacyBlocks(nHeight)
         && block.nVersion.IsLegacy())
         return state.DoS(100, error("%s : legacy block after auxpow start",
                                     __func__),

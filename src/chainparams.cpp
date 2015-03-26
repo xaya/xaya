@@ -109,6 +109,10 @@ public:
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
         consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.nAuxpowChainId = 0x0001;
+        consensus.nAuxpowStartHeight = 19200;
+        consensus.fStrictChainId = true;
+        consensus.nLegacyBlocksBefore = 19200;
         /** 
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -177,21 +181,6 @@ public:
     {
         return data;
     }
-
-    int AuxpowStartHeight() const
-    {
-        return 19200;
-    }
-
-    bool StrictChainId() const
-    {
-        return true;
-    }
-
-    bool AllowLegacyBlocks(unsigned nHeight) const
-    {
-        return static_cast<int> (nHeight) < AuxpowStartHeight();
-    }
 };
 static CMainParams mainParams;
 
@@ -206,6 +195,9 @@ public:
         consensus.nMajorityRejectBlockOutdated = 75;
         consensus.nMajorityWindow = 100;
         consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.nAuxpowStartHeight = 0;
+        consensus.fStrictChainId = false;
+        consensus.nLegacyBlocksBefore = -1;
         pchMessageStart[0] = 0x0b;
         pchMessageStart[1] = 0x11;
         pchMessageStart[2] = 0x09;
@@ -246,21 +238,6 @@ public:
     {
         return dataTestnet;
     }
-
-    int AuxpowStartHeight() const
-    {
-        return 0;
-    }
-
-    bool StrictChainId() const
-    {
-        return false;
-    }
-
-    bool AllowLegacyBlocks(unsigned) const
-    {
-        return true;
-    }
 };
 static CTestNetParams testNetParams;
 
@@ -276,6 +253,8 @@ public:
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
         consensus.powLimit = ~arith_uint256(0) >> 1;
+        consensus.fStrictChainId = true;
+        consensus.nLegacyBlocksBefore = 0;
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
@@ -301,16 +280,6 @@ public:
     const Checkpoints::CCheckpointData& Checkpoints() const 
     {
         return dataRegtest;
-    }
-
-    bool StrictChainId() const
-    {
-        return true;
-    }
-
-    bool AllowLegacyBlocks(unsigned) const
-    {
-        return false;
     }
 };
 static CRegTestParams regTestParams;
