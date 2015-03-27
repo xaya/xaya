@@ -51,7 +51,8 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
 
   /* Calculate expiration data.  */
   const int curHeight = chainActive.Height ();
-  const int expireDepth = Params ().NameExpirationDepth (curHeight);
+  const Consensus::Params& params = Params ().GetConsensus ();
+  const int expireDepth = params.rules->NameExpirationDepth (curHeight);
   const int expireHeight = height + expireDepth;
   const int expiresIn = expireHeight - curHeight;
   const bool expired = (expiresIn <= 0);

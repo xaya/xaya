@@ -6,10 +6,80 @@
 #ifndef BITCOIN_CONSENSUS_CONSENSUS_PARAMS_H
 #define BITCOIN_CONSENSUS_CONSENSUS_PARAMS_H
 
+#include "amount.h"
 #include "arith_uint256.h"
 #include "uint256.h"
 
+#include <memory>
+
 namespace Consensus {
+
+/**
+ * Interface for classes that define consensus behaviour in more
+ * complex ways than just by a set of constants.
+ */
+class ConsensusRules
+{
+public:
+
+    /* Return the expiration depth for names at the given height.  */
+    virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
+
+    /* Return minimum locked amount in a name.  */
+    virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
+
+};
+
+class MainNetConsensus : public ConsensusRules
+{
+public:
+
+    unsigned NameExpirationDepth(unsigned nHeight) const
+    {
+        /* Important:  It is assumed (in ExpireNames) that
+           "n - expirationDepth(n)" is increasing!  (This is
+           the update height up to which names expire at height n.)  */
+
+        if (nHeight < 24000)
+            return 12000;
+        if (nHeight < 48000)
+            return nHeight - 12000;
+
+        return 36000;
+    }
+
+    CAmount MinNameCoinAmount(unsigned nHeight) const
+    {
+        if (nHeight < 212500)
+            return 0;
+
+        return COIN / 100;
+    }
+
+};
+
+class TestNetConsensus : public MainNetConsensus
+{
+public:
+
+    CAmount MinNameCoinAmount(unsigned) const
+    {
+        return COIN / 100;
+    }
+
+};
+
+class RegTestConsensus : public TestNetConsensus
+{
+public:
+
+    unsigned NameExpirationDepth (unsigned nHeight) const
+    {
+        return 30;
+    }
+
+};
+
 /**
  * Parameters that influence chain consensus.
  */
@@ -32,6 +102,9 @@ struct Params {
     int nAuxpowStartHeight;
     bool fStrictChainId;
     int nLegacyBlocksBefore; // -1 for "always allow"
+
+    /** Consensus rule interface.  */
+    std::auto_ptr<ConsensusRules> rules;
 
     /**
      * Check whether or not minimum difficulty blocks are allowed

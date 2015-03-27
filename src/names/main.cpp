@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2015 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,7 +28,8 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
   if (nPrevHeight == MEMPOOL_HEIGHT)
     return false;
 
-  return nPrevHeight + Params ().NameExpirationDepth (nHeight) <= nHeight;
+  const Consensus::Params& params = Params ().GetConsensus ();
+  return nPrevHeight + params.rules->NameExpirationDepth (nHeight) <= nHeight;
 }
 
 /* ************************************************************************** */
@@ -425,7 +426,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                                  __func__, txid));
 
   /* Reject "greedy names".  */
-  if (tx.vout[nameOut].nValue < Params().MinNameCoinAmount(nHeight))
+  const Consensus::Params& params = Params ().GetConsensus ();
+  if (tx.vout[nameOut].nValue < params.rules->MinNameCoinAmount(nHeight))
     return state.Invalid (error ("%s: greedy name", __func__));
 
   /* Handle NAME_NEW now, since this is easy and different from the other
@@ -600,8 +602,9 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
      since the last block.  If the expiration depth changes, this could
      be multiple heights at once.  */
 
-  const unsigned expDepthOld = Params ().NameExpirationDepth (nHeight - 1);
-  const unsigned expDepthNow = Params ().NameExpirationDepth (nHeight);
+  const Consensus::Params& params = Params ().GetConsensus ();
+  const unsigned expDepthOld = params.rules->NameExpirationDepth (nHeight - 1);
+  const unsigned expDepthNow = params.rules->NameExpirationDepth (nHeight);
 
   if (expDepthNow > nHeight)
     return true;

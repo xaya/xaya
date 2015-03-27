@@ -6,7 +6,6 @@
 #ifndef BITCOIN_CHAINPARAMS_H
 #define BITCOIN_CHAINPARAMS_H
 
-#include "amount.h"
 #include "arith_uint256.h"
 #include "chainparamsbase.h"
 #include "checkpoints.h"
@@ -100,14 +99,6 @@ public:
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
-
-    /* Return the expiration depth for names at the given height.  */
-    /* FIXME: Move to consensus params!  */
-    virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
-
-    /* Return minimum locked amount in a name.  */
-    /* FIXME: Move to consensus params!  */
-    virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,

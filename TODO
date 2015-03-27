@@ -8,6 +8,7 @@
   - allow larger blocks (DB locks)
   - no need to disallow auxpow parent blocks with auxpow-flag in the version
     any more; instead, the auxpow is simply never loaded for them
+  - disallow legacy blocks also on testnet
   - name_new format change?
   - make NamecoinTxVersion a flag?
   - more differences???

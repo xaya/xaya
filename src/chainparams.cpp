@@ -140,6 +140,7 @@ public:
         consensus.nAuxpowStartHeight = 19200;
         consensus.fStrictChainId = true;
         consensus.nLegacyBlocksBefore = 19200;
+        consensus.rules.reset(new Consensus::MainNetConsensus());
         /** 
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -248,28 +249,6 @@ public:
         return data;
     }
 
-    unsigned NameExpirationDepth (unsigned nHeight) const
-    {
-        /* Important:  It is assumed (in ExpireNames) that
-           "n - expirationDepth(n)" is increasing!  (This is
-           the update height up to which names expire at height n.)  */
-
-        if (nHeight < 24000)
-            return 12000;
-        if (nHeight < 48000)
-            return nHeight - 12000;
-
-        return 36000;
-    }
-
-    CAmount MinNameCoinAmount(unsigned nHeight) const
-    {
-        if (nHeight < 212500)
-            return 0;
-
-        return COIN / 100;
-    }
-
     int DefaultCheckNameDB () const
     {
         return -1;
@@ -293,6 +272,7 @@ public:
         consensus.nAuxpowStartHeight = 0;
         consensus.fStrictChainId = false;
         consensus.nLegacyBlocksBefore = -1;
+        consensus.rules.reset(new Consensus::TestNetConsensus());
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
@@ -346,11 +326,6 @@ public:
     {
         return dataTestnet;
     }
-
-    CAmount MinNameCoinAmount(unsigned) const
-    {
-        return COIN / 100;
-    }
 };
 static CTestNetParams testNetParams;
 
@@ -369,6 +344,7 @@ public:
         consensus.nMinDifficultySince = 0;
         consensus.fStrictChainId = true;
         consensus.nLegacyBlocksBefore = 0;
+        consensus.rules.reset(new Consensus::RegTestConsensus());
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
@@ -394,11 +370,6 @@ public:
     const Checkpoints::CCheckpointData& Checkpoints() const 
     {
         return dataRegtest;
-    }
-
-    unsigned NameExpirationDepth (unsigned nHeight) const
-    {
-        return 30;
     }
 
     int DefaultCheckNameDB () const
