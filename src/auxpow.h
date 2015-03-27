@@ -7,11 +7,11 @@
 #ifndef BITCOIN_AUXPOW_H
 #define BITCOIN_AUXPOW_H
 
-#include "serialize.h"
-#include "uint256.h"
-
+#include "consensus/params.h"
 #include "primitives/pureheader.h"
 #include "primitives/transaction.h"
+#include "serialize.h"
+#include "uint256.h"
 
 #include <vector>
 
@@ -135,9 +135,11 @@ public:
    * just confirms that all the merkle branches are valid.
    * @param hashAuxBlock Hash of the merge-mined block.
    * @param nChainId The auxpow chain ID of the block to check.
+   * @param params Consensus parameters.
    * @return True if the auxpow is valid.
    */
-  bool check (const uint256& hashAuxBlock, int nChainId) const;
+  bool check (const uint256& hashAuxBlock, int nChainId,
+              const Consensus::Params& params) const;
 
   /**
    * Get the parent block's hash.  This is used to verify that it

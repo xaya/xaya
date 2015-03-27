@@ -7,11 +7,12 @@
 #define BITCOIN_CHAINPARAMS_H
 
 #include "amount.h"
+#include "arith_uint256.h"
 #include "chainparamsbase.h"
 #include "checkpoints.h"
+#include "consensus/params.h"
 #include "primitives/block.h"
 #include "protocol.h"
-#include "arith_uint256.h"
 
 #include <map>
 #include <vector>
@@ -58,16 +59,16 @@ public:
         BUG_FULLY_IGNORE,
     };
 
-    const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
+    const Consensus::Params& GetConsensus() const { return consensus; }
+    const uint256& HashGenesisBlock() const { return consensus.hashGenesisBlock; }
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     const std::vector<unsigned char>& AlertKey() const { return vAlertPubKey; }
     int GetDefaultPort() const { return nDefaultPort; }
-    const arith_uint256& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
-    int SubsidyHalvingInterval() const { return nSubsidyHalvingInterval; }
-    /** Used to check majorities for block version upgrade */
-    int EnforceBlockUpgradeMajority() const { return nEnforceBlockUpgradeMajority; }
-    int RejectBlockOutdatedMajority() const { return nRejectBlockOutdatedMajority; }
-    int ToCheckBlockUpgradeMajority() const { return nToCheckBlockUpgradeMajority; }
+    const arith_uint256& ProofOfWorkLimit() const { return consensus.powLimit; }
+    int SubsidyHalvingInterval() const { return consensus.nSubsidyHalvingInterval; }
+    int EnforceBlockUpgradeMajority() const { return consensus.nMajorityEnforceBlockUpgrade; }
+    int RejectBlockOutdatedMajority() const { return consensus.nMajorityRejectBlockOutdated; }
+    int ToCheckBlockUpgradeMajority() const { return consensus.nMajorityWindow; }
 
     /** Used if GenerateBitcoins is called with a negative number of threads */
     int DefaultMinerThreads() const { return nMinerThreads; }
@@ -80,12 +81,15 @@ public:
     /** Default value for -checknamedb argument */
     virtual int DefaultCheckNameDB() const = 0;
     /** Allow mining of a min-difficulty block */
-    bool AllowMinDifficultyBlocks(const CBlockHeader& block) const;
+    bool AllowMinDifficultyBlocks(const CBlockHeader& block) const
+    {
+        return consensus.AllowMinDifficultyBlocks(block.GetBlockTime());
+    }
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
-    int64_t TargetTimespan() const { return nTargetTimespan; }
-    int64_t TargetSpacing() const { return nTargetSpacing; }
-    int64_t DifficultyAdjustmentInterval() const { return nTargetTimespan / nTargetSpacing; }
+    int64_t TargetTimespan() const { return consensus.nPowTargetTimespan; }
+    int64_t TargetSpacing() const { return consensus.nPowTargetSpacing; }
+    int64_t DifficultyAdjustmentInterval() const { return consensus.nPowTargetTimespan / consensus.nPowTargetSpacing; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
     bool MineBlocksOnDemand() const { return fMineBlocksOnDemand; }
     /** In the future use NetworkIDString() for RPC fields */
@@ -97,44 +101,28 @@ public:
     const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
 
-    /* Return the auxpow chain ID.  */
-    inline int32_t AuxpowChainId () const { return 0x0001; }
-
-    /* Return start height of auxpow and the retarget interval change.  */
-    virtual int AuxpowStartHeight() const = 0;
-
-    /* Return whether or not to enforce strict chain ID checks.  */
-    virtual bool StrictChainId() const = 0;
-
-    /* Return whether to allow blocks with a "legacy" version.  */
-    virtual bool AllowLegacyBlocks(unsigned nHeight) const = 0;
-
     /* Return the expiration depth for names at the given height.  */
+    /* FIXME: Move to consensus params!  */
     virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
 
     /* Return minimum locked amount in a name.  */
+    /* FIXME: Move to consensus params!  */
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,
        which determines further actions.  */
+    /* FIXME: Move to consensus params!  */
     bool IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const;
 
 protected:
     CChainParams() {}
 
-    uint256 hashGenesisBlock;
+    Consensus::Params consensus;
     CMessageHeader::MessageStartChars pchMessageStart;
     //! Raw pub key bytes for the broadcast alert signing key.
     std::vector<unsigned char> vAlertPubKey;
     int nDefaultPort;
-    arith_uint256 bnProofOfWorkLimit;
-    int nSubsidyHalvingInterval;
-    int nEnforceBlockUpgradeMajority;
-    int nRejectBlockOutdatedMajority;
-    int nToCheckBlockUpgradeMajority;
-    int64_t nTargetTimespan;
-    int64_t nTargetSpacing;
     int nMinerThreads;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
@@ -144,8 +132,6 @@ protected:
     bool fRequireRPCPassword;
     bool fMiningRequiresPeers;
     bool fDefaultCheckMemPool;
-    bool fAllowMinDifficultyBlocks;
-    unsigned nMinDifficultySince;
     bool fRequireStandard;
     bool fMineBlocksOnDemand;
     bool fTestnetToBeDeprecatedFieldRPC;

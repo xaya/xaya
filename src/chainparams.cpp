@@ -23,12 +23,6 @@ struct SeedSpec6 {
 
 #include "chainparamsseeds.h"
 
-bool
-CChainParams::AllowMinDifficultyBlocks(const CBlockHeader& block) const
-{
-    return fAllowMinDifficultyBlocks && block.GetBlockTime() > nMinDifficultySince;
-}
-
 bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const
 {
     const std::pair<unsigned, uint256> key(nHeight, txid);
@@ -134,6 +128,18 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
+        consensus.nSubsidyHalvingInterval = 210000;
+        consensus.nMajorityEnforceBlockUpgrade = 750;
+        consensus.nMajorityRejectBlockOutdated = 950;
+        consensus.nMajorityWindow = 1000;
+        consensus.powLimit = ~arith_uint256(0) >> 32;
+        consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
+        consensus.nPowTargetSpacing = 10 * 60;
+        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.nAuxpowChainId = 0x0001;
+        consensus.nAuxpowStartHeight = 19200;
+        consensus.fStrictChainId = true;
+        consensus.nLegacyBlocksBefore = 19200;
         /** 
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -145,14 +151,7 @@ public:
         pchMessageStart[3] = 0xfe;
         vAlertPubKey = ParseHex("04ba207043c1575208f08ea6ac27ed2aedd4f84e70b874db129acb08e6109a3bbb7c479ae22565973ebf0ac0391514511a22cb9345bdb772be20cfbd38be578b0c");
         nDefaultPort = 8334;
-        bnProofOfWorkLimit = ~arith_uint256(0) >> 32;
-        nSubsidyHalvingInterval = 210000;
-        nEnforceBlockUpgradeMajority = 750;
-        nRejectBlockOutdatedMajority = 950;
-        nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 0;
-        nTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        nTargetSpacing = 10 * 60;
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -179,8 +178,8 @@ public:
         genesis.nBits    = 0x1c007fff;
         genesis.nNonce   = 0xa21ea192U;
 
-        hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256S("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770"));
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256S("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770"));
         assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
 
         vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
@@ -198,7 +197,6 @@ public:
         fRequireRPCPassword = true;
         fMiningRequiresPeers = true;
         fDefaultCheckMemPool = false;
-        fAllowMinDifficultyBlocks = false;
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = false;
@@ -250,21 +248,6 @@ public:
         return data;
     }
 
-    int AuxpowStartHeight() const
-    {
-        return 19200;
-    }
-
-    bool StrictChainId() const
-    {
-        return true;
-    }
-
-    bool AllowLegacyBlocks(unsigned nHeight) const
-    {
-        return static_cast<int> (nHeight) < AuxpowStartHeight();
-    }
-
     unsigned NameExpirationDepth (unsigned nHeight) const
     {
         /* Important:  It is assumed (in ExpireNames) that
@@ -301,19 +284,22 @@ class CTestNetParams : public CMainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
+        consensus.nMajorityEnforceBlockUpgrade = 51;
+        consensus.nMajorityRejectBlockOutdated = 75;
+        consensus.nMajorityWindow = 100;
+        consensus.powLimit = ~arith_uint256(0) >> 28;
+        consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.nMinDifficultySince = 1394838000; // 15 Mar 2014
+        consensus.nAuxpowStartHeight = 0;
+        consensus.fStrictChainId = false;
+        consensus.nLegacyBlocksBefore = -1;
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xfe;
         vAlertPubKey = ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
         nDefaultPort = 18334;
-        bnProofOfWorkLimit = ~arith_uint256(0) >> 28;
-        nEnforceBlockUpgradeMajority = 51;
-        nRejectBlockOutdatedMajority = 75;
-        nToCheckBlockUpgradeMajority = 100;
         nMinerThreads = 0;
-        nTargetTimespan = 14 * 24 * 60 * 60; //! two weeks
-        nTargetSpacing = 10 * 60;
 
         //! Modify the testnet genesis block accordingly.
         const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
@@ -329,8 +315,8 @@ public:
         genesis.nBits    = 0x1d07fff8;
         genesis.nNonce   = 0x16ec0bff;
 
-        hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256S("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256S("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
         assert(genesis.hashMerkleRoot == uint256S("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear();
@@ -350,8 +336,6 @@ public:
         fRequireRPCPassword = true;
         fMiningRequiresPeers = true;
         fDefaultCheckMemPool = false;
-        fAllowMinDifficultyBlocks = true;
-        nMinDifficultySince = 1394838000; // 15 Mar 2014
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = true;
@@ -361,21 +345,6 @@ public:
     const Checkpoints::CCheckpointData& Checkpoints() const 
     {
         return dataTestnet;
-    }
-
-    int AuxpowStartHeight() const
-    {
-        return 0;
-    }
-
-    bool StrictChainId() const
-    {
-        return false;
-    }
-
-    bool AllowLegacyBlocks(unsigned) const
-    {
-        return true;
     }
 
     CAmount MinNameCoinAmount(unsigned) const
@@ -392,24 +361,25 @@ class CRegTestParams : public CTestNetParams {
 public:
     CRegTestParams() {
         strNetworkID = "regtest";
+        consensus.nSubsidyHalvingInterval = 150;
+        consensus.nMajorityEnforceBlockUpgrade = 750;
+        consensus.nMajorityRejectBlockOutdated = 950;
+        consensus.nMajorityWindow = 1000;
+        consensus.powLimit = ~arith_uint256(0) >> 1;
+        consensus.nMinDifficultySince = 0;
+        consensus.fStrictChainId = true;
+        consensus.nLegacyBlocksBefore = 0;
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
-        nSubsidyHalvingInterval = 150;
-        nEnforceBlockUpgradeMajority = 750;
-        nRejectBlockOutdatedMajority = 950;
-        nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 1;
-        nTargetTimespan = 14 * 24 * 60 * 60; //! two weeks
-        nTargetSpacing = 10 * 60;
-        bnProofOfWorkLimit = ~arith_uint256(0) >> 1;
         genesis.nTime = 1296688602;
         genesis.nBits = 0x207fffff;
         genesis.nNonce = 2;
-        hashGenesisBlock = genesis.GetHash();
+        consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18444;
-        assert(hashGenesisBlock == uint256S("0x0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"));
+        assert(consensus.hashGenesisBlock == uint256S("0x0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
@@ -417,8 +387,6 @@ public:
         fRequireRPCPassword = false;
         fMiningRequiresPeers = false;
         fDefaultCheckMemPool = true;
-        fAllowMinDifficultyBlocks = true;
-        nMinDifficultySince = 0;
         fRequireStandard = false;
         fMineBlocksOnDemand = true;
         fTestnetToBeDeprecatedFieldRPC = false;
@@ -426,16 +394,6 @@ public:
     const Checkpoints::CCheckpointData& Checkpoints() const 
     {
         return dataRegtest;
-    }
-
-    bool StrictChainId() const
-    {
-        return true;
-    }
-
-    bool AllowLegacyBlocks(unsigned) const
-    {
-        return false;
     }
 
     unsigned NameExpirationDepth (unsigned nHeight) const

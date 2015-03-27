@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "base58.h"
+#include "coins.h"
 #include "init.h"
+#include "main.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"

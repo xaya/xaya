@@ -13,7 +13,8 @@ void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
 {
     assert(nBaseVersion >= 1 && nBaseVersion < VERSION_AUXPOW);
     assert(!IsAuxpow());
-    nVersion = nBaseVersion | (Params ().AuxpowChainId () * VERSION_CHAIN_START);
+    const int32_t nChainId = Params ().GetConsensus ().nAuxpowChainId;
+    nVersion = nBaseVersion | (nChainId * VERSION_CHAIN_START);
 }
 
 uint256 CPureBlockHeader::GetHash() const

@@ -13,6 +13,7 @@
 #include "pow.h"
 #include "rpcserver.h"
 #include "util.h"
+#include "validationinterface.h"
 #ifdef ENABLE_WALLET
 #include "wallet/db.h"
 #include "wallet/wallet.h"
@@ -204,7 +205,7 @@ Value setgenerate(const Array& params, bool fHelp)
                 LOCK(cs_main);
                 IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
             }
-            while (!CheckProofOfWork(pblock->GetHash(), pblock->nBits)) {
+            while (!CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus())) {
                 // Yes, there is a chance every nonce could fail to satisfy the -regtest
                 // target -- 1 in 2^(2^32). That ain't gonna happen.
                 ++pblock->nNonce;
@@ -776,7 +777,7 @@ Value getauxblock(const Array& params, bool fHelp)
        past the point of merge-mining start.  Check nevertheless.  */
     {
         LOCK(cs_main);
-        if (chainActive.Height() + 1 < Params().AuxpowStartHeight())
+        if (chainActive.Height() + 1 < Params().GetConsensus().nAuxpowStartHeight)
             throw std::runtime_error("getauxblock method is not yet available");
     }
 
