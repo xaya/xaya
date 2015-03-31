@@ -214,6 +214,7 @@ extern json_spirit::Value getwalletinfo(const json_spirit::Array& params, bool f
 extern json_spirit::Value getblockchaininfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value getnetworkinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value setmocktime(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value resendwallettransactions(const json_spirit::Array& params, bool fHelp);
 
 extern void SendMoneyToScript(const CScript& scriptPubKey, const CTxIn* withInput, CAmount nValue, bool fSubtractFeeFromAmount, CWalletTx& wtxNew);
 
