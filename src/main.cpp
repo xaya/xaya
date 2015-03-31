@@ -4538,7 +4538,7 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // transactions become unconfirmed and spams other nodes.
         if (!fReindex && !fImporting && !IsInitialBlockDownload())
         {
-            GetMainSignals().Broadcast();
+            GetMainSignals().Broadcast(nTimeBestReceived);
         }
 
         //
