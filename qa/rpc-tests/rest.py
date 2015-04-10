@@ -99,7 +99,7 @@ class RESTTest (BitcoinTestFramework):
         self.sync_all()
 
         # now mine the transactions
-        newblockhash = self.nodes[1].setgenerate(True, 1)
+        newblockhash = self.nodes[1].generate(1)
         self.sync_all()
 
         #check if the 3 tx show up in the new block
@@ -135,9 +135,9 @@ class RESTTest (BitcoinTestFramework):
         binData = binascii.unhexlify("0001")
         value = "correct value\nwith newlines\nand binary: " + binData
         newData = self.nodes[0].name_new(name)
-        self.nodes[0].setgenerate(True, 10)
+        self.nodes[0].generate(10)
         self.nodes[0].name_firstupdate(name, newData[1], newData[0], value)
-        self.nodes[0].setgenerate(True, 5)
+        self.nodes[0].generate(5)
         nameData = self.nodes[0].name_show(name)
         assert_equal(nameData['name'], name)
         assert_equal(nameData['value'], value)

@@ -10,6 +10,7 @@
 #include "clientversion.h"
 #include "data/alertTests.raw.h"
 
+#include "chainparams.h"
 #include "serialize.h"
 #include "streams.h"
 #include "util.h"
@@ -122,10 +123,11 @@ FIXME: Update alert tests!
 BOOST_AUTO_TEST_CASE(AlertApplies)
 {
     SetMockTime(11);
+    const std::vector<unsigned char>& alertKey = Params(CBaseChainParams::MAIN).AlertKey();
 
     BOOST_FOREACH(const CAlert& alert, alerts)
     {
-        BOOST_CHECK(alert.CheckSignature());
+        BOOST_CHECK(alert.CheckSignature(alertKey));
     }
 
     BOOST_CHECK(alerts.size() >= 3);
@@ -162,6 +164,7 @@ BOOST_AUTO_TEST_CASE(AlertApplies)
 BOOST_AUTO_TEST_CASE(AlertNotify)
 {
     SetMockTime(11);
+    const std::vector<unsigned char>& alertKey = Params(CBaseChainParams::MAIN).AlertKey();
 
     boost::filesystem::path temp = GetTempPath() / "alertnotify.txt";
     boost::filesystem::remove(temp);
@@ -169,7 +172,7 @@ BOOST_AUTO_TEST_CASE(AlertNotify)
     mapArgs["-alertnotify"] = std::string("echo %s >> ") + temp.string();
 
     BOOST_FOREACH(CAlert alert, alerts)
-        alert.ProcessAlert(false);
+        alert.ProcessAlert(alertKey, false);
 
     std::vector<std::string> r = read_lines(temp);
     BOOST_CHECK_EQUAL(r.size(), 4u);

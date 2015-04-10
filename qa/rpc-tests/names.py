@@ -32,7 +32,7 @@ class NameTestFramework (BitcoinTestFramework):
 
     if syncBefore:
         self.sync_all ()
-    self.nodes[ind].setgenerate (True, blocks)
+    self.nodes[ind].generate (blocks)
     self.sync_all ('blocks')
 
   def checkName (self, ind, name, value, expiresIn, expired):
