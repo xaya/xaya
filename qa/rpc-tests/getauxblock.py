@@ -22,7 +22,7 @@ class GetAuxBlockTest (BitcoinTestFramework):
     BitcoinTestFramework.run_test (self)
 
     # Generate a block so that we are not "downloading blocks".
-    self.nodes[0].setgenerate (True, 1)
+    self.nodes[0].generate (1)
 
     # Compare basic data of getauxblock to getblocktemplate.
     auxblock = self.nodes[0].getauxblock ()
@@ -48,7 +48,7 @@ class GetAuxBlockTest (BitcoinTestFramework):
 
     # If we receive a new block, the old hash will be replaced.
     self.sync_all ()
-    self.nodes[1].setgenerate (True, 1)
+    self.nodes[1].generate (1)
     self.sync_all ()
     auxblock2 = self.nodes[0].getauxblock ()
     assert auxblock['hash'] != auxblock2['hash']
@@ -67,7 +67,7 @@ class GetAuxBlockTest (BitcoinTestFramework):
 
     # Invalidate the block again, send a transaction and query for the
     # auxblock to solve that contains the transaction.
-    self.nodes[0].setgenerate (True, 1)
+    self.nodes[0].generate (1)
     addr = self.nodes[1].getnewaddress ()
     txid = self.nodes[0].sendtoaddress (addr, 1)
     self.sync_all ()
