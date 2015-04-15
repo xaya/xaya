@@ -52,6 +52,9 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 json_spirit::Value
 name_list (const json_spirit::Array& params, bool fHelp)
 {
+  if (!EnsureWalletIsAvailable (fHelp))
+    return json_spirit::Value::null;
+
   if (fHelp || params.size () > 1)
     throw std::runtime_error (
         "name_list (\"name\")\n"
@@ -145,6 +148,9 @@ name_list (const json_spirit::Array& params, bool fHelp)
 json_spirit::Value
 name_new (const json_spirit::Array& params, bool fHelp)
 {
+  if (!EnsureWalletIsAvailable (fHelp))
+    return json_spirit::Value::null;
+
   if (fHelp || params.size () != 1)
     throw std::runtime_error (
         "name_new \"name\"\n"
@@ -209,6 +215,9 @@ name_new (const json_spirit::Array& params, bool fHelp)
 json_spirit::Value
 name_firstupdate (const json_spirit::Array& params, bool fHelp)
 {
+  if (!EnsureWalletIsAvailable (fHelp))
+    return json_spirit::Value::null;
+
   if (fHelp || (params.size () != 4 && params.size () != 5))
     throw std::runtime_error (
         "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
@@ -319,6 +328,9 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
 json_spirit::Value
 name_update (const json_spirit::Array& params, bool fHelp)
 {
+  if (!EnsureWalletIsAvailable (fHelp))
+    return json_spirit::Value::null;
+
   if (fHelp || (params.size () != 2 && params.size () != 3))
     throw std::runtime_error (
         "name_update \"name\" \"value\" (\"toaddress\")\n"

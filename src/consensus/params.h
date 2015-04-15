@@ -7,7 +7,6 @@
 #define BITCOIN_CONSENSUS_CONSENSUS_PARAMS_H
 
 #include "amount.h"
-#include "arith_uint256.h"
 #include "uint256.h"
 
 #include <memory>
@@ -91,7 +90,7 @@ struct Params {
     int nMajorityRejectBlockOutdated;
     int nMajorityWindow;
     /** Proof of work parameters */
-    arith_uint256 powLimit;
+    uint256 powLimit;
     bool fPowAllowMinDifficultyBlocks;
     int64_t nMinDifficultySince;
     int64_t nPowTargetSpacing;

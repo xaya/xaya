@@ -104,7 +104,6 @@ public:
     std::string name;
     rpcfn_type actor;
     bool okSafeMode;
-    bool reqWallet;
 };
 
 /**
@@ -151,6 +150,7 @@ extern std::string HelpRequiringPassphrase();
 extern std::string HelpExampleCli(std::string methodname, std::string args);
 extern std::string HelpExampleRpc(std::string methodname, std::string args);
 
+extern bool EnsureWalletIsAvailable(bool avoidException);
 extern void EnsureWalletIsUnlocked();
 
 extern json_spirit::Value getconnectioncount(const json_spirit::Array& params, bool fHelp); // in rpcnet.cpp
