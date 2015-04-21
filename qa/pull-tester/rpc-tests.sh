@@ -27,6 +27,7 @@ testScripts=(
     'mempool_coinbase_spends.py'
     'httpbasics.py'
     'zapwallettxes.py'
+    'proxy_test.py'
 #    'forknotify.py'
 
     # auxpow tests
