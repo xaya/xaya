@@ -35,8 +35,8 @@ public:
         PUBKEY_ADDRESS,
         SCRIPT_ADDRESS,
         SECRET_KEY,
-        //EXT_PUBLIC_KEY,
-        //EXT_SECRET_KEY,
+        EXT_PUBLIC_KEY,
+        EXT_SECRET_KEY,
 
         MAX_BASE58_TYPES
     };
@@ -78,6 +78,7 @@ public:
     virtual int DefaultCheckNameDB() const = 0;
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
+    int64_t PruneAfterHeight() const { return nPruneAfterHeight; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
     bool MineBlocksOnDemand() const { return fMineBlocksOnDemand; }
     /** In the future use NetworkIDString() for RPC fields */
@@ -104,6 +105,7 @@ protected:
     std::vector<unsigned char> vAlertPubKey;
     int nDefaultPort;
     int nMinerThreads;
+    uint64_t nPruneAfterHeight;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     std::string strNetworkID;

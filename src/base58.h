@@ -135,7 +135,6 @@ public:
     CBitcoinSecret() {}
 };
 
-/*
 template<typename K, int Size, CChainParams::Base58Type Type> class CBitcoinExtKeyBase : public CBase58Data
 {
 public:
@@ -160,6 +159,5 @@ public:
 
 typedef CBitcoinExtKeyBase<CExtKey, 74, CChainParams::EXT_SECRET_KEY> CBitcoinExtKey;
 typedef CBitcoinExtKeyBase<CExtPubKey, 74, CChainParams::EXT_PUBLIC_KEY> CBitcoinExtPubKey;
-*/
 
 #endif // BITCOIN_BASE58_H

@@ -163,7 +163,7 @@ def _rpchost_to_args(rpchost):
         rv += ['-rpcport=' + rpcport]
     return rv
 
-def start_node(i, dirname, extra_args=[], rpchost=None):
+def start_node(i, dirname, extra_args=[], rpchost=None, timewait=None):
     """
     Start a namecoind and return RPC connection to it
     """
@@ -177,7 +177,10 @@ def start_node(i, dirname, extra_args=[], rpchost=None):
                           ["-rpcwait", "getblockcount"], stdout=devnull)
     devnull.close()
     url = "http://rt:rt@%s:%d" % (rpchost or '127.0.0.1', rpc_port(i))
-    proxy = AuthServiceProxy(url)
+    if timewait is not None:
+        proxy = AuthServiceProxy(url, timeout=timewait)
+    else:
+        proxy = AuthServiceProxy(url)
     proxy.url = url # store URL on proxy for info
     return proxy
 
