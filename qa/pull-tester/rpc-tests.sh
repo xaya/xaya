@@ -28,6 +28,7 @@ testScripts=(
     'httpbasics.py'
     'zapwallettxes.py'
     'proxy_test.py'
+    'merkle_blocks.py'
 #    'forknotify.py'
 
     # auxpow tests
