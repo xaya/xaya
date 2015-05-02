@@ -30,6 +30,8 @@ testScripts=(
     'proxy_test.py'
     'merkle_blocks.py'
 #    'forknotify.py'
+    'maxblocksinflight.py'
+    'invalidblockrequest.py'
 
     # auxpow tests
     'getauxblock.py'
