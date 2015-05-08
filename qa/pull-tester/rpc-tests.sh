@@ -31,9 +31,10 @@ testScripts=(
     'proxy_test.py'
     'merkle_blocks.py'
     'signrawtransactions.py'
-#    'forknotify.py'
     'maxblocksinflight.py'
     'invalidblockrequest.py'
+    'rawtransactions.py'
+#    'forknotify.py'
 
     # auxpow tests
     'getauxblock.py'
