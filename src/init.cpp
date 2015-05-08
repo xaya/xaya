@@ -195,6 +195,7 @@ void Shutdown()
     delete pwalletMain;
     pwalletMain = NULL;
 #endif
+    ECC_Stop();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -742,7 +743,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     // Checkmempool and checkblockindex default to true in regtest mode
     mempool.setSanityCheck(GetBoolArg("-checkmempool", chainparams.DefaultConsistencyChecks()));
     fCheckBlockIndex = GetBoolArg("-checkblockindex", chainparams.DefaultConsistencyChecks());
-    Checkpoints::fEnabled = GetBoolArg("-checkpoints", true);
+    fCheckpointsEnabled = GetBoolArg("-checkpoints", true);
 
     // -par=0 means autodetect, but nScriptCheckThreads==0 means no concurrency
     nScriptCheckThreads = GetArg("-par", DEFAULT_SCRIPTCHECK_THREADS);
@@ -846,6 +847,9 @@ bool AppInit2(boost::thread_group& threadGroup)
     nMaxDatacarrierBytes = GetArg("-datacarriersize", nMaxDatacarrierBytes);
 
     // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
+
+    // Initialize elliptic curve code
+    ECC_Start();
 
     // Sanity check
     if (!InitSanityCheck())
