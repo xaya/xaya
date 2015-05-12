@@ -24,6 +24,10 @@ static const char DB_BLOCK_FILES = 'f';
 static const char DB_TXINDEX = 't';
 static const char DB_BLOCK_INDEX = 'b';
 
+static const char DB_NAME = 'n';
+static const char DB_NAME_HISTORY = 'h';
+static const char DB_NAME_EXPIRY = 'x';
+
 static const char DB_BEST_BLOCK = 'B';
 static const char DB_FLAG = 'F';
 static const char DB_REINDEX_FLAG = 'R';
@@ -60,12 +64,12 @@ uint256 CCoinsViewDB::GetBestBlock() const {
 }
 
 bool CCoinsViewDB::GetName(const valtype &name, CNameData& data) const {
-    return db.Read(std::make_pair('n', name), data);
+    return db.Read(std::make_pair(DB_NAME, name), data);
 }
 
 bool CCoinsViewDB::GetNameHistory(const valtype &name, CNameHistory& data) const {
     assert (fNameHistory);
-    return db.Read(std::make_pair('h', name), data);
+    return db.Read(std::make_pair(DB_NAME_HISTORY, name), data);
 }
 
 bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const {
@@ -77,7 +81,8 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
     boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
 
     const CNameCache::ExpireEntry seekEntry(nHeight, valtype ());
-    const std::pair<char, CNameCache::ExpireEntry> seekKey('x', seekEntry);
+    const std::pair<char, CNameCache::ExpireEntry> seekKey(DB_NAME_EXPIRY,
+                                                           seekEntry);
     CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
     seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
     seekKeyStream << seekKey;
@@ -92,7 +97,7 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
             char chType;
             ssKey >> chType;
 
-            if (chType != 'x')
+            if (chType != DB_NAME_EXPIRY)
               break;
 
             CNameCache::ExpireEntry entry;
@@ -123,7 +128,7 @@ void CCoinsViewDB::WalkNames(const valtype& start, CNameWalker& walker) const {
        that restriction.  */
     boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
 
-    const std::pair<char, valtype> seekKey('n', start);
+    const std::pair<char, valtype> seekKey(DB_NAME, start);
     CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
     seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
     seekKeyStream << seekKey;
@@ -138,7 +143,7 @@ void CCoinsViewDB::WalkNames(const valtype& start, CNameWalker& walker) const {
             char chType;
             ssKey >> chType;
 
-            if (chType != 'n')
+            if (chType != DB_NAME)
                 break;
 
             valtype name;
@@ -311,7 +316,7 @@ bool CCoinsViewDB::ValidateNameDB() const
 
             switch (chType)
             {
-            case 'c':
+            case DB_COINS:
             {
                 CCoins coins;
                 ssValue >> coins;
@@ -331,7 +336,7 @@ bool CCoinsViewDB::ValidateNameDB() const
                 break;
             }
 
-            case 'n':
+            case DB_NAME:
             {
                 valtype name;
                 ssKey >> name;
@@ -351,7 +356,7 @@ bool CCoinsViewDB::ValidateNameDB() const
                 break;
             }
 
-            case 'h':
+            case DB_NAME_HISTORY:
             {
                 valtype name;
                 ssKey >> name;
@@ -363,7 +368,7 @@ bool CCoinsViewDB::ValidateNameDB() const
                 break;
             }
 
-            case 'x':
+            case DB_NAME_EXPIRY:
             {
                 CNameCache::ExpireEntry entry;
                 ssKey >> entry;
