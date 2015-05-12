@@ -232,24 +232,26 @@ public:
 };
 
 /* ************************************************************************** */
-/* CNameWalker.  */
+/* CNameIterator.  */
 
 /**
- * Interface for objects that "consume" name database entries while iterating
- * over the database.  This is used by name_scan and name_filter.
+ * Interface for iterators over the name database.
  */
-class CNameWalker
+class CNameIterator
 {
 
 public:
 
+  // Virtual destructor in case subclasses need them.
+  virtual ~CNameIterator ();
+
   /**
-   * Called for each name.
-   * @param name The name.
-   * @param data The name's data.
-   * @return True if the iteration should continue.
+   * Get the next name.  Returns false if no more names are available.
+   * @param name Put the name here.
+   * @param data Put the name's data here.
+   * @return True if successful, false if no more names.
    */
-  virtual bool nextName (const valtype& name, const CNameData& data) = 0;
+  virtual bool next (valtype& name, CNameData& data) = 0;
 
 };
 

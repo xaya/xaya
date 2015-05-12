@@ -15,6 +15,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <list>
+#include <memory>
 
 #include <stdint.h>
 
@@ -81,25 +82,21 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 /* ************************************************************************** */
 
-class CTestNameWalker : public CNameWalker
+/* Iterate over names and put all appeared ones in a set.  */
+static void
+walkNames (const CCoinsView& coins, const valtype& start,
+           std::set<valtype>& names)
 {
+  names.clear ();
 
-public:
-
-  std::set<valtype> names;
-  bool single;
-
-  bool nextName (const valtype& name, const CNameData& data);
-
-};
-
-bool
-CTestNameWalker::nextName (const valtype& name, const CNameData&)
-{
-  assert (names.count (name) == 0);
-  names.insert (name);
-
-  return !single;
+  std::auto_ptr<CNameIterator> iter(coins.IterateNames (start));
+  valtype name;
+  CNameData data;
+  while (iter->next (name, data))
+    {
+      assert (names.count (name) == 0);
+      names.insert (name);
+    }
 }
 
 BOOST_AUTO_TEST_CASE (name_database)
@@ -174,26 +171,18 @@ BOOST_AUTO_TEST_CASE (name_database)
 
   /* Test name walking.  */
 
-  CTestNameWalker walker;
-  walker.single = false;
+  std::set<valtype> found;
   view.Flush ();
-  view.WalkNames (valtype (), walker);
+
+  walkNames (view, valtype (), found);
   setExpected.clear ();
   setExpected.insert (name1);
   setExpected.insert (name2);
-  BOOST_CHECK (walker.names == setExpected);
+  BOOST_CHECK (found == setExpected);
 
-  walker.names.clear ();
-  view.WalkNames (name2, walker);
+  walkNames (view, name2, found);
   setExpected.erase (name1);
-  BOOST_CHECK (walker.names == setExpected);
-
-  walker.names.clear ();
-  walker.single = true;
-  view.WalkNames (valtype (), walker);
-  setExpected.clear ();
-  setExpected.insert (name1);
-  BOOST_CHECK (walker.names == setExpected);
+  BOOST_CHECK (found == setExpected);
 }
 
 /* ************************************************************************** */

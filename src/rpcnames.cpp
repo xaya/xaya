@@ -16,6 +16,7 @@
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
+#include <memory>
 #include <sstream>
 
 /**
@@ -253,61 +254,6 @@ name_history (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-/**
- * CNameWalker object used for name_scan.
- */
-class CNameScanWalker : public CNameWalker
-{
-
-private:
-
-  /** Build up the result array.  */
-  json_spirit::Array res;
-
-  /** Count remaining names to return.  */
-  unsigned count;
-
-public:
-
-  /**
-   * Construct the object, given the count.
-   * @param c The count to return.
-   */
-  explicit inline CNameScanWalker (unsigned c)
-    : res(), count(c)
-  {}
-
-  /**
-   * Return the result array.
-   * @return The result array.
-   */
-  inline const json_spirit::Array&
-  getArray () const
-  {
-    return res;
-  }
-
-  /**
-   * Register a new name.
-   * @param name The name.
-   * @param data The name's data.
-   * @return True if there's still remaining count.
-   */
-  bool nextName (const valtype& name, const CNameData& data);
-
-};
-
-bool
-CNameScanWalker::nextName (const valtype& name, const CNameData& data)
-{
-  res.push_back (getNameInfo (name, data));
-
-  assert (count > 0);
-  --count;
-
-  return count > 0;
-}
-
 json_spirit::Value
 name_scan (const json_spirit::Array& params, bool fHelp)
 {
@@ -342,165 +288,25 @@ name_scan (const json_spirit::Array& params, bool fHelp)
   if (params.size () >= 2)
     count = params[1].get_int ();
 
+  json_spirit::Array res;
   if (count <= 0)
-    return json_spirit::Array ();
+    return res;
 
-  CNameScanWalker walker(count);
   {
     LOCK (cs_main);
     pcoinsTip->Flush ();
-    pcoinsTip->WalkNames (start, walker);
+
+    valtype name;
+    CNameData data;
+    for (std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (start));
+         count > 0 && iter->next (name, data); --count)
+      res.push_back (getNameInfo (name, data));
   }
 
-  return walker.getArray ();
+  return res;
 }
 
 /* ************************************************************************** */
-
-/**
- * CNameWalker object used for name_filter.
- */
-class CNameFilterWalker : public CNameWalker
-{
-
-private:
-
-  /** Whether we have a regexp to use.  */
-  bool haveRegexp;
-  /** The regexp to apply.  */
-  boost::xpressive::sregex regexp;
-
-  /** Maxage of 0 if no filtering.  */
-  int maxage;
-
-  /** From index (starting at 0).  */
-  int from;
-
-  /** Number of entries to return (0 means all).  */
-  int nb;
-
-  /** Collect only statistics?  */
-  bool stats;
-
-  /** In non-stats mode, build up the result here.  */
-  json_spirit::Array names;
-  /** Count names in stats mode.  */
-  unsigned count;
-
-public:
-
-  /**
-   * Construct the object from the name_filter parameters.
-   * @param params The parameters given to name_filter.
-   */
-  explicit CNameFilterWalker (const json_spirit::Array& params);
-
-  /**
-   * Return the constructed result.
-   * @return The name_filter result.
-   */
-  json_spirit::Value getResult () const;
-
-  /**
-   * Register a new name.
-   * @param name The name.
-   * @param data The name's data.
-   * @return True if there's still remaining count.
-   */
-  bool nextName (const valtype& name, const CNameData& data);
-
-};
-
-CNameFilterWalker::CNameFilterWalker (const json_spirit::Array& params)
-  : haveRegexp(false), regexp(), maxage(36000), from(0), nb(0), stats(false),
-    names(), count(0)
-{
-  if (params.size () >= 1)
-    {
-      haveRegexp = true;
-      regexp = boost::xpressive::sregex::compile (params[0].get_str ());
-    }
-
-  if (params.size () >= 2)
-    maxage = params[1].get_int ();
-  if (maxage < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER,
-                        "'maxage' should be non-negative");
-  if (params.size () >= 3)
-    from = params[2].get_int ();
-  if (from < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "'from' should be non-negative");
-
-  if (params.size () >= 4)
-    nb = params[3].get_int ();
-  if (nb < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "'nb' should be non-negative");
-
-  if (params.size () >= 5)
-    {
-      if (params[4].get_str () != "stat")
-        throw JSONRPCError (RPC_INVALID_PARAMETER,
-                            "fifth argument must be the literal string 'stat'");
-      stats = true;
-    }
-}
-
-json_spirit::Value
-CNameFilterWalker::getResult () const
-{
-  AssertLockHeld (cs_main);
-
-  if (stats)
-    {
-      json_spirit::Object res;
-      res.push_back (json_spirit::Pair ("blocks", chainActive.Height ()));
-      res.push_back (json_spirit::Pair ("count", static_cast<int> (count)));
-
-      return res;
-    }
-
-  return names;
-}
-
-bool
-CNameFilterWalker::nextName (const valtype& name, const CNameData& data)
-{
-  AssertLockHeld (cs_main);
-
-  const int age = chainActive.Height () - data.getHeight ();
-  assert (age >= 0);
-  if (maxage != 0 && age >= maxage)
-    return true;
-
-  if (haveRegexp)
-    {
-      const std::string nameStr = ValtypeToString (name);
-      boost::xpressive::smatch matches;
-      if (!boost::xpressive::regex_search (nameStr, matches, regexp))
-        return true;
-    }
-
-  if (from > 0)
-    {
-      --from;
-      return true;
-    }
-  assert (from == 0);
-
-  if (stats)
-    ++count;
-  else
-    names.push_back (getNameInfo (name, data));
-
-  if (nb > 0)
-    {
-      --nb;
-      if (nb == 0)
-        return false;
-    }
-
-  return true;
-}
 
 json_spirit::Value
 name_filter (const json_spirit::Array& params, bool fHelp)
@@ -531,15 +337,106 @@ name_filter (const json_spirit::Array& params, bool fHelp)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  /* ********************** */
+  /* Interpret parameters.  */
+
+  bool haveRegexp(false);
+  boost::xpressive::sregex regexp;
+
+  int maxage(36000), from(0), nb(0);
+  bool stats(false);
+
+  if (params.size () >= 1)
+    {
+      haveRegexp = true;
+      regexp = boost::xpressive::sregex::compile (params[0].get_str ());
+    }
+
+  if (params.size () >= 2)
+    maxage = params[1].get_int ();
+  if (maxage < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "'maxage' should be non-negative");
+  if (params.size () >= 3)
+    from = params[2].get_int ();
+  if (from < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "'from' should be non-negative");
+
+  if (params.size () >= 4)
+    nb = params[3].get_int ();
+  if (nb < 0)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "'nb' should be non-negative");
+
+  if (params.size () >= 5)
+    {
+      if (params[4].get_str () != "stat")
+        throw JSONRPCError (RPC_INVALID_PARAMETER,
+                            "fifth argument must be the literal string 'stat'");
+      stats = true;
+    }
+
+  /* ******************************************* */
+  /* Iterate over names to build up the result.  */
+
+  json_spirit::Array names;
+  unsigned count(0);
+
   /* The lock must be held throughout the call, since walker.getResult()
      uses chainActive for the block height in stats mode.  */
   LOCK (cs_main);
-
-  CNameFilterWalker walker(params);
   pcoinsTip->Flush ();
-  pcoinsTip->WalkNames (valtype (), walker);
 
-  return walker.getResult ();
+  std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (valtype ()));
+  valtype name;
+  CNameData data;
+  while (iter->next (name, data))
+    {
+      const int age = chainActive.Height () - data.getHeight ();
+      assert (age >= 0);
+      if (maxage != 0 && age >= maxage)
+        continue;
+
+      if (haveRegexp)
+        {
+          const std::string nameStr = ValtypeToString (name);
+          boost::xpressive::smatch matches;
+          if (!boost::xpressive::regex_search (nameStr, matches, regexp))
+            continue;
+        }
+
+      if (from > 0)
+        {
+          --from;
+          continue;
+        }
+      assert (from == 0);
+
+      if (stats)
+        ++count;
+      else
+        names.push_back (getNameInfo (name, data));
+
+      if (nb > 0)
+        {
+          --nb;
+          if (nb == 0)
+            break;
+        }
+    }
+
+  /* ********************************************************** */
+  /* Return the correct result (take stats mode into account).  */
+
+  if (stats)
+    {
+      json_spirit::Object res;
+      res.push_back (json_spirit::Pair ("blocks", chainActive.Height ()));
+      res.push_back (json_spirit::Pair ("count", static_cast<int> (count)));
+
+      return res;
+    }
+
+  return names;
 }
 
 /* ************************************************************************** */

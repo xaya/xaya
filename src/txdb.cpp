@@ -122,46 +122,81 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
     return true;
 }
 
-void CCoinsViewDB::WalkNames(const valtype& start, CNameWalker& walker) const {
-    /* It seems that there are no "const iterators" for LevelDB.  Since we
-       only need read operations on it, use a const-cast to get around
-       that restriction.  */
-    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+class CDbNameIterator : public CNameIterator
+{
 
+private:
+
+    /* The backing LevelDB iterator.  */
+    leveldb::Iterator* iter;
+
+public:
+
+    ~CDbNameIterator();
+
+    /**
+     * Construct a new name iterator for the database and seek to the
+     * given start name.
+     * @param db The database to create the iterator for.
+     * @param start The name to seek to.
+     */
+    CDbNameIterator(const CLevelDBWrapper& db, const valtype& start);
+
+    /* Go to next name.  */
+    bool next (valtype& name, CNameData& data);
+
+};
+
+CDbNameIterator::~CDbNameIterator() {
+    delete iter;
+}
+
+CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db, const valtype& start)
+    : iter(const_cast<CLevelDBWrapper*>(&db)->NewIterator())
+{
     const std::pair<char, valtype> seekKey(DB_NAME, start);
     CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
     seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
     seekKeyStream << seekKey;
+
     leveldb::Slice slKey(&seekKeyStream[0], seekKeyStream.size());
+    iter->Seek(slKey);
+}
 
-    for (pcursor->Seek(slKey); pcursor->Valid(); pcursor->Next())
+bool CDbNameIterator::next(valtype& name, CNameData& data) {
+    if (!iter->Valid())
+        return false;
+
+    try
     {
-        try
-        {
-            slKey = pcursor->key();
-            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(), SER_DISK, CLIENT_VERSION);
-            char chType;
-            ssKey >> chType;
+        const leveldb::Slice& slKey = iter->key();
+        CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(),
+                          SER_DISK, CLIENT_VERSION);
 
-            if (chType != DB_NAME)
-                break;
+        char chType;
+        ssKey >> chType;
 
-            valtype name;
-            ssKey >> name;
+        if (chType != DB_NAME)
+            return false;
 
-            const leveldb::Slice& slValue = pcursor->value();
-            CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(), SER_DISK, CLIENT_VERSION);
+        const leveldb::Slice& slValue = iter->value();
+        CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
+                            SER_DISK, CLIENT_VERSION);
 
-            CNameData data;
-            ssValue >> data;
-
-            if (!walker.nextName (name, data))
-                break;
-        } catch (const std::exception &e)
-        {
-            LogPrintf("%s : Deserialize or I/O error - %s", __func__, e.what());
-        }
+        ssKey >> name;
+        ssValue >> data;
+    } catch (const std::exception& exc)
+    {
+        LogPrintf("%s : Deserialize or I/O error - %s", __func__, exc.what());
+        return false;
     }
+
+    iter->Next ();
+    return true;
+}
+
+CNameIterator* CCoinsViewDB::IterateNames(const valtype& start) const {
+    return new CDbNameIterator(db, start);
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {

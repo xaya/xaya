@@ -23,6 +23,15 @@ CNameData::fromScript (unsigned h, const COutPoint& out,
 }
 
 /* ************************************************************************** */
+/* CNameIterator.  */
+
+CNameIterator::~CNameIterator ()
+{
+  /* Nothing to be done here.  This may be overwritten by
+     subclasses if they need a destructor.  */
+}
+
+/* ************************************************************************** */
 /* CNameCache.  */
 
 /* Try to get a name's associated data.  This looks only
