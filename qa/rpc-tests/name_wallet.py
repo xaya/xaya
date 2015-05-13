@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python
 from bitcoinrpc.authproxy import JSONRPCException
 from decimal import Decimal
 from names import NameTestFramework
-from util import assert_equal
+from util import assert_equal, start_nodes
 
 nameFee = Decimal ("0.01")
 txFee = Decimal ("0.001")
@@ -31,11 +31,9 @@ class NameWalletTest (NameTestFramework):
 
   # Set paytxfee to some value so that no estimated fees
   # are used and the amounts are predictable for the tests.
-  def getExtraArgs(self, n):
-    args = NameTestFramework.getExtraArgs (self, n)
-    args.append ("-paytxfee=%s" % txFee)
-
-    return args
+  def setup_nodes(self):
+    args = ["-paytxfee=%s" % txFee]
+    return start_nodes(4, self.options.tmpdir, [args] * 4)
 
   def checkBalance (self, ind, spent):
     """

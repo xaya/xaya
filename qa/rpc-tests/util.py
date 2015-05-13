@@ -72,15 +72,28 @@ def initialize_datadir(dirname, n):
         f.write("rpcport="+str(rpc_port(n))+"\n");
     return datadir
 
-def initialize_chain(test_dir, extra_args = None):
+def base_node_args(i):
+    """
+    Return base arguments to always use for node i.  These arguments
+    are those that are also present for the chain cache and must thus
+    be set for all runs.
+    """
+
+    # We choose nodes 1 and 2 to keep -namehistory, because this allows
+    # us to test both nodes with it and without it in both split
+    # network parts (0/1 vs 2/3).
+
+    if i == 1 or i == 2:
+        return ["-namehistory"]
+
+    return []
+
+def initialize_chain(test_dir):
     """
     Create (or copy from cache) a 200-block-long chain and
     4 wallets.
     namecoind and namecoin-cli must be in search path.
     """
-
-    if extra_args is not None:
-        assert len (extra_args) == 4
 
     if not os.path.isdir(os.path.join("cache", "node0")):
         devnull = open("/dev/null", "w+")
@@ -88,8 +101,7 @@ def initialize_chain(test_dir, extra_args = None):
         for i in range(4):
             datadir=initialize_datadir("cache", i)
             args = [ os.getenv("NAMECOIND", "namecoind"), "-keypool=1", "-datadir="+datadir, "-discover=0" ]
-            if extra_args is not None:
-                args.extend(extra_args[i])
+            args.extend(base_node_args(i))
             if i > 0:
                 args.append("-connect=127.0.0.1:"+str(p2p_port(0)))
             bitcoind_processes[i] = subprocess.Popen(args)
@@ -176,6 +188,7 @@ def start_node(i, dirname, extra_args=[], rpchost=None, timewait=None, binary=No
         binary = os.getenv("NAMECOIND", "namecoind")
     args = [ binary, "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest" ]
     args.extend(extra_args)
+    args.extend(base_node_args(i))
     bitcoind_processes[i] = subprocess.Popen(args)
     devnull = open("/dev/null", "w+")
     if os.getenv("PYTHON_DEBUG", ""):

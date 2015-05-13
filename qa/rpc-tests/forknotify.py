@@ -17,28 +17,16 @@ class ForkNotifyTest(BitcoinTestFramework):
 
     alert_filename = None  # Set by setup_network
 
-    def getExtraArgs(self, n):
-        args = BitcoinTestFramework.getExtraArgs(self, n)
-
-        if n == 0:
-            args.append("-blockversion=2")
-            if self.alert_filename is not None:
-                args.append("-alertnotify=echo %s >> \"" + self.alert_filename + "\"")
-        elif n == 1:
-            args.append("-blockversion=211")
-
-        return args
-
     def setup_network(self):
         self.nodes = []
         self.alert_filename = os.path.join(self.options.tmpdir, "alert.txt")
         with open(self.alert_filename, 'w') as f:
             pass  # Just open then close to create zero-length file
         self.nodes.append(start_node(0, self.options.tmpdir,
-                                     self.getExtraArgs(0)))
+                            ["-blockversion=2", "-alertnotify=echo %s >> \"" + self.alert_filename + "\""]))
         # Node1 mines block.version=211 blocks
         self.nodes.append(start_node(1, self.options.tmpdir,
-                                     self.getExtraArgs(1)))
+                                ["-blockversion=211"]))
         connect_nodes(self.nodes[1], 0)
 
         self.is_network_split = False
