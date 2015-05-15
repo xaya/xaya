@@ -10,6 +10,11 @@ from script import CScript, CScriptOp
 # Create a block (with regtest difficulty)
 def create_block(hashprev, coinbase, nTime=None):
     block = CBlock()
+
+    # Set auxpow chain ID.  Blocks without a chain ID are not accepted
+    # by the regtest network consensus rules (since they are "legacy").
+    block.set_base_version(1)
+
     if nTime is None:
         import time
         block.nTime = int(time.time()+600)

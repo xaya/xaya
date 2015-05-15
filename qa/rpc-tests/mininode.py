@@ -37,6 +37,11 @@ MY_SUBVERSION = "/python-mininode-tester:0.0.1/"
 
 MAX_INV_SZ = 50000
 
+# Constants for the auxpow block version.
+VERSION_AUXPOW = (1 << 8)
+VERSION_CHAIN_START = (1 << 16)
+CHAIN_ID = 1
+
 # Keep our own socket map for asyncore, so that we can track disconnects
 # ourselves (to workaround an issue with closing an asyncore socket when 
 # using select)
@@ -451,6 +456,10 @@ class CBlockHeader(object):
         self.sha256 = None
         self.hash = None
 
+    def set_base_version(self, n):
+        assert n < VERSION_AUXPOW
+        self.nVersion = n + CHAIN_ID * VERSION_CHAIN_START
+
     def deserialize(self, f):
         self.nVersion = struct.unpack("<i", f.read(4))[0]
         self.hashPrevBlock = deser_uint256(f)
@@ -461,7 +470,12 @@ class CBlockHeader(object):
         self.sha256 = None
         self.hash = None
 
+        # auxpow serialisation is not implemented.  Make sure that
+        # it is not needed.
+        assert (self.nVersion & VERSION_AUXPOW) == 0
+
     def serialize(self):
+        assert (self.nVersion & VERSION_AUXPOW) == 0
         r = ""
         r += struct.pack("<i", self.nVersion)
         r += ser_uint256(self.hashPrevBlock)
