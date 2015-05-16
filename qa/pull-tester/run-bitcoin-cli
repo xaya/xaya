@@ -10,4 +10,4 @@ CURDIR=$(cd $(dirname "$0"); pwd)
 # Grab the value of $REAL_BITCOINCLI which may be bitcoin-cli.exe.
 . "${CURDIR}/tests-config.sh"
 
-"${REAL_BITCOINCLI}" "$@" | sed 's/\r//'
+"${REAL_NAMECOINCLI}" "$@" | sed 's/\r//'
