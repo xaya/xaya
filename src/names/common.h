@@ -266,6 +266,26 @@ public:
 class CNameCache
 {
 
+private:
+
+  /**
+   * Special comparator class for names that compares by length first.
+   * This is used to sort the cache entry map in the same way as the
+   * database is sorted.
+   */
+  class NameComparator
+  {
+  public:
+    inline bool
+    operator() (const valtype& a, const valtype& b) const
+    {
+      if (a.size () != b.size ())
+        return a.size () < b.size ();
+
+      return a < b;
+    }
+  };
+
 public:
 
   /**
@@ -345,10 +365,16 @@ public:
 
   };
 
+  /**
+   * Type of name entry map.  This is public because it is also used
+   * by the unit tests.
+   */
+  typedef std::map<valtype, CNameData, NameComparator> EntryMap;
+
 private:
 
   /** New or updated names.  */
-  std::map<valtype, CNameData> entries;
+  EntryMap entries;
   /** Deleted names.  */
   std::set<valtype> deleted;
 
@@ -363,6 +389,8 @@ private:
    * to either "true" (meaning to add it) or "false" (delete).
    */
   std::map<ExpireEntry, bool> expireIndex;
+
+  friend class CCacheNameIterator;
 
 public:
 
@@ -404,6 +432,18 @@ public:
      in entries, and doesn't care about deleted data.  */
   bool get (const valtype& name, CNameData& data) const;
 
+  /* Insert (or update) a name.  If it is marked as "deleted", this also
+     removes the "deleted" mark.  */
+  void set (const valtype& name, const CNameData& data);
+
+  /* Delete a name.  If it is in the "entries" set also, remove it there.  */
+  void remove (const valtype& name);
+
+  /* Return a name iterator that combines a "base" iterator with the changes
+     made to it according to the cache.  The base iterator is taken
+     ownership of.  */
+  CNameIterator* iterateNames (const valtype& start, CNameIterator* base) const;
+
   /**
    * Query for an history entry.
    * @param name The name to look up.
@@ -412,16 +452,6 @@ public:
    */
   bool getHistory (const valtype& name, CNameHistory& res) const;
 
-  /* Query the cached changes to the expire index.  In particular,
-     for a given height and a given set of names that were indexed to
-     this update height, apply possible changes to the set that
-     are represented by the cached expire index changes.  */
-  void updateNamesForHeight (unsigned nHeight, std::set<valtype>& names) const;
-
-  /* Insert (or update) a name.  If it is marked as "deleted", this also
-     removes the "deleted" mark.  */
-  void set (const valtype& name, const CNameData& data);
-
   /**
    * Set a name history entry.
    * @param name The name to modify.
@@ -429,8 +459,11 @@ public:
    */
   void setHistory (const valtype& name, const CNameHistory& data);
 
-  /* Delete a name.  If it is in the "entries" set also, remove it there.  */
-  void remove (const valtype& name);
+  /* Query the cached changes to the expire index.  In particular,
+     for a given height and a given set of names that were indexed to
+     this update height, apply possible changes to the set that
+     are represented by the cached expire index changes.  */
+  void updateNamesForHeight (unsigned nHeight, std::set<valtype>& names) const;
 
   /* Add an expire-index entry.  */
   void addExpireIndex (const valtype& name, unsigned height);

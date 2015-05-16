@@ -32,10 +32,131 @@ CNameIterator::~CNameIterator ()
 }
 
 /* ************************************************************************** */
+/* CNameCacheNameIterator.  */
+
+class CCacheNameIterator : public CNameIterator
+{
+
+private:
+
+  /** Reference to cache object that is used.  */
+  const CNameCache& cache;
+
+  /** Base iterator to combine with the cache.  */
+  CNameIterator* base;
+
+  /** Whether or not the base iterator has more entries.  */
+  bool baseHasMore;
+  /** "Next" name of the base iterator.  */
+  valtype baseName;
+  /** "Next" data of the base iterator.  */
+  CNameData baseData;
+
+  /** Iterator of the cache's entries.  */
+  CNameCache::EntryMap::const_iterator cacheIter;
+
+  /* Call the base iterator's next() routine to fill in the internal
+     "cache" for the next entry.  This already skips entries that are
+     marked as deleted in the cache.  */
+  void advanceBaseIterator ();
+
+public:
+
+  /**
+   * Construct the iterator.  This takes ownership of the base iterator.
+   * @param c The cache object to use.
+   * @param s The starting name.
+   * @param b The base iterator.
+   */
+  CCacheNameIterator (const CNameCache& c, const valtype& s, CNameIterator* b);
+
+  /* Destruct, this deletes also the base iterator.  */
+  ~CCacheNameIterator ();
+
+  /* Get next name.  */
+  bool next (valtype& name, CNameData& data);
+
+};
+
+CCacheNameIterator::CCacheNameIterator (const CNameCache& c, const valtype& s,
+                                        CNameIterator* b)
+  : cache(c), base(b)
+{
+  cacheIter = cache.entries.lower_bound (s);
+
+  baseHasMore = true;
+  advanceBaseIterator ();
+}
+
+CCacheNameIterator::~CCacheNameIterator ()
+{
+  delete base;
+}
+
+void
+CCacheNameIterator::advanceBaseIterator ()
+{
+  assert (baseHasMore);
+  do
+    baseHasMore = base->next (baseName, baseData);
+  while (baseHasMore && cache.isDeleted (baseName));
+}
+
+bool
+CCacheNameIterator::next (valtype& name, CNameData& data)
+{
+  /* Exit early if no more data is available in either the cache
+     nor the base iterator.  */
+  if (!baseHasMore && cacheIter == cache.entries.end ())
+    return false;
+
+  /* Determine which source to use for the next.  */
+  bool useBase;
+  if (!baseHasMore)
+    useBase = false;
+  else if (cacheIter == cache.entries.end ())
+    useBase = true;
+  else
+    {
+      /* A special case is when both iterators are equal.  In this case,
+         we want to use the cached version.  We also have to advance
+         the base iterator.  */
+      if (baseName == cacheIter->first)
+        advanceBaseIterator ();
+
+      /* Due to advancing the base iterator above, it may happen that
+         no more base entries are present.  Handle this gracefully.  */
+      if (!baseHasMore)
+        useBase = false;
+      else
+        {
+          assert (baseName != cacheIter->first);
+
+          CNameCache::NameComparator cmp;
+          useBase = cmp (baseName, cacheIter->first);
+        }
+    }
+
+  /* Use the correct source now and advance it.  */
+  if (useBase)
+    {
+      name = baseName;
+      data = baseData;
+      advanceBaseIterator ();
+    }
+  else
+    {
+      name = cacheIter->first;
+      data = cacheIter->second;
+      ++cacheIter;
+    }
+
+  return true;
+}
+
+/* ************************************************************************** */
 /* CNameCache.  */
 
-/* Try to get a name's associated data.  This looks only
-   in entries, and doesn't care about deleted data.  */
 bool
 CNameCache::get (const valtype& name, CNameData& data) const
 {
@@ -45,6 +166,36 @@ CNameCache::get (const valtype& name, CNameData& data) const
 
   data = i->second;
   return true;
+}
+
+void
+CNameCache::set (const valtype& name, const CNameData& data)
+{
+  const std::set<valtype>::iterator di = deleted.find (name);
+  if (di != deleted.end ())
+    deleted.erase (di);
+
+  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
+  if (ei != entries.end ())
+    ei->second = data;
+  else
+    entries.insert (std::make_pair (name, data));
+}
+
+void
+CNameCache::remove (const valtype& name)
+{
+  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
+  if (ei != entries.end ())
+    entries.erase (ei);
+
+  deleted.insert (name);
+}
+
+CNameIterator*
+CNameCache::iterateNames (const valtype& start, CNameIterator* base) const
+{
+  return new CCacheNameIterator (*this, start, base);
 }
 
 bool
@@ -58,6 +209,18 @@ CNameCache::getHistory (const valtype& name, CNameHistory& res) const
 
   res = i->second;
   return true;
+}
+
+void
+CNameCache::setHistory (const valtype& name, const CNameHistory& data)
+{
+  assert (fNameHistory);
+
+  const std::map<valtype, CNameHistory>::iterator ei = history.find (name);
+  if (ei != history.end ())
+    ei->second = data;
+  else
+    history.insert (std::make_pair (name, data));
 }
 
 void
@@ -84,45 +247,6 @@ CNameCache::updateNamesForHeight (unsigned nHeight,
     }
 }
 
-/* Insert (or update) a name.  If it is marked as "deleted", this also
-   removes the "deleted" mark.  */
-void
-CNameCache::set (const valtype& name, const CNameData& data)
-{
-  const std::set<valtype>::iterator di = deleted.find (name);
-  if (di != deleted.end ())
-    deleted.erase (di);
-
-  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
-  if (ei != entries.end ())
-    ei->second = data;
-  else
-    entries.insert (std::make_pair (name, data));
-}
-
-void
-CNameCache::setHistory (const valtype& name, const CNameHistory& data)
-{
-  assert (fNameHistory);
-
-  const std::map<valtype, CNameHistory>::iterator ei = history.find (name);
-  if (ei != history.end ())
-    ei->second = data;
-  else
-    history.insert (std::make_pair (name, data));
-}
-
-/* Delete a name.  If it is in the "entries" set also, remove it there.  */
-void
-CNameCache::remove (const valtype& name)
-{
-  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
-  if (ei != entries.end ())
-    entries.erase (ei);
-
-  deleted.insert (name);
-}
-
 void
 CNameCache::addExpireIndex (const valtype& name, unsigned height)
 {
@@ -137,11 +261,10 @@ CNameCache::removeExpireIndex (const valtype& name, unsigned height)
   expireIndex[entry] = false;
 }
 
-/* Apply all the changes in the passed-in record on top of this one.  */
 void
 CNameCache::apply (const CNameCache& cache)
 {
-  for (std::map<valtype, CNameData>::const_iterator i = cache.entries.begin ();
+  for (EntryMap::const_iterator i = cache.entries.begin ();
        i != cache.entries.end (); ++i)
     set (i->first, i->second);
 

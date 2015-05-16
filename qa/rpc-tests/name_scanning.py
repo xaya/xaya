@@ -68,13 +68,17 @@ class NameScanningTest (NameTestFramework):
                   {"blocks": 201,"count": 0})
 
     # Register some names with various data, heights and expiration status.
+    # Using both "aa" and "b" ensures that we can also check for the expected
+    # comparison order between string length and lexicographic ordering.
 
     newA = self.nodes[0].name_new ("a")
+    newAA = self.nodes[0].name_new ("aa")
     newB = self.nodes[1].name_new ("b")
     newC = self.nodes[2].name_new ("c")
     self.generate (3, 15)
 
     self.firstupdateName (0, "a", newA, "wrong value")
+    self.firstupdateName (0, "aa", newAA, "value aa")
     self.firstupdateName (1, "b", newB, "value b")
     self.generate (3, 15)
     self.firstupdateName (2, "c", newC, "value c")
@@ -83,37 +87,40 @@ class NameScanningTest (NameTestFramework):
 
     # Check the expected name_scan data values.
     scan = self.nodes[3].name_scan ()
-    assert_equal (len (scan), 3)
+    assert_equal (len (scan), 4)
     self.checkNameData (scan[0], "a", "value a", 11, False)
     self.checkNameData (scan[1], "b", "value b", -4, True)
     self.checkNameData (scan[2], "c", "value c", 11, False)
+    self.checkNameData (scan[3], "aa", "value aa", -4, True)
 
     # Check for expected names in various name_scan calls.
-    self.checkList (self.nodes[3].name_scan (), ["a", "b", "c"])
+    self.checkList (self.nodes[3].name_scan (), ["a", "b", "c", "aa"])
     self.checkList (self.nodes[3].name_scan ("", 0), [])
     self.checkList (self.nodes[3].name_scan ("", -1), [])
-    self.checkList (self.nodes[3].name_scan ("b"), ["b", "c"])
-    self.checkList (self.nodes[3].name_scan ("z"), [])
+    self.checkList (self.nodes[3].name_scan ("b"), ["b", "c", "aa"])
+    self.checkList (self.nodes[3].name_scan ("zz"), [])
     self.checkList (self.nodes[3].name_scan ("", 2), ["a", "b"])
     self.checkList (self.nodes[3].name_scan ("b", 1), ["b"])
 
     # Check the expected name_filter data values.
     scan = self.nodes[3].name_scan ()
-    assert_equal (len (scan), 3)
+    assert_equal (len (scan), 4)
     self.checkNameData (scan[0], "a", "value a", 11, False)
     self.checkNameData (scan[1], "b", "value b", -4, True)
     self.checkNameData (scan[2], "c", "value c", 11, False)
+    self.checkNameData (scan[3], "aa", "value aa", -4, True)
 
     # Check for expected names in various name_filter calls.
     height = self.nodes[3].getblockcount ()
-    self.checkList (self.nodes[3].name_filter (), ["a", "b", "c"])
-    self.checkList (self.nodes[3].name_filter ("[ac]"), ["a", "c"])
+    self.checkList (self.nodes[3].name_filter (), ["a", "b", "c", "aa"])
+    self.checkList (self.nodes[3].name_filter ("[ac]"), ["a", "c", "aa"])
     self.checkList (self.nodes[3].name_filter ("", 10), [])
     self.checkList (self.nodes[3].name_filter ("", 30), ["a", "c"])
-    self.checkList (self.nodes[3].name_filter ("", 0, 0, 0), ["a", "b", "c"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 0, 0),
+                    ["a", "b", "c", "aa"])
     self.checkList (self.nodes[3].name_filter ("", 0, 0, 1), ["a"])
-    self.checkList (self.nodes[3].name_filter ("", 0, 1, 3), ["b", "c"])
-    self.checkList (self.nodes[3].name_filter ("", 0, 3, 3), [])
+    self.checkList (self.nodes[3].name_filter ("", 0, 1, 4), ["b", "c", "aa"])
+    self.checkList (self.nodes[3].name_filter ("", 0, 4, 4), [])
     assert_equal (self.nodes[3].name_filter ("", 30, 0, 0, "stat"),
                   {"blocks": height, "count": 2})
 

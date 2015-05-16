@@ -54,7 +54,7 @@ CNameData::isExpired (unsigned h) const
 void
 CNameCache::writeBatch (CLevelDBBatch& batch) const
 {
-  for (std::map<valtype, CNameData>::const_iterator i = entries.begin ();
+  for (EntryMap::const_iterator i = entries.begin ();
        i != entries.end (); ++i)
     batch.Write (std::make_pair ('n', i->first), i->second);
 

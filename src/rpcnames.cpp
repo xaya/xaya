@@ -292,16 +292,13 @@ name_scan (const json_spirit::Array& params, bool fHelp)
   if (count <= 0)
     return res;
 
-  {
-    LOCK (cs_main);
-    pcoinsTip->Flush ();
+  LOCK (cs_main);
 
-    valtype name;
-    CNameData data;
-    for (std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (start));
-         count > 0 && iter->next (name, data); --count)
-      res.push_back (getNameInfo (name, data));
-  }
+  valtype name;
+  CNameData data;
+  for (std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (start));
+       count > 0 && iter->next (name, data); --count)
+    res.push_back (getNameInfo (name, data));
 
   return res;
 }
@@ -381,10 +378,7 @@ name_filter (const json_spirit::Array& params, bool fHelp)
   json_spirit::Array names;
   unsigned count(0);
 
-  /* The lock must be held throughout the call, since walker.getResult()
-     uses chainActive for the block height in stats mode.  */
   LOCK (cs_main);
-  pcoinsTip->Flush ();
 
   std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (valtype ()));
   valtype name;

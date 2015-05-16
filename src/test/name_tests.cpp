@@ -82,23 +82,6 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 /* ************************************************************************** */
 
-/* Iterate over names and put all appeared ones in a set.  */
-static void
-walkNames (const CCoinsView& coins, const valtype& start,
-           std::set<valtype>& names)
-{
-  names.clear ();
-
-  std::auto_ptr<CNameIterator> iter(coins.IterateNames (start));
-  valtype name;
-  CNameData data;
-  while (iter->next (name, data))
-    {
-      assert (names.count (name) == 0);
-      names.insert (name);
-    }
-}
-
 BOOST_AUTO_TEST_CASE (name_database)
 {
   const valtype name1 = ValtypeFromString ("database-test-name-1");
@@ -168,21 +151,273 @@ BOOST_AUTO_TEST_CASE (name_database)
   setExpected.insert (name1);
   setExpected.insert (name2);
   BOOST_CHECK (setRet == setExpected);
+}
 
-  /* Test name walking.  */
+/* ************************************************************************** */
 
-  std::set<valtype> found;
-  view.Flush ();
+/**
+ * Define a class that can be used as "dummy" base name database.  It allows
+ * iteration over its content, but always returns an empty range for that.
+ * This is necessary to define a "purely cached" view, since the iteration
+ * over CCoinsViewCache always calls through to the base iteration.
+ */
+class CDummyIterationView : public CCoinsView
+{
 
-  walkNames (view, valtype (), found);
-  setExpected.clear ();
-  setExpected.insert (name1);
-  setExpected.insert (name2);
-  BOOST_CHECK (found == setExpected);
+private:
 
-  walkNames (view, name2, found);
-  setExpected.erase (name1);
-  BOOST_CHECK (found == setExpected);
+  /**
+   * "Fake" name iterator returned.
+   */
+  class Iterator : public CNameIterator
+  {
+  public:
+
+    bool
+    next (valtype& name, CNameData& data)
+    {
+      return false;
+    }
+
+  };
+
+public:
+
+  CNameIterator*
+  IterateNames (const valtype& start) const
+  {
+    return new Iterator ();
+  }
+
+};
+
+/**
+ * Helper class for testing name iteration.  It allows performing changes
+ * to the name list, and mirrors them to a purely cached view, a name DB
+ * and a name DB with cache that is flushed from time to time.  It compares
+ * all of them to each other.
+ */
+class NameIterationTester
+{
+
+private:
+
+  /** Type used for ordered lists of entries.  */
+  typedef std::list<std::pair<valtype, CNameData> > EntryList;
+
+  /** Name database view.  */
+  CCoinsView& db;
+  /** Cached view based off the database.  */
+  CCoinsViewCache hybrid;
+
+  /** Dummy base view without real content.  */
+  CDummyIterationView dummy;
+  /**
+   * Cache view based off the dummy.  This allows to test iteration
+   * based solely on the cache.
+   */
+  CCoinsViewCache cache;
+
+  /** Keep track of what the name set should look like as comparison.  */
+  CNameCache::EntryMap data;
+
+  /**
+   * Keep an internal counter to build unique and changing CNameData
+   * objects for testing purposes.  The counter value will be used
+   * as the name's height in the data.
+   */
+  unsigned counter;
+
+  /**
+   * Verify consistency of the given view with the expected data.
+   * @param view The view to check against data.
+   */
+  void verify (const CCoinsView& view) const;
+
+  /**
+   * Get a new CNameData object for testing purposes.  This also
+   * increments the counter, so that each returned value is unique.
+   * @return A new CNameData object.
+   */
+  CNameData getNextData ();
+
+  /**
+   * Iterate all names in a view and return the result as an ordered
+   * list in the way they appeared.
+   * @param view The view to iterate over.
+   * @param start The start name.
+   * @return The resulting entry map.
+   */
+  static EntryList getNamesFromView (const CCoinsView& view,
+                                     const valtype& start);
+
+public:
+
+  /**
+   * Construct the tester with the given database view to use.
+   * @param base The database coins view to use.
+   */
+  explicit NameIterationTester (CCoinsView& base);
+
+  /**
+   * Verify consistency of all views.  This also flushes the hybrid cache
+   * between verifying it and the base db view.
+   */
+  void verify ();
+
+  /**
+   * Add a new name with created dummy data.
+   * @param n The name to add.
+   */
+  void add (const std::string& n);
+
+  /**
+   * Update the name with new dummy data.
+   * @param n The name to update.
+   */
+  void update (const std::string& n);
+
+  /**
+   * Delete the name.
+   * @param n The name to delete.
+   */
+  void remove (const std::string& n);
+
+};
+
+NameIterationTester::NameIterationTester (CCoinsView& base)
+  : db(base), hybrid(&db), dummy(), cache(&dummy), data(), counter(100)
+{
+  // Nothing else to do.
+}
+
+CNameData
+NameIterationTester::getNextData ()
+{
+  const CScript addr = getTestAddress ();
+  const valtype name = ValtypeFromString ("dummy");
+  const valtype value = ValtypeFromString ("abc");
+  const CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
+  const CNameScript nameOp(updateScript);
+
+  CNameData res;
+  res.fromScript (++counter, COutPoint (uint256 (), 0), nameOp);
+
+  return res;
+}
+
+void
+NameIterationTester::verify (const CCoinsView& view) const
+{
+  /* Try out everything with all names as "start".  This thoroughly checks
+     that also the start implementation is correct.  */
+
+  valtype start;
+  EntryList remaining(data.begin (), data.end ());
+
+  while (true)
+    {
+      const EntryList got = getNamesFromView (view, start);
+      BOOST_CHECK (got == remaining);
+
+      if (remaining.empty ())
+        break;
+
+      if (start == remaining.front ().first)
+        remaining.pop_front ();
+
+      if (remaining.empty ())
+        start = ValtypeFromString ("zzzzzzzzzzzzzzzz");
+      else
+        start = remaining.front ().first;
+    }
+}
+
+void
+NameIterationTester::verify ()
+{
+  verify (hybrid);
+  hybrid.Flush ();
+  verify (db);
+  verify (cache);
+}
+
+NameIterationTester::EntryList
+NameIterationTester::getNamesFromView (const CCoinsView& view,
+                                       const valtype& start)
+{
+  EntryList res;
+
+  std::auto_ptr<CNameIterator> iter(view.IterateNames (start));
+  valtype name;
+  CNameData data;
+  while (iter->next (name, data))
+    res.push_back (std::make_pair (name, data));
+
+  return res;
+}
+
+void
+NameIterationTester::add (const std::string& n)
+{
+  const valtype& name = ValtypeFromString (n);
+  const CNameData testData = getNextData ();
+
+  assert (data.count (name) == 0);
+  data[name] = testData;
+  hybrid.SetName (name, testData, false);
+  cache.SetName (name, testData, false);
+  verify ();
+}
+
+void
+NameIterationTester::update (const std::string& n)
+{
+  const valtype& name = ValtypeFromString (n);
+  const CNameData testData = getNextData ();
+
+  assert (data.count (name) == 1);
+  data[name] = testData;
+  hybrid.SetName (name, testData, false);
+  cache.SetName (name, testData, false);
+  verify ();
+}
+
+void
+NameIterationTester::remove (const std::string& n)
+{
+  const valtype& name = ValtypeFromString (n);
+
+  assert (data.count (name) == 1);
+  data.erase (name);
+  hybrid.DeleteName (name);
+  cache.DeleteName (name);
+  verify ();
+}
+
+BOOST_AUTO_TEST_CASE (name_iteration)
+{
+  NameIterationTester tester(*pcoinsTip);
+
+  tester.verify ();
+
+  tester.add ("");
+  tester.add ("a");
+  tester.add ("aa");
+  tester.add ("b");
+  
+  tester.remove ("aa");
+  tester.remove ("b");
+  tester.add ("b");
+  tester.add ("aa");
+  tester.remove ("b");
+  tester.remove ("aa");
+
+  tester.update ("");
+  tester.add ("aa");
+  tester.add ("b");
+  tester.update ("b");
+  tester.update ("aa");
 }
 
 /* ************************************************************************** */

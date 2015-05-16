@@ -203,14 +203,7 @@ bool CCoinsViewCache::GetNamesForHeight(unsigned nHeight, std::set<valtype>& nam
 }
 
 CNameIterator* CCoinsViewCache::IterateNames(const valtype& start) const {
-    /* Before using this function, callers should flush the cache.  We don't
-       want to deal with combining the backing data store with the cached
-       updates.  This is not worth the effort compared to just flushing
-       every time a name_scan or name_filter is required.  */
-    /* FIXME: Get rid of this restriction.  */
-    assert (cacheNames.empty ());
-
-    return base->IterateNames (start);
+    return cacheNames.iterateNames(start, base->IterateNames(start));
 }
 
 /* undo is set if the change is due to disconnecting blocks / going back in
