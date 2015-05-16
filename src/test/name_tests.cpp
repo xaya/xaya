@@ -6,6 +6,7 @@
 #include "coins.h"
 #include "main.h"
 #include "names/main.h"
+#include "txdb.h"
 #include "txmempool.h"
 #include "undo.h"
 #include "primitives/transaction.h"
@@ -206,7 +207,7 @@ private:
   typedef std::list<std::pair<valtype, CNameData> > EntryList;
 
   /** Name database view.  */
-  CCoinsView& db;
+  CCoinsViewDB& db;
   /** Cached view based off the database.  */
   CCoinsViewCache hybrid;
 
@@ -257,7 +258,7 @@ public:
    * Construct the tester with the given database view to use.
    * @param base The database coins view to use.
    */
-  explicit NameIterationTester (CCoinsView& base);
+  explicit NameIterationTester (CCoinsViewDB& base);
 
   /**
    * Verify consistency of all views.  This also flushes the hybrid cache
@@ -285,7 +286,7 @@ public:
 
 };
 
-NameIterationTester::NameIterationTester (CCoinsView& base)
+NameIterationTester::NameIterationTester (CCoinsViewDB& base)
   : db(base), hybrid(&db), dummy(), cache(&dummy), data(), counter(100)
 {
   // Nothing else to do.
@@ -397,7 +398,7 @@ NameIterationTester::remove (const std::string& n)
 
 BOOST_AUTO_TEST_CASE (name_iteration)
 {
-  NameIterationTester tester(*pcoinsTip);
+  NameIterationTester tester(*pcoinsdbview);
 
   tester.verify ();
 
