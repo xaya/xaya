@@ -65,27 +65,26 @@ public:
   /**
    * Construct the iterator.  This takes ownership of the base iterator.
    * @param c The cache object to use.
-   * @param s The starting name.
    * @param b The base iterator.
    */
-  CCacheNameIterator (const CNameCache& c, const valtype& s, CNameIterator* b);
+  CCacheNameIterator (const CNameCache& c, CNameIterator* b);
 
   /* Destruct, this deletes also the base iterator.  */
   ~CCacheNameIterator ();
 
-  /* Get next name.  */
+  /* Implement iterator methods.  */
+  void seek (const valtype& name);
   bool next (valtype& name, CNameData& data);
 
 };
 
-CCacheNameIterator::CCacheNameIterator (const CNameCache& c, const valtype& s,
-                                        CNameIterator* b)
+CCacheNameIterator::CCacheNameIterator (const CNameCache& c, CNameIterator* b)
   : cache(c), base(b)
 {
-  cacheIter = cache.entries.lower_bound (s);
-
-  baseHasMore = true;
-  advanceBaseIterator ();
+  /* Add a seek-to-start to ensure that everything is consistent.  This call
+     may be superfluous if we seek to another position afterwards anyway,
+     but it should also not hurt too much.  */
+  seek (valtype ());
 }
 
 CCacheNameIterator::~CCacheNameIterator ()
@@ -100,6 +99,16 @@ CCacheNameIterator::advanceBaseIterator ()
   do
     baseHasMore = base->next (baseName, baseData);
   while (baseHasMore && cache.isDeleted (baseName));
+}
+
+void
+CCacheNameIterator::seek (const valtype& start)
+{
+  cacheIter = cache.entries.lower_bound (start);
+  base->seek (start);
+
+  baseHasMore = true;
+  advanceBaseIterator ();
 }
 
 bool
@@ -193,9 +202,9 @@ CNameCache::remove (const valtype& name)
 }
 
 CNameIterator*
-CNameCache::iterateNames (const valtype& start, CNameIterator* base) const
+CNameCache::iterateNames (CNameIterator* base) const
 {
-  return new CCacheNameIterator (*this, start, base);
+  return new CCacheNameIterator (*this, base);
 }
 
 bool

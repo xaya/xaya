@@ -135,14 +135,13 @@ public:
     ~CDbNameIterator();
 
     /**
-     * Construct a new name iterator for the database and seek to the
-     * given start name.
+     * Construct a new name iterator for the database.
      * @param db The database to create the iterator for.
-     * @param start The name to seek to.
      */
-    CDbNameIterator(const CLevelDBWrapper& db, const valtype& start);
+    CDbNameIterator(const CLevelDBWrapper& db);
 
-    /* Go to next name.  */
+    /* Implement iterator methods.  */
+    void seek (const valtype& start);
     bool next (valtype& name, CNameData& data);
 
 };
@@ -151,9 +150,13 @@ CDbNameIterator::~CDbNameIterator() {
     delete iter;
 }
 
-CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db, const valtype& start)
+CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db)
     : iter(const_cast<CLevelDBWrapper*>(&db)->NewIterator())
 {
+    seek(valtype());
+}
+
+void CDbNameIterator::seek(const valtype& start) {
     const std::pair<char, valtype> seekKey(DB_NAME, start);
     CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
     seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
@@ -195,8 +198,8 @@ bool CDbNameIterator::next(valtype& name, CNameData& data) {
     return true;
 }
 
-CNameIterator* CCoinsViewDB::IterateNames(const valtype& start) const {
-    return new CDbNameIterator(db, start);
+CNameIterator* CCoinsViewDB::IterateNames() const {
+    return new CDbNameIterator(db);
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {

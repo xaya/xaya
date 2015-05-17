@@ -174,6 +174,10 @@ private:
   {
   public:
 
+    void
+    seek (const valtype& start)
+    {}
+
     bool
     next (valtype& name, CNameData& data)
     {
@@ -185,7 +189,7 @@ private:
 public:
 
   CNameIterator*
-  IterateNames (const valtype& start) const
+  IterateNames () const
   {
     return new Iterator ();
   }
@@ -247,10 +251,17 @@ private:
    * list in the way they appeared.
    * @param view The view to iterate over.
    * @param start The start name.
-   * @return The resulting entry map.
+   * @return The resulting entry list.
    */
   static EntryList getNamesFromView (const CCoinsView& view,
                                      const valtype& start);
+
+  /**
+   * Return all names that are produced by the given iterator.
+   * @param iter The iterator to use.
+   * @return The resulting entry list.
+   */
+  static EntryList getNamesFromIterator (CNameIterator& iter);
 
 public:
 
@@ -311,14 +322,31 @@ void
 NameIterationTester::verify (const CCoinsView& view) const
 {
   /* Try out everything with all names as "start".  This thoroughly checks
-     that also the start implementation is correct.  */
+     that also the start implementation is correct.  It also checks using
+     a single iterator and seeking vs using a fresh iterator.  */
 
   valtype start;
   EntryList remaining(data.begin (), data.end ());
 
+  /* Seek the iterator to the end first for "maximum confusion".  This ensures
+     that seeking to valtype() works.  */
+  std::auto_ptr<CNameIterator> iter(view.IterateNames ());
+  const valtype end = ValtypeFromString ("zzzzzzzzzzzzzzzz");
+  {
+    valtype name;
+    CNameData data;
+
+    iter->seek (end);
+    BOOST_CHECK (!iter->next (name, data));
+  }
+
   while (true)
     {
-      const EntryList got = getNamesFromView (view, start);
+      EntryList got = getNamesFromView (view, start);
+      BOOST_CHECK (got == remaining);
+
+      iter->seek (start);
+      got = getNamesFromIterator (*iter);
       BOOST_CHECK (got == remaining);
 
       if (remaining.empty ())
@@ -328,7 +356,7 @@ NameIterationTester::verify (const CCoinsView& view) const
         remaining.pop_front ();
 
       if (remaining.empty ())
-        start = ValtypeFromString ("zzzzzzzzzzzzzzzz");
+        start = end;
       else
         start = remaining.front ().first;
     }
@@ -347,12 +375,20 @@ NameIterationTester::EntryList
 NameIterationTester::getNamesFromView (const CCoinsView& view,
                                        const valtype& start)
 {
+  std::auto_ptr<CNameIterator> iter(view.IterateNames ());
+  iter->seek (start);
+
+  return getNamesFromIterator (*iter);
+}
+
+NameIterationTester::EntryList
+NameIterationTester::getNamesFromIterator (CNameIterator& iter)
+{
   EntryList res;
 
-  std::auto_ptr<CNameIterator> iter(view.IterateNames (start));
   valtype name;
   CNameData data;
-  while (iter->next (name, data))
+  while (iter.next (name, data))
     res.push_back (std::make_pair (name, data));
 
   return res;

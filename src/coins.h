@@ -338,7 +338,7 @@ public:
     virtual bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
 
     // Get a name iterator.
-    virtual CNameIterator* IterateNames(const valtype& start) const;
+    virtual CNameIterator* IterateNames() const;
 
     //! Do a bulk modification (multiple CCoins changes + BestBlock change).
     //! The passed mapCoins can be modified.
@@ -369,7 +369,7 @@ public:
     bool GetName(const valtype& name, CNameData& data) const;
     bool GetNameHistory(const valtype& name, CNameHistory& data) const;
     bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
-    CNameIterator* IterateNames(const valtype& start) const;
+    CNameIterator* IterateNames() const;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     bool GetStats(CCoinsStats &stats) const;
@@ -433,7 +433,7 @@ public:
     bool GetName(const valtype &name, CNameData &data) const;
     bool GetNameHistory(const valtype &name, CNameHistory &data) const;
     bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
-    CNameIterator* IterateNames(const valtype& start) const;
+    CNameIterator* IterateNames() const;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
 
     /* Changes to the name database.  */

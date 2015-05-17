@@ -246,6 +246,12 @@ public:
   virtual ~CNameIterator ();
 
   /**
+   * Seek to a given lower bound.
+   * @param start The name to seek to.
+   */
+  virtual void seek (const valtype& name) = 0;
+
+  /**
    * Get the next name.  Returns false if no more names are available.
    * @param name Put the name here.
    * @param data Put the name's data here.
@@ -442,7 +448,7 @@ public:
   /* Return a name iterator that combines a "base" iterator with the changes
      made to it according to the cache.  The base iterator is taken
      ownership of.  */
-  CNameIterator* iterateNames (const valtype& start, CNameIterator* base) const;
+  CNameIterator* iterateNames (CNameIterator* base) const;
 
   /**
    * Query for an history entry.

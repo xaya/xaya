@@ -296,8 +296,8 @@ name_scan (const json_spirit::Array& params, bool fHelp)
 
   valtype name;
   CNameData data;
-  for (std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (start));
-       count > 0 && iter->next (name, data); --count)
+  std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
+  for (iter->seek (start); count > 0 && iter->next (name, data); --count)
     res.push_back (getNameInfo (name, data));
 
   return res;
@@ -380,9 +380,9 @@ name_filter (const json_spirit::Array& params, bool fHelp)
 
   LOCK (cs_main);
 
-  std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames (valtype ()));
   valtype name;
   CNameData data;
+  std::auto_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
   while (iter->next (name, data))
     {
       const int age = chainActive.Height () - data.getHeight ();
