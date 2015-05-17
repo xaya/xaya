@@ -465,6 +465,33 @@ bool CCoinsViewDB::ValidateNameDB() const
     return true;
 }
 
+void
+CNameCache::writeBatch (CLevelDBBatch& batch) const
+{
+  for (EntryMap::const_iterator i = entries.begin ();
+       i != entries.end (); ++i)
+    batch.Write (std::make_pair (DB_NAME, i->first), i->second);
+
+  for (std::set<valtype>::const_iterator i = deleted.begin ();
+       i != deleted.end (); ++i)
+    batch.Erase (std::make_pair (DB_NAME, *i));
+
+  assert (fNameHistory || history.empty ());
+  for (std::map<valtype, CNameHistory>::const_iterator i = history.begin ();
+       i != history.end (); ++i)
+    if (i->second.empty ())
+      batch.Erase (std::make_pair (DB_NAME_HISTORY, i->first));
+    else
+      batch.Write (std::make_pair (DB_NAME_HISTORY, i->first), i->second);
+
+  for (std::map<ExpireEntry, bool>::const_iterator i = expireIndex.begin ();
+       i != expireIndex.end (); ++i)
+    if (i->second)
+      batch.Write (std::make_pair (DB_NAME_EXPIRY, i->first));
+    else
+      batch.Erase (std::make_pair (DB_NAME_EXPIRY, i->first));
+}
+
 bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
     return Read(make_pair(DB_TXINDEX, txid), pos);
 }
