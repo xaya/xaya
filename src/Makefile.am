@@ -364,6 +364,10 @@ namecoin_tx_SOURCES = bitcoin-tx.cpp
 namecoin_tx_CPPFLAGS = $(BITCOIN_INCLUDES)
 namecoin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
+if TARGET_WINDOWS
+namecoin_tx_SOURCES += bitcoin-tx-res.rc
+endif
+
 namecoin_tx_LDADD = \
   $(LIBBITCOIN_UNIVALUE) \
   $(LIBBITCOIN_COMMON) \

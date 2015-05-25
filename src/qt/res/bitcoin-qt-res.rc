@@ -19,7 +19,7 @@ BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
             VALUE "CompanyName",        "Namecoin"
-            VALUE "FileDescription",    "Namecore (OSS GUI client for Namecoin)"
+            VALUE "FileDescription",    "Namecoin Core (GUI node for Namecoin)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
             VALUE "InternalName",       "namecoin-qt"
             VALUE "LegalCopyright",     COPYRIGHT_STR
