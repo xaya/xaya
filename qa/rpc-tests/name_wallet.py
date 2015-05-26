@@ -45,7 +45,7 @@ class NameWalletTest (NameTestFramework):
 
   def checkBalances (self, spentA = zero, spentB = zero):
     """
-    Check balances of nodes 1 and 2.  The expected spent amounts
+    Check balances of nodes 2 and 3.  The expected spent amounts
     for them are stored in self.spentA and self.spentB, and increased
     prior to the check by the arguments passed in.
     """
@@ -162,6 +162,37 @@ class NameWalletTest (NameTestFramework):
     self.checkTx (3, txid, -price, zero,
                   [['send', None, -price, zero],
                    ['send', 'update: name-a', zero, zero]])
+
+    # Test sendtoname RPC command.
+
+    addrDest = self.nodes[2].getnewaddress ()
+    newDest = self.nodes[0].name_new ("destination")
+    self.generate (0, 5)
+    self.firstupdateName (0, "destination", newDest, "value", addrDest)
+    self.generate (0, 10)
+    self.checkName (3, "destination", "value", None, False)
+
+    try:
+      self.nodes[3].sendtoname ("non-existant", 10)
+      raise AssertionError ("sendtoname allowed to non-existant name")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -5)
+
+    self.nodes[3].sendtoname ("destination", 10)
+    self.generate (0, 1)
+    self.checkBalances (-10, 10 + txFee)
+
+    self.nodes[3].sendtoname ("destination", 10, "foo", "bar", True)
+    self.generate (0, 1)
+    self.checkBalances (-10 + txFee, 10)
+
+    self.generate (0, 30)
+    self.checkName (3, "destination", "value", None, True)
+    try:
+      self.nodes[3].sendtoname ("destination", 10)
+      raise AssertionError ("sendtoname allowed to expired name")
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -5)
 
 if __name__ == '__main__':
   NameWalletTest ().main ()

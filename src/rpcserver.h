@@ -265,6 +265,7 @@ extern UniValue name_list(const UniValue& params, bool fHelp);
 extern UniValue name_new(const UniValue& params, bool fHelp);
 extern UniValue name_firstupdate(const UniValue& params, bool fHelp);
 extern UniValue name_update(const UniValue& params, bool fHelp);
+extern UniValue sendtoname(const UniValue& params, bool fHelp);
 extern UniValue name_checkdb(const UniValue& params, bool fHelp);
 
 // in rest.cpp
