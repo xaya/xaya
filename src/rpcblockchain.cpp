@@ -4,8 +4,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "checkpoints.h"
+#include "consensus/validation.h"
 #include "core_io.h"
 #include "main.h"
+#include "primitives/transaction.h"
 #include "rpcserver.h"
 #include "sync.h"
 #include "util.h"

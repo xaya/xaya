@@ -12,6 +12,7 @@
 #include "chainparams.h"
 #include "checkpoints.h"
 #include "checkqueue.h"
+#include "consensus/validation.h"
 #include "init.h"
 #include "merkleblock.h"
 #include "net.h"
@@ -29,6 +30,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/math/distributions/poisson.hpp>
 #include <boost/thread.hpp>
 
 using namespace std;
@@ -154,8 +156,8 @@ namespace {
         uint256 hash;
         CBlockIndex *pindex;  //! Optional.
         int64_t nTime;  //! Time of "getdata" request in microseconds.
-        int nValidatedQueuedBefore;  //! Number of blocks queued with validated headers (globally) at the time this one is requested.
         bool fValidatedHeaders;  //! Whether this block has validated headers at the time of request.
+        int64_t nTimeDisconnect; //! The timeout for this block request (for disconnecting a slow peer)
     };
     map<uint256, pair<NodeId, list<QueuedBlock>::iterator> > mapBlocksInFlight;
 
@@ -216,6 +218,7 @@ struct CNodeState {
     int64_t nStallingSince;
     list<QueuedBlock> vBlocksInFlight;
     int nBlocksInFlight;
+    int nBlocksInFlightValidHeaders;
     //! Whether we consider this a preferred download peer.
     bool fPreferredDownload;
 
@@ -229,6 +232,7 @@ struct CNodeState {
         fSyncStarted = false;
         nStallingSince = 0;
         nBlocksInFlight = 0;
+        nBlocksInFlightValidHeaders = 0;
         fPreferredDownload = false;
     }
 };
@@ -258,6 +262,12 @@ void UpdatePreferredDownload(CNode* node, CNodeState* state)
     state->fPreferredDownload = (!node->fInbound || node->fWhitelisted) && !node->fOneShot && !node->fClient;
 
     nPreferredDownload += state->fPreferredDownload;
+}
+
+// Returns time at which to timeout block request (nTime in microseconds)
+int64_t GetBlockTimeout(int64_t nTime, int nValidatedQueuedBefore)
+{
+    return nTime + 500000 * Params().GetConsensus().nPowTargetSpacing * (4 + nValidatedQueuedBefore);
 }
 
 void InitializeNode(NodeId nodeid, const CNode *pnode) {
@@ -292,6 +302,7 @@ void MarkBlockAsReceived(const uint256& hash) {
     if (itInFlight != mapBlocksInFlight.end()) {
         CNodeState *state = State(itInFlight->second.first);
         nQueuedValidatedHeaders -= itInFlight->second.second->fValidatedHeaders;
+        state->nBlocksInFlightValidHeaders -= itInFlight->second.second->fValidatedHeaders;
         state->vBlocksInFlight.erase(itInFlight->second.second);
         state->nBlocksInFlight--;
         state->nStallingSince = 0;
@@ -307,10 +318,12 @@ void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, CBlockIndex *pindex
     // Make sure it's not listed somewhere already.
     MarkBlockAsReceived(hash);
 
-    QueuedBlock newentry = {hash, pindex, GetTimeMicros(), nQueuedValidatedHeaders, pindex != NULL};
+    int64_t nNow = GetTimeMicros();
+    QueuedBlock newentry = {hash, pindex, nNow, pindex != NULL, GetBlockTimeout(nNow, nQueuedValidatedHeaders)};
     nQueuedValidatedHeaders += newentry.fValidatedHeaders;
     list<QueuedBlock>::iterator it = state->vBlocksInFlight.insert(state->vBlocksInFlight.end(), newentry);
     state->nBlocksInFlight++;
+    state->nBlocksInFlightValidHeaders += newentry.fValidatedHeaders;
     mapBlocksInFlight[hash] = std::make_pair(nodeid, it);
 }
 
@@ -1172,7 +1185,7 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
     return true;
 }
 
-bool WriteBlockToDisk(CBlock& block, CDiskBlockPos& pos)
+bool WriteBlockToDisk(CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
 {
     // Open history file to append
     CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
@@ -1181,7 +1194,7 @@ bool WriteBlockToDisk(CBlock& block, CDiskBlockPos& pos)
 
     // Write index header
     unsigned int nSize = fileout.GetSerializeSize(block);
-    fileout << FLATDATA(Params().MessageStart()) << nSize;
+    fileout << FLATDATA(messageStart) << nSize;
 
     // Write block
     long fileOutPos = ftell(fileout.Get());
@@ -1555,7 +1568,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
 
 namespace {
 
-bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint256& hashBlock)
+bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint256& hashBlock, const CMessageHeader::MessageStartChars& messageStart)
 {
     // Open history file to append
     CAutoFile fileout(OpenUndoFile(pos), SER_DISK, CLIENT_VERSION);
@@ -1564,7 +1577,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
 
     // Write index header
     unsigned int nSize = fileout.GetSerializeSize(blockundo);
-    fileout << FLATDATA(Params().MessageStart()) << nSize;
+    fileout << FLATDATA(messageStart) << nSize;
 
     // Write undo data
     long fileOutPos = ftell(fileout.Get());
@@ -1607,6 +1620,24 @@ bool UndoReadFromDisk(CBlockUndo& blockundo, const CDiskBlockPos& pos, const uin
         return error("%s: Checksum mismatch", __func__);
 
     return true;
+}
+
+/** Abort with a message */
+bool AbortNode(const std::string& strMessage, const std::string& userMessage="")
+{
+    strMiscWarning = strMessage;
+    LogPrintf("*** %s\n", strMessage);
+    uiInterface.ThreadSafeMessageBox(
+        userMessage.empty() ? _("Error: A fatal internal error occured, see debug.log for details") : userMessage,
+        "", CClientUIInterface::MSG_ERROR);
+    StartShutdown();
+    return false;
+}
+
+bool AbortNode(CValidationState& state, const std::string& strMessage, const std::string& userMessage="")
+{
+    AbortNode(strMessage, userMessage);
+    return state.Error(strMessage);
 }
 
 } // anon namespace
@@ -1742,6 +1773,64 @@ static CCheckQueue<CScriptCheck> scriptcheckqueue(128);
 void ThreadScriptCheck() {
     RenameThread("bitcoin-scriptch");
     scriptcheckqueue.Thread();
+}
+
+//
+// Called periodically asynchronously; alerts if it smells like
+// we're being fed a bad chain (blocks being generated much
+// too slowly or too quickly).
+//
+void PartitionCheck(bool (*initialDownloadCheck)(), CCriticalSection& cs, const CChain& chain, int64_t nPowTargetSpacing)
+{
+    if (initialDownloadCheck()) return;
+
+    static int64_t lastAlertTime = 0;
+    int64_t now = GetAdjustedTime();
+    if (lastAlertTime > now-60*60*24) return; // Alert at most once per day
+
+    const int SPAN_HOURS=4;
+    const int SPAN_SECONDS=SPAN_HOURS*60*60;
+    int BLOCKS_EXPECTED = SPAN_SECONDS / nPowTargetSpacing;
+
+    boost::math::poisson_distribution<double> poisson(BLOCKS_EXPECTED);
+
+    std::string strWarning;
+    int64_t startTime = GetAdjustedTime()-SPAN_SECONDS;
+
+    LOCK(cs);
+    int h = chain.Height();
+    while (h > 0 && chain[h]->GetBlockTime() >= startTime)
+        --h;
+    int nBlocks = chain.Height()-h;
+
+    // How likely is it to find that many by chance?
+    double p = boost::math::pdf(poisson, nBlocks);
+
+    LogPrint("partitioncheck", "%s : Found %d blocks in the last %d hours\n", __func__, nBlocks, SPAN_HOURS);
+    LogPrint("partitioncheck", "%s : likelihood: %g\n", __func__, p);
+
+    // Aim for one false-positive about every fifty years of normal running:
+    const int FIFTY_YEARS = 50*365*24*60*60;
+    double alertThreshold = 1.0 / (FIFTY_YEARS / SPAN_SECONDS);
+
+    if (p <= alertThreshold && nBlocks < BLOCKS_EXPECTED)
+    {
+        // Many fewer blocks than expected: alert!
+        strWarning = strprintf(_("WARNING: check your network connection, %d blocks received in the last %d hours (%d expected)"),
+                               nBlocks, SPAN_HOURS, BLOCKS_EXPECTED);
+    }
+    else if (p <= alertThreshold && nBlocks > BLOCKS_EXPECTED)
+    {
+        // Many more blocks than expected: alert!
+        strWarning = strprintf(_("WARNING: abnormally high number of blocks generated, %d blocks received in the last %d hours (%d expected)"),
+                               nBlocks, SPAN_HOURS, BLOCKS_EXPECTED);
+    }
+    if (!strWarning.empty())
+    {
+        strMiscWarning = strWarning;
+        CAlert::Notify(strWarning, true);
+        lastAlertTime = now;
+    }
 }
 
 static int64_t nTimeVerify = 0;
@@ -1888,8 +1977,8 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             CDiskBlockPos pos;
             if (!FindUndoPos(state, pindex->nFile, pos, ::GetSerializeSize(blockundo, SER_DISK, CLIENT_VERSION) + 40))
                 return error("ConnectBlock(): FindUndoPos failed");
-            if (!UndoWriteToDisk(blockundo, pos, pindex->pprev->GetBlockHash()))
-                return state.Abort("Failed to write undo data");
+            if (!UndoWriteToDisk(blockundo, pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
+                return AbortNode(state, "Failed to write undo data");
 
             // update nUndoPos in block index
             pindex->nUndoPos = pos.nPos;
@@ -1902,7 +1991,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     if (fTxIndex)
         if (!pblocktree->WriteTxIndex(vPos))
-            return state.Abort("Failed to write transaction index");
+            return AbortNode(state, "Failed to write transaction index");
 
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
@@ -1997,7 +2086,7 @@ bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
                 setDirtyBlockIndex.erase(it++);
             }
             if (!pblocktree->WriteBatchSync(vFiles, nLastBlockFile, vBlocks)) {
-                return state.Abort("Files to write to block index database");
+                return AbortNode(state, "Files to write to block index database");
             }
         }
         // Finally remove any pruned files
@@ -2016,7 +2105,7 @@ bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
             return state.Error("out of disk space");
         // Flush the chainstate (which may refer to block index entries).
         if (!pcoinsTip->Flush())
-            return state.Abort("Failed to write to coin database");
+            return AbortNode(state, "Failed to write to coin database");
         nLastFlush = nNow;
     }
     if ((mode == FLUSH_STATE_ALWAYS || mode == FLUSH_STATE_PERIODIC) && nNow > nLastSetChain + (int64_t)DATABASE_WRITE_INTERVAL * 1000000) {
@@ -2025,7 +2114,7 @@ bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
         nLastSetChain = nNow;
     }
     } catch (const std::runtime_error& e) {
-        return state.Abort(std::string("System error while flushing: ") + e.what());
+        return AbortNode(state, std::string("System error while flushing: ") + e.what());
     }
     return true;
 }
@@ -2089,7 +2178,7 @@ bool static DisconnectTip(CValidationState &state) {
     // Read block from disk.
     CBlock block;
     if (!ReadBlockFromDisk(block, pindexDelete))
-        return state.Abort("Failed to read block");
+        return AbortNode(state, "Failed to read block");
     // Apply the block atomically to the chain state.
     int64_t nStart = GetTimeMicros();
     {
@@ -2140,7 +2229,7 @@ bool static ConnectTip(CValidationState &state, CBlockIndex *pindexNew, CBlock *
     CBlock block;
     if (!pblock) {
         if (!ReadBlockFromDisk(block, pindexNew))
-            return state.Abort("Failed to read block");
+            return AbortNode(state, "Failed to read block");
         pblock = &block;
     }
     // Apply the block atomically to the chain state.
@@ -2818,6 +2907,7 @@ bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, CBloc
 
 bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, CDiskBlockPos* dbp)
 {
+    const CChainParams& chainparams = Params();
     AssertLockHeld(cs_main);
 
     CBlockIndex *&pindex = *ppindex;
@@ -2853,12 +2943,12 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
         if (!FindBlockPos(state, blockPos, nBlockSize+8, nHeight, block.GetBlockTime(), dbp != NULL))
             return error("AcceptBlock(): FindBlockPos failed");
         if (dbp == NULL)
-            if (!WriteBlockToDisk(block, blockPos))
-                return state.Abort("Failed to write block");
+            if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStart()))
+                AbortNode(state, "Failed to write block");
         if (!ReceivedBlockTransactions(block, state, pindex, blockPos))
             return error("AcceptBlock(): ReceivedBlockTransactions failed");
     } catch (const std::runtime_error& e) {
-        return state.Abort(std::string("System error: ") + e.what());
+        return AbortNode(state, std::string("System error: ") + e.what());
     }
 
     if (fCheckForPruning)
@@ -2932,24 +3022,6 @@ bool TestBlockValidity(CValidationState &state, const CBlock& block, CBlockIndex
 
     return true;
 }
-
-
-
-
-
-
-
-
-bool AbortNode(const std::string &strMessage, const std::string &userMessage) {
-    strMiscWarning = strMessage;
-    LogPrintf("*** %s\n", strMessage);
-    uiInterface.ThreadSafeMessageBox(
-        userMessage.empty() ? _("Error: A fatal internal error occured, see debug.log for details") : userMessage,
-        "", CClientUIInterface::MSG_ERROR);
-    StartShutdown();
-    return false;
-}
-
 
 /**
  * BLOCK PRUNING CODE
@@ -3361,6 +3433,7 @@ bool LoadBlockIndex()
 
 
 bool InitBlockIndex() {
+    const CChainParams& chainparams = Params();
     LOCK(cs_main);
     // Check whether we're already initialized
     if (chainActive.Genesis() != NULL)
@@ -3381,7 +3454,7 @@ bool InitBlockIndex() {
             CValidationState state;
             if (!FindBlockPos(state, blockPos, nBlockSize+8, 0, block.GetBlockTime()))
                 return error("LoadBlockIndex(): FindBlockPos failed");
-            if (!WriteBlockToDisk(block, blockPos))
+            if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStart()))
                 return error("LoadBlockIndex(): writing genesis block to disk failed");
             CBlockIndex *pindex = AddToBlockIndex(block);
             if (!ReceivedBlockTransactions(block, state, pindex, blockPos))
@@ -5022,9 +5095,22 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // timeout. We compensate for in-flight blocks to prevent killing off peers due to our own downstream link
         // being saturated. We only count validated in-flight blocks so peers can't advertise non-existing block hashes
         // to unreasonably increase our timeout.
-        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0 && state.vBlocksInFlight.front().nTime < nNow - 500000 * consensusParams.nPowTargetSpacing * (4 + state.vBlocksInFlight.front().nValidatedQueuedBefore)) {
-            LogPrintf("Timeout downloading block %s from peer=%d, disconnecting\n", state.vBlocksInFlight.front().hash.ToString(), pto->id);
-            pto->fDisconnect = true;
+        // We also compare the block download timeout originally calculated against the time at which we'd disconnect
+        // if we assumed the block were being requested now (ignoring blocks we've requested from this peer, since we're
+        // only looking at this peer's oldest request).  This way a large queue in the past doesn't result in a
+        // permanently large window for this block to be delivered (ie if the number of blocks in flight is decreasing
+        // more quickly than once every 5 minutes, then we'll shorten the download window for this block).
+        if (!pto->fDisconnect && state.vBlocksInFlight.size() > 0) {
+            QueuedBlock &queuedBlock = state.vBlocksInFlight.front();
+            int64_t nTimeoutIfRequestedNow = GetBlockTimeout(nNow, nQueuedValidatedHeaders - state.nBlocksInFlightValidHeaders);
+            if (queuedBlock.nTimeDisconnect > nTimeoutIfRequestedNow) {
+                LogPrint("net", "Reducing block download timeout for peer=%d block=%s, orig=%d new=%d\n", pto->id, queuedBlock.hash.ToString(), queuedBlock.nTimeDisconnect, nTimeoutIfRequestedNow);
+                queuedBlock.nTimeDisconnect = nTimeoutIfRequestedNow;
+            }
+            if (queuedBlock.nTimeDisconnect < nNow) {
+                LogPrintf("Timeout downloading block %s from peer=%d, disconnecting\n", queuedBlock.hash.ToString(), pto->id);
+                pto->fDisconnect = true;
+            }
         }
 
         //

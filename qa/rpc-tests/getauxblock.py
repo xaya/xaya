@@ -5,16 +5,10 @@
 
 # Test the "getauxblock" merge-mining RPC interface.
 
-# Add python-bitcoinrpc to module search path:
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import *
 
-from bitcoinrpc.authproxy import JSONRPCException
-from test_framework import BitcoinTestFramework
-from util import assert_equal, Decimal
-
-import auxpow
+from test_framework import auxpow
 
 class GetAuxBlockTest (BitcoinTestFramework):
 
