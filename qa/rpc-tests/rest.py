@@ -7,15 +7,16 @@
 # Test REST interface
 #
 
-from test_framework import BitcoinTestFramework
-from util import *
+
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import *
 from struct import *
 import binascii
 import json
 import StringIO
 import urllib
 
-import auxpow
+from test_framework import auxpow
 
 try:
     import http.client as httplib
