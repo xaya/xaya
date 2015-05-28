@@ -31,6 +31,9 @@ testScripts=(
     'proxy_test.py'
     'merkle_blocks.py'
     'signrawtransactions.py'
+
+    # auxpow tests
+    'getauxblock.py'
 );
 testScriptsExt=(
     'bipdersig-p2p.py'
@@ -50,9 +53,6 @@ testScriptsExt=(
     'invalidblockrequest.py'
     'rawtransactions.py'
 #    'forknotify.py'
-
-    # auxpow tests
-    'getauxblock.py'
 );
 
 extArg="-extended"
