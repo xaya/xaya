@@ -6,14 +6,8 @@
 # Test that expiring / unexpiring names works as desired, in particular
 # with respect to clearing the UTXO set and mempool.
 
-# Add python-bitcoinrpc to module search path:
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
-
-from bitcoinrpc.authproxy import JSONRPCException
-from names import NameTestFramework
-from util import assert_equal
+from test_framework.names import NameTestFramework
+from test_framework.util import *
 
 class NameExpirationTest (NameTestFramework):
 

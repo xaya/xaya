@@ -6,6 +6,7 @@
 
 #include "chainparams.h"
 #include "coins.h"
+#include "consensus/validation.h"
 #include "leveldbwrapper.h"
 #include "../main.h"
 #include "script/names.h"

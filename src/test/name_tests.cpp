@@ -4,6 +4,7 @@
 
 #include "base58.h"
 #include "coins.h"
+#include "consensus/validation.h"
 #include "main.h"
 #include "names/main.h"
 #include "txdb.h"

@@ -5,15 +5,10 @@
 
 # RPC tests for the handling of names in the wallet.
 
-# Add python-bitcoinrpc to module search path:
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-bitcoinrpc"))
+from test_framework.names import NameTestFramework
+from test_framework.util import *
 
-from bitcoinrpc.authproxy import JSONRPCException
 from decimal import Decimal
-from names import NameTestFramework
-from util import assert_equal, start_nodes
 
 nameFee = Decimal ("0.01")
 txFee = Decimal ("0.001")
