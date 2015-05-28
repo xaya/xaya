@@ -31,6 +31,19 @@ testScripts=(
     'proxy_test.py'
     'merkle_blocks.py'
     'signrawtransactions.py'
+
+    # auxpow tests
+    'getauxblock.py'
+
+    # name tests
+    'name_expiration.py'
+    'name_list.py'
+    'name_multisig.py'
+    'name_rawtx.py'
+    'name_registration.py'
+    'name_reorg.py'
+    'name_scanning.py'
+    'name_wallet.py'
 );
 testScriptsExt=(
     'bipdersig-p2p.py'
@@ -50,19 +63,6 @@ testScriptsExt=(
     'invalidblockrequest.py'
     'rawtransactions.py'
 #    'forknotify.py'
-
-    # auxpow tests
-    'getauxblock.py'
-
-    # name tests
-    'name_expiration.py'
-    'name_list.py'
-    'name_multisig.py'
-    'name_rawtx.py'
-    'name_registration.py'
-    'name_reorg.py'
-    'name_scanning.py'
-    'name_wallet.py'
 );
 
 extArg="-extended"
