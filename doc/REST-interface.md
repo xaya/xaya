@@ -79,6 +79,16 @@ $ curl localhost:18332/rest/getutxos/checkmempool/b2cdfd7b89def827ff8af7cd9bff76
 }
 ```
 
+####Names
+`GET /rest/name/<NAME>.<bin|hex|json>`
+
+Given a name (possibly URL-encoded),
+Returns the value associated to the name.
+
+bin and hex formats return the value in the respective form,
+while the JSON format returns an object including additional
+information (like the "name_show" RPC command).
+
 Risks
 -------------
 Running a webbrowser on the same node with a REST enabled bitcoind can be a risk. Accessing prepared XSS websites could read out tx/block data of your node by placing links like `<script src="http://127.0.0.1:8332/rest/tx/1234567890.json">` which might break the nodes privacy.
