@@ -15,8 +15,7 @@
 #include "util.h"
 #include "wallet/wallet.h"
 
-#include "json/json_spirit_utils.h"
-#include "json/json_spirit_value.h"
+#include "univalue/univalue.h"
 
 /**
  * Helper routine to fetch the name output of a previous transaction.  This
@@ -49,11 +48,11 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_list (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_list (const UniValue& params, bool fHelp)
 {
   if (!EnsureWalletIsAvailable (fHelp))
-    return json_spirit::Value::null;
+    return NullUniValue;
 
   if (fHelp || params.size () > 1)
     throw std::runtime_error (
@@ -77,7 +76,7 @@ name_list (const json_spirit::Array& params, bool fHelp)
     nameFilter = ValtypeFromString (params[0].get_str ());
 
   std::map<valtype, int> mapHeights;
-  std::map<valtype, json_spirit::Object> mapObjects;
+  std::map<valtype, UniValue> mapObjects;
 
   {
   LOCK2 (cs_main, pwalletMain->cs_wallet);
@@ -122,22 +121,21 @@ name_list (const json_spirit::Array& params, bool fHelp)
       if (mit != mapHeights.end () && mit->second > pindex->nHeight)
         continue;
 
-      json_spirit::Object obj
+      UniValue obj
         = getNameInfo (name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress (), pindex->nHeight);
 
       const bool mine = IsMine (*pwalletMain, nameOp.getAddress ());
-      obj.push_back (json_spirit::Pair ("transferred", !mine));
+      obj.push_back (Pair ("transferred", !mine));
 
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;
     }
   }
 
-  json_spirit::Array res;
-  BOOST_FOREACH (const PAIRTYPE(const valtype, json_spirit::Object)& item,
-                 mapObjects)
+  UniValue res(UniValue::VARR);
+  BOOST_FOREACH (const PAIRTYPE(const valtype, UniValue)& item, mapObjects)
     res.push_back (item.second);
 
   return res;
@@ -145,11 +143,11 @@ name_list (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_new (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_new (const UniValue& params, bool fHelp)
 {
   if (!EnsureWalletIsAvailable (fHelp))
-    return json_spirit::Value::null;
+    return NullUniValue;
 
   if (fHelp || params.size () != 1)
     throw std::runtime_error (
@@ -203,7 +201,7 @@ name_new (const json_spirit::Array& params, bool fHelp)
   LogPrintf ("name_new: name=%s, rand=%s, tx=%s\n",
              nameStr.c_str (), randStr.c_str (), txid.c_str ());
 
-  json_spirit::Array res;
+  UniValue res(UniValue::VARR);
   res.push_back (txid);
   res.push_back (randStr);
 
@@ -212,11 +210,11 @@ name_new (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_firstupdate (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_firstupdate (const UniValue& params, bool fHelp)
 {
   if (!EnsureWalletIsAvailable (fHelp))
-    return json_spirit::Value::null;
+    return NullUniValue;
 
   if (fHelp || (params.size () != 4 && params.size () != 5))
     throw std::runtime_error (
@@ -325,11 +323,11 @@ name_firstupdate (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_update (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_update (const UniValue& params, bool fHelp)
 {
   if (!EnsureWalletIsAvailable (fHelp))
-    return json_spirit::Value::null;
+    return NullUniValue;
 
   if (fHelp || (params.size () != 2 && params.size () != 3))
     throw std::runtime_error (

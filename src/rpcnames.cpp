@@ -11,13 +11,12 @@
 #include "rpcserver.h"
 #include "script/names.h"
 
-#include "json/json_spirit_utils.h"
-#include "json/json_spirit_value.h"
-
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
 #include <memory>
 #include <sstream>
+
+#include "univalue/univalue.h"
 
 /**
  * Utility routine to construct a "name info" object to return.  This is used
@@ -29,15 +28,15 @@
  * @param height The name's last update height.
  * @return A JSON object to return.
  */
-json_spirit::Object
+UniValue
 getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
              const CScript& addr, int height)
 {
-  json_spirit::Object obj;
-  obj.push_back (json_spirit::Pair ("name", ValtypeToString (name)));
-  obj.push_back (json_spirit::Pair ("value", ValtypeToString (value)));
-  obj.push_back (json_spirit::Pair ("txid", outp.hash.GetHex ()));
-  obj.push_back (json_spirit::Pair ("vout", static_cast<int> (outp.n)));
+  UniValue obj(UniValue::VOBJ);
+  obj.push_back (Pair ("name", ValtypeToString (name)));
+  obj.push_back (Pair ("value", ValtypeToString (value)));
+  obj.push_back (Pair ("txid", outp.hash.GetHex ()));
+  obj.push_back (Pair ("vout", static_cast<int> (outp.n)));
 
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
@@ -48,7 +47,7 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
     addrStr = addrParsed.ToString ();
   else
     addrStr = "<nonstandard>";
-  obj.push_back (json_spirit::Pair ("address", addrStr));
+  obj.push_back (Pair ("address", addrStr));
 
   /* Calculate expiration data.  */
   const int curHeight = chainActive.Height ();
@@ -57,9 +56,9 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   const int expireHeight = height + expireDepth;
   const int expiresIn = expireHeight - curHeight;
   const bool expired = (expiresIn <= 0);
-  obj.push_back (json_spirit::Pair ("height", height));
-  obj.push_back (json_spirit::Pair ("expires_in", expiresIn));
-  obj.push_back (json_spirit::Pair ("expired", expired));
+  obj.push_back (Pair ("height", height));
+  obj.push_back (Pair ("expires_in", expiresIn));
+  obj.push_back (Pair ("expired", expired));
 
   return obj;
 }
@@ -70,11 +69,11 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
  * @param data The name's data.
  * @return A JSON object to return.
  */
-json_spirit::Object
+UniValue
 getNameInfo (const valtype& name, const CNameData& data)
 {
   return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
-                     data.getAddress (), data.getHeight ());
+                      data.getAddress (), data.getHeight ());
 }
 
 /**
@@ -116,10 +115,10 @@ getNameInfoHelp (const std::string& indent, const std::string& trailing)
  * @param obj The name operation "description" as given to the call.
  */
 void
-AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
+AddRawTxNameOperation (CMutableTransaction& tx, const UniValue& obj)
 {
-  json_spirit::Value val = json_spirit::find_value (obj, "op");
-  if (val.type () != json_spirit::str_type)
+  UniValue val = find_value (obj, "op");
+  if (!val.isStr ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "missing op key");
   const std::string op = val.get_str ();
 
@@ -127,18 +126,18 @@ AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
     throw JSONRPCError (RPC_INVALID_PARAMETER,
                         "only name_update is implemented for the rawtx API");
 
-  val = json_spirit::find_value (obj, "name");
-  if (val.type () != json_spirit::str_type)
+  val = find_value (obj, "name");
+  if (!val.isStr ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "missing name key");
   const valtype name = ValtypeFromString (val.get_str ());
 
-  val = json_spirit::find_value (obj, "value");
-  if (val.type () != json_spirit::str_type)
+  val = find_value (obj, "value");
+  if (!val.isStr ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "missing value key");
   const valtype value = ValtypeFromString (val.get_str ());
 
-  val = json_spirit::find_value (obj, "address");
-  if (val.type () != json_spirit::str_type)
+  val = find_value (obj, "address");
+  if (!val.isStr ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "missing address key");
   const CBitcoinAddress toAddress(val.get_str ());
   if (!toAddress.IsValid ())
@@ -157,8 +156,8 @@ AddRawTxNameOperation (CMutableTransaction& tx, const json_spirit::Object& obj)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_show (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_show (const UniValue& params, bool fHelp)
 {
   if (fHelp || params.size () != 1)
     throw std::runtime_error (
@@ -197,8 +196,8 @@ name_show (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_history (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_history (const UniValue& params, bool fHelp)
 {
   if (fHelp || params.size () != 1)
     throw std::runtime_error (
@@ -244,7 +243,7 @@ name_history (const json_spirit::Array& params, bool fHelp)
       assert (history.empty ());
   }
 
-  json_spirit::Array res;
+  UniValue res(UniValue::VARR);
   BOOST_FOREACH (const CNameData& entry, history.getData ())
     res.push_back (getNameInfo (name, entry));
   res.push_back (getNameInfo (name, data));
@@ -254,8 +253,8 @@ name_history (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_scan (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_scan (const UniValue& params, bool fHelp)
 {
   if (fHelp || params.size () > 2)
     throw std::runtime_error (
@@ -288,7 +287,7 @@ name_scan (const json_spirit::Array& params, bool fHelp)
   if (params.size () >= 2)
     count = params[1].get_int ();
 
-  json_spirit::Array res;
+  UniValue res(UniValue::VARR);
   if (count <= 0)
     return res;
 
@@ -305,8 +304,8 @@ name_scan (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_filter (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_filter (const UniValue& params, bool fHelp)
 {
   if (fHelp || params.size () > 5)
     throw std::runtime_error (
@@ -375,7 +374,7 @@ name_filter (const json_spirit::Array& params, bool fHelp)
   /* ******************************************* */
   /* Iterate over names to build up the result.  */
 
-  json_spirit::Array names;
+  UniValue names(UniValue::VARR);
   unsigned count(0);
 
   LOCK (cs_main);
@@ -423,9 +422,9 @@ name_filter (const json_spirit::Array& params, bool fHelp)
 
   if (stats)
     {
-      json_spirit::Object res;
-      res.push_back (json_spirit::Pair ("blocks", chainActive.Height ()));
-      res.push_back (json_spirit::Pair ("count", static_cast<int> (count)));
+      UniValue res(UniValue::VOBJ);
+      res.push_back (Pair ("blocks", chainActive.Height ()));
+      res.push_back (Pair ("count", static_cast<int> (count)));
 
       return res;
     }
@@ -435,8 +434,8 @@ name_filter (const json_spirit::Array& params, bool fHelp)
 
 /* ************************************************************************** */
 
-json_spirit::Value
-name_checkdb (const json_spirit::Array& params, bool fHelp)
+UniValue
+name_checkdb (const UniValue& params, bool fHelp)
 {
   if (fHelp || params.size () != 0)
     throw std::runtime_error (
