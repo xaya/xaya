@@ -261,8 +261,10 @@ void OnRPCPreCommand(const CRPCCommand& cmd)
 
 std::string HelpMessage(HelpMessageMode mode)
 {
+    const bool showDebug = GetBoolArg("-help-debug", false);
 
     // When adding new options to the categories, please keep and ensure alphabetical ordering.
+    // Do not translate _(...) -help-debug options, Many technical terms, and only a very small audience, so is unnecessary stress to translators.
     string strUsage = HelpMessageGroup(_("Options:"));
     strUsage += HelpMessageOpt("-?", _("This help message"));
     strUsage += HelpMessageOpt("-alertnotify=<cmd>", _("Execute command when a relevant alert is received or we see a really long fork (%s in cmd is replaced by message)"));
@@ -332,8 +334,8 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageGroup(_("Wallet options:"));
     strUsage += HelpMessageOpt("-disablewallet", _("Do not load the wallet and disable wallet RPC calls"));
     strUsage += HelpMessageOpt("-keypool=<n>", strprintf(_("Set key pool size to <n> (default: %u)"), 100));
-    if (GetBoolArg("-help-debug", false))
-        strUsage += HelpMessageOpt("-mintxfee=<amt>", strprintf(_("Fees (in BTC/Kb) smaller than this are considered zero fee for transaction creation (default: %s)"),
+    if (showDebug)
+        strUsage += HelpMessageOpt("-mintxfee=<amt>", strprintf("Fees (in BTC/Kb) smaller than this are considered zero fee for transaction creation (default: %s)",
             FormatMoney(CWallet::minTxFee.GetFeePerK())));
     strUsage += HelpMessageOpt("-paytxfee=<amt>", strprintf(_("Fee (in BTC/kB) to add to transactions you send (default: %s)"), FormatMoney(payTxFee.GetFeePerK())));
     strUsage += HelpMessageOpt("-rescan", _("Rescan the block chain for missing wallet transactions") + " " + _("on startup"));
@@ -352,16 +354,16 @@ std::string HelpMessage(HelpMessageMode mode)
 #endif
 
     strUsage += HelpMessageGroup(_("Debugging/Testing options:"));
-    if (GetBoolArg("-help-debug", false))
+    if (showDebug)
     {
-        strUsage += HelpMessageOpt("-checkpoints", strprintf(_("Disable expensive verification for known chain history (default: %u)"), 1));
-        strUsage += HelpMessageOpt("-dblogsize=<n>", strprintf(_("Flush database activity from memory pool to disk log every <n> megabytes (default: %u)"), 100));
-        strUsage += HelpMessageOpt("-disablesafemode", strprintf(_("Disable safemode, override a real safe mode event (default: %u)"), 0));
-        strUsage += HelpMessageOpt("-testsafemode", strprintf(_("Force safe mode (default: %u)"), 0));
-        strUsage += HelpMessageOpt("-dropmessagestest=<n>", _("Randomly drop 1 of every <n> network messages"));
-        strUsage += HelpMessageOpt("-fuzzmessagestest=<n>", _("Randomly fuzz 1 of every <n> network messages"));
-        strUsage += HelpMessageOpt("-flushwallet", strprintf(_("Run a thread to flush wallet periodically (default: %u)"), 1));
-        strUsage += HelpMessageOpt("-stopafterblockimport", strprintf(_("Stop running after importing blocks from disk (default: %u)"), 0));
+        strUsage += HelpMessageOpt("-checkpoints", strprintf("Disable expensive verification for known chain history (default: %u)", 1));
+        strUsage += HelpMessageOpt("-dblogsize=<n>", strprintf("Flush database activity from memory pool to disk log every <n> megabytes (default: %u)", 100));
+        strUsage += HelpMessageOpt("-disablesafemode", strprintf("Disable safemode, override a real safe mode event (default: %u)", 0));
+        strUsage += HelpMessageOpt("-testsafemode", strprintf("Force safe mode (default: %u)", 0));
+        strUsage += HelpMessageOpt("-dropmessagestest=<n>", "Randomly drop 1 of every <n> network messages");
+        strUsage += HelpMessageOpt("-fuzzmessagestest=<n>", "Randomly fuzz 1 of every <n> network messages");
+        strUsage += HelpMessageOpt("-flushwallet", strprintf("Run a thread to flush wallet periodically (default: %u)", 1));
+        strUsage += HelpMessageOpt("-stopafterblockimport", strprintf("Stop running after importing blocks from disk (default: %u)", 0));
     }
     string debugCategories = "addrman, alert, bench, coindb, db, lock, rand, rpc, selectcoins, mempool, net, proxy, prune"; // Don't translate these and qt below
     if (mode == HMM_BITCOIN_QT)
@@ -375,21 +377,20 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-help-debug", _("Show all debugging options (usage: --help -help-debug)"));
     strUsage += HelpMessageOpt("-logips", strprintf(_("Include IP addresses in debug output (default: %u)"), 0));
     strUsage += HelpMessageOpt("-logtimestamps", strprintf(_("Prepend debug output with timestamp (default: %u)"), 1));
-    if (GetBoolArg("-help-debug", false))
+    if (showDebug)
     {
-        strUsage += HelpMessageOpt("-limitfreerelay=<n>", strprintf(_("Continuously rate-limit free transactions to <n>*1000 bytes per minute (default: %u)"), 15));
-        strUsage += HelpMessageOpt("-relaypriority", strprintf(_("Require high priority for relaying free or low-fee transactions (default: %u)"), 1));
-        strUsage += HelpMessageOpt("-maxsigcachesize=<n>", strprintf(_("Limit size of signature cache to <n> entries (default: %u)"), 50000));
+        strUsage += HelpMessageOpt("-limitfreerelay=<n>", strprintf("Continuously rate-limit free transactions to <n>*1000 bytes per minute (default: %u)", 15));
+        strUsage += HelpMessageOpt("-relaypriority", strprintf("Require high priority for relaying free or low-fee transactions (default: %u)", 1));
+        strUsage += HelpMessageOpt("-maxsigcachesize=<n>", strprintf("Limit size of signature cache to <n> entries (default: %u)", 50000));
     }
     strUsage += HelpMessageOpt("-minrelaytxfee=<amt>", strprintf(_("Fees (in BTC/Kb) smaller than this are considered zero fee for relaying (default: %s)"), FormatMoney(::minRelayTxFee.GetFeePerK())));
     strUsage += HelpMessageOpt("-printtoconsole", _("Send trace/debug info to console instead of debug.log file"));
-    if (GetBoolArg("-help-debug", false))
+    if (showDebug)
     {
-        strUsage += HelpMessageOpt("-printpriority", strprintf(_("Log transaction priority and fee per kB when mining blocks (default: %u)"), 0));
-        strUsage += HelpMessageOpt("-privdb", strprintf(_("Sets the DB_PRIVATE flag in the wallet db environment (default: %u)"), 1));
-        strUsage += HelpMessageOpt("-regtest", _("Enter regression test mode, which uses a special chain in which blocks can be solved instantly.") + " " +
-            _("This is intended for regression testing tools and app development.") + " " +
-            _("In this mode -genproclimit controls how many blocks are generated immediately."));
+        strUsage += HelpMessageOpt("-printpriority", strprintf("Log transaction priority and fee per kB when mining blocks (default: %u)", 0));
+        strUsage += HelpMessageOpt("-privdb", strprintf("Sets the DB_PRIVATE flag in the wallet db environment (default: %u)", 1));
+        strUsage += HelpMessageOpt("-regtest", "Enter regression test mode, which uses a special chain in which blocks can be solved instantly. "
+            "This is intended for regression testing tools and app development.");
     }
     strUsage += HelpMessageOpt("-shrinkdebugfile", _("Shrink debug.log file on client startup (default: 1 when no -debug)"));
     strUsage += HelpMessageOpt("-testnet", _("Use the test network"));
@@ -402,8 +403,8 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-blockminsize=<n>", strprintf(_("Set minimum block size in bytes (default: %u)"), 0));
     strUsage += HelpMessageOpt("-blockmaxsize=<n>", strprintf(_("Set maximum block size in bytes (default: %d)"), DEFAULT_BLOCK_MAX_SIZE));
     strUsage += HelpMessageOpt("-blockprioritysize=<n>", strprintf(_("Set maximum size of high-priority/low-fee transactions in bytes (default: %d)"), DEFAULT_BLOCK_PRIORITY_SIZE));
-    if (GetBoolArg("-help-debug", false))
-        strUsage += HelpMessageOpt("-blockversion=<n>", strprintf(_("Override block version to test forking scenarios (default: %d)"), (int)CBlock::CURRENT_VERSION));
+    if (showDebug)
+        strUsage += HelpMessageOpt("-blockversion=<n>", strprintf("Override block version to test forking scenarios (default: %d)", (int)CBlock::CURRENT_VERSION));
 
     strUsage += HelpMessageGroup(_("RPC server options:"));
     strUsage += HelpMessageOpt("-server", _("Accept command line and JSON-RPC commands"));
@@ -425,8 +426,8 @@ std::string HelpMessage(HelpMessageMode mode)
     if (mode == HMM_BITCOIN_QT)
     {
         strUsage += HelpMessageGroup(_("UI Options:"));
-        if (GetBoolArg("-help-debug", false)) {
-            strUsage += HelpMessageOpt("-allowselfsignedrootcertificates", _("Allow self signed root certificates (default: 0)"));
+        if (showDebug) {
+            strUsage += HelpMessageOpt("-allowselfsignedrootcertificates", "Allow self signed root certificates (default: 0)");
         }
         strUsage += HelpMessageOpt("-choosedatadir", _("Choose data directory on startup (default: 0)"));
         strUsage += HelpMessageOpt("-lang=<lang>", _("Set language, for example \"de_DE\" (default: system locale)"));
@@ -474,24 +475,43 @@ struct CImportingNow
 
 // If we're using -prune with -reindex, then delete block files that will be ignored by the
 // reindex.  Since reindexing works by starting at block file 0 and looping until a blockfile
-// is missing, and since pruning works by deleting the oldest block file first, just check
-// for block file 0, and if it doesn't exist, delete all the block files in the
-// directory (since they won't be read by the reindex but will take up disk space).
-void DeleteAllBlockFiles()
+// is missing, do the same here to delete any later block files after a gap.  Also delete all
+// rev files since they'll be rewritten by the reindex anyway.  This ensures that vinfoBlockFile
+// is in sync with what's actually on disk by the time we start downloading, so that pruning
+// works correctly.
+void CleanupBlockRevFiles()
 {
-    if (boost::filesystem::exists(GetBlockPosFilename(CDiskBlockPos(0, 0), "blk")))
-        return;
+    using namespace boost::filesystem;
+    map<string, path> mapBlockFiles;
 
-    LogPrintf("Removing all blk?????.dat and rev?????.dat files for -reindex with -prune\n");
-    boost::filesystem::path blocksdir = GetDataDir() / "blocks";
-    for (boost::filesystem::directory_iterator it(blocksdir); it != boost::filesystem::directory_iterator(); it++) {
-        if (is_regular_file(*it)) {
-            if ((it->path().filename().string().length() == 12) &&
-                (it->path().filename().string().substr(8,4) == ".dat") &&
-                ((it->path().filename().string().substr(0,3) == "blk") ||
-                 (it->path().filename().string().substr(0,3) == "rev")))
-                boost::filesystem::remove(it->path());
+    // Glob all blk?????.dat and rev?????.dat files from the blocks directory.
+    // Remove the rev files immediately and insert the blk file paths into an
+    // ordered map keyed by block file index.
+    LogPrintf("Removing unusable blk?????.dat and rev?????.dat files for -reindex with -prune\n");
+    path blocksdir = GetDataDir() / "blocks";
+    for (directory_iterator it(blocksdir); it != directory_iterator(); it++) {
+        if (is_regular_file(*it) &&
+            it->path().filename().string().length() == 12 &&
+            it->path().filename().string().substr(8,4) == ".dat")
+        {
+            if (it->path().filename().string().substr(0,3) == "blk")
+                mapBlockFiles[it->path().filename().string().substr(3,5)] = it->path();
+            else if (it->path().filename().string().substr(0,3) == "rev")
+                remove(it->path());
         }
+    }
+
+    // Remove all block files that aren't part of a contiguous set starting at
+    // zero by walking the ordered map (keys are block file indices) by
+    // keeping a separate counter.  Once we hit a gap (or if 0 doesn't exist)
+    // start removing block files.
+    int nContigCounter = 0;
+    BOOST_FOREACH(const PAIRTYPE(string, path)& item, mapBlockFiles) {
+        if (atoi(item.first) == nContigCounter) {
+            nContigCounter++;
+            continue;
+        }
+        remove(item.second);
     }
 }
 
@@ -1107,9 +1127,9 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
                 if (fReindex) {
                     pblocktree->WriteReindexing(true);
-                    //If we're reindexing in prune mode, wipe away all our block and undo data files
+                    //If we're reindexing in prune mode, wipe away unusable block files and all undo data files
                     if (fPruneMode)
-                        DeleteAllBlockFiles();
+                        CleanupBlockRevFiles();
                 }
 
                 if (!LoadBlockIndex()) {
