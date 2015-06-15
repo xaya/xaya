@@ -62,6 +62,7 @@ bool fCheckBlockIndex = false;
 bool fCheckpointsEnabled = true;
 size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
+bool fAlerts = DEFAULT_ALERTS;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying and mining) */
 CFeeRate minRelayTxFee = CFeeRate(COIN / 1000);
@@ -1820,9 +1821,10 @@ void ThreadScriptCheck() {
 // we're being fed a bad chain (blocks being generated much
 // too slowly or too quickly).
 //
-void PartitionCheck(bool (*initialDownloadCheck)(), CCriticalSection& cs, const CChain& chain, int64_t nPowTargetSpacing)
+void PartitionCheck(bool (*initialDownloadCheck)(), CCriticalSection& cs, const CBlockIndex *const &bestHeader,
+                    int64_t nPowTargetSpacing)
 {
-    if (initialDownloadCheck()) return;
+    if (bestHeader == NULL || initialDownloadCheck()) return;
 
     static int64_t lastAlertTime = 0;
     int64_t now = GetAdjustedTime();
@@ -1838,10 +1840,13 @@ void PartitionCheck(bool (*initialDownloadCheck)(), CCriticalSection& cs, const 
     int64_t startTime = GetAdjustedTime()-SPAN_SECONDS;
 
     LOCK(cs);
-    int h = chain.Height();
-    while (h > 0 && chain[h]->GetBlockTime() >= startTime)
-        --h;
-    int nBlocks = chain.Height()-h;
+    const CBlockIndex* i = bestHeader;
+    int nBlocks = 0;
+    while (i->GetBlockTime() >= startTime) {
+        ++nBlocks;
+        i = i->pprev;
+        if (i == NULL) return; // Ran out of chain, we must not be fully sync'ed
+    }
 
     // How likely is it to find that many by chance?
     double p = boost::math::pdf(poisson, nBlocks);
@@ -4799,7 +4804,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     }
 
 
-    else if (strCommand == "alert")
+    else if (fAlerts && strCommand == "alert")
     {
         CAlert alert;
         vRecv >> alert;
