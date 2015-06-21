@@ -107,6 +107,7 @@ public:
         vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
         vSeeds.push_back(CDNSSeedData("digi-masters.com", "namecoindnsseed.digi-masters.com"));
         vSeeds.push_back(CDNSSeedData("digi-masters.uk", "namecoindnsseed.digi-masters.uk"));
+        vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.namecoin.webbtc.com"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
@@ -242,8 +243,7 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        /* FIXME: DNS seeds for testnet?  */
-        //vSeeds.push_back(CDNSSeedData("bitcoin.schildbach.de", "testnet-seed.bitcoin.schildbach.de"));
+        vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.test.namecoin.webbtc.com"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
