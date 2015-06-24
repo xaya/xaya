@@ -30,8 +30,10 @@ testScripts=(
     'zapwallettxes.py'
     'proxy_test.py'
     'merkle_blocks.py'
+    'fundrawtransaction.py'
     'signrawtransactions.py'
     'walletbackup.py'
+    'nodehandling.py'
 
     # auxpow tests
     'getauxblock.py'
