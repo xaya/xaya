@@ -169,7 +169,7 @@ CCacheNameIterator::next (valtype& name, CNameData& data)
 bool
 CNameCache::get (const valtype& name, CNameData& data) const
 {
-  const std::map<valtype, CNameData>::const_iterator i = entries.find (name);
+  const EntryMap::const_iterator i = entries.find (name);
   if (i == entries.end ())
     return false;
 
@@ -184,7 +184,7 @@ CNameCache::set (const valtype& name, const CNameData& data)
   if (di != deleted.end ())
     deleted.erase (di);
 
-  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
+  const EntryMap::iterator ei = entries.find (name);
   if (ei != entries.end ())
     ei->second = data;
   else
@@ -194,7 +194,7 @@ CNameCache::set (const valtype& name, const CNameData& data)
 void
 CNameCache::remove (const valtype& name)
 {
-  const std::map<valtype, CNameData>::iterator ei = entries.find (name);
+  const EntryMap::iterator ei = entries.find (name);
   if (ei != entries.end ())
     entries.erase (ei);
 
