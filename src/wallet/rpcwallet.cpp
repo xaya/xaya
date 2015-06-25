@@ -417,6 +417,9 @@ UniValue sendtoaddress(const UniValue& params, bool fHelp)
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
 
+    /* Note that the code below is duplicated in sendtoname.  Make sure
+       to update it accordingly with changes made here.  */
+
     // Amount
     CAmount nAmount = AmountFromValue(params[1]);
     if (nAmount <= 0)
