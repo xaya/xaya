@@ -77,6 +77,11 @@ enum
     // Note: CLEANSTACK should never be used without P2SH.
     SCRIPT_VERIFY_CLEANSTACK = (1U << 8),
 
+    // Verify CHECKLOCKTIMEVERIFY
+    //
+    // See BIP65 for details.
+    SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY = (1U << 9),
+
     // Perform name checks in "mempool" mode.  This allows / disallows
     // certain stuff (e. g., it allows immature spending of name_new's).
     SCRIPT_VERIFY_NAMES_MEMPOOL = (1U << 24),
@@ -90,6 +95,11 @@ public:
     virtual bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode) const
     {
         return false;
+    }
+
+    virtual bool CheckLockTime(const CScriptNum& nLockTime) const
+    {
+         return false;
     }
 
     virtual ~BaseSignatureChecker() {}
@@ -107,6 +117,7 @@ protected:
 public:
     TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn) : txTo(txToIn), nIn(nInIn) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode) const;
+    bool CheckLockTime(const CScriptNum& nLockTime) const;
 };
 
 class MutableTransactionSignatureChecker : public TransactionSignatureChecker
