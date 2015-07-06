@@ -68,6 +68,8 @@ def mineAuxpowBlock (node):
   res = node.getauxblock (auxblock['hash'], apow)
   assert res
 
+  return auxblock['hash']
+
 def mineBlock (header, target, ok):
   """
   Given a block header, update the nonce until it is ok (or not)

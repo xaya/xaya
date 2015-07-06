@@ -289,6 +289,7 @@ static const CRPCCommand vRPCCommands[] =
     { "blockchain",         "getblockcount",          &getblockcount,          true  },
     { "blockchain",         "getblock",               &getblock,               true  },
     { "blockchain",         "getblockhash",           &getblockhash,           true  },
+    { "blockchain",         "getblockheader",         &getblockheader,         true  },
     { "blockchain",         "getchaintips",           &getchaintips,           true  },
     { "blockchain",         "getdifficulty",          &getdifficulty,          true  },
     { "blockchain",         "getmempoolinfo",         &getmempoolinfo,         true  },
@@ -305,16 +306,12 @@ static const CRPCCommand vRPCCommands[] =
     { "mining",             "getnetworkhashps",       &getnetworkhashps,       true  },
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  true  },
     { "mining",             "submitblock",            &submitblock,            true  },
-#ifdef ENABLE_WALLET
-    { "mining",             "getauxblock",            &getauxblock,            false },
-#endif // ENABLE_WALLET
+    { "mining",             "getauxblock",            &getauxblock,            true  },
 
-#ifdef ENABLE_WALLET
     /* Coin generation */
     { "generating",         "getgenerate",            &getgenerate,            true  },
     { "generating",         "setgenerate",            &setgenerate,            true  },
     { "generating",         "generate",               &generate,               true  },
-#endif
 
     /* Raw transactions */
     { "rawtransactions",    "createrawtransaction",   &createrawtransaction,   true  },
@@ -949,13 +946,6 @@ static bool HTTPReq_JSONRPC(AcceptedConnection *conn,
         if (!valRequest.read(strRequest))
             throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
 
-        // Return immediately if in warmup
-        {
-            LOCK(cs_rpcWarmup);
-            if (fRPCInWarmup)
-                throw JSONRPCError(RPC_IN_WARMUP, rpcWarmupStatus);
-        }
-
         string strReply;
 
         // singleton request
@@ -1027,6 +1017,13 @@ void ServiceConnection(AcceptedConnection *conn)
 
 UniValue CRPCTable::execute(const std::string &strMethod, const UniValue &params) const
 {
+    // Return immediately if in warmup
+    {
+        LOCK(cs_rpcWarmup);
+        if (fRPCInWarmup)
+            throw JSONRPCError(RPC_IN_WARMUP, rpcWarmupStatus);
+    }
+
     // Find method
     const CRPCCommand *pcmd = tableRPC[strMethod];
     if (!pcmd)

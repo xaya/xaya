@@ -119,5 +119,33 @@ class GetAuxBlockTest (BitcoinTestFramework):
     coinbase = tx['vin'][0]['coinbase']
     assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
 
+    # Ensure that the payout address is changed from one block to the next.
+    addr1 = self.getCoinbaseAddr (auxblock['hash'])
+    newHash = auxpow.mineAuxpowBlock (self.nodes[0])
+    self.sync_all ()
+    addr2 = self.getCoinbaseAddr (newHash)
+    assert addr1 != addr2
+    valid = self.nodes[0].validateaddress (addr1)
+    assert valid['ismine']
+    valid = self.nodes[0].validateaddress (addr2)
+    assert valid['ismine']
+
+  def getCoinbaseAddr (self, blockHash):
+    """
+    Extract the coinbase tx' payout address for the given block.
+    """
+
+    blockData = self.nodes[1].getblock (blockHash)
+    txn = blockData['tx']
+    assert len (txn) >= 1
+
+    txData = self.nodes[1].getrawtransaction (txn[0], 1)
+    assert len (txData['vout']) == 1 and len (txData['vin']) == 1
+    assert 'coinbase' in txData['vin'][0]
+
+    addr = txData['vout'][0]['scriptPubKey']['addresses']
+    assert len (addr) == 1
+    return addr[0]
+
 if __name__ == '__main__':
   GetAuxBlockTest ().main ()

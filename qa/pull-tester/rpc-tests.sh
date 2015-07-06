@@ -21,6 +21,8 @@ testScripts=(
     'mempool_resurrect_test.py'
     'txn_doublespend.py'
     'txn_doublespend.py --mineblock'
+    'txn_clone.py'
+    'txn_clone.py --mineblock'
     'getchaintips.py'
     'rawtransactions.py'
     'rest.py'
@@ -35,6 +37,7 @@ testScripts=(
     'walletbackup.py'
     'nodehandling.py'
     'reindex.py'
+    'decodescript.py'
 
     # auxpow tests
     'getauxblock.py'
