@@ -12,6 +12,7 @@
 #include "consensus/validation.h"
 #include "main.h"
 #include "net.h"
+#include "policy/policy.h"
 #include "script/script.h"
 #include "script/sign.h"
 #include "timedata.h"
@@ -1329,6 +1330,15 @@ bool CWalletTx::IsTrusted() const
             return false;
     }
     return true;
+}
+
+bool CWalletTx::IsEquivalentTo(const CWalletTx& tx) const
+{
+        CMutableTransaction tx1 = *this;
+        CMutableTransaction tx2 = tx;
+        for (unsigned int i = 0; i < tx1.vin.size(); i++) tx1.vin[i].scriptSig = CScript();
+        for (unsigned int i = 0; i < tx2.vin.size(); i++) tx2.vin[i].scriptSig = CScript();
+        return CTransaction(tx1) == CTransaction(tx2);
 }
 
 std::vector<uint256> CWallet::ResendWalletTransactionsBefore(int64_t nTime)
