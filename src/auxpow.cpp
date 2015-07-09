@@ -7,6 +7,7 @@
 
 #include "auxpow.h"
 
+#include "consensus/consensus.h"
 #include "consensus/validation.h"
 #include "main.h"
 #include "script/script.h"

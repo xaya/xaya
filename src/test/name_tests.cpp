@@ -7,11 +7,13 @@
 #include "consensus/validation.h"
 #include "main.h"
 #include "names/main.h"
+#include "policy/policy.h"
+#include "primitives/transaction.h"
+#include "script/names.h"
 #include "txdb.h"
 #include "txmempool.h"
 #include "undo.h"
-#include "primitives/transaction.h"
-#include "script/names.h"
+
 #include "test/test_bitcoin.h"
 
 #include <boost/test/unit_test.hpp>
