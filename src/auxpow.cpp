@@ -11,7 +11,9 @@
 #include "consensus/validation.h"
 #include "main.h"
 #include "script/script.h"
+#include "txmempool.h"
 #include "util.h"
+#include "utilstrencodings.h"
 
 #include <algorithm>
 
