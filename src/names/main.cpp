@@ -7,12 +7,15 @@
 #include "chainparams.h"
 #include "coins.h"
 #include "consensus/validation.h"
+#include "hash.h"
 #include "leveldbwrapper.h"
 #include "../main.h"
+#include "script/interpreter.h"
 #include "script/names.h"
 #include "txmempool.h"
 #include "undo.h"
 #include "util.h"
+#include "utilstrencodings.h"
 
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also

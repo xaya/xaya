@@ -6,9 +6,10 @@
 #include "chainparams.h"
 #include "coins.h"
 #include "main.h"
-#include "uint256.h"
 #include "primitives/block.h"
 #include "script/script.h"
+#include "utilstrencodings.h"
+#include "uint256.h"
 
 #include "test/test_bitcoin.h"
 

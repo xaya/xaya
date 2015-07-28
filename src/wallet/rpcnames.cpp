@@ -12,6 +12,7 @@
 #include "random.h"
 #include "rpcserver.h"
 #include "script/names.h"
+#include "txmempool.h"
 #include "util.h"
 #include "wallet/wallet.h"
 

@@ -10,6 +10,7 @@
 #include "consensus/validation.h"
 #include "main.h"
 #include "policy/fees.h"
+#include "script/interpreter.h"
 #include "streams.h"
 #include "util.h"
 #include "utilmoneystr.h"
