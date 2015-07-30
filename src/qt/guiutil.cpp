@@ -586,11 +586,11 @@ TableViewLastColumnResizingFixer::TableViewLastColumnResizingFixer(QTableView* t
 boost::filesystem::path static StartupShortcutPath()
 {
     if (GetBoolArg("-testnet", false))
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Bitcoin (testnet).lnk";
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "Namecoin (testnet).lnk";
     else if (GetBoolArg("-regtest", false))
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Bitcoin (regtest).lnk";
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "Namecoin (regtest).lnk";
 
-    return GetSpecialFolderPath(CSIDL_STARTUP) / "Bitcoin.lnk";
+    return GetSpecialFolderPath(CSIDL_STARTUP) / "Namecoin.lnk";
 }
 
 bool GetStartOnSystemStartup()
