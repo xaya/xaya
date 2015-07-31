@@ -31,7 +31,7 @@ bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType&
     return false;
 }
 
-static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime=1303000001, uint32_t nNonce=0xa21ea192u, uint32_t nBits=0x1c007fff, int32_t nVersion=1, const CAmount& genesisReward=50 * COIN)
+static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;
     txNew.nVersion = 1;
@@ -57,7 +57,7 @@ static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScrip
  * transaction cannot be spent since it did not originally exist in the
  * database.
  */
-static CBlock CreateGenesisBlock(uint32_t nTime=1303000001, uint32_t nNonce=0xa21ea192u, uint32_t nBits=0x1c007fff, int32_t nVersion=1, const CAmount& genesisReward=50 * COIN)
+static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
     const char* pszTimestamp = "... choose what comes next.  Lives of your own, or a return to chains. -- V";
     const CScript genesisInputScript = CScript() << 0x1c007fff << CScriptNum(522) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -69,7 +69,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime=1303000001, uint32_t nNonce=0xa2
  * Build genesis block for testnet.  In Namecoin, it has a changed timestamp
  * and output script (it uses Bitcoin's).
  */
-static CBlock CreateTestnetGenesisBlock(uint32_t nTime=1296688602, uint32_t nNonce=0x16ec0bff, uint32_t nBits=0x1d07fff8, int32_t nVersion=1, const CAmount& genesisReward=50 * COIN)
+static CBlock CreateTestnetGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     const CScript genesisInputScript = CScript() << 0x1d00ffff << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -121,7 +121,7 @@ public:
         nDefaultPort = 8334;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock();
+        genesis = CreateGenesisBlock(1303000001, 0xa21ea192u, 0x1c007fff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770"));
         assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
@@ -250,7 +250,7 @@ public:
         nDefaultPort = 18334;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateTestnetGenesisBlock();
+        genesis = CreateTestnetGenesisBlock(1296688602, 0x16ec0bff, 0x1d07fff8, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
         assert(genesis.hashMerkleRoot == uint256S("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
@@ -331,11 +331,13 @@ public:
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
-        genesis = CreateTestnetGenesisBlock(1296688602, 2, 0x207fffff);
-        consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18445;
-        assert(consensus.hashGenesisBlock == uint256S("0x0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"));
         nPruneAfterHeight = 1000;
+
+        genesis = CreateTestnetGenesisBlock(1296688602, 2, 0x207fffff, 1, 50 * COIN);
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256S("0x0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"));
+        assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
