@@ -31,6 +31,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn);
 /** Modify the extranonce in a block */
 void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev);
-bool ProcessBlockFound(CBlock* pblock, const CChainParams& chainParams);
+bool ProcessBlockFound(const CBlock* pblock, const CChainParams& chainParams);
 
 #endif // BITCOIN_MINER_H
