@@ -16,6 +16,7 @@ import tempfile
 import traceback
 
 from test_framework.util import *
+from test_framework import auxpow
 
 
 def check_array_result(object_array, to_match, expected):
@@ -86,6 +87,42 @@ def run_test(nodes, tmpdir):
     try:
         nodes[0].generate(1)
         raise AssertionError('Keypool should be exhausted after three addesses')
+    except JSONRPCException,e:
+        assert(e.error['code']==-12)
+
+    # test draining with getauxblock
+    test_auxpow(nodes)
+
+def test_auxpow(nodes):
+    """
+    Test behaviour of getauxpow.  Calling getauxpow should reserve
+    a key from the pool, but it should be released again if the
+    created block is not actually used.  On the other hand, if the
+    auxpow is submitted and turned into a block, the keypool should
+    be drained.
+    """
+
+    nodes[0].walletpassphrase('test', 12000)
+    nodes[0].keypoolrefill(1)
+    nodes[0].walletlock()
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 2)
+
+    nodes[0].getauxblock()
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 2)
+    nodes[0].generate(1)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
+    auxblock = nodes[0].getauxblock()
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
+
+    target = auxpow.reverseHex(auxblock['_target'])
+    solved = auxpow.computeAuxpow(auxblock['hash'], target, True)
+    res = nodes[0].getauxblock(auxblock['hash'], solved)
+    assert res
+    assert_equal(nodes[0].getwalletinfo()['keypoolsize'], 0)
+
+    try:
+        nodes[0].getauxblock()
+        raise AssertionError('Keypool should be exhausted by getauxblock')
     except JSONRPCException,e:
         assert(e.error['code']==-12)
 
