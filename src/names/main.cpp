@@ -546,9 +546,8 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp () && op.isAnyUpdate ())
         {
           const valtype& name = op.getOpName ();
-          if (fDebug)
-            LogPrintf ("Updating name at height %d: %s\n",
-                       nHeight, ValtypeToString (name).c_str ());
+          LogPrint ("names", "Updating name at height %d: %s\n",
+                    nHeight, ValtypeToString (name).c_str ());
 
           CNameTxUndo opUndo;
           opUndo.fromOldState (name, view);
