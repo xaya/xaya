@@ -202,7 +202,8 @@ class RESTTest (BitcoinTestFramework):
         response = http_get_call(url.hostname, url.port, '/rest/getutxos'+json_request+self.FORMAT_SEPARATOR+'json', '', True)
         assert_equal(response.status, 200) #must be a 500 because we exceeding the limits
 
-        auxpow.mineAuxpowBlock(self.nodes[0])
+        # Generate a block to not affect upcoming tests.
+        auxpow.mineAuxpowBlock(self.nodes[0]) #generate
         self.sync_all()
         bb_hash = self.nodes[0].getbestblockhash()
 
