@@ -449,9 +449,19 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
          from the UTXO set and thus not available to be spent anyway.
          But it does not hurt to enforce this here, too.  It is also
          exercised by the unit tests.  */
-      if (isExpired (coinsIn.nHeight, nHeight))
-        return state.Invalid (error ("CheckNameTransaction: trying to update"
-                                     " expired name"));
+      CNameData oldName;
+      if (!view.GetName (name, oldName))
+        return state.Invalid (error ("%s: NAME_UPDATE name does not exist",
+                                     __func__));
+      if (oldName.isExpired (nHeight))
+        return state.Invalid (error ("%s: trying to update expired name",
+                                     __func__));
+
+      /* This is an internal consistency check.  If everything is fine,
+         the input coins from the UTXO database should match the
+         name database.  */
+      assert (static_cast<unsigned> (coinsIn.nHeight) == oldName.getHeight ());
+      assert (tx.vin[nameIn].prevout == oldName.getUpdateOutpoint ());
 
       return true;
     }

@@ -579,21 +579,30 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* ***************************** */
   /* Test NAME_UPDATE validation.  */
 
+  /* Construct two versions of the coin view.  Since CheckNameTransaction
+     verifies the name update against the name database, we have to ensure
+     that it fits to the current test.  One version has the NAME_FIRSTUPDATE
+     as previous state of the name, and one has the NAME_UPDATE.  */
+  CCoinsViewCache viewFirst(&view);
+  CCoinsViewCache viewUpd(&view);
+  data1.fromScript (100000, COutPoint (inUpdate, 0), CNameScript (scrUpdate));
+  viewUpd.SetName (name1, data1, false);
+
   /* Check update of UPDATE output, plus expiry.  */
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 135999, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 135999, viewUpd, state, 0));
   mtx.vin.push_back (CTxIn (COutPoint (inUpdate, 0)));
-  BOOST_CHECK (CheckNameTransaction (mtx, 135999, view, state, 0));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 136000, view, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 135999, viewUpd, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 136000, viewUpd, state, 0));
   BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* Check update of FIRSTUPDATE output, plus expiry.  */
   mtx.vin.clear ();
   mtx.vin.push_back (CTxIn (COutPoint (inFirst, 0)));
-  BOOST_CHECK (CheckNameTransaction (mtx, 135999, view, state, 0));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 136000, view, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 135999, viewFirst, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 136000, viewFirst, state, 0));
 
   /* No check for greedy names, since the test names are expired
      already at the greedy-name fork height.  Should not matter
@@ -606,20 +615,22 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vin.push_back (CTxIn (COutPoint (inUpdate, 0)));
   scr = CNameScript::buildNameUpdate (addr, name1, tooLongValue);
   mtx.vout.push_back (CTxOut (COIN, scr));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state, 0));
   
   /* Name mismatch to prev out.  */
   mtx.vout.clear ();
   scr = CNameScript::buildNameUpdate (addr, name2, value);
   mtx.vout.push_back (CTxOut (COIN, scr));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state, 0));
 
   /* Previous NAME_NEW is not allowed!  */
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
   mtx.vin.push_back (CTxIn (COutPoint (inNew, 0)));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, view, state, 0));
+  CCoinsViewCache viewNew(&view);
+  viewNew.DeleteName (name1);
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewNew, state, 0));
 
   /* ********************************** */
   /* Test NAME_FIRSTUPDATE validation.  */

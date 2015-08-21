@@ -858,6 +858,21 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
         // Bring the best block into scope
         view.GetBestBlock();
 
+        /* See if this is a name update.  If it is, we also have to
+           ensure that the dummy cache contains the updated name.  */
+        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        {
+            const CNameScript nameOp(txout.scriptPubKey);
+            if (nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_UPDATE)
+            {
+                const valtype& name = nameOp.getOpName();
+                CNameData data;
+                if (!view.GetName(name, data))
+                    return state.Invalid(false, REJECT_INVALID, "bad-updated-name");
+                view.SetName(name, data, false);
+            }
+        }
+
         nValueIn = view.GetValueIn(tx);
 
         // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
