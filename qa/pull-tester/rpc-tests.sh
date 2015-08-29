@@ -8,11 +8,6 @@ CURDIR=$(cd $(dirname "$0"); pwd)
 export BITCOINCLI=${BUILDDIR}/qa/pull-tester/run-bitcoin-cli
 export BITCOIND=${REAL_BITCOIND}
 
-if [ "x${EXEEXT}" = "x.exe" ]; then
-  echo "Win tests currently disabled"
-  exit 0
-fi
-
 #Run the tests
 
 testScripts=(
@@ -36,6 +31,7 @@ testScripts=(
     'nodehandling.py'
     'reindex.py'
     'decodescript.py'
+    'p2p-fullblocktest.py'
 
     # auxpow tests
     'getauxblock.py'
