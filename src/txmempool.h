@@ -223,6 +223,12 @@ public:
         AssertLockHeld(cs);
         return names.updatesName(name);
     }
+    inline uint256
+    getTxForName (const valtype& name) const
+    {
+        AssertLockHeld(cs);
+        return names.getTxForName(name);
+    }
 
     /**
      * Check if a tx can be added to it according to name criteria.

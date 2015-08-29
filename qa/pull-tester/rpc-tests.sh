@@ -40,6 +40,7 @@ testScripts=(
     'name_expiration.py'
     'name_list.py'
     'name_multisig.py'
+    'name_pending.py'
     'name_rawtx.py'
     'name_registration.py'
     'name_reorg.py'

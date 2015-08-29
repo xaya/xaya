@@ -102,21 +102,24 @@ private:
   /** The parent mempool object.  Used to, e. g., remove conflicting tx.  */
   CTxMemPool& pool;
 
+  /** Type used for internal indices.  */
+  typedef std::map<valtype, uint256> NameTxMap;
+
   /**
    * Keep track of names that are registered by transactions in the pool.
    * Map name to registering transaction.
    */
-  std::map<valtype, uint256> mapNameRegs;
+  NameTxMap mapNameRegs;
 
   /** Map pending name updates to transaction IDs.  */
-  std::map<valtype, uint256> mapNameUpdates;
+  NameTxMap mapNameUpdates;
 
   /**
    * Map NAME_NEW hashes to the corresponding transaction IDs.  This is
    * data that is kept only in memory but never cleared (until a restart).
    * It is used to prevent "name_new stealing", at least in a "soft" way.
    */
-  std::map<valtype, uint256> mapNameNews;
+  NameTxMap mapNameNews;
 
 public:
 
@@ -151,6 +154,14 @@ public:
   {
     return mapNameUpdates.count (name) > 0;
   }
+
+  /**
+   * Return txid of transaction registering or updating a name.  The returned
+   * txid is null if no such tx exists.
+   * @param name The name to check for.
+   * @return The txid that registers/updates it.  Null if none.
+   */
+  uint256 getTxForName (const valtype& name) const;
 
   /**
    * Clear all data.

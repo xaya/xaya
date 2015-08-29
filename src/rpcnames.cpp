@@ -4,12 +4,17 @@
 
 #include "base58.h"
 #include "chainparams.h"
+#include "init.h"
 #include "main.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
 #include "rpcserver.h"
 #include "script/names.h"
+#include "txmempool.h"
+#ifdef ENABLE_WALLET
+# include "wallet/wallet.h"
+#endif
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
@@ -430,6 +435,106 @@ name_filter (const UniValue& params, bool fHelp)
     }
 
   return names;
+}
+
+/* ************************************************************************** */
+
+UniValue
+name_pending (const UniValue& params, bool fHelp)
+{
+  if (fHelp || params.size () > 1)
+    throw std::runtime_error (
+        "name_pending (\"name\")\n"
+        "\nList unconfirmed name operations in the mempool.\n"
+        "\nIf a name is given, only check for operations on this name.\n"
+        "\nArguments:\n"
+        "1. \"name\"        (string, optional) only look for this name\n"
+        "\nResult:\n"
+        "[\n"
+        "  {\n"
+        "    \"op\": xxxx       (string) the operation being performed\n"
+        "    \"name\": xxxx     (string) the name operated on\n"
+        "    \"value\": xxxx    (string) the name's new value\n"
+        "    \"txid\": xxxx     (string) the txid corresponding to the operation\n"
+        "    \"ismine\": xxxx   (boolean) whether the name is owned by the wallet\n"
+        "  },\n"
+        "  ...\n"
+        "]\n"
+        + HelpExampleCli ("name_pending", "")
+        + HelpExampleCli ("name_pending", "\"d/domob\"")
+        + HelpExampleRpc ("name_pending", "")
+      );
+
+#ifdef ENABLE_WALLET
+    LOCK2 (pwalletMain ? &pwalletMain->cs_wallet : NULL, mempool.cs);
+#else
+    LOCK (mempool.cs);
+#endif
+
+  std::vector<uint256> txHashes;
+  if (params.size () == 0)
+    mempool.queryHashes (txHashes);
+  else
+    {
+      const std::string name = params[0].get_str ();
+      const valtype vchName = ValtypeFromString (name);
+      const uint256 txid = mempool.getTxForName (vchName);
+      if (!txid.IsNull ())
+        txHashes.push_back (txid);
+    }
+
+  UniValue arr(UniValue::VARR);
+  for (std::vector<uint256>::const_iterator i = txHashes.begin ();
+       i != txHashes.end (); ++i)
+    {
+      CTransaction tx;
+      if (!mempool.lookup (*i, tx) || !tx.IsNamecoin ())
+        continue;
+
+      for (unsigned i = 0; i < tx.vout.size (); ++i)
+        {
+          const CNameScript op(tx.vout[i].scriptPubKey);
+          if (!op.isNameOp () || !op.isAnyUpdate ())
+            continue;
+
+          const valtype vchName = op.getOpName ();
+          const valtype vchValue = op.getOpValue ();
+
+          const std::string name = ValtypeToString (vchName);
+          const std::string value = ValtypeToString (vchValue);
+
+          std::string strOp;
+          switch (op.getNameOp ())
+            {
+            case OP_NAME_FIRSTUPDATE:
+              strOp = "name_firstupdate";
+              break;
+            case OP_NAME_UPDATE:
+              strOp = "name_update";
+              break;
+            default:
+              assert (false);
+            }
+
+          UniValue obj(UniValue::VOBJ);
+          obj.push_back (Pair ("op", strOp));
+          obj.push_back (Pair ("name", name));
+          obj.push_back (Pair ("value", value));
+          obj.push_back (Pair ("txid", tx.GetHash ().GetHex ()));
+
+#ifdef ENABLE_WALLET
+          isminetype mine = ISMINE_NO;
+          if (pwalletMain)
+            mine = IsMine (*pwalletMain, op.getAddress ());
+          const bool isMine = (mine & ISMINE_SPENDABLE);
+          obj.push_back (Pair ("ismine", isMine));
+#endif
+
+          arr.push_back (obj);
+        }
+    }
+
+  return arr;
 }
 
 /* ************************************************************************** */

@@ -9,6 +9,9 @@ echo "\nName list..."
 echo "\nName multisig..."
 ./name_multisig.py
 
+echo "\nName pending..."
+./name_pending.py
+
 echo "\nName rawtx operations..."
 ./name_rawtx.py
 

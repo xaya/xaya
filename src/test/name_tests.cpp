@@ -960,6 +960,10 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (mempool.updatesName (nameUpd));
   BOOST_CHECK (!mempool.checkNameOps (txUpd2));
 
+  /* Check getTxForName.  */
+  BOOST_CHECK (mempool.getTxForName (nameReg) == txReg1.GetHash ());
+  BOOST_CHECK (mempool.getTxForName (nameUpd) == txUpd1.GetHash ());
+
   /* Run mempool sanity check.  */
   CCoinsViewCache view(pcoinsTip);
   const CNameScript nameOp(upd1);
@@ -990,6 +994,10 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (removed.size () == 2);
   BOOST_CHECK (!mempool.checkNameOps (txNew1p));
   BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
+
+  /* Check getTxForName with non-existent names.  */
+  BOOST_CHECK (mempool.getTxForName (nameReg).IsNull ());
+  BOOST_CHECK (mempool.getTxForName (nameUpd).IsNull ());
 
   /* Check removing of conflicted name registrations.  */
 

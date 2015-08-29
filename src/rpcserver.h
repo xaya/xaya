@@ -260,6 +260,7 @@ extern UniValue name_show(const UniValue& params, bool fHelp);
 extern UniValue name_history(const UniValue& params, bool fHelp);
 extern UniValue name_scan(const UniValue& params, bool fHelp);
 extern UniValue name_filter(const UniValue& params, bool fHelp);
+extern UniValue name_pending(const UniValue& params, bool fHelp);
 extern UniValue name_list(const UniValue& params, bool fHelp);
 extern UniValue name_new(const UniValue& params, bool fHelp);
 extern UniValue name_firstupdate(const UniValue& params, bool fHelp);

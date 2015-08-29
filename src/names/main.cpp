@@ -73,6 +73,28 @@ CNameTxUndo::apply (CCoinsViewCache& view) const
 /* ************************************************************************** */
 /* CNameMemPool.  */
 
+uint256
+CNameMemPool::getTxForName (const valtype& name) const
+{
+  NameTxMap::const_iterator mi;
+
+  mi = mapNameRegs.find (name);
+  if (mi != mapNameRegs.end ())
+    {
+      assert (mapNameUpdates.count (name) == 0);
+      return mi->second;
+    }
+
+  mi = mapNameUpdates.find (name);
+  if (mi != mapNameUpdates.end ())
+    {
+      assert (mapNameRegs.count (name) == 0);
+      return mi->second;
+    }
+
+  return uint256 ();
+}
+
 void
 CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
 {
@@ -81,8 +103,7 @@ CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
   if (entry.isNameNew ())
     {
       const valtype& newHash = entry.getNameNewHash ();
-      const std::map<valtype, uint256>::const_iterator mit
-        = mapNameNews.find (newHash);
+      const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
       if (mit != mapNameNews.end ())
         assert (mit->second == hash);
       else
@@ -111,15 +132,13 @@ CNameMemPool::remove (const CTxMemPoolEntry& entry)
 
   if (entry.isNameRegistration ())
     {
-      const std::map<valtype, uint256>::iterator mit
-        = mapNameRegs.find (entry.getName ());
+      const NameTxMap::iterator mit = mapNameRegs.find (entry.getName ());
       assert (mit != mapNameRegs.end ());
       mapNameRegs.erase (mit);
     }
   if (entry.isNameUpdate ())
     {
-      const std::map<valtype, uint256>::iterator mit
-        = mapNameUpdates.find (entry.getName ());
+      const NameTxMap::iterator mit = mapNameUpdates.find (entry.getName ());
       assert (mit != mapNameUpdates.end ());
       mapNameUpdates.erase (mit);
     }
@@ -140,8 +159,7 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
       if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
         {
           const valtype& name = nameOp.getOpName ();
-          const std::map<valtype, uint256>::const_iterator mit
-            = mapNameRegs.find (name);
+          const NameTxMap::const_iterator mit = mapNameRegs.find (name);
           if (mit != mapNameRegs.end ())
             {
               const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
@@ -161,8 +179,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
 
   BOOST_FOREACH (const valtype& name, unexpired)
     {
-      const std::map<valtype, uint256>::const_iterator mit
-        = mapNameRegs.find (name);
+      const NameTxMap::const_iterator mit = mapNameRegs.find (name);
       if (mit != mapNameRegs.end ())
         {
           const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
@@ -181,8 +198,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
 
   BOOST_FOREACH (const valtype& name, expired)
     {
-      const std::map<valtype, uint256>::const_iterator mit
-        = mapNameUpdates.find (name);
+      const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
       if (mit != mapNameUpdates.end ())
         {
           const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
@@ -213,8 +229,7 @@ CNameMemPool::check (const CCoinsView& coins) const
       if (entry.second.isNameNew ())
         {
           const valtype& newHash = entry.second.getNameNewHash ();
-          const std::map<valtype, uint256>::const_iterator mit
-            = mapNameNews.find (newHash);
+          const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
 
           assert (mit != mapNameNews.end ());
           assert (mit->second == entry.first);
@@ -224,8 +239,7 @@ CNameMemPool::check (const CCoinsView& coins) const
         {
           const valtype& name = entry.second.getName ();
 
-          const std::map<valtype, uint256>::const_iterator mit
-            = mapNameRegs.find (name);
+          const NameTxMap::const_iterator mit = mapNameRegs.find (name);
           assert (mit != mapNameRegs.end ());
           assert (mit->second == entry.first);
 
@@ -244,8 +258,7 @@ CNameMemPool::check (const CCoinsView& coins) const
         {
           const valtype& name = entry.second.getName ();
 
-          const std::map<valtype, uint256>::const_iterator mit
-            = mapNameUpdates.find (name);
+          const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
           assert (mit != mapNameUpdates.end ());
           assert (mit->second == entry.first);
 
@@ -262,6 +275,14 @@ CNameMemPool::check (const CCoinsView& coins) const
 
   assert (nameRegs.size () == mapNameRegs.size ());
   assert (nameUpdates.size () == mapNameUpdates.size ());
+
+  /* Check that nameRegs and nameUpdates are disjoint.  They must be since
+     a name can only be in either category, depending on whether it exists
+     at the moment or not.  */
+  BOOST_FOREACH (const valtype& name, nameRegs)
+    assert (nameUpdates.count (name) == 0);
+  BOOST_FOREACH (const valtype& name, nameUpdates)
+    assert (nameRegs.count (name) == 0);
 }
 
 bool
