@@ -92,6 +92,9 @@ class GetAuxBlockTest (BitcoinTestFramework):
     assert 'auxpow' in data
     auxJson = data['auxpow']
     assert_equal (auxJson['index'], 0)
+    assert_equal (auxJson['chainindex'], 0)
+    assert_equal (auxJson['merklebranch'], [])
+    assert_equal (auxJson['chainmerklebranch'], [])
     assert_equal (auxJson['parentblock'], apow[-160:])
 
     # Check that previous blocks don't have 'auxpow' in their getblock JSON.
