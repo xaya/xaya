@@ -94,8 +94,17 @@ def initialize_chain(test_dir):
     namecoind and namecoin-cli must be in search path.
     """
 
-    if not os.path.isdir(os.path.join("cache", "node0")):
-        devnull = open("/dev/null", "w+")
+    if (not os.path.isdir(os.path.join("cache","node0"))
+        or not os.path.isdir(os.path.join("cache","node1")) 
+        or not os.path.isdir(os.path.join("cache","node2")) 
+        or not os.path.isdir(os.path.join("cache","node3"))):
+
+        #find and delete old cache directories if any exist
+        for i in range(4):
+            if os.path.isdir(os.path.join("cache","node"+str(i))): 
+                shutil.rmtree(os.path.join("cache","node"+str(i)))
+
+        devnull = open(os.devnull, "w")
         # Create cache directories, run bitcoinds:
         for i in range(4):
             datadir=initialize_datadir("cache", i)
@@ -189,7 +198,7 @@ def start_node(i, dirname, extra_args=[], rpchost=None, timewait=None, binary=No
     args.extend(extra_args)
     args.extend(base_node_args(i))
     bitcoind_processes[i] = subprocess.Popen(args)
-    devnull = open("/dev/null", "w+")
+    devnull = open(os.devnull, "w")
     if os.getenv("PYTHON_DEBUG", ""):
         print "start_node: namecoind started, calling namecoin-cli -rpcwait getblockcount"
     subprocess.check_call([ os.getenv("NAMECOINCLI", "namecoin-cli"), "-datadir="+datadir] +

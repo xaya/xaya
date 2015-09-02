@@ -5,8 +5,8 @@ CURDIR=$(cd $(dirname "$0"); pwd)
 # Get BUILDDIR and REAL_BITCOIND
 . "${CURDIR}/tests-config.sh"
 
-export NAMECOINCLI=${BUILDDIR}/qa/pull-tester/run-bitcoin-cli
 export NAMECOIND=${REAL_NAMECOIND}
+export NAMECOINCLI=${REAL_NAMECOINCLI}
 
 #Run the tests
 
