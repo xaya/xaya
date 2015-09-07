@@ -8,6 +8,11 @@ CURDIR=$(cd $(dirname "$0"); pwd)
 export NAMECOIND=${REAL_NAMECOIND}
 export NAMECOINCLI=${REAL_NAMECOINCLI}
 
+if [ "x${EXEEXT}" = "x.exe" ]; then
+  echo "Win tests currently disabled"
+  exit 0
+fi
+
 #Run the tests
 
 testScripts=(

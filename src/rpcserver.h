@@ -38,26 +38,17 @@ class COutPoint;
 class CTxIn;
 class CWalletTx;
 
-class AcceptedConnection
+class JSONRequest
 {
 public:
-    virtual ~AcceptedConnection() {}
+    UniValue id;
+    std::string strMethod;
+    UniValue params;
 
-    virtual std::iostream& stream() = 0;
-    virtual std::string peer_address_to_string() const = 0;
-    virtual void close() = 0;
+    JSONRequest() { id = NullUniValue; }
+    void parse(const UniValue& valRequest);
 };
 
-/** Start RPC threads */
-void StartRPCThreads();
-/**
- * Alternative to StartRPCThreads for the GUI, when no server is
- * used. The RPC thread in this case is only used to handle timeouts.
- * If real RPC threads have already been started this is a no-op.
- */
-void StartDummyRPCThread();
-/** Stop RPC threads */
-void StopRPCThreads();
 /** Query whether RPC is running */
 bool IsRPCRunning();
 
@@ -87,14 +78,44 @@ void RPCTypeCheck(const UniValue& params,
 void RPCTypeCheckObj(const UniValue& o,
                   const std::map<std::string, UniValue::VType>& typesExpected, bool fAllowNull=false);
 
+/** Opaque base class for timers returned by NewTimerFunc.
+ * This provides no methods at the moment, but makes sure that delete
+ * cleans up the whole state.
+ */
+class RPCTimerBase
+{
+public:
+    virtual ~RPCTimerBase() {}
+};
+
 /**
- * Run func nSeconds from now. Uses boost deadline timers.
+ * RPC timer "driver".
+ */
+class RPCTimerInterface
+{
+public:
+    virtual ~RPCTimerInterface() {}
+    /** Implementation name */
+    virtual const char *Name() = 0;
+    /** Factory function for timers.
+     * RPC will call the function to create a timer that will call func in *millis* milliseconds.
+     * @note As the RPC mechanism is backend-neutral, it can use different implementations of timers.
+     * This is needed to cope with the case in which there is no HTTP server, but
+     * only GUI RPC console, and to break the dependency of pcserver on httprpc.
+     */
+    virtual RPCTimerBase* NewTimer(boost::function<void(void)>& func, int64_t millis) = 0;
+};
+
+/** Register factory function for timers */
+void RPCRegisterTimerInterface(RPCTimerInterface *iface);
+/** Unregister factory function for timers */
+void RPCUnregisterTimerInterface(RPCTimerInterface *iface);
+
+/**
+ * Run func nSeconds from now.
  * Overrides previous timer <name> (if any).
  */
 void RPCRunLater(const std::string& name, boost::function<void(void)> func, int64_t nSeconds);
-
-//! Convert boost::asio address to CNetAddr
-extern CNetAddr BoostAsioToCNetAddr(boost::asio::ip::address address);
 
 typedef UniValue(*rpcfn_type)(const UniValue& params, bool fHelp);
 
@@ -268,11 +289,9 @@ extern UniValue name_update(const UniValue& params, bool fHelp);
 extern UniValue sendtoname(const UniValue& params, bool fHelp);
 extern UniValue name_checkdb(const UniValue& params, bool fHelp);
 
-// in rest.cpp
-extern bool HTTPReq_REST(AcceptedConnection *conn,
-                  const std::string& strURI,
-                  const std::string& strRequest,
-                  const std::map<std::string, std::string>& mapHeaders,
-                  bool fRun);
+bool StartRPC();
+void InterruptRPC();
+void StopRPC();
+std::string JSONRPCExecBatch(const UniValue& vReq);
 
 #endif // BITCOINRPC_SERVER_H
