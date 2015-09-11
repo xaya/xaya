@@ -87,6 +87,9 @@ static enum RetFormat ParseDataFormat(std::string& param, const std::string& str
     for (unsigned int i = 0; i < ARRAYLEN(rf_names); i++)
         if (suff == rf_names[i].name)
             return rf_names[i].rf;
+
+    /* If no suffix is found, return original string.  */
+    param = strReq;
     return rf_names[0].rf;
 }
 
