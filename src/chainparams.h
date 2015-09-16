@@ -96,6 +96,13 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
 
+    /**
+     * Ignore check for IsInitialBlockDownload()?  If this flag is set,
+     * always make the check return false.  This is useful for testing
+     * and testnet.
+     */
+    bool IgnoreInitialBlockDownload() const { return fIgnoreIBD; }
+
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,
        which determines further actions.  */
@@ -122,6 +129,9 @@ protected:
     bool fMineBlocksOnDemand;
     bool fTestnetToBeDeprecatedFieldRPC;
     CCheckpointData checkpointData;
+
+    /* Ignore IsInitialBlockDownload check?  This is for testnet.  */
+    bool fIgnoreIBD;
 
     /* Map (block height, txid) pairs for buggy transactions onto their
        bug type value.  */

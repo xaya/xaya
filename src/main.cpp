@@ -1190,7 +1190,7 @@ bool IsInitialBlockDownload()
     if (fCheckpointsEnabled && chainActive.Height() < Checkpoints::GetTotalBlocksEstimate(chainParams.Checkpoints()))
         return true;
     static bool lockIBDState = false;
-    if (lockIBDState)
+    if (lockIBDState || chainParams.IgnoreInitialBlockDownload())
         return false;
     bool state = (chainActive.Height() < pindexBestHeader->nHeight - 24 * 6 ||
             pindexBestHeader->GetBlockTime() < GetTime() - 24 * 60 * 60);
