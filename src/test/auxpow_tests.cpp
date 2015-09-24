@@ -128,7 +128,7 @@ CAuxpowBuilder::setCoinbase (const CScript& scr)
 
   parentBlock.vtx.clear ();
   parentBlock.vtx.push_back (mtx);
-  parentBlock.hashMerkleRoot = parentBlock.BuildMerkleTree ();
+  parentBlock.hashMerkleRoot = parentBlock.ComputeMerkleRoot ();
 }
 
 valtype
@@ -142,7 +142,7 @@ CAuxpowBuilder::buildAuxpowChain (const uint256& hashAux, unsigned h, int index)
     auxpowChainMerkleBranch.push_back (ArithToUint256 (arith_uint256 (i)));
 
   const uint256 hash
-    = CBlock::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch, index);
+    = CAuxPow::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch, index);
 
   valtype res = ToByteVector (hash);
   std::reverse (res.begin (), res.end ());
@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
   const CTransaction oldCoinbase = builder.parentBlock.vtx[0];
   builder.setCoinbase (scr << 5);
   builder.parentBlock.vtx.push_back (oldCoinbase);
-  builder.parentBlock.hashMerkleRoot = builder.parentBlock.BuildMerkleTree ();
+  builder.parentBlock.hashMerkleRoot = builder.parentBlock.ComputeMerkleRoot ();
   auxpow = builder.get (builder.parentBlock.vtx[0]);
   BOOST_CHECK (auxpow.check (hashAux, ourChainId, params));
   auxpow = builder.get (builder.parentBlock.vtx[1]);

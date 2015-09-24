@@ -35,10 +35,6 @@ public:
     std::vector<uint256> vMerkleBranch;
     int nIndex;
 
-    // memory only
-    mutable bool fMerkleVerified;
-
-
     CMerkleTx()
     {
         Init();
@@ -53,7 +49,6 @@ public:
     {
         hashBlock = uint256();
         nIndex = -1;
-        fMerkleVerified = false;
     }
 
     ADD_SERIALIZE_METHODS;
@@ -161,6 +156,14 @@ public:
    * @return The expected index for the aux hash.
    */
   static int getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h);
+
+  /**
+   * Check a merkle branch.  This used to be in CBlock, but was removed
+   * upstream.  Thus include it here now.
+   */
+  static uint256 CheckMerkleBranch (uint256 hash,
+                                    const std::vector<uint256>& vMerkleBranch,
+                                    int nIndex);
 
 };
 
