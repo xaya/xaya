@@ -162,10 +162,9 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
           const NameTxMap::const_iterator mit = mapNameRegs.find (name);
           if (mit != mapNameRegs.end ())
             {
-              const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
-                = pool.mapTx.find (mit->second);
+              const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
               assert (mit2 != pool.mapTx.end ());
-              pool.remove (mit2->second.GetTx (), removed, true);
+              pool.remove (mit2->GetTx (), removed, true);
             }
         }
     }
@@ -182,10 +181,9 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
       const NameTxMap::const_iterator mit = mapNameRegs.find (name);
       if (mit != mapNameRegs.end ())
         {
-          const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
-            = pool.mapTx.find (mit->second);
+          const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.remove (mit2->second.GetTx (), removed, true);
+          pool.remove (mit2->GetTx (), removed, true);
         }
     }
 }
@@ -201,10 +199,9 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
       const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
       if (mit != mapNameUpdates.end ())
         {
-          const std::map<uint256, CTxMemPoolEntry>::const_iterator mit2
-            = pool.mapTx.find (mit->second);
+          const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.remove (mit2->second.GetTx (), removed, true);
+          pool.remove (mit2->GetTx (), removed, true);
         }
     }
 }
@@ -223,25 +220,25 @@ CNameMemPool::check (const CCoinsView& coins) const
 
   std::set<valtype> nameRegs;
   std::set<valtype> nameUpdates;
-  BOOST_FOREACH (const PAIRTYPE(const uint256, CTxMemPoolEntry)& entry,
-                 pool.mapTx)
+  BOOST_FOREACH (const CTxMemPoolEntry& entry, pool.mapTx)
     {
-      if (entry.second.isNameNew ())
+      const uint256 txHash = entry.GetTx ().GetHash ();
+      if (entry.isNameNew ())
         {
-          const valtype& newHash = entry.second.getNameNewHash ();
+          const valtype& newHash = entry.getNameNewHash ();
           const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
 
           assert (mit != mapNameNews.end ());
-          assert (mit->second == entry.first);
+          assert (mit->second == txHash);
         }
 
-      if (entry.second.isNameRegistration ())
+      if (entry.isNameRegistration ())
         {
-          const valtype& name = entry.second.getName ();
+          const valtype& name = entry.getName ();
 
           const NameTxMap::const_iterator mit = mapNameRegs.find (name);
           assert (mit != mapNameRegs.end ());
-          assert (mit->second == entry.first);
+          assert (mit->second == txHash);
 
           assert (nameRegs.count (name) == 0);
           nameRegs.insert (name);
@@ -254,13 +251,13 @@ CNameMemPool::check (const CCoinsView& coins) const
             assert (data.isExpired (nHeight + 1));
         }
 
-      if (entry.second.isNameUpdate ())
+      if (entry.isNameUpdate ())
         {
-          const valtype& name = entry.second.getName ();
+          const valtype& name = entry.getName ();
 
           const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
           assert (mit != mapNameUpdates.end ());
-          assert (mit->second == entry.first);
+          assert (mit->second == txHash);
 
           assert (nameUpdates.count (name) == 0);
           nameUpdates.insert (name);

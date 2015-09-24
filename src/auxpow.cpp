@@ -10,6 +10,7 @@
 #include "compat/endian.h"
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
+#include "hash.h"
 #include "main.h"
 #include "script/script.h"
 #include "txmempool.h"
@@ -17,6 +18,24 @@
 #include "utilstrencodings.h"
 
 #include <algorithm>
+
+/* This used to be in CBlock but was removed upstream.  We need it
+   at least for unit testing, thus moved here.  */
+static void
+GetMerkleBranch (const CBlock& block, int nIndex,
+                 std::vector<uint256>& vMerkleBranch)
+{
+  std::vector<uint256> vMerkleTree;
+  block.ComputeMerkleRoot (vMerkleTree);
+  int j = 0;
+  for (int nSize = block.vtx.size (); nSize > 1; nSize = (nSize + 1) / 2)
+    {
+      const int i = std::min (nIndex ^ 1, nSize - 1);
+      vMerkleBranch.push_back (vMerkleTree[j + i]);
+      nIndex >>= 1;
+      j += nSize;
+    }
+}
 
 /* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
    of an enabled (or disabled) wallet.  Always include the code.  */
@@ -42,7 +61,7 @@ int CMerkleTx::SetMerkleBranch(const CBlock& block)
     }
 
     // Fill in merkle branch
-    vMerkleBranch = block.GetMerkleBranch(nIndex);
+    GetMerkleBranch(block, nIndex, vMerkleBranch);
 
     // Is the tx in a block that's in the main chain
     BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
@@ -69,14 +88,6 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const
     if (!pindex || !chainActive.Contains(pindex))
         return 0;
 
-    // Make sure the merkle branch connects to this block
-    if (!fMerkleVerified)
-    {
-        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
-            return 0;
-        fMerkleVerified = true;
-    }
-
     pindexRet = pindex;
     return chainActive.Height() - pindex->nHeight + 1;
 }
@@ -97,7 +108,6 @@ int CMerkleTx::GetBlocksToMaturity() const
         return 0;
     return std::max(0, (COINBASE_MATURITY+1) - GetDepthInMainChain());
 }
-
 
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectAbsurdFee)
 {
@@ -122,13 +132,13 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
 
     // Check that the chain merkle root is in the coinbase
     const uint256 nRootHash
-      = CBlock::CheckMerkleBranch (hashAuxBlock, vChainMerkleBranch,
-                                   nChainIndex);
+      = CheckMerkleBranch (hashAuxBlock, vChainMerkleBranch, nChainIndex);
     valtype vchRootHash(nRootHash.begin (), nRootHash.end ());
     std::reverse (vchRootHash.begin (), vchRootHash.end ()); // correct endian
 
     // Check that we are in the parent block merkle tree
-    if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+    if (CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex)
+          != parentBlock.hashMerkleRoot)
         return error("Aux POW merkle root incorrect");
 
     const CScript script = vin[0].scriptSig;
@@ -210,4 +220,23 @@ CAuxPow::getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h)
   rand = rand * 1103515245 + 12345;
 
   return rand % (1 << h);
+}
+
+uint256
+CAuxPow::CheckMerkleBranch (uint256 hash,
+                            const std::vector<uint256>& vMerkleBranch,
+                            int nIndex)
+{
+  if (nIndex == -1)
+    return uint256 ();
+  for (std::vector<uint256>::const_iterator it(vMerkleBranch.begin ());
+       it != vMerkleBranch.end (); ++it)
+  {
+    if (nIndex & 1)
+      hash = Hash (BEGIN (*it), END (*it), BEGIN (hash), END (hash));
+    else
+      hash = Hash (BEGIN (hash), END (hash), BEGIN (*it), END (*it));
+    nIndex >>= 1;
+  }
+  return hash;
 }

@@ -46,7 +46,7 @@ static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScrip
     genesis.nVersion.SetGenesisVersion(nVersion);
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
-    genesis.hashMerkleRoot = genesis.BuildMerkleTree();
+    genesis.hashMerkleRoot = genesis.ComputeMerkleRoot();
     return genesis;
 }
 
