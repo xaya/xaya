@@ -373,8 +373,7 @@ endif
 namecoin_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_UNIVALUE) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBSECP256K1)
+  $(LIBBITCOIN_UTIL)
 
 namecoin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #

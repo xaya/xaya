@@ -243,7 +243,8 @@ UniValue stop(const UniValue& params, bool fHelp)
         throw runtime_error(
             "stop\n"
             "\nStop Namecoin server.");
-    // Shutdown will take long enough that the response should get back
+    // Event loop will exit after current HTTP requests have been handled, so
+    // this reply will get back to the client.
     StartShutdown();
     return "Namecoin server stopping";
 }
