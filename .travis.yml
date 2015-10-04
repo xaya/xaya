@@ -9,6 +9,11 @@
 os: linux
 language: cpp
 compiler: gcc
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#namecoin-dev"
+    on_success: never
 env:
   global:
     - MAKEJOBS=-j3
