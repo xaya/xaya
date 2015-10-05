@@ -21,7 +21,7 @@
 #include <memory>
 #include <sstream>
 
-#include "univalue/univalue.h"
+#include <univalue.h>
 
 /**
  * Utility routine to construct a "name info" object to return.  This is used

@@ -84,6 +84,7 @@ public:
     virtual int DefaultCheckNameDB() const = 0;
     /** Policy: Filter transactions that do not match well-defined patterns */
     bool RequireStandard() const { return fRequireStandard; }
+    int64_t MaxTipAge() const { return nMaxTipAge; }
     int64_t PruneAfterHeight() const { return nPruneAfterHeight; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
     bool MineBlocksOnDemand() const { return fMineBlocksOnDemand; }
@@ -95,13 +96,6 @@ public:
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
-
-    /**
-     * Ignore check for IsInitialBlockDownload()?  If this flag is set,
-     * always make the check return false.  This is useful for testing
-     * and testnet.
-     */
-    bool IgnoreInitialBlockDownload() const { return fIgnoreIBD; }
 
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,
@@ -117,6 +111,7 @@ protected:
     //! Raw pub key bytes for the broadcast alert signing key.
     std::vector<unsigned char> vAlertPubKey;
     int nDefaultPort;
+    long nMaxTipAge;
     uint64_t nPruneAfterHeight;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
@@ -129,9 +124,6 @@ protected:
     bool fMineBlocksOnDemand;
     bool fTestnetToBeDeprecatedFieldRPC;
     CCheckpointData checkpointData;
-
-    /* Ignore IsInitialBlockDownload check?  This is for testnet.  */
-    bool fIgnoreIBD;
 
     /* Map (block height, txid) pairs for buggy transactions onto their
        bug type value.  */

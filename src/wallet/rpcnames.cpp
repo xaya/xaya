@@ -16,7 +16,7 @@
 #include "util.h"
 #include "wallet/wallet.h"
 
-#include "univalue/univalue.h"
+#include <univalue.h>
 
 /**
  * Helper routine to fetch the name output of a previous transaction.  This
