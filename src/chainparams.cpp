@@ -125,9 +125,10 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770"));
         assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
 
-        vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
         vSeeds.push_back(CDNSSeedData("digi-masters.com", "namecoindnsseed.digi-masters.com"));
         vSeeds.push_back(CDNSSeedData("digi-masters.uk", "namecoindnsseed.digi-masters.uk"));
+        vSeeds.push_back(CDNSSeedData("domob.eu", "seed.namecoin.domob.eu");
+        vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
         vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.namecoin.webbtc.com"));
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
