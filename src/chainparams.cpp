@@ -127,7 +127,7 @@ public:
 
         vSeeds.push_back(CDNSSeedData("digi-masters.com", "namecoindnsseed.digi-masters.com"));
         vSeeds.push_back(CDNSSeedData("digi-masters.uk", "namecoindnsseed.digi-masters.uk"));
-        vSeeds.push_back(CDNSSeedData("domob.eu", "seed.namecoin.domob.eu");
+        vSeeds.push_back(CDNSSeedData("domob.eu", "seed.namecoin.domob.eu"));
         vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
         vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.namecoin.webbtc.com"));
 
