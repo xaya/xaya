@@ -28,7 +28,7 @@ Development Process
 
 The `master` branch is regularly built and tested, but is not guaranteed to be
 completely stable. [Tags](https://github.com/bitcoin/bitcoin/tags) are created
-regularly to indicate new official, stable release versions of Bitcoin.
+regularly to indicate new official, stable release versions of Bitcoin Core.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -53,7 +53,7 @@ submit new unit tests for old code. Unit tests can be compiled and run (assuming
 
 There are also regression and integration tests of the RPC interface, written
 in Python, that are run automatically on the build server.
-These tests can be run with: `qa/pull-tester/rpc-tests.sh`
+These tests can be run with: `qa/pull-tester/rpc-tests.py`
 
 Every pull request is built for both Windows and Linux on a dedicated server,
 and unit and sanity tests are automatically run. The binaries produced may be
