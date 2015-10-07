@@ -35,18 +35,8 @@ static const char DB_REINDEX_FLAG = 'R';
 static const char DB_LAST_BLOCK = 'l';
 
 
-void static BatchWriteCoins(CLevelDBBatch &batch, const uint256 &hash, const CCoins &coins) {
-    if (coins.IsPruned())
-        batch.Erase(make_pair(DB_COINS, hash));
-    else
-        batch.Write(make_pair(DB_COINS, hash), coins);
-}
-
-void static BatchWriteHashBestChain(CLevelDBBatch &batch, const uint256 &hash) {
-    batch.Write(DB_BEST_BLOCK, hash);
-}
-
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe) {
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) 
+{
 }
 
 bool CCoinsViewDB::GetCoins(const uint256 &txid, CCoins &coins) const {
@@ -131,6 +121,9 @@ private:
     /* The backing LevelDB iterator.  */
     leveldb::Iterator* iter;
 
+    /* The db itself.  This is used to query for the obfuscation key.  */
+    const CLevelDBWrapper& db;
+
 public:
 
     ~CDbNameIterator();
@@ -139,7 +132,7 @@ public:
      * Construct a new name iterator for the database.
      * @param db The database to create the iterator for.
      */
-    CDbNameIterator(const CLevelDBWrapper& db);
+    CDbNameIterator(const CLevelDBWrapper& forDb);
 
     /* Implement iterator methods.  */
     void seek (const valtype& start);
@@ -151,8 +144,8 @@ CDbNameIterator::~CDbNameIterator() {
     delete iter;
 }
 
-CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db)
-    : iter(const_cast<CLevelDBWrapper*>(&db)->NewIterator())
+CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& forDb)
+    : iter(const_cast<CLevelDBWrapper*>(&forDb)->NewIterator()), db(forDb)
 {
     seek(valtype());
 }
@@ -186,6 +179,7 @@ bool CDbNameIterator::next(valtype& name, CNameData& data) {
         const leveldb::Slice& slValue = iter->value();
         CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
                             SER_DISK, CLIENT_VERSION);
+        ssValue.Xor(db.GetObfuscateKey());
 
         ssKey >> name;
         ssValue >> data;
@@ -204,12 +198,15 @@ CNameIterator* CCoinsViewDB::IterateNames() const {
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(db.GetObfuscateKey());
     size_t count = 0;
     size_t changed = 0;
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
         if (it->second.flags & CCoinsCacheEntry::DIRTY) {
-            BatchWriteCoins(batch, it->first, it->second.coins);
+            if (it->second.coins.IsPruned())
+                batch.Erase(make_pair(DB_COINS, it->first));
+            else
+                batch.Write(make_pair(DB_COINS, it->first), it->second.coins);
             changed++;
         }
         count++;
@@ -217,7 +214,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, con
         mapCoins.erase(itOld);
     }
     if (!hashBlock.IsNull())
-        BatchWriteHashBestChain(batch, hashBlock);
+        batch.Write(DB_BEST_BLOCK, hashBlock);
 
     names.writeBatch(batch);
 
@@ -269,6 +266,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
             if (chType == DB_COINS) {
                 leveldb::Slice slValue = pcursor->value();
                 CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
+                /* FIXME: Should here be a de-obfuscation???  */
                 CCoins coins;
                 ssValue >> coins;
                 uint256 txhash;
@@ -305,7 +303,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(GetObfuscateKey());
     for (std::vector<std::pair<int, const CBlockFileInfo*> >::const_iterator it=fileInfo.begin(); it != fileInfo.end(); it++) {
         batch.Write(make_pair(DB_BLOCK_FILES, it->first), *it->second);
     }
@@ -355,6 +353,7 @@ bool CCoinsViewDB::ValidateNameDB() const
             const leveldb::Slice slValue = pcursor->value();
             CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
                                 SER_DISK, CLIENT_VERSION);
+            ssValue.Xor(db.GetObfuscateKey());
 
             switch (chType)
             {
@@ -501,7 +500,7 @@ bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
 }
 
 bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(GetObfuscateKey());
     for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
         batch.Write(make_pair(DB_TXINDEX, it->first), it->second);
     return WriteBatch(batch);
