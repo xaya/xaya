@@ -69,45 +69,27 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
 
     const CNameCache::ExpireEntry seekEntry(nHeight, valtype ());
-    const std::pair<char, CNameCache::ExpireEntry> seekKey(DB_NAME_EXPIRY,
-                                                           seekEntry);
-    CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
-    seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
-    seekKeyStream << seekKey;
-    leveldb::Slice slKey(&seekKeyStream[0], seekKeyStream.size());
+    pcursor->Seek(std::make_pair(DB_NAME_EXPIRY, seekEntry));
 
-    for (pcursor->Seek(slKey); pcursor->Valid(); pcursor->Next())
+    for (; pcursor->Valid(); pcursor->Next())
     {
-        try
-        {
-            slKey = pcursor->key();
-            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(), SER_DISK, CLIENT_VERSION);
-            char chType;
-            ssKey >> chType;
+        std::pair<char, CNameCache::ExpireEntry> key;
+        if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY)
+            break;
+        const CNameCache::ExpireEntry& entry = key.second;
 
-            if (chType != DB_NAME_EXPIRY)
-              break;
+        assert (entry.nHeight >= nHeight);
+        if (entry.nHeight > nHeight)
+          break;
 
-            CNameCache::ExpireEntry entry;
-            ssKey >> entry;
-
-            assert (entry.nHeight >= nHeight);
-            if (entry.nHeight > nHeight)
-              break;
-
-            const valtype& name = entry.name;
-            if (names.count(name) > 0)
-                return error("%s : duplicate name '%s' in expire index",
-                             __func__, ValtypeToString(name).c_str());
-            names.insert(name);
-        } catch (const std::exception &e)
-        {
-            return error("%s : Deserialize or I/O error - %s",
-                         __func__, e.what());
-        }
+        const valtype& name = entry.name;
+        if (names.count(name) > 0)
+            return error("%s : duplicate name '%s' in expire index",
+                         __func__, ValtypeToString(name).c_str());
+        names.insert(name);
     }
 
     return true;
@@ -119,10 +101,7 @@ class CDbNameIterator : public CNameIterator
 private:
 
     /* The backing LevelDB iterator.  */
-    leveldb::Iterator* iter;
-
-    /* The db itself.  This is used to query for the obfuscation key.  */
-    const CLevelDBWrapper& db;
+    CLevelDBIterator* iter;
 
 public:
 
@@ -132,7 +111,7 @@ public:
      * Construct a new name iterator for the database.
      * @param db The database to create the iterator for.
      */
-    CDbNameIterator(const CLevelDBWrapper& forDb);
+    CDbNameIterator(const CLevelDBWrapper& db);
 
     /* Implement iterator methods.  */
     void seek (const valtype& start);
@@ -144,50 +123,27 @@ CDbNameIterator::~CDbNameIterator() {
     delete iter;
 }
 
-CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& forDb)
-    : iter(const_cast<CLevelDBWrapper*>(&forDb)->NewIterator()), db(forDb)
+CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db)
+    : iter(const_cast<CLevelDBWrapper*>(&db)->NewIterator())
 {
     seek(valtype());
 }
 
 void CDbNameIterator::seek(const valtype& start) {
-    const std::pair<char, valtype> seekKey(DB_NAME, start);
-    CDataStream seekKeyStream(SER_DISK, CLIENT_VERSION);
-    seekKeyStream.reserve(seekKeyStream.GetSerializeSize(seekKey));
-    seekKeyStream << seekKey;
-
-    leveldb::Slice slKey(&seekKeyStream[0], seekKeyStream.size());
-    iter->Seek(slKey);
+    iter->Seek(std::make_pair(DB_NAME, start));
 }
 
 bool CDbNameIterator::next(valtype& name, CNameData& data) {
     if (!iter->Valid())
         return false;
 
-    try
-    {
-        const leveldb::Slice& slKey = iter->key();
-        CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(),
-                          SER_DISK, CLIENT_VERSION);
-
-        char chType;
-        ssKey >> chType;
-
-        if (chType != DB_NAME)
-            return false;
-
-        const leveldb::Slice& slValue = iter->value();
-        CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
-                            SER_DISK, CLIENT_VERSION);
-        ssValue.Xor(db.GetObfuscateKey());
-
-        ssKey >> name;
-        ssValue >> data;
-    } catch (const std::exception& exc)
-    {
-        LogPrintf("%s : Deserialize or I/O error - %s", __func__, exc.what());
+    std::pair<char, valtype> key;
+    if (!iter->GetKey(key) || key.first != DB_NAME)
         return false;
-    }
+    name = key.second;
+
+    if (!iter->GetValue(data))
+        return error("%s : failed to read data from iterator", __func__);
 
     iter->Next ();
     return true;
@@ -198,7 +154,7 @@ CNameIterator* CCoinsViewDB::IterateNames() const {
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {
-    CLevelDBBatch batch(db.GetObfuscateKey());
+    CLevelDBBatch batch(&db.GetObfuscateKey());
     size_t count = 0;
     size_t changed = 0;
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
@@ -249,8 +205,8 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
-    pcursor->SeekToFirst();
+    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    pcursor->Seek('c');
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
     stats.hashBlock = GetBestBlock();
@@ -258,23 +214,10 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
     CAmount nTotalAmount = 0;
     while (pcursor->Valid()) {
         boost::this_thread::interruption_point();
-        try {
-            leveldb::Slice slKey = pcursor->key();
-            CDataStream ssKey(slKey.data(), slKey.data()+slKey.size(), SER_DISK, CLIENT_VERSION);
-            char chType;
-            ssKey >> chType;
-            if (chType == DB_COINS) {
-                leveldb::Slice slValue = pcursor->value();
-                CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
-                /* FIXME: Should here be a de-obfuscation???  */
-                CCoins coins;
-                ssValue >> coins;
-                uint256 txhash;
-                ssKey >> txhash;
-                ss << txhash;
-                ss << VARINT(coins.nVersion);
-                ss << (coins.fCoinBase ? 'c' : 'n');
-                ss << VARINT(coins.nHeight);
+        std::pair<char, uint256> key;
+        CCoins coins;
+        if (pcursor->GetKey(key) && key.first == 'c') {
+            if (pcursor->GetValue(coins)) {
                 stats.nTransactions++;
                 for (unsigned int i=0; i<coins.vout.size(); i++) {
                     const CTxOut &out = coins.vout[i];
@@ -285,13 +228,15 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
                         nTotalAmount += out.nValue;
                     }
                 }
-                stats.nSerializedSize += 32 + slValue.size();
+                stats.nSerializedSize += 32 + pcursor->GetKeySize();
                 ss << VARINT(0);
+            } else {
+                return error("CCoinsViewDB::GetStats() : unable to read value");
             }
-            pcursor->Next();
-        } catch (const std::exception& e) {
-            return error("%s: Deserialize or I/O error - %s", __func__, e.what());
+        } else {
+            break;
         }
+        pcursor->Next();
     }
     {
         LOCK(cs_main);
@@ -303,7 +248,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {
-    CLevelDBBatch batch(GetObfuscateKey());
+    CLevelDBBatch batch(&GetObfuscateKey());
     for (std::vector<std::pair<int, const CBlockFileInfo*> >::const_iterator it=fileInfo.begin(); it != fileInfo.end(); it++) {
         batch.Write(make_pair(DB_BLOCK_FILES, it->first), *it->second);
     }
@@ -326,7 +271,7 @@ bool CCoinsViewDB::ValidateNameDB() const
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<leveldb::Iterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
     pcursor->SeekToFirst();
 
     /* Loop over the total database and read interesting
@@ -339,99 +284,95 @@ bool CCoinsViewDB::ValidateNameDB() const
     std::set<valtype> namesInUTXO;
     std::set<valtype> namesWithHistory;
 
-    while (pcursor->Valid())
+    for (; pcursor->Valid(); pcursor->Next())
     {
         boost::this_thread::interruption_point();
-        try
+        char chType;
+        if (!pcursor->GetKey(chType))
+            continue;
+
+        switch (chType)
         {
-            const leveldb::Slice slKey = pcursor->key();
-            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(),
-                              SER_DISK, CLIENT_VERSION);
-            char chType;
-            ssKey >> chType;
+        case DB_COINS:
+        {
+            CCoins coins;
+            if (!pcursor->GetValue(coins))
+                return error("%s : failed to read coins", __func__);
 
-            const leveldb::Slice slValue = pcursor->value();
-            CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(),
-                                SER_DISK, CLIENT_VERSION);
-            ssValue.Xor(db.GetObfuscateKey());
-
-            switch (chType)
-            {
-            case DB_COINS:
-            {
-                CCoins coins;
-                ssValue >> coins;
-                BOOST_FOREACH(const CTxOut& txout, coins.vout)
-                    if (!txout.IsNull())
+            BOOST_FOREACH(const CTxOut& txout, coins.vout)
+                if (!txout.IsNull())
+                {
+                    const CNameScript nameOp(txout.scriptPubKey);
+                    if (nameOp.isNameOp() && nameOp.isAnyUpdate())
                     {
-                        const CNameScript nameOp(txout.scriptPubKey);
-                        if (nameOp.isNameOp() && nameOp.isAnyUpdate())
-                        {
-                            const valtype& name = nameOp.getOpName();
-                            if (namesInUTXO.count(name) > 0)
-                                return error("%s : name %s duplicated in UTXO set",
-                                             __func__, ValtypeToString(name).c_str());
-                            namesInUTXO.insert(nameOp.getOpName());
-                        }
+                        const valtype& name = nameOp.getOpName();
+                        if (namesInUTXO.count(name) > 0)
+                            return error("%s : name %s duplicated in UTXO set",
+                                         __func__, ValtypeToString(name).c_str());
+                        namesInUTXO.insert(nameOp.getOpName());
                     }
-                break;
-            }
+                }
+            break;
+        }
 
-            case DB_NAME:
-            {
-                valtype name;
-                ssKey >> name;
-                CNameData data;
-                ssValue >> data;
-
-                if (nameHeightsData.count(name) > 0)
-                    return error("%s : name %s duplicated in name index",
-                                 __func__, ValtypeToString(name).c_str());
-                nameHeightsData.insert(std::make_pair(name, data.getHeight()));
-                
-                /* Expiration is checked at height+1, because that matches
-                   how the UTXO set is cleared in ExpireNames.  */
-                assert(namesInDB.count(name) == 0);
-                if (!data.isExpired(nHeight + 1))
-                    namesInDB.insert(name);
-                break;
-            }
-
-            case DB_NAME_HISTORY:
-            {
-                valtype name;
-                ssKey >> name;
-
-                if (namesWithHistory.count(name) > 0)
-                    return error("%s : name %s has duplicate history",
-                                 __func__, ValtypeToString(name).c_str());
-                namesWithHistory.insert(name);
-                break;
-            }
-
-            case DB_NAME_EXPIRY:
-            {
-                CNameCache::ExpireEntry entry;
-                ssKey >> entry;
-                const valtype& name = entry.name;
-
-                if (nameHeightsIndex.count(name) > 0)
-                    return error("%s : name %s duplicated in expire idnex",
-                                 __func__, ValtypeToString(name).c_str());
-
-                nameHeightsIndex.insert(std::make_pair(name, entry.nHeight));
-                break;
-            }
-
-            default:
-                break;
-            }
-
-            pcursor->Next();
-        } catch (std::exception &e)
+        case DB_NAME:
         {
-            return error("%s : Deserialize or I/O error - %s",
-                         __func__, e.what());
+            std::pair<char, valtype> key;
+            if (!pcursor->GetKey(key) || key.first != DB_NAME)
+                return error("%s : failed to read DB_NAME key", __func__);
+            const valtype& name = key.second;
+
+            CNameData data;
+            if (!pcursor->GetValue(data))
+                return error("%s : failed to read name value", __func__);
+
+            if (nameHeightsData.count(name) > 0)
+                return error("%s : name %s duplicated in name index",
+                             __func__, ValtypeToString(name).c_str());
+            nameHeightsData.insert(std::make_pair(name, data.getHeight()));
+            
+            /* Expiration is checked at height+1, because that matches
+               how the UTXO set is cleared in ExpireNames.  */
+            assert(namesInDB.count(name) == 0);
+            if (!data.isExpired(nHeight + 1))
+                namesInDB.insert(name);
+            break;
+        }
+
+        case DB_NAME_HISTORY:
+        {
+            std::pair<char, valtype> key;
+            if (!pcursor->GetKey(key) || key.first != DB_NAME_HISTORY)
+                return error("%s : failed to read DB_NAME_HISTORY key",
+                             __func__);
+            const valtype& name = key.second;
+
+            if (namesWithHistory.count(name) > 0)
+                return error("%s : name %s has duplicate history",
+                             __func__, ValtypeToString(name).c_str());
+            namesWithHistory.insert(name);
+            break;
+        }
+
+        case DB_NAME_EXPIRY:
+        {
+            std::pair<char, CNameCache::ExpireEntry> key;
+            if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY)
+                return error("%s : failed to read DB_NAME_EXPIRY key",
+                             __func__);
+            const CNameCache::ExpireEntry& entry = key.second;
+            const valtype& name = entry.name;
+
+            if (nameHeightsIndex.count(name) > 0)
+                return error("%s : name %s duplicated in expire idnex",
+                             __func__, ValtypeToString(name).c_str());
+
+            nameHeightsIndex.insert(std::make_pair(name, entry.nHeight));
+            break;
+        }
+
+        default:
+            break;
         }
     }
 
@@ -500,7 +441,7 @@ bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
 }
 
 bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
-    CLevelDBBatch batch(GetObfuscateKey());
+    CLevelDBBatch batch(&GetObfuscateKey());
     for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
         batch.Write(make_pair(DB_TXINDEX, it->first), it->second);
     return WriteBatch(batch);
@@ -520,26 +461,17 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
 
 bool CBlockTreeDB::LoadBlockIndexGuts()
 {
-    boost::scoped_ptr<leveldb::Iterator> pcursor(NewIterator());
+    boost::scoped_ptr<CLevelDBIterator> pcursor(NewIterator());
 
-    CDataStream ssKeySet(SER_DISK, CLIENT_VERSION);
-    ssKeySet << make_pair(DB_BLOCK_INDEX, uint256());
-    pcursor->Seek(ssKeySet.str());
+    pcursor->Seek(make_pair('b', uint256()));
 
     // Load mapBlockIndex
     while (pcursor->Valid()) {
         boost::this_thread::interruption_point();
-        try {
-            leveldb::Slice slKey = pcursor->key();
-            CDataStream ssKey(slKey.data(), slKey.data()+slKey.size(), SER_DISK, CLIENT_VERSION);
-            char chType;
-            ssKey >> chType;
-            if (chType == DB_BLOCK_INDEX) {
-                leveldb::Slice slValue = pcursor->value();
-                CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
-                CDiskBlockIndex diskindex;
-                ssValue >> diskindex;
-
+        std::pair<char, uint256> key;
+        if (pcursor->GetKey(key) && key.first == 'b') {
+            CDiskBlockIndex diskindex;
+            if (pcursor->GetValue(diskindex)) {
                 // Construct block index object
                 CBlockIndex* pindexNew = InsertBlockIndex(diskindex.GetBlockHash());
                 pindexNew->pprev          = InsertBlockIndex(diskindex.hashPrev);
@@ -562,10 +494,10 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
 
                 pcursor->Next();
             } else {
-                break; // if shutdown requested or finished loading block index
+                return error("LoadBlockIndex() : failed to read value");
             }
-        } catch (const std::exception& e) {
-            return error("%s: Deserialize or I/O error - %s", __func__, e.what());
+        } else {
+            break;
         }
     }
 
