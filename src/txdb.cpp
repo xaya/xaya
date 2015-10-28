@@ -69,7 +69,7 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    boost::scoped_ptr<CDBIterator> pcursor(const_cast<CDBWrapper*>(&db)->NewIterator());
 
     const CNameCache::ExpireEntry seekEntry(nHeight, valtype ());
     pcursor->Seek(std::make_pair(DB_NAME_EXPIRY, seekEntry));
@@ -101,7 +101,7 @@ class CDbNameIterator : public CNameIterator
 private:
 
     /* The backing LevelDB iterator.  */
-    CLevelDBIterator* iter;
+    CDBIterator* iter;
 
 public:
 
@@ -111,7 +111,7 @@ public:
      * Construct a new name iterator for the database.
      * @param db The database to create the iterator for.
      */
-    CDbNameIterator(const CLevelDBWrapper& db);
+    CDbNameIterator(const CDBWrapper& db);
 
     /* Implement iterator methods.  */
     void seek (const valtype& start);
@@ -123,8 +123,8 @@ CDbNameIterator::~CDbNameIterator() {
     delete iter;
 }
 
-CDbNameIterator::CDbNameIterator(const CLevelDBWrapper& db)
-    : iter(const_cast<CLevelDBWrapper*>(&db)->NewIterator())
+CDbNameIterator::CDbNameIterator(const CDBWrapper& db)
+    : iter(const_cast<CDBWrapper*>(&db)->NewIterator())
 {
     seek(valtype());
 }
@@ -154,7 +154,7 @@ CNameIterator* CCoinsViewDB::IterateNames() const {
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) {
-    CLevelDBBatch batch(&db.GetObfuscateKey());
+    CDBBatch batch(&db.GetObfuscateKey());
     size_t count = 0;
     size_t changed = 0;
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
@@ -178,7 +178,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, con
     return db.WriteBatch(batch);
 }
 
-CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
+CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
 }
 
 bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {
@@ -205,7 +205,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    boost::scoped_ptr<CDBIterator> pcursor(const_cast<CDBWrapper*>(&db)->NewIterator());
     pcursor->Seek(DB_COINS);
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
@@ -228,7 +228,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
                         nTotalAmount += out.nValue;
                     }
                 }
-                stats.nSerializedSize += 32 + pcursor->GetKeySize();
+                stats.nSerializedSize += 32 + pcursor->GetValueSize();
                 ss << VARINT(0);
             } else {
                 return error("CCoinsViewDB::GetStats() : unable to read value");
@@ -248,7 +248,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {
-    CLevelDBBatch batch(&GetObfuscateKey());
+    CDBBatch batch(&GetObfuscateKey());
     for (std::vector<std::pair<int, const CBlockFileInfo*> >::const_iterator it=fileInfo.begin(); it != fileInfo.end(); it++) {
         batch.Write(make_pair(DB_BLOCK_FILES, it->first), *it->second);
     }
@@ -271,7 +271,7 @@ bool CCoinsViewDB::ValidateNameDB() const
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<CLevelDBIterator> pcursor(const_cast<CLevelDBWrapper*>(&db)->NewIterator());
+    boost::scoped_ptr<CDBIterator> pcursor(const_cast<CDBWrapper*>(&db)->NewIterator());
     pcursor->SeekToFirst();
 
     /* Loop over the total database and read interesting
@@ -410,7 +410,7 @@ bool CCoinsViewDB::ValidateNameDB() const
 }
 
 void
-CNameCache::writeBatch (CLevelDBBatch& batch) const
+CNameCache::writeBatch (CDBBatch& batch) const
 {
   for (EntryMap::const_iterator i = entries.begin ();
        i != entries.end (); ++i)
@@ -441,7 +441,7 @@ bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
 }
 
 bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
-    CLevelDBBatch batch(&GetObfuscateKey());
+    CDBBatch batch(&GetObfuscateKey());
     for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
         batch.Write(make_pair(DB_TXINDEX, it->first), it->second);
     return WriteBatch(batch);
@@ -461,7 +461,7 @@ bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
 
 bool CBlockTreeDB::LoadBlockIndexGuts()
 {
-    boost::scoped_ptr<CLevelDBIterator> pcursor(NewIterator());
+    boost::scoped_ptr<CDBIterator> pcursor(NewIterator());
 
     pcursor->Seek(make_pair(DB_BLOCK_INDEX, uint256()));
 

@@ -84,6 +84,8 @@ testScripts = [
     'name_wallet.py',
 ]
 testScriptsExt = [
+    'bip65-cltv.py',
+    'bip65-cltv-p2p.py',
     'bipdersig-p2p.py',
     'bipdersig.py',
     'getblocktemplate_longpoll.py',
@@ -96,12 +98,13 @@ testScriptsExt = [
     'keypool.py',
     'receivedby.py',
 #    'rpcbind_test.py', #temporary, bug in libevent, see #6655
-#   'script_test.py', #used for manual comparison of 2 binaries
+#    'script_test.py', #used for manual comparison of 2 binaries
     'smartfees.py',
     'maxblocksinflight.py',
     'invalidblockrequest.py',
     'p2p-acceptblock.py',
     'mempool_packages.py',
+    'maxuploadtarget.py',
 ]
 
 #Enable ZMQ tests

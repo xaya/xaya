@@ -14,7 +14,7 @@
 #include <set>
 
 class CNameScript;
-class CLevelDBBatch;
+class CDBBatch;
 
 /** Whether or not name history is enabled.  */
 extern bool fNameHistory;
@@ -481,7 +481,7 @@ public:
   void apply (const CNameCache& cache);
 
   /* Write all cached changes to a database batch update object.  */
-  void writeBatch (CLevelDBBatch& batch) const;
+  void writeBatch (CDBBatch& batch) const;
 
 };
 

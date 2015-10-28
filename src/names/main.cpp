@@ -8,7 +8,7 @@
 #include "coins.h"
 #include "consensus/validation.h"
 #include "hash.h"
-#include "leveldbwrapper.h"
+#include "dbwrapper.h"
 #include "../main.h"
 #include "script/interpreter.h"
 #include "script/names.h"

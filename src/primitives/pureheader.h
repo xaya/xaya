@@ -145,7 +145,7 @@ class CPureBlockHeader
 {
 public:
     // header
-    static const int32_t CURRENT_VERSION=3;
+    static const int32_t CURRENT_VERSION=4;
     CBlockVersion nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;

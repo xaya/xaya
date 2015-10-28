@@ -970,7 +970,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (nameUpd, data, false);
-  mempool.setSanityCheck (true, false);
+  mempool.setSanityCheck (1.0, false);
   mempool.check (&view);
 
   /* Remove the transactions again.  */
