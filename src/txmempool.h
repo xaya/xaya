@@ -399,7 +399,7 @@ public:
      * check does nothing.
      */
     void check(const CCoinsViewCache *pcoins) const;
-    void setSanityCheck(double dFrequency = 1.0, bool _fCheckInputs = true) { nCheckFrequency = dFrequency * 4294967296.0; fCheckInputs = _fCheckInputs; }
+    void setSanityCheck(double dFrequency = 1.0, bool _fCheckInputs = true) { nCheckFrequency = dFrequency * 4294967295.0; fCheckInputs = _fCheckInputs; }
 
     // addUnchecked must updated state for all ancestors of a given transaction,
     // to track size/count of descendant transactions.  First version of
