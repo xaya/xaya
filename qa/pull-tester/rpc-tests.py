@@ -68,6 +68,7 @@ testScripts = [
     'decodescript.py',
     'p2p-fullblocktest.py',
     'blockchain.py',
+    'disablewallet.py',
 
     # auxpow tests
     'getauxblock.py',
