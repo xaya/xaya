@@ -11,7 +11,7 @@ using namespace std;
 
 /* Moved here from the header, because we need auxpow and the logic
    becomes more involved.  */
-CBlockHeader CBlockIndex::GetBlockHeader() const
+CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
 {
     CBlockHeader block;
 
@@ -20,7 +20,7 @@ CBlockHeader CBlockIndex::GetBlockHeader() const
        have to read the actual *header*, not the full block.  */
     if (nVersion.IsAuxpow())
     {
-        ReadBlockHeaderFromDisk(block, this);
+        ReadBlockHeaderFromDisk(block, this, consensusParams);
         return block;
     }
 

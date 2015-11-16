@@ -143,13 +143,52 @@ higher, it becomes mandatory for all blocks and blocks with versions less than
 
 Bitcoin Core's block templates are now for version 4 blocks only, and any
 mining software relying on its `getblocktemplate` must be updated in parallel
-to use either libblkmaker version FIXME or any version from 0.5.1 onward. If
+to use either libblkmaker version 0.4.3 or any version from 0.5.2 onward. If
 you are solo mining, this will affect you the moment you upgrade Bitcoin Core,
 which must be done prior to BIP65 achieving its 951/1001 status.  If you are
 mining with the stratum mining protocol: this does not affect you.  If you are
 mining with the getblocktemplate protocol to a pool: this will affect you at
 the pool operator's discretion, which must be no later than BIP65 achieving its
 951/1001 status.
+
+Automatically listen on Tor
+----------------------------
+
+Starting with Tor version 0.2.7.1 it is possible, through Tor's control socket
+API, to create and destroy 'ephemeral' hidden services programmatically.
+Bitcoin Core has been updated to make use of this.
+
+This means that if Tor is running (and proper authorization is available),
+Bitcoin Core automatically creates a hidden service to listen on, without
+manual configuration. This will positively affect the number of available
+.onion nodes.
+
+This new feature is enabled by default if Bitcoin Core is listening, and
+a connection to Tor can be made. It can be configured with the `-listenonion`,
+`-torcontrol` and `-torpassword` settings. To show verbose debugging
+information, pass `-debug=tor`.
+
+Reduce upload traffic
+---------------------
+
+A major part of the outbound traffic is caused by serving historic blocks to
+other nodes in initial block download state.
+
+It is now possible to reduce the total upload traffic via the `-maxuploadtarget`
+parameter. This is *not* a hard limit but a threshold to minimize the outbound
+traffic. When the limit is about to be reached, the uploaded data is cut by not
+serving historic blocks (blocks older than one week).
+Moreover, any SPV peer is disconnected when they request a filtered block.
+
+This option can be specified in MiB per day and is turned off by default
+(`-maxuploadtarget=0`).
+The recommended minimum is 144 * MAX_BLOCK_SIZE (currently 144MB) per day.
+
+Whitelisted peers will never be disconnected, although their traffic counts for
+calculating the target.
+
+A more detailed documentation about keeping traffic low can be found in
+[/doc/reducetraffic.md](/doc/reducetraffic.md).
 
 0.12.0 Change log
 =================

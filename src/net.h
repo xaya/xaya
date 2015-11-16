@@ -66,6 +66,10 @@ static const bool DEFAULT_UPNP = false;
 static const size_t MAPASKFOR_MAX_SZ = MAX_INV_SZ;
 /** The maximum number of peer connections to maintain. */
 static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
+/** The default for -maxuploadtarget. 0 = Unlimited */
+static const uint64_t DEFAULT_MAX_UPLOAD_TARGET = 0;
+/** Default for blocks only*/
+static const bool DEFAULT_BLOCKSONLY = false;
 
 unsigned int ReceiveFloodSize();
 unsigned int SendBufferSize();
@@ -134,6 +138,7 @@ bool IsLimited(enum Network net);
 bool IsLimited(const CNetAddr& addr);
 bool AddLocal(const CService& addr, int nScore = LOCAL_NONE);
 bool AddLocal(const CNetAddr& addr, int nScore = LOCAL_NONE);
+bool RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer = NULL);
@@ -345,7 +350,7 @@ public:
     // We use fRelayTxes for two purposes -
     // a) it allows us to not relay tx invs before receiving the peer's version message
     // b) the peer may tell us in its version message that we should not relay tx invs
-    //    until it has initialized its bloom filter.
+    //    unless it loads a bloom filter.
     bool fRelayTxes;
     CSemaphoreGrant grantOutbound;
     CCriticalSection cs_filter;
