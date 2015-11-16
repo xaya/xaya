@@ -1,26 +1,41 @@
-Bitcoin Core integration/staging tree
+Namecoin Core integration/staging tree
 =====================================
 
-[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
+[![Build Status](https://travis-ci.org/namecoin/namecoin-core.svg?branch=master)](https://travis-ci.org/namecoin/namecoin-core)
 
-https://www.bitcoin.org
+https://namecoin.org
 
-What is Bitcoin?
+What is Namecoin? 
 ----------------
 
-Bitcoin is an experimental new digital currency that enables instant payments to
-anyone, anywhere in the world. Bitcoin uses peer-to-peer technology to operate
-with no central authority: managing transactions and issuing money are carried
-out collectively by the network. Bitcoin Core is the name of open source
-software which enables the use of this currency.
+Namecoin is a decentralized open source information registration and transfer system based on the Bitcoin cryptocurrency.
 
-For more information, as well as an immediately useable, binary version of
-the Bitcoin Core software, see https://www.bitcoin.org/en/download.
+What does it do?
+----------------
+
+Securely record and transfer arbitrary names (keys).
+Attach a value (data) to the names
+(up to 520 bytes, more in the future).
+Transact namecoins, the digital currency (ℕ, NMC).
+Namecoin was the first fork of Bitcoin and still is one of the most innovative altcoins. It was first to implement merged mining and a decentralized DNS. Namecoin squares Zooko's Triangle!
+
+What can it be used for?
+----------------
+
+Protect free-speech rights online by making the web more resistant to censorship.
+Access websites using the .bit domain (with TLS/SSL).
+Store identity information such as email, GPG key, BTC address, TLS fingerprints, Bitmessage address, etc.
+Human readable Tor .onion names/domains.
+File signatures, Voting, bonds/stocks,/shares, web of trust, escrow and notary services (to be implemented).
+
+~~For more information, as well as an immediately useable, binary version of~~
+~~the Namecoin Core software, see https://namecoin.org/?p=download.~~
+Public binary downloads are not yet posted.
 
 License
 -------
 
-Bitcoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Namecoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see http://opensource.org/licenses/MIT.
 
 Development Process
