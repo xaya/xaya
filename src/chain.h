@@ -7,6 +7,7 @@
 #define BITCOIN_CHAIN_H
 
 #include "arith_uint256.h"
+#include "consensus/params.h"
 #include "primitives/block.h"
 #include "pow.h"
 #include "tinyformat.h"
@@ -204,7 +205,7 @@ public:
         return ret;
     }
 
-    CBlockHeader GetBlockHeader() const;
+    CBlockHeader GetBlockHeader(const Consensus::Params& consensusParams) const;
 
     uint256 GetBlockHash() const
     {
