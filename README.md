@@ -13,20 +13,20 @@ Namecoin is a decentralized open source information registration and transfer sy
 What does it do?
 ----------------
 
-Securely record and transfer arbitrary names (keys).
-Attach a value (data) to the names
-(up to 520 bytes, more in the future).
-Transact namecoins, the digital currency (ℕ, NMC).
+* Securely record and transfer arbitrary names (keys).
+* Attach a value (data) to the names (up to 520 bytes, more in the future).
+* Transact namecoins, the digital currency (ℕ, NMC).
+
 Namecoin was the first fork of Bitcoin and still is one of the most innovative altcoins. It was first to implement merged mining and a decentralized DNS. Namecoin squares Zooko's Triangle!
 
 What can it be used for?
 ----------------
 
-Protect free-speech rights online by making the web more resistant to censorship.
-Access websites using the .bit domain (with TLS/SSL).
-Store identity information such as email, GPG key, BTC address, TLS fingerprints, Bitmessage address, etc.
-Human readable Tor .onion names/domains.
-File signatures, Voting, bonds/stocks,/shares, web of trust, escrow and notary services (to be implemented).
+* Protect free-speech rights online by making the web more resistant to censorship.
+* Access websites using the .bit domain (with TLS/SSL).
+* Store identity information such as email, GPG key, BTC address, TLS fingerprints, Bitmessage address, etc.
+* Human readable Tor .onion names/domains.
+* File signatures, Voting, bonds/stocks,/shares, web of trust, escrow and notary services (to be implemented).
 
 ~~For more information, as well as an immediately useable, binary version of~~
 ~~the Namecoin Core software, see https://namecoin.org/?p=download.~~
@@ -42,16 +42,16 @@ Development Process
 -------------------
 
 The `master` branch is regularly built and tested, but is not guaranteed to be
-completely stable. [Tags](https://github.com/bitcoin/bitcoin/tags) are created
-regularly to indicate new official, stable release versions of Bitcoin Core.
+completely stable. [Tags](https://github.com/namecoin/namecoin-core/tags) are created
+regularly to indicate new official, stable release versions of Namecoin Core.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-The developer [mailing list](https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-dev)
+The developer [forum](https://forum.namecoin.info/viewforum.php?f=4)
 should be used to discuss complicated or controversial changes before working
 on a patch set.
 
-Developer IRC can be found on Freenode at #bitcoin-core-dev.
+Developer IRC can be found on Freenode at #namecoin-dev.
 
 Testing
 -------
@@ -82,6 +82,8 @@ not straightforward.
 
 Translations
 ------------
+
+**Translation workflow is not yet set up for Namecoin Core.  For strings which are common to Bitcoin Core, see below.**
 
 Changes to translations as well as new translations can be submitted to
 [Bitcoin Core's Transifex page](https://www.transifex.com/projects/p/bitcoin/).
