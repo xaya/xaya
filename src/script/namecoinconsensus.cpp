@@ -6,6 +6,7 @@
 #include "namecoinconsensus.h"
 
 #include "primitives/transaction.h"
+#include "pubkey.h"
 #include "script/interpreter.h"
 #include "version.h"
 
@@ -60,7 +61,13 @@ inline int set_error(namecoinconsensus_error* ret, namecoinconsensus_error serro
     return 0;
 }
 
-} // anon namespace
+struct ECCryptoClosure
+{
+    ECCVerifyHandle handle;
+};
+
+ECCryptoClosure instance_of_eccryptoclosure;
+}
 
 int namecoinconsensus_verify_script(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen,
                                     const unsigned char *txTo        , unsigned int txToLen,

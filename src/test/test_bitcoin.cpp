@@ -15,6 +15,7 @@
 #include "pubkey.h"
 #include "random.h"
 #include "txdb.h"
+#include "txmempool.h"
 #include "ui_interface.h"
 #include "util.h"
 #ifdef ENABLE_WALLET
@@ -114,7 +115,8 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
 CBlock
 TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
-    CBlockTemplate *pblocktemplate = CreateNewBlock(scriptPubKey);
+    const CChainParams& chainparams = Params();
+    CBlockTemplate *pblocktemplate = CreateNewBlock(chainparams, scriptPubKey);
     CBlock& block = pblocktemplate->block;
 
     // Replace mempool-selected txns with just coinbase plus passed-in txns:
@@ -125,10 +127,10 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
     unsigned int extraNonce = 0;
     IncrementExtraNonce(&block, chainActive.Tip(), extraNonce);
 
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params(CBaseChainParams::REGTEST).GetConsensus())) ++block.nNonce;
+    while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
 
     CValidationState state;
-    ProcessNewBlock(state, NULL, &block, true, NULL);
+    ProcessNewBlock(state, chainparams, NULL, &block, true, NULL);
 
     CBlock result = block;
     delete pblocktemplate;
@@ -137,6 +139,12 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
 
 TestChain100Setup::~TestChain100Setup()
 {
+}
+
+
+CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(CMutableTransaction &tx, CTxMemPool *pool) {
+    return CTxMemPoolEntry(tx, nFee, nTime, dPriority, nHeight,
+                           pool ? pool->HasNoInputsOf(tx) : hadNoDependencies);
 }
 
 void Shutdown(void* parg)
