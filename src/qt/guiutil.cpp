@@ -685,7 +685,10 @@ boost::filesystem::path static GetAutostartDir()
 
 boost::filesystem::path static GetAutostartFilePath()
 {
-    return GetAutostartDir() / "namecoin.desktop";
+    std::string chain = ChainNameFromCommandLine();
+    if (chain == CBaseChainParams::MAIN)
+        return GetAutostartDir() / "namecoin.desktop";
+    return GetAutostartDir() / strprintf("namecoin-%s.lnk", chain);
 }
 
 bool GetStartOnSystemStartup()

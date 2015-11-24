@@ -671,10 +671,11 @@ bool CheckFinalTx(const CTransaction &tx, int flags)
     // IsFinalTx() with one more than chainActive.Height().
     const int nBlockHeight = chainActive.Height() + 1;
 
-    // Timestamps on the other hand don't get any special treatment,
-    // because we can't know what timestamp the next block will have,
-    // and there aren't timestamp applications where it matters.
-    // However this changes once median past time-locks are enforced:
+    // BIP113 will require that time-locked transactions have nLockTime set to
+    // less than the median time of the previous block they're contained in.
+    // When the next block is created its previous block will be the current
+    // chain tip, so we use that to calculate the median time passed to
+    // IsFinalTx() if LOCKTIME_MEDIAN_TIME_PAST is set.
     const int64_t nBlockTime = (flags & LOCKTIME_MEDIAN_TIME_PAST)
                              ? chainActive.Tip()->GetMedianTimePast()
                              : GetAdjustedTime();
@@ -4409,6 +4410,12 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             return error("message inv size() = %u", vInv.size());
         }
 
+        bool fBlocksOnly = GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY);
+
+        // Allow whitelisted peers to send data other than blocks in blocks only mode if whitelistalwaysrelay is true
+        if (pfrom->fWhitelisted && GetBoolArg("-whitelistalwaysrelay", DEFAULT_WHITELISTALWAYSRELAY))
+            fBlocksOnly = false;
+
         LOCK(cs_main);
 
         std::vector<CInv> vToFetch;
@@ -4422,9 +4429,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
             bool fAlreadyHave = AlreadyHave(inv);
             LogPrint("net", "got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->id);
-
-            if (!fAlreadyHave && !fImporting && !fReindex && inv.type != MSG_BLOCK && !GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY))
-                pfrom->AskFor(inv);
 
             if (inv.type == MSG_BLOCK) {
                 UpdateBlockAvailability(pfrom->GetId(), inv.hash);
@@ -4448,6 +4452,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                     }
                     LogPrint("net", "getheaders (%d) %s to peer=%d\n", pindexBestHeader->nHeight, inv.hash.ToString(), pfrom->id);
                 }
+            }
+            else
+            {
+                if (fBlocksOnly)
+                    LogPrint("net", "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->id);
+                else if (!fAlreadyHave && !fImporting && !fReindex)
+                    pfrom->AskFor(inv);
             }
 
             // Track requests for our stuff
@@ -4594,6 +4605,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
     else if (strCommand == "tx")
     {
+        // Stop processing the transaction early if
+        // We are in blocks only mode and peer is either not whitelisted or whitelistalwaysrelay is off
+        if (GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY) && (!pfrom->fWhitelisted || !GetBoolArg("-whitelistalwaysrelay", DEFAULT_WHITELISTALWAYSRELAY)))
+        {
+            LogPrint("net", "transaction sent in violation of protocol peer=%d\n", pfrom->id);
+            return true;
+        }
+
         vector<uint256> vWorkQueue;
         vector<uint256> vEraseQueue;
         CTransaction tx;
