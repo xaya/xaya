@@ -11,6 +11,7 @@
 #include "consensus/validation.h"
 #include "core_io.h"
 #include "main.h"
+#include "policy/policy.h"
 #include "primitives/transaction.h"
 #include "rpcserver.h"
 #include "streams.h"
@@ -610,7 +611,7 @@ UniValue verifychain(const UniValue& params, bool fHelp)
     if (params.size() > 1)
         nCheckDepth = params[1].get_int();
 
-    return CVerifyDB().VerifyDB(pcoinsTip, nCheckLevel, nCheckDepth);
+    return CVerifyDB().VerifyDB(Params(), pcoinsTip, nCheckLevel, nCheckDepth);
 }
 
 /** Implementation of IsSuperMajority with better feedback */
@@ -878,7 +879,7 @@ UniValue invalidateblock(const UniValue& params, bool fHelp)
     }
 
     if (state.IsValid()) {
-        ActivateBestChain(state);
+        ActivateBestChain(state, Params());
     }
 
     if (!state.IsValid()) {
@@ -917,7 +918,7 @@ UniValue reconsiderblock(const UniValue& params, bool fHelp)
     }
 
     if (state.IsValid()) {
-        ActivateBestChain(state);
+        ActivateBestChain(state, Params());
     }
 
     if (!state.IsValid()) {

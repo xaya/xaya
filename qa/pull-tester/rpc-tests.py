@@ -115,6 +115,7 @@ testScriptsExt = [
     'p2p-acceptblock.py',
     'mempool_packages.py',
     'maxuploadtarget.py',
+    'replace-by-fee.py',
 ]
 
 #Enable ZMQ tests

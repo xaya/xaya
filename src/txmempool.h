@@ -420,6 +420,11 @@ public:
      */
     bool CalculateMemPoolAncestors(const CTxMemPoolEntry &entry, setEntries &setAncestors, uint64_t limitAncestorCount, uint64_t limitAncestorSize, uint64_t limitDescendantCount, uint64_t limitDescendantSize, std::string &errString, bool fSearchForParents = true);
 
+    /** Populate setDescendants with all in-mempool descendants of hash.
+     *  Assumes that setDescendants includes all in-mempool descendants of anything
+     *  already in it.  */
+    void CalculateDescendants(txiter it, setEntries &setDescendants);
+
     /** The minimum fee to get into the mempool, which may itself not be enough
       *  for larger-sized transactions.
       *  The minReasonableRelayFee constructor arg is used to bound the time it
@@ -454,8 +459,20 @@ public:
 
     bool lookup(uint256 hash, CTransaction& result) const;
 
+    /** Estimate fee rate needed to get into the next nBlocks
+     *  If no answer can be given at nBlocks, return an estimate
+     *  at the lowest number of blocks where one can be given
+     */
+    CFeeRate estimateSmartFee(int nBlocks, int *answerFoundAtBlocks = NULL) const;
+
     /** Estimate fee rate needed to get into the next nBlocks */
     CFeeRate estimateFee(int nBlocks) const;
+
+    /** Estimate priority needed to get into the next nBlocks
+     *  If no answer can be given at nBlocks, return an estimate
+     *  at the lowest number of blocks where one can be given
+     */
+    double estimateSmartPriority(int nBlocks, int *answerFoundAtBlocks = NULL) const;
 
     /** Estimate priority needed to get into the next nBlocks */
     double estimatePriority(int nBlocks) const;
@@ -493,10 +510,6 @@ private:
     void UpdateForRemoveFromMempool(const setEntries &entriesToRemove);
     /** Sever link between specified transaction and direct children. */
     void UpdateChildrenForRemoval(txiter entry);
-    /** Populate setDescendants with all in-mempool descendants of hash.
-     *  Assumes that setDescendants includes all in-mempool descendants of anything
-     *  already in it.  */
-    void CalculateDescendants(txiter it, setEntries &setDescendants);
 
     /** Before calling removeUnchecked for a given transaction,
      *  UpdateForRemoveFromMempool must be called on the entire (dependent) set
