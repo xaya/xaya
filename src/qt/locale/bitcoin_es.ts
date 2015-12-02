@@ -2911,8 +2911,8 @@
         <translation>Poner en lista blanca a los equipos que se conecten desde la máscara de subred o dirección IP especificada. Se puede especificar múltiples veces.</translation>
     </message>
     <message>
-        <source>(default: 1)</source>
-        <translation>(predeterminado: 1)</translation>
+        <source>-maxmempool must be at least %d MB</source>
+        <translation>-maxmempool debe ser por lo menos de %d MB</translation>
     </message>
     <message>
         <source>&lt;category&gt; can be:</source>
@@ -3127,12 +3127,12 @@
         <translation>Intento de recuperar claves privadas de un wallet.dat corrupto</translation>
     </message>
     <message>
-        <source>Cannot resolve -whitebind address: '%s'</source>
-        <translation>No se puede resolver -whitebind address: '%s'</translation>
+        <source>Automatically create Tor hidden service (default: %d)</source>
+        <translation>Automáticamente crea el servicio Tor oculto (por defecto: %d)</translation>
     </message>
     <message>
-        <source>Choose data directory on startup (default: 0)</source>
-        <translation>Elegir directorio de datos al iniciar (predeterminado: 0)</translation>
+        <source>Cannot resolve -whitebind address: '%s'</source>
+        <translation>No se puede resolver -whitebind address: '%s'</translation>
     </message>
     <message>
         <source>Connect through SOCKS5 proxy</source>
@@ -3219,20 +3219,8 @@
         <translation>Mandar transacciones como comisión-cero si es posible (por defecto: %u)</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>Establecer los certificados raíz SSL para solicitudes de pago (predeterminado: -system-)</translation>
-    </message>
-    <message>
-        <source>Set language, for example "de_DE" (default: system locale)</source>
-        <translation>Establecer el idioma, por ejemplo, "es_ES" (predeterminado: configuración regional del sistema)</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>Muestra todas las opciones de depuración (uso: --help -help-debug)</translation>
-    </message>
-    <message>
-        <source>Show splash screen on startup (default: 1)</source>
-        <translation>Mostrar pantalla de bienvenida en el inicio (predeterminado: 1)</translation>
     </message>
     <message>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
@@ -3241,10 +3229,6 @@
     <message>
         <source>Signing transaction failed</source>
         <translation>Transacción falló</translation>
-    </message>
-    <message>
-        <source>Start minimized</source>
-        <translation>Arrancar minimizado</translation>
     </message>
     <message>
         <source>The transaction amount is too small to pay the fee</source>
@@ -3269,10 +3253,6 @@
     <message>
         <source>Transaction too large</source>
         <translation>Transacción demasiado grande</translation>
-    </message>
-    <message>
-        <source>UI Options:</source>
-        <translation>Opciones de interfaz de usuario</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>

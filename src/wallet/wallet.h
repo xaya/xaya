@@ -36,8 +36,8 @@ extern CAmount maxTxFee;
 extern unsigned int nTxConfirmTarget;
 extern bool bSpendZeroConfChange;
 extern bool fSendFreeTransactions;
-extern bool fPayAtLeastCustomFee;
 
+static const unsigned int DEFAULT_KEYPOOL_SIZE = 100;
 //! -paytxfee default
 static const CAmount DEFAULT_TRANSACTION_FEE = 0;
 //! -paytxfee will warn if called with a higher fee than this amount (in satoshis) per KB
@@ -48,12 +48,17 @@ static const CAmount DEFAULT_TRANSACTION_MINFEE = 1000;
 static const CAmount DEFAULT_TRANSACTION_MAXFEE = 0.1 * COIN;
 //! minimum change amount
 static const CAmount MIN_CHANGE = CENT;
+//! Default for -spendzeroconfchange
+static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
+//! Default for -sendfreetransactions
+static const bool DEFAULT_SEND_FREE_TRANSACTIONS = false;
 //! -txconfirmtarget default
 static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 2;
 //! -maxtxfee will warn if called with a higher fee than this amount (in satoshis)
 static const CAmount nHighTransactionMaxFeeWarning = 100 * nHighTransactionFeeWarning;
 //! Largest (in bytes) free transaction we're willing to create
 static const unsigned int MAX_FREE_TRANSACTION_CREATE_SIZE = 1000;
+static const bool DEFAULT_WALLETBROADCAST = true;
 
 class CAccountingEntry;
 class CBlockIndex;
@@ -421,6 +426,10 @@ private:
     TxSpends mapTxSpends;
     void AddToSpends(const COutPoint& outpoint, const uint256& wtxid);
     void AddToSpends(const uint256& wtxid);
+
+    /* Mark a transaction (and its in-wallet descendants) as conflicting with a particular block. */
+    void MarkConflicted(const uint256& hashBlock, const uint256& hashTx);
+
 
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
 

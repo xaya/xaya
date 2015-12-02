@@ -222,7 +222,15 @@
 </context>
 <context>
     <name>BanTableModel</name>
-    </context>
+    <message>
+        <source>IP/Netmask</source>
+        <translation>IP/Maska Sieci</translation>
+    </message>
+    <message>
+        <source>Banned Until</source>
+        <translation>Blokada do</translation>
+    </message>
+</context>
 <context>
     <name>BitcoinGUI</name>
     <message>
@@ -1068,6 +1076,18 @@
         <translation>Port proxy (np. 9050)</translation>
     </message>
     <message>
+        <source>IPv4</source>
+        <translation>IPv4</translation>
+    </message>
+    <message>
+        <source>IPv6</source>
+        <translation>IPv6</translation>
+    </message>
+    <message>
+        <source>Tor</source>
+        <translation>Tor</translation>
+    </message>
+    <message>
         <source>&amp;Window</source>
         <translation>&amp;Okno</translation>
     </message>
@@ -1454,6 +1474,10 @@
         <translation>&amp;Węzły</translation>
     </message>
     <message>
+        <source>Banned peers</source>
+        <translation>Blokowane węzły</translation>
+    </message>
+    <message>
         <source>Select a peer to view detailed information.</source>
         <translation>Wybierz węzeł żeby zobaczyć szczegóły.</translation>
     </message>
@@ -1542,6 +1566,14 @@
         <translation>Wyczyść konsolę</translation>
     </message>
     <message>
+        <source>Ban Node for</source>
+        <translation>Blokuj węzeł na okres</translation>
+    </message>
+    <message>
+        <source>&amp;Unban Node</source>
+        <translation>Odblokuj węzeł</translation>
+    </message>
+    <message>
         <source>Welcome to the Bitcoin Core RPC console.</source>
         <translation>Witaj w konsoli Bitcoin Core RPC.</translation>
     </message>
@@ -1584,6 +1616,14 @@
     <message>
         <source>Outbound</source>
         <translation>Wyjściowy</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Tak</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Nie</translation>
     </message>
     <message>
         <source>Unknown</source>
@@ -1980,6 +2020,10 @@
     <message>
         <source>Payment request expired.</source>
         <translation>Żądanie płatności upłynęło.</translation>
+    </message>
+    <message>
+        <source>Pay only the required fee of %1</source>
+        <translation>Zapłać tylko wymaganą opłatę %1</translation>
     </message>
     <message numerus="yes">
         <source>Estimated to begin confirmation within %n block(s).</source>
@@ -2828,10 +2872,6 @@
         <translation>Dodawaj do białej listy węzły łączące się z podanej maski sieciowej lub adresu IP. Może być określona kilka razy.</translation>
     </message>
     <message>
-        <source>(default: 1)</source>
-        <translation>(domyślnie: 1)</translation>
-    </message>
-    <message>
         <source>&lt;category&gt; can be:</source>
         <translation>&lt;category&gt; mogą być:</translation>
     </message>
@@ -3040,10 +3080,6 @@
         <translation>Nie można rozwiązać adresu -whitebind: '%s'</translation>
     </message>
     <message>
-        <source>Choose data directory on startup (default: 0)</source>
-        <translation>Wybierz folder danych przy starcie (domyślnie: 0)</translation>
-    </message>
-    <message>
         <source>Connect through SOCKS5 proxy</source>
         <translation>Połącz przez SOCKS5 proxy</translation>
     </message>
@@ -3116,20 +3152,8 @@
         <translation>Wyślij bez opłaty jeżeli to możliwe (domyślnie: %u)</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>Ustaw certyfikaty główne SSL dla żądań płatności (domyślnie: -system-)</translation>
-    </message>
-    <message>
-        <source>Set language, for example "de_DE" (default: system locale)</source>
-        <translation>Ustaw Język, na przykład "pl_PL" (domyślnie: systemowy)</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>Pokaż wszystkie opcje odpluskwiania (użycie: --help -help-debug)</translation>
-    </message>
-    <message>
-        <source>Show splash screen on startup (default: 1)</source>
-        <translation>Pokazuj okno powitalne przy starcie (domyślnie: 1)</translation>
     </message>
     <message>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
@@ -3138,10 +3162,6 @@
     <message>
         <source>Signing transaction failed</source>
         <translation>Podpisywanie transakcji nie powiodło się</translation>
-    </message>
-    <message>
-        <source>Start minimized</source>
-        <translation>Uruchom zminimalizowany</translation>
     </message>
     <message>
         <source>The transaction amount is too small to pay the fee</source>
@@ -3166,10 +3186,6 @@
     <message>
         <source>Transaction too large</source>
         <translation>Transakcja zbyt duża</translation>
-    </message>
-    <message>
-        <source>UI Options:</source>
-        <translation>Opcje UI</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>

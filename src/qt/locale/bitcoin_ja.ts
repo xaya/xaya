@@ -2737,6 +2737,10 @@
         <translation>取引 ID をコピー</translation>
     </message>
     <message>
+        <source>Copy raw transaction</source>
+        <translation>生トランザクションをコピー</translation>
+    </message>
+    <message>
         <source>Edit label</source>
         <translation>ラベルの編集</translation>
     </message>
@@ -2996,10 +3000,6 @@
         <translation>与えられたネットマスクやIPアドレスから接続を行う、ホワイトリストのピア。複数回指定できます。</translation>
     </message>
     <message>
-        <source>(default: 1)</source>
-        <translation>(デフォルト: 1)</translation>
-    </message>
-    <message>
         <source>-maxmempool must be at least %d MB</source>
         <translation>-maxmempoolは最低でも %d MB必要です</translation>
     </message>
@@ -3257,16 +3257,20 @@
         <translation>最優良のチェインを有効化しています...</translation>
     </message>
     <message>
+        <source>Always relay transactions received from whitelisted peers (default: %d)</source>
+        <translation>ホワイトリストにあるピアから受け取ったトランザクションを常にリレーする (初期値: %d)</translation>
+    </message>
+    <message>
         <source>Attempt to recover private keys from a corrupt wallet.dat on startup</source>
         <translation>起動時に壊れた wallet.dat から秘密鍵を復旧することを試す</translation>
     </message>
     <message>
-        <source>Cannot resolve -whitebind address: '%s'</source>
-        <translation>-whitebind アドレス '%s' を解決できません</translation>
+        <source>Automatically create Tor hidden service (default: %d)</source>
+        <translation>Tor秘匿サービスを自動的に作成する (初期値: %d)</translation>
     </message>
     <message>
-        <source>Choose data directory on startup (default: 0)</source>
-        <translation>起動時にデータ ディレクトリを選ぶ (初期値: 0)</translation>
+        <source>Cannot resolve -whitebind address: '%s'</source>
+        <translation>-whitebind アドレス '%s' を解決できません</translation>
     </message>
     <message>
         <source>Connect through SOCKS5 proxy</source>
@@ -3357,20 +3361,8 @@
         <translation>可能な場合には手数料ゼロのトランザクションとしてトランザクションを送信する (初期値: %u)</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>支払いリクエスト用にSSLルート証明書を設定する（デフォルト：-system-）</translation>
-    </message>
-    <message>
-        <source>Set language, for example "de_DE" (default: system locale)</source>
-        <translation>言語設定 例: "de_DE" (初期値: システムの言語)</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>すべてのデバッグオプションを表示する (使い方: --help -help-debug)</translation>
-    </message>
-    <message>
-        <source>Show splash screen on startup (default: 1)</source>
-        <translation>起動時にスプラッシュ画面を表示する (初期値: 1)</translation>
     </message>
     <message>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
@@ -3381,16 +3373,20 @@
         <translation>取引の署名に失敗しました</translation>
     </message>
     <message>
-        <source>Start minimized</source>
-        <translation>最小化された状態で起動する</translation>
-    </message>
-    <message>
         <source>The transaction amount is too small to pay the fee</source>
         <translation>トランザクションの金額が小さすぎて手数料を支払えません</translation>
     </message>
     <message>
         <source>This is experimental software.</source>
         <translation>これは実験的なソフトウェアです。</translation>
+    </message>
+    <message>
+        <source>Tor control port password (default: empty)</source>
+        <translation>Tor管理ポートのパスワード (初期値: 空文字)</translation>
+    </message>
+    <message>
+        <source>Tor control port to use if onion listening enabled (default: %s)</source>
+        <translation>Onion のリッスンが有効になっている場合に使用するTor管理ポート (初期値: %s)</translation>
     </message>
     <message>
         <source>Transaction amount too small</source>
@@ -3407,10 +3403,6 @@
     <message>
         <source>Transaction too large</source>
         <translation>取引が大き過ぎます</translation>
-    </message>
-    <message>
-        <source>UI Options:</source>
-        <translation>UIオプション:</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>
@@ -3431,6 +3423,10 @@
     <message>
         <source>Warning</source>
         <translation>警告</translation>
+    </message>
+    <message>
+        <source>Whether to operate in a blocks only mode (default: %u)</source>
+        <translation>ブロック限定モードにおいて動作を行うかどうか (初期値: %u)</translation>
     </message>
     <message>
         <source>Zapping all transactions from wallet...</source>

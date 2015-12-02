@@ -6,15 +6,8 @@
 # Exercise the wallet keypool, and interaction with wallet encryption/locking
 
 # Add python-bitcoinrpc to module search path:
-import os
-import sys
 
-import json
-import shutil
-import subprocess
-import tempfile
-import traceback
-
+from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 from test_framework import auxpow
 
@@ -40,58 +33,61 @@ def check_array_result(object_array, to_match, expected):
     if num_matched == 0:
         raise AssertionError("No objects matched %s"%(str(to_match)))
 
-def run_test(nodes, tmpdir):
-    # Encrypt wallet and wait to terminate
-    nodes[0].encryptwallet('test')
-    bitcoind_processes[0].wait()
-    # Restart node 0
-    nodes[0] = start_node(0, tmpdir)
-    # Keep creating keys
-    addr = nodes[0].getnewaddress()
-    try:
+class KeyPoolTest(BitcoinTestFramework):
+
+    def run_test(self):
+        nodes = self.nodes
+        # Encrypt wallet and wait to terminate
+        nodes[0].encryptwallet('test')
+        bitcoind_processes[0].wait()
+        # Restart node 0
+        nodes[0] = start_node(0, self.options.tmpdir)
+        # Keep creating keys
         addr = nodes[0].getnewaddress()
-        raise AssertionError('Keypool should be exhausted after one address')
-    except JSONRPCException,e:
-        assert(e.error['code']==-12)
+        try:
+            addr = nodes[0].getnewaddress()
+            raise AssertionError('Keypool should be exhausted after one address')
+        except JSONRPCException,e:
+            assert(e.error['code']==-12)
 
-    # put three new keys in the keypool
-    nodes[0].walletpassphrase('test', 12000)
-    nodes[0].keypoolrefill(3)
-    nodes[0].walletlock()
+        # put three new keys in the keypool
+        nodes[0].walletpassphrase('test', 12000)
+        nodes[0].keypoolrefill(3)
+        nodes[0].walletlock()
 
-    # drain the keys
-    addr = set()
-    addr.add(nodes[0].getrawchangeaddress())
-    addr.add(nodes[0].getrawchangeaddress())
-    addr.add(nodes[0].getrawchangeaddress())
-    addr.add(nodes[0].getrawchangeaddress())
-    # assert that four unique addresses were returned
-    assert(len(addr) == 4)
-    # the next one should fail
-    try:
-        addr = nodes[0].getrawchangeaddress()
-        raise AssertionError('Keypool should be exhausted after three addresses')
-    except JSONRPCException,e:
-        assert(e.error['code']==-12)
+        # drain the keys
+        addr = set()
+        addr.add(nodes[0].getrawchangeaddress())
+        addr.add(nodes[0].getrawchangeaddress())
+        addr.add(nodes[0].getrawchangeaddress())
+        addr.add(nodes[0].getrawchangeaddress())
+        # assert that four unique addresses were returned
+        assert(len(addr) == 4)
+        # the next one should fail
+        try:
+            addr = nodes[0].getrawchangeaddress()
+            raise AssertionError('Keypool should be exhausted after three addresses')
+        except JSONRPCException,e:
+            assert(e.error['code']==-12)
 
-    # refill keypool with three new addresses
-    nodes[0].walletpassphrase('test', 12000)
-    nodes[0].keypoolrefill(3)
-    nodes[0].walletlock()
+        # refill keypool with three new addresses
+        nodes[0].walletpassphrase('test', 12000)
+        nodes[0].keypoolrefill(3)
+        nodes[0].walletlock()
 
-    # drain them by mining
-    nodes[0].generate(1)
-    nodes[0].generate(1)
-    nodes[0].generate(1)
-    nodes[0].generate(1)
-    try:
+        # drain them by mining
         nodes[0].generate(1)
-        raise AssertionError('Keypool should be exhausted after three addesses')
-    except JSONRPCException,e:
-        assert(e.error['code']==-12)
+        nodes[0].generate(1)
+        nodes[0].generate(1)
+        nodes[0].generate(1)
+        try:
+            nodes[0].generate(1)
+            raise AssertionError('Keypool should be exhausted after three addesses')
+        except JSONRPCException,e:
+            assert(e.error['code']==-12)
 
-    # test draining with getauxblock
-    test_auxpow(nodes)
+        # test draining with getauxblock
+        test_auxpow(nodes)
 
 def test_auxpow(nodes):
     """
@@ -165,18 +161,12 @@ def main():
         print("Unexpected exception caught during testing: "+str(sys.exc_info()[0]))
         traceback.print_tb(sys.exc_info()[2])
 
-    if not options.nocleanup:
-        print("Cleaning up")
-        stop_nodes(nodes)
-        wait_bitcoinds()
-        shutil.rmtree(options.tmpdir)
+    def setup_chain(self):
+        print("Initializing test directory "+self.options.tmpdir)
+        initialize_chain(self.options.tmpdir)
 
-    if success:
-        print("Tests successful")
-        sys.exit(0)
-    else:
-        print("Failed")
-        sys.exit(1)
+    def setup_network(self):
+        self.nodes = start_nodes(1, self.options.tmpdir)
 
 if __name__ == '__main__':
-    main()
+    KeyPoolTest().main()

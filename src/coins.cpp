@@ -144,6 +144,11 @@ bool CCoinsViewCache::HaveCoins(const uint256 &txid) const {
     return (it != cacheCoins.end() && !it->second.coins.vout.empty());
 }
 
+bool CCoinsViewCache::HaveCoinsInCache(const uint256 &txid) const {
+    CCoinsMap::const_iterator it = cacheCoins.find(txid);
+    return it != cacheCoins.end();
+}
+
 uint256 CCoinsViewCache::GetBestBlock() const {
     if (hashBlock.IsNull())
         hashBlock = base->GetBestBlock();
@@ -206,6 +211,15 @@ bool CCoinsViewCache::Flush() {
     return fOk;
 }
 
+void CCoinsViewCache::Uncache(const uint256& hash)
+{
+    CCoinsMap::iterator it = cacheCoins.find(hash);
+    if (it != cacheCoins.end() && it->second.flags == 0) {
+        cachedCoinsUsage -= it->second.coins.DynamicMemoryUsage();
+        cacheCoins.erase(it);
+    }
+}
+
 unsigned int CCoinsViewCache::GetCacheSize() const {
     return cacheCoins.size();
 }
@@ -243,8 +257,9 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
     return true;
 }
 
-double CCoinsViewCache::GetPriority(const CTransaction &tx, int nHeight) const
+double CCoinsViewCache::GetPriority(const CTransaction &tx, int nHeight, CAmount &inChainInputValue) const
 {
+    inChainInputValue = 0;
     if (tx.IsCoinBase())
         return 0.0;
     double dResult = 0.0;
@@ -253,8 +268,9 @@ double CCoinsViewCache::GetPriority(const CTransaction &tx, int nHeight) const
         const CCoins* coins = AccessCoins(txin.prevout.hash);
         assert(coins);
         if (!coins->IsAvailable(txin.prevout.n)) continue;
-        if (coins->nHeight < nHeight) {
+        if (coins->nHeight <= nHeight) {
             dResult += coins->vout[txin.prevout.n].nValue * (nHeight-coins->nHeight);
+            inChainInputValue += coins->vout[txin.prevout.n].nValue;
         }
     }
     return tx.ComputePriority(dResult);
