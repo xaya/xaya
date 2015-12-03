@@ -151,8 +151,8 @@ mining with the getblocktemplate protocol to a pool: this will affect you at
 the pool operator's discretion, which must be no later than BIP65 achieving its
 951/1001 status.
 
-Automatically listen on Tor
-----------------------------
+Automatically use Tor hidden services
+-------------------------------------
 
 Starting with Tor version 0.2.7.1 it is possible, through Tor's control socket
 API, to create and destroy 'ephemeral' hidden services programmatically.
@@ -160,8 +160,9 @@ Bitcoin Core has been updated to make use of this.
 
 This means that if Tor is running (and proper authorization is available),
 Bitcoin Core automatically creates a hidden service to listen on, without
-manual configuration. This will positively affect the number of available
-.onion nodes.
+manual configuration. Bitcoin Core will also use Tor automatically to connect
+to other .onion nodes if the control socket can be successfully opened. This
+will positively affect the number of available .onion nodes and their usage.
 
 This new feature is enabled by default if Bitcoin Core is listening, and
 a connection to Tor can be made. It can be configured with the `-listenonion`,
@@ -204,6 +205,33 @@ block validation times that are less than half of what it was before.
 Libsecp256k1 has undergone very extensive testing and validation.
 
 A side effect of this change is that libconsensus no longer depends on OpenSSL.
+
+Direct headers announcement (BIP 130)
+-------------------------------------
+
+Between compatible peers, BIP 130 direct headers announcement is used. This
+means that blocks are advertized by announcing their headers directly, instead
+of just announcing the hash. In a reorganization, all new headers are sent,
+instead of just the new tip. This can often prevent an extra roundtrip before
+the actual block is downloaded.
+
+Negative confirmations and conflict detection
+---------------------------------------------
+
+The wallet will now report a negative number for confirmations that indicates
+how deep in the block chain the conflict is found. For example, if a transaction
+A has 5 confirmations and spends the same input as a wallet transaction B, B
+will be reported as having -5 confirmations. If another wallet transaction C
+spends an output from B, it will also be reported as having -5 confirmations.
+To detect conflicts with historical transactions in the chain a one-time
+`-rescan` may be needed.
+
+Unlike earlier versions, unconfirmed but non-conflicting transactions will never
+get a negative confirmation count. They are not treated as spendable unless
+they're coming from ourself (change) and accepted into our local mempool,
+however. The new "trusted" field in the `listtransactions` RPC output
+indicates whether outputs of an unconfirmed transaction are considered
+spendable.
 
 0.12.0 Change log
 =================

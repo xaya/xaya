@@ -22,6 +22,7 @@ For a description of arguments recognized by test scripts, see
 """
 
 import os
+import time
 import shutil
 import sys
 import subprocess
@@ -46,6 +47,10 @@ ENABLE_COVERAGE=0
 opts = set()
 passOn = ""
 p = re.compile("^--")
+
+bold = ("","")
+if (os.name == 'posix'):
+    bold = ('\033[0m', '\033[1m')
 
 for arg in sys.argv[1:]:
     if arg == '--coverage':
@@ -77,8 +82,9 @@ testScripts = [
     'rawtransactions.py',
     'rest.py',
     'mempool_spendcoinbase.py',
-    'mempool_coinbase_spends.py',
+    'mempool_reorg.py',
     'httpbasics.py',
+    'multi_rpc.py',
     'zapwallettxes.py',
     'proxy_test.py',
     'merkle_blocks.py',
@@ -91,6 +97,9 @@ testScripts = [
     'p2p-fullblocktest.py',
     'blockchain.py',
     'disablewallet.py',
+    'sendheaders.py',
+    'keypool.py',
+    'prioritise_transaction.py',
 
     # auxpow tests
     'getauxblock.py',
@@ -118,7 +127,6 @@ testScriptsExt = [
     'pruning.py',
     'forknotify.py',
     'invalidateblock.py',
-    'keypool.py',
 #    'rpcbind_test.py', #temporary, bug in libevent, see #6655
     'smartfees.py',
     'maxblocksinflight.py',
@@ -139,7 +147,7 @@ def runtests():
 
     if ENABLE_COVERAGE:
         coverage = RPCCoverage()
-        print("Initializing coverage directory at %s" % coverage.dir)
+        print("Initializing coverage directory at %s\n" % coverage.dir)
 
     if(ENABLE_WALLET == 1 and ENABLE_UTILS == 1 and ENABLE_BITCOIND == 1):
         rpcTestDir = buildDir + '/qa/rpc-tests/'
@@ -154,10 +162,12 @@ def runtests():
                     or run_extended
                     or testScripts[i] in opts
                     or re.sub(".py$", "", testScripts[i]) in opts ):
-                print("Running testscript " + testScripts[i] + "...")
 
+                print("Running testscript %s%s%s ..." % (bold[1], testScripts[i], bold[0]))
+                time0 = time.time()
                 subprocess.check_call(
                     rpcTestDir + testScripts[i] + flags, shell=True)
+                print("Duration: %s s\n" % (int(time.time() - time0)))
 
                 # exit if help is called so we print just one set of
                 # instructions
@@ -169,12 +179,14 @@ def runtests():
         for i in range(len(testScriptsExt)):
             if (run_extended or testScriptsExt[i] in opts
                     or re.sub(".py$", "", testScriptsExt[i]) in opts):
+
                 print(
                     "Running 2nd level testscript "
-                    + testScriptsExt[i] + "...")
-
+                    + "%s%s%s ..." % (bold[1], testScriptsExt[i], bold[0]))
+                time0 = time.time()
                 subprocess.check_call(
                     rpcTestDir + testScriptsExt[i] + flags, shell=True)
+                print("Duration: %s s\n" % (int(time.time() - time0)))
 
         if coverage:
             coverage.report_rpc_coverage()

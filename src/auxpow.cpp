@@ -9,6 +9,7 @@
 
 #include "compat/endian.h"
 #include "consensus/consensus.h"
+#include "consensus/merkle.h"
 #include "consensus/validation.h"
 #include "hash.h"
 #include "main.h"
@@ -18,24 +19,6 @@
 #include "utilstrencodings.h"
 
 #include <algorithm>
-
-/* This used to be in CBlock but was removed upstream.  We need it
-   at least for unit testing, thus moved here.  */
-static void
-GetMerkleBranch (const CBlock& block, int nIndex,
-                 std::vector<uint256>& vMerkleBranch)
-{
-  std::vector<uint256> vMerkleTree;
-  block.ComputeMerkleRoot (vMerkleTree);
-  int j = 0;
-  for (int nSize = block.vtx.size (); nSize > 1; nSize = (nSize + 1) / 2)
-    {
-      const int i = std::min (nIndex ^ 1, nSize - 1);
-      vMerkleBranch.push_back (vMerkleTree[j + i]);
-      nIndex >>= 1;
-      j += nSize;
-    }
-}
 
 /* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
    of an enabled (or disabled) wallet.  Always include the code.  */
@@ -61,7 +44,7 @@ int CMerkleTx::SetMerkleBranch(const CBlock& block)
     }
 
     // Fill in merkle branch
-    GetMerkleBranch(block, nIndex, vMerkleBranch);
+    vMerkleBranch = BlockMerkleBranch (block, nIndex);
 
     // Is the tx in a block that's in the main chain
     BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
@@ -74,9 +57,9 @@ int CMerkleTx::SetMerkleBranch(const CBlock& block)
     return chainActive.Height() - pindex->nHeight + 1;
 }
 
-int CMerkleTx::GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const
+int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
 {
-    if (hashBlock.IsNull() || nIndex == -1)
+    if (hashBlock.IsNull())
         return 0;
     AssertLockHeld(cs_main);
 
@@ -89,17 +72,7 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(const CBlockIndex* &pindexRet) const
         return 0;
 
     pindexRet = pindex;
-    return chainActive.Height() - pindex->nHeight + 1;
-}
-
-int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
-{
-    AssertLockHeld(cs_main);
-    int nResult = GetDepthInMainChainINTERNAL(pindexRet);
-    if (nResult == 0 && !mempool.exists(GetHash()))
-        return -1; // Not in chain, not in mempool
-
-    return nResult;
+    return ((nIndex == -1) ? (-1) : 1) * (chainActive.Height() - pindex->nHeight + 1);
 }
 
 int CMerkleTx::GetBlocksToMaturity() const

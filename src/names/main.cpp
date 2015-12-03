@@ -178,6 +178,9 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
 
   BOOST_FOREACH (const valtype& name, unexpired)
     {
+      LogPrint ("names", "unexpired: %s, mempool: %u\n",
+                ValtypeToString (name).c_str (), mapNameRegs.count (name));
+
       const NameTxMap::const_iterator mit = mapNameRegs.find (name);
       if (mit != mapNameRegs.end ())
         {
@@ -196,6 +199,9 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
 
   BOOST_FOREACH (const valtype& name, expired)
     {
+      LogPrint ("names", "expired: %s, mempool: %u\n",
+                ValtypeToString (name).c_str (), mapNameUpdates.count (name));
+
       const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
       if (mit != mapNameUpdates.end ())
         {

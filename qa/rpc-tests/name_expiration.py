@@ -26,6 +26,10 @@ class NameExpirationTest (NameTestFramework):
     else:
       assert txo is None
 
+  def setup_nodes(self):
+    args = ["-debug=names"]
+    return start_nodes(4, self.options.tmpdir, [args] * 4)
+
   def run_test (self):
     NameTestFramework.run_test (self)
 
@@ -104,9 +108,9 @@ class NameExpirationTest (NameTestFramework):
     assert_equal (self.nodes[0].getrawmempool (), [])
     assert_equal (self.nodes[3].getrawmempool (), [])
     data = self.nodes[3].gettransaction (updLong2)
-    assert_equal (data['confirmations'], -1)
+    assert data['confirmations'] < 0
     data = self.nodes[3].gettransaction (renewShort)
-    assert_equal (data['confirmations'], -1)
+    assert data['confirmations'] < 0
 
 if __name__ == '__main__':
   NameExpirationTest ().main ()

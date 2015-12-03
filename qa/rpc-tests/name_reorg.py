@@ -83,7 +83,7 @@ class NameRegistrationTest (NameTestFramework):
     assert_equal (self.nodes[0].getrawmempool (), [])
     assert_equal (self.nodes[3].getrawmempool (), [])
     data = self.nodes[3].gettransaction (txidB)
-    assert_equal (data['confirmations'], -1)
+    assert data['confirmations'] < 0
 
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

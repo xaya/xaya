@@ -15,20 +15,35 @@ txFee = Decimal ("0.001")
 initialBalance = Decimal ("1250")
 zero = Decimal ("0")
 
-newFee = nameFee + txFee
-firstFee = txFee
-updFee = txFee
-
 class NameWalletTest (NameTestFramework):
 
   spentA = zero
   spentB = zero
 
-  # Set paytxfee to some value so that no estimated fees
-  # are used and the amounts are predictable for the tests.
+  # Set paytxfee to an explicitly known value.
   def setup_nodes(self):
     args = ["-paytxfee=%s" % txFee]
     return start_nodes(4, self.options.tmpdir, [args] * 4)
+
+  def getFee (self, ind, txid, extra = zero):
+    """
+    Return and check the fee of a transaction.  There may be an additional
+    fee for the locked coin, and the paytxfee times the tx size.
+    The tx size is queried from the node with the given index by the txid.
+    """
+
+    info = self.nodes[ind].gettransaction (txid)
+    totalFee = -info['fee']
+    assert totalFee >= extra
+
+    absFee = totalFee - extra
+    size = len (info['hex']) / 2
+
+    # See check_fee_amount in wallet.py.
+    assert absFee >= txFee / 1000 * size
+    assert absFee <= txFee / 1000 * (size + 2)
+
+    return totalFee
 
   def checkBalance (self, ind, spent):
     """
@@ -110,12 +125,15 @@ class NameWalletTest (NameTestFramework):
 
     # Register and update a name.  Check changes to the balance.
     newA = self.nodes[2].name_new ("name-a")
+    newFee = self.getFee (2, newA[0], nameFee)
     self.generate (0, 5)
     self.checkBalances (newFee)
     firstA = self.firstupdateName (2, "name-a", newA, "value")
+    firstFee = self.getFee (2, firstA)
     self.generate (0, 10)
     self.checkBalances (firstFee)
     updA = self.nodes[2].name_update ("name-a", "new value")
+    updFee = self.getFee (2, updA)
     self.generate (0, 1)
     self.checkBalances (updFee)
 
@@ -130,16 +148,21 @@ class NameWalletTest (NameTestFramework):
     # Send a name from 1 to 2 by firstupdate and update.
     addrB = self.nodes[3].getnewaddress ()
     newB = self.nodes[2].name_new ("name-b")
+    fee = self.getFee (2, newB[0], nameFee)
     newC = self.nodes[2].name_new ("name-c")
+    fee += self.getFee (2, newC[0], nameFee)
     self.generate (0, 5)
-    self.checkBalances (2 * newFee)
+    self.checkBalances (fee)
     firstB = self.firstupdateName (2, "name-b", newB, "value", addrB)
+    fee = self.getFee (2, firstB)
     firstC = self.firstupdateName (2, "name-c", newC, "value")
+    fee += self.getFee (2, firstC)
     self.generate (0, 10)
-    self.checkBalances (2 * firstFee)
+    self.checkBalances (fee)
     updC = self.nodes[2].name_update ("name-c", "new value", addrB)
+    fee = self.getFee (2, updC)
     self.generate (0, 1)
-    self.checkBalances (updFee)
+    self.checkBalances (fee)
 
     # Check the receiving transactions on B.
     self.checkTx (3, firstB, zero, None,
@@ -178,13 +201,15 @@ class NameWalletTest (NameTestFramework):
     except JSONRPCException as exc:
       assert_equal (exc.error['code'], -5)
 
-    self.nodes[3].sendtoname ("destination", 10)
+    txid = self.nodes[3].sendtoname ("destination", 10)
+    fee = self.getFee (3, txid)
     self.generate (0, 1)
-    self.checkBalances (-10, 10 + txFee)
+    self.checkBalances (-10, 10 + fee)
 
-    self.nodes[3].sendtoname ("destination", 10, "foo", "bar", True)
+    txid = self.nodes[3].sendtoname ("destination", 10, "foo", "bar", True)
+    fee = self.getFee (3, txid)
     self.generate (0, 1)
-    self.checkBalances (-10 + txFee, 10)
+    self.checkBalances (-10 + fee, 10)
 
     self.generate (0, 30)
     self.checkName (3, "destination", "value", None, True)

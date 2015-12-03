@@ -67,6 +67,9 @@ def check_json_precision():
     if satoshis != 2000000000000003:
         raise RuntimeError("JSON encode/decode loses precision")
 
+def count_bytes(hex_string):
+    return len(bytearray.fromhex(hex_string))
+
 def sync_blocks(rpc_connections, wait=1):
     """
     Wait until everybody has the same block count
@@ -231,8 +234,9 @@ def start_node(i, dirname, extra_args=[], rpchost=None, timewait=None, binary=No
     datadir = os.path.join(dirname, "node"+str(i))
     if binary is None:
         binary = os.getenv("NAMECOIND", "namecoind")
-    args = [ binary, "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest" ]
-    args.extend(extra_args)
+    # RPC tests still depend on free transactions
+    args = [ binary, "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest", "-blockprioritysize=50000" ]
+    if extra_args is not None: args.extend(extra_args)
     args.extend(base_node_args(i))
     bitcoind_processes[i] = subprocess.Popen(args)
     devnull = open(os.devnull, "w")
@@ -419,3 +423,6 @@ def assert_raises(exc, fun, *args, **kwds):
         raise AssertionError("Unexpected exception raised: "+type(e).__name__)
     else:
         raise AssertionError("No exception raised")
+
+def satoshi_round(amount):
+    return  Decimal(amount).quantize(Decimal('0.00000001'), rounding=ROUND_DOWN)

@@ -2055,6 +2055,10 @@ Var vänlig och försök igen.</translation>
         <translation>Kopiera växel</translation>
     </message>
     <message>
+        <source>Total Amount %1</source>
+        <translation>Total summa %1</translation>
+    </message>
+    <message>
         <source>or</source>
         <translation>eller</translation>
     </message>
@@ -2085,6 +2089,10 @@ Var vänlig och försök igen.</translation>
     <message>
         <source>Payment request expired.</source>
         <translation>Betalningsbegäran löpte ut.</translation>
+    </message>
+    <message>
+        <source>Pay only the required fee of %1</source>
+        <translation>Betala endast den nödvändiga avgiften på %1</translation>
     </message>
     <message numerus="yes">
         <source>Estimated to begin confirmation within %n block(s).</source>
@@ -2718,6 +2726,10 @@ Var vänlig och försök igen.</translation>
         <translation>Kopiera transaktions ID</translation>
     </message>
     <message>
+        <source>Copy raw transaction</source>
+        <translation>Kopiera rå transaktion</translation>
+    </message>
+    <message>
         <source>Edit label</source>
         <translation>Ändra etikett</translation>
     </message>
@@ -2977,10 +2989,6 @@ Var vänlig och försök igen.</translation>
         <translation>Vitlista klienter som ansluter från angivna nätmasker eller IP-adresser. Kan specificeras flera gånger.</translation>
     </message>
     <message>
-        <source>(default: 1)</source>
-        <translation>(förvalt: 1)</translation>
-    </message>
-    <message>
         <source>-maxmempool must be at least %d MB</source>
         <translation>-maxmempool måste vara minst %d MB</translation>
     </message>
@@ -3177,6 +3185,10 @@ Var vänlig och försök igen.</translation>
         <translation>Exekvera kommando när ett relevant meddelande är mottagen eller när vi ser en väldigt lång förgrening (%s i cmd är utbytt med ett meddelande)</translation>
     </message>
     <message>
+        <source>Fees (in %s/kB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)</source>
+        <translation>Avgifter (i %s/kB) mindre än detta betraktas som nollavgift för vidarebefordran, mining och transaktionsskapande (förvalt: %s)</translation>
+    </message>
+    <message>
         <source>If paytxfee is not set, include enough fee so transactions begin confirmation on average within n blocks (default: %u)</source>
         <translation>Om paytxfee inte är satt, inkludera tillräcklig avgift så att transaktionen börjar att konfirmeras inom n blocks (förvalt: %u)</translation>
     </message>
@@ -3229,12 +3241,20 @@ Var vänlig och försök igen.</translation>
         <translation>Aktiverar bästa kedjan...</translation>
     </message>
     <message>
-        <source>Cannot resolve -whitebind address: '%s'</source>
-        <translation>Kan inte matcha -whitebind adress: '%s'</translation>
+        <source>Always relay transactions received from whitelisted peers (default: %d)</source>
+        <translation>Vidarebefordra alltid transaktioner från vitlistade noder (förval: %d)</translation>
     </message>
     <message>
-        <source>Choose data directory on startup (default: 0)</source>
-        <translation>Välj datakatalog vid uppstart (förvalt: 0)</translation>
+        <source>Attempt to recover private keys from a corrupt wallet.dat on startup</source>
+        <translation>Försök att rädda privata nycklar från en korrupt wallet.dat vid uppstart</translation>
+    </message>
+    <message>
+        <source>Automatically create Tor hidden service (default: %d)</source>
+        <translation>Skapa automatiskt dold tjänst i Tor (förval: %d)</translation>
+    </message>
+    <message>
+        <source>Cannot resolve -whitebind address: '%s'</source>
+        <translation>Kan inte matcha -whitebind adress: '%s'</translation>
     </message>
     <message>
         <source>Connect through SOCKS5 proxy</source>
@@ -3251,6 +3271,10 @@ Var vänlig och försök igen.</translation>
     <message>
         <source>Error reading from database, shutting down.</source>
         <translation>Fel vid läsning från databas, avslutar.</translation>
+    </message>
+    <message>
+        <source>Imports blocks from external blk000??.dat file on startup</source>
+        <translation>Importera block från extern blk000??.dat-fil vid uppstart</translation>
     </message>
     <message>
         <source>Information</source>
@@ -3309,6 +3333,10 @@ Var vänlig och försök igen.</translation>
         <translation>Minskar -maxconnections från %d till %d, på grund av systembegränsningar.</translation>
     </message>
     <message>
+        <source>Rescan the block chain for missing wallet transactions on startup</source>
+        <translation>Sök i blockkedjan efter saknade plånbokstransaktioner vid uppstart</translation>
+    </message>
+    <message>
         <source>Send trace/debug info to console instead of debug.log file</source>
         <translation>Skicka trace-/debuginformation till terminalen istället för till debug.log</translation>
     </message>
@@ -3317,20 +3345,8 @@ Var vänlig och försök igen.</translation>
         <translation>Sänd transaktioner som nollavgiftstransaktioner om möjligt (förvalt: %u)</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>Sätt SSL root-certifikat för betalningsbegäran (förvalt: -system-)</translation>
-    </message>
-    <message>
-        <source>Set language, for example "de_DE" (default: system locale)</source>
-        <translation>Ändra språk, till exempel "de_DE" (förvalt: systemets språk)</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>Visa alla avlusningsalternativ (använd: --help -help-debug)</translation>
-    </message>
-    <message>
-        <source>Show splash screen on startup (default: 1)</source>
-        <translation>Visa startbilden vid uppstart (förvalt: 1)</translation>
     </message>
     <message>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
@@ -3341,16 +3357,20 @@ Var vänlig och försök igen.</translation>
         <translation>Signering av transaktion misslyckades</translation>
     </message>
     <message>
-        <source>Start minimized</source>
-        <translation>Starta som minimerad</translation>
-    </message>
-    <message>
         <source>The transaction amount is too small to pay the fee</source>
         <translation>Transaktionen är för liten för att betala avgiften</translation>
     </message>
     <message>
         <source>This is experimental software.</source>
         <translation>Detta är experimentmjukvara.</translation>
+    </message>
+    <message>
+        <source>Tor control port password (default: empty)</source>
+        <translation>Lösenord för Tor-kontrollport (förval: inget)</translation>
+    </message>
+    <message>
+        <source>Tor control port to use if onion listening enabled (default: %s)</source>
+        <translation>Tor-kontrollport att använda om onion är aktiverat (förval: %s)</translation>
     </message>
     <message>
         <source>Transaction amount too small</source>
@@ -3369,12 +3389,12 @@ Var vänlig och försök igen.</translation>
         <translation>Transaktionen är för stor</translation>
     </message>
     <message>
-        <source>UI Options:</source>
-        <translation>UI Alternativ:</translation>
-    </message>
-    <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>
         <translation>Det går inte att binda till %s på den här datorn (bind returnerade felmeddelande %s)</translation>
+    </message>
+    <message>
+        <source>Upgrade wallet to latest format on startup</source>
+        <translation>Uppgradera plånbok till senaste formatet vid uppstart</translation>
     </message>
     <message>
         <source>Username for JSON-RPC connections</source>
@@ -3387,6 +3407,10 @@ Var vänlig och försök igen.</translation>
     <message>
         <source>Warning</source>
         <translation>Varning</translation>
+    </message>
+    <message>
+        <source>Whether to operate in a blocks only mode (default: %u)</source>
+        <translation>Ska allt göras i endast block-läge (förval: %u)</translation>
     </message>
     <message>
         <source>Zapping all transactions from wallet...</source>

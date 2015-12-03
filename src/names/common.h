@@ -78,7 +78,7 @@ public:
     READWRITE (value);
     READWRITE (nHeight);
     READWRITE (prevout);
-    READWRITE (addr);
+    READWRITE (*(CScriptBase*)(&addr));
   }
 
   /* Compare for equality.  */

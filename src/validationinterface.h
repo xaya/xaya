@@ -28,6 +28,8 @@ void UnregisterValidationInterface(CValidationInterface* pwalletIn);
 void UnregisterAllValidationInterfaces();
 /** Push an updated transaction to all registered wallets */
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL);
+/** Notify about a name conflict.  */
+void NameConflict(const CTransaction& tx, const uint256& hashBlock);
 
 class CValidationInterface {
 protected:
@@ -40,6 +42,7 @@ protected:
     virtual void BlockChecked(const CBlock&, const CValidationState&) {}
     virtual void GetScriptForMining(boost::shared_ptr<CReserveScript>&) {};
     virtual void ResetRequestCount(const uint256 &hash) {};
+    virtual void NameConflict(const CTransaction &tx, const uint256& hashBlock) {}
     friend void ::RegisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterAllValidationInterfaces();
@@ -50,6 +53,8 @@ struct CMainSignals {
     boost::signals2::signal<void (const CBlockIndex *)> UpdatedBlockTip;
     /** Notifies listeners of updated transaction data (transaction, and optionally the block it is found in. */
     boost::signals2::signal<void (const CTransaction &, const CBlock *)> SyncTransaction;
+    /** Notifies listeners of name operation conflicts due to expired/unexpired names.  */
+    boost::signals2::signal<void (const CTransaction &, const uint256 &)> NameConflict;
     /** Notifies listeners of an updated transaction without new data (for now: a coinbase potentially becoming visible). */
     boost::signals2::signal<void (const uint256 &)> UpdatedTransaction;
     /** Notifies listeners of a new active block chain. */

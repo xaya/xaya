@@ -64,12 +64,21 @@ static const bool DEFAULT_UPNP = false;
 #endif
 /** The maximum number of entries in mapAskFor */
 static const size_t MAPASKFOR_MAX_SZ = MAX_INV_SZ;
+/** The maximum number of entries in setAskFor (larger due to getdata latency)*/
+static const size_t SETASKFOR_MAX_SZ = 2 * MAX_INV_SZ;
 /** The maximum number of peer connections to maintain. */
 static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 /** The default for -maxuploadtarget. 0 = Unlimited */
 static const uint64_t DEFAULT_MAX_UPLOAD_TARGET = 0;
 /** Default for blocks only*/
 static const bool DEFAULT_BLOCKSONLY = false;
+
+static const bool DEFAULT_FORCEDNSSEED = false;
+static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
+static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
+
+// NOTE: When adjusting this, update rpcnet:setban's help ("24h")
+static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Default 24-hour ban
 
 unsigned int ReceiveFloodSize();
 unsigned int SendBufferSize();
@@ -388,7 +397,11 @@ public:
     mruset<CInv> setInventoryKnown;
     std::vector<CInv> vInventoryToSend;
     CCriticalSection cs_inventory;
+    std::set<uint256> setAskFor;
     std::multimap<int64_t, CInv> mapAskFor;
+    // Used for headers announcements - unfiltered blocks to relay
+    // Also protected by cs_inventory
+    std::vector<uint256> vBlockHashesToAnnounce;
 
     // Ping time measurement:
     // The pong reply we're expecting, or 0 if no pong expected.
@@ -501,6 +514,12 @@ public:
             if (!setInventoryKnown.count(inv))
                 vInventoryToSend.push_back(inv);
         }
+    }
+
+    void PushBlockHash(const uint256 &hash)
+    {
+        LOCK(cs_inventory);
+        vBlockHashesToAnnounce.push_back(hash);
     }
 
     void AskFor(const CInv& inv);

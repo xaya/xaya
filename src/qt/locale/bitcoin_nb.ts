@@ -2737,6 +2737,10 @@
         <translation>Kopier transaksjons-ID</translation>
     </message>
     <message>
+        <source>Copy raw transaction</source>
+        <translation>Kopier råtransaksjon</translation>
+    </message>
+    <message>
         <source>Edit label</source>
         <translation>Rediger merkelapp</translation>
     </message>
@@ -2992,10 +2996,6 @@
         <translation>Hvitelist noder som kobler til fra den oppgitte nettmasken eller IP-adressen. Kan oppgis flere ganger.</translation>
     </message>
     <message>
-        <source>(default: 1)</source>
-        <translation>(standardverdi: 1)</translation>
-    </message>
-    <message>
         <source>-maxmempool must be at least %d MB</source>
         <translation>-maxmempool må være minst %d MB</translation>
     </message>
@@ -3041,11 +3041,11 @@
     </message>
     <message>
         <source>Enable publish raw block in &lt;address&gt;</source>
-        <translation>Slå på publish raw block i &lt;address&gt;</translation>
+        <translation>Slå på publisering av råblokk i &lt;address&gt;</translation>
     </message>
     <message>
         <source>Enable publish raw transaction in &lt;address&gt;</source>
-        <translation>Slå på publish raw transaction i &lt;address&gt;</translation>
+        <translation>Slå på publisering av råtransaksjon i &lt;address&gt;</translation>
     </message>
     <message>
         <source>Error initializing block database</source>
@@ -3252,16 +3252,20 @@
         <translation>Aktiverer beste kjede...</translation>
     </message>
     <message>
+        <source>Always relay transactions received from whitelisted peers (default: %d)</source>
+        <translation>Alltid videresend transaksjoner mottatt fra hvitlistede noder (standardverdi: %d)</translation>
+    </message>
+    <message>
         <source>Attempt to recover private keys from a corrupt wallet.dat on startup</source>
         <translation>Forsøk å berge private nøkler fra en korrupt wallet.dat ved oppstart</translation>
     </message>
     <message>
-        <source>Cannot resolve -whitebind address: '%s'</source>
-        <translation>Kan ikke løse -whitebind-adresse: '%s'</translation>
+        <source>Automatically create Tor hidden service (default: %d)</source>
+        <translation>Automatisk opprette Tor skjult tjeneste (standardverdi: %d)</translation>
     </message>
     <message>
-        <source>Choose data directory on startup (default: 0)</source>
-        <translation>Velg datamappe ved oppstart (standard: 0)</translation>
+        <source>Cannot resolve -whitebind address: '%s'</source>
+        <translation>Kan ikke løse -whitebind-adresse: '%s'</translation>
     </message>
     <message>
         <source>Connect through SOCKS5 proxy</source>
@@ -3352,20 +3356,8 @@
         <translation>Send transaksjoner uten transaksjonsgebyr hvis mulig (standardverdi: %u)</translation>
     </message>
     <message>
-        <source>Set SSL root certificates for payment request (default: -system-)</source>
-        <translation>Sett SSL-rotsertifikat for betalingsetterspørring (standard: -system-)</translation>
-    </message>
-    <message>
-        <source>Set language, for example "de_DE" (default: system locale)</source>
-        <translation>Sett språk, for eksempel "nb_NO" (standardverdi: fra operativsystem)</translation>
-    </message>
-    <message>
         <source>Show all debugging options (usage: --help -help-debug)</source>
         <translation>Vis alle feilsøkingsvalg (bruk: --help -help-debug)</translation>
-    </message>
-    <message>
-        <source>Show splash screen on startup (default: 1)</source>
-        <translation>Vis splashskjerm ved oppstart (standardverdi: 1)</translation>
     </message>
     <message>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
@@ -3376,16 +3368,20 @@
         <translation>Signering av transaksjon feilet</translation>
     </message>
     <message>
-        <source>Start minimized</source>
-        <translation>Start minimert</translation>
-    </message>
-    <message>
         <source>The transaction amount is too small to pay the fee</source>
         <translation>Transaksjonsbeløpet er for lite til å betale gebyr</translation>
     </message>
     <message>
         <source>This is experimental software.</source>
         <translation>Dette er eksperimentell programvare.</translation>
+    </message>
+    <message>
+        <source>Tor control port password (default: empty)</source>
+        <translation>Passord for Tor-kontrollport (standardverdi: tom)</translation>
+    </message>
+    <message>
+        <source>Tor control port to use if onion listening enabled (default: %s)</source>
+        <translation>Tor-kontrollport å bruke hvis onion-lytting er aktivert (standardverdi: %s)</translation>
     </message>
     <message>
         <source>Transaction amount too small</source>
@@ -3402,10 +3398,6 @@
     <message>
         <source>Transaction too large</source>
         <translation>Transaksjonen er for stor</translation>
-    </message>
-    <message>
-        <source>UI Options:</source>
-        <translation>Innstillinger for Brukergrensesnitt:</translation>
     </message>
     <message>
         <source>Unable to bind to %s on this computer (bind returned error %s)</source>
@@ -3426,6 +3418,10 @@
     <message>
         <source>Warning</source>
         <translation>Advarsel</translation>
+    </message>
+    <message>
+        <source>Whether to operate in a blocks only mode (default: %u)</source>
+        <translation>Hvorvidt å operere i modus med kun blokker (standardverdi: %u)</translation>
     </message>
     <message>
         <source>Zapping all transactions from wallet...</source>

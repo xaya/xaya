@@ -5,6 +5,7 @@
 #include "auxpow.h"
 #include "chainparams.h"
 #include "coins.h"
+#include "consensus/merkle.h"
 #include "main.h"
 #include "primitives/block.h"
 #include "script/script.h"
@@ -128,7 +129,7 @@ CAuxpowBuilder::setCoinbase (const CScript& scr)
 
   parentBlock.vtx.clear ();
   parentBlock.vtx.push_back (mtx);
-  parentBlock.hashMerkleRoot = parentBlock.ComputeMerkleRoot ();
+  parentBlock.hashMerkleRoot = BlockMerkleRoot (parentBlock);
 }
 
 valtype
@@ -220,7 +221,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
   const CTransaction oldCoinbase = builder.parentBlock.vtx[0];
   builder.setCoinbase (scr << 5);
   builder.parentBlock.vtx.push_back (oldCoinbase);
-  builder.parentBlock.hashMerkleRoot = builder.parentBlock.ComputeMerkleRoot ();
+  builder.parentBlock.hashMerkleRoot = BlockMerkleRoot (builder.parentBlock);
   auxpow = builder.get (builder.parentBlock.vtx[0]);
   BOOST_CHECK (auxpow.check (hashAux, ourChainId, params));
   auxpow = builder.get (builder.parentBlock.vtx[1]);

@@ -65,9 +65,13 @@ private:
     size_t nModSize; //! ... and modified size for priority
     size_t nUsageSize; //! ... and total memory usage
     int64_t nTime; //! Local time when entering the mempool
-    double dPriority; //! Priority when entering the mempool
-    unsigned int nHeight; //! Chain height when entering the mempool
+    double entryPriority; //! Priority when entering the mempool
+    unsigned int entryHeight; //! Chain height when entering the mempool
     bool hadNoDependencies; //! Not dependent on any other txs when it entered the mempool
+    CAmount inChainInputValue; //! Sum of all txin values that are already in blockchain
+    bool spendsCoinbase; //! keep track of transactions that spend a coinbase
+    unsigned int sigOpCount; //! Legacy sig ops plus P2SH sig op count
+    int64_t feeDelta; //! Used for determining the priority of the transaction for mining in a block
 
     // Information about descendants of this transaction that are in the
     // mempool; if we remove this transaction we must remove all of these
@@ -83,20 +87,30 @@ private:
 
 public:
     CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
-                    int64_t _nTime, double _dPriority, unsigned int _nHeight, bool poolHasNoInputsOf = false);
+                    int64_t _nTime, double _entryPriority, unsigned int _entryHeight,
+                    bool poolHasNoInputsOf, CAmount _inChainInputValue, bool spendsCoinbase,
+                    unsigned int nSigOps);
     CTxMemPoolEntry(const CTxMemPoolEntry& other);
 
     const CTransaction& GetTx() const { return this->tx; }
+    /**
+     * Fast calculation of lower bound of current priority as update
+     * from entry priority. Only inputs that were originally in-chain will age.
+     */
     double GetPriority(unsigned int currentHeight) const;
     const CAmount& GetFee() const { return nFee; }
     size_t GetTxSize() const { return nTxSize; }
     int64_t GetTime() const { return nTime; }
-    unsigned int GetHeight() const { return nHeight; }
+    unsigned int GetHeight() const { return entryHeight; }
     bool WasClearAtEntry() const { return hadNoDependencies; }
+    unsigned int GetSigOpCount() const { return sigOpCount; }
+    int64_t GetModifiedFee() const { return nFee + feeDelta; }
     size_t DynamicMemoryUsage() const { return nUsageSize; }
 
     // Adjusts the descendant state, if this entry is not dirty.
     void UpdateState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount);
+    // Updates the fee delta used for mining priority score
+    void UpdateFeeDelta(int64_t feeDelta);
 
     /** We can set the entry to be dirty if doing the full calculation of in-
      *  mempool descendants will be too expensive, which can potentially happen
@@ -108,6 +122,8 @@ public:
     uint64_t GetCountWithDescendants() const { return nCountWithDescendants; }
     uint64_t GetSizeWithDescendants() const { return nSizeWithDescendants; }
     CAmount GetFeesWithDescendants() const { return nFeesWithDescendants; }
+
+    bool GetSpendsCoinbase() const { return spendsCoinbase; }
 
     inline bool
     isNameNew() const
@@ -158,6 +174,16 @@ struct set_dirty
         { e.SetDirty(); }
 };
 
+struct update_fee_delta
+{
+    update_fee_delta(int64_t _feeDelta) : feeDelta(_feeDelta) { }
+
+    void operator() (CTxMemPoolEntry &e) { e.UpdateFeeDelta(feeDelta); }
+
+private:
+    int64_t feeDelta;
+};
+
 // extracts a TxMemPoolEntry's transaction hash
 struct mempoolentry_txid
 {
@@ -205,6 +231,24 @@ public:
     }
 };
 
+/** \class CompareTxMemPoolEntryByScore
+ *
+ *  Sort by score of entry ((fee+delta)/size) in descending order
+ */
+class CompareTxMemPoolEntryByScore
+{
+public:
+    bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b)
+    {
+        double f1 = (double)a.GetModifiedFee() * b.GetTxSize();
+        double f2 = (double)b.GetModifiedFee() * a.GetTxSize();
+        if (f1 == f2) {
+            return b.GetTx().GetHash() < a.GetTx().GetHash();
+        }
+        return f1 > f2;
+    }
+};
+
 class CompareTxMemPoolEntryByEntryTime
 {
 public:
@@ -242,10 +286,11 @@ public:
  *
  * CTxMemPool::mapTx, and CTxMemPoolEntry bookkeeping:
  *
- * mapTx is a boost::multi_index that sorts the mempool on 3 criteria:
+ * mapTx is a boost::multi_index that sorts the mempool on 4 criteria:
  * - transaction hash
  * - feerate [we use max(feerate of tx, feerate of tx with all descendants)]
  * - time in mempool
+ * - mining score (feerate modified by any fee deltas from PrioritiseTransaction)
  *
  * Note: the term "descendant" refers to in-mempool transactions that depend on
  * this one, while "ancestor" refers to in-mempool transactions that a given
@@ -350,6 +395,11 @@ public:
             boost::multi_index::ordered_non_unique<
                 boost::multi_index::identity<CTxMemPoolEntry>,
                 CompareTxMemPoolEntryByEntryTime
+                >,
+            // sorted by score (for mining prioritization)
+            boost::multi_index::ordered_unique<
+                boost::multi_index::identity<CTxMemPoolEntry>,
+                CompareTxMemPoolEntryByScore
             >
         >
     > indexed_transaction_set;
@@ -364,6 +414,8 @@ public:
     };
     typedef std::set<txiter, CompareIteratorByHash> setEntries;
 
+    const setEntries & GetMemPoolParents(txiter entry) const;
+    const setEntries & GetMemPoolChildren(txiter entry) const;
 private:
     typedef std::map<txiter, setEntries, CompareIteratorByHash> cacheMap;
 
@@ -375,8 +427,6 @@ private:
     typedef std::map<txiter, TxLinks, CompareIteratorByHash> txlinksMap;
     txlinksMap mapLinks;
 
-    const setEntries & GetMemPoolParents(txiter entry) const;
-    const setEntries & GetMemPoolChildren(txiter entry) const;
     void UpdateParent(txiter entry, txiter parent, bool add);
     void UpdateChild(txiter entry, txiter child, bool add);
 
@@ -409,10 +459,12 @@ public:
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool fCurrentEstimate = true);
 
     void remove(const CTransaction &tx, std::list<CTransaction>& removed, bool fRecursive = false);
-    void removeCoinbaseSpends(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight);
-    void removeConflicts(const CTransaction &tx, std::list<CTransaction>& removed);
+    void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
+    void removeConflicts(const CTransaction &tx, std::list<CTransaction>& removed, std::list<CTransaction>& removedNames);
     void removeForBlock(const std::vector<CTransaction>& vtx, unsigned int nBlockHeight,
-                        std::list<CTransaction>& conflicts, bool fCurrentEstimate = true);
+                        std::list<CTransaction>& conflicts,
+                        std::list<CTransaction>& nameConflicts,
+                        bool fCurrentEstimate = true);
     void clear();
     void _clear(); //lock free
     void queryHashes(std::vector<uint256>& vtxid);
@@ -488,8 +540,11 @@ public:
       */
     CFeeRate GetMinFee(size_t sizelimit) const;
 
-    /** Remove transactions from the mempool until its dynamic size is <= sizelimit. */
-    void TrimToSize(size_t sizelimit);
+    /** Remove transactions from the mempool until its dynamic size is <= sizelimit.
+      *  pvNoSpendsRemaining, if set, will be populated with the list of transactions
+      *  which are not in mempool which no longer have any spends in this mempool.
+      */
+    void TrimToSize(size_t sizelimit, std::vector<uint256>* pvNoSpendsRemaining=NULL);
 
     /** Expire all transaction (and their dependencies) in the mempool older than time. Return the number of removed transactions. */
     int Expire(int64_t time);
@@ -623,6 +678,19 @@ public:
     CCoinsViewMemPool(CCoinsView *baseIn, CTxMemPool &mempoolIn);
     bool GetCoins(const uint256 &txid, CCoins &coins) const;
     bool HaveCoins(const uint256 &txid) const;
+};
+
+// We want to sort transactions by coin age priority
+typedef std::pair<double, CTxMemPool::txiter> TxCoinAgePriority;
+
+struct TxCoinAgePriorityCompare
+{
+    bool operator()(const TxCoinAgePriority& a, const TxCoinAgePriority& b)
+    {
+        if (a.first == b.first)
+            return CompareTxMemPoolEntryByScore()(*(b.second), *(a.second)); //Reverse order to make sort less than
+        return a.first < b.first;
+    }
 };
 
 #endif // BITCOIN_TXMEMPOOL_H
