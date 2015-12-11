@@ -1359,6 +1359,15 @@ CAmount CWalletTx::GetChange() const
     return nChangeCached;
 }
 
+bool CWalletTx::InMempool() const
+{
+    LOCK(mempool.cs);
+    if (mempool.exists(GetHash())) {
+        return true;
+    }
+    return false;
+}
+
 bool CWalletTx::IsTrusted() const
 {
     // Quick answer in most cases
@@ -1373,12 +1382,8 @@ bool CWalletTx::IsTrusted() const
         return false;
 
     // Don't trust unconfirmed transactions from us unless they are in the mempool.
-    {
-        LOCK(mempool.cs);
-        if (!mempool.exists(GetHash())) {
-            return false;
-        }
-    }
+    if (!InMempool())
+        return false;
 
     // Trusted if all inputs are from us and are in the mempool:
     BOOST_FOREACH(const CTxIn& txin, vin)
@@ -1630,6 +1635,16 @@ static void ApproximateBestSubset(vector<pair<CAmount, pair<const CWalletTx*,uns
                     }
                 }
             }
+        }
+    }
+
+    //Reduces the approximate best subset by removing any inputs that are smaller than the surplus of nTotal beyond nTargetValue. 
+    for (unsigned int i = 0; i < vValue.size(); i++)
+    {                        
+        if (vfBest[i] && (nBest - vValue[i].first) >= nTargetValue )
+        {
+            vfBest[i] = false;
+            nBest -= vValue[i].first;
         }
     }
 }
