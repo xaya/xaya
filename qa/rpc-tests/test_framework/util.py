@@ -147,7 +147,7 @@ def initialize_chain(test_dir):
         # Create cache directories, run bitcoinds:
         for i in range(4):
             datadir=initialize_datadir("cache", i)
-            args = [ os.getenv("NAMECOIND", "namecoind"), "-keypool=1", "-datadir="+datadir, "-discover=0" ]
+            args = [ os.getenv("NAMECOIND", "namecoind"), "-server", "-keypool=1", "-datadir="+datadir, "-discover=0" ]
             args.extend(base_node_args(i))
             if i > 0:
                 args.append("-connect=127.0.0.1:"+str(p2p_port(0)))
@@ -236,7 +236,7 @@ def start_node(i, dirname, extra_args=[], rpchost=None, timewait=None, binary=No
     if binary is None:
         binary = os.getenv("NAMECOIND", "namecoind")
     # RPC tests still depend on free transactions
-    args = [ binary, "-datadir="+datadir, "-keypool=1", "-discover=0", "-rest", "-blockprioritysize=50000" ]
+    args = [ binary, "-datadir="+datadir, "-server", "-keypool=1", "-discover=0", "-rest", "-blockprioritysize=50000" ]
     if extra_args is not None: args.extend(extra_args)
     args.extend(base_node_args(i))
     bitcoind_processes[i] = subprocess.Popen(args)

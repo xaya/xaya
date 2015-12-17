@@ -131,7 +131,7 @@ class BitcoinTestFramework(object):
         if self.options.coveragedir:
             enable_coverage(self.options.coveragedir)
 
-        os.environ['PATH'] = self.options.srcdir+":"+os.environ['PATH']
+        os.environ['PATH'] = self.options.srcdir+":"+self.options.srcdir+"/qt:"+os.environ['PATH']
 
         check_json_precision()
 
