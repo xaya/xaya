@@ -923,18 +923,18 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
         // Bring the best block into scope
         view.GetBestBlock();
 
-        /* See if this is a name update.  If it is, we also have to
-           ensure that the dummy cache contains the updated name.  */
+        /* If this is a name update (or firstupdate), make sure that the
+           existing name entry (if any) is in the dummy cache.  Otherwise
+           tx validation done below (in CheckInputs) will not be correct.  */
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
         {
             const CNameScript nameOp(txout.scriptPubKey);
-            if (nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_UPDATE)
+            if (nameOp.isNameOp() && nameOp.isAnyUpdate())
             {
                 const valtype& name = nameOp.getOpName();
                 CNameData data;
-                if (!view.GetName(name, data))
-                    return state.Invalid(false, REJECT_INVALID, "bad-updated-name");
-                view.SetName(name, data, false);
+                if (view.GetName(name, data))
+                    view.SetName(name, data, false);
             }
         }
 

@@ -263,7 +263,6 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
 
                         const CNameScript op(coins.vout[prevout.n].scriptPubKey);
                         if (op.isNameOp() && op.getNameOp() == OP_NAME_NEW) {
-
                             const unsigned newHeight = pindexPrev->nHeight + 1;
                             if (coins.nHeight + MIN_FIRSTUPDATE_DEPTH > newHeight)
                                 immatureNew = true;

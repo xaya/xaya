@@ -218,7 +218,13 @@ name_firstupdate (const UniValue& params, bool fHelp)
   if (!EnsureWalletIsAvailable (fHelp))
     return NullUniValue;
 
-  if (fHelp || (params.size () != 4 && params.size () != 5))
+  /* There is an undocumented sixth argument that can be used to disable
+     the check for already existing names here (it will still be checked
+     by the mempool and tx validation logic, of course).  This is used
+     by the regtests to catch a bug that was previously present but
+     has presumably no other use.  */
+
+  if (fHelp || params.size () < 4 || params.size () > 6)
     throw std::runtime_error (
         "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
         "\nFinish the registration of a name.  Depends on name_new being"
@@ -261,12 +267,14 @@ name_firstupdate (const UniValue& params, bool fHelp)
                           "this name is already being registered");
   }
 
-  {
-    LOCK (cs_main);
-    CNameData oldData;
-    if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
-      throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name is already active");
-  }
+  if (params.size () < 6 || !params[5].get_bool ())
+    {
+      LOCK (cs_main);
+      CNameData oldData;
+      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+        throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                            "this name is already active");
+    }
 
   CTxOut prevOut;
   CTxIn txIn;
@@ -297,7 +305,7 @@ name_firstupdate (const UniValue& params, bool fHelp)
   bool usedKey = false;
 
   CScript addrName;
-  if (params.size () == 5)
+  if (params.size () >= 5)
     {
       keyName.ReturnKey ();
       const CBitcoinAddress toAddress(params[4].get_str ());

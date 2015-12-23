@@ -10,13 +10,20 @@ from util import assert_equal, sync_blocks, sync_mempools
 
 class NameTestFramework (BitcoinTestFramework):
 
-  def firstupdateName (self, ind, name, newData, value, toAddr = None):
+  def firstupdateName (self, ind, name, newData, value,
+                       toAddr = None, allowActive = False):
     """
     Utility routine to perform a name_firstupdate command.  The rand
     and txid are taken from 'newData', as it is returned by name_new.
     """
 
     node = self.nodes[ind]
+
+    if allowActive:
+      if toAddr is None:
+        toAddr = node.getnewaddress ()
+      return node.name_firstupdate (name, newData[1], newData[0],
+                                    value, toAddr, True)
 
     if toAddr is None:
       return node.name_firstupdate (name, newData[1], newData[0], value)
