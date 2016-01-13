@@ -105,6 +105,7 @@ testScripts = [
     'prioritise_transaction.py',
     'invalidblockrequest.py',
     'invalidtxrequest.py',
+    'abandonconflict.py',
 
     # auxpow tests
     'getauxblock.py',
