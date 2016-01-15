@@ -17,7 +17,7 @@ BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
             VALUE "CompanyName",        "Namecoin"
-            VALUE "FileDescription",    "namecoin-cli (JSON-RPC client for Bitcoin Core)"
+            VALUE "FileDescription",    "namecoin-cli (JSON-RPC client for Namecoin Core)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
             VALUE "InternalName",       "namecoin-cli"
             VALUE "LegalCopyright",     COPYRIGHT_STR
