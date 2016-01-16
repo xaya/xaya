@@ -4,11 +4,13 @@
 src/bitcoind
 src/bitcoin-cli
 src/bitcoin-tx
+src/test/test_bitcoin
+src/qt/test/test_bitcoin-qt
 src/namecoind
 src/namecoin-cli
 src/namecoin-tx
-src/test/test_bitcoin
-src/qt/test/test_bitcoin-qt
+src/test/test_namecoin
+src/qt/test/test_namecoin-qt
 
 # autoreconf
 Makefile.in
