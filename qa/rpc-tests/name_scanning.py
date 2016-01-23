@@ -13,44 +13,6 @@ class NameScanningTest (NameTestFramework):
   def run_test (self):
     NameTestFramework.run_test (self)
 
-    # It would also nice to test the "initial download" error,
-    # but it will only pop up if the blockchain directory (in the cache)
-    # is old enough.  This can not be guaranteed (if the cache is freshly
-    # generated), so that we cannot use it as a "strict" test here.
-    # Instead, only warn if the test "fails".
-
-    initialDownloadOk = True
-
-    try:
-      self.nodes[0].name_show ("a")
-      initialDownloadOk = False
-    except JSONRPCException as exc:
-      if exc.error['code'] != -10:
-        initialDownloadOk = False
-    try:
-      self.nodes[1].name_history ("a")
-      initialDownloadOk = False
-    except JSONRPCException as exc:
-      if exc.error['code'] != -10:
-        initialDownloadOk = False
-    try:
-      self.nodes[0].name_scan ()
-      initialDownloadOk = False
-    except JSONRPCException as exc:
-      if exc.error['code'] != -10:
-        initialDownloadOk = False
-    try:
-      self.nodes[0].name_filter ()
-      initialDownloadOk = False
-    except JSONRPCException as exc:
-      if exc.error['code'] != -10:
-        initialDownloadOk = False
-
-    if not initialDownloadOk:
-      print "WARNING: 'initial blockchain download' check failed!"
-      print ("This probably means that the blockchain was regenerated"
-              + " and is fine.")
-
     # Mine a block so that we're no longer in initial download.
     self.generate (3, 1)
 

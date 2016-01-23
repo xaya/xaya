@@ -6,7 +6,7 @@
 # General code for Namecoin tests.
 
 from test_framework import BitcoinTestFramework
-from util import assert_equal, sync_blocks, sync_mempools
+from util import *
 
 class NameTestFramework (BitcoinTestFramework):
 
@@ -79,7 +79,7 @@ class NameTestFramework (BitcoinTestFramework):
 
     assert_equal (valuesFound, values)
 
-  def atomicTrade (self, name, value, price, nameFrom, nameTo):
+  def atomicTrade (self, name, value, price, fee, nameFrom, nameTo):
     """
     Perform an atomic name trade, sending 'name' from the first to the
     second node (referenced by their index).  Also send 'price' (we assume
@@ -96,8 +96,8 @@ class NameTestFramework (BitcoinTestFramework):
     unspents = self.nodes[nameTo].listunspent ()
     assert (len (unspents) > 0)
     txin = unspents[0]
-    assert (txin['amount'] >= price)
-    change = txin['amount'] - price
+    assert (txin['amount'] >= price + fee)
+    change = txin['amount'] - price - fee
     inputs.append ({"txid": txin['txid'], "vout": txin['vout']})
 
     data = self.nodes[nameFrom].name_show (name)
@@ -115,3 +115,10 @@ class NameTestFramework (BitcoinTestFramework):
     tx = signed['hex']
     
     return self.nodes[nameFrom].sendrawtransaction (tx)
+
+  def setupNodesWithArgs (self, extraArgs):
+    enable_mocktime ()
+    return start_nodes (len (extraArgs), self.options.tmpdir, extraArgs)
+
+  def setup_nodes (self):
+    return self.setupNodesWithArgs ([[]] * 4)

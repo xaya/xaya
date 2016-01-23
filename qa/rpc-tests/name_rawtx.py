@@ -46,8 +46,9 @@ class NameRawTxTest (NameTestFramework):
     balanceA = self.nodes[0].getbalance ()
     balanceB = self.nodes[1].getbalance ()
     price = Decimal ("1.0")
+    fee = Decimal ("0.01")
 
-    self.atomicTrade ("my-name", "enjoy", price, 0, 1)
+    self.atomicTrade ("my-name", "enjoy", price, fee, 0, 1)
     self.generate (3, 1)
 
     data = self.checkName (3, "my-name", "enjoy", None, False)
@@ -65,7 +66,7 @@ class NameRawTxTest (NameTestFramework):
     # Node 0 also got a block matured.  Take this into account.
     assert_equal (balanceA + price + Decimal ("50.0"),
                   self.nodes[0].getbalance ())
-    assert_equal (balanceB - price, self.nodes[1].getbalance ())
+    assert_equal (balanceB - price - fee, self.nodes[1].getbalance ())
 
   def decodeNameTx (self, ind, txid):
     """

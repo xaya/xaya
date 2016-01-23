@@ -22,8 +22,7 @@ class NameWalletTest (NameTestFramework):
 
   # Set paytxfee to an explicitly known value.
   def setup_nodes(self):
-    args = ["-paytxfee=%s" % txFee]
-    return start_nodes(4, self.options.tmpdir, [args] * 4)
+    return self.setupNodesWithArgs ([["-paytxfee=%s" % txFee]] * 4)
 
   def getFee (self, ind, txid, extra = zero):
     """
@@ -176,15 +175,16 @@ class NameWalletTest (NameTestFramework):
     # possibly not exactly what one would expect.
 
     price = Decimal ("1.0")
-    txid = self.atomicTrade ("name-a", "enjoy", price, 2, 3)
+    fee = Decimal ("0.01")
+    txid = self.atomicTrade ("name-a", "enjoy", price, fee, 2, 3)
     self.generate (0, 1)
 
-    self.checkBalances (-price, price)
+    self.checkBalances (-price, price + fee)
     self.checkTx (2, txid, price, None,
                   [['receive', None, price, None]])
-    self.checkTx (3, txid, -price, zero,
-                  [['send', None, -price, zero],
-                   ['send', 'update: name-a', zero, zero]])
+    self.checkTx (3, txid, -price, -fee,
+                  [['send', None, -price, -fee],
+                   ['send', 'update: name-a', zero, -fee]])
 
     # Test sendtoname RPC command.
 
