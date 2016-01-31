@@ -10,7 +10,7 @@
 #include "main.h"
 #include "names/common.h"
 #include "httpserver.h"
-#include "rpcserver.h"
+#include "rpc/server.h"
 #include "streams.h"
 #include "sync.h"
 #include "txmempool.h"

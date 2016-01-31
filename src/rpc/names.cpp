@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Daniel Kraft
+// Copyright (c) 2014-2016 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,7 @@
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
-#include "rpcserver.h"
+#include "rpc/server.h"
 #include "script/names.h"
 #include "txmempool.h"
 #ifdef ENABLE_WALLET

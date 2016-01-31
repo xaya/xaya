@@ -24,6 +24,15 @@ import subprocess
 GIT = os.getenv('GIT','git')
 BASH = os.getenv('BASH','bash')
 
+# OS specific configuration for terminal attributes
+ATTR_RESET = ''
+ATTR_PR = ''
+COMMIT_FORMAT = '%h %s (%an)%d'
+if os.name == 'posix': # if posix, assume we can use basic terminal escapes
+    ATTR_RESET = '\033[0m'
+    ATTR_PR = '\033[1;36m'
+    COMMIT_FORMAT = '%C(bold blue)%h%Creset %s %C(cyan)(%an)%Creset%C(green)%d%Creset'
+
 def git_config_get(option, default=None):
     '''
     Get named configuration option from git repository.
@@ -138,22 +147,25 @@ def main():
         else:
             firstline = 'Merge #%s' % (pull,)
         message = firstline + '\n\n'
-        message += subprocess.check_output([GIT,'log','--no-merges','--topo-order','--pretty=format:%h %s (%an)',base_branch+'..'+head_branch])
+        message += subprocess.check_output([GIT,'log','--no-merges','--topo-order','--pretty=format:%h %s (%an)',base_branch+'..'+head_branch]).decode('utf-8')
         try:
-            subprocess.check_call([GIT,'merge','-q','--commit','--no-edit','--no-ff','-m',message,head_branch])
+            subprocess.check_call([GIT,'merge','-q','--commit','--no-edit','--no-ff','-m',message.encode('utf-8'),head_branch])
         except subprocess.CalledProcessError as e:
             print("ERROR: Cannot be merged cleanly.",file=stderr)
             subprocess.check_call([GIT,'merge','--abort'])
             exit(4)
-        logmsg = subprocess.check_output([GIT,'log','--pretty=format:%s','-n','1'])
+        logmsg = subprocess.check_output([GIT,'log','--pretty=format:%s','-n','1']).decode('utf-8')
         if logmsg.rstrip() != firstline.rstrip():
             print("ERROR: Creating merge failed (already merged?).",file=stderr)
             exit(4)
 
+        print('%s#%s%s %s' % (ATTR_RESET+ATTR_PR,pull,ATTR_RESET,title))
+        subprocess.check_call([GIT,'log','--graph','--topo-order','--pretty=format:'+COMMIT_FORMAT,base_branch+'..'+head_branch])
+        print()
         # Run test command if configured.
         if testcmd:
             # Go up to the repository's root.
-            toplevel = subprocess.check_output([GIT,'rev-parse','--show-toplevel'])
+            toplevel = subprocess.check_output([GIT,'rev-parse','--show-toplevel']).strip()
             os.chdir(toplevel)
             if subprocess.call(testcmd,shell=True):
                 print("ERROR: Running %s failed." % testcmd,file=stderr)
