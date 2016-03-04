@@ -61,8 +61,9 @@ public:
      * the one given.  This should only be called when auxpow is not yet
      * set, to initialise a block!
      * @param nBaseVersion The base version.
+     * @param nChainId The auxpow chain ID.
      */
-    void SetBaseVersion(int32_t nBaseVersion);
+    void SetBaseVersion(int32_t nBaseVersion, int32_t nChainId);
 
     /**
      * Extract the chain ID.
