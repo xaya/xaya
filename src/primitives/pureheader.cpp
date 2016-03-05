@@ -5,15 +5,13 @@
 
 #include "primitives/pureheader.h"
 
-#include "chainparams.h"
 #include "hash.h"
 #include "utilstrencodings.h"
 
-void CBlockVersion::SetBaseVersion(int32_t nBaseVersion)
+void CBlockVersion::SetBaseVersion(int32_t nBaseVersion, int32_t nChainId)
 {
     assert(nBaseVersion >= 1 && nBaseVersion < VERSION_AUXPOW);
     assert(!IsAuxpow());
-    const int32_t nChainId = Params ().GetConsensus ().nAuxpowChainId;
     nVersion = nBaseVersion | (nChainId * VERSION_CHAIN_START);
 }
 
