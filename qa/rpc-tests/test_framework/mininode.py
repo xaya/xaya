@@ -38,6 +38,8 @@ MY_SUBVERSION = "/python-mininode-tester:0.0.1/"
 MAX_INV_SZ = 50000
 MAX_BLOCK_SIZE = 1000000
 
+COIN = 100000000L # 1 btc in satoshis
+
 # Constants for the auxpow block version.
 VERSION_AUXPOW = (1 << 8)
 VERSION_CHAIN_START = (1 << 16)
@@ -382,7 +384,7 @@ class CTxOut(object):
 
     def __repr__(self):
         return "CTxOut(nValue=%i.%08i scriptPubKey=%s)" \
-            % (self.nValue // 100000000, self.nValue % 100000000,
+            % (self.nValue // COIN, self.nValue % COIN,
                binascii.hexlify(self.scriptPubKey))
 
 
@@ -431,7 +433,7 @@ class CTransaction(object):
     def is_valid(self):
         self.calc_sha256()
         for tout in self.vout:
-            if tout.nValue < 0 or tout.nValue > 21000000L * 100000000L:
+            if tout.nValue < 0 or tout.nValue > 21000000 * COIN:
                 return False
         return True
 

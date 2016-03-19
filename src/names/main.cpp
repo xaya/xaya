@@ -164,7 +164,7 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
             {
               const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
               assert (mit2 != pool.mapTx.end ());
-              pool.remove (mit2->GetTx (), removed, true);
+              pool.removeRecursive (mit2->GetTx (), removed);
             }
         }
     }
@@ -186,7 +186,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
         {
           const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.remove (mit2->GetTx (), removed, true);
+          pool.removeRecursive (mit2->GetTx (), removed);
         }
     }
 }
@@ -207,7 +207,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
         {
           const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.remove (mit2->GetTx (), removed, true);
+          pool.removeRecursive (mit2->GetTx (), removed);
         }
     }
 }
