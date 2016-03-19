@@ -115,7 +115,8 @@ testScripts = [
     'invalidblockrequest.py',
     'invalidtxrequest.py',
     'abandonconflict.py',
-    'p2p-versionbits-warning.py',
+    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
+    #'p2p-versionbits-warning.py',
 
     # auxpow tests
     'getauxblock.py',
