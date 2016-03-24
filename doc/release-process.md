@@ -162,7 +162,7 @@ Commit your signature to gitian.sigs:
 	mv build/out/namecoin-*win32-setup.exe ../namecoin-${VERSION}-win32-setup.exe
 	popd
 
-Commit your signature for the signed OS X/Windows binaries:
+( **Not in Namecoin yet.** ) Commit your signature for the signed OS X/Windows binaries:
 
 	pushd gitian.sigs
 	git add ${VERSION}-osx-signed/${SIGNER}
