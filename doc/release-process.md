@@ -65,11 +65,11 @@ Check out the source code in the following directory hierarchy.
 	wget -P inputs https://bitcoincore.org/cfields/osslsigncode-Backports-to-1.7.1.patch
 	wget -P inputs http://downloads.sourceforge.net/project/osslsigncode/osslsigncode/osslsigncode-1.7.1.tar.gz
 
- Register and download the Apple SDK: see [OS X readme](README_osx.txt) for details.
+ ( **Not in Namecoin yet.** ) Register and download the Apple SDK: see [OS X readme](README_osx.txt) for details.
 
  https://developer.apple.com/devcenter/download.action?path=/Developer_Tools/xcode_6.1.1/xcode_6.1.1.dmg
 
- Using a Mac, create a tarball for the 10.9 SDK and copy it to the inputs directory:
+ ( **Not in Namecoin yet.** ) Using a Mac, create a tarball for the 10.9 SDK and copy it to the inputs directory:
 
 	tar -C /Volumes/Xcode/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/ -czf MacOSX10.9.sdk.tar.gz MacOSX10.9.sdk
 
@@ -98,17 +98,19 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
     mv build/out/namecoin-*-win-unsigned.tar.gz inputs/namecoin-win-unsigned.tar.gz
     mv build/out/namecoin-*.zip build/out/namecoin-*.exe ../
 
-	./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
-	./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
-    mv build/out/namecoin-*-osx-unsigned.tar.gz inputs/namecoin-osx-unsigned.tar.gz
-    mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../
+( **OS X is not in Namecoin yet.** ) 
+
+	#./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+	#./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+    #mv build/out/namecoin-*-osx-unsigned.tar.gz inputs/namecoin-osx-unsigned.tar.gz
+    #mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../
 
   Build output expected:
 
   1. source tarball (namecoin-${VERSION}.tar.gz)
   2. linux 32-bit and 64-bit dist tarballs (namecoin-${VERSION}-linux[32|64].tar.gz)
   3. windows 32-bit and 64-bit unsigned installers and dist zips (namecoin-${VERSION}-win[32|64]-setup-unsigned.exe, namecoin-${VERSION}-win[32|64].zip)
-  4. OS X unsigned installer and dist tarball (namecoin-${VERSION}-osx-unsigned.dmg, namecoin-${VERSION}-osx64.tar.gz)
+  4. ( **Not in Namecoin yet.** ) OS X unsigned installer and dist tarball (namecoin-${VERSION}-osx-unsigned.dmg, namecoin-${VERSION}-osx64.tar.gz)
   5. Gitian signatures (in gitian.sigs/${VERSION}-<linux|{win,osx}-unsigned>/(your Gitian key)/
 
 ###Verify other gitian builders signatures to your own. (Optional)
@@ -121,7 +123,7 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 
 	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
 	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-unsigned ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
-	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+	#./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-unsigned ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml # OS X is not in Namecoin yet, so don't do this.
 
 	popd
 
@@ -132,7 +134,7 @@ Commit your signature to gitian.sigs:
 	pushd gitian.sigs
 	git add ${VERSION}-linux/${SIGNER}
 	git add ${VERSION}-win-unsigned/${SIGNER}
-	git add ${VERSION}-osx-unsigned/${SIGNER}
+	#git add ${VERSION}-osx-unsigned/${SIGNER} # OS X is not in Namecoin yet, so don't do this.
 	git commit -a
 	git push  # Assuming you can push to the gitian.sigs tree
 	popd
