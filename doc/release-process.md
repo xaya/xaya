@@ -152,7 +152,7 @@ Commit your signature to gitian.sigs:
 	mv build/out/namecoin-osx-signed.dmg ../namecoin-${VERSION}-osx.dmg
 	popd
 
-  Create (and optionally verify) the signed Windows binaries:
+  ( **Not in Namecoin yet.** ) Create (and optionally verify) the signed Windows binaries:
 
 	pushd ./gitian-builder
 	./bin/gbuild -i --commit signature=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
