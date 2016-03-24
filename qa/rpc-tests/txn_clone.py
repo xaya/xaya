@@ -54,7 +54,7 @@ class TxnMallTest(BitcoinTestFramework):
         clone_outputs = {rawtx1["vout"][0]["scriptPubKey"]["addresses"][0]:rawtx1["vout"][0]["value"],
                          rawtx1["vout"][1]["scriptPubKey"]["addresses"][0]:rawtx1["vout"][1]["value"]}
         clone_locktime = rawtx1["locktime"]
-        clone_raw = self.nodes[0].createrawtransaction(clone_inputs, clone_outputs, clone_locktime)
+        clone_raw = self.nodes[0].createrawtransaction(clone_inputs, clone_outputs, None, clone_locktime)
 
         # createrawtransaction randomizes the order of its outputs, so swap them if necessary.
         # output 0 is at version+#inputs+input+sigstub+sequence+#outputs

@@ -467,7 +467,7 @@ UniValue createrawtransaction(const UniValue& params, bool fHelp)
         }
     }
 
-    if (params.size() > 2)
+    if (params.size() > 2 && !params[2].isNull())
         AddRawTxNameOperation(rawTx, params[2].get_obj());
 
     return EncodeHexTx(rawTx);
