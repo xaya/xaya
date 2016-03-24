@@ -1,7 +1,7 @@
 Release Process
 ====================
 
-* Update translations (ping wumpus, Diapolo or tcatm on IRC) see [translation_process.md](https://github.com/namecoin/namecoin-core/blob/master/doc/translation_process.md#syncing-with-transifex)
+* ( **Not in Namecoin yet.** ) Update translations (ping wumpus, Diapolo or tcatm on IRC) see [translation_process.md](https://github.com/namecoin/namecoin-core/blob/master/doc/translation_process.md#syncing-with-transifex)
 * Update [bips.md](bips.md) to account for changes since the last release.
 * Update hardcoded [seeds](/contrib/seeds)
 
