@@ -164,13 +164,6 @@ extern const char *PING;
  */
 extern const char *PONG;
 /**
- * The alert message warns nodes of problems that may affect them or the rest
- * of the network.
- * @since protocol version 311.
- * @see https://bitcoin.org/en/developer-reference#alert
- */
-extern const char *ALERT;
-/**
  * The notfound message is a reply to a getdata message which requested an
  * object the receiving node does not have available for relay.
  * @ince protocol version 70001.
@@ -218,7 +211,12 @@ extern const char *REJECT;
  * @see https://bitcoin.org/en/developer-reference#sendheaders
  */
 extern const char *SENDHEADERS;
-
+/**
+ * The feefilter message tells the receiving peer not to inv us any txs
+ * which do not meet the specified min fee rate.
+ * @since protocol version 70013 as described by BIP133
+ */
+extern const char *FEEFILTER;
 };
 
 /* Get a vector of all valid message types (see above) */
