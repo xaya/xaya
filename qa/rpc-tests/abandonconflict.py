@@ -16,7 +16,7 @@ class AbandonConflictTest(BitcoinTestFramework):
     def setup_network(self):
         self.nodes = []
         self.nodes.append(start_node(0, self.options.tmpdir, ["-debug","-logtimemicros","-minrelaytxfee=0.00001"]))
-        self.nodes.append(start_node(1, self.options.tmpdir, ["-debug","-logtimemicros"]))
+        self.nodes.append(start_node(1, self.options.tmpdir, ["-debug","-logtimemicros","-minrelaytxfee=0.0001"]))
         connect_nodes(self.nodes[0], 1)
 
     def run_test(self):
@@ -83,6 +83,12 @@ class AbandonConflictTest(BitcoinTestFramework):
         # inputs are still spent, but change not received
         newbalance = self.nodes[0].getbalance()
         assert(newbalance == balance - Decimal("24.9996"))
+        # Unconfirmed received funds that are not in mempool, also shouldn't show
+        # up in unconfirmed balance
+        unconfbalance = self.nodes[0].getunconfirmedbalance() + self.nodes[0].getbalance()
+        assert(unconfbalance == newbalance)
+        # Also shouldn't show up in listunspent
+        assert(not txABC2 in [utxo["txid"] for utxo in self.nodes[0].listunspent(0)])
         balance = newbalance
 
         # Abandon original transaction and verify inputs are available again

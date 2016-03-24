@@ -252,7 +252,7 @@ class WalletTest (BitcoinTestFramework):
         except JSONRPCException,e:
             errorString = e.error['message']
 
-        assert_equal("Invalid amount" in errorString, True)
+        assert("Invalid amount" in errorString)
 
         errorString = ""
         try:
@@ -260,7 +260,19 @@ class WalletTest (BitcoinTestFramework):
         except JSONRPCException,e:
             errorString = e.error['message']
 
-        assert_equal("not an integer" in errorString, True)
+        assert("not an integer" in errorString)
+
+        # Mine a block from node0 to an address from node1
+        cbAddr = self.nodes[1].getnewaddress()
+        blkHash = self.nodes[0].generatetoaddress(1, cbAddr)[0]
+        cbTxId = self.nodes[0].getblock(blkHash)['tx'][0]
+        self.sync_all()
+
+        # Check that the txid and balance is found by node1
+        try:
+            self.nodes[1].gettransaction(cbTxId)
+        except JSONRPCException,e:
+            assert("Invalid or non-wallet transaction id" not in e.error['message'])
 
         #check if wallet or blochchain maintenance changes the balance
         self.sync_all()
