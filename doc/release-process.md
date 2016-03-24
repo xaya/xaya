@@ -28,11 +28,11 @@ Check out the source code in the following directory hierarchy.
 
 	# tag version in git
 
-	git tag -s v(new version, e.g. 0.8.0)
+	git tag -s nc(new version, e.g. 0.8.0)
 
 	# write release notes. git shortlog helps a lot, for example:
 
-	git shortlog --no-merges v(current version, e.g. 0.7.2)..v(new version, e.g. 0.8.0)
+	git shortlog --no-merges nc(current version, e.g. 0.7.2)..nc(new version, e.g. 0.8.0)
 	popd
 
 * * *
@@ -45,7 +45,7 @@ Check out the source code in the following directory hierarchy.
 	export SIGNER=(your Gitian key, ie bluematt, sipa, etc)
 	export VERSION=(new version, e.g. 0.8.0)
 	git fetch
-	git checkout v${VERSION}
+	git checkout nc${VERSION}
 	popd
 
   Ensure your gitian.sigs are up-to-date if you wish to gverify your builds against other Gitian signatures.
@@ -89,16 +89,16 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 
 ###Build and sign Bitcoin Core for Linux, Windows, and OS X:
 
-	./bin/gbuild --commit bitcoin=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-linux.yml
+	./bin/gbuild --commit bitcoin=nc${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-linux.yml
 	./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-linux.yml
     mv build/out/bitcoin-*.tar.gz build/out/src/bitcoin-*.tar.gz ../
 
-	./bin/gbuild --commit bitcoin=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-win.yml
+	./bin/gbuild --commit bitcoin=nc${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-win.yml
 	./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-win.yml
     mv build/out/bitcoin-*-win-unsigned.tar.gz inputs/bitcoin-win-unsigned.tar.gz
     mv build/out/bitcoin-*.zip build/out/bitcoin-*.exe ../
 
-	./bin/gbuild --commit bitcoin=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
+	./bin/gbuild --commit bitcoin=nc${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
 	./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
     mv build/out/bitcoin-*-osx-unsigned.tar.gz inputs/bitcoin-osx-unsigned.tar.gz
     mv build/out/bitcoin-*.tar.gz build/out/bitcoin-*.dmg ../
@@ -144,7 +144,7 @@ Commit your signature to gitian.sigs:
   Create (and optionally verify) the signed OS X binary:
 
 	pushd ./gitian-builder
-	./bin/gbuild -i --commit signature=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
+	./bin/gbuild -i --commit signature=nc${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
 	./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
 	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
 	mv build/out/bitcoin-osx-signed.dmg ../bitcoin-${VERSION}-osx.dmg
@@ -153,7 +153,7 @@ Commit your signature to gitian.sigs:
   Create (and optionally verify) the signed Windows binaries:
 
 	pushd ./gitian-builder
-	./bin/gbuild -i --commit signature=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-win-signer.yml
+	./bin/gbuild -i --commit signature=nc${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-win-signer.yml
 	./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-win-signer.yml
 	./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../bitcoin/contrib/gitian-descriptors/gitian-win-signer.yml
 	mv build/out/bitcoin-*win64-setup.exe ../bitcoin-${VERSION}-win64-setup.exe
