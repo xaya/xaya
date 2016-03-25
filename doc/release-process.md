@@ -12,7 +12,7 @@ Check out the source code in the following directory hierarchy.
 
 	cd /path/to/your/toplevel/build
 	git clone https://github.com/namecoin/gitian.sigs.git
-	git clone https://github.com/namecoin/namecoin-detached-sigs.git
+	#git clone https://github.com/namecoin/namecoin-detached-sigs.git # Namecoin doesn't use detached sigs yet, so don't do this.
 	git clone https://github.com/devrandom/gitian-builder.git
 	git clone https://github.com/namecoin/namecoin-core.git
 
@@ -137,7 +137,7 @@ Commit your signature to gitian.sigs:
 	git push  # Assuming you can push to the gitian.sigs tree
 	popd
 
-  Wait for Windows/OS X detached signatures:
+  ( **Not in Namecoin yet.** ) Wait for Windows/OS X detached signatures:
 	Once the Windows/OS X builds each have 3 matching signatures, they will be signed with their respective release keys.
 	Detached signatures will then be committed to the [namecoin-detached-sigs](https://github.com/namecoin/namecoin-detached-sigs) repository, which can be combined with the unsigned apps to create signed binaries.
 
