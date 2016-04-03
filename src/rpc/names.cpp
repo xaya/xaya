@@ -559,3 +559,22 @@ name_checkdb (const UniValue& params, bool fHelp)
   pcoinsTip->Flush ();
   return pcoinsTip->ValidateNameDB ();
 }
+
+/* ************************************************************************** */
+
+static const CRPCCommand commands[] =
+{ //  category              name                      actor (function)         okSafeMode
+  //  --------------------- ------------------------  -----------------------  ----------
+    { "namecoin",           "name_show",              &name_show,              false },
+    { "namecoin",           "name_history",           &name_history,           false },
+    { "namecoin",           "name_scan",              &name_scan,              false },
+    { "namecoin",           "name_filter",            &name_filter,            false },
+    { "namecoin",           "name_pending",           &name_pending,           true  },
+    { "namecoin",           "name_checkdb",           &name_checkdb,           false },
+};
+
+void RegisterNameRPCCommands(CRPCTable &tableRPC)
+{
+    for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
+        tableRPC.appendCommand(commands[vcidx].name, &commands[vcidx]);
+}
