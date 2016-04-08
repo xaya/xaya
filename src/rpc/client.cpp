@@ -18,8 +18,8 @@ using namespace std;
 class CRPCConvertParam
 {
 public:
-    std::string methodName;            //! method whose params want conversion
-    int paramIdx;                      //! 0-based idx of param to convert
+    std::string methodName; //!< method whose params want conversion
+    int paramIdx;           //!< 0-based idx of param to convert
 };
 
 static const CRPCConvertParam vRPCConvertParams[] =
@@ -30,7 +30,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "generate", 0 },
     { "generate", 1 },
     { "generatetoaddress", 0 },
-    { "generatetoaddress", 1 },
     { "generatetoaddress", 2 },
     { "getnetworkhashps", 0 },
     { "getnetworkhashps", 1 },
