@@ -397,6 +397,8 @@ COMMIT=hardfork-nmc
 Building fully offline
 -----------------------
 
+**Note: Namecoin does not yet use detatched sigs; this section might not be relevant.**
+
 For building fully offline including attaching signatures to unsigned builds, the detached-sigs repository
 and the namecoin-core git repository with the desired tag must both be available locally, and then gbuild must be
 told where to find them. It also requires an apt-cacher-ng which is fully-populated but set to offline mode, or
