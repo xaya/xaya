@@ -471,9 +471,7 @@ boost::filesystem::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    pathRet /= "Library/Application Support";
-    TryCreateDirectory(pathRet);
-    return pathRet / "Namecoin";
+    return pathRet / "Library/Application Support/Namecoin";
 #else
     // Unix
     return pathRet / ".namecoin";

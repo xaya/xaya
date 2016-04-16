@@ -10,9 +10,9 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnamecoinconsensus.pc
 endif
 
-BITCOIND_BIN=$(top_builddir)/src/namecoind$(EXEEXT)
-BITCOIN_QT_BIN=$(top_builddir)/src/qt/namecoin-qt$(EXEEXT)
-BITCOIN_CLI_BIN=$(top_builddir)/src/namecoin-cli$(EXEEXT)
+BITCOIND_BIN=$(top_builddir)/src/$(BITCOIN_DAEMON_NAME)$(EXEEXT)
+BITCOIN_QT_BIN=$(top_builddir)/src/qt/$(BITCOIN_GUI_NAME)$(EXEEXT)
+BITCOIN_CLI_BIN=$(top_builddir)/src/$(BITCOIN_CLI_NAME)$(EXEEXT)
 BITCOIN_WIN_INSTALLER=$(PACKAGE)-$(PACKAGE_VERSION)-win$(WINDOWS_BITS)-setup$(EXEEXT)
 
 empty :=

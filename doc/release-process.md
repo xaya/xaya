@@ -117,7 +117,7 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 
   Add other gitian builders keys to your gpg keyring
 
-	gpg --import ../namecoin-core/contrib/gitian-downloader/*.pgp
+	gpg --import ../namecoin-core/contrib/gitian-keys/*.pgp
 
   Verify the signatures
 

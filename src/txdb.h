@@ -26,6 +26,8 @@ static const int64_t nMaxDbCache = sizeof(void*) > 4 ? 16384 : 1024;
 //! min. -dbcache in (MiB)
 static const int64_t nMinDbCache = 4;
 
+class CCoinsViewDBCursor;
+
 /** CCoinsView backed by the coin database (chainstate/) */
 class CCoinsViewDB : public CCoinsView
 {
@@ -42,8 +44,30 @@ public:
     bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& data) const;
     CNameIterator* IterateNames() const;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
-    bool GetStats(CCoinsStats &stats) const;
+    CCoinsViewCursor *Cursor() const;
     bool ValidateNameDB() const;
+};
+
+/** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
+class CCoinsViewDBCursor: public CCoinsViewCursor
+{
+public:
+    ~CCoinsViewDBCursor() {}
+
+    bool GetKey(uint256 &key) const;
+    bool GetValue(CCoins &coins) const;
+    unsigned int GetValueSize() const;
+
+    bool Valid() const;
+    void Next();
+
+private:
+    CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
+        CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
+    boost::scoped_ptr<CDBIterator> pcursor;
+    std::pair<char, uint256> keyTmp;
+
+    friend class CCoinsViewDB;
 };
 
 /** Access to the block database (blocks/index/) */
