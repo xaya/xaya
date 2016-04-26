@@ -12,6 +12,7 @@
 #include "rpc/server.h"
 #include "script/names.h"
 #include "txmempool.h"
+#include "utilstrencodings.h"
 #ifdef ENABLE_WALLET
 # include "wallet/wallet.h"
 #endif
