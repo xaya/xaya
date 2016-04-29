@@ -98,7 +98,7 @@ def deser_uint256(f):
 
 
 def ser_uint256(u):
-    rs = ""
+    rs = b""
     for i in xrange(8):
         rs += struct.pack("<I", u & 0xFFFFFFFFL)
         u >>= 32
@@ -196,7 +196,7 @@ def deser_string_vector(f):
 
 
 def ser_string_vector(l):
-    r = ""
+    r = b""
     if len(l) < 253:
         r = struct.pack("B", len(l))
     elif len(l) < 0x10000:
@@ -677,7 +677,7 @@ class CAlert(object):
         self.vchSig = deser_string(f)
 
     def serialize(self):
-        r = ""
+        r = b""
         r += ser_string(self.vchMsg)
         r += ser_string(self.vchSig)
         return r
@@ -1041,7 +1041,7 @@ class msg_reject(object):
     def __init__(self):
         self.message = b""
         self.code = 0
-        self.reason = ""
+        self.reason = b""
         self.data = 0L
 
     def deserialize(self, f):
