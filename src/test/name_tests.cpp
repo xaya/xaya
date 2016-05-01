@@ -333,7 +333,7 @@ NameIterationTester::verify (const CCoinsView& view) const
 
   /* Seek the iterator to the end first for "maximum confusion".  This ensures
      that seeking to valtype() works.  */
-  std::auto_ptr<CNameIterator> iter(view.IterateNames ());
+  std::unique_ptr<CNameIterator> iter(view.IterateNames ());
   const valtype end = ValtypeFromString ("zzzzzzzzzzzzzzzz");
   {
     valtype name;
@@ -378,7 +378,7 @@ NameIterationTester::EntryList
 NameIterationTester::getNamesFromView (const CCoinsView& view,
                                        const valtype& start)
 {
-  std::auto_ptr<CNameIterator> iter(view.IterateNames ());
+  std::unique_ptr<CNameIterator> iter(view.IterateNames ());
   iter->seek (start);
 
   return getNamesFromIterator (*iter);

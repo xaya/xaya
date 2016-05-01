@@ -136,7 +136,7 @@ struct Params {
     int nLegacyBlocksBefore; // -1 for "always allow"
 
     /** Consensus rule interface.  */
-    std::auto_ptr<ConsensusRules> rules;
+    std::unique_ptr<ConsensusRules> rules;
 
     /**
      * Check whether or not minimum difficulty blocks are allowed
