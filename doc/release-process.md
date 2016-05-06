@@ -214,8 +214,8 @@ The list of files should be:
 ```
 namecoin-${VERSION}-linux32.tar.gz
 namecoin-${VERSION}-linux64.tar.gz
-namecoin-${VERSION}-osx64.tar.gz
-namecoin-${VERSION}-osx.dmg
+namecoin-${VERSION}-osx64.tar.gz     # Not in Namecoin yet.
+namecoin-${VERSION}-osx.dmg          # Not in Namecoin yet.
 namecoin-${VERSION}.tar.gz
 namecoin-${VERSION}-win32-setup.exe
 namecoin-${VERSION}-win32.zip
