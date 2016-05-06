@@ -47,7 +47,7 @@ Write release notes. git shortlog helps a lot, for example:
 
     git shortlog --no-merges nc(current version, e.g. 0.7.2)..nc(new version, e.g. 0.8.0)
 
-(or ping @wumpus on IRC, he has specific tooling to generate the list of merged pulls
+( **Not in Namecoin yet.** ) (or ping @wumpus on IRC, he has specific tooling to generate the list of merged pulls
 and sort them into categories based on labels)
 
 Generate list of authors:
