@@ -3,7 +3,7 @@ Release Process
 
 Before every release candidate:
 
-* ( **Not in Namecoin yet.** ) Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/bitcoin/bitcoin/blob/master/doc/translation_process.md#syncing-with-transifex)
+* ( **Not in Namecoin yet.** ) Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/namecoin/namecoin-core/blob/master/doc/translation_process.md#syncing-with-transifex)
 
 Before every minor and major release:
 
@@ -118,21 +118,21 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 ### Build and sign Namecoin Core for Linux, Windows, and OS X:
 
     pushd ./gitian-builder
-    ./bin/gbuild --commit namecoin=v${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
     ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
     mv build/out/namecoin-*.tar.gz build/out/src/namecoin-*.tar.gz ../
 
-    ./bin/gbuild --commit namecoin=v${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
     ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
     mv build/out/namecoin-*-win-unsigned.tar.gz inputs/namecoin-win-unsigned.tar.gz
     mv build/out/namecoin-*.zip build/out/namecoin-*.exe ../
 
 ( **OS X is not in Namecoin yet.** )
 
-    ./bin/gbuild --commit bitcoin=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
-    mv build/out/bitcoin-*-osx-unsigned.tar.gz inputs/bitcoin-osx-unsigned.tar.gz
-    mv build/out/bitcoin-*.tar.gz build/out/bitcoin-*.dmg ../
+    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+    mv build/out/namecoin-*-osx-unsigned.tar.gz inputs/namecoin-osx-unsigned.tar.gz
+    mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../
     popd
 
 Build output expected:
@@ -140,7 +140,7 @@ Build output expected:
   1. source tarball (`namecoin-${VERSION}.tar.gz`)
   2. linux 32-bit and 64-bit dist tarballs (`namecoin-${VERSION}-linux[32|64].tar.gz`)
   3. windows 32-bit and 64-bit unsigned installers and dist zips (`namecoin-${VERSION}-win[32|64]-setup-unsigned.exe`, `namecoin-${VERSION}-win[32|64].zip`)
-  4. ( **Not in Namecoin yet.** ) OS X unsigned installer and dist tarball (`bitcoin-${VERSION}-osx-unsigned.dmg`, `bitcoin-${VERSION}-osx64.tar.gz`)
+  4. ( **Not in Namecoin yet.** ) OS X unsigned installer and dist tarball (`namecoin-${VERSION}-osx-unsigned.dmg`, `namecoin-${VERSION}-osx64.tar.gz`)
   5. Gitian signatures (in `gitian.sigs/${VERSION}-<linux|{win,osx}-unsigned>/(your Gitian key)/`)
 
 ### Verify other gitian builders signatures to your own. (Optional)
@@ -177,26 +177,26 @@ Commit your signature to gitian.sigs:
 ( **Not in Namecoin yet.** ) Create (and optionally verify) the signed OS X binary:
 
     pushd ./gitian-builder
-    ./bin/gbuild -i --commit signature=v${VERSION} ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../bitcoin/contrib/gitian-descriptors/gitian-osx-signer.yml
-    mv build/out/bitcoin-osx-signed.dmg ../bitcoin-${VERSION}-osx.dmg
+    ./bin/gbuild -i --commit signature=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-signed --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml
+    ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-osx-signed ../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml
+    mv build/out/namecoin-osx-signed.dmg ../namecoin-${VERSION}-osx.dmg
     popd
 
-Create (and optionally verify) the signed Windows binaries:
+( **Not in Namecoin yet.** ) Create (and optionally verify) the signed Windows binaries:
 
     pushd ./gitian-builder
-    ./bin/gbuild -i --commit signature=v${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../bitcoin/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gbuild -i --commit signature=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
     ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
-    mv build/out/namecoin-*win64-setup.exe ../bitcoin-${VERSION}-win64-setup.exe
-    mv build/out/namecoin-*win32-setup.exe ../bitcoin-${VERSION}-win32-setup.exe
+    mv build/out/namecoin-*win64-setup.exe ../namecoin-${VERSION}-win64-setup.exe
+    mv build/out/namecoin-*win32-setup.exe ../namecoin-${VERSION}-win32-setup.exe
     popd
 
-Commit your signature for the signed OS X/Windows binaries:
+( **Not in Namecoin yet.** ) Commit your signature for the signed OS X/Windows binaries:
 
     pushd gitian.sigs
-    #git add ${VERSION}-osx-signed/${SIGNER} # OS X is not in Namecoin yet, so don't do this.
+    git add ${VERSION}-osx-signed/${SIGNER}
     git add ${VERSION}-win-signed/${SIGNER}
     git commit -a
     git push  # Assuming you can push to the gitian.sigs tree
