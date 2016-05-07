@@ -752,6 +752,31 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
     assert(innerUsage == cachedInnerUsage);
 }
 
+bool CTxMemPool::CompareDepthAndScore(const uint256& hasha, const uint256& hashb)
+{
+    LOCK(cs);
+    indexed_transaction_set::const_iterator i = mapTx.find(hasha);
+    if (i == mapTx.end()) return false;
+    indexed_transaction_set::const_iterator j = mapTx.find(hashb);
+    if (j == mapTx.end()) return true;
+    uint64_t counta = i->GetCountWithAncestors();
+    uint64_t countb = j->GetCountWithAncestors();
+    if (counta == countb) {
+        return CompareTxMemPoolEntryByScore()(*i, *j);
+    }
+    return counta < countb;
+}
+
+namespace {
+class DepthAndScoreComparator
+{
+    CTxMemPool *mp;
+public:
+    DepthAndScoreComparator(CTxMemPool *mempool) : mp(mempool) {}
+    bool operator()(const uint256& a, const uint256& b) { return mp->CompareDepthAndScore(a, b); }
+};
+}
+
 void CTxMemPool::queryHashes(vector<uint256>& vtxid)
 {
     vtxid.clear();
@@ -760,6 +785,8 @@ void CTxMemPool::queryHashes(vector<uint256>& vtxid)
     vtxid.reserve(mapTx.size());
     for (indexed_transaction_set::iterator mi = mapTx.begin(); mi != mapTx.end(); ++mi)
         vtxid.push_back(mi->GetTx().GetHash());
+
+    std::sort(vtxid.begin(), vtxid.end(), DepthAndScoreComparator(this));
 }
 
 bool CTxMemPool::lookup(uint256 hash, CTransaction& result) const
@@ -885,7 +912,7 @@ bool CTxMemPool::HasNoInputsOf(const CTransaction &tx) const
     return true;
 }
 
-CCoinsViewMemPool::CCoinsViewMemPool(CCoinsView *baseIn, CTxMemPool &mempoolIn) : CCoinsViewBacked(baseIn), mempool(mempoolIn) { }
+CCoinsViewMemPool::CCoinsViewMemPool(CCoinsView* baseIn, const CTxMemPool& mempoolIn) : CCoinsViewBacked(baseIn), mempool(mempoolIn) { }
 
 bool CCoinsViewMemPool::GetCoins(const uint256 &txid, CCoins &coins) const {
     // If an entry in the mempool exists, always return that one, as it's guaranteed to never
