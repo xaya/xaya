@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2014 Daniel Kraft
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,7 +36,7 @@ class NameWalletTest (NameTestFramework):
     assert totalFee >= extra
 
     absFee = totalFee - extra
-    size = len (info['hex']) / 2
+    size = Decimal (len (info['hex']) / 2)
 
     # See check_fee_amount in wallet.py.
     assert absFee >= txFee / 1000 * size
@@ -101,7 +101,8 @@ class NameWalletTest (NameTestFramework):
         if nameOp[:3] == 'new':
           nameOp = 'new'
       else:
-        nameOp = None
+        # None is not sortable in Python3, so use "none" instead.
+        nameOp = "none"
       if 'fee' in d:
         fee = d['fee']
       else:
@@ -181,9 +182,9 @@ class NameWalletTest (NameTestFramework):
 
     self.checkBalances (-price, price + fee)
     self.checkTx (2, txid, price, None,
-                  [['receive', None, price, None]])
+                  [['receive', "none", price, None]])
     self.checkTx (3, txid, -price, -fee,
-                  [['send', None, -price, -fee],
+                  [['send', "none", -price, -fee],
                    ['send', 'update: name-a', zero, -fee]])
 
     # Test sendtoname RPC command.

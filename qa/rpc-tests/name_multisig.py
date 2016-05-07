@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2014 Daniel Kraft
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -77,7 +77,7 @@ class NameMultisigTest (NameTestFramework):
     # compared to the redeem script).
     txData = bytearray (binascii.unhexlify (tx))
     txData[44] = (txData[44] + 10) % 256
-    txManipulated = binascii.hexlify (txData)
+    txManipulated = binascii.hexlify (txData).decode ("ascii")
 
     # Send the tx.  The manipulation should be caught (independently of
     # when strict P2SH checks are enabled, since they are enforced

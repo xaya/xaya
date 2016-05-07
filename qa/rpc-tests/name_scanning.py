@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright (c) 2014 Daniel Kraft
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -95,7 +95,7 @@ class NameScanningTest (NameTestFramework):
 
     def walker (e):
       return e['name']
-    dataNames = map (walker, data)
+    dataNames = list (map (walker, data))
 
     assert_equal (dataNames, names)
 

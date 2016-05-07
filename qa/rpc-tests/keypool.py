@@ -1,5 +1,5 @@
-#!/usr/bin/env python2
-# Copyright (c) 2014-2015 The Bitcoin Core developers
+#!/usr/bin/env python3
+# Copyright (c) 2014-2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -99,7 +99,7 @@ def test_auxpow(nodes):
     try:
         nodes[0].getauxblock()
         raise AssertionError('Keypool should be exhausted by getauxblock')
-    except JSONRPCException,e:
+    except JSONRPCException as e:
         assert(e.error['code']==-12)
 
 def main():
