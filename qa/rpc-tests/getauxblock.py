@@ -13,8 +13,6 @@ from test_framework import auxpow
 class GetAuxBlockTest (BitcoinTestFramework):
 
   def run_test (self):
-    BitcoinTestFramework.run_test (self)
-
     # Generate a block so that we are not "downloading blocks".
     self.nodes[0].generate (1)
 

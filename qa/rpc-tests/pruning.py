@@ -20,13 +20,13 @@ def calc_usage(blockdir):
 class PruneTest(BitcoinTestFramework):
 
     def __init__(self):
+        super().__init__()
+        self.setup_clean_chain = True
+        self.num_nodes = 3
+
         self.utxo = []
         self.address = ["",""]
         self.txouts = gen_return_txouts()
-
-    def setup_chain(self):
-        print("Initializing test directory "+self.options.tmpdir)
-        initialize_chain_clean(self.options.tmpdir, 3)
 
     def setup_network(self):
         self.nodes = []
@@ -75,7 +75,7 @@ class PruneTest(BitcoinTestFramework):
         waitstart = time.time()
         while os.path.isfile(self.prunedir+"blk00000.dat"):
             time.sleep(0.1)
-            if time.time() - waitstart > 10:
+            if time.time() - waitstart > 30:
                 raise AssertionError("blk00000.dat not pruned when it should be")
 
         print("Success")
