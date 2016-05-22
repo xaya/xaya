@@ -19,9 +19,10 @@ class WalletTest (BitcoinTestFramework):
             raise AssertionError("Fee of %s BTC too high! (Should be %s BTC)"%(str(fee), str(target_fee)))
         return curr_balance
 
-    def setup_chain(self):
-        print("Initializing test directory "+self.options.tmpdir)
-        initialize_chain_clean(self.options.tmpdir, 4)
+    def __init__(self):
+        super().__init__()
+        self.setup_clean_chain = True
+        self.num_nodes = 4
 
     def setup_network(self, split=False):
         self.nodes = start_nodes(3, self.options.tmpdir)
@@ -306,7 +307,7 @@ class WalletTest (BitcoinTestFramework):
         # Check that the txid and balance is found by node1
         self.nodes[1].gettransaction(cbTxId)
 
-        #check if wallet or blochchain maintenance changes the balance
+        # check if wallet or blockchain maintenance changes the balance
         self.sync_all()
         blocks = self.nodes[0].generate(2)
         self.sync_all()
@@ -318,7 +319,8 @@ class WalletTest (BitcoinTestFramework):
             '-reindex',
             '-zapwallettxes=1',
             '-zapwallettxes=2',
-            '-salvagewallet',
+            # disabled until issue is fixed: https://github.com/bitcoin/bitcoin/issues/7463
+            # '-salvagewallet',
         ]
         for m in maintenance:
             print("check " + m)
@@ -338,4 +340,4 @@ class WalletTest (BitcoinTestFramework):
         assert_equal(len(self.nodes[0].listsinceblock(blocks[1])["transactions"]), 0)
 
 if __name__ == '__main__':
-    WalletTest ().main ()
+    WalletTest().main()

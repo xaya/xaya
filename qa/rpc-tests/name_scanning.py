@@ -11,8 +11,6 @@ from test_framework.util import *
 class NameScanningTest (NameTestFramework):
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-
     # Mine a block so that we're no longer in initial download.
     self.generate (3, 1)
 

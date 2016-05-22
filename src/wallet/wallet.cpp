@@ -1307,9 +1307,7 @@ bool CWalletTx::RelayWalletTransaction()
     {
         if (GetDepthInMainChain() == 0 && !isAbandoned() && InMempool()) {
             LogPrintf("Relaying wtx %s\n", GetHash().ToString());
-            CFeeRate feeRate;
-            mempool.lookupFeeRate(GetHash(), feeRate);
-            RelayTransaction((CTransaction)*this, feeRate);
+            RelayTransaction((CTransaction)*this);
             return true;
         }
     }

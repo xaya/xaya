@@ -30,8 +30,6 @@ class NameExpirationTest (NameTestFramework):
     return self.setupNodesWithArgs ([["-debug=names"]] * 4)
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-
     # Start the registration of two names which will be used.  name-long
     # will expire and be reregistered on the short chain, which will be
     # undone with the reorg.  name-short will be updated before expiration

@@ -115,8 +115,6 @@ class NameWalletTest (NameTestFramework):
     assert_equal (detailsGot, details)
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-    
     # Note that the next 50 maturing blocks will be for nodes 0 and 1.
     # Thus we use 2 and 3 for the tests, because their balance
     # will stay constant over time except for our explicit transactions.

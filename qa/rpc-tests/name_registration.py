@@ -11,8 +11,6 @@ from test_framework.util import *
 class NameRegistrationTest (NameTestFramework):
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-
     # Perform name_new's.  Check for too long names exception.
     newA = self.nodes[0].name_new ("node-0")
     newAconfl = self.nodes[1].name_new ("node-0")

@@ -1,5 +1,3 @@
-* handle seed nodes / DNS seeds
-
 * implement proper size computation for name cache
 
 * upgrade to new version at fixed height:
@@ -19,3 +17,5 @@
 * make dust spam unspendable?
 
 * dropexpirednames=1 to also remove expired names from the name database?
+
+* simplify regtests with reduced number of nodes?

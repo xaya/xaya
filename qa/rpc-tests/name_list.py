@@ -11,8 +11,6 @@ from test_framework.util import *
 class NameListTest (NameTestFramework):
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-
     assert_equal (self.nodes[0].name_list (), [])
     assert_equal (self.nodes[1].name_list (), [])
 

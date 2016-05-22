@@ -13,8 +13,6 @@ from decimal import Decimal
 class NameRawTxTest (NameTestFramework):
 
   def run_test (self):
-    NameTestFramework.run_test (self)
-
     # Decode name_new.
     new = self.nodes[0].name_new ("my-name")
     self.generate (0, 10)
