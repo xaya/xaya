@@ -125,7 +125,9 @@ testScripts = [
     'nodehandling.py',
     'reindex.py',
     'decodescript.py',
-    'p2p-fullblocktest.py',
+    # Disabled for now, seems flaky in Namecoin (see Bitcoin issue #7978).
+    # FIXME: Investigate and fix properly.
+    #'p2p-fullblocktest.py',
     'blockchain.py',
     'disablewallet.py',
     'sendheaders.py',
