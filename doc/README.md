@@ -57,6 +57,7 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [Shared Libraries](shared-libraries.md)
 - [BIPS](bips.md)
 - [Dnsseed Policy](dnsseed-policy.md)
+- [Benchmarking](benchmarking.md)
 
 ### Resources
 * Discuss on the [Namecoin forums](https://forum.namecoin.info/index.php), in the [Development & Technical Discussion board](https://forum.namecoin.info/viewforum.php?f=8).

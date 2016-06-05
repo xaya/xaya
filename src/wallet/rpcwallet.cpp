@@ -2319,13 +2319,14 @@ UniValue listunspent(const UniValue& params, bool fHelp)
             "\nResult\n"
             "[                   (array of json object)\n"
             "  {\n"
-            "    \"txid\" : \"txid\",        (string) the transaction id \n"
+            "    \"txid\" : \"txid\",          (string) the transaction id \n"
             "    \"vout\" : n,               (numeric) the vout value\n"
-            "    \"address\" : \"address\",  (string) the namecoin address\n"
-            "    \"account\" : \"account\",  (string) DEPRECATED. The associated account, or \"\" for the default account\n"
-            "    \"scriptPubKey\" : \"key\", (string) the script key\n"
+            "    \"address\" : \"address\",    (string) the namecoin address\n"
+            "    \"account\" : \"account\",    (string) DEPRECATED. The associated account, or \"\" for the default account\n"
+            "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
             "    \"amount\" : x.xxx,         (numeric) the transaction amount in " + CURRENCY_UNIT + "\n"
             "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "    \"redeemScript\" : n        (string) The redeemScript if scriptPubKey is P2SH\n"
             "    \"spendable\" : xxx,        (bool) Whether we have the private keys to spend this output\n"
             "    \"solvable\" : xxx          (bool) Whether we know how to spend this output, ignoring the lack of keys\n"
             "  }\n"
@@ -2371,38 +2372,34 @@ UniValue listunspent(const UniValue& params, bool fHelp)
         if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
             continue;
 
-        if (setAddress.size()) {
-            CTxDestination address;
-            if (!ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
-                continue;
+        CTxDestination address;
+        const CScript& scriptPubKey = out.tx->vout[out.i].scriptPubKey;
+        bool fValidAddress = ExtractDestination(scriptPubKey, address);
 
-            if (!setAddress.count(address))
-                continue;
-        }
+        if (setAddress.size() && (!fValidAddress || !setAddress.count(address)))
+            continue;
 
-        CAmount nValue = out.tx->vout[out.i].nValue;
-        const CScript& pk = out.tx->vout[out.i].scriptPubKey;
         UniValue entry(UniValue::VOBJ);
         entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
         entry.push_back(Pair("vout", out.i));
-        CTxDestination address;
-        if (ExtractDestination(out.tx->vout[out.i].scriptPubKey, address)) {
+
+        if (fValidAddress) {
             entry.push_back(Pair("address", CBitcoinAddress(address).ToString()));
+
             if (pwalletMain->mapAddressBook.count(address))
                 entry.push_back(Pair("account", pwalletMain->mapAddressBook[address].name));
-        }
-        entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
-        if (pk.IsPayToScriptHash(true)) {
-            CTxDestination address;
-            if (ExtractDestination(pk, address)) {
+
+            if (scriptPubKey.IsPayToScriptHash(true)) {
                 const CScriptID& hash = boost::get<CScriptID>(address);
                 CScript redeemScript;
                 if (pwalletMain->GetCScript(hash, redeemScript))
                     entry.push_back(Pair("redeemScript", HexStr(redeemScript.begin(), redeemScript.end())));
             }
         }
-        entry.push_back(Pair("amount",ValueFromAmount(nValue)));
-        entry.push_back(Pair("confirmations",out.nDepth));
+
+        entry.push_back(Pair("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
+        entry.push_back(Pair("amount", ValueFromAmount(out.tx->vout[out.i].nValue)));
+        entry.push_back(Pair("confirmations", out.nDepth));
         entry.push_back(Pair("spendable", out.fSpendable));
         entry.push_back(Pair("solvable", out.fSolvable));
         results.push_back(entry);
@@ -2436,6 +2433,7 @@ UniValue fundrawtransaction(const UniValue& params, bool fHelp)
                             "     \"changePosition\"    (numeric, optional, default random) The index of the change output\n"
                             "     \"includeWatching\"   (boolean, optional, default false) Also select inputs which are watch only\n"
                             "     \"lockUnspents\"      (boolean, optional, default false) Lock selected unspent outputs\n"
+                            "     \"feeRate\"           (numeric, optional, default 0=estimate) Set a specific feerate (fee per KB)\n"
                             "   }\n"
                             "                         for backward compatibility: passing in a true instead of an object will result in {\"includeWatching\":true}\n"
                             "\nResult:\n"
@@ -2462,6 +2460,8 @@ UniValue fundrawtransaction(const UniValue& params, bool fHelp)
     int changePosition = -1;
     bool includeWatching = false;
     bool lockUnspents = false;
+    CFeeRate feeRate = CFeeRate(0);
+    bool overrideEstimatedFeerate = false;
 
     if (params.size() > 1) {
       if (params[1].type() == UniValue::VBOOL) {
@@ -2473,7 +2473,7 @@ UniValue fundrawtransaction(const UniValue& params, bool fHelp)
 
         UniValue options = params[1];
 
-        RPCTypeCheckObj(options, boost::assign::map_list_of("changeAddress", UniValue::VSTR)("changePosition", UniValue::VNUM)("includeWatching", UniValue::VBOOL)("lockUnspents", UniValue::VBOOL), true, true);
+        RPCTypeCheckObj(options, boost::assign::map_list_of("changeAddress", UniValue::VSTR)("changePosition", UniValue::VNUM)("includeWatching", UniValue::VBOOL)("lockUnspents", UniValue::VBOOL)("feeRate", UniValue::VNUM), true, true);
 
         if (options.exists("changeAddress")) {
             CBitcoinAddress address(options["changeAddress"].get_str());
@@ -2492,6 +2492,12 @@ UniValue fundrawtransaction(const UniValue& params, bool fHelp)
 
         if (options.exists("lockUnspents"))
             lockUnspents = options["lockUnspents"].get_bool();
+
+        if (options.exists("feeRate"))
+        {
+            feeRate = CFeeRate(options["feeRate"].get_real());
+            overrideEstimatedFeerate = true;
+        }
       }
     }
 
@@ -2507,16 +2513,16 @@ UniValue fundrawtransaction(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "changePosition out of bounds");
 
     CMutableTransaction tx(origTx);
-    CAmount nFee;
+    CAmount nFeeOut;
     string strFailReason;
 
-    if(!pwalletMain->FundTransaction(tx, nFee, changePosition, strFailReason, includeWatching, lockUnspents, changeAddress))
+    if(!pwalletMain->FundTransaction(tx, nFeeOut, overrideEstimatedFeerate, feeRate, changePosition, strFailReason, includeWatching, lockUnspents, changeAddress))
         throw JSONRPCError(RPC_INTERNAL_ERROR, strFailReason);
 
     UniValue result(UniValue::VOBJ);
     result.push_back(Pair("hex", EncodeHexTx(tx)));
     result.push_back(Pair("changepos", changePosition));
-    result.push_back(Pair("fee", ValueFromAmount(nFee)));
+    result.push_back(Pair("fee", ValueFromAmount(nFeeOut)));
 
     return result;
 }
