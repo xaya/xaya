@@ -488,13 +488,13 @@ name_pending (const UniValue& params, bool fHelp)
   for (std::vector<uint256>::const_iterator i = txHashes.begin ();
        i != txHashes.end (); ++i)
     {
-      CTransaction tx;
-      if (!mempool.lookup (*i, tx) || !tx.IsNamecoin ())
+      std::shared_ptr<const CTransaction> tx = mempool.get (*i);
+      if (!tx || !tx->IsNamecoin ())
         continue;
 
-      for (unsigned i = 0; i < tx.vout.size (); ++i)
+      for (const auto& txOut : tx->vout)
         {
-          const CNameScript op(tx.vout[i].scriptPubKey);
+          const CNameScript op(txOut.scriptPubKey);
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
 
@@ -521,7 +521,7 @@ name_pending (const UniValue& params, bool fHelp)
           obj.push_back (Pair ("op", strOp));
           obj.push_back (Pair ("name", name));
           obj.push_back (Pair ("value", value));
-          obj.push_back (Pair ("txid", tx.GetHash ().GetHex ()));
+          obj.push_back (Pair ("txid", tx->GetHash ().GetHex ()));
 
 #ifdef ENABLE_WALLET
           isminetype mine = ISMINE_NO;

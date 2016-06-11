@@ -31,6 +31,14 @@ bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType&
     return false;
 }
 
+std::string CDNSSeedData::getHost(uint64_t requiredServiceBits) const {
+    //use default host for non-filter-capable seeds or if we use the default service bits (NODE_NETWORK)
+    if (!supportsServiceBitsFiltering || requiredServiceBits == NODE_NETWORK)
+        return host;
+    
+    return strprintf("x%x.%s", requiredServiceBits, host);
+}
+
 static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;

@@ -80,11 +80,7 @@ bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock,
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 bool CCoinsViewBacked::ValidateNameDB() const { return base->ValidateNameDB(); }
 
-SaltedTxidHasher::SaltedTxidHasher()
-{
-    GetRandBytes((unsigned char*)&k0, sizeof(k0));
-    GetRandBytes((unsigned char*)&k1, sizeof(k1));
-}
+SaltedTxidHasher::SaltedTxidHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
 CCoinsViewCache::CCoinsViewCache(CCoinsView *baseIn) : CCoinsViewBacked(baseIn), hasModifier(false), cachedCoinsUsage(0) { }
 
