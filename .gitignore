@@ -121,3 +121,4 @@ share/BitcoindComparisonTool.jar
 
 libbitcoinconsensus.pc
 libnamecoinconsensus.pc
+contrib/devtools/split-debug.sh
