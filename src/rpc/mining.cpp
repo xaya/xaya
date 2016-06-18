@@ -23,6 +23,8 @@
 #include "validationinterface.h"
 
 #include <stdint.h>
+#include <memory>
+#include <utility>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/shared_ptr.hpp>
@@ -943,15 +945,15 @@ UniValue getauxblock(const UniValue& params, bool fHelp)
     static CCriticalSection cs_auxblockCache;
     LOCK(cs_auxblockCache);
     static std::map<uint256, CBlock*> mapNewBlock;
-    static std::vector<CBlockTemplate*> vNewBlockTemplate;
+    static std::vector<std::unique_ptr<CBlockTemplate>> vNewBlockTemplate;
 
     /* Create a new block?  */
     if (params.size() == 0)
     {
         static unsigned nTransactionsUpdatedLast;
-        static const CBlockIndex* pindexPrev = NULL;
+        static const CBlockIndex* pindexPrev = nullptr;
         static uint64_t nStart;
-        static CBlockTemplate* pblocktemplate;
+        static CBlock* pblock = nullptr;
         static unsigned nExtraNonce = 0;
 
         // Update block
@@ -963,16 +965,15 @@ UniValue getauxblock(const UniValue& params, bool fHelp)
         {
             if (pindexPrev != chainActive.Tip())
             {
-                // Deallocate old blocks since they're obsolete now
+                // Clear old blocks since they're obsolete now.
                 mapNewBlock.clear();
-                BOOST_FOREACH(CBlockTemplate* pbt, vNewBlockTemplate)
-                    delete pbt;
                 vNewBlockTemplate.clear();
+                pblock = nullptr;
             }
 
             // Create new block with nonce = 0 and extraNonce = 1
-            pblocktemplate = BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript);
-            if (!pblocktemplate)
+            std::unique_ptr<CBlockTemplate> newBlock(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+            if (!newBlock)
                 throw JSONRPCError(RPC_OUT_OF_MEMORY, "out of memory");
 
             // Update state only when CreateNewBlock succeeded
@@ -981,30 +982,28 @@ UniValue getauxblock(const UniValue& params, bool fHelp)
             nStart = GetTime();
 
             // Finalise it by setting the version and building the merkle root
-            CBlock* pblock = &pblocktemplate->block;
-            IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
-            pblock->SetAuxpowVersion(true);
+            IncrementExtraNonce(&newBlock->block, pindexPrev, nExtraNonce);
+            newBlock->block.SetAuxpowVersion(true);
 
             // Save
+            pblock = &newBlock->block;
             mapNewBlock[pblock->GetHash()] = pblock;
-            vNewBlockTemplate.push_back(pblocktemplate);
+            vNewBlockTemplate.push_back(std::move(newBlock));
         }
         }
-
-        const CBlock& block = pblocktemplate->block;
 
         arith_uint256 target;
         bool fNegative, fOverflow;
-        target.SetCompact(block.nBits, &fNegative, &fOverflow);
+        target.SetCompact(pblock->nBits, &fNegative, &fOverflow);
         if (fNegative || fOverflow || target == 0)
             throw std::runtime_error("invalid difficulty bits in block");
 
         UniValue result(UniValue::VOBJ);
-        result.push_back(Pair("hash", block.GetHash().GetHex()));
-        result.push_back(Pair("chainid", block.GetChainId()));
-        result.push_back(Pair("previousblockhash", block.hashPrevBlock.GetHex()));
-        result.push_back(Pair("coinbasevalue", (int64_t)block.vtx[0].vout[0].nValue));
-        result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
+        result.push_back(Pair("hash", pblock->GetHash().GetHex()));
+        result.push_back(Pair("chainid", pblock->GetChainId()));
+        result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
+        result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0].vout[0].nValue));
+        result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
         result.push_back(Pair("height", static_cast<int64_t> (pindexPrev->nHeight + 1)));
         result.push_back(Pair("_target", HexStr(BEGIN(target), END(target))));
 
@@ -1033,7 +1032,8 @@ UniValue getauxblock(const UniValue& params, bool fHelp)
     CValidationState state;
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool fAccepted = ProcessNewBlock(state, Params(), NULL, &block, true, NULL);
+    bool fAccepted = ProcessNewBlock(state, Params(), nullptr, &block,
+                                     true, nullptr);
     UnregisterValidationInterface(&sc);
 
     if (fAccepted)
