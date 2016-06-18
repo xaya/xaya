@@ -11,12 +11,7 @@ class WalletTest (BitcoinTestFramework):
     def check_fee_amount(self, curr_balance, balance_with_fee, fee_per_byte, tx_size):
         """Return curr_balance after asserting the fee was in range"""
         fee = balance_with_fee - curr_balance
-        target_fee = fee_per_byte * tx_size
-        if fee < target_fee:
-            raise AssertionError("Fee of %s BTC too low! (Should be %s BTC)"%(str(fee), str(target_fee)))
-        # allow the node's estimation to be at most 2 bytes off
-        if fee > fee_per_byte * (tx_size + 2):
-            raise AssertionError("Fee of %s BTC too high! (Should be %s BTC)"%(str(fee), str(target_fee)))
+        assert_fee_amount(fee, tx_size, fee_per_byte * 1000)
         return curr_balance
 
     def __init__(self):
@@ -314,6 +309,20 @@ class WalletTest (BitcoinTestFramework):
         balance_nodes = [self.nodes[i].getbalance() for i in range(3)]
         block_count = self.nodes[0].getblockcount()
 
+        # Check modes:
+        #   - True: unicode escaped as \u....
+        #   - False: unicode directly as UTF-8
+        for mode in [True, False]:
+            self.nodes[0].ensure_ascii = mode
+            # unicode check: Basic Multilingual Plane, Supplementary Plane respectively
+            for s in [u'рыба', u'𝅘𝅥𝅯']:
+                addr = self.nodes[0].getaccountaddress(s)
+                label = self.nodes[0].getaccount(addr)
+                assert_equal(label, s)
+                assert(s in self.nodes[0].listaccounts().keys())
+        self.nodes[0].ensure_ascii = True # restore to default
+
+        # maintenance tests
         maintenance = [
             '-rescan',
             '-reindex',
