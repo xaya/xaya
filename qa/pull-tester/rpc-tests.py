@@ -101,6 +101,10 @@ if ENABLE_ZMQ:
 
 #Tests
 testScripts = [
+    # longest test should go first, to favor running tests in parallel
+    # Disabled for now, seems flaky in Namecoin (see Bitcoin issue #7978).
+    # FIXME: Investigate and fix properly.
+    #'p2p-fullblocktest.py',
     'walletbackup.py',
     # FIXME: Enable once we activate BIP9.
     #'bip68-112-113-p2p.py',
@@ -126,9 +130,6 @@ testScripts = [
     'nodehandling.py',
     'reindex.py',
     'decodescript.py',
-    # Disabled for now, seems flaky in Namecoin (see Bitcoin issue #7978).
-    # FIXME: Investigate and fix properly.
-    #'p2p-fullblocktest.py',
     'blockchain.py',
     'disablewallet.py',
     'sendheaders.py',
@@ -139,6 +140,8 @@ testScripts = [
     'abandonconflict.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-versionbits-warning.py',
+    #'p2p-segwit.py',
+    #'segwit.py',
     'importprunedfunds.py',
     'signmessages.py',
 
@@ -207,7 +210,7 @@ def runtests():
     if coverage:
         flags.append(coverage.flag)
 
-    if len(test_list) > 1:
+    if len(test_list) > 1 and run_parallel > 1:
         # Populate cache
         subprocess.check_output([RPC_TESTS_DIR + 'create_cache.py'] + flags)
 
@@ -267,7 +270,7 @@ class RPCTestHandler:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)))
         if not self.jobs:
-            raise IndexError('%s from empty list' % __name__)
+            raise IndexError('pop from empty list')
         while True:
             # Return first proc that finishes
             time.sleep(.5)
