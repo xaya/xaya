@@ -41,9 +41,21 @@ report issues about Windows XP to the issue tracker.
 Notable changes
 ===============
 
-Example item
-----------------
+Database cache memory increased
+--------------------------------
 
+As a result of growth of the UTXO set, performance with the prior default
+database cache of 100 MiB has suffered.
+For this reason the default was changed to 300 MiB in this release.
+
+For nodes on low-memory systems, the database cache can be changed back to
+100 MiB (or to another value) by either:
+
+- Adding `dbcache=100` in bitcoin.conf
+- Changing it in the GUI under `Options → Size of database cache`
+
+Note that the database cache setting has the most performance impact
+during initial sync of a node, and when catching up after downtime.
 
 bitcoin-cli: arguments privacy
 --------------------------------
@@ -113,11 +125,14 @@ git merge commit are mentioned.
 
 ### RPC and REST
 
-Asm script outputs now contain OP_CHECKLOCKTIMEVERIFY in place of OP_NOP2
--------------------------------------------------------------------------
+Asm script outputs replacements for OP_NOP2 and OP_NOP3
+-------------------------------------------------------
 
 OP_NOP2 has been renamed to OP_CHECKLOCKTIMEVERIFY by [BIP 
 65](https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki)
+
+OP_NOP3 has been renamed to OP_CHECKSEQUENCEVERIFY by [BIP 
+112](https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki)
 
 The following outputs are affected by this change:
 - RPC `getrawtransaction` (in verbose mode)
