@@ -124,6 +124,8 @@ CPubKey CWallet::GenerateNewKey()
             // childIndex | BIP32_HARDENED_KEY_LIMIT = derive childIndex in hardened child-index-range
             // example: 1 | BIP32_HARDENED_KEY_LIMIT == 0x80000001 == 2147483649
             externalChainChildKey.Derive(childKey, hdChain.nExternalChainCounter | BIP32_HARDENED_KEY_LIMIT);
+            metadata.hdKeypath     = "m/0'/0'/"+std::to_string(hdChain.nExternalChainCounter)+"'";
+            metadata.hdMasterKeyID = hdChain.masterKeyID;
             // increment childkey index
             hdChain.nExternalChainCounter++;
         } while(HaveKey(childKey.key.GetPubKey().GetID()));
@@ -1188,6 +1190,9 @@ CAmount CWallet::GetChange(const CTransaction& tx) const
 bool CWallet::SetHDMasterKey(const CKey& key)
 {
     LOCK(cs_wallet);
+
+    // ensure this wallet.dat can only be opened by clients supporting HD
+    SetMinVersion(FEATURE_HD);
 
     // store the key as normal "key"/"ckey" object
     // in the database
@@ -2424,7 +2429,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend,
                 *static_cast<CTransaction*>(&wtxNew) = CTransaction(txNew);
 
                 // Limit size
-                if (GetTransactionCost(txNew) >= MAX_STANDARD_TX_COST)
+                if (GetTransactionWeight(txNew) >= MAX_STANDARD_TX_WEIGHT)
                 {
                     strFailReason = _("Transaction too large");
                     return false;
