@@ -118,19 +118,19 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 ### Build and sign Namecoin Core for Linux, Windows, and OS X:
 
     pushd ./gitian-builder
-    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gbuild --memory 3000 --commit namecoin=nc${VERSION} ../namecoin/contrib/gitian-descriptors/gitian-linux.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-linux --destination ../gitian.sigs/ ../namecoin/contrib/gitian-descriptors/gitian-linux.yml
     mv build/out/namecoin-*.tar.gz build/out/src/namecoin-*.tar.gz ../
 
-    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gbuild --memory 3000 --commit namecoin=nc${VERSION} ../namecoin/contrib/gitian-descriptors/gitian-win.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-win-unsigned --destination ../gitian.sigs/ ../namecoin/contrib/gitian-descriptors/gitian-win.yml
     mv build/out/namecoin-*-win-unsigned.tar.gz inputs/namecoin-win-unsigned.tar.gz
     mv build/out/namecoin-*.zip build/out/namecoin-*.exe ../
 
 ( **OS X is not in Namecoin yet.** )
 
-    ./bin/gbuild --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
-    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gbuild --memory 3000 --commit namecoin=nc${VERSION} ../namecoin/contrib/gitian-descriptors/gitian-osx.yml
+    ./bin/gsign --signer $SIGNER --release ${VERSION}-osx-unsigned --destination ../gitian.sigs/ ../namecoin/contrib/gitian-descriptors/gitian-osx.yml
     mv build/out/namecoin-*-osx-unsigned.tar.gz inputs/namecoin-osx-unsigned.tar.gz
     mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../
     popd
