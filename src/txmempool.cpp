@@ -367,7 +367,7 @@ void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee,
 
 CTxMemPool::CTxMemPool(const CFeeRate& _minReasonableRelayFee) :
     nTransactionsUpdated(0),
-    names(*this), fCheckInputs(true)
+    names(*this)
 {
     _clear(); //lock free clear
 
@@ -684,6 +684,7 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
     uint64_t innerUsage = 0;
 
     CCoinsViewCache mempoolDuplicate(const_cast<CCoinsViewCache*>(pcoins));
+    const int64_t nSpendHeight = GetSpendHeight(mempoolDuplicate);
 
     LOCK(cs);
     list<const CTxMemPoolEntry*> waitingOnDependants;
@@ -764,7 +765,9 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
             waitingOnDependants.push_back(&(*it));
         else {
             CValidationState state;
-            assert(!fCheckInputs || CheckInputs(tx, state, mempoolDuplicate, false, SCRIPT_VERIFY_NAMES_MEMPOOL, false, NULL));
+            bool fCheckResult = tx.IsCoinBase() ||
+                Consensus::CheckTxInputs(tx, state, mempoolDuplicate, nSpendHeight, SCRIPT_VERIFY_NAMES_MEMPOOL);
+            assert(fCheckResult);
             UpdateCoins(tx, mempoolDuplicate, 1000000);
         }
     }
@@ -778,7 +781,9 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
             stepsSinceLastRemove++;
             assert(stepsSinceLastRemove < waitingOnDependants.size());
         } else {
-            assert(!fCheckInputs || CheckInputs(entry->GetTx(), state, mempoolDuplicate, false, SCRIPT_VERIFY_NAMES_MEMPOOL, false, NULL));
+            bool fCheckResult = entry->GetTx().IsCoinBase() ||
+                Consensus::CheckTxInputs(entry->GetTx(), state, mempoolDuplicate, nSpendHeight, SCRIPT_VERIFY_NAMES_MEMPOOL);
+            assert(fCheckResult);
             UpdateCoins(entry->GetTx(), mempoolDuplicate, 1000000);
             stepsSinceLastRemove = 0;
         }
@@ -794,6 +799,11 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
     assert(totalTxSize == checkTotal);
     assert(innerUsage == cachedInnerUsage);
 
+    checkNames(pcoins);
+}
+
+void CTxMemPool::checkNames(const CCoinsViewCache *pcoins) const
+{
     names.check (*pcoins);
 }
 

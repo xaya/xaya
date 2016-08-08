@@ -93,12 +93,15 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.nMajorityEnforceBlockUpgrade = 750;
-        consensus.nMajorityRejectBlockOutdated = 950;
-        consensus.nMajorityWindow = 1000;
-        /* FIXME: Set once we need the value in main.cpp.  */
-        consensus.BIP34Height = -1;
-        consensus.BIP34Hash = uint256();
+        /* Note that these are not the actual activation heights, but blocks
+           after them.  They are too deep in the chain to be ever reorged,
+           and thus this is also fine.  */
+        consensus.BIP34Height = 250000;
+        consensus.BIP34Hash = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a");
+        // FIXME: BIP65 is not yet active on mainnet, activate it by setting
+        // a corresponding scheduled height here.
+        consensus.BIP65Height = 1000000;
+        consensus.BIP66Height = 250000;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -180,9 +183,10 @@ public:
             ( 57000, uint256S("aa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203"))
             (112896, uint256S("73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf"))
             (182000, uint256S("d47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9"))
-            (193000, uint256S("3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58")),
-            1409050213, // * UNIX timestamp of last checkpoint block
-            1441814,    // * total number of transactions between genesis and last checkpoint
+            (193000, uint256S("3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58"))
+            (250000, uint256S("514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a")),
+            1442977054, // * UNIX timestamp of last checkpoint block
+            3000785,    // * total number of transactions between genesis and last checkpoint
                         //   (the tx=... number in the SetBestChain debug.log lines)
             1635.0      // * estimated number of transactions per day after checkpoint
         };
@@ -244,12 +248,12 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.nMajorityEnforceBlockUpgrade = 51;
-        consensus.nMajorityRejectBlockOutdated = 75;
-        consensus.nMajorityWindow = 100;
-        /* FIXME: Set once we need the value in main.cpp.  */
-        consensus.BIP34Height = -1;
-        consensus.BIP34Hash = uint256();
+        /* As before, these are not the actual activation heights but some
+           blocks after them.  */
+        consensus.BIP34Height = 130000;
+        consensus.BIP34Hash = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954");
+        consensus.BIP65Height = 130000;
+        consensus.BIP66Height = 130000;
         consensus.powLimit = uint256S("0000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -322,9 +326,10 @@ public:
             ( 18144, uint256S("c0ec570117822ca3c76abd1d10449b283d8ad39c64290d6abafe2bed23917886"))
             ( 34715, uint256S("0000000580cf4342f869e278d94d7e67d2ac8cae4a411082e0fd518a8091ebf2"))
             ( 48384, uint256S("00000001d528af69dce584f882e3bdb36127104988607b726591cc5e62287922"))
-            ( 60480, uint256S("d3af823c32e890ca589dd4277aa4d27b8cd290396b7e0eeeee5121481fd43ca5")),
-            1407617760,
-            93107,
+            ( 60480, uint256S("d3af823c32e890ca589dd4277aa4d27b8cd290396b7e0eeeee5121481fd43ca5"))
+            (130000, uint256S("e0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954")),
+            1464247300,
+            173446,
             230
         };
 
@@ -346,11 +351,10 @@ public:
     CRegTestParams() {
         strNetworkID = "regtest";
         consensus.nSubsidyHalvingInterval = 150;
-        consensus.nMajorityEnforceBlockUpgrade = 750;
-        consensus.nMajorityRejectBlockOutdated = 950;
-        consensus.nMajorityWindow = 1000;
-        consensus.BIP34Height = -1; // BIP34 has not necessarily activated on regtest
+        consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
         consensus.BIP34Hash = uint256();
+        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
+        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -417,6 +421,12 @@ public:
     {
         return 0;
     }
+
+    void UpdateBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)
+    {
+        consensus.vDeployments[d].nStartTime = nStartTime;
+        consensus.vDeployments[d].nTimeout = nTimeout;
+    }
 };
 static CRegTestParams regTestParams;
 
@@ -444,3 +454,9 @@ void SelectParams(const std::string& network)
     SelectBaseParams(network);
     pCurrentParams = &Params(network);
 }
+
+void UpdateRegtestBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)
+{
+    regTestParams.UpdateBIP9Parameters(d, nStartTime, nTimeout);
+}
+ 

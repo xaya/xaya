@@ -102,8 +102,7 @@ if ENABLE_ZMQ:
 #Tests
 testScripts = [
     # longest test should go first, to favor running tests in parallel
-    # Disabled for now, seems flaky in Namecoin (see Bitcoin issue #7978).
-    # FIXME: Investigate and fix properly.
+    # p2p-fullblocktest is disabled as it hits the BDB lock limit.
     #'p2p-fullblocktest.py',
     'walletbackup.py',
     # FIXME: Enable once we activate BIP9.
@@ -146,6 +145,7 @@ testScripts = [
     #'segwit.py',
     'importprunedfunds.py',
     'signmessages.py',
+    'p2p-compactblocks.py',
 
     # auxpow tests
     'getauxblock.py',
@@ -175,7 +175,7 @@ testScriptsExt = [
     'txn_clone.py --mineblock',
     'forknotify.py',
     'invalidateblock.py',
-#    'rpcbind_test.py', #temporary, bug in libevent, see #6655
+    'rpcbind_test.py',
     'smartfees.py',
     'maxblocksinflight.py',
     'p2p-acceptblock.py',
