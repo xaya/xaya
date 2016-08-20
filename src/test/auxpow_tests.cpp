@@ -155,7 +155,7 @@ CAuxpowBuilder::get (const CTransaction& tx) const
 {
   LOCK(cs_main);
   CAuxPow res(tx);
-  res.SetMerkleBranch (parentBlock);
+  res.InitMerkleBranch (parentBlock, 0);
 
   res.vChainMerkleBranch = auxpowChainMerkleBranch;
   res.nChainIndex = auxpowChainIndex;

@@ -114,6 +114,9 @@ testScripts = [
     'receivedby.py',
     'mempool_resurrect_test.py',
     'txn_doublespend.py --mineblock',
+    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
+    #'p2p-segwit.py',
+    #'segwit.py',
     'txn_clone.py',
     'getchaintips.py',
     'rawtransactions.py',
@@ -135,14 +138,13 @@ testScripts = [
     'disablewallet.py',
     'sendheaders.py',
     'keypool.py',
+    'p2p-mempool.py',
     'prioritise_transaction.py',
     'invalidblockrequest.py',
     'invalidtxrequest.py',
     'abandonconflict.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-versionbits-warning.py',
-    #'p2p-segwit.py',
-    #'segwit.py',
     'importprunedfunds.py',
     'signmessages.py',
     'p2p-compactblocks.py',
@@ -209,6 +211,7 @@ def runtests():
         coverage = RPCCoverage()
         print("Initializing coverage directory at %s\n" % coverage.dir)
     flags = ["--srcdir=%s/src" % BUILDDIR] + passon_args
+    flags.append("--cachedir=%s/qa/cache" % BUILDDIR)
     if coverage:
         flags.append(coverage.flag)
 
