@@ -1183,8 +1183,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     fNameLookup = GetBoolArg("-dns", DEFAULT_NAME_LOOKUP);
     fRelayTxes = !GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY);
 
-    bool fBound = false;
     if (fListen) {
+        bool fBound = false;
         if (mapArgs.count("-bind") || mapArgs.count("-whitebind")) {
             BOOST_FOREACH(const std::string& strBind, mapMultiArgs["-bind"]) {
                 CService addrBind;
@@ -1494,12 +1494,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     //// debug print
     LogPrintf("mapBlockIndex.size() = %u\n",   mapBlockIndex.size());
     LogPrintf("nBestHeight = %d\n",                   chainActive.Height());
-#ifdef ENABLE_WALLET
-    LogPrintf("setKeyPool.size() = %u\n",      pwalletMain ? pwalletMain->setKeyPool.size() : 0);
-    LogPrintf("mapWallet.size() = %u\n",       pwalletMain ? pwalletMain->mapWallet.size() : 0);
-    LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain ? pwalletMain->mapAddressBook.size() : 0);
-#endif
-
     if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
         StartTorControl(threadGroup, scheduler);
 
@@ -1512,9 +1506,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 #ifdef ENABLE_WALLET
     if (pwalletMain) {
-        // Add wallet transactions that aren't already in a block to mapTransactions
-        pwalletMain->ReacceptWalletTransactions();
-
         // Run a thread to flush wallet periodically
         threadGroup.create_thread(boost::bind(&ThreadFlushWalletDB, boost::ref(pwalletMain->strWalletFile)));
     }

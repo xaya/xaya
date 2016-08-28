@@ -215,7 +215,7 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
 
     Dbc* pcursor = GetCursor();
     if (!pcursor)
-        throw runtime_error("CWalletDB::ListAccountCreditDebit(): cannot create DB cursor");
+        throw runtime_error(std::string(__func__) + ": cannot create DB cursor");
     unsigned int fFlags = DB_SET_RANGE;
     while (true)
     {
@@ -231,7 +231,7 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
         else if (ret != 0)
         {
             pcursor->close();
-            throw runtime_error("CWalletDB::ListAccountCreditDebit(): error scanning DB");
+            throw runtime_error(std::string(__func__) + ": error scanning DB");
         }
 
         // Unserialize
@@ -556,14 +556,8 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssKey >> nIndex;
             CKeyPool keypool;
             ssValue >> keypool;
-            pwallet->setKeyPool.insert(nIndex);
 
-            // If no metadata exists yet, create a default with the pool key's
-            // creation time. Note that this may be overwritten by actually
-            // stored metadata for that key later, which is fine.
-            CKeyID keyid = keypool.vchPubKey.GetID();
-            if (pwallet->mapKeyMetadata.count(keyid) == 0)
-                pwallet->mapKeyMetadata[keyid] = CKeyMetadata(keypool.nTime);
+            pwallet->LoadKeyPool(nIndex, keypool);
         }
         else if (strType == "version")
         {
