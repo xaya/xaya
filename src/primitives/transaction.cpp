@@ -109,7 +109,7 @@ CAmount CTransaction::GetValueOut(bool fExcludeNames) const
         if (!fExcludeNames || !CNameScript::isNameScript(it->scriptPubKey))
             nValueOut += it->nValue;
         if (!MoneyRange(it->nValue) || !MoneyRange(nValueOut))
-            throw std::runtime_error("CTransaction::GetValueOut(): value out of range");
+            throw std::runtime_error(std::string(__func__) + ": value out of range");
     }
     return nValueOut;
 }

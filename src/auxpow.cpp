@@ -28,7 +28,6 @@ const uint256 CMerkleTx::ABANDON_HASH(uint256S("00000000000000000000000000000000
 int CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
 {
     AssertLockHeld(cs_main);
-    CBlock blockTmp;
 
     // Update the tx's hashBlock
     hashBlock = pindex->GetBlockHash();
