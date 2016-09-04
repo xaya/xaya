@@ -22,14 +22,14 @@ void RegisterRawTransactionRPCCommands(CRPCTable &tableRPC);
 /** Register Namecoin RPC commands */
 void RegisterNameRPCCommands(CRPCTable &tableRPC);
 
-static inline void RegisterAllCoreRPCCommands(CRPCTable &tableRPC)
+static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
 {
-    RegisterBlockchainRPCCommands(tableRPC);
-    RegisterNetRPCCommands(tableRPC);
-    RegisterMiscRPCCommands(tableRPC);
-    RegisterMiningRPCCommands(tableRPC);
-    RegisterRawTransactionRPCCommands(tableRPC);
-    RegisterNameRPCCommands(tableRPC);
+    RegisterBlockchainRPCCommands(t);
+    RegisterNetRPCCommands(t);
+    RegisterMiscRPCCommands(t);
+    RegisterMiningRPCCommands(t);
+    RegisterRawTransactionRPCCommands(t);
+    RegisterNameRPCCommands(t);
 }
 
 #endif

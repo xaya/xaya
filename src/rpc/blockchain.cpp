@@ -676,7 +676,7 @@ struct CCoinsStats
 //! Calculate statistics about the unspent transaction output set
 static bool GetUTXOStats(CCoinsView *view, CCoinsStats &stats)
 {
-    boost::scoped_ptr<CCoinsViewCursor> pcursor(view->Cursor());
+    std::unique_ptr<CCoinsViewCursor> pcursor(view->Cursor());
 
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
     stats.hashBlock = pcursor->GetBestBlock();
@@ -1249,8 +1249,8 @@ static const CRPCCommand commands[] =
     { "hidden",             "reconsiderblock",        &reconsiderblock,        true  },
 };
 
-void RegisterBlockchainRPCCommands(CRPCTable &tableRPC)
+void RegisterBlockchainRPCCommands(CRPCTable &t)
 {
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
-        tableRPC.appendCommand(commands[vcidx].name, &commands[vcidx]);
+        t.appendCommand(commands[vcidx].name, &commands[vcidx]);
 }
