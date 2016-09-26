@@ -412,6 +412,9 @@ void CWallet::Flush(bool shutdown)
 
 bool CWallet::Verify()
 {
+    if (GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET))
+        return true;
+
     LogPrintf("Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
     std::string walletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
 
@@ -647,6 +650,12 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
     return true;
 }
 
+DBErrors CWallet::ReorderTransactions()
+{
+    CWalletDB walletdb(strWalletFile);
+    return walletdb.ReorderTransactions(this);
+}
+
 int64_t CWallet::IncOrderPosNext(CWalletDB *pwalletdb)
 {
     AssertLockHeld(cs_wallet); // nOrderPosNext
@@ -675,7 +684,7 @@ bool CWallet::AccountMove(std::string strFrom, std::string strTo, CAmount nAmoun
     debit.nTime = nNow;
     debit.strOtherAccount = strTo;
     debit.strComment = strComment;
-    AddAccountingEntry(debit, walletdb);
+    AddAccountingEntry(debit, &walletdb);
 
     // Credit
     CAccountingEntry credit;
@@ -685,7 +694,7 @@ bool CWallet::AccountMove(std::string strFrom, std::string strTo, CAmount nAmoun
     credit.nTime = nNow;
     credit.strOtherAccount = strFrom;
     credit.strComment = strComment;
-    AddAccountingEntry(credit, walletdb);
+    AddAccountingEntry(credit, &walletdb);
 
     if (!walletdb.TxnCommit())
         return false;
@@ -2499,9 +2508,21 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
     return true;
 }
 
-bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry, CWalletDB & pwalletdb)
+void CWallet::ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries) {
+    CWalletDB walletdb(strWalletFile);
+    return walletdb.ListAccountCreditDebit(strAccount, entries);
+}
+
+bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry)
 {
-    if (!pwalletdb.WriteAccountingEntry_Backend(acentry))
+    CWalletDB walletdb(strWalletFile);
+
+    return AddAccountingEntry(acentry, &walletdb);
+}
+
+bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry, CWalletDB *pwalletdb)
+{
+    if (!pwalletdb->WriteAccountingEntry_Backend(acentry))
         return false;
 
     laccentries.push_back(acentry);
@@ -3273,6 +3294,12 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
 
 bool CWallet::InitLoadWallet()
 {
+    if (GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
+        pwalletMain = NULL;
+        LogPrintf("Wallet disabled!\n");
+        return true;
+    }
+
     std::string walletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
 
     // needed to restore wallet transaction meta data after -zapwallettxes
@@ -3444,6 +3471,18 @@ bool CWallet::InitLoadWallet()
 
 bool CWallet::ParameterInteraction()
 {
+    if (GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET))
+        return true;
+
+    if (GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY) && SoftSetBoolArg("-walletbroadcast", false)) {
+        LogPrintf("%s: parameter interaction: -blocksonly=1 -> setting -walletbroadcast=0\n", __func__);
+    }
+
+    if (GetBoolArg("-sysperms", false))
+        return InitError("-sysperms is not allowed in combination with enabled wallet functionality");
+    if (GetArg("-prune", 0) && GetBoolArg("-rescan", false))
+        return InitError(_("Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again."));
+
     if (mapArgs.count("-mintxfee"))
     {
         CAmount n = 0;
