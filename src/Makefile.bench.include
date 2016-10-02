@@ -1,3 +1,7 @@
+# Copyright (c) 2015-2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 bin_PROGRAMS += bench/bench_namecoin
 BENCH_SRCDIR = bench
 BENCH_BINARY = bench/bench_namecoin$(EXEEXT)
@@ -46,4 +50,4 @@ bench: $(BENCH_BINARY) FORCE
 	$(BENCH_BINARY)
 
 namecoin_bench_clean : FORCE
-	rm -f $(CLEAN_BITCOIN_BENCH) $(bench_bench_bitcoin_OBJECTS) $(BENCH_BINARY)
+	rm -f $(CLEAN_BITCOIN_BENCH) $(bench_bench_namecoin_OBJECTS) $(BENCH_BINARY)

@@ -89,6 +89,8 @@ static ScriptErrorDesc script_errors[]={
     {SCRIPT_ERR_SIG_NULLDUMMY, "SIG_NULLDUMMY"},
     {SCRIPT_ERR_PUBKEYTYPE, "PUBKEYTYPE"},
     {SCRIPT_ERR_CLEANSTACK, "CLEANSTACK"},
+    {SCRIPT_ERR_MINIMALIF, "MINIMALIF"},
+    {SCRIPT_ERR_SIG_NULLFAIL, "NULLFAIL"},
     {SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS, "DISCOURAGE_UPGRADABLE_NOPS"},
     {SCRIPT_ERR_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM, "DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM"},
     {SCRIPT_ERR_WITNESS_PROGRAM_WRONG_LENGTH, "WITNESS_PROGRAM_WRONG_LENGTH"},
@@ -323,10 +325,10 @@ public:
         return *this;
     }
 
-    TestBuilder& Add(const CScript& script)
+    TestBuilder& Add(const CScript& _script)
     {
         DoPush();
-        spendTx.vin[0].scriptSig += script;
+        spendTx.vin[0].scriptSig += _script;
         return *this;
     }
 
@@ -343,8 +345,8 @@ public:
         return *this;
     }
 
-    TestBuilder& Push(const CScript& script) {
-         DoPush(std::vector<unsigned char>(script.begin(), script.end()));
+    TestBuilder& Push(const CScript& _script) {
+         DoPush(std::vector<unsigned char>(_script.begin(), _script.end()));
         return *this;
     }
 

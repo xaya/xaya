@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Bitcoin Core developers
+// Copyright (c) 2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -125,9 +125,9 @@ void ModalOverlay::tipUpdate(int count, const QDateTime& blockDate, double nVeri
     ui->percentageProgress->setText(QString::number(nVerificationProgress*100, 'f', 2)+"%");
     ui->progressBar->setValue(nVerificationProgress*100);
 
-    // show remaining amount of blocks
+    // show remaining number of blocks
     if (bestBlockHeight > 0)
-        ui->amountOfBlocksLeft->setText(QString::number(bestBlockHeight-count));
+        ui->numberOfBlocksLeft->setText(QString::number(bestBlockHeight-count));
     else
         ui->expectedTimeLeft->setText(tr("Unknown. Syncing Headers..."));
 }
