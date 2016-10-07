@@ -5895,6 +5895,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             return true;
         }
 
+        // If we already know the last header in the message, then it contains
+        // no new information for us.  In this case, we do not request
+        // more headers later.  This prevents multiple chains of redundant
+        // getheader requests from running in parallel if triggered by incoming
+        // blocks while the node is still in initial headers sync.
+        const bool hasNewHeaders = (mapBlockIndex.count(headers.back().GetHash()) == 0);
+
         CNodeState *nodestate = State(pfrom->GetId());
 
         // If this looks like it could be a block announcement (nCount <
@@ -5948,13 +5955,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         assert(pindexLast);
         UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
-
-        // If we already know the last header in the message, then it contains
-        // no new information for us.  In this case, we do not request
-        // more headers later.  This prevents multiple chains of redundant
-        // getheader requests from running in parallel if triggered by incoming
-        // blocks while the node is still in initial headers sync.
-        const bool hasNewHeaders = (mapBlockIndex.count(headers.back().GetHash()) == 0);
 
         bool maxSize = (nCount == MAX_HEADERS_RESULTS);
         if (pfrom->nVersion >= SIZE_HEADERS_LIMIT_VERSION
