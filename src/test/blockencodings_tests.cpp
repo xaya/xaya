@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(SimpleRoundTripTest)
 
     // Do a simple ShortTxIDs RT
     {
-        CBlockHeaderAndShortTxIDs shortIDs(block);
+        CBlockHeaderAndShortTxIDs shortIDs(block, true);
 
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << shortIDs;
@@ -122,7 +122,7 @@ public:
         stream >> *this;
     }
     TestHeaderAndShortIDs(const CBlock& block) :
-        TestHeaderAndShortIDs(CBlockHeaderAndShortTxIDs(block)) {}
+        TestHeaderAndShortIDs(CBlockHeaderAndShortTxIDs(block, true)) {}
 
     uint64_t GetShortID(const uint256& txhash) const {
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
 
     // Test simple header round-trip with only coinbase
     {
-        CBlockHeaderAndShortTxIDs shortIDs(block);
+        CBlockHeaderAndShortTxIDs shortIDs(block, false);
 
         CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         stream << shortIDs;
