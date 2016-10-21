@@ -143,11 +143,13 @@ testScripts = [
     'abandonconflict.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-versionbits-warning.py',
+    'preciousblock.py',
     'importprunedfunds.py',
     'signmessages.py',
     'p2p-compactblocks.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'nulldummy.py',
+    'importmulti.py',
 
     # auxpow tests
     'getauxblock.py',
