@@ -50,12 +50,12 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 /* ************************************************************************** */
 
 UniValue
-name_list (const UniValue& params, bool fHelp)
+name_list (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (fHelp))
+  if (!EnsureWalletIsAvailable (request.fHelp))
     return NullUniValue;
 
-  if (fHelp || params.size () > 1)
+  if (request.fHelp || request.params.size () > 1)
     throw std::runtime_error (
         "name_list (\"name\")\n"
         "\nShow status of names in the wallet.\n"
@@ -73,8 +73,8 @@ name_list (const UniValue& params, bool fHelp)
       );
 
   valtype nameFilter;
-  if (params.size () == 1)
-    nameFilter = ValtypeFromString (params[0].get_str ());
+  if (request.params.size () == 1)
+    nameFilter = ValtypeFromString (request.params[0].get_str ());
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -145,12 +145,12 @@ name_list (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_new (const UniValue& params, bool fHelp)
+name_new (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (fHelp))
+  if (!EnsureWalletIsAvailable (request.fHelp))
     return NullUniValue;
 
-  if (fHelp || params.size () != 1)
+  if (request.fHelp || request.params.size () != 1)
     throw std::runtime_error (
         "name_new \"name\"\n"
         "\nStart registration of the given name.  Must be followed up with"
@@ -168,7 +168,7 @@ name_new (const UniValue& params, bool fHelp)
         + HelpExampleRpc ("name_new", "\"myname\"")
       );
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
@@ -213,9 +213,9 @@ name_new (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_firstupdate (const UniValue& params, bool fHelp)
+name_firstupdate (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (fHelp))
+  if (!EnsureWalletIsAvailable (request.fHelp))
     return NullUniValue;
 
   /* There is an undocumented sixth argument that can be used to disable
@@ -224,7 +224,7 @@ name_firstupdate (const UniValue& params, bool fHelp)
      by the regtests to catch a bug that was previously present but
      has presumably no other use.  */
 
-  if (fHelp || params.size () < 4 || params.size () > 6)
+  if (request.fHelp || request.params.size () < 4 || request.params.size () > 6)
     throw std::runtime_error (
         "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
         "\nFinish the registration of a name.  Depends on name_new being"
@@ -244,18 +244,18 @@ name_firstupdate (const UniValue& params, bool fHelp)
         + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
       );
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const valtype rand = ParseHexV (params[1], "rand");
+  const valtype rand = ParseHexV (request.params[1], "rand");
   if (rand.size () > 20)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid rand value");
 
-  const uint256 prevTxid = ParseHashV (params[2], "txid");
+  const uint256 prevTxid = ParseHashV (request.params[2], "txid");
 
-  const std::string valueStr = params[3].get_str ();
+  const std::string valueStr = request.params[3].get_str ();
   const valtype value = ValtypeFromString (valueStr);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
@@ -267,7 +267,7 @@ name_firstupdate (const UniValue& params, bool fHelp)
                           "this name is already being registered");
   }
 
-  if (params.size () < 6 || !params[5].get_bool ())
+  if (request.params.size () < 6 || !request.params[5].get_bool ())
     {
       LOCK (cs_main);
       CNameData oldData;
@@ -305,10 +305,10 @@ name_firstupdate (const UniValue& params, bool fHelp)
   bool usedKey = false;
 
   CScript addrName;
-  if (params.size () >= 5)
+  if (request.params.size () >= 5)
     {
       keyName.ReturnKey ();
-      const CBitcoinAddress toAddress(params[4].get_str ());
+      const CBitcoinAddress toAddress(request.params[4].get_str ());
       if (!toAddress.IsValid ())
         throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
 
@@ -335,12 +335,13 @@ name_firstupdate (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_update (const UniValue& params, bool fHelp)
+name_update (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (fHelp))
+  if (!EnsureWalletIsAvailable (request.fHelp))
     return NullUniValue;
 
-  if (fHelp || (params.size () != 2 && params.size () != 3))
+  if (request.fHelp
+      || (request.params.size () != 2 && request.params.size () != 3))
     throw std::runtime_error (
         "name_update \"name\" \"value\" (\"toaddress\")\n"
         "\nUpdate a name and possibly transfer it.\n"
@@ -357,12 +358,12 @@ name_update (const UniValue& params, bool fHelp)
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       );
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const std::string valueStr = params[1].get_str ();
+  const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
@@ -399,10 +400,10 @@ name_update (const UniValue& params, bool fHelp)
   bool usedKey = false;
 
   CScript addrName;
-  if (params.size () == 3)
+  if (request.params.size () == 3)
     {
       keyName.ReturnKey ();
-      const CBitcoinAddress toAddress(params[2].get_str ());
+      const CBitcoinAddress toAddress(request.params[2].get_str ());
       if (!toAddress.IsValid ())
         throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
 
@@ -429,12 +430,12 @@ name_update (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-sendtoname (const UniValue& params, bool fHelp)
+sendtoname (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (fHelp))
+  if (!EnsureWalletIsAvailable (request.fHelp))
     return NullUniValue;
   
-  if (fHelp || params.size () < 2 || params.size () > 5)
+  if (request.fHelp || request.params.size () < 2 || request.params.size () > 5)
     throw std::runtime_error (
         "sendtoname \"name\" amount ( \"comment\" \"comment-to\" subtractfeefromamount )\n"
         "\nSend an amount to the owner of a name. "
@@ -466,7 +467,7 @@ sendtoname (const UniValue& params, bool fHelp)
 
   LOCK2 (cs_main, pwalletMain->cs_wallet);
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
 
   CNameData data;
@@ -483,20 +484,22 @@ sendtoname (const UniValue& params, bool fHelp)
      keep it in sync.  */
 
   // Amount
-  CAmount nAmount = AmountFromValue(params[1]);
+  CAmount nAmount = AmountFromValue(request.params[1]);
   if (nAmount <= 0)
       throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
 
   // Wallet comments
   CWalletTx wtx;
-  if (params.size() > 2 && !params[2].isNull() && !params[2].get_str().empty())
-      wtx.mapValue["comment"] = params[2].get_str();
-  if (params.size() > 3 && !params[3].isNull() && !params[3].get_str().empty())
-      wtx.mapValue["to"]      = params[3].get_str();
+  if (request.params.size() > 2 && !request.params[2].isNull()
+        && !request.params[2].get_str().empty())
+      wtx.mapValue["comment"] = request.params[2].get_str();
+  if (request.params.size() > 3 && !request.params[3].isNull()
+        && !request.params[3].get_str().empty())
+      wtx.mapValue["to"]      = request.params[3].get_str();
 
   bool fSubtractFeeFromAmount = false;
-  if (params.size() > 4)
-      fSubtractFeeFromAmount = params[4].get_bool();
+  if (request.params.size() > 4)
+      fSubtractFeeFromAmount = request.params[4].get_bool();
 
   EnsureWalletIsUnlocked();
 

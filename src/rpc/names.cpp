@@ -163,9 +163,9 @@ AddRawTxNameOperation (CMutableTransaction& tx, const UniValue& obj)
 /* ************************************************************************** */
 
 UniValue
-name_show (const UniValue& params, bool fHelp)
+name_show (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () != 1)
+  if (request.fHelp || request.params.size () != 1)
     throw std::runtime_error (
         "name_show \"name\"\n"
         "\nLook up the current data for the given name."
@@ -183,7 +183,7 @@ name_show (const UniValue& params, bool fHelp)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
 
   CNameData data;
@@ -203,9 +203,9 @@ name_show (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_history (const UniValue& params, bool fHelp)
+name_history (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () != 1)
+  if (request.fHelp || request.params.size () != 1)
     throw std::runtime_error (
         "name_history \"name\"\n"
         "\nLook up the current and all past data for the given name."
@@ -229,7 +229,7 @@ name_history (const UniValue& params, bool fHelp)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  const std::string nameStr = params[0].get_str ();
+  const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
 
   CNameData data;
@@ -260,9 +260,9 @@ name_history (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_scan (const UniValue& params, bool fHelp)
+name_scan (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () > 2)
+  if (request.fHelp || request.params.size () > 2)
     throw std::runtime_error (
         "name_scan (\"start\" (\"count\"))\n"
         "\nList names in the database.\n"
@@ -286,12 +286,12 @@ name_scan (const UniValue& params, bool fHelp)
                        "Namecoin is downloading blocks...");
 
   valtype start;
-  if (params.size () >= 1)
-    start = ValtypeFromString (params[0].get_str ());
+  if (request.params.size () >= 1)
+    start = ValtypeFromString (request.params[0].get_str ());
 
   int count = 500;
-  if (params.size () >= 2)
-    count = params[1].get_int ();
+  if (request.params.size () >= 2)
+    count = request.params[1].get_int ();
 
   UniValue res(UniValue::VARR);
   if (count <= 0)
@@ -311,9 +311,9 @@ name_scan (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_filter (const UniValue& params, bool fHelp)
+name_filter (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () > 5)
+  if (request.fHelp || request.params.size () > 5)
     throw std::runtime_error (
         "name_filter (\"regexp\" (\"maxage\" (\"from\" (\"nb\" (\"stat\")))))\n"
         "\nScan and list names matching a regular expression.\n"
@@ -348,30 +348,30 @@ name_filter (const UniValue& params, bool fHelp)
   int maxage(36000), from(0), nb(0);
   bool stats(false);
 
-  if (params.size () >= 1)
+  if (request.params.size () >= 1)
     {
       haveRegexp = true;
-      regexp = boost::xpressive::sregex::compile (params[0].get_str ());
+      regexp = boost::xpressive::sregex::compile (request.params[0].get_str ());
     }
 
-  if (params.size () >= 2)
-    maxage = params[1].get_int ();
+  if (request.params.size () >= 2)
+    maxage = request.params[1].get_int ();
   if (maxage < 0)
     throw JSONRPCError (RPC_INVALID_PARAMETER,
                         "'maxage' should be non-negative");
-  if (params.size () >= 3)
-    from = params[2].get_int ();
+  if (request.params.size () >= 3)
+    from = request.params[2].get_int ();
   if (from < 0)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "'from' should be non-negative");
 
-  if (params.size () >= 4)
-    nb = params[3].get_int ();
+  if (request.params.size () >= 4)
+    nb = request.params[3].get_int ();
   if (nb < 0)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "'nb' should be non-negative");
 
-  if (params.size () >= 5)
+  if (request.params.size () >= 5)
     {
-      if (params[4].get_str () != "stat")
+      if (request.params[4].get_str () != "stat")
         throw JSONRPCError (RPC_INVALID_PARAMETER,
                             "fifth argument must be the literal string 'stat'");
       stats = true;
@@ -441,9 +441,9 @@ name_filter (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_pending (const UniValue& params, bool fHelp)
+name_pending (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () > 1)
+  if (request.fHelp || request.params.size () > 1)
     throw std::runtime_error (
         "name_pending (\"name\")\n"
         "\nList unconfirmed name operations in the mempool.\n"
@@ -473,11 +473,11 @@ name_pending (const UniValue& params, bool fHelp)
 #endif
 
   std::vector<uint256> txHashes;
-  if (params.size () == 0)
+  if (request.params.size () == 0)
     mempool.queryHashes (txHashes);
   else
     {
-      const std::string name = params[0].get_str ();
+      const std::string name = request.params[0].get_str ();
       const valtype vchName = ValtypeFromString (name);
       const uint256 txid = mempool.getTxForName (vchName);
       if (!txid.IsNull ())
@@ -541,9 +541,9 @@ name_pending (const UniValue& params, bool fHelp)
 /* ************************************************************************** */
 
 UniValue
-name_checkdb (const UniValue& params, bool fHelp)
+name_checkdb (const JSONRPCRequest& request)
 {
-  if (fHelp || params.size () != 0)
+  if (request.fHelp || request.params.size () != 0)
     throw std::runtime_error (
         "name_checkdb\n"
         "\nValidate the name DB's consistency.\n"

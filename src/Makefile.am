@@ -88,7 +88,6 @@ BITCOIN_CORE_H = \
   checkpoints.h \
   checkqueue.h \
   clientversion.h \
-  coincontrol.h \
   coins.h \
   compat.h \
   compat/byteswap.h \
@@ -150,6 +149,7 @@ BITCOIN_CORE_H = \
   utiltime.h \
   validationinterface.h \
   versionbits.h \
+  wallet/coincontrol.h \
   wallet/crypter.h \
   wallet/db.h \
   wallet/rpcwallet.h \

@@ -15,6 +15,7 @@
 #include "indirectmap.h"
 #include "primitives/transaction.h"
 #include "names/main.h"
+#include "random.h"
 #include "sync.h"
 #include "script/names.h"
 
