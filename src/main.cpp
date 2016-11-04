@@ -1612,7 +1612,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     return res;
 }
 
-/** Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock */
+/** Return transaction in txOut, and if it was found inside a block, its hash is placed in hashBlock */
 bool GetTransaction(const uint256 &hash, CTransaction &txOut, const Consensus::Params& consensusParams, uint256 &hashBlock, bool fAllowSlow)
 {
     CBlockIndex *pindexSlow = NULL;
@@ -2883,16 +2883,15 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     if (!FlushStateToDisk(state, FLUSH_STATE_IF_NEEDED))
         return false;
 
-    list<CTransaction> txNameConflicts;
+    std::vector<std::shared_ptr<const CTransaction>> txNameConflicts;
     if (!fBare) {
         // Resurrect mempool transactions from the disconnected block.
         std::vector<uint256> vHashUpdate;
         BOOST_FOREACH(const CTransaction &tx, block.vtx) {
             // ignore validation errors in resurrected transactions
-            list<CTransaction> removed;
             CValidationState stateDummy;
             if (tx.IsCoinBase() || !AcceptToMemoryPool(mempool, stateDummy, tx, false, NULL, true)) {
-                mempool.removeRecursive(tx, removed);
+                mempool.removeRecursive(tx);
             } else if (mempool.exists(tx.GetHash())) {
                 vHashUpdate.push_back(tx.GetHash());
             }
@@ -2904,7 +2903,7 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
         // block that were added back and cleans up the mempool state.
         mempool.UpdateTransactionsFromBlock(vHashUpdate);
         // Fix the pool for conflicts due to unexpired names.
-        mempool.removeUnexpireConflicts(unexpiredNames, txNameConflicts);
+        mempool.removeUnexpireConflicts(unexpiredNames, &txNameConflicts);
     }
 
     // Update chainActive and related variables.
@@ -2912,9 +2911,9 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     CheckNameDB (true);
     // Tell wallet about transactions that went from mempool
     // to conflicted:
-    BOOST_FOREACH(const CTransaction &tx, txNameConflicts) {
-        GetMainSignals().SyncTransaction(tx, nullptr, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
-        GetMainSignals().NameConflict(tx, *pindexDelete->pprev->phashBlock);
+    for (std::shared_ptr<const CTransaction> tx : txNameConflicts) {
+        GetMainSignals().SyncTransaction(*tx, nullptr, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
+        GetMainSignals().NameConflict(*tx, *pindexDelete->pprev->phashBlock);
     }
     // Let wallets know transactions went from 1-confirmed to
     // 0-confirmed or conflicted:
@@ -2934,7 +2933,10 @@ static int64_t nTimePostConnect = 0;
  * Connect a new block to chainActive. pblock is either NULL or a pointer to a CBlock
  * corresponding to pindexNew, to bypass loading it again from disk.
  */
-bool static ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const CBlock* pblock, std::list<CTransaction> &txConflicted, std::list<CTransaction> &txNameConflicts, std::vector<std::tuple<CTransaction,CBlockIndex*,int>> &txChanged)
+bool static ConnectTip(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const CBlock* pblock,
+                       std::vector<std::shared_ptr<const CTransaction>> &txConflicted,
+                       std::vector<std::shared_ptr<const CTransaction>> &txNameConflicts,
+                       std::vector<std::tuple<CTransaction,CBlockIndex*,int>> &txChanged)
 {
     assert(pindexNew->pprev == chainActive.Tip());
     CheckNameDB (true);
@@ -2972,8 +2974,8 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
     LogPrint("bench", "  - Writing chainstate: %.2fms [%.2fs]\n", (nTime5 - nTime4) * 0.001, nTimeChainState * 0.000001);
     // Remove conflicting transactions from the mempool.;
-    mempool.removeForBlock(pblock->vtx, pindexNew->nHeight, txConflicted, txNameConflicts, !IsInitialBlockDownload());
-    mempool.removeExpireConflicts(expiredNames, txNameConflicts);
+    mempool.removeForBlock(pblock->vtx, pindexNew->nHeight, &txConflicted, &txNameConflicts, !IsInitialBlockDownload());
+    mempool.removeExpireConflicts(expiredNames, &txNameConflicts);
     // Update chainActive & related variables.
     UpdateTip(pindexNew, chainparams);
     CheckNameDB (false);
@@ -3061,7 +3063,10 @@ static void PruneBlockIndexCandidates() {
  * Try to make some progress towards making pindexMostWork the active block.
  * pblock is either NULL or a pointer to a CBlock corresponding to pindexMostWork.
  */
-static bool ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const CBlock* pblock, bool& fInvalidFound, std::list<CTransaction>& txConflicted, std::list<CTransaction>& txNameConflicts, std::vector<std::tuple<CTransaction,CBlockIndex*,int>>& txChanged)
+static bool ActivateBestChainStep(CValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const CBlock* pblock, bool& fInvalidFound,
+                                  std::vector<std::shared_ptr<const CTransaction>>& txConflicted,
+                                  std::vector<std::shared_ptr<const CTransaction>>& txNameConflicts,
+                                  std::vector<std::tuple<CTransaction,CBlockIndex*,int>>& txChanged)
 {
     AssertLockHeld(cs_main);
     const CBlockIndex *pindexOldTip = chainActive.Tip();
@@ -3172,8 +3177,8 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
             break;
 
         const CBlockIndex *pindexFork;
-        std::list<CTransaction> txConflicted;
-        std::list<CTransaction> txNameConflicts;
+        std::vector<std::shared_ptr<const CTransaction>> txConflicted;
+        std::vector<std::shared_ptr<const CTransaction>> txNameConflicts;
         bool fInitialDownload;
         {
             LOCK(cs_main);
@@ -3204,13 +3209,13 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
 
         // throw all transactions though the signal-interface
         // while _not_ holding the cs_main lock
-        BOOST_FOREACH(const CTransaction &tx, txConflicted)
+        for(std::shared_ptr<const CTransaction> tx : txConflicted)
         {
-            GetMainSignals().SyncTransaction(tx, pindexNewTip, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
+            GetMainSignals().SyncTransaction(*tx, pindexNewTip, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
         }
-        for(const auto& tx : txNameConflicts) {
-            GetMainSignals().SyncTransaction(tx, nullptr, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
-            GetMainSignals().NameConflict(tx, pindexNewTip->GetBlockHash());
+        for(std::shared_ptr<const CTransaction> tx : txNameConflicts) {
+            GetMainSignals().SyncTransaction(*tx, nullptr, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
+            GetMainSignals().NameConflict(*tx, pindexNewTip->GetBlockHash());
         }
         // ... and about transactions that got confirmed:
         for(unsigned int i = 0; i < txChanged.size(); i++)
@@ -5633,6 +5638,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     {
         BlockTransactionsRequest req;
         vRecv >> req;
+
+        LOCK(cs_main);
 
         BlockMap::iterator it = mapBlockIndex.find(req.blockhash);
         if (it == mapBlockIndex.end() || !(it->second->nStatus & BLOCK_HAVE_DATA)) {

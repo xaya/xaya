@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Daniel Kraft
+// Copyright (c) 2014-2016 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -979,22 +979,22 @@ BOOST_AUTO_TEST_CASE (name_mempool)
 
   /* Remove the transactions again.  */
 
-  std::list<CTransaction> removed;
-  mempool.removeRecursive (txReg1, removed);
+  std::vector<std::shared_ptr<const CTransaction>> removed;
+  mempool.removeRecursive (txReg1, &removed);
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
   BOOST_CHECK (!mempool.checkNameOps (txUpd2));
   BOOST_CHECK (removed.size () == 1);
 
-  mempool.removeRecursive (txUpd1, removed);
+  mempool.removeRecursive (txUpd1, &removed);
   BOOST_CHECK (!mempool.updatesName (nameUpd));
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
   BOOST_CHECK (mempool.checkNameOps (txReg1));
   BOOST_CHECK (removed.size () == 2);
 
   removed.clear ();
-  mempool.removeRecursive (txNew1, removed);
-  mempool.removeRecursive (txNew2, removed);
+  mempool.removeRecursive (txNew1, &removed);
+  mempool.removeRecursive (txNew2, &removed);
   BOOST_CHECK (removed.size () == 2);
   BOOST_CHECK (!mempool.checkNameOps (txNew1p));
   BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
@@ -1010,10 +1010,9 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (!mempool.checkNameOps (txReg2));
 
   removed.clear ();
-  std::list<CTransaction> dummyConflicts;
-  mempool.removeConflicts (txReg2, dummyConflicts, removed);
+  mempool.removeConflicts (txReg2, nullptr, &removed);
   BOOST_CHECK (removed.size () == 1);
-  BOOST_CHECK (removed.front ().GetHash () == txReg1.GetHash ());
+  BOOST_CHECK (removed.front ()->GetHash () == txReg1.GetHash ());
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.mapTx.empty ());
 
@@ -1026,9 +1025,9 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   std::set<valtype> names;
   names.insert (nameUpd);
   removed.clear ();
-  mempool.removeExpireConflicts (names, removed);
+  mempool.removeExpireConflicts (names, &removed);
   BOOST_CHECK (removed.size () == 1);
-  BOOST_CHECK (removed.front ().GetHash () == txUpd1.GetHash ());
+  BOOST_CHECK (removed.front ()->GetHash () == txUpd1.GetHash ());
   BOOST_CHECK (!mempool.updatesName (nameUpd));
   BOOST_CHECK (mempool.mapTx.empty ());
 
@@ -1041,9 +1040,9 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   names.clear ();
   names.insert (nameReg);
   removed.clear ();
-  mempool.removeUnexpireConflicts (names, removed);
+  mempool.removeUnexpireConflicts (names, &removed);
   BOOST_CHECK (removed.size () == 1);
-  BOOST_CHECK (removed.front ().GetHash () == txReg1.GetHash ());
+  BOOST_CHECK (removed.front ()->GetHash () == txReg1.GetHash ());
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.mapTx.empty ());
 }

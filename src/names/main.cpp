@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Daniel Kraft
+// Copyright (c) 2014-2016 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -145,8 +145,9 @@ CNameMemPool::remove (const CTxMemPoolEntry& entry)
 }
 
 void
-CNameMemPool::removeConflicts (const CTransaction& tx,
-                               std::list<CTransaction>& removed)
+CNameMemPool::removeConflicts (
+    const CTransaction& tx,
+    std::vector<std::shared_ptr<const CTransaction>>* removed)
 {
   AssertLockHeld (pool.cs);
 
@@ -171,8 +172,9 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
 }
 
 void
-CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
-                                       std::list<CTransaction>& removed)
+CNameMemPool::removeUnexpireConflicts (
+    const std::set<valtype>& unexpired,
+    std::vector<std::shared_ptr<const CTransaction>>* removed)
 {
   AssertLockHeld (pool.cs);
 
@@ -192,8 +194,9 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
 }
 
 void
-CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
-                                     std::list<CTransaction>& removed)
+CNameMemPool::removeExpireConflicts (
+    const std::set<valtype>& expired,
+    std::vector<std::shared_ptr<const CTransaction>>* removed)
 {
   AssertLockHeld (pool.cs);
 

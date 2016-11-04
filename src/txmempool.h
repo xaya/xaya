@@ -6,9 +6,12 @@
 #ifndef BITCOIN_TXMEMPOOL_H
 #define BITCOIN_TXMEMPOOL_H
 
-#include <list>
 #include <memory>
 #include <set>
+#include <map>
+#include <vector>
+#include <utility>
+#include <string>
 
 #include "amount.h"
 #include "coins.h"
@@ -556,12 +559,14 @@ public:
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool fCurrentEstimate = true);
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool fCurrentEstimate = true);
 
-    void removeRecursive(const CTransaction &tx, std::list<CTransaction>& removed);
+    void removeRecursive(const CTransaction &tx, std::vector<std::shared_ptr<const CTransaction>>* removed = NULL);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
-    void removeConflicts(const CTransaction &tx, std::list<CTransaction>& removed, std::list<CTransaction>& removedNames);
+    void removeConflicts(const CTransaction &tx,
+                         std::vector<std::shared_ptr<const CTransaction>>* removed = NULL,
+                         std::vector<std::shared_ptr<const CTransaction>>* removedNames = NULL);
     void removeForBlock(const std::vector<CTransaction>& vtx, unsigned int nBlockHeight,
-                        std::list<CTransaction>& conflicts,
-                        std::list<CTransaction>& nameConflicts,
+                        std::vector<std::shared_ptr<const CTransaction>>* conflicts = NULL,
+                        std::vector<std::shared_ptr<const CTransaction>>* nameConflicts = NULL,
                         bool fCurrentEstimate = true);
     void clear();
     void _clear(); //lock free
@@ -578,15 +583,17 @@ public:
 
     /* Remove entries that conflict with name expirations / unexpirations.  */
     inline void
-    removeUnexpireConflicts (const std::set<valtype>& unexpired,
-                             std::list<CTransaction>& removed)
+    removeUnexpireConflicts (
+        const std::set<valtype>& unexpired,
+        std::vector<std::shared_ptr<const CTransaction>>* removed)
     {
         LOCK(cs);
         names.removeUnexpireConflicts (unexpired, removed);
     }
     inline void
-    removeExpireConflicts (const std::set<valtype>& expired,
-                           std::list<CTransaction>& removed)
+    removeExpireConflicts (
+        const std::set<valtype>& expired,
+        std::vector<std::shared_ptr<const CTransaction>>* removed)
     {
         LOCK(cs);
         names.removeExpireConflicts (expired, removed);
