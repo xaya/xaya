@@ -360,6 +360,9 @@ struct TxMempoolInfo
 
     /** Feerate of the transaction. */
     CFeeRate feeRate;
+
+    /** The fee delta. */
+    int64_t nFeeDelta;
 };
 
 /**
