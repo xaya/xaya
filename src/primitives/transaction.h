@@ -28,7 +28,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(hash);
         READWRITE(n);
     }
@@ -104,7 +104,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(prevout);
         READWRITE(*(CScriptBase*)(&scriptSig));
         READWRITE(nSequence);
@@ -144,7 +144,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(nValue);
         READWRITE(*(CScriptBase*)(&scriptPubKey));
     }
@@ -159,8 +159,6 @@ public:
     {
         return (nValue == -1);
     }
-
-    uint256 GetHash() const;
 
     CAmount GetDustThreshold(const CFeeRate &minRelayTxFee) const
     {
@@ -179,7 +177,7 @@ public:
         if (scriptPubKey.IsUnspendable())
             return 0;
 
-        size_t nSize = GetSerializeSize(SER_DISK, 0);
+        size_t nSize = GetSerializeSize(*this, SER_DISK, 0);
         int witnessversion = 0;
         std::vector<unsigned char> witnessprogram;
 
@@ -221,7 +219,7 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(scriptWitness.stack);
     }
@@ -257,7 +255,7 @@ public:
     }
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         for (size_t n = 0; n < vtxinwit.size(); n++) {
             READWRITE(vtxinwit[n]);
@@ -289,8 +287,8 @@ struct CMutableTransaction;
  * - uint32_t nLockTime
  */
 template<typename Stream, typename Operation, typename TxType>
-inline void SerializeTransaction(TxType& tx, Stream& s, Operation ser_action, int nType, int nVersion) {
-    const bool fAllowWitness = !(nVersion & SERIALIZE_TRANSACTION_NO_WITNESS);
+inline void SerializeTransaction(TxType& tx, Stream& s, Operation ser_action) {
+    const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     READWRITE(*const_cast<int32_t*>(&tx.nVersion));
     unsigned char flags = 0;
@@ -388,8 +386,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        SerializeTransaction(*this, s, ser_action, nType, nVersion);
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        SerializeTransaction(*this, s, ser_action);
         if (ser_action.ForRead()) {
             UpdateHash();
         }
@@ -464,8 +462,8 @@ struct CMutableTransaction
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        SerializeTransaction(*this, s, ser_action, nType, nVersion);
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        SerializeTransaction(*this, s, ser_action);
     }
 
     /** Compute the hash of this CMutableTransaction. This is computed on the

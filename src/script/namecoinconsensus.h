@@ -42,6 +42,7 @@ typedef enum namecoinconsensus_error_t
     namecoinconsensus_ERR_TX_SIZE_MISMATCH,
     namecoinconsensus_ERR_TX_DESERIALIZE,
     namecoinconsensus_ERR_AMOUNT_REQUIRED,
+    namecoinconsensus_ERR_INVALID_FLAGS,
 } namecoinconsensus_error;
 
 /** Script verification flags */
@@ -54,6 +55,9 @@ enum
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY = (1U << 9), // enable CHECKLOCKTIMEVERIFY (BIP65)
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY = (1U << 10), // enable CHECKSEQUENCEVERIFY (BIP112)
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS             = (1U << 11), // enable WITNESS (BIP141)
+    namecoinconsensus_SCRIPT_FLAGS_VERIFY_ALL                 = namecoinconsensus_SCRIPT_FLAGS_VERIFY_P2SH | namecoinconsensus_SCRIPT_FLAGS_VERIFY_DERSIG |
+                                                                namecoinconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY |
+                                                                namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS
 };
 
 /// Returns 1 if the input nIn of the serialized transaction pointed to by

@@ -72,8 +72,7 @@ public:
   ADD_SERIALIZE_METHODS;
 
   template<typename Stream, typename Operation>
-    inline void SerializationOp (Stream& s, Operation ser_action,
-                                 int nType, int nVersion)
+    inline void SerializationOp (Stream& s, Operation ser_action)
   {
     READWRITE (value);
     READWRITE (nHeight);
@@ -177,8 +176,7 @@ public:
   ADD_SERIALIZE_METHODS;
 
   template<typename Stream, typename Operation>
-    inline void SerializationOp (Stream& s, Operation ser_action,
-                                 int nType, int nVersion)
+    inline void SerializationOp (Stream& s, Operation ser_action)
   {
     READWRITE (data);
   }
@@ -318,31 +316,25 @@ public:
 
     /* Default copy and assignment.  */
 
-    inline size_t
-    GetSerializeSize (int nType, int nVersion) const
-    {
-      return sizeof (nHeight) + ::GetSerializeSize (name, nType, nVersion);
-    }
-
     template<typename Stream>
       inline void
-      Serialize (Stream& s, int nType, int nVersion) const
+      Serialize (Stream& s) const
     {
       /* Flip the byte order of nHeight to big endian.  */
       const uint32_t nHeightFlipped = htobe32 (nHeight);
 
-      ::Serialize (s, nHeightFlipped, nType, nVersion);
-      ::Serialize (s, name, nType, nVersion);
+      ::Serialize (s, nHeightFlipped);
+      ::Serialize (s, name);
     }
 
     template<typename Stream>
       inline void
-      Unserialize (Stream& s, int nType, int nVersion)
+      Unserialize (Stream& s)
     {
       uint32_t nHeightFlipped;
 
-      ::Unserialize (s, nHeightFlipped, nType, nVersion);
-      ::Unserialize (s, name, nType, nVersion);
+      ::Unserialize (s, nHeightFlipped);
+      ::Unserialize (s, name);
 
       /* Unflip the byte order.  */
       nHeight = be32toh (nHeightFlipped);
