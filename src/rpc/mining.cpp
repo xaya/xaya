@@ -135,9 +135,8 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
         if (miningHeader.nNonce == nInnerLoopCount) {
             continue;
         }
-        CValidationState state;
-        if (!ProcessNewBlock(state, Params(), NULL, pblock, true, NULL, false))
-            throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("ProcessNewBlock: block not accepted: %s", FormatStateMessage(state)));
+        if (!ProcessNewBlock(Params(), pblock, true, NULL, NULL))
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
         blockHashes.push_back(pblock->GetHash().GetHex());
 
@@ -764,10 +763,9 @@ UniValue submitblock(const JSONRPCRequest& request)
         }
     }
 
-    CValidationState state;
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool fAccepted = ProcessNewBlock(state, Params(), NULL, &block, true, NULL, false);
+    bool fAccepted = ProcessNewBlock(Params(), &block, true, NULL, NULL);
     UnregisterValidationInterface(&sc);
     if (fBlockPresent)
     {
@@ -775,13 +773,9 @@ UniValue submitblock(const JSONRPCRequest& request)
             return "duplicate-inconclusive";
         return "duplicate";
     }
-    if (fAccepted)
-    {
-        if (!sc.found)
-            return "inconclusive";
-        state = sc.state;
-    }
-    return BIP22ValidationResult(state);
+    if (!sc.found)
+        return "inconclusive";
+    return BIP22ValidationResult(sc.state);
 }
 
 UniValue estimatefee(const JSONRPCRequest& request)
@@ -1068,11 +1062,9 @@ UniValue getauxblock(const JSONRPCRequest& request)
     block.SetAuxpow(new CAuxPow(pow));
     assert(block.GetHash() == hash);
 
-    CValidationState state;
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool fAccepted = ProcessNewBlock(state, Params(), nullptr, &block,
-                                     true, nullptr, false);
+    bool fAccepted = ProcessNewBlock(Params(), &block, true, nullptr, nullptr);
     UnregisterValidationInterface(&sc);
 
     if (fAccepted)
