@@ -87,6 +87,16 @@ public:
   CAuxPow get (const CTransaction& tx) const;
 
   /**
+   * Builds the finished CAuxPow object, using a CTransactionRef instead of
+   * const reference to CTransaction directly.
+   */
+  inline CAuxPow
+  get (const CTransactionRef txref) const
+  {
+    return get (*txref);
+  }
+
+  /**
    * Build the finished CAuxPow object from the parent block's coinbase.
    * @return The constructed CAuxPow object.
    */
@@ -127,7 +137,7 @@ CAuxpowBuilder::setCoinbase (const CScript& scr)
   mtx.vin[0].scriptSig = scr;
 
   parentBlock.vtx.clear ();
-  parentBlock.vtx.push_back (mtx);
+  parentBlock.vtx.push_back (MakeTransactionRef (std::move (mtx)));
   parentBlock.hashMerkleRoot = BlockMerkleRoot (parentBlock);
 }
 
@@ -217,7 +227,7 @@ BOOST_AUTO_TEST_CASE (check_auxpow)
 
   /* Non-coinbase parent tx should fail.  Note that we can't just copy
      the coinbase literally, as we have to get a tx with different hash.  */
-  const CTransaction oldCoinbase = builder.parentBlock.vtx[0];
+  const CTransactionRef oldCoinbase = builder.parentBlock.vtx[0];
   builder.setCoinbase (scr << 5);
   builder.parentBlock.vtx.push_back (oldCoinbase);
   builder.parentBlock.hashMerkleRoot = BlockMerkleRoot (builder.parentBlock);

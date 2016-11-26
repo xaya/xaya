@@ -132,7 +132,7 @@ class GetAuxBlockTest (BitcoinTestFramework):
     assert len (txn) >= 1
 
     txData = self.nodes[1].getrawtransaction (txn[0], 1)
-    assert len (txData['vout']) == 1 and len (txData['vin']) == 1
+    assert len (txData['vout']) >= 1 and len (txData['vin']) == 1
     assert 'coinbase' in txData['vin'][0]
 
     addr = txData['vout'][0]['scriptPubKey']['addresses']
