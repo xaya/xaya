@@ -232,7 +232,7 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   CBlock parent;
   parent.nVersion = 1;
   parent.vtx.resize (1);
-  parent.vtx[0] = coinbase;
+  parent.vtx[0] = MakeTransactionRef(coinbase);
   parent.hashMerkleRoot = BlockMerkleRoot (parent);
 
   /* Construct the auxpow object.  */

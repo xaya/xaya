@@ -145,9 +145,8 @@ CNameMemPool::remove (const CTxMemPoolEntry& entry)
 }
 
 void
-CNameMemPool::removeConflicts (
-    const CTransaction& tx,
-    std::vector<std::shared_ptr<const CTransaction>>* removed)
+CNameMemPool::removeConflicts (const CTransaction& tx,
+                               std::vector<CTransactionRef>* removed)
 {
   AssertLockHeld (pool.cs);
 
@@ -172,9 +171,8 @@ CNameMemPool::removeConflicts (
 }
 
 void
-CNameMemPool::removeUnexpireConflicts (
-    const std::set<valtype>& unexpired,
-    std::vector<std::shared_ptr<const CTransaction>>* removed)
+CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
+                                       std::vector<CTransactionRef>* removed)
 {
   AssertLockHeld (pool.cs);
 
@@ -194,9 +192,8 @@ CNameMemPool::removeUnexpireConflicts (
 }
 
 void
-CNameMemPool::removeExpireConflicts (
-    const std::set<valtype>& expired,
-    std::vector<std::shared_ptr<const CTransaction>>* removed)
+CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
+                                     std::vector<CTransactionRef>* removed)
 {
   AssertLockHeld (pool.cs);
 

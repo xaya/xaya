@@ -195,9 +195,8 @@ public:
    * @param tx The transaction for which we look for conflicts.
    * @param removed Put removed tx here.
    */
-  void removeConflicts (
-      const CTransaction& tx,
-      std::vector<std::shared_ptr<const CTransaction>>* removed);
+  void removeConflicts (const CTransaction& tx,
+                        std::vector<CTransactionRef>* removed);
 
   /**
    * Remove conflicts in the mempool due to unexpired names.  This removes
@@ -205,18 +204,16 @@ public:
    * @param unexpired The set of unexpired names.
    * @param removed Put removed tx here.
    */
-  void removeUnexpireConflicts (
-      const std::set<valtype>& unexpired,
-      std::vector<std::shared_ptr<const CTransaction>>* removed);
+  void removeUnexpireConflicts (const std::set<valtype>& unexpired,
+                                std::vector<CTransactionRef>* removed);
   /**
    * Remove conflicts in the mempool due to expired names.  This removes
    * conflicting name updates that are no longer possible.
    * @param expired The set of expired names.
    * @param removed Put removed tx here.
    */
-  void removeExpireConflicts (
-      const std::set<valtype>& expired,
-      std::vector<std::shared_ptr<const CTransaction>>* removed);
+  void removeExpireConflicts (const std::set<valtype>& expired,
+                              std::vector<CTransactionRef>* removed);
 
   /**
    * Perform sanity checks.  Throws if it fails.

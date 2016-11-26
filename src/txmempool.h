@@ -82,7 +82,7 @@ class CTxMemPool;
 class CTxMemPoolEntry
 {
 private:
-    std::shared_ptr<const CTransaction> tx;
+    CTransactionRef tx;
     CAmount nFee;              //!< Cached to avoid expensive parent-transaction lookups
     size_t nTxWeight;          //!< ... and avoid recomputing tx weight (also used for GetTxSize())
     size_t nModSize;           //!< ... and modified size for priority
@@ -123,7 +123,7 @@ public:
     CTxMemPoolEntry(const CTxMemPoolEntry& other);
 
     const CTransaction& GetTx() const { return *this->tx; }
-    std::shared_ptr<const CTransaction> GetSharedTx() const { return this->tx; }
+    CTransactionRef GetSharedTx() const { return this->tx; }
     /**
      * Fast calculation of lower bound of current priority as update
      * from entry priority. Only inputs that were originally in-chain will age.
@@ -353,7 +353,7 @@ class CBlockPolicyEstimator;
 struct TxMempoolInfo
 {
     /** The transaction itself */
-    std::shared_ptr<const CTransaction> tx;
+    CTransactionRef tx;
 
     /** Time the transaction entered the mempool. */
     int64_t nTime;
@@ -562,14 +562,14 @@ public:
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool fCurrentEstimate = true);
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool fCurrentEstimate = true);
 
-    void removeRecursive(const CTransaction &tx, std::vector<std::shared_ptr<const CTransaction>>* removed = NULL);
+    void removeRecursive(const CTransaction &tx, std::vector<CTransactionRef>* removed = NULL);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
     void removeConflicts(const CTransaction &tx,
-                         std::vector<std::shared_ptr<const CTransaction>>* removed = NULL,
-                         std::vector<std::shared_ptr<const CTransaction>>* removedNames = NULL);
-    void removeForBlock(const std::vector<CTransaction>& vtx, unsigned int nBlockHeight,
-                        std::vector<std::shared_ptr<const CTransaction>>* conflicts = NULL,
-                        std::vector<std::shared_ptr<const CTransaction>>* nameConflicts = NULL,
+                         std::vector<CTransactionRef>* removed = NULL,
+                         std::vector<CTransactionRef>* removedNames = NULL);
+    void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight,
+                        std::vector<CTransactionRef>* conflicts = NULL,
+                        std::vector<CTransactionRef>* nameConflicts = NULL,
                         bool fCurrentEstimate = true);
     void clear();
     void _clear(); //lock free
@@ -713,7 +713,7 @@ public:
         return names.checkTx (tx);
     }
 
-    std::shared_ptr<const CTransaction> get(const uint256& hash) const;
+    CTransactionRef get(const uint256& hash) const;
     TxMempoolInfo info(const uint256& hash) const;
     std::vector<TxMempoolInfo> infoAll() const;
 

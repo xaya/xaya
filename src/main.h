@@ -142,7 +142,7 @@ static const int64_t BLOCK_DOWNLOAD_TIMEOUT_BASE = 1000000;
 /** Additional block download timeout per parallel downloading peer (i.e. 5 min) */
 static const int64_t BLOCK_DOWNLOAD_TIMEOUT_PER_PEER = 500000;
 
-static const unsigned int DEFAULT_LIMITFREERELAY = 15;
+static const unsigned int DEFAULT_LIMITFREERELAY = 0;
 static const bool DEFAULT_RELAYPRIORITY = true;
 static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60;
 
@@ -467,7 +467,7 @@ bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex, con
 
 bool ApplyTxInUndo(const CTxInUndo& undo, CCoinsViewCache& view, const COutPoint& out);
 // TODO: Remove when this check is no longer necessary.
-bool CheckDbLockLimit(const std::vector<CTransaction>& vtx);
+bool CheckDbLockLimit(const std::vector<CTransactionRef>& vtx);
 
 /** Context-independent validity checks */
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true);
@@ -591,6 +591,7 @@ private:
 public:
     PeerLogicValidation(CConnman* connmanIn);
 
+    virtual void SyncTransaction(const CTransaction& tx, const CBlockIndex* pindex, int nPosInBlock);
     virtual void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload);
     virtual void BlockChecked(const CBlock& block, const CValidationState& state);
 };

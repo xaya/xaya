@@ -511,6 +511,13 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel)
             // Disable context menu on tray icon
             trayIconMenu->clear();
         }
+        // Propagate cleared model to child objects
+        rpcConsole->setClientModel(nullptr);
+#ifdef ENABLE_WALLET
+        walletFrame->setClientModel(nullptr);
+#endif // ENABLE_WALLET
+        unitDisplayControl->setOptionsModel(nullptr);
+        connectionsControl->setClientModel(nullptr);
     }
 }
 
@@ -713,12 +720,18 @@ void BitcoinGUI::updateNetworkState()
     default: icon = ":/icons/connect_4"; break;
     }
 
+    QString tooltip;
+
     if (clientModel->getNetworkActive()) {
-        connectionsControl->setToolTip(tr("%n active connection(s) to Namecoin network", "", count));
+        tooltip = tr("%n active connection(s) to Namecoin network", "", count) + QString(".<br>") + tr("Click to disable network activity.");
     } else {
-        connectionsControl->setToolTip(tr("Network activity disabled"));
+        tooltip = tr("Network activity disabled.") + QString("<br>") + tr("Click to enable network activity again.");
         icon = ":/icons/network_disabled";
     }
+
+    // Don't word-wrap this (fixed-width) tooltip
+    tooltip = QString("<nobr>") + tooltip + QString("</nobr>");
+    connectionsControl->setToolTip(tooltip);
 
     connectionsControl->setPixmap(platformStyle->SingleColorIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
 }
@@ -1185,7 +1198,7 @@ void UnitDisplayStatusBarControl::mousePressEvent(QMouseEvent *event)
 /** Creates context menu, its actions, and wires up all the relevant signals for mouse events. */
 void UnitDisplayStatusBarControl::createContextMenu()
 {
-    menu = new QMenu();
+    menu = new QMenu(this);
     Q_FOREACH(BitcoinUnits::Unit u, BitcoinUnits::availableUnits())
     {
         QAction *menuAction = new QAction(QString(BitcoinUnits::name(u)), this);
@@ -1242,7 +1255,5 @@ void NetworkToggleStatusBarControl::mousePressEvent(QMouseEvent *event)
 /** Lets the control know about the Client Model */
 void NetworkToggleStatusBarControl::setClientModel(ClientModel *_clientModel)
 {
-    if (_clientModel) {
-        this->clientModel = _clientModel;
-    }
+    this->clientModel = _clientModel;
 }

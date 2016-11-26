@@ -27,6 +27,7 @@ class TestNode(SingleNodeConnCB):
         self.last_cmpctblock = None
         self.block_announced = False
         self.last_getdata = None
+        self.last_getheaders = None
         self.last_getblocktxn = None
         self.last_block = None
         self.last_blocktxn = None
@@ -63,6 +64,9 @@ class TestNode(SingleNodeConnCB):
 
     def on_getdata(self, conn, message):
         self.last_getdata = message
+
+    def on_getheaders(self, conn, message):
+        self.last_getheaders = message
 
     def on_getblocktxn(self, conn, message):
         self.last_getblocktxn = message
@@ -186,12 +190,15 @@ class CompactBlocksTest(BitcoinTestFramework):
 
         def check_announcement_of_new_block(node, peer, predicate):
             peer.clear_block_announcement()
-            node.generate(1)
-            got_message = wait_until(lambda: peer.block_announced, timeout=30)
+            block_hash = int(node.generate(1)[0], 16)
+            peer.wait_for_block_announcement(block_hash, timeout=30)
             assert(peer.block_announced)
             assert(got_message)
+
             with mininode_lock:
-                assert(predicate(peer))
+                assert predicate(peer), (
+                    "block_hash={!r}, cmpctblock={!r}, inv={!r}".format(
+                        block_hash, peer.last_cmpctblock, peer.last_inv))
 
         # We shouldn't get any block announcements via cmpctblock yet.
         check_announcement_of_new_block(node, test_node, lambda p: p.last_cmpctblock is None)
@@ -393,6 +400,9 @@ class CompactBlocksTest(BitcoinTestFramework):
 
             if announce == "inv":
                 test_node.send_message(msg_inv([CInv(2, block.sha256)]))
+                success = wait_until(lambda: test_node.last_getheaders is not None, timeout=30)
+                assert(success)
+                test_node.send_header_for_blocks([block])
             else:
                 test_node.send_header_for_blocks([block])
             success = wait_until(lambda: test_node.last_getdata is not None, timeout=30)
