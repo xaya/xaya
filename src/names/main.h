@@ -238,7 +238,7 @@ public:
  * ensures that all name operations (if any) are valid and that it has
  * name operations iff it is marked as Namecoin tx by its version.
  * @param tx The transaction to check.
- * @param nHeight Height at which the tx will be.  May be MEMPOOL_HEIGHT.
+ * @param nHeight Height at which the tx will be.
  * @param view The current chain state.
  * @param state Resulting validation state.
  * @param flags Verification flags.

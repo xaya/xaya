@@ -686,6 +686,16 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         if (!tx.wit.IsNull() && fRequireStandard && !IsWitnessStandard(tx, view))
             return state.DoS(0, false, REJECT_NONSTANDARD, "bad-witness-nonstandard", true);
 
+        // Verify the name transaction, to ensure that the structure is valid
+        // (e. g., not multiple name outputs).  This is something that is
+        // assumed to be true later on, for instance in the constructor of
+        // CTxMemPoolEntry.  The check is redone later in CheckInputs, but that
+        // point is too late and it does not hurt to do the check twice.
+        // This is necessary to fix #116.
+        if (!CheckNameTransaction (tx, GetSpendHeight(view), view, state,
+                                   SCRIPT_VERIFY_NAMES_MEMPOOL))
+            return state.Invalid(false, 0, "", "Tx invalid for Namecoin");
+
         int64_t nSigOpsCost = GetTransactionSigOpCost(tx, view, STANDARD_SCRIPT_VERIFY_FLAGS);
 
         CAmount nValueOut = tx.GetValueOut();
