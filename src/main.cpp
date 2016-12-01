@@ -70,7 +70,7 @@ int64_t nTimeBestReceived = 0; // Used only to inform the wallet of when we last
 CWaitableCriticalSection csBestBlock;
 CConditionVariable cvBlockChange;
 int nScriptCheckThreads = 0;
-bool fImporting = false;
+std::atomic_bool fImporting(false);
 bool fReindex = false;
 bool fTxIndex = false;
 bool fHavePruned = false;
@@ -5039,7 +5039,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                     else if (inv.type == MSG_CMPCT_BLOCK)
                     {
                         // If a peer is asking for old blocks, we're almost guaranteed
-                        // they wont have a useful mempool to match against a compact block,
+                        // they won't have a useful mempool to match against a compact block,
                         // and we don't feel like constructing the object for them, so
                         // instead we respond with the full, non-compact block.
                         bool fPeerWantsWitness = State(pfrom->GetId())->fWantsCmpctWitness;
@@ -5307,8 +5307,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
     {
         pfrom->SetRecvVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
 
-        // Mark this node as currently connected, so we update its timestamp later.
-        if (pfrom->fNetworkNode) {
+        if (!pfrom->fInbound) {
+            // Mark this node as currently connected, so we update its timestamp later.
             LOCK(cs_main);
             State(pfrom->GetId())->fCurrentlyConnected = true;
         }
