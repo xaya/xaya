@@ -100,56 +100,61 @@ if ENABLE_ZMQ:
 
 testScripts = [
     # longest test should go first, to favor running tests in parallel
-    'p2p-fullblocktest.py',
+    'wallet-hd.py',
     'walletbackup.py',
-    # FIXME: Enable once we activate BIP9.
-    #'bip68-112-113-p2p.py',
+    # vv Tests less than 5m vv
+    'p2p-fullblocktest.py',
+    'fundrawtransaction.py',
+    'p2p-compactblocks.py',
+    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
+    #'segwit.py',
+    # vv Tests less than 2m vv
     'wallet.py',
     'wallet-accounts.py',
-    'wallet-hd.py',
-    'wallet-dump.py',
-    'listtransactions.py',
-    'receivedby.py',
-    'mempool_resurrect_test.py',
-    'txn_doublespend.py --mineblock',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-segwit.py',
-    #'segwit.py',
+    'wallet-dump.py',
+    'listtransactions.py',
+    # vv Tests less than 60s vv
+    'sendheaders.py',
+    'zapwallettxes.py',
+    'importmulti.py',
+    'mempool_limit.py',
+    'merkle_blocks.py',
+    'receivedby.py',
+    'abandonconflict.py',
+    # FIXME: Enable once we activate BIP9.
+    #'bip68-112-113-p2p.py',
+    'rawtransactions.py',
+    'reindex.py',
+    # vv Tests less than 30s vv
+    'mempool_resurrect_test.py',
+    'txn_doublespend.py --mineblock',
     'txn_clone.py',
     'getchaintips.py',
-    'rawtransactions.py',
     'rest.py',
     'mempool_spendcoinbase.py',
     'mempool_reorg.py',
-    'mempool_limit.py',
     'httpbasics.py',
     'multi_rpc.py',
-    'zapwallettxes.py',
     'proxy_test.py',
-    'merkle_blocks.py',
-    'fundrawtransaction.py',
     'signrawtransactions.py',
     'nodehandling.py',
-    'reindex.py',
     'decodescript.py',
     'blockchain.py',
     'disablewallet.py',
-    'sendheaders.py',
     'keypool.py',
     'p2p-mempool.py',
     'prioritise_transaction.py',
     'invalidblockrequest.py',
     'invalidtxrequest.py',
-    'abandonconflict.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-versionbits-warning.py',
     'preciousblock.py',
     'importprunedfunds.py',
     'signmessages.py',
-    'p2p-compactblocks.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'nulldummy.py',
-    'importmulti.py',
 
     # auxpow tests
     'getauxblock.py',
@@ -158,25 +163,30 @@ if ENABLE_ZMQ:
     testScripts.append('zmq_test.py')
 
 testScriptsExt = [
+    'pruning.py',
+    # vv Tests less than 20m vv
+    'smartfees.py',
+    # vv Tests less than 5m vv
+    'maxuploadtarget.py',
+    'mempool_packages.py',
+    # vv Tests less than 2m vv
+    'bip68-sequence.py',
+    # vv Tests less than 60s vv
     'bip9-softforks.py',
+    'p2p-feefilter.py',
+    'rpcbind_test.py',
+    # vv Tests less than 30s vv
     'bip65-cltv.py',
     'bip65-cltv-p2p.py',
-    'bip68-sequence.py',
     'bipdersig-p2p.py',
     'bipdersig.py',
     'txn_doublespend.py',
     'txn_clone.py --mineblock',
     'forknotify.py',
     'invalidateblock.py',
-    'rpcbind_test.py',
-    'smartfees.py',
     'maxblocksinflight.py',
     'p2p-acceptblock.py',
-    'mempool_packages.py',
-    'maxuploadtarget.py',
     'replace-by-fee.py',
-    'p2p-feefilter.py',
-    'pruning.py', # leave pruning last as it takes a REALLY long time
 ]
 
 

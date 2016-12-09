@@ -6,7 +6,7 @@
 #include "chainparams.h"
 #include "coins.h"
 #include "consensus/merkle.h"
-#include "main.h"
+#include "validation.h"
 #include "primitives/block.h"
 #include "script/script.h"
 #include "utilstrencodings.h"
@@ -84,17 +84,7 @@ public:
    * @param tx The base tx to use.
    * @return The constructed CAuxPow object.
    */
-  CAuxPow get (const CTransaction& tx) const;
-
-  /**
-   * Builds the finished CAuxPow object, using a CTransactionRef instead of
-   * const reference to CTransaction directly.
-   */
-  inline CAuxPow
-  get (const CTransactionRef txref) const
-  {
-    return get (*txref);
-  }
+  CAuxPow get (const CTransactionRef tx) const;
 
   /**
    * Build the finished CAuxPow object from the parent block's coinbase.
@@ -161,7 +151,7 @@ CAuxpowBuilder::buildAuxpowChain (const uint256& hashAux, unsigned h, int index)
 }
 
 CAuxPow
-CAuxpowBuilder::get (const CTransaction& tx) const
+CAuxpowBuilder::get (const CTransactionRef tx) const
 {
   LOCK(cs_main);
   CAuxPow res(tx);
