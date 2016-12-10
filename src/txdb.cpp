@@ -7,9 +7,9 @@
 
 #include "chainparams.h"
 #include "hash.h"
-#include "main.h"
 #include "pow.h"
 #include "uint256.h"
+#include "validation.h"
 
 #include "script/names.h"
 

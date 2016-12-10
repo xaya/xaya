@@ -20,6 +20,8 @@
 
 #include <univalue.h>
 
+static const unsigned int DEFAULT_RPC_SERIALIZE_VERSION = 1;
+
 class CRPCCommand;
 
 namespace RPCServer
@@ -211,4 +213,7 @@ void StopRPC();
 std::string JSONRPCExecBatch(const UniValue& vReq);
 void RPCNotifyBlockChange(bool ibd, const CBlockIndex *);
 
-#endif // BITCOINRPC_SERVER_H
+// Retrieves any serialization flags requested in command line argument
+int RPCSerializationFlags();
+
+#endif // BITCOIN_RPCSERVER_H

@@ -5,7 +5,6 @@
 #include "base58.h"
 #include "coins.h"
 #include "init.h"
-#include "main.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
@@ -14,6 +13,7 @@
 #include "script/names.h"
 #include "txmempool.h"
 #include "util.h"
+#include "validation.h"
 #include "wallet/wallet.h"
 
 #include <univalue.h>
@@ -85,14 +85,14 @@ name_list (const JSONRPCRequest& request)
                  pwalletMain->mapWallet)
     {
       const CWalletTx& tx = item.second;
-      if (!tx.IsNamecoin ())
+      if (!tx.tx->IsNamecoin ())
         continue;
 
       CNameScript nameOp;
       int nOut = -1;
-      for (unsigned i = 0; i < tx.vout.size (); ++i)
+      for (unsigned i = 0; i < tx.tx->vout.size (); ++i)
         {
-          const CNameScript cur(tx.vout[i].scriptPubKey);
+          const CNameScript cur(tx.tx->vout[i].scriptPubKey);
           if (cur.isNameOp ())
             {
               if (nOut != -1)

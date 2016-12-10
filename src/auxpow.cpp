@@ -12,11 +12,11 @@
 #include "consensus/merkle.h"
 #include "consensus/validation.h"
 #include "hash.h"
-#include "main.h"
 #include "script/script.h"
 #include "txmempool.h"
 #include "util.h"
 #include "utilstrencodings.h"
+#include "validation.h"
 
 #include <algorithm>
 
@@ -107,7 +107,7 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
           != parentBlock.hashMerkleRoot)
         return error("Aux POW merkle root incorrect");
 
-    const CScript script = vin[0].scriptSig;
+    const CScript script = tx->vin[0].scriptSig;
 
     // Check that the same work is not submitted twice to our chain.
     //
@@ -227,16 +227,17 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   coinbase.vin[0].prevout.SetNull ();
   coinbase.vin[0].scriptSig = (CScript () << inputData);
   assert (coinbase.vout.empty ());
+  CTransactionRef coinbaseRef = MakeTransactionRef (coinbase);
 
   /* Build a fake parent block with the coinbase.  */
   CBlock parent;
   parent.nVersion = 1;
   parent.vtx.resize (1);
-  parent.vtx[0] = MakeTransactionRef(coinbase);
+  parent.vtx[0] = coinbaseRef;
   parent.hashMerkleRoot = BlockMerkleRoot (parent);
 
   /* Construct the auxpow object.  */
-  header.SetAuxpow (new CAuxPow (coinbase));
+  header.SetAuxpow (new CAuxPow (coinbaseRef));
   assert (header.auxpow->vChainMerkleBranch.empty ());
   header.auxpow->nChainIndex = 0;
   assert (header.auxpow->vMerkleBranch.empty ());

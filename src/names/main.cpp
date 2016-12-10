@@ -9,13 +9,13 @@
 #include "consensus/validation.h"
 #include "hash.h"
 #include "dbwrapper.h"
-#include "../main.h"
 #include "script/interpreter.h"
 #include "script/names.h"
 #include "txmempool.h"
 #include "undo.h"
 #include "util.h"
 #include "utilstrencodings.h"
+#include "validation.h"
 
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also

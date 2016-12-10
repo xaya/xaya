@@ -5,7 +5,6 @@
 #include "base58.h"
 #include "chainparams.h"
 #include "init.h"
-#include "main.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
@@ -13,6 +12,7 @@
 #include "script/names.h"
 #include "txmempool.h"
 #include "utilstrencodings.h"
+#include "validation.h"
 #ifdef ENABLE_WALLET
 # include "wallet/wallet.h"
 #endif
