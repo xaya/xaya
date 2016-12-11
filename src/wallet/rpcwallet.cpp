@@ -352,7 +352,21 @@ void SendMoneyToScript(const CScript &scriptPubKey, const CTxIn* withInput, CAmo
     if (nValue <= 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
 
-    if (nValue > curBalance)
+    /* If we have an additional input that is a name, we have to take this
+       name's value into account as well for the balance check.  Otherwise one
+       sees spurious "Insufficient funds" errors when updating names when the
+       wallet's balance it smaller than the amount locked in the name.  */
+    CAmount lockedValue = 0;
+    std::string strError;
+    if (withInput)
+      {
+        const CWalletTx* dummyWalletTx;
+        if (!pwalletMain->FindValueInNameInput (*withInput, lockedValue,
+                                                dummyWalletTx, strError))
+          throw JSONRPCError(RPC_WALLET_ERROR, strError);
+      }
+
+    if (nValue > curBalance + lockedValue)
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
 
     if (pwalletMain->GetBroadcastTransactions() && !g_connman)
@@ -361,7 +375,6 @@ void SendMoneyToScript(const CScript &scriptPubKey, const CTxIn* withInput, CAmo
     // Create and send the transaction
     CReserveKey reservekey(pwalletMain);
     CAmount nFeeRequired;
-    std::string strError;
     vector<CRecipient> vecSend;
     int nChangePosRet = -1;
     CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount};

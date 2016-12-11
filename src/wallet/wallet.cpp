@@ -2259,6 +2259,36 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool ov
     return true;
 }
 
+bool
+CWallet::FindValueInNameInput (const CTxIn& nameInput,
+                               CAmount& value, const CWalletTx*& walletTx,
+                               std::string& strFailReason) const
+{
+  walletTx = GetWalletTx (nameInput.prevout.hash);
+  if (!walletTx)
+    {
+      strFailReason = _("Input tx not found in wallet");
+      return false;
+    }
+
+  const CTxOut& output = walletTx->tx->vout[nameInput.prevout.n];
+  if (IsMine (output) != ISMINE_SPENDABLE)
+    {
+      strFailReason = _("Input tx is not mine");
+      return false;
+    }
+
+  if (!CNameScript::isNameScript (output.scriptPubKey))
+    {
+      strFailReason = _("Input tx is not a name operation");
+      return false;
+    }
+
+  value = output.nValue;
+  return true;
+
+}
+
 bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend,
                                 const CTxIn* withInput,
                                 CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet,
@@ -2300,19 +2330,9 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend,
     const CWalletTx* withInputTx = nullptr;
     if (withInput)
     {
-        withInputTx = GetWalletTx(withInput->prevout.hash);
-        if (!withInputTx)
-        {
-            strFailReason = _("Input tx not found in wallet");
+        if (!FindValueInNameInput (*withInput, nInputValue, withInputTx,
+                                   strFailReason))
             return false;
-        }
-        const CTxOut& withOut = withInputTx->tx->vout[withInput->prevout.n];
-        if (IsMine (withOut) != ISMINE_SPENDABLE)
-        {
-            strFailReason = _("Input tx is not mine");
-            return false;
-        }
-        nInputValue = withOut.nValue;
     }
 
     wtxNew.fTimeReceivedIsTxTime = true;

@@ -184,5 +184,21 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (1, "node-1", "reregistered", 23, False)
     self.checkNameHistory (1, "node-1", ["x" * 520, "reregistered"])
 
+    # Test that name updates are even possible with less balance in the wallet
+    # than what is locked in a name (0.01 NMC).  There was a bug preventing
+    # this from working.
+    balance = self.nodes[1].getbalance ()
+    keep = Decimal ("0.001")
+    addr0 = self.nodes[0].getnewaddress ()
+    self.nodes[1].sendtoaddress (addr0, balance - keep, "", "", True)
+    addr1 = self.nodes[1].getnewaddress ()
+    self.nodes[0].name_update ("node-1", "value", addr1)
+    self.generate (0, 1)
+    assert_equal (self.nodes[1].getbalance (), keep)
+    self.nodes[1].name_update ("node-1", "new value")
+    self.generate (0, 1)
+    self.checkName (1, "node-1", "new value", None, False)
+    assert self.nodes[1].getbalance () < Decimal ("0.01")
+
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

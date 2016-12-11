@@ -706,6 +706,14 @@ public:
     bool FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const CTxDestination& destChange = CNoDestination());
 
     /**
+     * Find the amount in the given tx input.  This must only be called with
+     * Namecoin inputs as used for CreateTransaction.
+     */
+    bool FindValueInNameInput (const CTxIn& nameInput,
+                               CAmount& value, const CWalletTx*& walletTx,
+                               std::string& strFailReason) const;
+
+    /**
      * Create a new transaction paying the recipients with a set of coins
      * selected by SelectCoins(); Also create the change output, when needed
      * @note passing nChangePosInOut as -1 will result in setting a random position
