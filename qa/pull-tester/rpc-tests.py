@@ -156,6 +156,7 @@ testScripts = [
     'signmessages.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'nulldummy.py',
+    'import-rescan.py',
 
     # auxpow tests
     'getauxblock.py',

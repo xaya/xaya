@@ -9,7 +9,7 @@
   - disallow legacy blocks also on testnet
   - restrict auxpow size / coinbase tx size?
   - name_new format change?
-  - make NamecoinTxVersion a flag?
+  - make NamecoinTxVersion a flag / irrelevant
   - more differences???
 
 * reenable some of the disabled tests, new alert keys?

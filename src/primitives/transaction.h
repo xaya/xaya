@@ -363,6 +363,8 @@ class CTransaction
 {
 public:
     // Default transaction version.
+    // FIXME: Upstream Bitcoin has default version set to 2 already.  Do this
+    // once we forked to make the tx version irrelevant for Namecoin.
     static const int32_t CURRENT_VERSION=1;
     static const int32_t NAMECOIN_VERSION=0x7100;
 

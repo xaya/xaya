@@ -524,7 +524,7 @@ void CTxMemPool::CalculateDescendants(txiter entryit, setEntries &setDescendants
     }
 }
 
-void CTxMemPool::removeRecursive(const CTransaction &origTx, std::vector<CTransactionRef>* removed)
+void CTxMemPool::removeRecursive(const CTransaction &origTx)
 {
     // Remove transaction from memory pool
     {
@@ -550,11 +550,6 @@ void CTxMemPool::removeRecursive(const CTransaction &origTx, std::vector<CTransa
         setEntries setAllRemoves;
         BOOST_FOREACH(txiter it, txToRemove) {
             CalculateDescendants(it, setAllRemoves);
-        }
-        if (removed) {
-            BOOST_FOREACH(txiter it, setAllRemoves) {
-                removed->emplace_back(it->GetSharedTx());
-            }
         }
         RemoveStaged(setAllRemoves, false);
     }
@@ -598,7 +593,6 @@ void CTxMemPool::removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMem
 }
 
 void CTxMemPool::removeConflicts(const CTransaction &tx,
-                                 std::vector<CTransactionRef>* removed,
                                  std::vector<CTransactionRef>* removedNames)
 {
     // Remove transactions which depend on inputs of tx, recursively
@@ -609,7 +603,7 @@ void CTxMemPool::removeConflicts(const CTransaction &tx,
             const CTransaction &txConflict = *it->second;
             if (txConflict != tx)
             {
-                removeRecursive(txConflict, removed);
+                removeRecursive(txConflict);
                 ClearPrioritisation(txConflict.GetHash());
             }
         }
@@ -623,7 +617,6 @@ void CTxMemPool::removeConflicts(const CTransaction &tx,
  * Called when a block is connected. Removes from mempool and updates the miner fee estimator.
  */
 void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight,
-                                std::vector<CTransactionRef>* conflicts,
                                 std::vector<CTransactionRef>* nameConflicts,
                                 bool fCurrentEstimate)
 {
@@ -645,7 +638,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
             stage.insert(it);
             RemoveStaged(stage, true);
         }
-        removeConflicts(*tx, conflicts, nameConflicts);
+        removeConflicts(*tx, nameConflicts);
         ClearPrioritisation(tx->GetHash());
     }
     // After the txs in the new block have been removed from the mempool, update policy estimates

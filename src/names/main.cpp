@@ -153,7 +153,7 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
   if (!tx.IsNamecoin ())
     return;
 
-  BOOST_FOREACH (const CTxOut& txout, tx.vout)
+  for (const auto& txout : tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
       if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
@@ -164,7 +164,9 @@ CNameMemPool::removeConflicts (const CTransaction& tx,
             {
               const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
               assert (mit2 != pool.mapTx.end ());
-              pool.removeRecursive (mit2->GetTx (), removed);
+              if (removed)
+                removed->push_back (MakeTransactionRef (mit2->GetTx ()));
+              pool.removeRecursive (mit2->GetTx ());
             }
         }
     }
@@ -176,7 +178,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
 {
   AssertLockHeld (pool.cs);
 
-  BOOST_FOREACH (const valtype& name, unexpired)
+  for (const auto& name : unexpired)
     {
       LogPrint ("names", "unexpired: %s, mempool: %u\n",
                 ValtypeToString (name).c_str (), mapNameRegs.count (name));
@@ -186,7 +188,9 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
         {
           const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.removeRecursive (mit2->GetTx (), removed);
+          if (removed)
+            removed->push_back (MakeTransactionRef (mit2->GetTx ()));
+          pool.removeRecursive (mit2->GetTx ());
         }
     }
 }
@@ -197,7 +201,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
 {
   AssertLockHeld (pool.cs);
 
-  BOOST_FOREACH (const valtype& name, expired)
+  for (const auto& name : expired)
     {
       LogPrint ("names", "expired: %s, mempool: %u\n",
                 ValtypeToString (name).c_str (), mapNameUpdates.count (name));
@@ -207,7 +211,9 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
         {
           const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
           assert (mit2 != pool.mapTx.end ());
-          pool.removeRecursive (mit2->GetTx (), removed);
+          if (removed)
+            removed->push_back (MakeTransactionRef (mit2->GetTx ()));
+          pool.removeRecursive (mit2->GetTx ());
         }
     }
 }

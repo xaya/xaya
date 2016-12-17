@@ -1518,7 +1518,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
 
         CBlock block;
-        assert(ReadBlockFromDisk(block, it->second, chainparams.GetConsensus()));
+        bool ret = ReadBlockFromDisk(block, it->second, chainparams.GetConsensus());
+        assert(ret);
 
         BlockTransactions resp(req);
         for (size_t i = 0; i < req.indexes.size(); i++) {
@@ -1972,7 +1973,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             bool fNewBlock = false;
             // Since we requested this block (it was in mapBlocksInFlight), force it to be processed,
             // even if it would not be a candidate for new tip (missing previous block, chain not long enough, etc)
-            ProcessNewBlock(chainparams, pblock, true, NULL, &fNewBlock);
+            ProcessNewBlock(chainparams, pblock, true, &fNewBlock);
             if (fNewBlock)
                 pfrom->nLastBlockTime = GetTime();
         }
@@ -2176,7 +2177,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             mapBlockSource.emplace(hash, std::make_pair(pfrom->GetId(), true));
         }
         bool fNewBlock = false;
-        ProcessNewBlock(chainparams, pblock, forceProcessing, NULL, &fNewBlock);
+        ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
         if (fNewBlock)
             pfrom->nLastBlockTime = GetTime();
     }
@@ -2773,7 +2774,8 @@ bool SendMessages(CNode* pto, CConnman& connman)
                             vHeaders.front().GetHash().ToString(), pto->id);
                     //TODO: Shouldn't need to reload block from disk, but requires refactor
                     CBlock block;
-                    assert(ReadBlockFromDisk(block, pBestIndex, consensusParams));
+                    bool ret = ReadBlockFromDisk(block, pBestIndex, consensusParams);
+                    assert(ret);
                     CBlockHeaderAndShortTxIDs cmpctblock(block, state.fWantsCmpctWitness);
                     int nSendFlags = state.fWantsCmpctWitness ? 0 : SERIALIZE_TRANSACTION_NO_WITNESS;
                     connman.PushMessage(pto, msgMaker.Make(nSendFlags, NetMsgType::CMPCTBLOCK, cmpctblock));
@@ -3041,6 +3043,9 @@ bool SendMessages(CNode* pto, CConnman& connman)
                 static CFeeRate default_feerate(DEFAULT_MIN_RELAY_TX_FEE);
                 static FeeFilterRounder filterRounder(default_feerate);
                 CAmount filterToSend = filterRounder.round(currentFilter);
+                // If we don't allow free transactions, then we always have a fee filter of at least minRelayTxFee
+                if (GetArg("-limitfreerelay", DEFAULT_LIMITFREERELAY) <= 0)
+                    filterToSend = std::max(filterToSend, ::minRelayTxFee.GetFeePerK());
                 if (filterToSend != pto->lastSentFeeFilter) {
                     connman.PushMessage(pto, msgMaker.Make(NetMsgType::FEEFILTER, filterToSend));
                     pto->lastSentFeeFilter = filterToSend;

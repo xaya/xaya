@@ -108,17 +108,12 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (1, "node-0", "stolen", 30, False)
     self.checkNameHistory (1, "node-0", ["value-0", "stolen"])
 
-    # Check for error when firstupdating an active name, but this time
-    # without the check present in the RPC call itself.  This should still not
-    # be allowed and should be prevented by the mempool logic.  There was a bug
-    # that allowed these transactiosn to get into the mempool, so make
-    # sure it is no longer there.
-    try:
-      self.firstupdateName (1, "node-0", newSteal2, "unstolen",
-                            allowActive = True)
-      raise AssertionError ("name stolen before expiry with allowActive")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    # Check for firstupdating an active name, but this time without the check
+    # present in the RPC call itself.  This should still be prevented by the
+    # mempool logic.  There was a bug that allowed these transactiosn to get
+    # into the mempool, so make sure it is no longer there.
+    self.firstupdateName (1, "node-0", newSteal2, "unstolen",
+                          allowActive = True)
     assert_equal (self.nodes[1].getrawmempool (), [])
     self.checkName (1, "node-0", "stolen", None, False)
 

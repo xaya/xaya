@@ -4,6 +4,7 @@
 
 TESTS += test/test_namecoin
 bin_PROGRAMS += test/test_namecoin
+noinst_PROGRAMS += test/test_namecoin_fuzzy
 TEST_SRCDIR = test
 TEST_BINARY=test/test_namecoin$(EXEEXT)
 
@@ -38,6 +39,7 @@ RAW_TEST_FILES =
 
 GENERATED_TEST_FILES = $(JSON_TEST_FILES:.json=.json.h) $(RAW_TEST_FILES:.raw=.raw.h)
 
+# test_bitcoin binary #
 BITCOIN_TESTS =\
   test/arith_uint256_tests.cpp \
   test/scriptnum10.h \
@@ -54,6 +56,7 @@ BITCOIN_TESTS =\
   test/coins_tests.cpp \
   test/compress_tests.cpp \
   test/crypto_tests.cpp \
+  test/cuckoocache_tests.cpp \
   test/DoS_tests.cpp \
   test/getarg_tests.cpp \
   test/hash_tests.cpp \
@@ -121,6 +124,25 @@ test_test_namecoin_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -
 if ENABLE_ZMQ
 test_test_namecoin_LDADD += $(ZMQ_LIBS)
 endif
+#
+
+# test_namecoin_fuzzy binary #
+test_test_namecoin_fuzzy_SOURCES = test/test_bitcoin_fuzzy.cpp
+test_test_namecoin_fuzzy_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_test_namecoin_fuzzy_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_test_namecoin_fuzzy_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+test_test_namecoin_fuzzy_LDADD = \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_SERVER) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBSECP256K1)
+
+test_test_namecoin_fuzzy_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+#
 
 nodist_test_test_namecoin_SOURCES = $(GENERATED_TEST_FILES)
 

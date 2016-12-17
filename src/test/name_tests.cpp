@@ -979,23 +979,18 @@ BOOST_AUTO_TEST_CASE (name_mempool)
 
   /* Remove the transactions again.  */
 
-  std::vector<std::shared_ptr<const CTransaction>> removed;
-  mempool.removeRecursive (txReg1, &removed);
+  mempool.removeRecursive (txReg1);
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
   BOOST_CHECK (!mempool.checkNameOps (txUpd2));
-  BOOST_CHECK (removed.size () == 1);
 
-  mempool.removeRecursive (txUpd1, &removed);
+  mempool.removeRecursive (txUpd1);
   BOOST_CHECK (!mempool.updatesName (nameUpd));
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
   BOOST_CHECK (mempool.checkNameOps (txReg1));
-  BOOST_CHECK (removed.size () == 2);
 
-  removed.clear ();
-  mempool.removeRecursive (txNew1, &removed);
-  mempool.removeRecursive (txNew2, &removed);
-  BOOST_CHECK (removed.size () == 2);
+  mempool.removeRecursive (txNew1);
+  mempool.removeRecursive (txNew2);
   BOOST_CHECK (!mempool.checkNameOps (txNew1p));
   BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
 
@@ -1009,8 +1004,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (mempool.registersName (nameReg));
   BOOST_CHECK (!mempool.checkNameOps (txReg2));
 
-  removed.clear ();
-  mempool.removeConflicts (txReg2, nullptr, &removed);
+  std::vector<CTransactionRef> removed;
+  mempool.removeConflicts (txReg2, &removed);
   BOOST_CHECK (removed.size () == 1);
   BOOST_CHECK (removed.front ()->GetHash () == txReg1.GetHash ());
   BOOST_CHECK (!mempool.registersName (nameReg));
