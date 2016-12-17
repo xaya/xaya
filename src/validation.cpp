@@ -2159,7 +2159,8 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
         CCoinsViewCache view(pcoinsTip);
         if (!DisconnectBlock(block, state, pindexDelete, view))
             return error("DisconnectTip(): DisconnectBlock %s failed", pindexDelete->GetBlockHash().ToString());
-        assert(view.Flush());
+        bool flushed = view.Flush();
+        assert(flushed);
     }
     LogPrint("bench", "- Disconnect block: %.2fms\n", (GetTimeMicros() - nStart) * 0.001);
     // Write the chain state to disk, if necessary.
@@ -2204,11 +2205,10 @@ static int64_t nTimeChainState = 0;
 static int64_t nTimePostConnect = 0;
 
 /**
- * Used to track conflicted transactions removed from mempool and transactions
- * applied to the UTXO state as a part of a single ActivateBestChainStep call.
+ * Used to track blocks whose transactions were applied to the UTXO state as a
+ * part of a single ActivateBestChainStep call.
  */
 struct ConnectTrace {
-    std::vector<CTransactionRef> txConflicted;
     std::vector<std::pair<CBlockIndex*, std::shared_ptr<const CBlock> > > blocksConnected;
 };
 
@@ -2249,7 +2249,8 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
         }
         nTime3 = GetTimeMicros(); nTimeConnectTotal += nTime3 - nTime2;
         LogPrint("bench", "  - Connect total: %.2fms [%.2fs]\n", (nTime3 - nTime2) * 0.001, nTimeConnectTotal * 0.000001);
-        assert(view.Flush());
+        bool flushed = view.Flush();
+        assert(flushed);
     }
     int64_t nTime4 = GetTimeMicros(); nTimeFlush += nTime4 - nTime3;
     LogPrint("bench", "  - Flush: %.2fms [%.2fs]\n", (nTime4 - nTime3) * 0.001, nTimeFlush * 0.000001);
@@ -2259,7 +2260,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
     int64_t nTime5 = GetTimeMicros(); nTimeChainState += nTime5 - nTime4;
     LogPrint("bench", "  - Writing chainstate: %.2fms [%.2fs]\n", (nTime5 - nTime4) * 0.001, nTimeChainState * 0.000001);
     // Remove conflicting transactions from the mempool.;
-    mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight, &connectTrace.txConflicted, !IsInitialBlockDownload());
+    mempool.removeForBlock(blockConnecting.vtx, pindexNew->nHeight, !IsInitialBlockDownload());
     // Update chainActive & related variables.
     UpdateTip(pindexNew, chainparams);
 
@@ -2484,11 +2485,6 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
 
         // throw all transactions though the signal-interface
         // while _not_ holding the cs_main lock
-        for (const auto& tx : connectTrace.txConflicted)
-        {
-            GetMainSignals().SyncTransaction(*tx, pindexNewTip, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
-        }
-        // ... and about transactions that got confirmed:
         for (const auto& pair : connectTrace.blocksConnected) {
             assert(pair.second);
             const CBlock& block = *(pair.second);
@@ -3185,7 +3181,7 @@ static bool AcceptBlock(const CBlock& block, CValidationState& state, const CCha
     return true;
 }
 
-bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, const CDiskBlockPos* dbp, bool *fNewBlock)
+bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     {
         LOCK(cs_main);
@@ -3194,7 +3190,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CBlockIndex *pindex = NULL;
         if (fNewBlock) *fNewBlock = false;
         CValidationState state;
-        bool ret = AcceptBlock(*pblock, state, chainparams, &pindex, fForceProcessing, dbp, fNewBlock);
+        bool ret = AcceptBlock(*pblock, state, chainparams, &pindex, fForceProcessing, NULL, fNewBlock);
         CheckBlockIndex(chainparams.GetConsensus());
         if (!ret) {
             GetMainSignals().BlockChecked(*pblock, state);

@@ -136,7 +136,7 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
             continue;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
-        if (!ProcessNewBlock(Params(), shared_pblock, true, NULL, NULL))
+        if (!ProcessNewBlock(Params(), shared_pblock, true, NULL))
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
         blockHashes.push_back(pblock->GetHash().GetHex());
@@ -770,7 +770,7 @@ UniValue submitblock(const JSONRPCRequest& request)
 
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool fAccepted = ProcessNewBlock(Params(), blockptr, true, NULL, NULL);
+    bool fAccepted = ProcessNewBlock(Params(), blockptr, true, NULL);
     UnregisterValidationInterface(&sc);
     if (fBlockPresent)
     {
@@ -1073,7 +1073,7 @@ UniValue getauxblock(const JSONRPCRequest& request)
     RegisterValidationInterface(&sc);
     std::shared_ptr<const CBlock> shared_block
       = std::make_shared<const CBlock>(block);
-    bool fAccepted = ProcessNewBlock(Params(), shared_block, true, nullptr, nullptr);
+    bool fAccepted = ProcessNewBlock(Params(), shared_block, true, nullptr);
     UnregisterValidationInterface(&sc);
 
     if (fAccepted)
