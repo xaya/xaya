@@ -66,6 +66,35 @@ class NameRawTxTest (NameTestFramework):
                   self.nodes[0].getbalance ())
     assert_equal (balanceB - price - fee, self.nodes[1].getbalance ())
 
+    # Try to construct and relay a transaction that updates two names at once.
+    # This used to crash the client, #116.  It should lead to an error (as such
+    # a transaction is invalid), but not a crash.
+
+    newA = self.nodes[0].name_new ("a")
+    newB = self.nodes[0].name_new ("b")
+    self.generate (0, 10)
+    self.firstupdateName (0, "a", newA, "value a")
+    self.firstupdateName (0, "b", newB, "value b")
+    self.generate (0, 5)
+
+    inA, outA = self.constructUpdateTx (0, "a", "new value a")
+    inB, outB = self.constructUpdateTx (0, "b", "new value b")
+
+    tx = outA[:8]      # version
+    tx += '02'         # number of txin
+    tx += inA[10:-10]  # first txin
+    tx += inB[10:-10]  # second txin
+    tx += '02'         # number of txout
+    tx += outA[12:-8]  # first txout
+    tx += outB[12:-8]  # second txout
+    tx += '00' * 4     # locktime
+
+    signed = self.nodes[0].signrawtransaction (tx)
+    try:
+      self.nodes[0].sendrawtransaction (signed['hex'])
+    except JSONRPCException as exc:
+      assert_equal (exc.error['code'], -26)
+
   def decodeNameTx (self, ind, txid):
     """
     Call the node's getrawtransaction on the txid and find the output
@@ -88,6 +117,24 @@ class NameRawTxTest (NameTestFramework):
 
     assert res is not None
     return res
+
+  def constructUpdateTx (self, ind, name, val):
+    """
+    Construct a name_update raw transaction for the given name.  The target
+    address is newly constructed.  Returned are the hex-encoded input
+    and output, so that one can mix-and-match them.
+    """
+
+    addr = self.nodes[ind].getnewaddress ()
+    data = self.nodes[ind].name_show (name)
+
+    vin = [{"txid": data['txid'], "vout": data['vout']}]
+    txin = self.nodes[ind].createrawtransaction (vin, {})
+
+    nameop = {"op": "name_update", "name": name, "value": val, "address": addr}
+    txout = self.nodes[ind].createrawtransaction ([], {}, nameop)
+
+    return txin, txout
 
 if __name__ == '__main__':
   NameRawTxTest ().main ()
