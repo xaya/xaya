@@ -658,6 +658,8 @@ struct CScriptWitness
 
     bool IsNull() const { return stack.empty(); }
 
+    void SetNull() { stack.clear(); stack.shrink_to_fit(); }
+
     std::string ToString() const;
 };
 
