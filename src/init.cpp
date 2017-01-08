@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -176,6 +176,8 @@ void Interrupt(boost::thread_group& threadGroup)
     InterruptRPC();
     InterruptREST();
     InterruptTorControl();
+    if (g_connman)
+        g_connman->Interrupt();
     threadGroup.interrupt_all();
 }
 
@@ -485,7 +487,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-rpccookiefile=<loc>", _("Location of the auth cookie (default: data dir)"));
     strUsage += HelpMessageOpt("-rpcuser=<user>", _("Username for JSON-RPC connections"));
     strUsage += HelpMessageOpt("-rpcpassword=<pw>", _("Password for JSON-RPC connections"));
-    strUsage += HelpMessageOpt("-rpcauth=<userpw>", _("Username and hashed password for JSON-RPC connections. The field <userpw> comes in the format: <USERNAME>:<SALT>$<HASH>. A canonical python script is included in share/rpcuser. This option can be specified multiple times"));
+    strUsage += HelpMessageOpt("-rpcauth=<userpw>", _("Username and hashed password for JSON-RPC connections. The field <userpw> comes in the format: <USERNAME>:<SALT>$<HASH>. A canonical python script is included in share/rpcuser. The client then connects normally using the rpcuser=<USERNAME>/rpcpassword=<PASSWORD> pair of arguments. This option can be specified multiple times"));
     strUsage += HelpMessageOpt("-rpcport=<port>", strprintf(_("Listen for JSON-RPC connections on <port> (default: %u or testnet: %u)"), BaseParams(CBaseChainParams::MAIN).RPCPort(), BaseParams(CBaseChainParams::TESTNET).RPCPort()));
     strUsage += HelpMessageOpt("-rpcallowip=<ip>", _("Allow JSON-RPC connections from specified source. Valid for <ip> are a single IP (e.g. 1.2.3.4), a network/netmask (e.g. 1.2.3.4/255.255.255.0) or a network/CIDR (e.g. 1.2.3.4/24). This option can be specified multiple times"));
     strUsage += HelpMessageOpt("-rpcthreads=<n>", strprintf(_("Set the number of threads to service RPC calls (default: %d)"), DEFAULT_HTTP_THREADS));
@@ -870,11 +872,11 @@ bool AppInitParameterInteraction()
     nMaxConnections = std::max(nUserMaxConnections, 0);
 
     // Trim requested connection counts, to fit into system limitations
-    nMaxConnections = std::max(std::min(nMaxConnections, (int)(FD_SETSIZE - nBind - MIN_CORE_FILEDESCRIPTORS)), 0);
-    nFD = RaiseFileDescriptorLimit(nMaxConnections + MIN_CORE_FILEDESCRIPTORS);
+    nMaxConnections = std::max(std::min(nMaxConnections, (int)(FD_SETSIZE - nBind - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS)), 0);
+    nFD = RaiseFileDescriptorLimit(nMaxConnections + MIN_CORE_FILEDESCRIPTORS + MAX_ADDNODE_CONNECTIONS);
     if (nFD < MIN_CORE_FILEDESCRIPTORS)
         return InitError(_("Not enough file descriptors available."));
-    nMaxConnections = std::min(nFD - MIN_CORE_FILEDESCRIPTORS, nMaxConnections);
+    nMaxConnections = std::min(nFD - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS, nMaxConnections);
 
     if (nMaxConnections < nUserMaxConnections)
         InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
@@ -1108,7 +1110,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     LogPrintf("Default data directory %s\n", GetDefaultDataDir().string());
     LogPrintf("Using data directory %s\n", GetDataDir().string());
     LogPrintf("Using config file %s\n", GetConfigFile(GetArg("-conf", BITCOIN_CONF_FILENAME)).string());
-    LogPrintf("Using at most %i connections (%i file descriptors available)\n", nMaxConnections, nFD);
+    LogPrintf("Using at most %i automatic connections (%i file descriptors available)\n", nMaxConnections, nFD);
 
     InitSignatureCache();
 
@@ -1339,10 +1341,11 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     nCoinDBCache = std::min(nCoinDBCache, nMaxCoinsDBCache << 20); // cap total coins db cache
     nTotalCache -= nCoinDBCache;
     nCoinCacheUsage = nTotalCache; // the rest goes to in-memory cache
+    int64_t nMempoolSizeMax = GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     LogPrintf("Cache configuration:\n");
     LogPrintf("* Using %.1fMiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1fMiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
-    LogPrintf("* Using %.1fMiB for in-memory UTXO set\n", nCoinCacheUsage * (1.0 / 1024 / 1024));
+    LogPrintf("* Using %.1fMiB for in-memory UTXO set (plus up to %.1fMiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
     bool fLoaded = false;
     while (!fLoaded) {
@@ -1569,6 +1572,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     connOptions.nRelevantServices = nRelevantServices;
     connOptions.nMaxConnections = nMaxConnections;
     connOptions.nMaxOutbound = std::min(MAX_OUTBOUND_CONNECTIONS, connOptions.nMaxConnections);
+    connOptions.nMaxAddnode = MAX_ADDNODE_CONNECTIONS;
     connOptions.nMaxFeeler = 1;
     connOptions.nBestHeight = chainActive.Height();
     connOptions.uiInterface = &uiInterface;
@@ -1578,7 +1582,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     connOptions.nMaxOutboundTimeframe = nMaxOutboundTimeframe;
     connOptions.nMaxOutboundLimit = nMaxOutboundLimit;
 
-    if(!connman.Start(threadGroup, scheduler, strNodeError, connOptions))
+    if (!connman.Start(scheduler, strNodeError, connOptions))
         return InitError(strNodeError);
 
     // ********************************************************* Step 12: finished

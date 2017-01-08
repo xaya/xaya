@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,11 +19,14 @@
 #include "streams.h"
 #include "sync.h"
 #include "uint256.h"
+#include "threadinterrupt.h"
 
 #include <atomic>
 #include <deque>
 #include <stdint.h>
+#include <thread>
 #include <memory>
+#include <condition_variable>
 
 #ifndef WIN32
 #include <arpa/inet.h>
@@ -61,8 +64,10 @@ static const unsigned int MAX_ADDR_TO_SEND = 1000;
 static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 32 * 1024 * 1024;
 /** Maximum length of strSubVer in `version` message */
 static const unsigned int MAX_SUBVERSION_LENGTH = 256;
-/** Maximum number of outgoing nodes */
+/** Maximum number of automatic outgoing nodes */
 static const int MAX_OUTBOUND_CONNECTIONS = 8;
+/** Maximum number of addnode outgoing nodes */
+static const int MAX_ADDNODE_CONNECTIONS = 8;
 /** -listen default */
 static const bool DEFAULT_LISTEN = true;
 /** -upnp default */
@@ -138,6 +143,7 @@ public:
         ServiceFlags nRelevantServices = NODE_NONE;
         int nMaxConnections = 0;
         int nMaxOutbound = 0;
+        int nMaxAddnode = 0;
         int nMaxFeeler = 0;
         int nBestHeight = 0;
         CClientUIInterface* uiInterface = nullptr;
@@ -148,12 +154,13 @@ public:
     };
     CConnman(uint64_t seed0, uint64_t seed1);
     ~CConnman();
-    bool Start(boost::thread_group& threadGroup, CScheduler& scheduler, std::string& strNodeError, Options options);
+    bool Start(CScheduler& scheduler, std::string& strNodeError, Options options);
     void Stop();
+    void Interrupt();
     bool BindListenPort(const CService &bindAddr, std::string& strError, bool fWhitelisted = false);
     bool GetNetworkActive() const { return fNetworkActive; };
     void SetNetworkActive(bool active);
-    bool OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false, bool fFeeler = false);
+    bool OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false, bool fFeeler = false, bool fAddnode = false);
     bool CheckIncomingNonce(uint64_t nonce);
 
     bool ForNode(NodeId id, std::function<bool(CNode* pnode)> func);
@@ -408,7 +415,6 @@ private:
     std::list<CNode*> vNodesDisconnected;
     mutable CCriticalSection cs_vNodes;
     std::atomic<NodeId> nLastNodeId;
-    boost::condition_variable messageHandlerCondition;
 
     /** Services this instance offers */
     ServiceFlags nLocalServices;
@@ -417,14 +423,28 @@ private:
     ServiceFlags nRelevantServices;
 
     CSemaphore *semOutbound;
+    CSemaphore *semAddnode;
     int nMaxConnections;
     int nMaxOutbound;
+    int nMaxAddnode;
     int nMaxFeeler;
     std::atomic<int> nBestHeight;
     CClientUIInterface* clientInterface;
 
     /** SipHasher seeds for deterministic randomness */
     const uint64_t nSeed0, nSeed1;
+
+    std::condition_variable condMsgProc;
+    std::mutex mutexMsgProc;
+    std::atomic<bool> flagInterruptMsgProc;
+
+    CThreadInterrupt interruptNet;
+
+    std::thread threadDNSAddressSeed;
+    std::thread threadSocketHandler;
+    std::thread threadOpenAddedConnections;
+    std::thread threadOpenConnections;
+    std::thread threadMessageHandler;
 };
 extern std::unique_ptr<CConnman> g_connman;
 void Discover(boost::thread_group& threadGroup);
@@ -451,8 +471,8 @@ struct CombinerAll
 // Signals for message handling
 struct CNodeSignals
 {
-    boost::signals2::signal<bool (CNode*, CConnman&), CombinerAll> ProcessMessages;
-    boost::signals2::signal<bool (CNode*, CConnman&), CombinerAll> SendMessages;
+    boost::signals2::signal<bool (CNode*, CConnman&, std::atomic<bool>&), CombinerAll> ProcessMessages;
+    boost::signals2::signal<bool (CNode*, CConnman&, std::atomic<bool>&), CombinerAll> SendMessages;
     boost::signals2::signal<void (CNode*, CConnman&)> InitializeNode;
     boost::signals2::signal<void (NodeId, bool&)> FinalizeNode;
 };
@@ -520,6 +540,7 @@ public:
     int nVersion;
     std::string cleanSubVer;
     bool fInbound;
+    bool fAddnode;
     int nStartingHeight;
     uint64_t nSendBytes;
     mapMsgCmdSize mapSendBytesPerMsgCmd;
@@ -617,6 +638,7 @@ public:
     bool fWhitelisted; // This peer can bypass DoS banning.
     bool fFeeler; // If true this node is being used as a short lived feeler.
     bool fOneShot;
+    bool fAddnode;
     bool fClient;
     const bool fInbound;
     bool fSuccessfullyConnected;

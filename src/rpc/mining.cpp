@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -309,11 +309,6 @@ static UniValue BIP22ValidationResult(const CValidationState& state)
     // Should be impossible
     return "valid?";
 }
-
-#if 0
-getblocktemplate is disabled for merge-mining, since getauxblock should
-be used instead.  All blocks are required to be merge-mined, thus GBT
-makes no sense.
 
 std::string gbt_vb_name(const Consensus::DeploymentPos pos) {
     const struct BIP9DeploymentInfo& vbinfo = VersionBitsDeploymentInfo[pos];
@@ -698,7 +693,6 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
 
     return result;
 }
-#endif // Disabled getblocktemplate
 
 class submitblock_StateCatcher : public CValidationInterface
 {
@@ -789,7 +783,8 @@ UniValue estimatefee(const JSONRPCRequest& request)
         throw runtime_error(
             "estimatefee nblocks\n"
             "\nEstimates the approximate fee per kilobyte needed for a transaction to begin\n"
-            "confirmation within nblocks blocks.\n"
+            "confirmation within nblocks blocks. Uses virtual transaction size of transaction\n"
+            "as defined in BIP 141 (witness data is discounted).\n"
             "\nArguments:\n"
             "1. nblocks     (numeric)\n"
             "\nResult:\n"
@@ -851,7 +846,8 @@ UniValue estimatesmartfee(const JSONRPCRequest& request)
             "\nWARNING: This interface is unstable and may disappear or change!\n"
             "\nEstimates the approximate fee per kilobyte needed for a transaction to begin\n"
             "confirmation within nblocks blocks if possible and return the number of blocks\n"
-            "for which the estimate is valid.\n"
+            "for which the estimate is valid. Uses virtual transaction size as defined\n"
+            "in BIP 141 (witness data is discounted).\n"
             "\nArguments:\n"
             "1. nblocks     (numeric)\n"
             "\nResult:\n"
@@ -1090,6 +1086,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getnetworkhashps",       &getnetworkhashps,       true  },
     { "mining",             "getmininginfo",          &getmininginfo,          true  },
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  true  },
+    { "mining",             "getblocktemplate",       &getblocktemplate,       true  },
     { "mining",             "submitblock",            &submitblock,            true  },
     { "mining",             "getauxblock",            &getauxblock,            true  },
 

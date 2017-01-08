@@ -82,7 +82,7 @@ public:
         READWRITE(nIndex);
     }
 
-    int SetMerkleBranch(const CBlockIndex* pindex, int posInBlock);
+    void SetMerkleBranch(const CBlockIndex* pindex, int posInBlock);
 
     /**
      * Actually compute the Merkle branch.  This is used for unit tests when

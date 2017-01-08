@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -90,7 +90,6 @@ private:
     int64_t nTime;             //!< Local time when entering the mempool
     double entryPriority;      //!< Priority when entering the mempool
     unsigned int entryHeight;  //!< Chain height when entering the mempool
-    bool hadNoDependencies;    //!< Not dependent on any other txs when it entered the mempool
     CAmount inChainInputValue; //!< Sum of all txin values that are already in blockchain
     bool spendsCoinbase;       //!< keep track of transactions that spend a coinbase
     int64_t sigOpCost;         //!< Total sigop cost
@@ -116,10 +115,11 @@ private:
     CNameScript nameOp;
 
 public:
-    CTxMemPoolEntry(const CTransaction& _tx, const CAmount& _nFee,
+    CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
                     int64_t _nTime, double _entryPriority, unsigned int _entryHeight,
-                    bool poolHasNoInputsOf, CAmount _inChainInputValue, bool spendsCoinbase,
+                    CAmount _inChainInputValue, bool spendsCoinbase,
                     int64_t nSigOpsCost, LockPoints lp);
+
     CTxMemPoolEntry(const CTxMemPoolEntry& other);
 
     const CTransaction& GetTx() const { return *this->tx; }
@@ -134,7 +134,6 @@ public:
     size_t GetTxWeight() const { return nTxWeight; }
     int64_t GetTime() const { return nTime; }
     unsigned int GetHeight() const { return entryHeight; }
-    bool WasClearAtEntry() const { return hadNoDependencies; }
     int64_t GetSigOpCost() const { return sigOpCost; }
     int64_t GetModifiedFee() const { return nFee + feeDelta; }
     size_t DynamicMemoryUsage() const { return nUsageSize; }
@@ -452,7 +451,7 @@ private:
     unsigned int nTransactionsUpdated;
     CBlockPolicyEstimator* minerPolicyEstimator;
 
-    uint64_t totalTxSize;      //!< sum of all mempool tx' byte sizes
+    uint64_t totalTxSize;      //!< sum of all mempool tx's virtual sizes. Differs from serialized tx size since witness data is discounted. Defined in BIP 141.
     uint64_t cachedInnerUsage; //!< sum of dynamic memory usage of all the map elements (NOT the maps themselves)
 
     CFeeRate minReasonableRelayFee;
@@ -559,16 +558,15 @@ public:
     // to track size/count of descendant transactions.  First version of
     // addUnchecked can be used to have it call CalculateMemPoolAncestors(), and
     // then invoke the second version.
-    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool fCurrentEstimate = true);
-    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool fCurrentEstimate = true);
+    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool validFeeEstimate = true);
+    bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool validFeeEstimate = true);
 
     void removeRecursive(const CTransaction &tx);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
     void removeConflicts(const CTransaction &tx,
                          std::vector<CTransactionRef>* removedNames = nullptr);
     void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight,
-                        std::vector<CTransactionRef>* nameConflicts = nullptr,
-                        bool fCurrentEstimate = true);
+                        std::vector<CTransactionRef>* nameConflicts = nullptr);
     void clear();
     void _clear(); //lock free
     bool CompareDepthAndScore(const uint256& hasha, const uint256& hashb);

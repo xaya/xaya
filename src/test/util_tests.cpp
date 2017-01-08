@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015 The Bitcoin Core developers
+// Copyright (c) 2011-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,9 +17,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-using namespace std;
-
-extern map<string, string> mapArgs;
+extern std::map<std::string, std::string> mapArgs;
 
 BOOST_FIXTURE_TEST_SUITE(util_tests, BasicTestingSetup)
 

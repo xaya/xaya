@@ -184,6 +184,7 @@ testScriptsExt = [
     'mempool_packages.py',
     # vv Tests less than 2m vv
     'bip68-sequence.py',
+    'getblocktemplate_longpoll.py',
     # vv Tests less than 60s vv
     'bip9-softforks.py',
     'p2p-feefilter.py',
@@ -193,6 +194,7 @@ testScriptsExt = [
     'bip65-cltv-p2p.py',
     'bipdersig-p2p.py',
     'bipdersig.py',
+    'getblocktemplate_proposals.py',
     'txn_doublespend.py',
     'txn_clone.py --mineblock',
     'forknotify.py',
