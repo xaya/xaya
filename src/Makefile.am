@@ -136,9 +136,11 @@ BITCOIN_CORE_H = \
   support/allocators/secure.h \
   support/allocators/zeroafterfree.h \
   support/cleanse.h \
+  support/events.h \
   support/lockedpool.h \
   sync.h \
   threadsafety.h \
+  threadinterrupt.h \
   timedata.h \
   torcontrol.h \
   txdb.h \
@@ -331,6 +333,7 @@ libbitcoin_util_a_SOURCES = \
   rpc/protocol.cpp \
   support/cleanse.cpp \
   sync.cpp \
+  threadinterrupt.cpp \
   util.cpp \
   utilmoneystr.cpp \
   utilstrencodings.cpp \

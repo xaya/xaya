@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -789,7 +789,8 @@ UniValue estimatefee(const JSONRPCRequest& request)
         throw runtime_error(
             "estimatefee nblocks\n"
             "\nEstimates the approximate fee per kilobyte needed for a transaction to begin\n"
-            "confirmation within nblocks blocks.\n"
+            "confirmation within nblocks blocks. Uses virtual transaction size of transaction\n"
+            "as defined in BIP 141 (witness data is discounted).\n"
             "\nArguments:\n"
             "1. nblocks     (numeric)\n"
             "\nResult:\n"
@@ -851,7 +852,8 @@ UniValue estimatesmartfee(const JSONRPCRequest& request)
             "\nWARNING: This interface is unstable and may disappear or change!\n"
             "\nEstimates the approximate fee per kilobyte needed for a transaction to begin\n"
             "confirmation within nblocks blocks if possible and return the number of blocks\n"
-            "for which the estimate is valid.\n"
+            "for which the estimate is valid. Uses virtual transaction size as defined\n"
+            "in BIP 141 (witness data is discounted).\n"
             "\nArguments:\n"
             "1. nblocks     (numeric)\n"
             "\nResult:\n"

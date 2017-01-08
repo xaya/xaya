@@ -25,21 +25,13 @@
 
 const uint256 CMerkleTx::ABANDON_HASH(uint256S("0000000000000000000000000000000000000000000000000000000000000001"));
 
-int CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
+void CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
 {
-    AssertLockHeld(cs_main);
-
     // Update the tx's hashBlock
     hashBlock = pindex->GetBlockHash();
 
     // set the position of the transaction in the block
     nIndex = posInBlock;
-
-    // Is the tx in a block that's in the main chain
-    if (!chainActive.Contains(pindex))
-        return 0;
-
-    return chainActive.Height() - pindex->nHeight + 1;
 }
 
 void CMerkleTx::InitMerkleBranch(const CBlock& block, int posInBlock)
@@ -78,7 +70,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 
 bool CMerkleTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& state)
 {
-    return ::AcceptToMemoryPool(mempool, state, *this, true, NULL, false, nAbsurdFee);
+    return ::AcceptToMemoryPool(mempool, state, tx, true, NULL, false, nAbsurdFee);
 }
 
 /* ************************************************************************** */

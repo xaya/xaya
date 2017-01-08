@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2009-2016 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -2243,7 +2243,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
     CAmount nValue = 0;
     int nChangePosRequest = nChangePosInOut;
     unsigned int nSubtractFeeFromAmount = 0;
-    BOOST_FOREACH (const CRecipient& recipient, vecSend)
+    for (const auto& recipient : vecSend)
     {
         if (nValue < 0 || recipient.nAmount < 0)
         {
@@ -2298,6 +2298,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
     assert(txNew.nLockTime < LOCKTIME_THRESHOLD);
 
     {
+        set<pair<const CWalletTx*,unsigned int> > setCoins;
         LOCK2(cs_main, cs_wallet);
         {
             std::vector<COutput> vAvailableCoins;
@@ -2318,7 +2319,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     nValueToSelect += nFeeRet;
                 double dPriority = 0;
                 // vouts to the payees
-                BOOST_FOREACH (const CRecipient& recipient, vecSend)
+                for (const auto& recipient : vecSend)
                 {
                     CTxOut txout(recipient.nAmount, recipient.scriptPubKey);
 
@@ -2350,14 +2351,14 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 }
 
                 // Choose coins to use
-                set<pair<const CWalletTx*,unsigned int> > setCoins;
                 CAmount nValueIn = 0;
+                setCoins.clear();
                 if (!SelectCoins(vAvailableCoins, nValueToSelect, setCoins, nValueIn, coinControl))
                 {
                     strFailReason = _("Insufficient funds");
                     return false;
                 }
-                BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
+                for (const auto& pcoin : setCoins)
                 {
                     CAmount nCredit = pcoin.first->tx->vout[pcoin.second].nValue;
                     //The coin age after the next block (depth+1) is used instead of the current,
@@ -2468,24 +2469,18 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 // to avoid conflicting with other possible uses of nSequence,
                 // and in the spirit of "smallest posible change from prior
                 // behavior."
-                BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+                for (const auto& coin : setCoins)
                     txNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second,CScript(),
                                               std::numeric_limits<unsigned int>::max() - (fWalletRbf ? 2 : 1)));
 
-                // Sign
+                // Fill in dummy signatures for fee calculation.
                 int nIn = 0;
-                CTransaction txNewConst(txNew);
-                BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+                for (const auto& coin : setCoins)
                 {
-                    bool signSuccess;
                     const CScript& scriptPubKey = coin.first->tx->vout[coin.second].scriptPubKey;
                     SignatureData sigdata;
-                    if (sign)
-                        signSuccess = ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, coin.first->tx->vout[coin.second].nValue, SIGHASH_ALL), scriptPubKey, sigdata);
-                    else
-                        signSuccess = ProduceSignature(DummySignatureCreator(this), scriptPubKey, sigdata);
 
-                    if (!signSuccess)
+                    if (!ProduceSignature(DummySignatureCreator(this), scriptPubKey, sigdata))
                     {
                         strFailReason = _("Signing transaction failed");
                         return false;
@@ -2498,25 +2493,14 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
 
                 unsigned int nBytes = GetVirtualTransactionSize(txNew);
 
-                // Remove scriptSigs if we used dummy signatures for fee calculation
-                if (!sign) {
-                    BOOST_FOREACH (CTxIn& vin, txNew.vin) {
-                        vin.scriptSig = CScript();
-                        vin.scriptWitness.SetNull();
-                    }
+                CTransaction txNewConst(txNew);
+                dPriority = txNewConst.ComputePriority(dPriority, nBytes);
+
+                // Remove scriptSigs to eliminate the fee calculation dummy signatures
+                for (auto& vin : txNew.vin) {
+                    vin.scriptSig = CScript();
+                    vin.scriptWitness.SetNull();
                 }
-
-                // Embed the constructed transaction data in wtxNew.
-                wtxNew.SetTx(MakeTransactionRef(std::move(txNew)));
-
-                // Limit size
-                if (GetTransactionWeight(wtxNew) >= MAX_STANDARD_TX_WEIGHT)
-                {
-                    strFailReason = _("Transaction too large");
-                    return false;
-                }
-
-                dPriority = wtxNew.tx->ComputePriority(dPriority, nBytes);
 
                 // Allow to override the default confirmation target over the CoinControl instance
                 int currentConfirmationTarget = nTxConfirmTarget;
@@ -2556,12 +2540,43 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                 continue;
             }
         }
+
+        if (sign)
+        {
+            CTransaction txNewConst(txNew);
+            int nIn = 0;
+            for (const auto& coin : setCoins)
+            {
+                const CScript& scriptPubKey = coin.first->tx->vout[coin.second].scriptPubKey;
+                SignatureData sigdata;
+
+                if (!ProduceSignature(TransactionSignatureCreator(this, &txNewConst, nIn, coin.first->tx->vout[coin.second].nValue, SIGHASH_ALL), scriptPubKey, sigdata))
+                {
+                    strFailReason = _("Signing transaction failed");
+                    return false;
+                } else {
+                    UpdateTransaction(txNew, nIn, sigdata);
+                }
+
+                nIn++;
+            }
+        }
+
+        // Embed the constructed transaction data in wtxNew.
+        wtxNew.SetTx(MakeTransactionRef(std::move(txNew)));
+
+        // Limit size
+        if (GetTransactionWeight(wtxNew) >= MAX_STANDARD_TX_WEIGHT)
+        {
+            strFailReason = _("Transaction too large");
+            return false;
+        }
     }
 
     if (GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS)) {
         // Lastly, ensure this tx will pass the mempool's chain limits
         LockPoints lp;
-        CTxMemPoolEntry entry(txNew, 0, 0, 0, 0, false, 0, false, 0, lp);
+        CTxMemPoolEntry entry(wtxNew.tx, 0, 0, 0, 0, 0, false, 0, lp);
         CTxMemPool::setEntries setAncestors;
         size_t nLimitAncestors = GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
         size_t nLimitAncestorSize = GetArg("-limitancestorsize", DEFAULT_ANCESTOR_SIZE_LIMIT)*1000;
@@ -3397,22 +3412,14 @@ std::string CWallet::GetWalletHelpString(bool showDebug)
         strUsage += HelpMessageOpt("-dblogsize=<n>", strprintf("Flush wallet database activity from memory to disk log every <n> megabytes (default: %u)", DEFAULT_WALLET_DBLOGSIZE));
         strUsage += HelpMessageOpt("-flushwallet", strprintf("Run a thread to flush wallet periodically (default: %u)", DEFAULT_FLUSHWALLET));
         strUsage += HelpMessageOpt("-privdb", strprintf("Sets the DB_PRIVATE flag in the wallet db environment (default: %u)", DEFAULT_WALLET_PRIVDB));
-        strUsage += HelpMessageOpt("-walletrejectlongchains", strprintf(_("Wallet will not create transactions that violate mempool chain limits (default: %u"), DEFAULT_WALLET_REJECT_LONG_CHAINS));
+        strUsage += HelpMessageOpt("-walletrejectlongchains", strprintf(_("Wallet will not create transactions that violate mempool chain limits (default: %u)"), DEFAULT_WALLET_REJECT_LONG_CHAINS));
     }
 
     return strUsage;
 }
 
-bool CWallet::InitLoadWallet()
+CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
 {
-    if (GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
-        pwalletMain = NULL;
-        LogPrintf("Wallet disabled!\n");
-        return true;
-    }
-
-    std::string walletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
-
     // needed to restore wallet transaction meta data after -zapwallettxes
     std::vector<CWalletTx> vWtx;
 
@@ -3422,7 +3429,8 @@ bool CWallet::InitLoadWallet()
         CWallet *tempWallet = new CWallet(walletFile);
         DBErrors nZapWalletRet = tempWallet->ZapWalletTx(vWtx);
         if (nZapWalletRet != DB_LOAD_OK) {
-            return InitError(strprintf(_("Error loading %s: Wallet corrupted"), walletFile));
+            InitError(strprintf(_("Error loading %s: Wallet corrupted"), walletFile));
+            return NULL;
         }
 
         delete tempWallet;
@@ -3437,23 +3445,29 @@ bool CWallet::InitLoadWallet()
     DBErrors nLoadWalletRet = walletInstance->LoadWallet(fFirstRun);
     if (nLoadWalletRet != DB_LOAD_OK)
     {
-        if (nLoadWalletRet == DB_CORRUPT)
-            return InitError(strprintf(_("Error loading %s: Wallet corrupted"), walletFile));
+        if (nLoadWalletRet == DB_CORRUPT) {
+            InitError(strprintf(_("Error loading %s: Wallet corrupted"), walletFile));
+            return NULL;
+        }
         else if (nLoadWalletRet == DB_NONCRITICAL_ERROR)
         {
             InitWarning(strprintf(_("Error reading %s! All keys read correctly, but transaction data"
                                          " or address book entries might be missing or incorrect."),
                 walletFile));
         }
-        else if (nLoadWalletRet == DB_TOO_NEW)
-            return InitError(strprintf(_("Error loading %s: Wallet requires newer version of %s"),
-                               walletFile, _(PACKAGE_NAME)));
+        else if (nLoadWalletRet == DB_TOO_NEW) {
+            InitError(strprintf(_("Error loading %s: Wallet requires newer version of %s"), walletFile, _(PACKAGE_NAME)));
+            return NULL;
+        }
         else if (nLoadWalletRet == DB_NEED_REWRITE)
         {
-            return InitError(strprintf(_("Wallet needed to be rewritten: restart %s to complete"), _(PACKAGE_NAME)));
+            InitError(strprintf(_("Wallet needed to be rewritten: restart %s to complete"), _(PACKAGE_NAME)));
+            return NULL;
         }
-        else
-            return InitError(strprintf(_("Error loading %s"), walletFile));
+        else {
+            InitError(strprintf(_("Error loading %s"), walletFile));
+            return NULL;
+        }
     }
 
     if (GetBoolArg("-upgradewallet", fFirstRun))
@@ -3469,7 +3483,8 @@ bool CWallet::InitLoadWallet()
             LogPrintf("Allowing wallet upgrade up to %i\n", nMaxVersion);
         if (nMaxVersion < walletInstance->GetVersion())
         {
-            return InitError(_("Cannot downgrade wallet"));
+            InitError(_("Cannot downgrade wallet"));
+            return NULL;
         }
         walletInstance->SetMaxVersion(nMaxVersion);
     }
@@ -3486,18 +3501,24 @@ bool CWallet::InitLoadWallet()
         CPubKey newDefaultKey;
         if (walletInstance->GetKeyFromPool(newDefaultKey)) {
             walletInstance->SetDefaultKey(newDefaultKey);
-            if (!walletInstance->SetAddressBook(walletInstance->vchDefaultKey.GetID(), "", "receive"))
-                return InitError(_("Cannot write default address") += "\n");
+            if (!walletInstance->SetAddressBook(walletInstance->vchDefaultKey.GetID(), "", "receive")) {
+                InitError(_("Cannot write default address") += "\n");
+                return NULL;
+            }
         }
 
         walletInstance->SetBestChain(chainActive.GetLocator());
     }
     else if (IsArgSet("-usehd")) {
         bool useHD = GetBoolArg("-usehd", DEFAULT_USE_HD_WALLET);
-        if (walletInstance->IsHDEnabled() && !useHD)
-            return InitError(strprintf(_("Error loading %s: You can't disable HD on a already existing HD wallet"), walletFile));
-        if (!walletInstance->IsHDEnabled() && useHD)
-            return InitError(strprintf(_("Error loading %s: You can't enable HD on a already existing non-HD wallet"), walletFile));
+        if (walletInstance->IsHDEnabled() && !useHD) {
+            InitError(strprintf(_("Error loading %s: You can't disable HD on a already existing HD wallet"), walletFile));
+            return NULL;
+        }
+        if (!walletInstance->IsHDEnabled() && useHD) {
+            InitError(strprintf(_("Error loading %s: You can't enable HD on a already existing non-HD wallet"), walletFile));
+            return NULL;
+        }
     }
 
     LogPrintf(" wallet      %15dms\n", GetTimeMillis() - nStart);
@@ -3527,8 +3548,10 @@ bool CWallet::InitLoadWallet()
             while (block && block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA) && block->pprev->nTx > 0 && pindexRescan != block)
                 block = block->pprev;
 
-            if (pindexRescan != block)
-                return InitError(_("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)"));
+            if (pindexRescan != block) {
+                InitError(_("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)"));
+                return NULL;
+            }
         }
 
         uiInterface.InitMessage(_("Rescanning..."));
@@ -3573,10 +3596,29 @@ bool CWallet::InitLoadWallet()
         LogPrintf("mapAddressBook.size() = %u\n",  walletInstance->mapAddressBook.size());
     }
 
-    pwalletMain = walletInstance;
+    return walletInstance;
+}
+
+bool CWallet::InitLoadWallet()
+{
+    if (GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
+        pwalletMain = NULL;
+        LogPrintf("Wallet disabled!\n");
+        return true;
+    }
+
+    std::string walletFile = GetArg("-wallet", DEFAULT_WALLET_DAT);
+
+    CWallet * const pwallet = CreateWalletFromFile(walletFile);
+    if (!pwallet) {
+        return false;
+    }
+    pwalletMain = pwallet;
 
     return true;
 }
+
+std::atomic<bool> CWallet::fFlushThreadRunning(false);
 
 void CWallet::postInitProcess(boost::thread_group& threadGroup)
 {
@@ -3585,7 +3627,9 @@ void CWallet::postInitProcess(boost::thread_group& threadGroup)
     ReacceptWalletTransactions();
 
     // Run a thread to flush wallet periodically
-    threadGroup.create_thread(boost::bind(&ThreadFlushWalletDB, boost::ref(this->strWalletFile)));
+    if (!CWallet::fFlushThreadRunning.exchange(true)) {
+        threadGroup.create_thread(ThreadFlushWalletDB);
+    }
 }
 
 bool CWallet::ParameterInteraction()
