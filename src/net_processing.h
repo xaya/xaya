@@ -24,6 +24,7 @@ public:
     virtual void SyncTransaction(const CTransaction& tx, const CBlockIndex* pindex, int nPosInBlock);
     virtual void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload);
     virtual void BlockChecked(const CBlock& block, const CValidationState& state);
+    virtual void NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_ptr<const CBlock>& pblock);
 };
 
 struct CNodeStateStats {
@@ -46,6 +47,7 @@ bool ProcessMessages(CNode* pfrom, CConnman& connman, std::atomic<bool>& interru
  * @param[in]   pto             The node which we are sending messages to.
  * @param[in]   connman         The connection manager for that node.
  * @param[in]   interrupt       Interrupt condition for processing threads
+ * @return                      True if there is more work to be done
  */
 bool SendMessages(CNode* pto, CConnman& connman, std::atomic<bool>& interrupt);
 

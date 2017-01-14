@@ -1477,12 +1477,12 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
             pindex = chainActive.Next(pindex);
 
         ShowProgress(_("Rescanning..."), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
-        double dProgressStart = Checkpoints::GuessVerificationProgress(chainParams.Checkpoints(), pindex, false);
-        double dProgressTip = Checkpoints::GuessVerificationProgress(chainParams.Checkpoints(), chainActive.Tip(), false);
+        double dProgressStart = GuessVerificationProgress(chainParams.TxData(), pindex);
+        double dProgressTip = GuessVerificationProgress(chainParams.TxData(), chainActive.Tip());
         while (pindex)
         {
             if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0)
-                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((Checkpoints::GuessVerificationProgress(chainParams.Checkpoints(), pindex, false) - dProgressStart) / (dProgressTip - dProgressStart) * 100))));
+                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((GuessVerificationProgress(chainParams.TxData(), pindex) - dProgressStart) / (dProgressTip - dProgressStart) * 100))));
 
             CBlock block;
             ReadBlockFromDisk(block, pindex, Params().GetConsensus());
@@ -1495,7 +1495,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
             pindex = chainActive.Next(pindex);
             if (GetTime() >= nNow + 60) {
                 nNow = GetTime();
-                LogPrintf("Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, Checkpoints::GuessVerificationProgress(chainParams.Checkpoints(), pindex));
+                LogPrintf("Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, GuessVerificationProgress(chainParams.TxData(), pindex));
             }
         }
         ShowProgress(_("Rescanning..."), 100); // hide progress dialog in GUI
@@ -2190,14 +2190,15 @@ bool CWallet::SelectCoins(const vector<COutput>& vAvailableCoins, const CAmount&
     return res;
 }
 
-bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const CTxDestination& destChange)
+bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, const CTxDestination& destChange)
 {
     vector<CRecipient> vecSend;
 
     // Turn the txout set into a CRecipient vector
-    BOOST_FOREACH(const CTxOut& txOut, tx.vout)
+    for (size_t idx = 0; idx < tx.vout.size(); idx++)
     {
-        CRecipient recipient = {txOut.scriptPubKey, txOut.nValue, false};
+        const CTxOut& txOut = tx.vout[idx];
+        CRecipient recipient = {txOut.scriptPubKey, txOut.nValue, setSubtractFeeFromOutputs.count(idx) == 1};
         vecSend.push_back(recipient);
     }
 
@@ -2218,6 +2219,10 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool ov
 
     if (nChangePosInOut != -1)
         tx.vout.insert(tx.vout.begin() + nChangePosInOut, wtx.tx->vout[nChangePosInOut]);
+
+    // Copy output sizes from new transaction; they may have had the fee subtracted from them
+    for (unsigned int idx = 0; idx < tx.vout.size(); idx++)
+        tx.vout[idx].nValue = wtx.tx->vout[idx].nValue;
 
     // Add new txins (keeping original txin scriptSig/order)
     BOOST_FOREACH(const CTxIn& txin, wtx.tx->vin)
@@ -2532,8 +2537,37 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     return false;
                 }
 
-                if (nFeeRet >= nFeeNeeded)
+                if (nFeeRet >= nFeeNeeded) {
+                    // Reduce fee to only the needed amount if we have change
+                    // output to increase.  This prevents potential overpayment
+                    // in fees if the coins selected to meet nFeeNeeded result
+                    // in a transaction that requires less fee than the prior
+                    // iteration.
+                    // TODO: The case where nSubtractFeeFromAmount > 0 remains
+                    // to be addressed because it requires returning the fee to
+                    // the payees and not the change output.
+                    // TODO: The case where there is no change output remains
+                    // to be addressed so we avoid creating too small an output.
+                    if (nFeeRet > nFeeNeeded && nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
+                        CAmount extraFeePaid = nFeeRet - nFeeNeeded;
+                        vector<CTxOut>::iterator change_position = txNew.vout.begin()+nChangePosInOut;
+                        change_position->nValue += extraFeePaid;
+                        nFeeRet -= extraFeePaid;
+                    }
                     break; // Done, enough fee included.
+                }
+
+                // Try to reduce change to include necessary fee
+                if (nChangePosInOut != -1 && nSubtractFeeFromAmount == 0) {
+                    CAmount additionalFeeNeeded = nFeeNeeded - nFeeRet;
+                    vector<CTxOut>::iterator change_position = txNew.vout.begin()+nChangePosInOut;
+                    // Only reduce change if remaining amount is still a large enough output.
+                    if (change_position->nValue >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
+                        change_position->nValue -= additionalFeeNeeded;
+                        nFeeRet += additionalFeeNeeded;
+                        break; // Done, able to increase fee from change
+                    }
+                }
 
                 // Include more fee and try again.
                 nFeeRet = nFeeNeeded;
