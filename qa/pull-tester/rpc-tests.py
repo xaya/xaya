@@ -157,6 +157,7 @@ testScripts = [
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'nulldummy.py',
     'import-rescan.py',
+    'rpcnamedargs.py',
 
     # auxpow tests
     'getauxblock.py',
