@@ -2205,6 +2205,14 @@
         <translation>Advarsel: Ukendt byttepengeadresse</translation>
     </message>
     <message>
+        <source>Confirm custom change address</source>
+        <translation>Bekræft tilpasset byttepengeadresse</translation>
+    </message>
+    <message>
+        <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>
+        <translation>Den adresse, du har valgt til byttepenge, er ikke en del af denne tegnebog. Nogle af eller alle penge i din tegnebog kan blive sendt til denne adresse. Er du sikker?</translation>
+    </message>
+    <message>
         <source>(no label)</source>
         <translation>(ingen mærkat)</translation>
     </message>
@@ -3022,10 +3030,6 @@
         <translation>Beskæring: Seneste synkronisering rækker udover beskårne data. Du er nødt til at bruge -reindex (downloade hele blokkæden igen i fald af beskåret knude)</translation>
     </message>
     <message>
-        <source>Reduce storage requirements by pruning (deleting) old blocks. This mode is incompatible with -txindex and -rescan. Warning: Reverting this setting requires re-downloading the entire blockchain. (default: 0 = disable pruning blocks, &gt;%u = target size in MiB to use for block files)</source>
-        <translation>Reducér lagringskravene ved at beskære (slette) gamle blokke. Denne tilstand er ikke kompatibel med -txindex og -rescan. Advarsel: Fortrydelse af denne indstilling kræver gendownload af hele blokkæden. (standard: 0 = deaktivér beskæring af blokke, &gt;%u = målstørrelse i MiB der skal bruges på blokfiler)</translation>
-    </message>
-    <message>
         <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
         <translation>Genindlæsninger er ikke mulige i beskåret tilstand. Du er nødt til at bruge -reindex, hvilket vil downloade hele blokkæden igen.</translation>
     </message>
@@ -3124,6 +3128,10 @@
     <message>
         <source>Use UPnP to map the listening port (default: 1 when listening and no -proxy)</source>
         <translation>Brug UPnP for at konfigurere den lyttende port (standard: 1 under lytning og ingen -proxy)</translation>
+    </message>
+    <message>
+        <source>Username and hashed password for JSON-RPC connections. The field &lt;userpw&gt; comes in the format: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. A canonical python script is included in share/rpcuser. The client then connects normally using the rpcuser=&lt;USERNAME&gt;/rpcpassword=&lt;PASSWORD&gt; pair of arguments. This option can be specified multiple times</source>
+        <translation>Brugernavn og hashet adgangskode for JSON-RPC-forbindelser. Feltet &lt;userpw&gt; er i formatet: &lt;BRUGERNAVN&gt;:&lt;SALT&gt;$&lt;HASH&gt;. Et kanonisk Python-skript er inkluderet i share/rpcuser. Klienten forbinder så normalt ved hjælp af argumentparret rpcuser=&lt;BRUGERNAVN&gt;/rpcpassword=&lt;ADGANGSKODE&gt;. Dette tilvalg kan angives flere gange</translation>
     </message>
     <message>
         <source>Wallet will not create transactions that violate mempool chain limits (default: %u)</source>
@@ -3704,10 +3712,6 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>Brug separat SOCS5-proxy for at nå knuder via skjulte Tor-tjenester (standard: %s)</translation>
-    </message>
-    <message>
-        <source>Username and hashed password for JSON-RPC connections. The field &lt;userpw&gt; comes in the format: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. A canonical python script is included in share/rpcuser. This option can be specified multiple times</source>
-        <translation>Brugernavn og hashet adgangskode for JSON-RPC-forbindelser. Feltet &lt;userpw&gt; er i formatet: &lt;BRUGERNAVN&gt;:&lt;SALT&gt;$&lt;HASH&gt;. Et kanonisk Python-skript inkluderes i share/rpcuser. Dette tilvalg kan angives flere gange</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It's possible unknown rules are in effect</source>

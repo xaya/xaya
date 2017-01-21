@@ -409,6 +409,13 @@ set<uint256> CWallet::GetConflicts(const uint256& txid) const
     return result;
 }
 
+bool CWallet::HasWalletSpend(const uint256& txid) const
+{
+    AssertLockHeld(cs_wallet);
+    auto iter = mapTxSpends.lower_bound(COutPoint(txid, 0));
+    return (iter != mapTxSpends.end() && iter->first.hash == txid);
+}
+
 void CWallet::Flush(bool shutdown)
 {
     bitdb.Flush(shutdown);
@@ -824,6 +831,35 @@ void CWallet::MarkDirty()
     }
 }
 
+bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
+{
+    LOCK(cs_wallet);
+
+    auto mi = mapWallet.find(originalHash);
+
+    // There is a bug if MarkReplaced is not called on an existing wallet transaction.
+    assert(mi != mapWallet.end());
+
+    CWalletTx& wtx = (*mi).second;
+
+    // Ensure for now that we're not overwriting data
+    assert(wtx.mapValue.count("replaced_by_txid") == 0);
+
+    wtx.mapValue["replaced_by_txid"] = newHash.ToString();
+
+    CWalletDB walletdb(strWalletFile, "r+");
+
+    bool success = true;
+    if (!walletdb.WriteTx(wtx)) {
+        LogPrintf("%s: Updating walletdb tx %s failed", __func__, wtx.GetHash().ToString());
+        success = false;
+    }
+
+    NotifyTransactionChanged(this, originalHash, CT_UPDATED);
+
+    return success;
+}
+
 bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 {
     LOCK(cs_wallet);
@@ -1152,6 +1188,8 @@ isminetype CWallet::IsMine(const CTxIn &txin) const
     return ISMINE_NO;
 }
 
+// Note that this function doesn't distinguish between a 0-valued input,
+// and a not-"is mine" (according to the filter) input.
 CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter) const
 {
     {
@@ -1232,6 +1270,27 @@ CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter) co
             throw std::runtime_error(std::string(__func__) + ": value out of range");
     }
     return nDebit;
+}
+
+bool CWallet::IsAllFromMe(const CTransaction& tx, const isminefilter& filter) const
+{
+    LOCK(cs_wallet);
+
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        auto mi = mapWallet.find(txin.prevout.hash);
+        if (mi == mapWallet.end())
+            return false; // any unknown inputs can't be from us
+
+        const CWalletTx& prev = (*mi).second;
+
+        if (txin.prevout.n >= prev.tx->vout.size())
+            return false; // invalid input!
+
+        if (!(IsMine(prev.tx->vout[txin.prevout.n]) & filter))
+            return false;
+    }
+    return true;
 }
 
 CAmount CWallet::GetCredit(const CTransaction& tx, const isminefilter& filter) const
@@ -1956,6 +2015,37 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
             if (nDepth == 0 && !pcoin->InMempool())
                 continue;
 
+            // We should not consider coins from transactions that are replacing
+            // other transactions.
+            //
+            // Example: There is a transaction A which is replaced by bumpfee
+            // transaction B. In this case, we want to prevent creation of
+            // a transaction B' which spends an output of B.
+            //
+            // Reason: If transaction A were initially confirmed, transactions B
+            // and B' would no longer be valid, so the user would have to create
+            // a new transaction C to replace B'. However, in the case of a
+            // one-block reorg, transactions B' and C might BOTH be accepted,
+            // when the user only wanted one of them. Specifically, there could
+            // be a 1-block reorg away from the chain where transactions A and C
+            // were accepted to another chain where B, B', and C were all
+            // accepted.
+            if (nDepth == 0 && fOnlyConfirmed && pcoin->mapValue.count("replaces_txid")) {
+                continue;
+            }
+
+            // Similarly, we should not consider coins from transactions that
+            // have been replaced. In the example above, we would want to prevent
+            // creation of a transaction A' spending an output of A, because if
+            // transaction B were initially confirmed, conflicting with A and
+            // A', we wouldn't want to the user to create a transaction D
+            // intending to replace A', but potentially resulting in a scenario
+            // where A, A', and D could all be accepted (instead of just B and
+            // D, or just A and A' like the user would want).
+            if (nDepth == 0 && fOnlyConfirmed && pcoin->mapValue.count("replaced_by_txid")) {
+                continue;
+            }
+
             for (unsigned int i = 0; i < pcoin->tx->vout.size(); i++) {
                 isminetype mine = IsMine(pcoin->tx->vout[i]);
                 if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
@@ -2190,7 +2280,7 @@ bool CWallet::SelectCoins(const vector<COutput>& vAvailableCoins, const CAmount&
     return res;
 }
 
-bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, const CTxDestination& destChange)
+bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, bool keepReserveKey, const CTxDestination& destChange)
 {
     vector<CRecipient> vecSend;
 
@@ -2238,6 +2328,10 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool ov
             }
         }
     }
+
+    // optionally keep the change output key
+    if (keepReserveKey)
+        reservekey.KeepKey();
 
     return true;
 }
@@ -2339,7 +2433,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                         }
                     }
 
-                    if (txout.IsDust(::minRelayTxFee))
+                    if (txout.IsDust(dustRelayFee))
                     {
                         if (recipient.fSubtractFeeFromAmount && nFeeRet > 0)
                         {
@@ -2417,16 +2511,16 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                     // We do not move dust-change to fees, because the sender would end up paying more than requested.
                     // This would be against the purpose of the all-inclusive feature.
                     // So instead we raise the change and deduct from the recipient.
-                    if (nSubtractFeeFromAmount > 0 && newTxOut.IsDust(::minRelayTxFee))
+                    if (nSubtractFeeFromAmount > 0 && newTxOut.IsDust(dustRelayFee))
                     {
-                        CAmount nDust = newTxOut.GetDustThreshold(::minRelayTxFee) - newTxOut.nValue;
+                        CAmount nDust = newTxOut.GetDustThreshold(dustRelayFee) - newTxOut.nValue;
                         newTxOut.nValue += nDust; // raise change until no more dust
                         for (unsigned int i = 0; i < vecSend.size(); i++) // subtract from first recipient
                         {
                             if (vecSend[i].fSubtractFeeFromAmount)
                             {
                                 txNew.vout[i].nValue -= nDust;
-                                if (txNew.vout[i].IsDust(::minRelayTxFee))
+                                if (txNew.vout[i].IsDust(dustRelayFee))
                                 {
                                     strFailReason = _("The transaction amount is too small to send after the fee has been deducted");
                                     return false;
@@ -2438,7 +2532,7 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
 
                     // Never create dust outputs; if we would, just
                     // add the dust to the fee.
-                    if (newTxOut.IsDust(::minRelayTxFee))
+                    if (newTxOut.IsDust(dustRelayFee))
                     {
                         nChangePosInOut = -1;
                         nFeeRet += nChange;

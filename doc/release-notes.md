@@ -19,24 +19,16 @@ To receive security and update notifications, please subscribe to:
 Compatibility
 ==============
 
-Microsoft ended support for Windows XP on [April 8th, 2014](https://www.microsoft.com/en-us/WindowsForBusiness/end-of-xp-support),
-an OS initially released in 2001. This means that not even critical security
-updates will be released anymore. Without security updates, using a bitcoin
-wallet on a XP machine is irresponsible at least.
+Bitcoin Core is extensively tested on multiple operating systems using
+the Linux kernel, macOS 10.8+, and Windows Vista and later.
 
-In addition to that, with 0.12.x there have been varied reports of Bitcoin Core
-randomly crashing on Windows XP. It is [not clear](https://github.com/bitcoin/bitcoin/issues/7681#issuecomment-217439891)
-what the source of these crashes is, but it is likely that upstream
-libraries such as Qt are no longer being tested on XP.
+Microsoft ended support for Windows XP on [April 8th, 2014](https://www.microsoft.com/en-us/WindowsForBusiness/end-of-xp-support).
+No attempt is made to prevent installing or running the software on Windows XP, you
+can still do so at your own risk but be aware that there are known instabilities.
+Please do not report issues about Windows XP to the issue tracker.
 
-We do not have time nor resources to provide support for an OS that is
-end-of-life. From 0.13.0 on, Windows XP is no longer supported. Users are
-suggested to upgrade to a newer version of Windows, or install an alternative OS
-that is supported.
-
-No attempt is made to prevent installing or running the software on Windows XP,
-you can still do so at your own risk, but do not expect it to work: do not
-report issues about Windows XP to the issue tracker.
+Bitcoin Core should also work on most other Unix-like systems but is not
+frequently tested on them.
 
 Notable changes
 ===============
@@ -60,7 +52,7 @@ Fee Estimation Changes
   (previously 25) and for RPC calls (previously 2).
 
 Removal of Priority Estimation
-------------------------------
+-------------------------------
 
 - Estimation of "priority" needed for a transaction to be included within a target
   number of blocks has been removed.  The rpc calls are deprecated and will either
@@ -84,6 +76,27 @@ P2P connection management
 
 - New connections to manually added peers are much faster.
 
+Introduction of assumed-valid blocks
+-------------------------------------
+
+- A significant portion of the initial block download time is spent verifying
+  scripts/signatures.  Although the verification must pass to ensure the security
+  of the system, no other result from this verification is needed: If the node
+  knew the history of a given block were valid it could skip checking scripts
+  for its ancestors.
+
+- A new configuration option 'assumevalid' is provided to express this knowledge
+  to the software.  Unlike the 'checkpoints' in the past this setting does not
+  force the use of a particular chain: chains that are consistent with it are
+  processed quicker, but other chains are still accepted if they'd otherwise
+  be chosen as best. Also unlike 'checkpoints' the user can configure which
+  block history is assumed true, this means that even outdated software can
+  sync more quickly if the setting is updated by the user.
+
+- Because the validity of a chain history is a simple objective fact it is much
+  easier to review this setting.  As a result the software ships with a default
+  value adjusted to match the current chain shortly before release.  The use
+  of this default value can be disabled by setting -assumevalid=0
 
 0.14.0 Change log
 =================
@@ -114,6 +127,16 @@ Call "getmininginfo" loses the "testnet" field in favor of the more generic "cha
 ### Build system
 
 ### Wallet
+
+0.14.0 Fundrawtransaction change address reuse
+==============================================
+
+Before 0.14, `fundrawtransaction` was by default wallet stateless. In almost all cases `fundrawtransaction` does add a change-output to the outputs of the funded transaction. Before 0.14, the used keypool key was never marked as change-address key and directly returned to the keypool (leading to address reuse).
+Before 0.14, calling `getnewaddress` directly after `fundrawtransaction` did generate the same address as the change-output address.
+
+Since 0.14, fundrawtransaction does reserve the change-output-key from the keypool by default (optional by setting  `reserveChangeKey`, default = `true`)
+
+Users should also consider using `getrawchangeaddress()` in conjunction with `fundrawtransaction`'s `changeAddress` option.
 
 ### GUI
 

@@ -1360,7 +1360,15 @@
         <source>Node/Service</source>
         <translation>Nodo/Servicio</translation>
     </message>
-    </context>
+    <message>
+        <source>NodeId</source>
+        <translation>ID de nodo</translation>
+    </message>
+    <message>
+        <source>Ping</source>
+        <translation>Sonido</translation>
+    </message>
+</context>
 <context>
     <name>QObject</name>
     <message>
@@ -1399,14 +1407,54 @@
         <source>%1 ms</source>
         <translation>%1 ms</translation>
     </message>
+    <message numerus="yes">
+        <source>%n second(s)</source>
+        <translation><numerusform>%n segundo</numerusform><numerusform>%n segundos</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n minute(s)</source>
+        <translation><numerusform>%n minuto</numerusform><numerusform>%n minutos</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n hour(s)</source>
+        <translation><numerusform>%n hora</numerusform><numerusform>%n horas</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s)</source>
+        <translation><numerusform>%n dia</numerusform><numerusform>%n dias</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n week(s)</source>
+        <translation><numerusform>%n semana</numerusform><numerusform>%n semanas</numerusform></translation>
+    </message>
     <message>
         <source>%1 and %2</source>
         <translation>%1 y %2</translation>
     </message>
-    </context>
+    <message numerus="yes">
+        <source>%n year(s)</source>
+        <translation><numerusform>%n año</numerusform><numerusform>%n años</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 didn't yet exit safely...</source>
+        <translation>%1 no se ha cerrado de forma segura todavía...</translation>
+    </message>
+</context>
 <context>
     <name>QObject::QObject</name>
-    </context>
+    <message>
+        <source>Error: Specified data directory "%1" does not exist.</source>
+        <translation>Error: El directorio de datos «%1» especificado no existe.</translation>
+    </message>
+    <message>
+        <source>Error: Cannot parse configuration file: %1. Only use key=value syntax.</source>
+        <translation>Error: No se puede analizar el archivo de configuración: %1. Utilice únicamente la sintaxis clave=valor.</translation>
+    </message>
+    <message>
+        <source>Error: %1</source>
+        <translation>Error: %1</translation>
+    </message>
+</context>
 <context>
     <name>QRImageWidget</name>
     <message>
@@ -1585,6 +1633,10 @@
         <translation>Espera de Ping</translation>
     </message>
     <message>
+        <source>Min Ping</source>
+        <translation>Sonido Mínimo</translation>
+    </message>
+    <message>
         <source>Time Offset</source>
         <translation>Desplazamiento de tiempo</translation>
     </message>
@@ -1645,6 +1697,18 @@
         <translation>1 &amp;año</translation>
     </message>
     <message>
+        <source>&amp;Disconnect</source>
+        <translation>&amp;Desconectar</translation>
+    </message>
+    <message>
+        <source>Ban for</source>
+        <translation>Prohibir para</translation>
+    </message>
+    <message>
+        <source>&amp;Unban</source>
+        <translation>&amp;Unbano</translation>
+    </message>
+    <message>
         <source>Welcome to the %1 RPC console.</source>
         <translation>Bienvenido a la consola RPC %1.</translation>
     </message>
@@ -1655,6 +1719,14 @@
     <message>
         <source>Type &lt;b&gt;help&lt;/b&gt; for an overview of available commands.</source>
         <translation>Escriba &lt;b&gt;help&lt;/b&gt; para ver un resumen de los comandos disponibles.</translation>
+    </message>
+    <message>
+        <source>WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramification of a command.</source>
+        <translation>ADVERTENCIA: Los estafadores han sido activados, diciéndoles a los usuarios que escriban comandos aquí, robando el contenido de sus monederos. No utilice esta consola sin entender completamente la repercusión de un comando.</translation>
+    </message>
+    <message>
+        <source>Network activity disabled</source>
+        <translation>Actividad de red deshabilitada</translation>
     </message>
     <message>
         <source>%1 B</source>
@@ -1774,6 +1846,10 @@
     <message>
         <source>Remove</source>
         <translation>Eliminar</translation>
+    </message>
+    <message>
+        <source>Copy URI</source>
+        <translation>Copiar URI</translation>
     </message>
     <message>
         <source>Copy label</source>
@@ -2001,6 +2077,10 @@
         <translation>Polvo:</translation>
     </message>
     <message>
+        <source>Confirmation time target:</source>
+        <translation>Objetivo de tiempo de confirmación</translation>
+    </message>
+    <message>
         <source>Clear &amp;All</source>
         <translation>Vaciar &amp;todo</translation>
     </message>
@@ -2093,6 +2173,10 @@
         <translation>¡Falló la creación de transacción!</translation>
     </message>
     <message>
+        <source>The transaction was rejected with the following reason: %1</source>
+        <translation>Se ha rechazado la transacción por la siguiente razón: %1</translation>
+    </message>
+    <message>
         <source>A fee higher than %1 is considered an absurdly high fee.</source>
         <translation>Una comisión mayor que %1 se considera una cuota irracionalmente alta.</translation>
     </message>
@@ -2100,9 +2184,17 @@
         <source>Payment request expired.</source>
         <translation>Solicitud de pago caducada.</translation>
     </message>
+    <message numerus="yes">
+        <source>%n block(s)</source>
+        <translation><numerusform>%n bloque</numerusform><numerusform>%n bloques</numerusform></translation>
+    </message>
     <message>
         <source>Pay only the required fee of %1</source>
         <translation>Pagar únicamente la comisión solicitada de %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>Estimated to begin confirmation within %n block(s).</source>
+        <translation><numerusform>Estimado para empezar la confirmación dentro de %n bloque.</numerusform><numerusform>Estimado para empezar la confirmación dentro de %n bloques.</numerusform></translation>
     </message>
     <message>
         <source>Warning: Invalid Bitcoin address</source>
@@ -2111,6 +2203,14 @@
     <message>
         <source>Warning: Unknown change address</source>
         <translation>Alerta: dirección cambiada desconocida</translation>
+    </message>
+    <message>
+        <source>Confirm custom change address</source>
+        <translation>Confirmar dirección de cambio personalizada</translation>
+    </message>
+    <message>
+        <source>The address you selected for change is not part of this wallet. Any or all funds in your wallet may be sent to this address. Are you sure?</source>
+        <translation>La dirección que ha seleccionado para cambiar no es parte de este monedero. ninguno o todos los fondos de su monedero pueden ser enviados a esta dirección. ¿Está seguro?</translation>
     </message>
     <message>
         <source>(no label)</source>
@@ -2900,10 +3000,6 @@
         <translation>Poda: la ultima sincronizacion del monedero sobrepasa los datos podados. Necesitas reindexar con -reindex (o descargar la cadena de bloques de nuevo en el caso de un nodo podado)</translation>
     </message>
     <message>
-        <source>Reduce storage requirements by pruning (deleting) old blocks. This mode is incompatible with -txindex and -rescan. Warning: Reverting this setting requires re-downloading the entire blockchain. (default: 0 = disable pruning blocks, &gt;%u = target size in MiB to use for block files)</source>
-        <translation>Reduce los requisitos de almacenaje podando (eliminando) los bloques viejos. Este modo es incompatible con -txindex y -rescan. Advertencia: Revertir este ajuste requiere volver a descargar la cadena de bloques al completo. (predeterminado: 0 = deshabilitar la poda de bloques, &gt;%u = objetivo de tamaño en MiB para usar para los archivos de bloques)</translation>
-    </message>
-    <message>
         <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
         <translation>Nos es posible re-escanear en modo podado.Necesitas utilizar -reindex el cual descargara la cadena de bloques al completo de nuevo.</translation>
     </message>
@@ -3545,10 +3641,6 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>Usar distintos proxys SOCKS5 para comunicarse vía Tor de forma anónima (Por defecto: %s)</translation>
-    </message>
-    <message>
-        <source>Username and hashed password for JSON-RPC connections. The field &lt;userpw&gt; comes in the format: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. A canonical python script is included in share/rpcuser. This option can be specified multiple times</source>
-        <translation>Nombre de usuario y hash de la contraseña para las conexiones JSON-RPC. El campo &lt;userpw&gt; tiene el formato: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. Se incluye un script python convencional en share/rpcuser. Esta opción puede ser especificada multiples veces</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It's possible unknown rules are in effect</source>
