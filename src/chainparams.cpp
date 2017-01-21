@@ -129,6 +129,9 @@ public:
         // c98df864dce972b1948314e98e96c8a86d2c0aaa80b421fe651e203f6bab9010
         consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000010d441df8a789cb99792b2");
 
+        // By default assume that the signatures in ancestors of this block are valid.
+        consensus.defaultAssumeValid = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a"); //250000
+
         consensus.nAuxpowChainId = 0x0001;
         consensus.nAuxpowStartHeight = 19200;
         consensus.fStrictChainId = true;
@@ -292,6 +295,9 @@ public:
         // cebebb916288ed48cd8a359576d900c550203883bf69fc8d5ed92c5d778a1e32
         consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000005cfea5e7ee2dd9d9");
 
+        // By default assume that the signatures in ancestors of this block are valid.
+        consensus.defaultAssumeValid = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954"); //130000
+
         consensus.nAuxpowStartHeight = 0;
         consensus.nAuxpowChainId = 0x0001;
         consensus.fStrictChainId = false;
@@ -394,6 +400,9 @@ public:
 
         // The best chain should have at least this much work.
         consensus.nMinimumChainWork = uint256S("0x00");
+
+        // By default assume that the signatures in ancestors of this block are valid.
+        consensus.defaultAssumeValid = uint256S("0x00");
 
         consensus.nAuxpowStartHeight = 0;
         consensus.nAuxpowChainId = 0x0001;

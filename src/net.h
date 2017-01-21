@@ -334,6 +334,8 @@ public:
     CSipHasher GetDeterministicRandomizer(uint64_t id);
 
     unsigned int GetReceiveFloodSize() const;
+
+    void WakeMessageHandler();
 private:
     struct ListenSocket {
         SOCKET socket;
@@ -349,8 +351,6 @@ private:
     void AcceptConnection(const ListenSocket& hListenSocket);
     void ThreadSocketHandler();
     void ThreadDNSAddressSeed();
-
-    void WakeMessageHandler();
 
     uint64_t CalculateKeyedNetGroup(const CAddress& ad);
 
@@ -623,6 +623,8 @@ public:
     CCriticalSection cs_vProcessMsg;
     std::list<CNetMessage> vProcessMsg;
     size_t nProcessQueueSize;
+
+    CCriticalSection cs_sendProcessing;
 
     std::deque<CInv> vRecvGetData;
     uint64_t nRecvBytes;

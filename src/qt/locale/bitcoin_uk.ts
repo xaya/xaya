@@ -1678,10 +1678,6 @@
         <translation>Операція відсікання: остання синхронізація вмісту гаманцю не обмежується діями над скороченими данними. Вам необхідно зробити переіндексацію -reindex (заново завантажити веcь ланцюжок блоків в разі появи скороченого ланцюга)</translation>
     </message>
     <message>
-        <source>Reduce storage requirements by pruning (deleting) old blocks. This mode is incompatible with -txindex and -rescan. Warning: Reverting this setting requires re-downloading the entire blockchain. (default: 0 = disable pruning blocks, &gt;%u = target size in MiB to use for block files)</source>
-        <translation>Зменшити вимоги до наявного простору на носії даних за допомогою скорочення ланцюжка (видалення старих блоків). Цей режим несумісний з параметрами -txindex та -rescan. Увага: при поверненні до типового значення видалені частини ланцюжка буде повторно завантажено. (типово: 0 = вимкнути скорочення ланцюжка, &gt;%u = очікуваний розмір файлів блоків в МіБ)</translation>
-    </message>
-    <message>
         <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
         <translation>Неможливо провести повторне сканування зі скороченим ланцюжком. Вам необхідно використати -reindex для завантаження повного ланцюжка блоків.</translation>
     </message>
@@ -2156,10 +2152,6 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>Використовувати окремий SOCKS5-проксі для з'єднання з учасниками через приховані сервіси Tor (типово: %s)</translation>
-    </message>
-    <message>
-        <source>Username and hashed password for JSON-RPC connections. The field &lt;userpw&gt; comes in the format: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. A canonical python script is included in share/rpcuser. This option can be specified multiple times</source>
-        <translation>Логін та хешований пароль для зв'язків JSON-RPC. Поле &lt;userpw&gt; має формат: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. Класичний Python script додано до share/rpcuser. Цей параметр може бути застосований декілька разів.</translation>
     </message>
     <message>
         <source>(default: %s)</source>

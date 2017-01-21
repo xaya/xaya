@@ -2838,10 +2838,6 @@
         <translation>Snoei: laatste portemoneesynchronisatie gaat verder dan de gesnoeide data. U moet -reindex gebruiken (download opnieuw de gehele blokketen voor een weggesnoeide node)</translation>
     </message>
     <message>
-        <source>Reduce storage requirements by pruning (deleting) old blocks. This mode is incompatible with -txindex and -rescan. Warning: Reverting this setting requires re-downloading the entire blockchain. (default: 0 = disable pruning blocks, &gt;%u = target size in MiB to use for block files)</source>
-        <translation>Beperk benodigde opslag door snoeien (verwijderen) van oude blokken. Deze modus is niet-compatibele met -txindex en -rescan. Waarschuwing: Terugzetten van deze instellingen vereist opnieuw downloaden van gehele de blokketen. (standaard:0 = uitzetten snoeimodus, &gt;%u = doelgrootte in MiB voor blokbestanden)</translation>
-    </message>
-    <message>
         <source>Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.</source>
         <translation>Herscannen is niet mogelijk in de snoeimodus. U moet -reindex gebruiken dat de hele blokketen opnieuw zal downloaden.</translation>
     </message>
@@ -3480,10 +3476,6 @@
     <message>
         <source>Use separate SOCKS5 proxy to reach peers via Tor hidden services (default: %s)</source>
         <translation>Gebruik een aparte SOCKS5 proxy om verborgen diensten van Tor te bereiken (standaard: %s)</translation>
-    </message>
-    <message>
-        <source>Username and hashed password for JSON-RPC connections. The field &lt;userpw&gt; comes in the format: &lt;USERNAME&gt;:&lt;SALT&gt;$&lt;HASH&gt;. A canonical python script is included in share/rpcuser. This option can be specified multiple times</source>
-        <translation>Gebruikersnaam en gehasht wachtwoord voor JSON-RPC-verbindingen. De velden &lt;userpw&gt; is in het formaat: &lt;GEBRUIKERSNAAM&gt;:&lt;SALT&gt;$&lt;HASH&gt;. Een kanoniek Pythonscript is inbegrepen in de share/rpcuser. Deze optie kan meerdere keren worden meegegeven</translation>
     </message>
     <message>
         <source>Warning: Unknown block versions being mined! It's possible unknown rules are in effect</source>
