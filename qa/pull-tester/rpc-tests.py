@@ -158,6 +158,7 @@ testScripts = [
     'import-rescan.py',
     'bumpfee.py',
     'rpcnamedargs.py',
+    'listsinceblock.py',
 
     # auxpow tests
     'getauxblock.py',
