@@ -7,8 +7,6 @@
 
 #include "validation.h"
 
-using namespace std;
-
 /* Moved here from the header, because we need auxpow and the logic
    becomes more involved.  */
 CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
