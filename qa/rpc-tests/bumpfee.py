@@ -186,7 +186,7 @@ def test_dust_to_fee(rbf_node, dest_address):
                             {dest_address: 0.00800000,
                              get_change_address(rbf_node): Decimal("0.00100000")})
     fulltx = rbf_node.getrawtransaction(rbfid, 1)
-    bumped_tx = rbf_node.bumpfee(rbfid, {"totalFee": 199000})
+    bumped_tx = rbf_node.bumpfee(rbfid, {"totalFee": 199900})
     full_bumped_tx = rbf_node.getrawtransaction(bumped_tx["txid"], 1)
     assert_equal(bumped_tx["fee"], Decimal("0.00200000"))
     assert_equal(len(fulltx["vout"]), 2)
@@ -196,10 +196,10 @@ def test_dust_to_fee(rbf_node, dest_address):
 def test_settxfee(rbf_node, dest_address):
     # check that bumpfee reacts correctly to the use of settxfee (paytxfee)
     # increase feerate by 2.5x, test that fee increased at least 2x
-    rbf_node.settxfee(Decimal("0.00001000"))
-    rbfid = create_fund_sign_send(rbf_node, {dest_address: 0.00090000})
+    rbf_node.settxfee(Decimal("0.00100000"))
+    rbfid = create_fund_sign_send(rbf_node, {dest_address: 0.09000000})
     rbftx = rbf_node.gettransaction(rbfid)
-    rbf_node.settxfee(Decimal("0.00002500"))
+    rbf_node.settxfee(Decimal("0.00250000"))
     bumped_tx = rbf_node.bumpfee(rbfid)
     assert bumped_tx["fee"] > 2 * abs(rbftx["fee"])
     rbf_node.settxfee(Decimal("0.00000000"))  # unset paytxfee

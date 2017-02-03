@@ -47,8 +47,6 @@
 #include <boost/math/distributions/poisson.hpp>
 #include <boost/thread.hpp>
 
-using namespace std;
-
 #if defined(NDEBUG)
 # error "Bitcoin cannot be compiled without assertions."
 #endif
@@ -91,7 +89,7 @@ static void CheckBlockIndex(const Consensus::Params& consensusParams);
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
-const string strMessageMagic = "Bitcoin Signed Message:\n";
+const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 
 // Internal stuff
 namespace {
@@ -124,11 +122,11 @@ namespace {
      * as good as our current tip or better. Entries may be failed, though, and pruning nodes may be
      * missing the data for the block.
      */
-    set<CBlockIndex*, CBlockIndexWorkComparator> setBlockIndexCandidates;
+    std::set<CBlockIndex*, CBlockIndexWorkComparator> setBlockIndexCandidates;
     /** All pairs A->B, where A (or one of its ancestors) misses transactions, but B has transactions.
      * Pruned nodes may have entries where B is missing data.
      */
-    multimap<CBlockIndex*, CBlockIndex*> mapBlocksUnlinked;
+    std::multimap<CBlockIndex*, CBlockIndex*> mapBlocksUnlinked;
 
     CCriticalSection cs_LastBlockFile;
     std::vector<CBlockFileInfo> vinfoBlockFile;
@@ -152,10 +150,10 @@ namespace {
     arith_uint256 nLastPreciousChainwork = 0;
 
     /** Dirty block index entries. */
-    set<CBlockIndex*> setDirtyBlockIndex;
+    std::set<CBlockIndex*> setDirtyBlockIndex;
 
     /** Dirty block file entries. */
-    set<int> setDirtyFileInfo;
+    std::set<int> setDirtyFileInfo;
 } // anon namespace
 
 /* Use this class to start tracking transactions that are removed from the
@@ -518,7 +516,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 
     // Check for duplicate inputs - note that this check is slow so we skip it in CheckBlock
     if (fCheckDuplicateInputs) {
-        set<COutPoint> vInOutPoints;
+        std::set<COutPoint> vInOutPoints;
         for (const auto& txin : tx.vin)
         {
             if (!vInOutPoints.insert(txin.prevout).second)
@@ -597,7 +595,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
     }
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
-    string reason;
+    std::string reason;
     if (fRequireStandard && !IsStandardTx(tx, reason, witnessEnabled))
         return state.DoS(0, false, REJECT_NONSTANDARD, reason);
 
@@ -612,7 +610,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         return state.Invalid(false, REJECT_ALREADY_KNOWN, "txn-already-in-mempool");
 
     // Check for conflicts with in-memory transactions
-    set<uint256> setConflicts;
+    std::set<uint256> setConflicts;
     {
     LOCK(pool.cs); // protect pool.mapNextTx
     BOOST_FOREACH(const CTxIn &txin, tx.vin)
@@ -860,7 +858,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         if (fReplacementTransaction)
         {
             CFeeRate newFeeRate(nModifiedFees, nSize);
-            set<uint256> setConflictsParents;
+            std::set<uint256> setConflictsParents;
             const int maxDescendantsToVisit = 100;
             CTxMemPool::setEntries setIterConflicting;
             BOOST_FOREACH(const uint256 &hashConflicting, setConflicts)
@@ -961,14 +959,14 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
             // Finally in addition to paying more fees than the conflicts the
             // new transaction must pay for its own bandwidth.
             CAmount nDeltaFees = nModifiedFees - nConflictingFees;
-            if (nDeltaFees < ::minRelayTxFee.GetFee(nSize))
+            if (nDeltaFees < ::incrementalRelayFee.GetFee(nSize))
             {
                 return state.DoS(0, false,
                         REJECT_INSUFFICIENTFEE, "insufficient fee", false,
                         strprintf("rejecting replacement %s, not enough additional fees to relay; %s < %s",
                               hash.ToString(),
                               FormatMoney(nDeltaFees),
-                              FormatMoney(::minRelayTxFee.GetFee(nSize))));
+                              FormatMoney(::incrementalRelayFee.GetFee(nSize))));
             }
         }
 
@@ -2178,13 +2176,13 @@ bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode, int n
         {
             std::vector<std::pair<int, const CBlockFileInfo*> > vFiles;
             vFiles.reserve(setDirtyFileInfo.size());
-            for (set<int>::iterator it = setDirtyFileInfo.begin(); it != setDirtyFileInfo.end(); ) {
-                vFiles.push_back(make_pair(*it, &vinfoBlockFile[*it]));
+            for (std::set<int>::iterator it = setDirtyFileInfo.begin(); it != setDirtyFileInfo.end(); ) {
+                vFiles.push_back(std::make_pair(*it, &vinfoBlockFile[*it]));
                 setDirtyFileInfo.erase(it++);
             }
             std::vector<const CBlockIndex*> vBlocks;
             vBlocks.reserve(setDirtyBlockIndex.size());
-            for (set<CBlockIndex*>::iterator it = setDirtyBlockIndex.begin(); it != setDirtyBlockIndex.end(); ) {
+            for (std::set<CBlockIndex*>::iterator it = setDirtyBlockIndex.begin(); it != setDirtyBlockIndex.end(); ) {
                 vBlocks.push_back(*it);
                 setDirtyBlockIndex.erase(it++);
             }
@@ -2817,7 +2815,7 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     // to avoid miners withholding blocks but broadcasting headers, to get a
     // competitive advantage.
     pindexNew->nSequenceId = 0;
-    BlockMap::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
+    BlockMap::iterator mi = mapBlockIndex.insert(std::make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
     BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
     if (miPrev != mapBlockIndex.end())
@@ -2854,7 +2852,7 @@ bool ReceivedBlockTransactions(const CBlock &block, CValidationState& state, CBl
 
     if (pindexNew->pprev == NULL || pindexNew->pprev->nChainTx) {
         // If pindexNew is the genesis block or all parents are BLOCK_VALID_TRANSACTIONS.
-        deque<CBlockIndex*> queue;
+        std::deque<CBlockIndex*> queue;
         queue.push_back(pindexNew);
 
         // Recursively process any descendant blocks that now may be eligible to be connected.
@@ -2983,7 +2981,7 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
    so add them as well.  */
 bool CheckDbLockLimit(const std::vector<CTransactionRef>& vtx)
 {
-    set<uint256> setTxIds;
+    std::set<uint256> setTxIds;
     unsigned nNames = 0;
     for (const auto& tx : vtx)
     {
@@ -3522,7 +3520,7 @@ void PruneOneBlockFile(const int fileNumber)
 
 void UnlinkPrunedFiles(std::set<int>& setFilesToPrune)
 {
-    for (set<int>::iterator it = setFilesToPrune.begin(); it != setFilesToPrune.end(); ++it) {
+    for (std::set<int>::iterator it = setFilesToPrune.begin(); it != setFilesToPrune.end(); ++it) {
         CDiskBlockPos pos(*it, 0);
         boost::filesystem::remove(GetBlockPosFilename(pos, "blk"));
         boost::filesystem::remove(GetBlockPosFilename(pos, "rev"));
@@ -3540,7 +3538,7 @@ void FindFilesToPruneManual(std::set<int>& setFilesToPrune, int nManualPruneHeig
         return;
 
     // last block to prune is the lesser of (user-specified height, MIN_BLOCKS_TO_KEEP from the tip)
-    unsigned int nLastBlockWeCanPrune = min((unsigned)nManualPruneHeight, chainActive.Tip()->nHeight - MIN_BLOCKS_TO_KEEP);
+    unsigned int nLastBlockWeCanPrune = std::min((unsigned)nManualPruneHeight, chainActive.Tip()->nHeight - MIN_BLOCKS_TO_KEEP);
     int count=0;
     for (int fileNumber = 0; fileNumber < nLastBlockFile; fileNumber++) {
         if (vinfoBlockFile[fileNumber].nSize == 0 || vinfoBlockFile[fileNumber].nHeightLast > nLastBlockWeCanPrune)
@@ -3667,8 +3665,8 @@ CBlockIndex * InsertBlockIndex(uint256 hash)
     // Create new
     CBlockIndex* pindexNew = new CBlockIndex();
     if (!pindexNew)
-        throw runtime_error(std::string(__func__) + ": new CBlockIndex failed");
-    mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
+        throw std::runtime_error(std::string(__func__) + ": new CBlockIndex failed");
+    mi = mapBlockIndex.insert(std::make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
 
     return pindexNew;
@@ -3682,12 +3680,12 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
     boost::this_thread::interruption_point();
 
     // Calculate nChainWork
-    vector<pair<int, CBlockIndex*> > vSortedByHeight;
+    std::vector<std::pair<int, CBlockIndex*> > vSortedByHeight;
     vSortedByHeight.reserve(mapBlockIndex.size());
     BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
     {
         CBlockIndex* pindex = item.second;
-        vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));
+        vSortedByHeight.push_back(std::make_pair(pindex->nHeight, pindex));
     }
     sort(vSortedByHeight.begin(), vSortedByHeight.end());
     BOOST_FOREACH(const PAIRTYPE(int, CBlockIndex*)& item, vSortedByHeight)
@@ -3738,7 +3736,7 @@ bool static LoadBlockIndexDB(const CChainParams& chainparams)
 
     // Check presence of blk files
     LogPrintf("Checking all blk files are present...\n");
-    set<int> setBlkDataFiles;
+    std::set<int> setBlkDataFiles;
     BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
     {
         CBlockIndex* pindex = item.second;
@@ -4132,7 +4130,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 NotifyHeaderTip();
 
                 // Recursively process earlier encountered successors of this block
-                deque<uint256> queue;
+                std::deque<uint256> queue;
                 queue.push_back(hash);
                 while (!queue.empty()) {
                     uint256 head = queue.front();

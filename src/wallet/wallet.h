@@ -14,6 +14,7 @@
 #include "utilstrencodings.h"
 #include "validationinterface.h"
 #include "script/ismine.h"
+#include "script/sign.h"
 #include "wallet/crypter.h"
 #include "wallet/walletdb.h"
 #include "wallet/rpcwallet.h"
@@ -51,6 +52,8 @@ static const CAmount DEFAULT_TRANSACTION_FEE = 0;
 static const CAmount DEFAULT_FALLBACK_FEE = 20000;
 //! -mintxfee default
 static const CAmount DEFAULT_TRANSACTION_MINFEE = 1000;
+//! minimum recommended increment for BIP 125 replacement txs
+static const CAmount WALLET_INCREMENTAL_RELAY_FEE = 5000;
 //! target minimum change amount
 static const CAmount MIN_CHANGE = CENT;
 //! final minimum change amount after paying for fees
@@ -735,6 +738,8 @@ public:
     void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& entries);
     bool AddAccountingEntry(const CAccountingEntry&);
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB *pwalletdb);
+    template <typename ContainerType>
+    bool DummySignTx(CMutableTransaction &txNew, const ContainerType &coins);
 
     static CFeeRate minTxFee;
     static CFeeRate fallbackFee;
@@ -743,6 +748,11 @@ public:
      * and the required fee
      */
     static CAmount GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool);
+    /**
+     * Estimate the minimum fee considering required fee and targetFee or if 0
+     * then fee estimation for nConfirmTarget
+     */
+    static CAmount GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool, CAmount targetFee);
     /**
      * Return the minimum required fee taking into account the
      * floating relay fee and user set minimum transaction fee
@@ -962,4 +972,28 @@ public:
     }
 };
 
+// Helper for producing a bunch of max-sized low-S signatures (eg 72 bytes)
+// ContainerType is meant to hold pair<CWalletTx *, int>, and be iterable
+// so that each entry corresponds to each vIn, in order.
+template <typename ContainerType>
+bool CWallet::DummySignTx(CMutableTransaction &txNew, const ContainerType &coins)
+{
+    // Fill in dummy signatures for fee calculation.
+    int nIn = 0;
+    for (const auto& coin : coins)
+    {
+        const CScript& scriptPubKey = coin.first->tx->vout[coin.second].scriptPubKey;
+        SignatureData sigdata;
+
+        if (!ProduceSignature(DummySignatureCreator(this), scriptPubKey, sigdata))
+        {
+            return false;
+        } else {
+            UpdateTransaction(txNew, nIn, sigdata);
+        }
+
+        nIn++;
+    }
+    return true;
+}
 #endif // BITCOIN_WALLET_WALLET_H

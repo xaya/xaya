@@ -249,8 +249,6 @@ public:
         post();
     };
 
-    void RelayTransaction(const CTransaction& tx);
-
     // Addrman functions
     size_t GetAddressCount() const;
     void SetServices(const CService &addr, ServiceFlags nServices);
@@ -292,10 +290,8 @@ public:
 
     size_t GetNodeCount(NumConnections num);
     void GetNodeStats(std::vector<CNodeStats>& vstats);
-    bool DisconnectAddress(const CNetAddr& addr);
     bool DisconnectNode(const std::string& node);
     bool DisconnectNode(NodeId id);
-    bool DisconnectSubnet(const CSubNet& subnet);
 
     unsigned int GetSendBufferSize() const;
 
