@@ -1,5 +1,5 @@
 ---
-name: "namecoin-win-0.13"
+name: "namecoin-win-0.15"
 enable_cache: true
 suites:
 - "trusty"
