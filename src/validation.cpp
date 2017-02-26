@@ -1528,7 +1528,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState &state, const CCoinsVi
         // Helps prevent CPU exhaustion attacks.
 
         // Skip script verification when connecting blocks under the
-        // assumedvalid block. Assuming the assumedvalid block is valid this
+        // assumevalid block. Assuming the assumevalid block is valid this
         // is safe because block merkle hashes are still computed and checked,
         // Of course, if an assumed valid block is invalid due to false scriptSigs
         // this optimization would allow an invalid chain to be accepted.
@@ -1892,7 +1892,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 pindexBestHeader->GetAncestor(pindex->nHeight) == pindex &&
                 pindexBestHeader->nChainWork >= UintToArith256(chainparams.GetConsensus().nMinimumChainWork)) {
                 // This block is a member of the assumed verified chain and an ancestor of the best header.
-                // The equivalent time check discourages hashpower from extorting the network via DOS attack
+                // The equivalent time check discourages hash power from extorting the network via DOS attack
                 //  into accepting an invalid block through telling users they must manually set assumevalid.
                 //  Requiring a software change or burying the invalid block, regardless of the setting, makes
                 //  it hard to hide the implication of the demand.  This also avoids having release candidates
@@ -2630,12 +2630,12 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
         bool fInitialDownload;
         {
             LOCK(cs_main);
-            { // TODO: Tempoarily ensure that mempool removals are notified before
+            { // TODO: Temporarily ensure that mempool removals are notified before
               // connected transactions.  This shouldn't matter, but the abandoned
               // state of transactions in our wallet is currently cleared when we
               // receive another notification and there is a race condition where
               // notification of a connected conflict might cause an outside process
-              // to abandon a transaction and then have it inadvertantly cleared by
+              // to abandon a transaction and then have it inadvertently cleared by
               // the notification that the conflicted transaction was evicted.
             MemPoolConflictRemovalTracker mrt(mempool);
             CBlockIndex *pindexOldTip = chainActive.Tip();
@@ -2664,7 +2664,7 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
 
             } // MemPoolConflictRemovalTracker destroyed and conflict evictions are notified
 
-            // Transactions in the connnected block are notified
+            // Transactions in the connected block are notified
             for (const auto& tx : connectTrace.txNameConflicts) {
                 GetMainSignals().NameConflict(*tx, pindexNewTip->GetBlockHash());
             }
@@ -3524,7 +3524,7 @@ void PruneOneBlockFile(const int fileNumber)
 }
 
 
-void UnlinkPrunedFiles(std::set<int>& setFilesToPrune)
+void UnlinkPrunedFiles(const std::set<int>& setFilesToPrune)
 {
     for (std::set<int>::iterator it = setFilesToPrune.begin(); it != setFilesToPrune.end(); ++it) {
         CDiskBlockPos pos(*it, 0);
@@ -4363,6 +4363,11 @@ std::string CBlockFileInfo::ToString() const
     return strprintf("CBlockFileInfo(blocks=%u, size=%u, heights=%u...%u, time=%s...%s)", nBlocks, nSize, nHeightFirst, nHeightLast, DateTimeStrFormat("%Y-%m-%d", nTimeFirst), DateTimeStrFormat("%Y-%m-%d", nTimeLast));
 }
 
+CBlockFileInfo* GetBlockFileInfo(size_t n)
+{
+    return &vinfoBlockFile.at(n);
+}
+
 ThresholdState VersionBitsTipState(const Consensus::Params& params, Consensus::DeploymentPos pos)
 {
     LOCK(cs_main);
@@ -4380,7 +4385,7 @@ static const uint64_t MEMPOOL_DUMP_VERSION = 1;
 bool LoadMempool(void)
 {
     int64_t nExpiryTimeout = GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60;
-    FILE* filestr = fopen((GetDataDir() / "mempool.dat").string().c_str(), "r");
+    FILE* filestr = fopen((GetDataDir() / "mempool.dat").string().c_str(), "rb");
     CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
     if (file.IsNull()) {
         LogPrintf("Failed to open mempool file from disk. Continuing anyway.\n");
@@ -4411,7 +4416,7 @@ bool LoadMempool(void)
 
             CAmount amountdelta = nFeeDelta;
             if (amountdelta) {
-                mempool.PrioritiseTransaction(tx->GetHash(), tx->GetHash().ToString(), prioritydummy, amountdelta);
+                mempool.PrioritiseTransaction(tx->GetHash(), prioritydummy, amountdelta);
             }
             CValidationState state;
             if (nTime + nExpiryTimeout > nNow) {
@@ -4432,7 +4437,7 @@ bool LoadMempool(void)
         file >> mapDeltas;
 
         for (const auto& i : mapDeltas) {
-            mempool.PrioritiseTransaction(i.first, i.first.ToString(), prioritydummy, i.second);
+            mempool.PrioritiseTransaction(i.first, prioritydummy, i.second);
         }
     } catch (const std::exception& e) {
         LogPrintf("Failed to deserialize mempool data on disk: %s. Continuing anyway.\n", e.what());
@@ -4461,7 +4466,7 @@ void DumpMempool(void)
     int64_t mid = GetTimeMicros();
 
     try {
-        FILE* filestr = fopen((GetDataDir() / "mempool.dat.new").string().c_str(), "w");
+        FILE* filestr = fopen((GetDataDir() / "mempool.dat.new").string().c_str(), "wb");
         if (!filestr) {
             return;
         }

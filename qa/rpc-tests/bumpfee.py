@@ -2,16 +2,15 @@
 # Copyright (c) 2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
+"""Test the bumpfee RPC."""
 
 from segwit import send_to_witness
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework import blocktools
 from test_framework.mininode import CTransaction
 from test_framework.util import *
-from test_framework.util import *
 
 import io
-import time
 
 # Sequence number that is BIP 125 opt-in and BIP 68-compliant
 BIP125_SEQUENCE_NUMBER = 0xfffffffd

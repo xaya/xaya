@@ -118,10 +118,6 @@ static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
 // threads that should only be stopped after the main network-processing
 // threads have exited.
 //
-// Note that if running -daemon the parent process returns from AppInit2
-// before adding any threads to the threadGroup, so .join_all() returns
-// immediately and the parent exits from main().
-//
 // Shutdown for Qt is very similar, only it uses a QTimer to detect
 // fRequestShutdown getting set, and then does the normal Qt
 // shutdown thing.
@@ -188,7 +184,7 @@ void Shutdown()
     if (!lockShutdown)
         return;
 
-    /// Note: Shutdown() must be able to handle cases in which AppInit2() failed part of the way,
+    /// Note: Shutdown() must be able to handle cases in which initialization failed part of the way,
     /// for example if the data directory was found to be locked.
     /// Be sure that anything that writes files or flushes caches only does this if the respective
     /// module was initialized.
@@ -935,7 +931,7 @@ bool AppInitParameterInteraction()
     int64_t nMempoolSizeMin = GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000 * 40;
     if (nMempoolSizeMax < 0 || nMempoolSizeMax < nMempoolSizeMin)
         return InitError(strprintf(_("-maxmempool must be at least %d MB"), std::ceil(nMempoolSizeMin / 1000000.0)));
-    // incremental relay fee sets the minimimum feerate increase necessary for BIP 125 replacement in the mempool
+    // incremental relay fee sets the minimum feerate increase necessary for BIP 125 replacement in the mempool
     // and the amount the mempool min fee increases above the feerate of txs evicted due to mempool limiting.
     if (IsArgSet("-incrementalrelayfee"))
     {
