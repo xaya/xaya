@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2016 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -337,10 +337,10 @@ NameIterationTester::verify (const CCoinsView& view) const
   const valtype end = ValtypeFromString ("zzzzzzzzzzzzzzzz");
   {
     valtype name;
-    CNameData data;
+    CNameData nameData;
 
     iter->seek (end);
-    BOOST_CHECK (!iter->next (name, data));
+    BOOST_CHECK (!iter->next (name, nameData));
   }
 
   while (true)

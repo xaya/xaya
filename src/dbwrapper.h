@@ -84,15 +84,15 @@ public:
     template <typename K>
     void Write(const K& key)
     {
-        CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(DBWRAPPER_PREALLOC_KEY_SIZE);
         ssKey << key;
-        leveldb::Slice slKey(&ssKey[0], ssKey.size());
+        leveldb::Slice slKey(ssKey.data(), ssKey.size());
 
         char dummy;
         leveldb::Slice slValue(&dummy, 0);
 
         batch.Put(slKey, slValue);
+        ssKey.clear();
     }
 
     template <typename K>

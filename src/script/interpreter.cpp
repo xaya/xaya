@@ -15,14 +15,6 @@
 
 using namespace std;
 
-static const valtype vchFalse(0);
-static const valtype vchZero(0);
-static const valtype vchTrue(1, 1);
-static const CScriptNum bnZero(0);
-static const CScriptNum bnOne(1);
-static const CScriptNum bnFalse(0);
-static const CScriptNum bnTrue(1);
-
 namespace {
 
 inline bool set_success(ScriptError* ret)

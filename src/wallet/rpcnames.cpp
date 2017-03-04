@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -52,7 +52,8 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 UniValue
 name_list (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (request.fHelp))
+  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
   if (request.fHelp || request.params.size () > 1)
@@ -80,9 +81,8 @@ name_list (const JSONRPCRequest& request)
   std::map<valtype, UniValue> mapObjects;
 
   {
-  LOCK2 (cs_main, pwalletMain->cs_wallet);
-  BOOST_FOREACH (const PAIRTYPE(const uint256, CWalletTx)& item,
-                 pwalletMain->mapWallet)
+  LOCK2 (cs_main, pwallet->cs_wallet);
+  for (const auto& item : pwallet->mapWallet)
     {
       const CWalletTx& tx = item.second;
       if (!tx.tx->IsNamecoin ())
@@ -127,7 +127,7 @@ name_list (const JSONRPCRequest& request)
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress (), pindex->nHeight);
 
-      const bool mine = IsMine (*pwalletMain, nameOp.getAddress ());
+      const bool mine = IsMine (*pwallet, nameOp.getAddress ());
       obj.push_back (Pair ("transferred", !mine));
 
       mapHeights[name] = pindex->nHeight;
@@ -136,7 +136,7 @@ name_list (const JSONRPCRequest& request)
   }
 
   UniValue res(UniValue::VARR);
-  BOOST_FOREACH (const PAIRTYPE(const valtype, UniValue)& item, mapObjects)
+  for (const auto& item : mapObjects)
     res.push_back (item.second);
 
   return res;
@@ -147,7 +147,8 @@ name_list (const JSONRPCRequest& request)
 UniValue
 name_new (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (request.fHelp))
+  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
   if (request.fHelp || request.params.size () != 1)
@@ -155,7 +156,7 @@ name_new (const JSONRPCRequest& request)
         "name_new \"name\"\n"
         "\nStart registration of the given name.  Must be followed up with"
         " name_firstupdate to finish the registration.\n"
-        + HelpRequiringPassphrase () +
+        + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
         "\nResult:\n"
@@ -184,9 +185,9 @@ name_new (const JSONRPCRequest& request)
      of locking the wallet, and CommitTransaction (called when sending
      the tx) locks cs_main as necessary.  */
 
-  EnsureWalletIsUnlocked ();
+  EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwalletMain);
+  CReserveKey keyName(pwallet);
   CPubKey pubKey;
   const bool ok = keyName.GetReservedKey (pubKey);
   assert (ok);
@@ -194,7 +195,7 @@ name_new (const JSONRPCRequest& request)
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
   CWalletTx wtx;
-  SendMoneyToScript (newScript, NULL, NAME_LOCKED_AMOUNT, false, wtx);
+  SendMoneyToScript (pwallet, newScript, NULL, NAME_LOCKED_AMOUNT, false, wtx);
 
   keyName.KeepKey ();
 
@@ -215,7 +216,8 @@ name_new (const JSONRPCRequest& request)
 UniValue
 name_firstupdate (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (request.fHelp))
+  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
   /* There is an undocumented sixth argument that can be used to disable
@@ -229,7 +231,7 @@ name_firstupdate (const JSONRPCRequest& request)
         "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
         "\nFinish the registration of a name.  Depends on name_new being"
         " already issued.\n"
-        + HelpRequiringPassphrase () +
+        + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"rand\"          (string, required) the rand value of name_new\n"
@@ -296,9 +298,9 @@ name_firstupdate (const JSONRPCRequest& request)
 
   /* No more locking required, similarly to name_new.  */
 
-  EnsureWalletIsUnlocked ();
+  EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwalletMain);
+  CReserveKey keyName(pwallet);
   CPubKey pubKeyReserve;
   const bool ok = keyName.GetReservedKey (pubKeyReserve);
   assert (ok);
@@ -324,7 +326,8 @@ name_firstupdate (const JSONRPCRequest& request)
     = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
   CWalletTx wtx;
-  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, false, wtx);
+  SendMoneyToScript (pwallet, nameScript, &txIn,
+                     NAME_LOCKED_AMOUNT, false, wtx);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -337,7 +340,8 @@ name_firstupdate (const JSONRPCRequest& request)
 UniValue
 name_update (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (request.fHelp))
+  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
   if (request.fHelp
@@ -345,7 +349,7 @@ name_update (const JSONRPCRequest& request)
     throw std::runtime_error (
         "name_update \"name\" \"value\" (\"toaddress\")\n"
         "\nUpdate a name and possibly transfer it.\n"
-        + HelpRequiringPassphrase () +
+        + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to update\n"
         "4. \"value\"         (string, required) value for the name\n"
@@ -391,9 +395,9 @@ name_update (const JSONRPCRequest& request)
 
   /* No more locking required, similarly to name_new.  */
 
-  EnsureWalletIsUnlocked ();
+  EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwalletMain);
+  CReserveKey keyName(pwallet);
   CPubKey pubKeyReserve;
   const bool ok = keyName.GetReservedKey (pubKeyReserve);
   assert (ok);
@@ -419,7 +423,8 @@ name_update (const JSONRPCRequest& request)
     = CNameScript::buildNameUpdate (addrName, name, value);
 
   CWalletTx wtx;
-  SendMoneyToScript (nameScript, &txIn, NAME_LOCKED_AMOUNT, false, wtx);
+  SendMoneyToScript (pwallet, nameScript, &txIn,
+                     NAME_LOCKED_AMOUNT, false, wtx);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -432,7 +437,8 @@ name_update (const JSONRPCRequest& request)
 UniValue
 sendtoname (const JSONRPCRequest& request)
 {
-  if (!EnsureWalletIsAvailable (request.fHelp))
+  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
   
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 5)
@@ -441,7 +447,7 @@ sendtoname (const JSONRPCRequest& request)
         "\nSend an amount to the owner of a name. "
         " The amount is a real and is rounded to the nearest 0.00000001.\n"
         "\nIt is an error if the name is expired.\n"
-        + HelpRequiringPassphrase () +
+        + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"        (string, required) The name to send to.\n"
         "2. \"amount\"      (numeric, required) The amount in nmc to send. eg 0.1\n"
@@ -465,7 +471,7 @@ sendtoname (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  LOCK2 (cs_main, pwalletMain->cs_wallet);
+  LOCK2 (cs_main, pwallet->cs_wallet);
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -501,9 +507,9 @@ sendtoname (const JSONRPCRequest& request)
   if (request.params.size() > 4)
       fSubtractFeeFromAmount = request.params[4].get_bool();
 
-  EnsureWalletIsUnlocked();
+  EnsureWalletIsUnlocked(pwallet);
 
-  SendMoneyToScript (data.getAddress (), NULL,
+  SendMoneyToScript (pwallet, data.getAddress (), NULL,
                      nAmount, fSubtractFeeFromAmount, wtx);
 
   return wtx.GetHash ().GetHex ();
