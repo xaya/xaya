@@ -82,10 +82,6 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
 static UniValue AuxpowToJSON(const CAuxPow& auxpow)
 {
-    UniValue tx(UniValue::VOBJ);
-    tx.push_back(Pair("hex", EncodeHexTx(auxpow)));
-    TxToJSON(auxpow, auxpow.parentBlock.GetHash(), tx);
-
     UniValue result(UniValue::VOBJ);
 
     {
