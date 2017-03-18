@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,18 +35,12 @@ class GetAuxBlockTest (BitcoinTestFramework):
     self.sync_all ()
     auxblock2 = self.nodes[0].getauxblock ()
     assert auxblock['hash'] != auxblock2['hash']
-    try:
-      self.nodes[0].getauxblock (auxblock['hash'], "x")
-      raise AssertionError ("invalid block hash accepted")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -8)
+    assert_raises_jsonrpc(-8, 'block hash unknown', self.nodes[0].getauxblock,
+                          auxblock['hash'], "x")
 
     # Invalid format for auxpow.
-    try:
-      self.nodes[0].getauxblock (auxblock2['hash'], "x")
-      raise AssertionError ("malformed auxpow accepted")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -1)
+    assert_raises_jsonrpc(-1, None, self.nodes[0].getauxblock,
+                          auxblock2['hash'], "x")
 
     # Invalidate the block again, send a transaction and query for the
     # auxblock to solve that contains the transaction.
