@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -90,10 +90,8 @@ class NameRawTxTest (NameTestFramework):
     tx += '00' * 4     # locktime
 
     signed = self.nodes[0].signrawtransaction (tx)
-    try:
-      self.nodes[0].sendrawtransaction (signed['hex'])
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -26)
+    assert_raises_jsonrpc (-26, None,
+                           self.nodes[0].sendrawtransaction, signed['hex'])
 
   def decodeNameTx (self, ind, txid):
     """

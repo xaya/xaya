@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -54,16 +54,9 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "b", "b long", None, False)
     self.checkNameHistory (2, "a", ["initial value"])
     self.checkNameHistory (2, "b", ["b long"])
-    try:
-      self.nodes[3].name_show ("c")
-      raise AssertionError ("'c' still registered after reorg")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
-    try:
-      self.nodes[2].name_history ("c")
-      raise AssertionError ("'c' still registered after reorg")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    assert_raises_jsonrpc (-4, 'name not found', self.nodes[3].name_show, "c")
+    assert_raises_jsonrpc (-4, 'name not found',
+                           self.nodes[2].name_history, "c")
 
     # Mine another block.  This should at least perform the
     # non-conflicting transactions.  It is done on node 3 so

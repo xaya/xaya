@@ -99,11 +99,7 @@ def test_auxpow(nodes):
     assert res
     assert_equal(nodes[0].getwalletinfo()['keypoolsize'], 0)
 
-    try:
-        nodes[0].getauxblock()
-        raise AssertionError('Keypool should be exhausted by getauxblock')
-    except JSONRPCException as e:
-        assert(e.error['code']==-12)
+    assert_raises_jsonrpc (-12, 'Keypool ran out', nodes[0].getauxblock)
 
 if __name__ == '__main__':
     KeyPoolTest().main()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -194,11 +194,8 @@ class NameWalletTest (NameTestFramework):
     self.generate (0, 10)
     self.checkName (3, "destination", "value", None, False)
 
-    try:
-      self.nodes[3].sendtoname ("non-existant", 10)
-      raise AssertionError ("sendtoname allowed to non-existant name")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -5)
+    assert_raises_jsonrpc (-5, 'name not found',
+                           self.nodes[3].sendtoname, "non-existant", 10)
 
     txid = self.nodes[3].sendtoname ("destination", 10)
     fee = self.getFee (3, txid)
@@ -212,11 +209,8 @@ class NameWalletTest (NameTestFramework):
 
     self.generate (0, 30)
     self.checkName (3, "destination", "value", None, True)
-    try:
-      self.nodes[3].sendtoname ("destination", 10)
-      raise AssertionError ("sendtoname allowed to expired name")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -5)
+    assert_raises_jsonrpc (-5, 'the name is expired',
+                           self.nodes[3].sendtoname, "destination", 10)
 
 if __name__ == '__main__':
   NameWalletTest ().main ()

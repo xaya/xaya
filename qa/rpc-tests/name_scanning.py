@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -79,11 +79,8 @@ class NameScanningTest (NameTestFramework):
                   {"blocks": height, "count": 2})
 
     # Check test for "stat" argument.
-    try:
-      self.nodes[3].name_filter ("", 0, 0, 0, "string")
-      raise AssertionError ("wrong check for 'stat' argument")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -8)
+    assert_raises_jsonrpc (-8, "must be the literal string 'stat'",
+                           self.nodes[3].name_filter, "", 0, 0, 0, "string")
 
   def checkList (self, data, names):
     """

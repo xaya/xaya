@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,51 +16,33 @@ class NameRegistrationTest (NameTestFramework):
     newAconfl = self.nodes[1].name_new ("node-0")
     newB = self.nodes[1].name_new ("node-1")
     self.nodes[0].name_new ("x" * 255)
-    try:
-      self.nodes[0].name_new ("x" * 256)
-      raise AssertionError ("too long name not recognised by name_new")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -8)
+    assert_raises_jsonrpc (-8, 'name is too long',
+                           self.nodes[0].name_new, "x" * 256)
     self.generate (0, 5)
 
     # Check for exception with name_history and without -namehistory.
-    try:
-      self.nodes[0].name_history ("node-0")
-      raise AssertionError ("name_history without -namehistory works")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -1)
+    assert_raises_jsonrpc (-1, 'namehistory is not enabled',
+                           self.nodes[0].name_history, "node-0")
 
     # first_update the names.  Check for too long values.
     addrA = self.nodes[0].getnewaddress ()
     txidA = self.firstupdateName (0, "node-0", newA, "value-0", addrA)
-    try:
-      self.firstupdateName (1, "node-1", newB, "x" * 521)
-      raise AssertionError ("too long value not recognised by name_firstupdate")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -8)
+    assert_raises_jsonrpc (-8, 'value is too long',
+                           self.firstupdateName, 1, "node-1", newB, "x" * 521)
     self.firstupdateName (1, "node-1", newB, "x" * 520)
 
     # Check for mempool conflict detection with registration of "node-0".
     self.sync_all ()
-    try:
-      self.firstupdateName (1, "node-0", newAconfl, "foo")
-      raise AssertionError ("name_firstupdate didn't catch conflict")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
+    assert_raises_jsonrpc (-25, 'is already being registered',
+                           self.firstupdateName, 1, "node-0", newAconfl, "foo")
     
     # Check that the name appears when the name_new is ripe.
 
     self.generate (0, 7)
-    try:
-      self.nodes[1].name_show ("node-0")
-      raise AssertionError ("name available when it should not yet be")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
-    try:
-      self.nodes[1].name_history ("node-0")
-      raise AssertionError ("name available when it should not yet be")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    assert_raises_jsonrpc (-4, 'name not found',
+                           self.nodes[1].name_show, "node-0")
+    assert_raises_jsonrpc (-4, 'name not found',
+                           self.nodes[1].name_history, "node-0")
     self.generate (0, 1)
 
     data = self.checkName (1, "node-0", "value-0", 30, False)
@@ -74,19 +56,14 @@ class NameRegistrationTest (NameTestFramework):
     # Check for error with rand mismatch (wrong name)
     newA = self.nodes[0].name_new ("test-name")
     self.generate (0, 10)
-    try:
-      self.firstupdateName (0, "test-name-wrong", newA, "value")
-      raise AssertionError ("wrong rand value not caught by name_firstupdate")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
+    assert_raises_jsonrpc (-25, 'rand value is wrong',
+                           self.firstupdateName,
+                           0, "test-name-wrong", newA, "value")
 
     # Check for mismatch with prev tx from another node for name_firstupdate
     # and name_update.
-    try:
-      self.firstupdateName (1, "test-name", newA, "value")
-      raise AssertionError ("wrong node can firstupdate a name")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    assert_raises_jsonrpc (-4, 'Input tx not found in wallet',
+                           self.firstupdateName, 1, "test-name", newA, "value")
     self.firstupdateName (0, "test-name", newA, "test-value")
 
     # Check for disallowed firstupdate when the name is active.
@@ -94,11 +71,9 @@ class NameRegistrationTest (NameTestFramework):
     newSteal2 = self.nodes[1].name_new ("node-0")
     self.generate (0, 19)
     self.checkName (1, "node-0", "value-0", 1, False)
-    try:
-      self.firstupdateName (1, "node-0", newSteal, "stolen")
-      raise AssertionError ("name stolen before expiry")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
+    assert_raises_jsonrpc (-25, 'this name is already active',
+                           self.firstupdateName,
+                           1, "node-0", newSteal, "stolen")
 
     # Check for "stealing" of the name after expiry.
     self.generate (0, 1)
@@ -118,11 +93,8 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (1, "node-0", "stolen", None, False)
 
     # Check basic updating.
-    try:
-      self.nodes[0].name_update ("test-name", "x" * 521)
-      raise AssertionError ("update to too long value allowed")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -8)
+    assert_raises_jsonrpc (-8, 'value is too long',
+                           self.nodes[0].name_update, "test-name", "x" * 521)
     self.nodes[0].name_update ("test-name", "x" * 520)
     self.checkName (0, "test-name", "test-value", None, False)
     self.generate (0, 1)
@@ -141,24 +113,15 @@ class NameRegistrationTest (NameTestFramework):
                            ["test-value", "x" * 520, "sent", "updated"])
 
     # Invalid updates.
-    try:
-      self.nodes[1].name_update ("wrong-name", "foo")
-      raise AssertionError ("invalid name updated")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
-    try:
-      self.nodes[0].name_update ("test-name", "stolen?")
-      raise AssertionError ("wrong node could update sent name")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    assert_raises_jsonrpc (-25, 'this name can not be updated',
+                           self.nodes[1].name_update, "wrong-name", "foo")
+    assert_raises_jsonrpc (-4, 'Input tx not found in wallet',
+                           self.nodes[0].name_update, "test-name", "stolen?")
 
     # Reject update when another update is pending.
     self.nodes[1].name_update ("test-name", "value")
-    try:
-      self.nodes[1].name_update ("test-name", "new value")
-      raise AssertionError ("name_update didn't catch pending other update")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
+    assert_raises_jsonrpc (-25, 'is already a pending update for this name',
+                           self.nodes[1].name_update, "test-name", "new value")
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "value", 30, False)
     self.checkNameHistory (1, "test-name", ["test-value", "x" * 520, "sent",
@@ -166,11 +129,8 @@ class NameRegistrationTest (NameTestFramework):
     
     # Update failing after expiry.  Re-registration possible.
     self.checkName (1, "node-1", "x" * 520, None, True)
-    try:
-      self.nodes[1].name_update ("node-1", "updated?")
-      raise AssertionError ("expired name updated")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -25)
+    assert_raises_jsonrpc (-25, 'this name can not be updated',
+                           self.nodes[1].name_update, "node-1", "updated?")
 
     newSteal = self.nodes[0].name_new ("node-1")
     self.generate (0, 10)

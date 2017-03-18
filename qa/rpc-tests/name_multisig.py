@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,16 +30,10 @@ class NameMultisigTest (NameTestFramework):
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
-    try:
-      self.nodes[0].name_update ("name", "new value")
-      raise AssertionError ("name_update allowed from single node")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
-    try:
-      self.nodes[1].name_update ("name", "new value")
-      raise AssertionError ("name_update allowed from single node")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -4)
+    assert_raises_jsonrpc (-4, None,
+                           self.nodes[0].name_update, "name", "new value")
+    assert_raises_jsonrpc (-4, None,
+                           self.nodes[1].name_update, "name", "new value")
 
     # Find some other input to add as fee.
     unspents = self.nodes[0].listunspent ()
@@ -59,11 +53,8 @@ class NameMultisigTest (NameTestFramework):
     # Sign it partially.
     partial = self.nodes[0].signrawtransaction (txRaw)
     assert not partial['complete']
-    try:
-      self.nodes[2].sendrawtransaction (partial['hex'])
-      raise AssertionError ("incomplete transaction accepted")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -26)
+    assert_raises_jsonrpc (-26, None,
+                           self.nodes[2].sendrawtransaction, partial['hex'])
 
     # Sign it fully and transmit it.
     signed = self.nodes[1].signrawtransaction (partial['hex'])
@@ -80,11 +71,8 @@ class NameMultisigTest (NameTestFramework):
     # Send the tx.  The manipulation should be caught (independently of
     # when strict P2SH checks are enabled, since they are enforced
     # mandatorily in the mempool).
-    try:
-      self.nodes[2].sendrawtransaction (txManipulated)
-      raise AssertionError ("manipulated signature tx accepted")
-    except JSONRPCException as exc:
-      assert_equal (exc.error['code'], -26)
+    assert_raises_jsonrpc (-26, None,
+                           self.nodes[2].sendrawtransaction, txManipulated)
     self.nodes[2].sendrawtransaction (tx)
     self.generate (3, 1)
 
