@@ -10,7 +10,7 @@ import os
 import sys
 import shutil
 import tempfile
-import traceback
+import time
 
 from .util import (
     initialize_chain,
@@ -27,8 +27,11 @@ from .util import (
 )
 from .authproxy import JSONRPCException
 
-
 class BitcoinTestFramework(object):
+
+    TEST_EXIT_PASSED = 0
+    TEST_EXIT_FAILED = 1
+    TEST_EXIT_SKIPPED = 77
 
     def __init__(self):
         self.num_nodes = 4
@@ -193,11 +196,11 @@ class BitcoinTestFramework(object):
                     print("".join(deque(open(f), MAX_LINES_TO_PRINT)))
         if success:
             self.log.info("Tests successful")
-            sys.exit(0)
+            sys.exit(self.TEST_EXIT_PASSED)
         else:
             self.log.error("Test failed. Test logging available at %s/test_framework.log", self.options.tmpdir)
             logging.shutdown()
-            sys.exit(1)
+            sys.exit(self.TEST_EXIT_FAILED)
 
     def _start_logging(self):
         # Add logger and logging handlers
@@ -213,6 +216,7 @@ class BitcoinTestFramework(object):
         ch.setLevel(ll)
         # Format logs the same as bitcoind's debug.log with microprecision (so log files can be concatenated and sorted)
         formatter = logging.Formatter(fmt = '%(asctime)s.%(msecs)03d000 %(name)s (%(levelname)s): %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        formatter.converter = time.gmtime
         fh.setFormatter(formatter)
         ch.setFormatter(formatter)
         # add the handlers to the logger
