@@ -189,7 +189,7 @@ name_new (const JSONRPCRequest& request)
 
   CReserveKey keyName(pwallet);
   CPubKey pubKey;
-  const bool ok = keyName.GetReservedKey (pubKey);
+  const bool ok = keyName.GetReservedKey (pubKey, true);
   assert (ok);
   const CScript addrName = GetScriptForDestination (pubKey.GetID ());
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
@@ -302,7 +302,7 @@ name_firstupdate (const JSONRPCRequest& request)
 
   CReserveKey keyName(pwallet);
   CPubKey pubKeyReserve;
-  const bool ok = keyName.GetReservedKey (pubKeyReserve);
+  const bool ok = keyName.GetReservedKey (pubKeyReserve, true);
   assert (ok);
   bool usedKey = false;
 
@@ -399,7 +399,7 @@ name_update (const JSONRPCRequest& request)
 
   CReserveKey keyName(pwallet);
   CPubKey pubKeyReserve;
-  const bool ok = keyName.GetReservedKey (pubKeyReserve);
+  const bool ok = keyName.GetReservedKey (pubKeyReserve, true);
   assert (ok);
   bool usedKey = false;
 

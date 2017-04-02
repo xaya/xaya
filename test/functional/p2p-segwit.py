@@ -32,10 +32,9 @@ def get_virtual_size(witness_block):
     vsize = int((3*base_size + total_size + 3)/4)
     return vsize
 
-# Note: we can reduce code by using SingleNodeConnCB (in master, not 0.12)
 class TestNode(NodeConnCB):
     def __init__(self):
-        NodeConnCB.__init__(self)
+        super().__init__()
         self.connection = None
         self.ping_counter = 1
         self.last_pong = msg_pong(0)
@@ -81,13 +80,6 @@ class TestNode(NodeConnCB):
             timeout -= self.sleep_time
         raise AssertionError("Sync failed to complete")
         
-    def sync_with_ping(self, timeout=60):
-        self.send_message(msg_ping(nonce=self.ping_counter))
-        test_function = lambda: self.last_pong.nonce == self.ping_counter
-        self.sync(test_function, timeout)
-        self.ping_counter += 1
-        return
-
     def wait_for_block(self, blockhash, timeout=60):
         test_function = lambda: self.last_block != None and self.last_block.sha256 == blockhash
         self.sync(test_function, timeout)
@@ -149,7 +141,7 @@ class TestNode(NodeConnCB):
         if with_witness:
             tx_message = msg_witness_tx(tx)
         self.send_message(tx_message)
-        self.sync_with_ping()
+        self.sync_with_ping(60)
         assert_equal(tx.hash in self.connection.rpc.getrawmempool(), accepted)
         if (reason != None and not accepted):
             # Check the rejection reason as well.
@@ -162,7 +154,7 @@ class TestNode(NodeConnCB):
             self.send_message(msg_witness_block(block))
         else:
             self.send_message(msg_block(block))
-        self.sync_with_ping()
+        self.sync_with_ping(60)
         assert_equal(self.connection.rpc.getbestblockhash() == block.hash, accepted)
 
 
@@ -236,7 +228,7 @@ class SegWitTest(BitcoinTestFramework):
         block = self.build_next_block(nVersion=1)
         block.solve()
         self.test_node.send_message(msg_block(block))
-        self.test_node.sync_with_ping() # make sure the block was processed
+        self.test_node.sync_with_ping(60) # make sure the block was processed
         txid = block.vtx[0].sha256
 
         self.nodes[0].generate(99) # let the block mature
@@ -252,7 +244,7 @@ class SegWitTest(BitcoinTestFramework):
         assert_equal(msg_tx(tx).serialize(), msg_witness_tx(tx).serialize())
 
         self.test_node.send_message(msg_witness_tx(tx))
-        self.test_node.sync_with_ping() # make sure the tx was processed
+        self.test_node.sync_with_ping(60) # make sure the tx was processed
         assert(tx.hash in self.nodes[0].getrawmempool())
         # Save this transaction for later
         self.utxo.append(UTXO(tx.sha256, 0, 49*100000000))
@@ -292,7 +284,7 @@ class SegWitTest(BitcoinTestFramework):
         # But it should not be permanently marked bad...
         # Resend without witness information.
         self.test_node.send_message(msg_block(block))
-        self.test_node.sync_with_ping()
+        self.test_node.sync_with_ping(60)
         assert_equal(self.nodes[0].getbestblockhash(), block.hash)
 
         sync_blocks(self.nodes)
@@ -1258,7 +1250,7 @@ class SegWitTest(BitcoinTestFramework):
         # Spending a higher version witness output is not allowed by policy,
         # even with fRequireStandard=false.
         self.test_node.test_transaction_acceptance(tx3, with_witness=True, accepted=False)
-        self.test_node.sync_with_ping()
+        self.test_node.sync_with_ping(60)
         with mininode_lock:
             assert(b"reserved for soft-fork upgrades" in self.test_node.last_reject.reason)
 
@@ -1388,7 +1380,7 @@ class SegWitTest(BitcoinTestFramework):
         for i in range(NUM_TESTS):
             # Ping regularly to keep the connection alive
             if (not i % 100):
-                self.test_node.sync_with_ping()
+                self.test_node.sync_with_ping(60)
             # Choose random number of inputs to use.
             num_inputs = random.randint(1, 10)
             # Create a slight bias for producing more utxos

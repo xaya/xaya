@@ -405,7 +405,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "manually.  (name_show gives the necessary data.)\n"
 
             "\nArguments:\n"
-            "1. \"inputs\"                (string, required) A json array of json objects\n"
+            "1. \"inputs\"                (array, required) A json array of json objects\n"
             "     [\n"
             "       {\n"
             "         \"txid\":\"id\",    (string, required) The transaction id\n"
@@ -414,7 +414,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "       } \n"
             "       ,...\n"
             "     ]\n"
-            "2. \"outputs\"               (string, required) a json object with outputs\n"
+            "2. \"outputs\"               (object, required) a json object with outputs\n"
             "    {\n"
             "      \"address\": x.xxx,    (numeric or string, required) The key is the namecoin address, the numeric value (can be string) is the " + CURRENCY_UNIT + " amount\n"
             "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data\n"
@@ -992,7 +992,7 @@ static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         okSafeMode
   //  --------------------- ------------------------  -----------------------  ----------
     { "rawtransactions",    "getrawtransaction",      &getrawtransaction,      true,  {"txid","verbose"} },
-    { "rawtransactions",    "createrawtransaction",   &createrawtransaction,   true,  {"transactions","outputs","name_operation","locktime"} },
+    { "rawtransactions",    "createrawtransaction",   &createrawtransaction,   true,  {"inputs","outputs","name_operation","locktime"} },
     { "rawtransactions",    "decoderawtransaction",   &decoderawtransaction,   true,  {"hexstring"} },
     { "rawtransactions",    "decodescript",           &decodescript,           true,  {"hexstring"} },
     { "rawtransactions",    "sendrawtransaction",     &sendrawtransaction,     false, {"hexstring","allowhighfees"} },
