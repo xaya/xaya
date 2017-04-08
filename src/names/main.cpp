@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2016 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -180,7 +180,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired,
 
   for (const auto& name : unexpired)
     {
-      LogPrint ("names", "unexpired: %s, mempool: %u\n",
+      LogPrint (BCLog::NAMES, "unexpired: %s, mempool: %u\n",
                 ValtypeToString (name).c_str (), mapNameRegs.count (name));
 
       const NameTxMap::const_iterator mit = mapNameRegs.find (name);
@@ -203,7 +203,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired,
 
   for (const auto& name : expired)
     {
-      LogPrint ("names", "expired: %s, mempool: %u\n",
+      LogPrint (BCLog::NAMES, "expired: %s, mempool: %u\n",
                 ValtypeToString (name).c_str (), mapNameUpdates.count (name));
 
       const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
@@ -586,7 +586,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp () && op.isAnyUpdate ())
         {
           const valtype& name = op.getOpName ();
-          LogPrint ("names", "Updating name at height %d: %s\n",
+          LogPrint (BCLog::NAMES, "Updating name at height %d: %s\n",
                     nHeight, ValtypeToString (name).c_str ());
 
           CNameTxUndo opUndo;

@@ -139,9 +139,7 @@ static bool DecryptKey(const CKeyingMaterial& vMasterKey, const std::vector<unsi
     CKeyingMaterial vchSecret;
     if(!DecryptSecret(vMasterKey, vchCryptedSecret, vchPubKey.GetHash(), vchSecret))
         return false;
-
-    if (fDebug)
-        LogPrintf("%s : decrypted %u-byte key\n", __func__, vchSecret.size());
+    //LogPrintf("%s : decrypted %u-byte key\n", __func__, vchSecret.size());
 
     if (vchSecret.size() == 32)
     {

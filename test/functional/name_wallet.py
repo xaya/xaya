@@ -37,10 +37,7 @@ class NameWalletTest (NameTestFramework):
 
     absFee = totalFee - extra
     size = Decimal (len (info['hex']) / 2)
-
-    # See check_fee_amount in wallet.py.
-    assert absFee >= txFee / 1000 * size
-    assert absFee <= txFee / 1000 * (size + 2)
+    assert_fee_amount (absFee, size, txFee)
 
     return totalFee
 

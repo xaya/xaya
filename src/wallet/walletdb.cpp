@@ -7,6 +7,7 @@
 
 #include "base58.h"
 #include "consensus/validation.h"
+#include "fs.h"
 #include "validation.h" // For CheckTransaction
 #include "protocol.h"
 #include "serialize.h"
@@ -18,7 +19,6 @@
 #include <atomic>
 
 #include <boost/version.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 
@@ -745,7 +745,7 @@ DBErrors CWalletDB::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<uin
         }
         else if ((*it) == hash) {
             if(!EraseTx(hash)) {
-                LogPrint("db", "Transaction was found for deletion but returned database error: %s\n", hash.GetHex());
+                LogPrint(BCLog::DB, "Transaction was found for deletion but returned database error: %s\n", hash.GetHex());
                 delerror = true;
             }
             vTxHashOut.push_back(hash);
@@ -842,12 +842,12 @@ bool CWalletDB::RecoverKeysOnlyFilter(void *callbackData, CDataStream ssKey, CDa
     return true;
 }
 
-bool CWalletDB::VerifyEnvironment(const std::string& walletFile, const boost::filesystem::path& dataDir, std::string& errorStr)
+bool CWalletDB::VerifyEnvironment(const std::string& walletFile, const fs::path& dataDir, std::string& errorStr)
 {
     return CDB::VerifyEnvironment(walletFile, dataDir, errorStr);
 }
 
-bool CWalletDB::VerifyDatabaseFile(const std::string& walletFile, const boost::filesystem::path& dataDir, std::string& warningStr, std::string& errorStr)
+bool CWalletDB::VerifyDatabaseFile(const std::string& walletFile, const fs::path& dataDir, std::string& warningStr, std::string& errorStr)
 {
     return CDB::VerifyDatabaseFile(walletFile, dataDir, errorStr, warningStr, CWalletDB::Recover);
 }
