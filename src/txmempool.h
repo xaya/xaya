@@ -355,6 +355,7 @@ enum class MemPoolRemovalReason {
     REORG,       //! Removed for reorganization
     BLOCK,       //! Removed for block
     CONFLICT,    //! Removed for conflict with in-block transaction
+    NAME_CONFLICT, //! Removed due to a name-operation conflict
     REPLACED     //! Removed for replacement
 };
 
@@ -552,10 +553,8 @@ public:
 
     void removeRecursive(const CTransaction &tx, MemPoolRemovalReason reason = MemPoolRemovalReason::UNKNOWN);
     void removeForReorg(const CCoinsViewCache *pcoins, unsigned int nMemPoolHeight, int flags);
-    void removeConflicts(const CTransaction &tx,
-                         std::vector<CTransactionRef>* removedNames = nullptr);
-    void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight,
-                        std::vector<CTransactionRef>* nameConflicts = nullptr);
+    void removeConflicts(const CTransaction &tx);
+    void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight);
 
     void clear();
     void _clear(); //lock free
@@ -572,20 +571,16 @@ public:
 
     /* Remove entries that conflict with name expirations / unexpirations.  */
     inline void
-    removeUnexpireConflicts (
-        const std::set<valtype>& unexpired,
-        std::vector<std::shared_ptr<const CTransaction>>* removed)
+    removeUnexpireConflicts (const std::set<valtype>& unexpired)
     {
         LOCK(cs);
-        names.removeUnexpireConflicts (unexpired, removed);
+        names.removeUnexpireConflicts (unexpired);
     }
     inline void
-    removeExpireConflicts (
-        const std::set<valtype>& expired,
-        std::vector<std::shared_ptr<const CTransaction>>* removed)
+    removeExpireConflicts (const std::set<valtype>& expired)
     {
         LOCK(cs);
-        names.removeExpireConflicts (expired, removed);
+        names.removeExpireConflicts (expired);
     }
 
     /** Affect CreateNewBlock prioritisation of transactions */

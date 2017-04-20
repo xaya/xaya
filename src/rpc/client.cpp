@@ -114,6 +114,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "getmempoolancestors", 1, "verbose" },
     { "getmempooldescendants", 1, "verbose" },
     { "bumpfee", 1, "options" },
+    { "logging", 0, "include" },
+    { "logging", 1, "exclude" },
     { "name_scan", 1, "count" },
     { "name_filter", 1, "maxage" },
     { "name_filter", 2, "from" },
