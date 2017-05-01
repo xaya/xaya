@@ -50,6 +50,7 @@ class NameWalletTest (NameTestFramework):
     bal = self.nodes[ind].getbalance ()
     assert_equal (bal, initialBalance - spent)
 
+    assert_equal (self.nodes[ind].getbalance (), bal)
     assert_equal (self.nodes[ind].getbalance (""), bal)
     assert_equal (self.nodes[ind].getbalance ("*"), bal)
     assert_equal (self.nodes[ind].listaccounts (), {"":bal})
