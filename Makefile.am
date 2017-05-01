@@ -226,10 +226,8 @@ EXTRA_DIST += \
     test/util/bctest.py \
     test/util/bitcoin-util-test.py \
     test/util/data/bitcoin-util-test.json \
-    test/util/data/blanktxv1.hex \
-    test/util/data/blanktxv1.json \
-    test/util/data/blanktxv2.hex \
-    test/util/data/blanktxv2.json \
+    test/util/data/blanktx.hex \
+    test/util/data/blanktx.json \
     test/util/data/tt-delin1-out.hex \
     test/util/data/tt-delin1-out.json \
     test/util/data/tt-delout1-out.hex \
@@ -271,9 +269,8 @@ EXTRA_DIST += \
     test/util/data/txcreatescript3.json \
     test/util/data/txcreatescript4.hex \
     test/util/data/txcreatescript4.json \
-    test/util/data/txcreatesignv1.hex \
-    test/util/data/txcreatesignv1.json \
-    test/util/data/txcreatesignv2.hex
+    test/util/data/txcreatesign.hex \
+    test/util/data/txcreatesign.json
 
 CLEANFILES = $(OSX_DMG) $(BITCOIN_WIN_INSTALLER)
 
