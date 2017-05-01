@@ -98,9 +98,7 @@ public:
            and thus this is also fine.  */
         consensus.BIP34Height = 250000;
         consensus.BIP34Hash = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a");
-        // FIXME: BIP65 is not yet active on mainnet, activate it by setting
-        // a corresponding scheduled height here.
-        consensus.BIP65Height = 1000000;
+        consensus.BIP65Height = 335000;
         consensus.BIP66Height = 250000;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
