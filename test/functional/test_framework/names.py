@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,41 @@ from .test_framework import BitcoinTestFramework
 from .util import *
 
 class NameTestFramework (BitcoinTestFramework):
+
+  def __init__ (self, args = [[]] * 4):
+    super ().__init__ ()
+    self.num_nodes = len (args)
+    self.extra_args = args
+    self.node_groups = None
+
+    # Since we use a cached chain, enable mocktime so nodes do not see
+    # themselves in IBD.
+    enable_mocktime ()
+
+  def split_network (self):
+    # Override this method to keep track of the node groups, so that we can
+    # sync_with_mode correctly.
+    super ().split_network ()
+    self.node_groups = [self.nodes[:2], self.nodes[2:]]
+
+  def join_network (self):
+    super ().join_network ()
+    self.node_groups = None
+
+  def sync_with_mode (self, mode = 'both'):
+    modes = {'both': {'blocks': True, 'mempool': True},
+             'blocks': {'blocks': True, 'mempool': False},
+             'mempool': {'blocks': False, 'mempool': True}}
+    assert mode in modes
+
+    node_groups = self.node_groups
+    if not node_groups:
+        node_groups = [self.nodes]
+
+    if modes[mode]['blocks']:
+        [sync_blocks(group) for group in node_groups]
+    if modes[mode]['mempool']:
+        [sync_mempools(group) for group in node_groups]
 
   def firstupdateName (self, ind, name, newData, value,
                        toAddr = None, allowActive = False):
@@ -38,9 +73,9 @@ class NameTestFramework (BitcoinTestFramework):
     # to ensure that all blocks have propagated.
 
     if syncBefore:
-        self.sync_all ()
+        self.sync_with_mode ('both')
     self.nodes[ind].generate (blocks)
-    self.sync_all ('blocks')
+    self.sync_with_mode ('blocks')
 
   def checkName (self, ind, name, value, expiresIn, expired):
     """
@@ -115,10 +150,3 @@ class NameTestFramework (BitcoinTestFramework):
     tx = signed['hex']
     
     return self.nodes[nameFrom].sendrawtransaction (tx)
-
-  def setupNodesWithArgs (self, extraArgs):
-    enable_mocktime ()
-    return start_nodes (len (extraArgs), self.options.tmpdir, extraArgs)
-
-  def setup_nodes (self):
-    return self.setupNodesWithArgs ([[]] * 4)

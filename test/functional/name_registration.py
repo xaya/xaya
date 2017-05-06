@@ -32,7 +32,7 @@ class NameRegistrationTest (NameTestFramework):
     self.firstupdateName (1, "node-1", newB, "x" * 520)
 
     # Check for mempool conflict detection with registration of "node-0".
-    self.sync_all ()
+    self.sync_with_mode ('both')
     assert_raises_jsonrpc (-25, 'is already being registered',
                            self.firstupdateName, 1, "node-0", newAconfl, "foo")
     

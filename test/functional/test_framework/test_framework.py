@@ -17,6 +17,7 @@ from .util import (
     initialize_chain,
     start_nodes,
     connect_nodes_bi,
+    disconnect_nodes,
     sync_blocks,
     sync_mempools,
     stop_nodes,
@@ -56,63 +57,45 @@ class BitcoinTestFramework(object):
         stop_node(self.nodes[num_node], num_node)
 
     def setup_nodes(self):
-        return start_nodes(self.num_nodes, self.options.tmpdir)
+        extra_args = None
+        if hasattr(self, "extra_args"):
+            extra_args = self.extra_args
+        self.nodes = start_nodes(self.num_nodes, self.options.tmpdir, extra_args)
 
-    def setup_network(self, split = False):
-        self.nodes = self.setup_nodes()
+    def setup_network(self):
+        self.setup_nodes()
 
         # Connect the nodes as a "chain".  This allows us
         # to split the network between nodes 1 and 2 to get
         # two halves that can work on competing chains.
-
-        # If we joined network halves, connect the nodes from the joint
-        # on outward.  This ensures that chains are properly reorganised.
-        if not split:
-            connect_nodes_bi(self.nodes, 1, 2)
-            sync_blocks(self.nodes[1:3])
-            # Don't sync mempools (see below).
-
-        connect_nodes_bi(self.nodes, 0, 1)
-        connect_nodes_bi(self.nodes, 2, 3)
-        self.is_network_split = split
-
-        # Only sync blocks here.  The mempools might not synchronise
-        # after joining a split network.
-        self.sync_all('blocks')
+        for i in range(self.num_nodes - 1):
+            connect_nodes_bi(self.nodes, i, i + 1)
+        self.sync_all()
 
     def split_network(self):
         """
         Split the network of four nodes into nodes 0/1 and 2/3.
         """
-        assert not self.is_network_split
-        stop_nodes(self.nodes)
-        self.setup_network(True)
+        disconnect_nodes(self.nodes[1], 2)
+        disconnect_nodes(self.nodes[2], 1)
+        self.sync_all([self.nodes[:2], self.nodes[2:]])
 
-    def sync_all(self, mode = 'both'):
-        modes = {'both': {'blocks': True, 'mempool': True},
-                 'blocks': {'blocks': True, 'mempool': False},
-                 'mempool': {'blocks': False, 'mempool': True}}
-        assert mode in modes
-        if self.is_network_split:
-            if modes[mode]['blocks']:
-                sync_blocks(self.nodes[:2])
-                sync_blocks(self.nodes[2:])
-            if modes[mode]['mempool']:
-                sync_mempools(self.nodes[:2])
-                sync_mempools(self.nodes[2:])
-        else:
-            if modes[mode]['blocks']:
-                sync_blocks(self.nodes)
-            if modes[mode]['mempool']:
-                sync_mempools(self.nodes)
+    def sync_all(self, node_groups=None):
+        if not node_groups:
+            node_groups = [self.nodes]
+
+        [sync_blocks(group) for group in node_groups]
+        [sync_mempools(group) for group in node_groups]
 
     def join_network(self):
         """
         Join the (previously split) network halves together.
         """
-        assert self.is_network_split
-        stop_nodes(self.nodes)
-        self.setup_network(False)
+        connect_nodes_bi(self.nodes, 1, 2)
+
+        # Only sync blocks after re-joining the network, since the mempools
+        # might conflict.
+        sync_blocks(self.nodes)
 
     def main(self):
 
@@ -135,6 +118,8 @@ class BitcoinTestFramework(object):
                           help="The seed to use for assigning port numbers (default: current process id)")
         parser.add_option("--coveragedir", dest="coveragedir",
                           help="Write tested RPC commands into this directory")
+        parser.add_option("--configfile", dest="configfile",
+                          help="Location of the test framework config file")
         self.add_options(parser)
         (self.options, self.args) = parser.parse_args()
 

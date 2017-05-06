@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2016 Daniel Kraft
+# Copyright (c) 2015-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,7 +33,7 @@ class NameScanningTest (NameTestFramework):
     self.checkName (0, "a", "old-value-a", None, False)
 
     # Check sizes of mempool against name_pending.
-    self.sync_all ('mempool')
+    self.sync_with_mode ('mempool')
     mempool = self.nodes[0].getrawmempool ()
     assert_equal (len (mempool), 4)
     pending = self.nodes[0].name_pending ()
@@ -69,7 +69,7 @@ class NameScanningTest (NameTestFramework):
 
     # Send a name and check that ismine is handled correctly.
     tx = self.nodes[1].name_update ('a', 'sent-a', addrC)
-    self.sync_all ('mempool')
+    self.sync_with_mode ('mempool')
     self.checkPendingName (1, 'a', 'name_update', 'sent-a', tx, False)
     self.checkPendingName (3, 'a', 'name_update', 'sent-a', tx, True)
 

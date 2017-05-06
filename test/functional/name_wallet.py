@@ -20,9 +20,9 @@ class NameWalletTest (NameTestFramework):
   spentA = zero
   spentB = zero
 
-  # Set paytxfee to an explicitly known value.
-  def setup_nodes(self):
-    return self.setupNodesWithArgs ([["-paytxfee=%s" % txFee]] * 4)
+  def __init__ (self):
+    # Set paytxfee to an explicitly known value.
+    super ().__init__ ([["-paytxfee=%s" % txFee]] * 4)
 
   def getFee (self, ind, txid, extra = zero):
     """

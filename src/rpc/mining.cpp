@@ -983,6 +983,13 @@ UniValue getauxblock(const JSONRPCRequest& request)
         }
         }
 
+        // At this point, pblock is always initialised:  If we make it here
+        // without creating a new block above, it means that, in particular,
+        // pindexPrev == chainActive.Tip().  But for that to happen, we must
+        // already have created a pblock in a previous call, as pindexPrev is
+        // initialised only when pblock is.
+        assert(pblock);
+
         arith_uint256 target;
         bool fNegative, fOverflow;
         target.SetCompact(pblock->nBits, &fNegative, &fOverflow);

@@ -5,7 +5,9 @@
 #include "core_io.h"
 
 #include "base58.h"
+#include "names/common.h"
 #include "primitives/transaction.h"
+#include "script/names.h"
 #include "script/script.h"
 #include "script/standard.h"
 #include "serialize.h"
@@ -128,6 +130,47 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     std::vector<CTxDestination> addresses;
     int nRequired;
 
+    const CNameScript nameOp(scriptPubKey);
+    if (nameOp.isNameOp ())
+    {
+        UniValue jsonOp(UniValue::VOBJ);
+        switch (nameOp.getNameOp ())
+        {
+        case OP_NAME_NEW:
+            jsonOp.push_back (Pair("op", "name_new"));
+            jsonOp.push_back (Pair("hash", HexStr (nameOp.getOpHash ())));
+            break;
+
+        case OP_NAME_FIRSTUPDATE:
+        {
+            const std::string name = ValtypeToString (nameOp.getOpName ());
+            const std::string value = ValtypeToString (nameOp.getOpValue ());
+
+            jsonOp.push_back (Pair("op", "name_firstupdate"));
+            jsonOp.push_back (Pair("name", name));
+            jsonOp.push_back (Pair("value", value));
+            jsonOp.push_back (Pair("rand", HexStr (nameOp.getOpRand ())));
+            break;
+        }
+
+        case OP_NAME_UPDATE:
+        {
+            const std::string name = ValtypeToString (nameOp.getOpName ());
+            const std::string value = ValtypeToString (nameOp.getOpValue ());
+
+            jsonOp.push_back (Pair("op", "name_update"));
+            jsonOp.push_back (Pair("name", name));
+            jsonOp.push_back (Pair("value", value));
+            break;
+        }
+
+        default:
+            assert (false);
+        }
+
+        out.push_back (Pair("nameOp", jsonOp));
+    }
+
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
     if (fIncludeHex)
         out.pushKV("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
@@ -151,6 +194,8 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry)
     entry.pushKV("txid", tx.GetHash().GetHex());
     entry.pushKV("hash", tx.GetWitnessHash().GetHex());
     entry.pushKV("version", tx.nVersion);
+    entry.pushKV("size", (int)::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION));
+    entry.pushKV("vsize", (GetTransactionWeight(tx) + WITNESS_SCALE_FACTOR - 1) / WITNESS_SCALE_FACTOR);
     entry.pushKV("locktime", (int64_t)tx.nLockTime);
 
     UniValue vin(UniValue::VARR);

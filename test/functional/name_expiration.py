@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2017 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,6 +10,9 @@ from test_framework.names import NameTestFramework
 from test_framework.util import *
 
 class NameExpirationTest (NameTestFramework):
+
+  def __init__ (self):
+    super ().__init__ ([["-debug=names"]] * 4)
 
   def checkUTXO (self, ind, name, shouldBeThere):
     """
@@ -25,9 +28,6 @@ class NameExpirationTest (NameTestFramework):
       assert_equal (txo['scriptPubKey']['nameOp']['name'], name)
     else:
       assert txo is None
-
-  def setup_nodes (self):
-    return self.setupNodesWithArgs ([["-debug=names"]] * 4)
 
   def run_test (self):
     # Start the registration of two names which will be used.  name-long
