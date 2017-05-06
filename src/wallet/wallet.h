@@ -621,7 +621,7 @@ private:
     void SyncTransaction(const CTransactionRef& tx, const CBlockIndex *pindex = NULL, int posInBlock = 0);
 
     /* Mark a transaction conflict due to name operations.  */
-    void NameConflict(const CTransactionRef& tx, const uint256& hashBlock);
+    void NameConflict(const CTransactionRef& tx, const uint256& hashBlock) override;
 
     /* the HD chain data model (external chain counters) */
     CHDChain hdChain;

@@ -42,7 +42,7 @@ protected:
     virtual void BlockChecked(const CBlock&, const CValidationState&) {}
     virtual void GetScriptForMining(std::shared_ptr<CReserveScript>&) {};
     virtual void NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_ptr<const CBlock>& block) {};
-    virtual void NameConflict(const CTransaction &tx, const uint256& hashBlock) {}
+    virtual void NameConflict(const CTransactionRef &tx, const uint256& hashBlock) {}
     friend void ::RegisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterAllValidationInterfaces();
