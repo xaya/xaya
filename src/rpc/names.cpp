@@ -39,10 +39,10 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
              const CScript& addr, int height)
 {
   UniValue obj(UniValue::VOBJ);
-  obj.push_back (Pair ("name", ValtypeToString (name)));
-  obj.push_back (Pair ("value", ValtypeToString (value)));
-  obj.push_back (Pair ("txid", outp.hash.GetHex ()));
-  obj.push_back (Pair ("vout", static_cast<int> (outp.n)));
+  obj.pushKV ("name", ValtypeToString (name));
+  obj.pushKV ("value", ValtypeToString (value));
+  obj.pushKV ("txid", outp.hash.GetHex ());
+  obj.pushKV ("vout", static_cast<int> (outp.n));
 
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
@@ -53,7 +53,7 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
     addrStr = addrParsed.ToString ();
   else
     addrStr = "<nonstandard>";
-  obj.push_back (Pair ("address", addrStr));
+  obj.pushKV ("address", addrStr);
 
   /* Calculate expiration data.  */
   const int curHeight = chainActive.Height ();
@@ -62,9 +62,9 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   const int expireHeight = height + expireDepth;
   const int expiresIn = expireHeight - curHeight;
   const bool expired = (expiresIn <= 0);
-  obj.push_back (Pair ("height", height));
-  obj.push_back (Pair ("expires_in", expiresIn));
-  obj.push_back (Pair ("expired", expired));
+  obj.pushKV ("height", height);
+  obj.pushKV ("expires_in", expiresIn);
+  obj.pushKV ("expired", expired);
 
   return obj;
 }
@@ -429,8 +429,8 @@ name_filter (const JSONRPCRequest& request)
   if (stats)
     {
       UniValue res(UniValue::VOBJ);
-      res.push_back (Pair ("blocks", chainActive.Height ()));
-      res.push_back (Pair ("count", static_cast<int> (count)));
+      res.pushKV ("blocks", chainActive.Height ());
+      res.pushKV ("count", static_cast<int> (count));
 
       return res;
     }
@@ -518,17 +518,17 @@ name_pending (const JSONRPCRequest& request)
             }
 
           UniValue obj(UniValue::VOBJ);
-          obj.push_back (Pair ("op", strOp));
-          obj.push_back (Pair ("name", name));
-          obj.push_back (Pair ("value", value));
-          obj.push_back (Pair ("txid", tx->GetHash ().GetHex ()));
+          obj.pushKV ("op", strOp);
+          obj.pushKV ("name", name);
+          obj.pushKV ("value", value);
+          obj.pushKV ("txid", tx->GetHash ().GetHex ());
 
 #ifdef ENABLE_WALLET
           isminetype mine = ISMINE_NO;
           if (pwalletMain)
             mine = IsMine (*pwalletMain, op.getAddress ());
           const bool isMine = (mine & ISMINE_SPENDABLE);
-          obj.push_back (Pair ("ismine", isMine));
+          obj.pushKV ("ismine", isMine);
 #endif
 
           arr.push_back (obj);

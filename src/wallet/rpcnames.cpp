@@ -128,7 +128,7 @@ name_list (const JSONRPCRequest& request)
                        nameOp.getAddress (), pindex->nHeight);
 
       const bool mine = IsMine (*pwallet, nameOp.getAddress ());
-      obj.push_back (Pair ("transferred", !mine));
+      obj.pushKV ("transferred", !mine);
 
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;

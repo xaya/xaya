@@ -137,8 +137,8 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
         switch (nameOp.getNameOp ())
         {
         case OP_NAME_NEW:
-            jsonOp.push_back (Pair("op", "name_new"));
-            jsonOp.push_back (Pair("hash", HexStr (nameOp.getOpHash ())));
+            jsonOp.pushKV ("op", "name_new");
+            jsonOp.pushKV ("hash", HexStr (nameOp.getOpHash ()));
             break;
 
         case OP_NAME_FIRSTUPDATE:
@@ -146,10 +146,10 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
             const std::string name = ValtypeToString (nameOp.getOpName ());
             const std::string value = ValtypeToString (nameOp.getOpValue ());
 
-            jsonOp.push_back (Pair("op", "name_firstupdate"));
-            jsonOp.push_back (Pair("name", name));
-            jsonOp.push_back (Pair("value", value));
-            jsonOp.push_back (Pair("rand", HexStr (nameOp.getOpRand ())));
+            jsonOp.pushKV ("op", "name_firstupdate");
+            jsonOp.pushKV ("name", name);
+            jsonOp.pushKV ("value", value);
+            jsonOp.pushKV ("rand", HexStr (nameOp.getOpRand ()));
             break;
         }
 
@@ -158,9 +158,9 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
             const std::string name = ValtypeToString (nameOp.getOpName ());
             const std::string value = ValtypeToString (nameOp.getOpValue ());
 
-            jsonOp.push_back (Pair("op", "name_update"));
-            jsonOp.push_back (Pair("name", name));
-            jsonOp.push_back (Pair("value", value));
+            jsonOp.pushKV ("op", "name_update");
+            jsonOp.pushKV ("name", name);
+            jsonOp.pushKV ("value", value);
             break;
         }
 
@@ -168,7 +168,7 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
             assert (false);
         }
 
-        out.push_back (Pair("nameOp", jsonOp));
+        out.pushKV ("nameOp", jsonOp);
     }
 
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
