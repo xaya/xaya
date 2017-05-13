@@ -117,7 +117,7 @@ BASE_SCRIPTS= [
     'p2p-leaktests.py',
 
     # auxpow tests
-    'getauxblock.py',
+    'auxpow_mining.py',
 ]
 
 EXTENDED_SCRIPTS = [
