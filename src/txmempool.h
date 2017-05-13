@@ -16,6 +16,7 @@
 #include "amount.h"
 #include "coins.h"
 #include "indirectmap.h"
+#include "policy/feerate.h"
 #include "primitives/transaction.h"
 #include "names/main.h"
 #include "random.h"

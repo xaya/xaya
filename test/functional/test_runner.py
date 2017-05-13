@@ -118,7 +118,7 @@ BASE_SCRIPTS= [
     'p2p-leaktests.py',
 
     # auxpow tests
-    'getauxblock.py',
+    'auxpow_mining.py',
 
     # name tests
     'name_expiration.py',
