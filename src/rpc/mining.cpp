@@ -882,23 +882,26 @@ static std::vector<std::unique_ptr<CBlockTemplate>> vNewBlockTemplate;
 static 
 void AuxMiningCheck()
 {
-    if(!g_connman)
-        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+  if(!g_connman)
+    throw JSONRPCError(RPC_CLIENT_P2P_DISABLED,
+                       "Error: Peer-to-peer functionality missing or disabled");
 
-    if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 && !Params().MineBlocksOnDemand())
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Namecoin is not connected!");
+  if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0
+        && !Params().MineBlocksOnDemand())
+    throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED,
+                       "Namecoin is not connected!");
 
-    if (IsInitialBlockDownload() && !Params().MineBlocksOnDemand())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                           "Namecoin is downloading blocks...");
+  if (IsInitialBlockDownload() && !Params().MineBlocksOnDemand())
+    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                       "Namecoin is downloading blocks...");
 
-    /* This should never fail, since the chain is already
-       past the point of merge-mining start.  Check nevertheless.  */
-    {
-        LOCK(cs_main);
-        if (chainActive.Height() + 1 < Params().GetConsensus().nAuxpowStartHeight)
-            throw std::runtime_error("mining auxblock method is not yet available");
-    }
+  /* This should never fail, since the chain is already
+     past the point of merge-mining start.  Check nevertheless.  */
+  {
+    LOCK(cs_main);
+    if (chainActive.Height() + 1 < Params().GetConsensus().nAuxpowStartHeight)
+      throw std::runtime_error("mining auxblock method is not yet available");
+  }
 }
 
 static 
@@ -908,7 +911,6 @@ UniValue AuxMiningCreateBlock(const CScript& scriptPubKey)
 
     LOCK(cs_auxblockCache);
 
-    /* Create a new block */
     static unsigned nTransactionsUpdatedLast;
     static const CBlockIndex* pindexPrev = nullptr;
     static uint64_t nStart;
@@ -931,7 +933,8 @@ UniValue AuxMiningCreateBlock(const CScript& scriptPubKey)
         }
 
         // Create new block with nonce = 0 and extraNonce = 1
-        std::unique_ptr<CBlockTemplate> newBlock(BlockAssembler(Params()).CreateNewBlock(scriptPubKey));
+        std::unique_ptr<CBlockTemplate> newBlock
+            = BlockAssembler(Params()).CreateNewBlock(scriptPubKey);
         if (!newBlock)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "out of memory");
 
@@ -965,19 +968,20 @@ UniValue AuxMiningCreateBlock(const CScript& scriptPubKey)
         throw std::runtime_error("invalid difficulty bits in block");
 
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("hash", pblock->GetHash().GetHex()));
-    result.push_back(Pair("chainid", pblock->GetChainId()));
-    result.push_back(Pair("previousblockhash", pblock->hashPrevBlock.GetHex()));
-    result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue));
-    result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
-    result.push_back(Pair("height", static_cast<int64_t> (pindexPrev->nHeight + 1)));
-    result.push_back(Pair("_target", HexStr(BEGIN(target), END(target))));
+    result.pushKV("hash", pblock->GetHash().GetHex());
+    result.pushKV("chainid", pblock->GetChainId());
+    result.pushKV("previousblockhash", pblock->hashPrevBlock.GetHex());
+    result.pushKV("coinbasevalue", (int64_t)pblock->vtx[0]->vout[0].nValue);
+    result.pushKV("bits", strprintf("%08x", pblock->nBits));
+    result.pushKV("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
+    result.pushKV("_target", HexStr(BEGIN(target), END(target)));
 
     return result;
 }
 
 static
-bool AuxMiningSubmitBlock(const std::string& hashHex, const std::string& auxpowHex)
+bool AuxMiningSubmitBlock(const std::string& hashHex,
+                          const std::string& auxpowHex)
 {
     AuxMiningCheck();
 
@@ -1052,9 +1056,7 @@ UniValue getauxblock(const JSONRPCRequest& request)
 
     /* Create a new block */
     if (request.params.size() == 0)
-    {
         return AuxMiningCreateBlock(coinbaseScript->reserveScript);
-    }
 
     /* Submit a block instead.  Note that this need not lock cs_main,
        since ProcessNewBlock below locks it instead.  */
@@ -1093,8 +1095,10 @@ UniValue createauxblock(const JSONRPCRequest& request)
     // Check coinbase payout address
     CBitcoinAddress coinbaseAddress(request.params[0].get_str());
     if (!coinbaseAddress.IsValid())
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid coinbase payout address");
-    const CScript scriptPubKey = GetScriptForDestination(coinbaseAddress.Get());
+        throw JSONRPCError(RPC_INVALID_PARAMETER,
+                           "Invalid coinbase payout address");
+    const CScript scriptPubKey
+        = GetScriptForDestination(coinbaseAddress.Get());
 
     return AuxMiningCreateBlock(scriptPubKey);
 }
