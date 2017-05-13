@@ -8,6 +8,7 @@
 
 #include "amount.h"
 #include "auxpow.h" // contains CMerkleTx
+#include "policy/feerate.h"
 #include "streams.h"
 #include "tinyformat.h"
 #include "ui_interface.h"
