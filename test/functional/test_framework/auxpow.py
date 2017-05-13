@@ -61,28 +61,25 @@ def computeAuxpow (block, target, ok):
 
 def mineAuxpowBlock (node):
   """
-  Mine an auxpow block on the given RPC connection.
-  Using command: getauxblock
+  Mine an auxpow block on the given RPC connection.  This uses the
+  createauxblock and submitauxblock command pair.
   """
 
-  auxblock = node.getauxblock ()
+  def create ():
+    addr = node.getnewaddress ()
+    return node.createauxblock (addr)
+
+  return mineAuxpowBlockWithMethods (create, node.submitauxblock)
+
+def mineAuxpowBlockWithMethods (create, submit):
+  """
+  Mine an auxpow block, using the given methods for creation and submission.
+  """
+
+  auxblock = create ()
   target = reverseHex (auxblock['_target'])
   apow = computeAuxpow (auxblock['hash'], target, True)
-  res = node.getauxblock (auxblock['hash'], apow)
-  assert res
-
-  return auxblock['hash']
-
-def mineAuxpowBlock2 (node, coinbaseAddress):
-  """
-  Mine an auxpow block on the given RPC connection.
-  Using command: createauxblock / submitauxblock
-  """
-
-  auxblock = node.createauxblock (coinbaseAddress)
-  target = reverseHex (auxblock['_target'])
-  apow = computeAuxpow (auxblock['hash'], target, True)
-  res = node.submitauxblock (auxblock['hash'], apow)
+  res = submit (auxblock['hash'], apow)
   assert res
 
   return auxblock['hash']

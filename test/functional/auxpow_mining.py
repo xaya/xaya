@@ -3,58 +3,53 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#
 # Test the merge-mining RPC interface:
-#  * createauxblock
-#  * submitauxblock
-#
+# getauxblock, createauxblock, submitauxblock
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
 from test_framework import auxpow
 
-class CreateAndSubmitAuxBlockTest (BitcoinTestFramework):
+class AuxpowMiningTest (BitcoinTestFramework):
 
   def run_test (self):
-    # Generate a block so that we are not "downloading blocks".
-    self.nodes[0].generate (1)
+    # Enable mock time to be out of IBD.
+    enable_mocktime ()
 
-    # specify coinbase output
-    coinbaseAddress = self.nodes[0].getnewaddress()
+    # Test with getauxblock and createauxblock/submitauxblock.
+    self.test_getauxblock ()
+    self.test_create_submit_auxblock ()
 
-    #
-    # check params
-    #
-    # missing address
-    assert_raises_jsonrpc(-1, None, self.nodes[0].createauxblock)
-    # invalid address
-    assert_raises_jsonrpc(-8, "Invalid coinbase payout address", 
-                          self.nodes[0].createauxblock, "this_a_invalid_address")
+  def test_common (self, create, submit):
+    """
+    Common test code that is shared between the tests for getauxblock and the
+    createauxblock / submitauxblock method pair.
+    """
 
     # Verify data that can be found in another way.
-    auxblock = self.nodes[0].createauxblock (coinbaseAddress)
+    auxblock = create ()
     assert_equal (auxblock['chainid'], 1)
     assert_equal (auxblock['height'], self.nodes[0].getblockcount () + 1)
-    assert_equal (auxblock['previousblockhash'], 
+    assert_equal (auxblock['previousblockhash'],
                   self.nodes[0].getblockhash (auxblock['height'] - 1))
 
     # Calling again should give the same block.
-    auxblock2 = self.nodes[0].createauxblock (coinbaseAddress)
+    auxblock2 = create ()
     assert_equal (auxblock2, auxblock)
 
     # If we receive a new block, the old hash will be replaced.
     self.sync_all ()
     self.nodes[1].generate (1)
     self.sync_all ()
-    auxblock2 = self.nodes[0].createauxblock (coinbaseAddress)
+    auxblock2 = create ()
     assert auxblock['hash'] != auxblock2['hash']
-    
+    assert_raises_jsonrpc (-8, 'block hash unknown', submit,
+                           auxblock['hash'], "x")
+
     # Invalid format for auxpow.
-    assert_raises_jsonrpc(-8, 'block hash unknown', self.nodes[0].submitauxblock,
-                          auxblock['hash'], "x")
-    assert_raises_jsonrpc(-1, None, self.nodes[0].submitauxblock,
-                          auxblock2['hash'], "x")
+    assert_raises_jsonrpc (-1, None, submit,
+                           auxblock2['hash'], "x")
 
     # Invalidate the block again, send a transaction and query for the
     # auxblock to solve that contains the transaction.
@@ -63,17 +58,17 @@ class CreateAndSubmitAuxBlockTest (BitcoinTestFramework):
     txid = self.nodes[0].sendtoaddress (addr, 1)
     self.sync_all ()
     assert_equal (self.nodes[1].getrawmempool (), [txid])
-    auxblock = self.nodes[0].createauxblock (coinbaseAddress)
+    auxblock = create ()
     target = auxpow.reverseHex (auxblock['_target'])
 
     # Compute invalid auxpow.
     apow = auxpow.computeAuxpow (auxblock['hash'], target, False)
-    res = self.nodes[0].submitauxblock (auxblock['hash'], apow)
+    res = submit (auxblock['hash'], apow)
     assert not res
 
     # Compute and submit valid auxpow.
     apow = auxpow.computeAuxpow (auxblock['hash'], target, True)
-    res = self.nodes[0].submitauxblock (auxblock['hash'], apow)
+    res = submit (auxblock['hash'], apow)
     assert res
 
     # Make sure that the block is indeed accepted.
@@ -119,13 +114,55 @@ class CreateAndSubmitAuxBlockTest (BitcoinTestFramework):
     coinbase = tx['vin'][0]['coinbase']
     assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
 
-    # Ensure that the payout address is the one which we specify
-    addr1 = auxpow.getCoinbaseAddr (self.nodes[1], auxblock['hash'])
-    assert addr1 == coinbaseAddress
-    newHash = auxpow.mineAuxpowBlock2 (self.nodes[0], coinbaseAddress)
+  def test_getauxblock (self):
+    """
+    Test the getauxblock method.
+    """
+
+    create = self.nodes[0].getauxblock
+    submit = self.nodes[0].getauxblock
+    self.test_common (create, submit)
+
+    # Ensure that the payout address is changed from one block to the next.
+    hash1 = auxpow.mineAuxpowBlockWithMethods (create, submit)
+    hash2 = auxpow.mineAuxpowBlockWithMethods (create, submit)
     self.sync_all ()
-    addr2 = auxpow.getCoinbaseAddr (self.nodes[1], newHash)
-    assert addr2 == coinbaseAddress
+    addr1 = auxpow.getCoinbaseAddr (self.nodes[1], hash1)
+    addr2 = auxpow.getCoinbaseAddr (self.nodes[1], hash2)
+    assert addr1 != addr2
+    valid = self.nodes[0].validateaddress (addr1)
+    assert valid['ismine']
+    valid = self.nodes[0].validateaddress (addr2)
+    assert valid['ismine']
+
+  def test_create_submit_auxblock (self):
+    """
+    Test the createauxblock / submitauxblock method pair.
+    """
+
+    # Check for errors with wrong parameters.
+    assert_raises_jsonrpc (-1, None, self.nodes[0].createauxblock)
+    assert_raises_jsonrpc (-8, "Invalid coinbase payout address",
+                           self.nodes[0].createauxblock,
+                           "this_an_invalid_address")
+
+    # Fix a coinbase address and construct methods for it.
+    coinbaseAddr = self.nodes[0].getnewaddress ()
+    def create ():
+      return self.nodes[0].createauxblock (coinbaseAddr)
+    submit = self.nodes[0].submitauxblock
+
+    # Run common tests.
+    self.test_common (create, submit)
+
+    # Ensure that the payout address is the one which we specify
+    hash1 = auxpow.mineAuxpowBlockWithMethods (create, submit)
+    hash2 = auxpow.mineAuxpowBlockWithMethods (create, submit)
+    self.sync_all ()
+    addr1 = auxpow.getCoinbaseAddr (self.nodes[1], hash1)
+    addr2 = auxpow.getCoinbaseAddr (self.nodes[1], hash2)
+    assert_equal (addr1, coinbaseAddr)
+    assert_equal (addr2, coinbaseAddr)
 
 if __name__ == '__main__':
-  CreateAndSubmitAuxBlockTest ().main ()
+  AuxpowMiningTest ().main ()
