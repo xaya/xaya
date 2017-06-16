@@ -604,8 +604,8 @@ void CBlockPolicyEstimator::processBlock(unsigned int nBlockHeight,
 
     unsigned int countedTxs = 0;
     // Update averages with data points from current block
-    for (unsigned int i = 0; i < entries.size(); i++) {
-        if (processBlockTx(nBlockHeight, entries[i]))
+    for (const auto& entry : entries) {
+        if (processBlockTx(nBlockHeight, entry))
             countedTxs++;
     }
 
@@ -786,7 +786,7 @@ CFeeRate CBlockPolicyEstimator::estimateSmartFee(int confTarget, int *answerFoun
          * This is necessary to preserve monotonically increasing estimates.
          * For non-conservative estimates we do the same thing for 2*target, but
          * for conservative estimates we want to skip these shorter horizons
-         * checks for 2*target becuase we are taking the max over all time
+         * checks for 2*target because we are taking the max over all time
          * horizons so we already have monotonically increasing estimates and
          * the purpose of conservative estimates is not to let short term
          * fluctuations lower our estimates by too much.
