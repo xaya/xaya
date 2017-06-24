@@ -69,12 +69,11 @@ class NameRegistrationTest (NameTestFramework):
     self.checkNameHistory (2, "b", ["b long"])
     self.checkNameHistory (2, "c", ["c registered"])
 
-    # Check that the conflicting tx got pruned from the mempool properly
-    # and is marked as conflicted in the wallet.
+    # Check that the conflicting tx got pruned from the mempool properly.
     assert_equal (self.nodes[0].getrawmempool (), [])
     assert_equal (self.nodes[3].getrawmempool (), [])
     data = self.nodes[3].gettransaction (txidB)
-    assert data['confirmations'] < 0
+    assert data['confirmations'] <= 0
 
 if __name__ == '__main__':
   NameRegistrationTest ().main ()

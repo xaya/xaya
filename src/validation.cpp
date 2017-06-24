@@ -2090,6 +2090,9 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
     AssertLockHeld(cs_main);
     CNameConflictTracker nameConflicts(mempool);
 
+    // Fix the memool for conflicts due to unexpired names.
+    mempool.removeUnexpireConflicts(unexpiredNames);
+
     if (disconnectpool) {
         // Save transactions to re-add to mempool at end of reorg
         for (auto it = block.vtx.rbegin(); it != block.vtx.rend(); ++it) {
@@ -2101,8 +2104,6 @@ bool static DisconnectTip(CValidationState& state, const CChainParams& chainpara
             mempool.removeRecursive(**it, MemPoolRemovalReason::REORG);
             disconnectpool->removeEntry(it);
         }
-        // Fix the memool for conflicts due to unexpired names.
-        mempool.removeUnexpireConflicts(unexpiredNames);
     }
 
     // Update chainActive and related variables.

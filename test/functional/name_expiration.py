@@ -100,14 +100,58 @@ class NameExpirationTest (NameTestFramework):
     self.checkUTXO (2, "name-long", True)
     self.checkUTXO (2, "name-short", False)
 
-    # Check that the conflicting tx's are marked in the wallet
-    # as conflicts and that they got removed from the mempool.
+    # Check that the conflicting tx's are removed from the mempool.
     assert_equal (self.nodes[0].getrawmempool (), [])
     assert_equal (self.nodes[3].getrawmempool (), [])
     data = self.nodes[3].gettransaction (updLong2)
-    assert data['confirmations'] < 0
+    assert data['confirmations'] <= 0
     data = self.nodes[3].gettransaction (renewShort)
-    assert data['confirmations'] < 0
+    assert data['confirmations'] <= 0
+
+    # Redo the same stuff but now without actually mining the conflicted tx
+    # on the short chain.  Make sure that the mempool cleaning works as expected
+    # also in this case.
+    #
+    # name-unexpired will unexpire in the chain reorg, which means that we
+    # will try to re-register it on the short chain.
+    #
+    # name-expired will expire in the chain reorg, which means that we try
+    # to update it on the short chain (but that will be too late for the
+    # long one after the reorg).
+
+    newUnexpired = self.nodes[0].name_new ("name-unexpired")
+    newExpired = self.nodes[3].name_new ("name-expired")
+    newSnatch = self.nodes[3].name_new ("name-unexpired")
+    self.generate (1, 12)
+
+    self.firstupdateName (0, "name-unexpired", newUnexpired, "value")
+    self.generate (1, 2)
+    self.firstupdateName (3, "name-expired", newExpired, "value")
+    self.generate (1, 27)
+    self.checkName (1, "name-unexpired", "value", 2, False)
+    self.checkName (1, "name-expired", "value", 4, False)
+
+    self.split_network ()
+    self.generate (2, 2)
+    self.checkName (2, "name-unexpired", "value", 0, True)
+    self.checkName (2, "name-expired", "value", 2, False)
+    updExpired = self.firstupdateName (3, "name-unexpired", newSnatch,
+                                       "value 2")
+    updUnexpired = self.nodes[3].name_update ("name-expired", "renewed")
+    mempoolShort = self.nodes[3].getrawmempool ()
+    assert updExpired in mempoolShort
+    assert updUnexpired in mempoolShort
+
+    self.nodes[0].name_update ("name-unexpired", "renewed")
+    self.generate (1, 5)
+    self.checkName (1, "name-unexpired", "renewed", 26, False)
+    self.checkName (1, "name-expired", "value", -1, True)
+
+    assert self.nodes[1].getblockcount () > self.nodes[2].getblockcount ()
+    self.join_network ()
+    assert_equal (self.nodes[0].getrawmempool (), [])
+    assert_equal (self.nodes[3].getrawmempool (), [])
+
 
 if __name__ == '__main__':
   NameExpirationTest ().main ()
