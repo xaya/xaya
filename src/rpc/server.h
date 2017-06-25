@@ -20,6 +20,8 @@
 
 static const unsigned int DEFAULT_RPC_SERIALIZE_VERSION = 1;
 
+class CMutableTransaction;
+class COutPoint;
 class CRPCCommand;
 
 namespace RPCServer
@@ -29,13 +31,7 @@ namespace RPCServer
     void OnPreCommand(std::function<void (const CRPCCommand&)> slot);
 }
 
-class CBlockIndex;
-class CMutableTransaction;
 class CNameData;
-class CNetAddr;
-class COutPoint;
-class CTxIn;
-class CWalletTx;
 
 /** Wrapper for UniValue::VType, which includes typeAny:
  * Used to denote don't care type. Only used by RPCTypeCheckObj */

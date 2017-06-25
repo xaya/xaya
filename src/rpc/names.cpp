@@ -14,6 +14,7 @@
 #include "utilstrencodings.h"
 #include "validation.h"
 #ifdef ENABLE_WALLET
+# include "wallet/rpcwallet.h"
 # include "wallet/wallet.h"
 #endif
 
@@ -467,7 +468,8 @@ name_pending (const JSONRPCRequest& request)
       );
 
 #ifdef ENABLE_WALLET
-    LOCK2 (pwalletMain ? &pwalletMain->cs_wallet : NULL, mempool.cs);
+    CWallet* pwallet = GetWalletForJSONRPCRequest (request);
+    LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
 #else
     LOCK (mempool.cs);
 #endif
@@ -525,8 +527,8 @@ name_pending (const JSONRPCRequest& request)
 
 #ifdef ENABLE_WALLET
           isminetype mine = ISMINE_NO;
-          if (pwalletMain)
-            mine = IsMine (*pwalletMain, op.getAddress ());
+          if (pwallet)
+            mine = IsMine (*pwallet, op.getAddress ());
           const bool isMine = (mine & ISMINE_SPENDABLE);
           obj.pushKV ("ismine", isMine);
 #endif
