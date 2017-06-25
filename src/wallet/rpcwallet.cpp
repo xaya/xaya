@@ -9,7 +9,6 @@
 #include "consensus/validation.h"
 #include "core_io.h"
 #include "init.h"
-#include "wallet/coincontrol.h"
 #include "validation.h"
 #include "net.h"
 #include "policy/feerate.h"
@@ -21,13 +20,12 @@
 #include "timedata.h"
 #include "util.h"
 #include "utilmoneystr.h"
+#include "wallet/coincontrol.h"
 #include "wallet/feebumper.h"
 #include "wallet/wallet.h"
 #include "wallet/walletdb.h"
 
 #include <stdint.h>
-
-#include <boost/assign/list_of.hpp>
 
 #include <univalue.h>
 
@@ -2254,9 +2252,9 @@ UniValue lockunspent(const JSONRPCRequest& request)
     LOCK2(cs_main, pwallet->cs_wallet);
 
     if (request.params.size() == 1)
-        RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VBOOL));
+        RPCTypeCheck(request.params, {UniValue::VBOOL});
     else
-        RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VBOOL)(UniValue::VARR));
+        RPCTypeCheck(request.params, {UniValue::VBOOL, UniValue::VARR});
 
     bool fUnlock = request.params[0].get_bool();
 
@@ -2628,7 +2626,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
                             "fundrawtransaction \"hexstring\" ( options )\n"
                             "\nAdd inputs to a transaction until it has enough in value to meet its out value.\n"
@@ -2657,6 +2655,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                             "                              Those recipients will receive less bitcoins than you enter in their corresponding amount field.\n"
                             "                              If no outputs are specified here, the sender pays the fee.\n"
                             "                                  [vout_index,...]\n"
+                            "     \"optIntoRbf\"             (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees\n"
                             "   }\n"
                             "                         for backward compatibility: passing in a true instead of an object will result in {\"includeWatching\":true}\n"
                             "\nResult:\n"
@@ -2676,25 +2675,26 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                             + HelpExampleCli("sendrawtransaction", "\"signedtransactionhex\"")
                             );
 
-    RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VSTR));
+    RPCTypeCheck(request.params, {UniValue::VSTR});
 
-    CTxDestination changeAddress = CNoDestination();
+    CCoinControl coinControl;
+    coinControl.destChange = CNoDestination();
     int changePosition = -1;
-    bool includeWatching = false;
+    coinControl.fAllowWatchOnly = false;  // include watching
     bool lockUnspents = false;
     bool reserveChangeKey = true;
-    CFeeRate feeRate = CFeeRate(0);
-    bool overrideEstimatedFeerate = false;
+    coinControl.nFeeRate = CFeeRate(0);
+    coinControl.fOverrideFeeRate = false;
     UniValue subtractFeeFromOutputs;
     std::set<int> setSubtractFeeFromOutputs;
 
     if (request.params.size() > 1) {
       if (request.params[1].type() == UniValue::VBOOL) {
         // backward compatibility bool only fallback
-        includeWatching = request.params[1].get_bool();
+        coinControl.fAllowWatchOnly = request.params[1].get_bool();
       }
       else {
-        RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VSTR)(UniValue::VOBJ));
+        RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
 
         UniValue options = request.params[1];
 
@@ -2707,6 +2707,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                 {"reserveChangeKey", UniValueType(UniValue::VBOOL)},
                 {"feeRate", UniValueType()}, // will be checked below
                 {"subtractFeeFromOutputs", UniValueType(UniValue::VARR)},
+                {"optIntoRbf", UniValueType(UniValue::VBOOL)},
             },
             true, true);
 
@@ -2716,14 +2717,14 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
             if (!address.IsValid())
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "changeAddress must be a valid bitcoin address");
 
-            changeAddress = address.Get();
+            coinControl.destChange = address.Get();
         }
 
         if (options.exists("changePosition"))
             changePosition = options["changePosition"].get_int();
 
         if (options.exists("includeWatching"))
-            includeWatching = options["includeWatching"].get_bool();
+            coinControl.fAllowWatchOnly = options["includeWatching"].get_bool();
 
         if (options.exists("lockUnspents"))
             lockUnspents = options["lockUnspents"].get_bool();
@@ -2733,12 +2734,16 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
 
         if (options.exists("feeRate"))
         {
-            feeRate = CFeeRate(AmountFromValue(options["feeRate"]));
-            overrideEstimatedFeerate = true;
+            coinControl.nFeeRate = CFeeRate(AmountFromValue(options["feeRate"]));
+            coinControl.fOverrideFeeRate = true;
         }
 
         if (options.exists("subtractFeeFromOutputs"))
             subtractFeeFromOutputs = options["subtractFeeFromOutputs"].get_array();
+
+        if (options.exists("optIntoRbf")) {
+            coinControl.signalRbf = options["optIntoRbf"].get_bool();
+        }
       }
     }
 
@@ -2767,7 +2772,7 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
     CAmount nFeeOut;
     std::string strFailReason;
 
-    if (!pwallet->FundTransaction(tx, nFeeOut, overrideEstimatedFeerate, feeRate, changePosition, strFailReason, includeWatching, lockUnspents, setSubtractFeeFromOutputs, reserveChangeKey, changeAddress)) {
+    if (!pwallet->FundTransaction(tx, nFeeOut, changePosition, strFailReason, lockUnspents, setSubtractFeeFromOutputs, coinControl, reserveChangeKey)) {
         throw JSONRPCError(RPC_WALLET_ERROR, strFailReason);
     }
 
@@ -2829,12 +2834,12 @@ UniValue bumpfee(const JSONRPCRequest& request)
             HelpExampleCli("bumpfee", "<txid>"));
     }
 
-    RPCTypeCheck(request.params, boost::assign::list_of(UniValue::VSTR)(UniValue::VOBJ));
+    RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
     uint256 hash;
     hash.SetHex(request.params[0].get_str());
 
     // optional parameters
-    bool specifiedConfirmTarget = false;
+    bool ignoreGlobalPayTxFee = false;
     int newConfirmTarget = nTxConfirmTarget;
     CAmount totalFee = 0;
     bool replaceable = true;
@@ -2851,7 +2856,10 @@ UniValue bumpfee(const JSONRPCRequest& request)
         if (options.exists("confTarget") && options.exists("totalFee")) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "confTarget and totalFee options should not both be set. Please provide either a confirmation target for fee estimation or an explicit total fee for the transaction.");
         } else if (options.exists("confTarget")) {
-            specifiedConfirmTarget = true;
+            // If the user has explicitly set a confTarget in this rpc call,
+            // then override the default logic that uses the global payTxFee
+            // instead of the confirmation target.
+            ignoreGlobalPayTxFee = true;
             newConfirmTarget = options["confTarget"].get_int();
             if (newConfirmTarget <= 0) { // upper-bound will be checked by estimatefee/smartfee
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid confTarget (cannot be <= 0)");
@@ -2871,7 +2879,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
     LOCK2(cs_main, pwallet->cs_wallet);
     EnsureWalletIsUnlocked(pwallet);
 
-    CFeeBumper feeBump(pwallet, hash, newConfirmTarget, specifiedConfirmTarget, totalFee, replaceable);
+    CFeeBumper feeBump(pwallet, hash, newConfirmTarget, ignoreGlobalPayTxFee, totalFee, replaceable);
     BumpFeeResult res = feeBump.getResult();
     if (res != BumpFeeResult::OK)
     {

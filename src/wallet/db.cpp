@@ -20,7 +20,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
-#include <boost/version.hpp>
 
 //
 // CDB
@@ -211,7 +210,6 @@ bool CDB::Recover(const std::string& filename, void *callbackDataIn, bool (*reco
         {
             CDataStream ssKey(row.first, SER_DISK, CLIENT_VERSION);
             CDataStream ssValue(row.second, SER_DISK, CLIENT_VERSION);
-            std::string strType, strErr;
             if (!(*recoverKVcallback)(callbackDataIn, ssKey, ssValue))
                 continue;
         }
@@ -361,7 +359,6 @@ void CDBEnv::CheckpointLSN(const std::string& strFile)
 
 CDB::CDB(CWalletDBWrapper& dbw, const char* pszMode, bool fFlushOnCloseIn) : pdb(NULL), activeTxn(NULL)
 {
-    int ret;
     fReadOnly = (!strchr(pszMode, '+') && !strchr(pszMode, 'w'));
     fFlushOnClose = fFlushOnCloseIn;
     env = dbw.env;
@@ -384,6 +381,7 @@ CDB::CDB(CWalletDBWrapper& dbw, const char* pszMode, bool fFlushOnCloseIn) : pdb
         ++env->mapFileUseCount[strFile];
         pdb = env->mapDb[strFile];
         if (pdb == NULL) {
+            int ret;
             pdb = new Db(env->dbenv, 0);
 
             bool fMockDb = env->IsMock();

@@ -10,7 +10,6 @@
 #include <set>
 #include <stdint.h>
 
-#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <univalue.h>
 
 class CRPCConvertParam
@@ -86,6 +85,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createrawtransaction", 0, "inputs" },
     { "createrawtransaction", 1, "outputs" },
     { "createrawtransaction", 2, "locktime" },
+    { "createrawtransaction", 3, "optintorbf" },
     { "signrawtransaction", 1, "prevtxs" },
     { "signrawtransaction", 2, "privkeys" },
     { "sendrawtransaction", 1, "allowhighfees" },
@@ -112,7 +112,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "estimaterawfee", 0, "nblocks" },
     { "estimaterawfee", 1, "threshold" },
     { "estimaterawfee", 2, "horizon" },
-    { "prioritisetransaction", 1, "fee_delta" },
+    { "prioritisetransaction", 1, "dummy" },
+    { "prioritisetransaction", 2, "fee_delta" },
     { "setban", 2, "bantime" },
     { "setban", 3, "absolute" },
     { "setnetworkactive", 0, "state" },

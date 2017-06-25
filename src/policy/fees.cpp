@@ -855,13 +855,13 @@ bool CBlockPolicyEstimator::Read(CAutoFile& filein)
     try {
         LOCK(cs_feeEstimator);
         int nVersionRequired, nVersionThatWrote;
-        unsigned int nFileBestSeenHeight, nFileHistoricalFirst, nFileHistoricalBest;
         filein >> nVersionRequired >> nVersionThatWrote;
         if (nVersionRequired > CLIENT_VERSION)
             return error("CBlockPolicyEstimator::Read(): up-version (%d) fee estimate file", nVersionRequired);
 
         // Read fee estimates file into temporary variables so existing data
         // structures aren't corrupted if there is an exception.
+        unsigned int nFileBestSeenHeight;
         filein >> nFileBestSeenHeight;
 
         if (nVersionThatWrote < 149900) {
@@ -890,6 +890,7 @@ bool CBlockPolicyEstimator::Read(CAutoFile& filein)
             }
         }
         else { // nVersionThatWrote >= 149900
+            unsigned int nFileHistoricalFirst, nFileHistoricalBest;
             filein >> nFileHistoricalFirst >> nFileHistoricalBest;
             if (nFileHistoricalFirst > nFileHistoricalBest || nFileHistoricalBest > nFileBestSeenHeight) {
                 throw std::runtime_error("Corrupt estimates file. Historical block range for estimates is invalid");
@@ -944,7 +945,7 @@ void CBlockPolicyEstimator::FlushUnconfirmed(CTxMemPool& pool) {
         removeTx(txid, false);
     }
     int64_t endclear = GetTimeMicros();
-    LogPrint(BCLog::ESTIMATEFEE, "Recorded %u unconfirmed txs from mempool in %ld micros\n",txids.size(), endclear - startclear);
+    LogPrint(BCLog::ESTIMATEFEE, "Recorded %u unconfirmed txs from mempool in %gs\n",txids.size(), (endclear - startclear)*0.000001);
 }
 
 FeeFilterRounder::FeeFilterRounder(const CFeeRate& minIncrementalFee)
