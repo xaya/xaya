@@ -401,15 +401,15 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   int nameIn = -1;
   CNameScript nameOpIn;
-  CCoins coinsIn;
+  Coin coinIn;
   for (unsigned i = 0; i < tx.vin.size (); ++i)
     {
       const COutPoint& prevout = tx.vin[i].prevout;
-      CCoins coins;
-      if (!view.GetCoins (prevout.hash, coins))
-        return error ("%s: failed to fetch input coins for %s", __func__, txid);
+      Coin coin;
+      if (!view.GetCoin (prevout, coin))
+        return error ("%s: failed to fetch input coin for %s", __func__, txid);
 
-      const CNameScript op(coins.vout[prevout.n].scriptPubKey);
+      const CNameScript op(coin.out.scriptPubKey);
       if (op.isNameOp ())
         {
           if (nameIn != -1)
@@ -417,7 +417,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                                          " transaction %s", __func__, txid));
           nameIn = i;
           nameOpIn = op;
-          coinsIn = coins;
+          coinIn = coin;
         }
     }
 
@@ -520,7 +520,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       /* This is an internal consistency check.  If everything is fine,
          the input coins from the UTXO database should match the
          name database.  */
-      assert (static_cast<unsigned> (coinsIn.nHeight) == oldName.getHeight ());
+      assert (static_cast<unsigned> (coinIn.nHeight) == oldName.getHeight ());
       assert (tx.vin[nameIn].prevout == oldName.getUpdateOutpoint ());
 
       return true;
@@ -537,8 +537,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
      to the mempool.  */
   if (!fMempool)
     {
-      assert (static_cast<unsigned> (coinsIn.nHeight) != MEMPOOL_HEIGHT);
-      if (coinsIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)
+      assert (static_cast<unsigned> (coinIn.nHeight) != MEMPOOL_HEIGHT);
+      if (coinIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)
         return state.Invalid (error ("CheckNameTransaction: NAME_NEW"
                                      " is not mature for FIRST_UPDATE"));
     }
@@ -584,20 +584,12 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
       && type != CChainParams::BUG_FULLY_APPLY)
     {
       if (type == CChainParams::BUG_FULLY_IGNORE)
-        {
-          CCoinsModifier coins = view.ModifyCoins (txHash);
-          for (unsigned i = 0; i < tx.vout.size (); ++i)
-            {
-              const CNameScript op(tx.vout[i].scriptPubKey);
-              if (op.isNameOp () && op.isAnyUpdate ())
-                {
-                  if (!coins->IsAvailable (i) || !coins->Spend (i))
-                    LogPrintf ("ERROR: %s : spending buggy name output failed",
-                               __func__);
-                }
-            }
-        }
-
+        for (unsigned i = 0; i < tx.vout.size (); ++i)
+          {
+            const CNameScript op(tx.vout[i].scriptPubKey);
+            if (op.isNameOp () && op.isAnyUpdate ())
+              view.SpendCoin (COutPoint (txHash, i));
+          }
       return;
     }
 
@@ -693,28 +685,24 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
         continue;
 
       const COutPoint& out = data.getUpdateOutpoint ();
-      CCoinsModifier coins = view.ModifyCoins (out.hash);
-
-      if (!coins->IsAvailable (out.n))
+      Coin coin;
+      if (!view.GetCoin(out, coin))
         return error ("%s : name coin for '%s' is not available",
                       __func__, nameStr.c_str ());
-      const CNameScript nameOp(coins->vout[out.n].scriptPubKey);
+      const CNameScript nameOp(coin.out.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
           || nameOp.getOpName () != *i)
         return error ("%s : name coin to be expired is wrong script", __func__);
 
-      CTxInUndo txUndo;
-      if (!coins->Spend (out.n, &txUndo))
-        return error ("%s : failed to spend name coin for '%s'",
-                      __func__, nameStr.c_str ());
-      undo.vexpired.push_back (txUndo);
+      view.SpendCoin (out, &coin);
+      undo.vexpired.push_back (coin);
     }
 
   return true;
 }
 
 bool
-UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view,
+UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
                std::set<valtype>& names)
 {
   names.clear ();
@@ -723,10 +711,10 @@ UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view,
   if (nHeight == 0)
     return true;
 
-  std::vector<CTxInUndo>::const_reverse_iterator i;
+  std::vector<Coin>::reverse_iterator i;
   for (i = undo.vexpired.rbegin (); i != undo.vexpired.rend (); ++i)
     {
-      const CNameScript nameOp(i->txout.scriptPubKey);
+      const CNameScript nameOp(i->out.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
         return error ("%s : wrong script to be unexpired", __func__);
 
@@ -745,7 +733,8 @@ UnexpireNames (unsigned nHeight, const CBlockUndo& undo, CCoinsViewCache& view,
                       " or it was already expired before the current height",
                       __func__, ValtypeToString (name).c_str ());
 
-      if (!ApplyTxInUndo (*i, view, data.getUpdateOutpoint ()))
+      if (ApplyTxInUndo (std::move(*i), view,
+                         data.getUpdateOutpoint ()) != DISCONNECT_OK)
         return error ("%s : failed to undo name coin spending", __func__);
     }
 

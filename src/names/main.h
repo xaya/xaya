@@ -306,7 +306,7 @@ bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
  * @param names List all unexpired names here.
  * @return True if successful.
  */
-bool UnexpireNames (unsigned nHeight, const CBlockUndo& undo,
+bool UnexpireNames (unsigned nHeight, CBlockUndo& undo,
                     CCoinsViewCache& view, std::set<valtype>& names);
 
 /**

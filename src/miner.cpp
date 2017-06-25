@@ -288,15 +288,14 @@ BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
     {
       for (const auto& txIn : tx.vin)
         {
-          const COutPoint& prevout = txIn.prevout;
-          CCoins coins;
-          if (!pcoinsTip->GetCoins (prevout.hash, coins))
+          Coin coin;
+          if (!pcoinsTip->GetCoin (txIn.prevout, coin))
             continue;
 
-          const CNameScript op(coins.vout[prevout.n].scriptPubKey);
+          const CNameScript op(coin.out.scriptPubKey);
           if (op.isNameOp () && op.getNameOp () == OP_NAME_NEW)
             {
-              const int minHeight = coins.nHeight + MIN_FIRSTUPDATE_DEPTH;
+              const int minHeight = coin.nHeight + MIN_FIRSTUPDATE_DEPTH;
               if (minHeight > nHeight)
                 return false;
             }

@@ -18,6 +18,9 @@
 
 #include <univalue.h>
 
+// Maximum number of outputs that are checked for the NAME_NEW prevout.
+constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
+
 /**
  * Helper routine to fetch the name output of a previous transaction.  This
  * is required for name_firstupdate.
@@ -31,18 +34,28 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 {
   AssertLockHeld (cs_main);
 
-  CCoins coins;
-  if (!pcoinsTip->GetCoins (txid, coins))
-    return false;
+  // Unfortunately, with the change of the txdb to be based on outputs rather
+  // than full transactions, we can no longer just look up the txid and iterate
+  // over all outputs.  Since this is only necessary for a corner case, we just
+  // keep trying with indices until we find the output (up to a maximum number
+  // of trials).
 
-  for (unsigned i = 0; i < coins.vout.size (); ++i)
-    if (!coins.vout[i].IsNull ()
-        && CNameScript::isNameScript (coins.vout[i].scriptPubKey))
-      {
-        txOut = coins.vout[i];
-        txIn = CTxIn (COutPoint (txid, i));
-        return true;
-      }
+  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
+    {
+      const COutPoint outp(txid, i);
+
+      Coin coin;
+      if (!pcoinsTip->GetCoin (outp, coin))
+        continue;
+
+      if (!coin.out.IsNull ()
+          && CNameScript::isNameScript (coin.out.scriptPubKey))
+        {
+          txOut = coin.out;
+          txIn = CTxIn (outp);
+          return true;
+        }
+    }
 
   return false;
 }
