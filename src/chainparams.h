@@ -96,7 +96,7 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
-    void UpdateBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
+    void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
 
     /* Check whether the given tx is a "historic relic" for which to
        skip the validity check.  Return also the "type" of the bug,
@@ -154,8 +154,8 @@ const CChainParams &Params();
 void SelectParams(const std::string& chain);
 
 /**
- * Allows modifying the BIP9 regtest parameters.
+ * Allows modifying the Version Bits regtest parameters.
  */
-void UpdateBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
+void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
 
 #endif // BITCOIN_CHAINPARAMS_H

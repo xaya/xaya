@@ -1501,10 +1501,9 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
  * from or to us. If fUpdate is true, found transactions that already
  * exist in the wallet will be updated.
  *
- * Returns pointer to the first block in the last contiguous range that was
- * successfully scanned or elided (elided if pIndexStart points at a block
- * before CWallet::nTimeFirstKey). Returns null if there is no such range, or
- * the range doesn't include chainActive.Tip().
+ * Returns null if scan was successful. Otherwise, if a complete rescan was not
+ * possible (due to pruning or corruption), returns pointer to the most recent
+ * block that could not be scanned.
  */
 CBlockIndex* CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
@@ -1512,7 +1511,7 @@ CBlockIndex* CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool f
     const CChainParams& chainParams = Params();
 
     CBlockIndex* pindex = pindexStart;
-    CBlockIndex* ret = pindexStart;
+    CBlockIndex* ret = nullptr;
     {
         LOCK2(cs_main, cs_wallet);
         fAbortRescan = false;
@@ -1540,11 +1539,8 @@ CBlockIndex* CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool f
                 for (size_t posInBlock = 0; posInBlock < block.vtx.size(); ++posInBlock) {
                     AddToWalletIfInvolvingMe(block.vtx[posInBlock], pindex, posInBlock, fUpdate);
                 }
-                if (!ret) {
-                    ret = pindex;
-                }
             } else {
-                ret = nullptr;
+                ret = pindex;
             }
             pindex = chainActive.Next(pindex);
         }
@@ -2459,7 +2455,7 @@ bool CWallet::SignTransaction(CMutableTransaction &tx)
     return true;
 }
 
-bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool overrideEstimatedFeeRate, const CFeeRate& specificFeeRate, int& nChangePosInOut, std::string& strFailReason, bool includeWatching, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, bool keepReserveKey, const CTxDestination& destChange)
+bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nChangePosInOut, std::string& strFailReason, bool lockUnspents, const std::set<int>& setSubtractFeeFromOutputs, CCoinControl coinControl, bool keepReserveKey)
 {
     std::vector<CRecipient> vecSend;
 
@@ -2471,12 +2467,7 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, bool ov
         vecSend.push_back(recipient);
     }
 
-    CCoinControl coinControl;
-    coinControl.destChange = destChange;
     coinControl.fAllowOtherInputs = true;
-    coinControl.fAllowWatchOnly = includeWatching;
-    coinControl.fOverrideFeeRate = overrideEstimatedFeeRate;
-    coinControl.nFeeRate = specificFeeRate;
 
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
         coinControl.Select(txin.prevout);
@@ -2791,9 +2782,10 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend,
                 // and in the spirit of "smallest possible change from prior
                 // behavior."
                 bool rbf = coinControl ? coinControl->signalRbf : fWalletRbf;
+                const uint32_t nSequence = rbf ? MAX_BIP125_RBF_SEQUENCE : (std::numeric_limits<unsigned int>::max() - 1);
                 for (const auto& coin : setCoins)
                     txNew.vin.push_back(CTxIn(coin.outpoint,CScript(),
-                                              std::numeric_limits<unsigned int>::max() - (rbf ? 2 : 1)));
+                                              nSequence));
 
                 // Fill in dummy signatures for fee calculation.
                 if (!DummySignTx(txNew, setCoins)) {
@@ -2987,12 +2979,12 @@ CAmount CWallet::GetRequiredFee(unsigned int nTxBytes)
     return std::max(minTxFee.GetFee(nTxBytes), ::minRelayTxFee.GetFee(nTxBytes));
 }
 
-CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool, const CBlockPolicyEstimator& estimator, bool ignoreUserSetFee)
+CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool, const CBlockPolicyEstimator& estimator, bool ignoreGlobalPayTxFee)
 {
     // payTxFee is the user-set global for desired feerate
     CAmount nFeeNeeded = payTxFee.GetFee(nTxBytes);
     // User didn't set: use -txconfirmtarget to estimate...
-    if (nFeeNeeded == 0 || ignoreUserSetFee) {
+    if (nFeeNeeded == 0 || ignoreGlobalPayTxFee) {
         int estimateFoundTarget = nConfirmTarget;
         nFeeNeeded = estimator.estimateSmartFee(nConfirmTarget, &estimateFoundTarget, pool).GetFee(nTxBytes);
         // ... unless we don't have enough mempool data for estimatefee, then use fallbackFee
@@ -3293,10 +3285,10 @@ void CWallet::ReturnKey(int64_t nIndex)
 
 bool CWallet::GetKeyFromPool(CPubKey& result, bool internal)
 {
-    int64_t nIndex = 0;
     CKeyPool keypool;
     {
         LOCK(cs_wallet);
+        int64_t nIndex = 0;
         ReserveKeyFromKeyPool(nIndex, keypool, internal);
         if (nIndex == -1)
         {
