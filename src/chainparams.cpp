@@ -159,10 +159,10 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
 
         // Note that of those with the service bits flag, most only support a subset of possible options
-        vSeeds.push_back(CDNSSeedData("digi-masters.com", "namecoindnsseed.digi-masters.com"));
-        vSeeds.push_back(CDNSSeedData("digi-masters.uk", "namecoindnsseed.digi-masters.uk"));
-        vSeeds.push_back(CDNSSeedData("quisquis.de", "nmc.seed.quisquis.de"));
-        vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.namecoin.webbtc.com"));
+        vSeeds.emplace_back("namecoindnsseed.digi-masters.com", false);
+        vSeeds.emplace_back("namecoindnsseed.digi-masters.uk", false);
+        vSeeds.emplace_back("nmc.seed.quisquis.de", false);
+        vSeeds.emplace_back("dnsseed.namecoin.webbtc.com", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
@@ -319,7 +319,7 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("webbtc.com", "dnsseed.test.namecoin.webbtc.com"));
+        vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);

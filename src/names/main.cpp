@@ -694,7 +694,8 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
           || nameOp.getOpName () != *i)
         return error ("%s : name coin to be expired is wrong script", __func__);
 
-      view.SpendCoin (out, &coin);
+      if (!view.SpendCoin (out, &coin))
+        return error ("%s : spending name coin failed", __func__);
       undo.vexpired.push_back (coin);
     }
 
