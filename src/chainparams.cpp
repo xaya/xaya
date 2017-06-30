@@ -163,6 +163,7 @@ public:
         vSeeds.emplace_back("namecoindnsseed.digi-masters.uk", false);
         vSeeds.emplace_back("nmc.seed.quisquis.de", false);
         vSeeds.emplace_back("dnsseed.namecoin.webbtc.com", false);
+        vSeeds.emplace_back("seed.nmc.markasoftware.com", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
