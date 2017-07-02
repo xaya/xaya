@@ -15,7 +15,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
 
   def run_test (self):
     # Enable mock time to be out of IBD.
-    enable_mocktime ()
+    self.enable_mocktime ()
 
     # Test with getauxblock and createauxblock/submitauxblock.
     self.test_getauxblock ()
