@@ -84,6 +84,8 @@
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 
+// Application startup time (used for uptime calculation)
+const int64_t nStartupTime = GetTime();
 
 const char * const BITCOIN_CONF_FILENAME = "namecoin.conf";
 const char * const BITCOIN_PID_FILENAME = "namecoind.pid";
@@ -421,7 +423,9 @@ void ArgsManager::ParseParameters(int argc, const char* const argv[])
 std::vector<std::string> ArgsManager::GetArgs(const std::string& strArg)
 {
     LOCK(cs_args);
-    return mapMultiArgs.at(strArg);
+    if (IsArgSet(strArg))
+        return mapMultiArgs.at(strArg);
+    return {};
 }
 
 bool ArgsManager::IsArgSet(const std::string& strArg)
@@ -884,4 +888,10 @@ std::string CopyrightHolders(const std::string& strPrefix)
 {
     std::string strCopyrightHolders = strPrefix + strprintf(_(COPYRIGHT_HOLDERS), _(COPYRIGHT_HOLDERS_SUBSTITUTION));
     return strCopyrightHolders;
+}
+
+// Obtain the application startup time (used for uptime calculation)
+int64_t GetStartupTime()
+{
+    return nStartupTime;
 }

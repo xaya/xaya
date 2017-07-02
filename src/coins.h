@@ -146,15 +146,23 @@ private:
 class CCoinsView
 {
 public:
-    //! Retrieve the Coin (unspent transaction output) for a given outpoint.
+    /** Retrieve the Coin (unspent transaction output) for a given outpoint.
+     *  Returns true only when an unspent coin was found, which is returned in coin.
+     *  When false is returned, coin's value is unspecified.
+     */
     virtual bool GetCoin(const COutPoint &outpoint, Coin &coin) const;
 
-    //! Just check whether we have data for a given outpoint.
-    //! This may (but cannot always) return true for spent outputs.
+    //! Just check whether a given outpoint is unspent.
     virtual bool HaveCoin(const COutPoint &outpoint) const;
 
     //! Retrieve the block hash whose state this CCoinsView currently represents
     virtual uint256 GetBestBlock() const;
+
+    //! Retrieve the range of blocks that may have been only partially written.
+    //! If the database is in a consistent state, the result is the empty vector.
+    //! Otherwise, a two-element vector is returned consisting of the new and
+    //! the old block hash, in that order.
+    virtual std::vector<uint256> GetHeadBlocks() const;
 
     // Get a name (if it exists)
     virtual bool GetName(const valtype& name, CNameData& data) const;
@@ -197,10 +205,11 @@ public:
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
-    bool GetName(const valtype& name, CNameData& data) const;
-    bool GetNameHistory(const valtype& name, CNameHistory& data) const;
-    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
-    CNameIterator* IterateNames() const;
+    std::vector<uint256> GetHeadBlocks() const override;
+    bool GetName(const valtype& name, CNameData& data) const override;
+    bool GetNameHistory(const valtype& name, CNameHistory& data) const override;
+    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const override;
+    CNameIterator* IterateNames() const override;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor *Cursor() const override;
@@ -235,10 +244,10 @@ public:
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
-    bool GetName(const valtype &name, CNameData &data) const;
-    bool GetNameHistory(const valtype &name, CNameHistory &data) const;
-    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
-    CNameIterator* IterateNames() const;
+    bool GetName(const valtype &name, CNameData &data) const override;
+    bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
+    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const override;
+    CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
@@ -322,12 +331,17 @@ private:
 };
 
 //! Utility function to add all of a transaction's outputs to a cache.
-// It assumes that overwrites are only possible for coinbase transactions,
+// When check is false, this assumes that overwrites are only possible for coinbase transactions.
+// When check is true, the underlying view may be queried to determine whether an addition is
+// an overwrite.
 // TODO: pass in a boolean to limit these possible overwrites to known
 // (pre-BIP34) cases.
-void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight);
+void AddCoins(CCoinsViewCache& cache, const CTransaction& tx, int nHeight, bool check = false);
 
 //! Utility function to find any unspent output with a given txid.
+// This function can be quite expensive because in the event of a transaction
+// which is not found in the cache, it can cause up to MAX_OUTPUTS_PER_BLOCK
+// lookups to database, so it should be used with care.
 const Coin& AccessByTxid(const CCoinsViewCache& cache, const uint256& txid);
 
 #endif // BITCOIN_COINS_H

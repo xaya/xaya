@@ -370,6 +370,13 @@ void
 NameIterationTester::verify ()
 {
   verify (hybrid);
+
+  /* Flush calls BatchWrite internally, and for that to work, we need to have
+     a non-zero block hash.  Just set the block hash based on our counter.  */
+  uint256 dummyBlockHash;
+  *reinterpret_cast<unsigned*> (dummyBlockHash.begin ()) = counter;
+  hybrid.SetBestBlock (dummyBlockHash);
+
   hybrid.Flush ();
   verify (db);
   verify (cache);

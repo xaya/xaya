@@ -29,7 +29,7 @@ inline bool set_error(ScriptError* ret, const ScriptError serror)
     return false;
 }
 
-} // anon namespace
+} // namespace
 
 bool CastToBool(const valtype& vch)
 {
@@ -1162,7 +1162,7 @@ uint256 GetOutputsHash(const CTransaction& txTo) {
     return ss.GetHash();
 }
 
-} // anon namespace
+} // namespace
 
 PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo)
 {

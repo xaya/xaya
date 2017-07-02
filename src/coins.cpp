@@ -13,8 +13,8 @@
 #include <assert.h>
 
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
-bool CCoinsView::HaveCoin(const COutPoint &outpoint) const { return false; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
+std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return false; }
 bool CCoinsView::GetNameHistory(const valtype &name, CNameHistory &data) const { return false; }
 bool CCoinsView::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return false; }
@@ -23,11 +23,17 @@ bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const
 CCoinsViewCursor *CCoinsView::Cursor() const { return 0; }
 bool CCoinsView::ValidateNameDB() const { return false; }
 
+bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
+{
+    Coin coin;
+    return GetCoin(outpoint, coin);
+}
 
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView *viewIn) : base(viewIn) { }
 bool CCoinsViewBacked::GetCoin(const COutPoint &outpoint, Coin &coin) const { return base->GetCoin(outpoint, coin); }
 bool CCoinsViewBacked::HaveCoin(const COutPoint &outpoint) const { return base->HaveCoin(outpoint); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
+std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
 bool CCoinsViewBacked::GetName(const valtype &name, CNameData &data) const { return base->GetName(name, data); }
 bool CCoinsViewBacked::GetNameHistory(const valtype &name, CNameHistory &data) const { return base->GetNameHistory(name, data); }
 bool CCoinsViewBacked::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return base->GetNamesForHeight(nHeight, names); }
@@ -67,7 +73,7 @@ bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     CCoinsMap::const_iterator it = FetchCoin(outpoint);
     if (it != cacheCoins.end()) {
         coin = it->second.coin;
-        return true;
+        return !coin.IsSpent();
     }
     return false;
 }
@@ -93,13 +99,14 @@ void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possi
     cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
 }
 
-void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight) {
+void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool check) {
     bool fCoinbase = tx.IsCoinBase();
     const uint256& txid = tx.GetHash();
     for (size_t i = 0; i < tx.vout.size(); ++i) {
-        // Pass fCoinbase as the possible_overwrite flag to AddCoin, in order to correctly
+        bool overwrite = check ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
+        // Always set the possible_overwrite flag to AddCoin for coinbase txn, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
-        cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), fCoinbase);
+        cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
     }
 }
 
@@ -137,7 +144,7 @@ bool CCoinsViewCache::HaveCoin(const COutPoint &outpoint) const {
 
 bool CCoinsViewCache::HaveCoinInCache(const COutPoint &outpoint) const {
     CCoinsMap::const_iterator it = cacheCoins.find(outpoint);
-    return it != cacheCoins.end();
+    return (it != cacheCoins.end() && !it->second.coin.IsSpent());
 }
 
 uint256 CCoinsViewCache::GetBestBlock() const {
@@ -302,6 +309,12 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
 }
 
 bool CCoinsViewCache::Flush() {
+    /* This function is called when validating the name mempool, and BatchWrite
+       actually fails if hashBlock is not set.  Thus we have to make sure here
+       that it is a valid no-op when nothing is cached.  */
+    if (hashBlock.IsNull() && cacheCoins.empty() && cacheNames.empty())
+        return true;
+
     bool fOk = base->BatchWrite(cacheCoins, hashBlock, cacheNames);
     cacheCoins.clear();
     cachedCoinsUsage = 0;
