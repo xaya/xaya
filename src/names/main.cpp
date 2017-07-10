@@ -226,7 +226,7 @@ CNameMemPool::check (const CCoinsView& coins) const
 
   std::set<valtype> nameRegs;
   std::set<valtype> nameUpdates;
-  BOOST_FOREACH (const CTxMemPoolEntry& entry, pool.mapTx)
+  for (const auto& entry : pool.mapTx)
     {
       const uint256 txHash = entry.GetTx ().GetHash ();
       if (entry.isNameNew ())
@@ -282,9 +282,9 @@ CNameMemPool::check (const CCoinsView& coins) const
   /* Check that nameRegs and nameUpdates are disjoint.  They must be since
      a name can only be in either category, depending on whether it exists
      at the moment or not.  */
-  BOOST_FOREACH (const valtype& name, nameRegs)
+  for (const auto& name : nameRegs)
     assert (nameUpdates.count (name) == 0);
-  BOOST_FOREACH (const valtype& name, nameUpdates)
+  for (const auto& name : nameUpdates)
     assert (nameRegs.count (name) == 0);
 }
 
@@ -301,7 +301,7 @@ CNameMemPool::checkTx (const CTransaction& tx) const
      since the current mempool implementation does not like it.  (We keep
      track of only a single update tx for each name.)  */
 
-  BOOST_FOREACH (const CTxOut& txout, tx.vout)
+  for (const auto& txout : tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
       if (!nameOp.isNameOp ())

@@ -141,7 +141,7 @@ static bool DecodeName(valtype& decoded, const std::string& encoded)
             i += 2;
 
             int intChar = 0;
-            BOOST_FOREACH(char c, hexStr)
+            for (char c : hexStr)
             {
                 intChar <<= 4;
 

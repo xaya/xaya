@@ -17,7 +17,6 @@
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 
-#include <boost/foreach.hpp>
 
 std::string FormatScript(const CScript& script)
 {

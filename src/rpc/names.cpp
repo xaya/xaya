@@ -251,7 +251,7 @@ name_history (const JSONRPCRequest& request)
   }
 
   UniValue res(UniValue::VARR);
-  BOOST_FOREACH (const CNameData& entry, history.getData ())
+  for (const auto& entry : history.getData ())
     res.push_back (getNameInfo (name, entry));
   res.push_back (getNameInfo (name, data));
 

@@ -25,6 +25,7 @@
 #include "primitives/block.h"
 #include "primitives/transaction.h"
 #include "random.h"
+#include "reverse_iterator.h"
 #include "script/script.h"
 #include "script/sigcache.h"
 #include "script/standard.h"
@@ -566,7 +567,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         /* If this is a name update (or firstupdate), make sure that the
            existing name entry (if any) is in the dummy cache.  Otherwise
            tx validation done below (in CheckInputs) will not be correct.  */
-        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        for (const auto& txout : tx.vout)
         {
             const CNameScript nameOp(txout.scriptPubKey);
             if (nameOp.isNameOp() && nameOp.isAnyUpdate())
@@ -2484,7 +2485,7 @@ static bool ActivateBestChainStep(CValidationState& state, const CChainParams& c
         nHeight = nTargetHeight;
 
         // Connect new blocks.
-        BOOST_REVERSE_FOREACH(CBlockIndex *pindexConnect, vpindexToConnect) {
+        for (CBlockIndex *pindexConnect : reverse_iterate(vpindexToConnect)) {
             if (!ConnectTip(state, chainparams, pindexConnect, pindexConnect == pindexMostWork ? pblock : std::shared_ptr<const CBlock>(), connectTrace, disconnectpool)) {
                 if (state.IsInvalid()) {
                     // The block violates a consensus rule.

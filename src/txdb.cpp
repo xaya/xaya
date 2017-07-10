@@ -467,18 +467,18 @@ bool CCoinsViewDB::ValidateNameDB() const
     if (nameHeightsIndex != nameHeightsData)
         return error("%s : name height data mismatch", __func__);
 
-    BOOST_FOREACH(const valtype& name, namesInDB)
+    for (const auto& name : namesInDB)
         if (namesInUTXO.count(name) == 0)
             return error("%s : name '%s' in DB but not UTXO set",
                          __func__, ValtypeToString(name).c_str());
-    BOOST_FOREACH(const valtype& name, namesInUTXO)
+    for (const auto& name : namesInUTXO)
         if (namesInDB.count(name) == 0)
             return error("%s : name '%s' in UTXO set but not DB",
                          __func__, ValtypeToString(name).c_str());
 
     if (fNameHistory)
     {
-        BOOST_FOREACH(const valtype& name, namesWithHistory)
+        for (const auto& name : namesWithHistory)
             if (nameHeightsData.count(name) == 0)
                 return error("%s : history entry for name '%s' not in main DB",
                              __func__, ValtypeToString(name).c_str());
