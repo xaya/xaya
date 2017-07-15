@@ -5,6 +5,8 @@
 #include "core_io.h"
 
 #include "base58.h"
+#include "consensus/consensus.h"
+#include "consensus/validation.h"
 #include "names/common.h"
 #include "primitives/transaction.h"
 #include "script/names.h"
@@ -16,7 +18,6 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
-
 
 std::string FormatScript(const CScript& script)
 {

@@ -114,6 +114,7 @@ BASE_SCRIPTS= [
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'nulldummy.py',
     'import-rescan.py',
+    'mining.py',
     'bumpfee.py',
     'rpcnamedargs.py',
     'listsinceblock.py',
@@ -161,7 +162,6 @@ EXTENDED_SCRIPTS = [
     'bipdersig-p2p.py',
     'bipdersig.py',
     'example_test.py',
-    'getblocktemplate_proposals.py',
     'txn_doublespend.py',
     'txn_clone.py --mineblock',
     'forknotify.py',

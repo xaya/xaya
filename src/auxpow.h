@@ -8,7 +8,6 @@
 #define BITCOIN_AUXPOW_H
 
 #include "consensus/params.h"
-#include "consensus/validation.h"
 #include "primitives/pureheader.h"
 #include "primitives/transaction.h"
 #include "serialize.h"
@@ -19,6 +18,7 @@
 class CBlock;
 class CBlockHeader;
 class CBlockIndex;
+class CValidationState;
 
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };

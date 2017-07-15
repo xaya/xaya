@@ -5,6 +5,7 @@
 #ifndef BITCOIN_WALLET_RPCWALLET_H
 #define BITCOIN_WALLET_RPCWALLET_H
 
+class CCoinControl;
 class CRPCTable;
 class CWalletTx;
 class JSONRPCRequest;
@@ -24,6 +25,7 @@ void EnsureWalletIsUnlocked(CWallet *);
 bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
 void SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                        const CTxIn* withInput, CAmount nValue,
-                       bool fSubtractFeeFromAmount, CWalletTx& wtxNew);
+                       bool fSubtractFeeFromAmount, CWalletTx& wtxNew,
+                       CCoinControl* coin_control = nullptr);
 
 #endif //BITCOIN_WALLET_RPCWALLET_H
