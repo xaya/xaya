@@ -14,6 +14,7 @@
 #include "txmempool.h"
 #include "util.h"
 #include "validation.h"
+#include "wallet/coincontrol.h"
 #include "wallet/wallet.h"
 
 #include <univalue.h>
@@ -207,8 +208,10 @@ name_new (const JSONRPCRequest& request)
   const CScript addrName = GetScriptForDestination (pubKey.GetID ());
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
-  SendMoneyToScript (pwallet, newScript, NULL, NAME_LOCKED_AMOUNT, false, wtx);
+  SendMoneyToScript (pwallet, newScript, nullptr,
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   keyName.KeepKey ();
 
@@ -338,9 +341,10 @@ name_firstupdate (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
   SendMoneyToScript (pwallet, nameScript, &txIn,
-                     NAME_LOCKED_AMOUNT, false, wtx);
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -435,9 +439,10 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (addrName, name, value);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
   SendMoneyToScript (pwallet, nameScript, &txIn,
-                     NAME_LOCKED_AMOUNT, false, wtx);
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -522,8 +527,9 @@ sendtoname (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked(pwallet);
 
+  CCoinControl coinControl;
   SendMoneyToScript (pwallet, data.getAddress (), NULL,
-                     nAmount, fSubtractFeeFromAmount, wtx);
+                     nAmount, fSubtractFeeFromAmount, wtx, coinControl);
 
   return wtx.GetHash ().GetHex ();
 }

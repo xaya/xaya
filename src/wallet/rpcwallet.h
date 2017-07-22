@@ -18,7 +18,7 @@ void RegisterWalletRPCCommands(CRPCTable &t);
  * @param[in] request JSONRPCRequest that wishes to access a wallet
  * @return NULL if no wallet should be used, or a pointer to the CWallet
  */
-CWallet *GetWalletForJSONRPCRequest(const JSONRPCRequest&);
+CWallet *GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
 
 std::string HelpRequiringPassphrase(CWallet *);
 void EnsureWalletIsUnlocked(CWallet *);
@@ -26,6 +26,6 @@ bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
 void SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                        const CTxIn* withInput, CAmount nValue,
                        bool fSubtractFeeFromAmount, CWalletTx& wtxNew,
-                       CCoinControl* coin_control = nullptr);
+                       const CCoinControl& coin_control);
 
 #endif //BITCOIN_WALLET_RPCWALLET_H
