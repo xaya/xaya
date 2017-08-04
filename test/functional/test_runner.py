@@ -64,7 +64,6 @@ BASE_SCRIPTS= [
     #'segwit.py',
     # vv Tests less than 2m vv
     'wallet.py',
-    'multiwallet.py',
     'wallet-accounts.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'p2p-segwit.py',
