@@ -1866,6 +1866,7 @@ std::vector<uint256> CWallet::ResendWalletTransactionsBefore(int64_t nTime, CCon
     std::vector<uint256> result;
 
     LOCK(cs_wallet);
+
     // Sort them in chronological order
     std::multimap<unsigned int, CWalletTx*> mapSorted;
     for (std::pair<const uint256, CWalletTx>& item : mapWallet)
@@ -2787,10 +2788,6 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                     // selected to meet nFeeNeeded result in a transaction that
                     // requires less fee than the prior iteration.
 
-                    // TODO: The case where nSubtractFeeFromAmount > 0 remains
-                    // to be addressed because it requires returning the fee to
-                    // the payees and not the change output.
-
                     // If we have no change and a big enough excess fee, then
                     // try to construct transaction again only without picking
                     // new inputs. We now know we only need the smaller fee
@@ -2817,6 +2814,8 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                 else if (!pick_new_inputs) {
                     // This shouldn't happen, we should have had enough excess
                     // fee to pay for the new output and still meet nFeeNeeded
+                    // Or we should have just subtracted fee from recipients and
+                    // nFeeNeeded should not have changed
                     strFailReason = _("Transaction fee and change calculation failed");
                     return false;
                 }
@@ -2831,6 +2830,12 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CWalletT
                         nFeeRet += additionalFeeNeeded;
                         break; // Done, able to increase fee from change
                     }
+                }
+
+                // If subtracting fee from recipients, we now know what fee we
+                // need to subtract, we have no reason to reselect inputs
+                if (nSubtractFeeFromAmount > 0) {
+                    pick_new_inputs = false;
                 }
 
                 // Include more fee and try again.
