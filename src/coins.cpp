@@ -20,7 +20,7 @@ bool CCoinsView::GetNameHistory(const valtype &name, CNameHistory &data) const {
 bool CCoinsView::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const { return false; }
 CNameIterator* CCoinsView::IterateNames() const { assert (false); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
-CCoinsViewCursor *CCoinsView::Cursor() const { return 0; }
+CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::ValidateNameDB() const { return false; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const

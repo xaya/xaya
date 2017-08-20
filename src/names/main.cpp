@@ -745,7 +745,8 @@ UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
 void
 CheckNameDB (bool disconnect)
 {
-  const int option = GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
+  const int option
+    = gArgs.GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
 
   if (option == -1)
     return;
