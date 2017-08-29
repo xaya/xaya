@@ -43,6 +43,7 @@
 #include "utilmoneystr.h"
 #include "validationinterface.h"
 #ifdef ENABLE_WALLET
+#include "wallet/init.h"
 #include "wallet/wallet.h"
 #endif
 #include "warnings.h"
@@ -133,7 +134,7 @@ bool ShutdownRequested()
  * chainstate, while keeping user interface out of the common library, which is shared
  * between bitcoind, and bitcoin-qt and non-server tools.
 */
-class CCoinsViewErrorCatcher : public CCoinsViewBacked
+class CCoinsViewErrorCatcher final : public CCoinsViewBacked
 {
 public:
     explicit CCoinsViewErrorCatcher(CCoinsView* view) : CCoinsViewBacked(view) {}
@@ -420,7 +421,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-maxuploadtarget=<n>", strprintf(_("Tries to keep outbound traffic under the given target (in MiB per 24h), 0 = no limit (default: %d)"), DEFAULT_MAX_UPLOAD_TARGET));
 
 #ifdef ENABLE_WALLET
-    strUsage += CWallet::GetWalletHelpString(showDebug);
+    strUsage += GetWalletHelpString(showDebug);
 #endif
 
 #if ENABLE_ZMQ
@@ -479,7 +480,7 @@ std::string HelpMessage(HelpMessageMode mode)
 
     strUsage += HelpMessageGroup(_("Node relay options:"));
     if (showDebug) {
-        strUsage += HelpMessageOpt("-acceptnonstdtxn", strprintf("Relay and mine \"non-standard\" transactions (%sdefault: %u)", "testnet/regtest only; ", defaultChainParams->RequireStandard()));
+        strUsage += HelpMessageOpt("-acceptnonstdtxn", strprintf("Relay and mine \"non-standard\" transactions (%sdefault: %u)", "testnet/regtest only; ", !testnetChainParams->RequireStandard()));
         strUsage += HelpMessageOpt("-incrementalrelayfee=<amt>", strprintf("Fee rate (in %s/kB) used to define cost of relay, used for mempool limiting and BIP 125 replacement. (default: %s)", CURRENCY_UNIT, FormatMoney(DEFAULT_INCREMENTAL_RELAY_FEE)));
         strUsage += HelpMessageOpt("-dustrelayfee=<amt>", strprintf("Fee rate (in %s/kB) used to defined dust, the value of an output such that it will cost more than its value in fees at this fee rate to spend it. (default: %s)", CURRENCY_UNIT, FormatMoney(DUST_RELAY_TX_FEE)));
     }
@@ -1035,7 +1036,7 @@ bool AppInitParameterInteraction()
         if (!ParseMoney(gArgs.GetArg("-minrelaytxfee", ""), n)) {
             return InitError(AmountErrMsg("minrelaytxfee", gArgs.GetArg("-minrelaytxfee", "")));
         }
-        // High fee check is done afterward in CWallet::ParameterInteraction()
+        // High fee check is done afterward in WalletParameterInteraction()
         ::minRelayTxFee = CFeeRate(n);
     } else if (incrementalRelayFee > ::minRelayTxFee) {
         // Allow only setting incrementalRelayFee to control both
@@ -1068,7 +1069,7 @@ bool AppInitParameterInteraction()
     nBytesPerSigOp = gArgs.GetArg("-bytespersigop", nBytesPerSigOp);
 
 #ifdef ENABLE_WALLET
-    if (!CWallet::ParameterInteraction())
+    if (!WalletParameterInteraction())
         return false;
 #endif
 
@@ -1245,7 +1246,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // ********************************************************* Step 5: verify wallet database integrity
 #ifdef ENABLE_WALLET
-    if (!CWallet::Verify())
+    if (!WalletVerify())
         return false;
 #endif
     // ********************************************************* Step 6: network initialization
@@ -1428,7 +1429,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
                 // Check for changed -txindex state
                 if (fTxIndex != gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-                    strLoadError = _("You need to rebuild the database using -reindex-chainstate to change -txindex");
+                    strLoadError = _("You need to rebuild the database using -reindex to change -txindex");
                     break;
                 }
 
@@ -1566,7 +1567,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     // ********************************************************* Step 8: load wallet
 #ifdef ENABLE_WALLET
-    if (!CWallet::InitLoadWallet())
+    if (!InitLoadWallet())
         return false;
 #else
     LogPrintf("No wallet support compiled in!\n");
