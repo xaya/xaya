@@ -129,9 +129,12 @@ class NameTestFramework (BitcoinTestFramework):
     inputs = []
 
     unspents = self.nodes[nameTo].listunspent ()
-    assert (len (unspents) > 0)
-    txin = unspents[0]
-    assert (txin['amount'] >= price + fee)
+    txin = None
+    for u in unspents:
+      if u['amount'] >= price + fee:
+        txin = u
+        break
+    assert txin is not None
     change = txin['amount'] - price - fee
     inputs.append ({"txid": txin['txid'], "vout": txin['vout']})
 
