@@ -13,6 +13,9 @@ from test_framework import auxpow
 
 class AuxpowMiningTest (BitcoinTestFramework):
 
+  def set_test_params (self):
+    self.num_nodes = 2
+
   def run_test (self):
     # Enable mock time to be out of IBD.
     self.enable_mocktime ()
