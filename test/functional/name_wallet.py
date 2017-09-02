@@ -20,9 +20,9 @@ class NameWalletTest (NameTestFramework):
   spentA = zero
   spentB = zero
 
-  def __init__ (self):
+  def set_test_params (self):
     # Set paytxfee to an explicitly known value.
-    super ().__init__ ([["-paytxfee=%s" % txFee]] * 4)
+    self.setup_name_test ([["-paytxfee=%s" % txFee]] * 4)
 
   def getFee (self, ind, txid, extra = zero):
     """

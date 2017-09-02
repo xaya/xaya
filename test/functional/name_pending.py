@@ -10,6 +10,9 @@ from test_framework.util import *
 
 class NameScanningTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Register a name that can then be update'd in the mempool.
     newData = self.nodes[1].name_new ("a")

@@ -10,6 +10,9 @@ from test_framework.util import *
 
 class NameScanningTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Mine a block so that we're no longer in initial download.
     self.generate (3, 1)

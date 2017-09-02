@@ -89,8 +89,7 @@ class TestNode(NodeConnCB):
         wait_until(lambda: not self.connected, timeout=timeout, lock=mininode_lock)
 
 class CompactBlocksTest(BitcoinTestFramework):
-    def __init__(self):
-        super().__init__()
+    def set_test_params(self):
         self.setup_clean_chain = True
         # Node0 = pre-segwit, node1 = segwit-aware
         self.num_nodes = 2
@@ -286,7 +285,8 @@ class CompactBlocksTest(BitcoinTestFramework):
 
         # Store the raw block in our internal format.
         block = FromHex(CBlock(), node.getblock("%02x" % block_hash, False))
-        [tx.calc_sha256() for tx in block.vtx]
+        for tx in block.vtx:
+            tx.calc_sha256()
         block.rehash()
 
         # Wait until the block was announced (via compact blocks)

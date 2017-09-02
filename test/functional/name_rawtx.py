@@ -12,6 +12,9 @@ from decimal import Decimal
 
 class NameRawTxTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ([[]] * 3)
+
   def run_test (self):
     # Decode name_new.
     new = self.nodes[0].name_new ("my-name")
@@ -47,9 +50,9 @@ class NameRawTxTest (NameTestFramework):
     fee = Decimal ("0.01")
 
     self.atomicTrade ("my-name", "enjoy", price, fee, 0, 1)
-    self.generate (3, 1)
+    self.generate (2, 1)
 
-    data = self.checkName (3, "my-name", "enjoy", None, False)
+    data = self.checkName (2, "my-name", "enjoy", None, False)
     validate = self.nodes[1].validateaddress (data['address'])
     assert validate['ismine']
     data = self.nodes[0].name_list ("my-name")

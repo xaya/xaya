@@ -11,6 +11,9 @@ from test_framework.util import *
 
 class NameRegistrationTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).

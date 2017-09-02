@@ -10,8 +10,7 @@ from .util import *
 
 class NameTestFramework (BitcoinTestFramework):
 
-  def __init__ (self, args = [[]] * 4):
-    super ().__init__ ()
+  def setup_name_test (self, args = [[]] * 4):
     self.num_nodes = len (args)
     self.extra_args = args
     self.node_groups = None

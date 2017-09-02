@@ -13,6 +13,9 @@ import binascii
 
 class NameMultisigTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Construct a 2-of-2 multisig address shared between two nodes.
     pubkeyA = self.getNewPubkey (0)
