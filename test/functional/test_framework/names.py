@@ -96,6 +96,7 @@ class NameTestFramework (BitcoinTestFramework):
     assert_equal (data['value'], value)
     if (expiresIn is not None):
       assert_equal (data['expires_in'], expiresIn)
+    assert isinstance (data['expired'], bool)
     assert_equal (data['expired'], expired)
 
   def checkNameHistory (self, ind, name, values):

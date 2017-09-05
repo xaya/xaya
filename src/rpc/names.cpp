@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2016 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -65,7 +65,7 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   const bool expired = (expiresIn <= 0);
   obj.pushKV ("height", height);
   obj.pushKV ("expires_in", expiresIn);
-  obj.pushKV ("expired", expired);
+  obj.push_back (Pair ("expired", expired));
 
   return obj;
 }
@@ -530,7 +530,7 @@ name_pending (const JSONRPCRequest& request)
           if (pwallet)
             mine = IsMine (*pwallet, op.getAddress ());
           const bool isMine = (mine & ISMINE_SPENDABLE);
-          obj.pushKV ("ismine", isMine);
+          obj.push_back (Pair ("ismine", isMine));
 #endif
 
           arr.push_back (obj);

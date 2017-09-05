@@ -90,6 +90,7 @@ class NameScanningTest (NameTestFramework):
     assert_equal (obj['name'], name)
     assert_equal (obj['value'], value)
     assert_equal (obj['txid'], txid)
+    assert isinstance (obj['ismine'], bool)
     assert_equal (obj['ismine'], mine)
 
 if __name__ == '__main__':
