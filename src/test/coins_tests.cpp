@@ -11,8 +11,6 @@
 #include "validation.h"
 #include "consensus/validation.h"
 
-#include "test/testutil.h"
-
 #include <vector>
 #include <map>
 

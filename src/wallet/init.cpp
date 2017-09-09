@@ -10,6 +10,7 @@
 #include "utilmoneystr.h"
 #include "validation.h"
 #include "wallet/wallet.h"
+#include "wallet/rpcwallet.h"
 
 std::string GetWalletHelpString(bool showDebug)
 {
@@ -29,7 +30,6 @@ std::string GetWalletHelpString(bool showDebug)
     strUsage += HelpMessageOpt("-salvagewallet", _("Attempt to recover private keys from a corrupt wallet on startup"));
     strUsage += HelpMessageOpt("-spendzeroconfchange", strprintf(_("Spend unconfirmed change when sending transactions (default: %u)"), DEFAULT_SPEND_ZEROCONF_CHANGE));
     strUsage += HelpMessageOpt("-txconfirmtarget=<n>", strprintf(_("If paytxfee is not set, include enough fee so transactions begin confirmation on average within n blocks (default: %u)"), DEFAULT_TX_CONFIRM_TARGET));
-    strUsage += HelpMessageOpt("-usehd", _("Use hierarchical deterministic key generation (HD) after BIP32. Only has effect during wallet creation/first start") + " " + strprintf(_("(default: %u)"), DEFAULT_USE_HD_WALLET));
     strUsage += HelpMessageOpt("-walletrbf", strprintf(_("Send transactions with full-RBF opt-in enabled (default: %u)"), DEFAULT_WALLET_RBF));
     strUsage += HelpMessageOpt("-upgradewallet", _("Upgrade wallet to latest format on startup"));
     strUsage += HelpMessageOpt("-wallet=<file>", _("Specify wallet file (within data directory)") + " " + strprintf(_("(default: %s)"), DEFAULT_WALLET_DAT));
@@ -171,7 +171,14 @@ bool WalletParameterInteraction()
     return true;
 }
 
-bool WalletVerify()
+void RegisterWalletRPC(CRPCTable &t)
+{
+    if (gArgs.GetBoolArg("-disablewallet", false)) return;
+
+    RegisterWalletRPCCommands(t);
+}
+
+bool VerifyWallets()
 {
     if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET))
         return true;
@@ -228,7 +235,7 @@ bool WalletVerify()
     return true;
 }
 
-bool InitLoadWallet()
+bool OpenWallets()
 {
     if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
         LogPrintf("Wallet disabled!\n");
@@ -244,4 +251,29 @@ bool InitLoadWallet()
     }
 
     return true;
+}
+
+void StartWallets(CScheduler& scheduler) {
+    for (CWalletRef pwallet : vpwallets) {
+        pwallet->postInitProcess(scheduler);
+    }
+}
+
+void FlushWallets() {
+    for (CWalletRef pwallet : vpwallets) {
+        pwallet->Flush(false);
+    }
+}
+
+void StopWallets() {
+    for (CWalletRef pwallet : vpwallets) {
+        pwallet->Flush(true);
+    }
+}
+
+void CloseWallets() {
+    for (CWalletRef pwallet : vpwallets) {
+        delete pwallet;
+    }
+    vpwallets.clear();
 }

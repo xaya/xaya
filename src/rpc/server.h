@@ -28,7 +28,6 @@ namespace RPCServer
 {
     void OnStarted(std::function<void ()> slot);
     void OnStopped(std::function<void ()> slot);
-    void OnPreCommand(std::function<void (const CRPCCommand&)> slot);
 }
 
 class CNameData;
@@ -139,7 +138,6 @@ public:
     std::string category;
     std::string name;
     rpcfn_type actor;
-    bool okSafeMode;
     std::vector<std::string> argNames;
 };
 

@@ -613,9 +613,14 @@ A few guidelines for introducing and reviewing new RPC interfaces:
     from there.
 
 - A RPC method must either be a wallet method or a non-wallet method. Do not
-  introduce new methods such as `getinfo` and `signrawtransaction` that differ
-  in behavior based on presence of a wallet.
+  introduce new methods such as `signrawtransaction` that differ in behavior
+  based on presence of a wallet.
 
   - *Rationale*: as well as complicating the implementation and interfering
     with the introduction of multi-wallet, wallet and non-wallet code should be
     separated to avoid introducing circular dependencies between code units.
+
+- Try to make the RPC response a JSON object.
+
+  - *Rationale*: If a RPC response is not a JSON object then it is harder to avoid API breakage if
+    new data in the response is needed.

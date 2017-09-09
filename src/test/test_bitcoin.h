@@ -49,12 +49,14 @@ struct BasicTestingSetup {
  * Included are data directory, coins database, script check threads setup.
  */
 class CConnman;
+class PeerLogicValidation;
 struct TestingSetup: public BasicTestingSetup {
     CCoinsViewDB *pcoinsdbview;
     fs::path pathTemp;
     boost::thread_group threadGroup;
     CConnman* connman;
     CScheduler scheduler;
+    std::unique_ptr<PeerLogicValidation> peerLogic;
 
     explicit TestingSetup(const std::string& chainName = CBaseChainParams::MAIN);
     ~TestingSetup();
@@ -109,3 +111,6 @@ struct TestMemPoolEntryHelper
     TestMemPoolEntryHelper &SigOpsCost(unsigned int _sigopsCost) { sigOpCost = _sigopsCost; return *this; }
 };
 #endif
+
+// Define == for coin equality (used by multiple tests).
+bool operator==(const Coin &a, const Coin &b);

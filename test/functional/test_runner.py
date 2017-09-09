@@ -127,6 +127,7 @@ BASE_SCRIPTS= [
     'bip65-cltv-p2p.py',
     'uptime.py',
     'resendwallettransactions.py',
+    'minchainwork.py',
 
     # auxpow tests
     'auxpow_mining.py',

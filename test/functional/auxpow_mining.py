@@ -145,7 +145,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
 
     # Check for errors with wrong parameters.
     assert_raises_jsonrpc (-1, None, self.nodes[0].createauxblock)
-    assert_raises_jsonrpc (-8, "Invalid coinbase payout address",
+    assert_raises_jsonrpc (-5, "Invalid coinbase payout address",
                            self.nodes[0].createauxblock,
                            "this_an_invalid_address")
 

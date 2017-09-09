@@ -8,6 +8,7 @@
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
+#include "rpc/safemode.h"
 #include "rpc/server.h"
 #include "script/names.h"
 #include "txmempool.h"
@@ -48,10 +49,9 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
   CTxDestination dest;
-  CBitcoinAddress addrParsed;
   std::string addrStr;
-  if (ExtractDestination (addr, dest) && addrParsed.Set (dest))
-    addrStr = addrParsed.ToString ();
+  if (ExtractDestination (addr, dest))
+    addrStr = EncodeDestination (dest);
   else
     addrStr = "<nonstandard>";
   obj.pushKV ("address", addrStr);
@@ -146,10 +146,10 @@ AddRawTxNameOperation (CMutableTransaction& tx, const UniValue& obj)
   val = find_value (obj, "address");
   if (!val.isStr ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "missing address key");
-  const CBitcoinAddress toAddress(val.get_str ());
-  if (!toAddress.IsValid ())
+  const CTxDestination toDest = DecodeDestination (val.get_str ());
+  if (!IsValidDestination (toDest))
     throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
-  const CScript addr = GetScriptForDestination (toAddress.Get ());
+  const CScript addr = GetScriptForDestination (toDest);
 
   tx.SetNamecoin ();
 
@@ -183,6 +183,8 @@ name_show (const JSONRPCRequest& request)
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
+
+  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -229,6 +231,8 @@ name_history (const JSONRPCRequest& request)
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
+
+  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -286,6 +290,8 @@ name_scan (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  ObserveSafeMode ();
+
   valtype start;
   if (request.params.size () >= 1)
     start = ValtypeFromString (request.params[0].get_str ());
@@ -339,6 +345,8 @@ name_filter (const JSONRPCRequest& request)
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
+
+  ObserveSafeMode ();
 
   /* ********************** */
   /* Interpret parameters.  */
@@ -468,10 +476,10 @@ name_pending (const JSONRPCRequest& request)
       );
 
 #ifdef ENABLE_WALLET
-    CWallet* pwallet = GetWalletForJSONRPCRequest (request);
-    LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
+  CWallet* pwallet = GetWalletForJSONRPCRequest (request);
+  LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
 #else
-    LOCK (mempool.cs);
+  LOCK (mempool.cs);
 #endif
 
   std::vector<uint256> txHashes;
@@ -566,14 +574,14 @@ name_checkdb (const JSONRPCRequest& request)
 /* ************************************************************************** */
 
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         okSafeMode
+{ //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "namecoin",           "name_show",              &name_show,              false,  {"name"} },
-    { "namecoin",           "name_history",           &name_history,           false,  {"name"} },
-    { "namecoin",           "name_scan",              &name_scan,              false,  {"start","count"} },
-    { "namecoin",           "name_filter",            &name_filter,            false,  {"regexp","maxage","from","nb","stat"} },
-    { "namecoin",           "name_pending",           &name_pending,           true,   {"name"} },
-    { "namecoin",           "name_checkdb",           &name_checkdb,           false,  {} },
+    { "namecoin",           "name_show",              &name_show,              {"name"} },
+    { "namecoin",           "name_history",           &name_history,           {"name"} },
+    { "namecoin",           "name_scan",              &name_scan,              {"start","count"} },
+    { "namecoin",           "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
+    { "namecoin",           "name_pending",           &name_pending,           {"name"} },
+    { "namecoin",           "name_checkdb",           &name_checkdb,           {} },
 };
 
 void RegisterNameRPCCommands(CRPCTable &t)
