@@ -21,6 +21,9 @@
 
 #include <univalue.h>
 
+namespace
+{
+
 // Maximum number of outputs that are checked for the NAME_NEW prevout.
 constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
 
@@ -63,6 +66,8 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
   return false;
 }
 
+} // namespace
+
 /* ************************************************************************** */
 
 UniValue
@@ -88,6 +93,8 @@ name_list (const JSONRPCRequest& request)
         + HelpExampleCli ("name_list", "\"myname\"")
         + HelpExampleRpc ("name_list", "")
       );
+
+  RPCTypeCheck (request.params, {UniValue::VSTR});
 
   ObserveSafeMode ();
 
@@ -187,6 +194,8 @@ name_new (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_new", "\"myname\"")
       );
 
+  RPCTypeCheck (request.params, {UniValue::VSTR});
+
   ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
@@ -267,6 +276,10 @@ name_firstupdate (const JSONRPCRequest& request)
         + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
         + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
       );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
+                 UniValue::VSTR});
 
   ObserveSafeMode ();
 
@@ -388,6 +401,9 @@ name_update (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       );
 
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
+
   ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
@@ -502,6 +518,11 @@ sendtoname (const JSONRPCRequest& request)
         + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
         + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
       );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,
+                 UniValue::VSTR, UniValue::VBOOL, UniValue::VBOOL,
+                 UniValue::VNUM, UniValue::VSTR});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,

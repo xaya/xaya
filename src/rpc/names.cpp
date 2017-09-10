@@ -162,6 +162,8 @@ AddRawTxNameOperation (CMutableTransaction& tx, const UniValue& obj)
 }
 
 /* ************************************************************************** */
+namespace
+{
 
 UniValue
 name_show (const JSONRPCRequest& request)
@@ -179,6 +181,8 @@ name_show (const JSONRPCRequest& request)
         + HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
       );
+
+  RPCTypeCheck (request.params, {UniValue::VSTR});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -224,6 +228,8 @@ name_history (const JSONRPCRequest& request)
         + HelpExampleCli ("name_history", "\"myname\"")
         + HelpExampleRpc ("name_history", "\"myname\"")
       );
+
+  RPCTypeCheck (request.params, {UniValue::VSTR});
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
@@ -286,6 +292,8 @@ name_scan (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_scan", "\"d/abc\"")
       );
 
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VNUM});
+
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
@@ -341,6 +349,10 @@ name_filter (const JSONRPCRequest& request)
         + HelpExampleCli ("name_filter", "\"^id/\" 36000 0 0 \"stat\"")
         + HelpExampleRpc ("name_scan", "\"^d/\"")
       );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VNUM, UniValue::VNUM,
+                 UniValue::VSTR});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -475,6 +487,8 @@ name_pending (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_pending", "")
       );
 
+  RPCTypeCheck (request.params, {UniValue::VSTR});
+
 #ifdef ENABLE_WALLET
   CWallet* pwallet = GetWalletForJSONRPCRequest (request);
   LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
@@ -571,6 +585,7 @@ name_checkdb (const JSONRPCRequest& request)
   return pcoinsTip->ValidateNameDB ();
 }
 
+} // namespace
 /* ************************************************************************** */
 
 static const CRPCCommand commands[] =
