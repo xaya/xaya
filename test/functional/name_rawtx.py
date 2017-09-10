@@ -64,6 +64,13 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data[0]['name'], "my-name")
     assert_equal (data[0]['transferred'], False)
 
+    # Verify range check of vout in namerawtransaction.
+    tx = self.nodes[0].createrawtransaction ([], {})
+    assert_raises_jsonrpc (-8, "vout is out of range",
+                           self.nodes[0].namerawtransaction, tx, 0, {})
+    assert_raises_jsonrpc (-8, "vout is out of range",
+                           self.nodes[0].namerawtransaction, tx, -1, {})
+
     # Node 0 also got a block matured.  Take this into account.
     assert_equal (balanceA + price + Decimal ("50.0"),
                   self.nodes[0].getbalance ())
@@ -128,12 +135,16 @@ class NameRawTxTest (NameTestFramework):
 
     addr = self.nodes[ind].getnewaddress ()
     data = self.nodes[ind].name_show (name)
+    txo = self.nodes[ind].gettxout (data['txid'], data['vout'])
+    amount = txo['value']
 
     vin = [{"txid": data['txid'], "vout": data['vout']}]
     txin = self.nodes[ind].createrawtransaction (vin, {})
 
+    vout = {addr: amount}
+    txout = self.nodes[ind].createrawtransaction ([], vout)
     nameop = {"op": "name_update", "name": name, "value": val, "address": addr}
-    txout = self.nodes[ind].createrawtransaction ([], {}, nameop)
+    txout = self.nodes[ind].namerawtransaction (txout, 0, nameop)
 
     return txin, txout
 

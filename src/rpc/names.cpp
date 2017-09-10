@@ -4,6 +4,7 @@
 
 #include "base58.h"
 #include "chainparams.h"
+#include "core_io.h"
 #include "init.h"
 #include "names/common.h"
 #include "names/main.h"
@@ -112,53 +113,6 @@ getNameInfoHelp (const std::string& indent, const std::string& trailing)
   res << indent << "}" << trailing << std::endl;
 
   return res.str ();
-}
-
-/**
- * Implement the rawtx name operation feature.  This routine interprets
- * the given JSON object describing the desired name operation and then
- * modifies the transaction accordingly.
- * @param tx The transaction to extend.
- * @param obj The name operation "description" as given to the call.
- */
-void
-AddRawTxNameOperation (CMutableTransaction& tx, const UniValue& obj)
-{
-  UniValue val = find_value (obj, "op");
-  if (!val.isStr ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing op key");
-  const std::string op = val.get_str ();
-
-  if (op != "name_update")
-    throw JSONRPCError (RPC_INVALID_PARAMETER,
-                        "only name_update is implemented for the rawtx API");
-
-  val = find_value (obj, "name");
-  if (!val.isStr ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing name key");
-  const valtype name = ValtypeFromString (val.get_str ());
-
-  val = find_value (obj, "value");
-  if (!val.isStr ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing value key");
-  const valtype value = ValtypeFromString (val.get_str ());
-
-  val = find_value (obj, "address");
-  if (!val.isStr ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "missing address key");
-  const CTxDestination toDest = DecodeDestination (val.get_str ());
-  if (!IsValidDestination (toDest))
-    throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
-  const CScript addr = GetScriptForDestination (toDest);
-
-  tx.SetNamecoin ();
-
-  /* We do not add the name input.  This has to be done explicitly,
-     but is easy from the name_show output.  That way, createrawtransaction
-     doesn't depend on the chainstate at all.  */
-
-  const CScript outScript = CNameScript::buildNameUpdate (addr, name, value);
-  tx.vout.push_back (CTxOut (NAME_LOCKED_AMOUNT, outScript));
 }
 
 /* ************************************************************************** */
@@ -565,6 +519,69 @@ name_pending (const JSONRPCRequest& request)
 /* ************************************************************************** */
 
 UniValue
+namerawtransaction (const JSONRPCRequest& request)
+{
+  if (request.fHelp || request.params.size () != 3)
+    throw std::runtime_error (
+        "namerawtransaction \"hexstring\" vout nameop\n"
+        "\nAdd a name operation to an existing raw transaction.\n"
+        "\nUse createrawtransaction first to create the basic transaction,\n"
+        "including the required inputs and outputs also for the name.\n"
+        "\nArguments:\n"
+        "1. \"hexstring\"       (string, required) The transaction hex string\n"
+        "2. vout              (numeric, required) The vout of the desired name output\n"
+        "3. nameop            (object, required) Json object for name operation\n"
+        "    {\n"
+        "      \"op\": \"name_update\",\n"
+        "      \"name\": xxx,         (string, required) The name to update\n"
+        "      \"value\": xxx,        (string, required) The new value\n"
+        "    }\n"
+        "\nResult:\n"
+        "\"transaction\"        (string) Hex string of the updated transaction\n"
+        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+        + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+      );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
+
+  CMutableTransaction mtx;
+  if (!DecodeHexTx (mtx, request.params[0].get_str (), true))
+    throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "TX decode failed");
+  mtx.SetNamecoin ();
+
+  const size_t nOut = request.params[1].get_int ();
+  if (nOut >= mtx.vout.size ())
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
+
+  const UniValue nameOp = request.params[2].get_obj ();
+  RPCTypeCheckObj (nameOp,
+    {
+      {"op", UniValueType (UniValue::VSTR)},
+      {"name", UniValueType (UniValue::VSTR)},
+      {"value", UniValueType (UniValue::VSTR)},
+    }
+  );
+
+  const std::string op = find_value (nameOp, "op").get_str ();
+  if (op != "name_update")
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "Only name_update is implemented for the rawtx API");
+
+  const valtype name
+    = ValtypeFromString (find_value (nameOp, "name").get_str ());
+  const valtype value
+    = ValtypeFromString (find_value (nameOp, "value").get_str ());
+
+  mtx.vout[nOut].scriptPubKey
+    = CNameScript::buildNameUpdate (mtx.vout[nOut].scriptPubKey, name, value);
+
+  return EncodeHexTx (mtx);
+}
+
+/* ************************************************************************** */
+
+UniValue
 name_checkdb (const JSONRPCRequest& request)
 {
   if (request.fHelp || request.params.size () != 0)
@@ -597,6 +614,7 @@ static const CRPCCommand commands[] =
     { "namecoin",           "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
     { "namecoin",           "name_pending",           &name_pending,           {"name"} },
     { "namecoin",           "name_checkdb",           &name_checkdb,           {} },
+    { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
 };
 
 void RegisterNameRPCCommands(CRPCTable &t)

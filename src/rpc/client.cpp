@@ -134,6 +134,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "name_filter", 2, "from" },
     { "name_filter", 3, "nb" },
     { "name_firstupdate", 5, "allow_active" },
+    { "namerawtransaction", 1, "vout" },
+    { "namerawtransaction", 2, "nameop" },
     { "sendtoname", 1, "amount" },
     { "sendtoname", 4, "subtractfeefromamount" },
     // Echo with conversion (For testing only)
