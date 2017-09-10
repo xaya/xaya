@@ -535,7 +535,7 @@ namerawtransaction (const JSONRPCRequest& request)
         "    {\n"
         "      \"op\": \"name_new\",\n"
         "      \"name\": xxx,         (string, required) The name to register\n"
-        "      \"rand\": xxx,         (string, required) The nonce value to use\n"
+        "      \"rand\": xxx,         (string, optional) The nonce value to use\n"
         "    }\n"
         "    {\n"
         "      \"op\": \"name_firstupdate\",\n"
@@ -549,8 +549,11 @@ namerawtransaction (const JSONRPCRequest& request)
         "      \"value\": xxx,        (string, required) The new value\n"
         "    }\n"
         "\nResult:\n"
-        "\"transaction\"        (string) Hex string of the updated transaction\n"
-        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_new\",\"name\":\"my-name\",\"rand\":\"00112233\")")
+        "{\n"
+        "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
+        "  \"rand\": xxx,       (string) If this is a name_new, the nonce used to create it\n"
+        "}\n"
+        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_new\",\"name\":\"my-name\")")
         + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_firstupdate\",\"name\":\"my-name\",\"value\":\"new value\",\"rand\":\"00112233\")")
         + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
@@ -576,19 +579,30 @@ namerawtransaction (const JSONRPCRequest& request)
   );
   const std::string op = find_value (nameOp, "op").get_str ();
 
+  UniValue result(UniValue::VOBJ);
+
   if (op == "name_new")
     {
       RPCTypeCheckObj (nameOp,
         {
           {"name", UniValueType (UniValue::VSTR)},
           {"rand", UniValueType (UniValue::VSTR)},
-        }
-      );
+        },
+        true);
 
-      const std::string randStr = find_value (nameOp, "rand").get_str ();
-      if (!IsHex (randStr))
-        throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
-      const valtype rand = ParseHex (randStr);
+      valtype rand;
+      if (nameOp.exists ("rand"))
+        {
+          const std::string randStr = find_value (nameOp, "rand").get_str ();
+          if (!IsHex (randStr))
+            throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
+          rand = ParseHex (randStr);
+        }
+      else
+        {
+          rand.resize (20);
+          GetRandBytes (&rand[0], rand.size ());
+        }
 
       const valtype name
         = ValtypeFromString (find_value (nameOp, "name").get_str ());
@@ -599,6 +613,7 @@ namerawtransaction (const JSONRPCRequest& request)
 
       mtx.vout[nOut].scriptPubKey
         = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, hash);
+      result.pushKV ("rand", HexStr (rand.begin (), rand.end ()));
     }
   else if (op == "name_firstupdate")
     {
@@ -646,7 +661,8 @@ namerawtransaction (const JSONRPCRequest& request)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "Invalid name operation");
 
 
-  return EncodeHexTx (mtx);
+  result.pushKV ("hex", EncodeHexTx (mtx));
+  return result;
 }
 
 /* ************************************************************************** */

@@ -43,24 +43,21 @@ class NameRawTxTest (NameTestFramework):
     # Go through the full name "life cycle" (name_new, name_firstupdate and
     # name_update) with raw transactions.
 
-    newOp = {"op": "name_new", "name": "raw-test-name",
-             "rand": "0123456789abcdef"}
+    newOp = {"op": "name_new", "name": "raw-test-name"}
     newAddr = self.nodes[0].getnewaddress ()
-    newTxid, newVout = self.rawNameOp (0, None, newAddr, newOp)
+    newOutp, newData = self.rawNameOp (0, None, newAddr, newOp)
     self.generate (0, 10)
 
-    firstOp = {"op": "name_firstupdate", "rand": newOp["rand"],
+    firstOp = {"op": "name_firstupdate", "rand": newData["rand"],
                "name": "raw-test-name", "value": "first value"}
     firstAddr = self.nodes[0].getnewaddress ()
-    firstVin = {"txid": newTxid, "vout": newVout}
-    firstTxid, firstVout = self.rawNameOp (0, firstVin, firstAddr, firstOp)
+    firstOutp, _ = self.rawNameOp (0, newOutp, firstAddr, firstOp)
     self.generate (0, 5)
     self.checkName (1, "raw-test-name", "first value", None, False)
 
     updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
     updAddr = self.nodes[0].getnewaddress ()
-    updVin = {"txid": firstTxid, "vout": firstVout}
-    self.rawNameOp (0, updVin, updAddr, updOp)
+    self.rawNameOp (0, firstOutp, updAddr, updOp)
     self.generate (0, 1)
     self.checkName (1, "raw-test-name", "new value", None, False)
 
@@ -169,12 +166,12 @@ class NameRawTxTest (NameTestFramework):
     tx = self.nodes[ind].fundrawtransaction (tx, {"feeRate": 0.01})
 
     nameInd = self.rawtxOutputIndex (ind, tx['hex'], toAddr)
-    tx = self.nodes[ind].namerawtransaction (tx['hex'], nameInd, op)
+    nameTx = self.nodes[ind].namerawtransaction (tx['hex'], nameInd, op)
 
-    tx = self.nodes[ind].signrawtransaction (tx)
+    tx = self.nodes[ind].signrawtransaction (nameTx['hex'])
     txid = self.nodes[ind].sendrawtransaction (tx['hex'])
 
-    return txid, nameInd
+    return {"txid": txid, "vout": nameInd}, nameTx
 
 
   def constructUpdateTx (self, ind, name, val):
@@ -197,7 +194,7 @@ class NameRawTxTest (NameTestFramework):
     nameop = {"op": "name_update", "name": name, "value": val, "address": addr}
     txout = self.nodes[ind].namerawtransaction (txout, 0, nameop)
 
-    return txin, txout
+    return txin, txout['hex']
 
 if __name__ == '__main__':
   NameRawTxTest ().main ()

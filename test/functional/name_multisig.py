@@ -56,7 +56,7 @@ class NameMultisigTest (NameTestFramework):
     txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
 
     # Sign it partially.
-    partial = self.nodes[0].signrawtransaction (txRaw)
+    partial = self.nodes[0].signrawtransaction (txRaw['hex'])
     assert not partial['complete']
     assert_raises_jsonrpc (-26, None,
                            self.nodes[2].sendrawtransaction, partial['hex'])
