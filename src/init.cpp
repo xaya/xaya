@@ -102,12 +102,11 @@ static const char* FEE_ESTIMATES_FILENAME="fee_estimates.dat";
 // created by AppInit() or the Qt main() function.
 //
 // A clean exit happens when StartShutdown() or the SIGTERM
-// signal handler sets fRequestShutdown, which triggers
-// the DetectShutdownThread(), which interrupts the main thread group.
-// DetectShutdownThread() then exits, which causes AppInit() to
-// continue (it .joins the shutdown thread).
-// Shutdown() is then
-// called to clean up database connections, and stop other
+// signal handler sets fRequestShutdown, which makes main thread's
+// WaitForShutdown() interrupts the thread group.
+// And then, WaitForShutdown() makes all other on-going threads
+// in the thread group join the main thread.
+// Shutdown() is then called to clean up database connections, and stop other
 // threads that should only be stopped after the main network-processing
 // threads have exited.
 //
@@ -195,7 +194,7 @@ void Shutdown()
     // Because these depend on each-other, we make sure that neither can be
     // using the other before destroying them.
     UnregisterValidationInterface(peerLogic.get());
-    g_connman->Stop();
+    if(g_connman) g_connman->Stop();
     peerLogic.reset();
     g_connman.reset();
 
@@ -484,7 +483,7 @@ std::string HelpMessage(HelpMessageMode mode)
 
     strUsage += HelpMessageGroup(_("Block creation options:"));
     strUsage += HelpMessageOpt("-blockmaxweight=<n>", strprintf(_("Set maximum BIP141 block weight (default: %d)"), DEFAULT_BLOCK_MAX_WEIGHT));
-    strUsage += HelpMessageOpt("-blockmaxsize=<n>", strprintf(_("Set maximum block size in bytes (default: %d)"), DEFAULT_BLOCK_MAX_SIZE));
+    strUsage += HelpMessageOpt("-blockmaxsize=<n>", _("Set maximum BIP141 block weight to this * 4. Deprecated, use blockmaxweight"));
     strUsage += HelpMessageOpt("-blockmintxfee=<amt>", strprintf(_("Set lowest fee rate (in %s/kB) for transactions to be included in block creation. (default: %s)"), CURRENCY_UNIT, FormatMoney(DEFAULT_BLOCK_MIN_TX_FEE)));
     if (showDebug)
         strUsage += HelpMessageOpt("-blockversion=<n>", "Override block version to test forking scenarios");
@@ -784,6 +783,15 @@ void InitParameterInteraction()
     if (gArgs.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) {
         if (gArgs.SoftSetBoolArg("-whitelistrelay", true))
             LogPrintf("%s: parameter interaction: -whitelistforcerelay=1 -> setting -whitelistrelay=1\n", __func__);
+    }
+
+    if (gArgs.IsArgSet("-blockmaxsize")) {
+        unsigned int max_size = gArgs.GetArg("-blockmaxsize", 0);
+        if (gArgs.SoftSetArg("blockmaxweight", strprintf("%d", max_size * WITNESS_SCALE_FACTOR))) {
+            LogPrintf("%s: parameter interaction: -blockmaxsize=%d -> setting -blockmaxweight=%d (-blockmaxsize is deprecated!)\n", __func__, max_size, max_size * WITNESS_SCALE_FACTOR);
+        } else {
+            LogPrintf("%s: Ignoring blockmaxsize setting which is overridden by blockmaxweight", __func__);
+        }
     }
 }
 
