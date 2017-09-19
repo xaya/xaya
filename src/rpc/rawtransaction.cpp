@@ -291,15 +291,12 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 4)
         throw std::runtime_error(
-            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,\"data\":\"hex\",...} (name operation) (locktime) (replaceable)\n"
+            "createrawtransaction [{\"txid\":\"id\",\"vout\":n},...] {\"address\":amount,\"data\":\"hex\",...} ( locktime ) ( replaceable )\n"
             "\nCreate a transaction spending the given inputs and creating new outputs.\n"
             "Outputs can be addresses or data.\n"
             "Returns hex-encoded raw transaction.\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.\n"
-
-            "\nOptionally, a name update operation can be performed.  The name input must be added\n"
-            "manually.  (name_show gives the necessary data.)\n"
 
             "\nArguments:\n"
             "1. \"inputs\"                (array, required) A json array of json objects\n"
@@ -317,27 +314,20 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
             "      \"data\": \"hex\"      (string, required) The key is \"data\", the value is hex encoded data\n"
             "      ,...\n"
             "    }\n"
-            "3. \"name_operation\"        (string, optional) json object for name operation\n"
-            "    {\n"
-            "      \"op\": \"name_update\",\n"
-            "      \"name\": xxx,         (string, required) the name to update\n"
-            "      \"value\": xxx,        (string, required) the new value\n"
-            "      \"address\": xxx,      (string, required) address to send it to\n"
-            "    }\n"
-            "4. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
-            "5. replaceable               (boolean, optional, default=false) Allow this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible.\n"
+            "3. locktime                  (numeric, optional, default=0) Raw locktime. Non-0 value also locktime-activates inputs\n"
+            "4. replaceable               (boolean, optional, default=false) Marks this transaction as BIP125 replaceable.\n"
+            "                             Allows this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible.\n"
             "\nResult:\n"
             "\"transaction\"              (string) hex string of the transaction\n"
 
             "\nExamples:\n"
             + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"address\\\":0.01}\"")
             + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{\\\"data\\\":\\\"00010203\\\"}\"")
-            + HelpExampleCli("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\" \"{}\" \"{\\\"op\""":\\\"name_update\\\",\\\"name\\\":\\\"my-name\\\",\\\"value\\\":\\\"new value\\\",\\\"address\\\":\\\"NFt4cuHJ97dxfsNZpz5qKxAxnQVAUShwdX\\\"}\"")
             + HelpExampleRpc("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"address\\\":0.01}\"")
             + HelpExampleRpc("createrawtransaction", "\"[{\\\"txid\\\":\\\"myid\\\",\\\"vout\\\":0}]\", \"{\\\"data\\\":\\\"00010203\\\"}\"")
         );
 
-    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VOBJ, UniValue::VOBJ, UniValue::VNUM}, true);
+    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VOBJ, UniValue::VNUM}, true);
     if (request.params[0].isNull() || request.params[1].isNull())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, arguments 1 and 2 must be non-null");
 
@@ -346,14 +336,14 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
 
     CMutableTransaction rawTx;
 
-    if (!request.params[3].isNull()) {
-        int64_t nLockTime = request.params[3].get_int64();
+    if (!request.params[2].isNull()) {
+        int64_t nLockTime = request.params[2].get_int64();
         if (nLockTime < 0 || nLockTime > std::numeric_limits<uint32_t>::max())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, locktime out of range");
         rawTx.nLockTime = nLockTime;
     }
 
-    bool rbfOptIn = request.params[4].isTrue();
+    bool rbfOptIn = request.params[3].isTrue();
 
     for (unsigned int idx = 0; idx < inputs.size(); idx++) {
         const UniValue& input = inputs[idx];
@@ -420,10 +410,7 @@ UniValue createrawtransaction(const JSONRPCRequest& request)
         }
     }
 
-    if (request.params.size() > 2 && !request.params[2].isNull())
-        AddRawTxNameOperation(rawTx, request.params[2].get_obj());
-
-    if (!request.params[4].isNull() && rbfOptIn != SignalsOptInRBF(rawTx)) {
+    if (!request.params[3].isNull() && rbfOptIn != SignalsOptInRBF(rawTx)) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter combination: Sequence number(s) contradict replaceable option");
     }
 
@@ -978,7 +965,7 @@ static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
     { "rawtransactions",    "getrawtransaction",      &getrawtransaction,      {"txid","verbose"} },
-    { "rawtransactions",    "createrawtransaction",   &createrawtransaction,   {"inputs","outputs","name_operation","locktime","replaceable"} },
+    { "rawtransactions",    "createrawtransaction",   &createrawtransaction,   {"inputs","outputs","locktime","replaceable"} },
     { "rawtransactions",    "decoderawtransaction",   &decoderawtransaction,   {"hexstring"} },
     { "rawtransactions",    "decodescript",           &decodescript,           {"hexstring"} },
     { "rawtransactions",    "sendrawtransaction",     &sendrawtransaction,     {"hexstring","allowhighfees"} },

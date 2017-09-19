@@ -43,18 +43,20 @@ class NameMultisigTest (NameTestFramework):
     assert len (unspents) > 0
     feeInput = unspents[0]
     changeAddr = self.nodes[0].getnewaddress ()
-    changeAmount = feeInput['amount'] - Decimal ("0.01")
+    nameAmount = Decimal ("0.01")
+    changeAmount = feeInput['amount'] - nameAmount
 
     # Construct the name update as raw transaction.
     addr = self.nodes[2].getnewaddress ()
     inputs = [{"txid": data['txid'], "vout": data['vout']}, feeInput]
-    outputs = {changeAddr: changeAmount}
-    op = {"op": "name_update", "name": "name",
-          "value": "it worked", "address": addr}
-    txRaw = self.nodes[3].createrawtransaction (inputs, outputs, op)
+    outputs = {changeAddr: changeAmount, addr: nameAmount}
+    txRaw = self.nodes[3].createrawtransaction (inputs, outputs)
+    op = {"op": "name_update", "name": "name", "value": "it worked"}
+    nameInd = self.rawtxOutputIndex (3, txRaw, addr)
+    txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
 
     # Sign it partially.
-    partial = self.nodes[0].signrawtransaction (txRaw)
+    partial = self.nodes[0].signrawtransaction (txRaw['hex'])
     assert not partial['complete']
     assert_raises_jsonrpc (-26, None,
                            self.nodes[2].sendrawtransaction, partial['hex'])

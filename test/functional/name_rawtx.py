@@ -40,6 +40,34 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data['name'], "my-name")
     assert_equal (data['value'], "new value")
 
+    # Go through the full name "life cycle" (name_new, name_firstupdate and
+    # name_update) with raw transactions.
+
+    newOp = {"op": "name_new", "name": "raw-test-name"}
+    newAddr = self.nodes[0].getnewaddress ()
+    newOutp, newData = self.rawNameOp (0, None, newAddr, newOp)
+    self.generate (0, 10)
+
+    firstOp = {"op": "name_firstupdate", "rand": newData["rand"],
+               "name": "raw-test-name", "value": "first value"}
+    firstAddr = self.nodes[0].getnewaddress ()
+    firstOutp, _ = self.rawNameOp (0, newOutp, firstAddr, firstOp)
+    self.generate (0, 5)
+    self.checkName (1, "raw-test-name", "first value", None, False)
+
+    updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
+    updAddr = self.nodes[0].getnewaddress ()
+    self.rawNameOp (0, firstOutp, updAddr, updOp)
+    self.generate (0, 1)
+    self.checkName (1, "raw-test-name", "new value", None, False)
+
+    # Verify range check of vout in namerawtransaction.
+    tx = self.nodes[0].createrawtransaction ([], {})
+    assert_raises_jsonrpc (-8, "vout is out of range",
+                           self.nodes[0].namerawtransaction, tx, 0, {})
+    assert_raises_jsonrpc (-8, "vout is out of range",
+                           self.nodes[0].namerawtransaction, tx, -1, {})
+
     # Perform a rawtx name update together with an atomic currency transaction.
     # We send the test name from 0 to 1 and some coins from 1 to 0.  In other
     # words, perform an atomic name trade.
@@ -64,10 +92,10 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data[0]['name'], "my-name")
     assert_equal (data[0]['transferred'], False)
 
-    # Node 0 also got a block matured.  Take this into account.
-    assert_equal (balanceA + price + Decimal ("50.0"),
-                  self.nodes[0].getbalance ())
-    assert_equal (balanceB - price - fee, self.nodes[1].getbalance ())
+    assert_equal (balanceA + price, self.nodes[0].getbalance ())
+    # Node 1 gets a block matured, take this into account.
+    assert_equal (balanceB - price - fee + Decimal ("50"),
+                  self.nodes[1].getbalance ())
 
     # Try to construct and relay a transaction that updates two names at once.
     # This used to crash the client, #116.  It should lead to an error (as such
@@ -119,6 +147,33 @@ class NameRawTxTest (NameTestFramework):
     assert res is not None
     return res
 
+  def rawNameOp (self, ind, nameIn, toAddr, op):
+    """
+    Utility method to construct and send a name-operation transaction with
+    the raw-transactions interface.  It uses the provided input (if not None)
+    for the name and finds other inputs to fund the tx.  It sends the name
+    to toAddr with the operation defined by op.
+    """
+
+    vin = []
+    if nameIn is not None:
+      vin.append (nameIn)
+
+    nameAmount = Decimal ("0.01")
+    vout = {toAddr: nameAmount}
+
+    tx = self.nodes[ind].createrawtransaction (vin, vout)
+    tx = self.nodes[ind].fundrawtransaction (tx, {"feeRate": 0.01})
+
+    nameInd = self.rawtxOutputIndex (ind, tx['hex'], toAddr)
+    nameTx = self.nodes[ind].namerawtransaction (tx['hex'], nameInd, op)
+
+    tx = self.nodes[ind].signrawtransaction (nameTx['hex'])
+    txid = self.nodes[ind].sendrawtransaction (tx['hex'])
+
+    return {"txid": txid, "vout": nameInd}, nameTx
+
+
   def constructUpdateTx (self, ind, name, val):
     """
     Construct a name_update raw transaction for the given name.  The target
@@ -128,14 +183,18 @@ class NameRawTxTest (NameTestFramework):
 
     addr = self.nodes[ind].getnewaddress ()
     data = self.nodes[ind].name_show (name)
+    txo = self.nodes[ind].gettxout (data['txid'], data['vout'])
+    amount = txo['value']
 
     vin = [{"txid": data['txid'], "vout": data['vout']}]
     txin = self.nodes[ind].createrawtransaction (vin, {})
 
+    vout = {addr: amount}
+    txout = self.nodes[ind].createrawtransaction ([], vout)
     nameop = {"op": "name_update", "name": name, "value": val, "address": addr}
-    txout = self.nodes[ind].createrawtransaction ([], {}, nameop)
+    txout = self.nodes[ind].namerawtransaction (txout, 0, nameop)
 
-    return txin, txout
+    return txin, txout['hex']
 
 if __name__ == '__main__':
   NameRawTxTest ().main ()

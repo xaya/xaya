@@ -114,6 +114,21 @@ class NameTestFramework (BitcoinTestFramework):
 
     assert_equal (valuesFound, values)
 
+  def rawtxOutputIndex (self, ind, txhex, addr):
+    """
+    Returns the index of the tx output in the given raw transaction that
+    is sent to the given address.
+
+    This is useful for building raw transactions with namerawtransaction.
+    """
+
+    tx = self.nodes[ind].decoderawtransaction (txhex)
+    for i, vout in enumerate (tx['vout']):
+      if addr in vout['scriptPubKey']['addresses']:
+        return i
+
+    return None
+
   def atomicTrade (self, name, value, price, fee, nameFrom, nameTo):
     """
     Perform an atomic name trade, sending 'name' from the first to the
@@ -139,14 +154,18 @@ class NameTestFramework (BitcoinTestFramework):
     inputs.append ({"txid": txin['txid'], "vout": txin['vout']})
 
     data = self.nodes[nameFrom].name_show (name)
+    nameTxo = self.nodes[nameFrom].gettxout (data['txid'], data['vout'])
+    nameAmount = nameTxo['value']
+
     inputs.append ({"txid": data['txid'], "vout": data['vout']})
+    outputs = {addrA: price, addrChange: change, addrB: nameAmount}
+    tx = self.nodes[nameFrom].createrawtransaction (inputs, outputs)
 
-    outputs = {addrA: price, addrChange: change}
-    nameOp = {"op": "name_update", "name": name,
-              "value": value, "address": addrB}
+    nameInd = self.rawtxOutputIndex (nameFrom, tx, addrB)
+    nameOp = {"op": "name_update", "name": name, "value": value}
+    tx = self.nodes[nameFrom].namerawtransaction (tx, nameInd, nameOp)
 
-    tx = self.nodes[nameFrom].createrawtransaction (inputs, outputs, nameOp)
-    signed = self.nodes[nameFrom].signrawtransaction (tx)
+    signed = self.nodes[nameFrom].signrawtransaction (tx['hex'])
     assert not signed['complete']
     signed = self.nodes[nameTo].signrawtransaction (signed['hex'])
     assert signed['complete']
