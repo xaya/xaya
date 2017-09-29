@@ -1670,6 +1670,7 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
     connOptions.m_msgproc = peerLogic.get();
     connOptions.nSendBufferMaxSize = 1000*gArgs.GetArg("-maxsendbuffer", DEFAULT_MAXSENDBUFFER);
     connOptions.nReceiveFloodSize = 1000*gArgs.GetArg("-maxreceivebuffer", DEFAULT_MAXRECEIVEBUFFER);
+    connOptions.m_added_nodes = gArgs.GetArgs("-addnode");
 
     connOptions.nMaxOutboundTimeframe = nMaxOutboundTimeframe;
     connOptions.nMaxOutboundLimit = nMaxOutboundLimit;
@@ -1700,9 +1701,8 @@ bool AppInitMain(boost::thread_group& threadGroup, CScheduler& scheduler)
         connOptions.vWhitelistedRange.push_back(subnet);
     }
 
-    if (gArgs.IsArgSet("-seednode")) {
-        connOptions.vSeedNodes = gArgs.GetArgs("-seednode");
-    }
+    connOptions.vSeedNodes = gArgs.GetArgs("-seednode");
+
     // Initiate outbound connections unless connect=0
     connOptions.m_use_addrman_outgoing = !gArgs.IsArgSet("-connect");
     if (!connOptions.m_use_addrman_outgoing) {
