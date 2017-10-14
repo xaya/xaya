@@ -113,7 +113,7 @@ struct TestMemPoolEntryHelper
 
 CBlock getBlock13b8a();
 
-#endif
-
 // Define == for coin equality (used by multiple tests).
 bool operator==(const Coin &a, const Coin &b);
+
+#endif
