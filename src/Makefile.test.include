@@ -51,6 +51,7 @@ BITCOIN_TESTS =\
   test/main_tests.cpp \
   test/mempool_tests.cpp \
   test/merkle_tests.cpp \
+  test/merkleblock_tests.cpp \
   test/miner_tests.cpp \
   test/multisig_tests.cpp \
   test/name_tests.cpp \
@@ -150,7 +151,7 @@ namecoin_test_clean : FORCE
 
 check-local:
 	@echo "Running test/util/bitcoin-util-test.py..."
-	$(top_builddir)/test/util/bitcoin-util-test.py
+	$(PYTHON) $(top_builddir)/test/util/bitcoin-util-test.py
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C secp256k1 check
 if EMBEDDED_UNIVALUE
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C univalue check
