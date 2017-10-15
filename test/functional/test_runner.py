@@ -128,6 +128,7 @@ BASE_SCRIPTS= [
     'uptime.py',
     'resendwallettransactions.py',
     'minchainwork.py',
+    'p2p-fingerprint.py',
 
     # auxpow tests
     'auxpow_mining.py',
@@ -156,7 +157,7 @@ EXTENDED_SCRIPTS = [
     'example_test.py',
     'txn_doublespend.py',
     'txn_clone.py --mineblock',
-    'forknotify.py',
+    'notifications.py',
     'invalidateblock.py',
     'p2p-acceptblock.py',
     'replace-by-fee.py',
