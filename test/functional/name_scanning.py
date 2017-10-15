@@ -82,8 +82,8 @@ class NameScanningTest (NameTestFramework):
                   {"blocks": height, "count": 2})
 
     # Check test for "stat" argument.
-    assert_raises_jsonrpc (-8, "must be the literal string 'stat'",
-                           self.nodes[3].name_filter, "", 0, 0, 0, "string")
+    assert_raises_rpc_error (-8, "must be the literal string 'stat'",
+                             self.nodes[3].name_filter, "", 0, 0, 0, "string")
 
   def checkList (self, data, names):
     """

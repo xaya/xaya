@@ -9,7 +9,7 @@ Verify that a bitcoind node can load multiple wallet files
 import os
 
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, assert_raises_jsonrpc
+from test_framework.util import assert_equal, assert_raises_rpc_error
 
 class MultiWalletTest(BitcoinTestFramework):
     def set_test_params(self):
@@ -43,10 +43,10 @@ class MultiWalletTest(BitcoinTestFramework):
         w1.generate(1)
 
         # accessing invalid wallet fails
-        assert_raises_jsonrpc(-18, "Requested wallet does not exist or is not loaded", wallet_bad.getwalletinfo)
+        assert_raises_rpc_error(-18, "Requested wallet does not exist or is not loaded", wallet_bad.getwalletinfo)
 
         # accessing wallet RPC without using wallet endpoint fails
-        assert_raises_jsonrpc(-19, "Wallet file not specified", self.nodes[0].getwalletinfo)
+        assert_raises_rpc_error(-19, "Wallet file not specified", self.nodes[0].getwalletinfo)
 
         # check w1 wallet balance
         w1_info = w1.getwalletinfo()
@@ -75,6 +75,10 @@ class MultiWalletTest(BitcoinTestFramework):
         w1.generate(1)
         assert_equal(w2.getbalance(), 1)
         assert_equal(w3.getbalance(), 2)
+
+        batch = w1.batch([w1.getblockchaininfo.get_request(), w1.getwalletinfo.get_request()])
+        assert_equal(batch[0]["result"]["chain"], "regtest")
+        assert_equal(batch[1]["result"]["walletname"], "w1")
 
 if __name__ == '__main__':
     MultiWalletTest().main()

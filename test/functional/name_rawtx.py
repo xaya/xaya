@@ -63,10 +63,10 @@ class NameRawTxTest (NameTestFramework):
 
     # Verify range check of vout in namerawtransaction.
     tx = self.nodes[0].createrawtransaction ([], {})
-    assert_raises_jsonrpc (-8, "vout is out of range",
-                           self.nodes[0].namerawtransaction, tx, 0, {})
-    assert_raises_jsonrpc (-8, "vout is out of range",
-                           self.nodes[0].namerawtransaction, tx, -1, {})
+    assert_raises_rpc_error (-8, "vout is out of range",
+                             self.nodes[0].namerawtransaction, tx, 0, {})
+    assert_raises_rpc_error (-8, "vout is out of range",
+                             self.nodes[0].namerawtransaction, tx, -1, {})
 
     # Perform a rawtx name update together with an atomic currency transaction.
     # We send the test name from 0 to 1 and some coins from 1 to 0.  In other
@@ -121,8 +121,8 @@ class NameRawTxTest (NameTestFramework):
     tx += '00' * 4     # locktime
 
     signed = self.nodes[0].signrawtransaction (tx)
-    assert_raises_jsonrpc (-26, None,
-                           self.nodes[0].sendrawtransaction, signed['hex'])
+    assert_raises_rpc_error (-26, None,
+                             self.nodes[0].sendrawtransaction, signed['hex'])
 
   def decodeNameTx (self, ind, txid):
     """

@@ -33,10 +33,10 @@ class NameMultisigTest (NameTestFramework):
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
-    assert_raises_jsonrpc (-4, None,
-                           self.nodes[0].name_update, "name", "new value")
-    assert_raises_jsonrpc (-4, None,
-                           self.nodes[1].name_update, "name", "new value")
+    assert_raises_rpc_error (-4, None,
+                             self.nodes[0].name_update, "name", "new value")
+    assert_raises_rpc_error (-4, None,
+                             self.nodes[1].name_update, "name", "new value")
 
     # Find some other input to add as fee.
     unspents = self.nodes[0].listunspent ()
@@ -58,8 +58,8 @@ class NameMultisigTest (NameTestFramework):
     # Sign it partially.
     partial = self.nodes[0].signrawtransaction (txRaw['hex'])
     assert not partial['complete']
-    assert_raises_jsonrpc (-26, None,
-                           self.nodes[2].sendrawtransaction, partial['hex'])
+    assert_raises_rpc_error (-26, None,
+                             self.nodes[2].sendrawtransaction, partial['hex'])
 
     # Sign it fully and transmit it.
     signed = self.nodes[1].signrawtransaction (partial['hex'])
@@ -76,8 +76,8 @@ class NameMultisigTest (NameTestFramework):
     # Send the tx.  The manipulation should be caught (independently of
     # when strict P2SH checks are enabled, since they are enforced
     # mandatorily in the mempool).
-    assert_raises_jsonrpc (-26, None,
-                           self.nodes[2].sendrawtransaction, txManipulated)
+    assert_raises_rpc_error (-26, None,
+                             self.nodes[2].sendrawtransaction, txManipulated)
     self.nodes[2].sendrawtransaction (tx)
     self.generate (3, 1)
 

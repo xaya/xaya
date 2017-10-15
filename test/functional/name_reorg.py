@@ -57,9 +57,9 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "b", "b long", None, False)
     self.checkNameHistory (2, "a", ["initial value"])
     self.checkNameHistory (2, "b", ["b long"])
-    assert_raises_jsonrpc (-4, 'name not found', self.nodes[3].name_show, "c")
-    assert_raises_jsonrpc (-4, 'name not found',
-                           self.nodes[2].name_history, "c")
+    assert_raises_rpc_error (-4, 'name not found', self.nodes[3].name_show, "c")
+    assert_raises_rpc_error (-4, 'name not found',
+                             self.nodes[2].name_history, "c")
 
     # Mine another block.  This should at least perform the
     # non-conflicting transactions.  It is done on node 3 so
