@@ -3234,7 +3234,7 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
             "}\n"
             "\nExamples:\n"
             + HelpExampleCli("rescanblockchain", "100000 120000")
-            + HelpExampleRpc("rescanblockchain", "100000 120000")
+            + HelpExampleRpc("rescanblockchain", "100000, 120000")
             );
     }
 

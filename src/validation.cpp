@@ -940,6 +940,9 @@ bool GetTransaction(const uint256 &hash, CTransactionRef &txOut, const Consensus
                 return error("%s: txid mismatch", __func__);
             return true;
         }
+
+        // transaction not found in index, nothing more can be done
+        return false;
     }
 
     if (fAllowSlow) { // use coin database to locate block that contains transaction, and scan it
@@ -3197,6 +3200,12 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
         if (pindex->nTx != 0) return true;  // This is a previously-processed block that was pruned
         if (!fHasMoreWork) return true;     // Don't process less-work chains
         if (fTooFarAhead) return true;      // Block height is too high
+
+        // Protect against DoS attacks from low-work chains.
+        // If our tip is behind, a peer could try to send us
+        // low-work blocks on a fake chain that we would never
+        // request; don't process these.
+        if (pindex->nChainWork < nMinimumChainWork) return true;
     }
     if (fNewBlock) *fNewBlock = true;
 
@@ -4352,8 +4361,9 @@ bool LoadMempool(void)
     }
 
     int64_t count = 0;
-    int64_t skipped = 0;
+    int64_t expired = 0;
     int64_t failed = 0;
+    int64_t already_there = 0;
     int64_t nNow = GetTime();
 
     try {
@@ -4384,10 +4394,18 @@ bool LoadMempool(void)
                 if (state.IsValid()) {
                     ++count;
                 } else {
-                    ++failed;
+                    // mempool may contain the transaction already, e.g. from
+                    // wallet(s) having loaded it while we were processing
+                    // mempool transactions; consider these as valid, instead of
+                    // failed, but mark them as 'already there'
+                    if (mempool.exists(tx->GetHash())) {
+                        ++already_there;
+                    } else {
+                        ++failed;
+                    }
                 }
             } else {
-                ++skipped;
+                ++expired;
             }
             if (ShutdownRequested())
                 return false;
@@ -4403,7 +4421,7 @@ bool LoadMempool(void)
         return false;
     }
 
-    LogPrintf("Imported mempool transactions from disk: %i successes, %i failed, %i expired\n", count, failed, skipped);
+    LogPrintf("Imported mempool transactions from disk: %i succeeded, %i failed, %i expired, %i already there\n", count, failed, expired, already_there);
     return true;
 }
 
