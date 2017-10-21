@@ -44,8 +44,8 @@ TEST_EXIT_PASSED = 0
 TEST_EXIT_FAILED = 1
 TEST_EXIT_SKIPPED = 77
 
-class BitcoinTestFramework(object):
-    """Base class for a namecoin test script.
+class BitcoinTestFramework():
+    """Base class for a bitcoin test script.
 
     Individual bitcoin test scripts should subclass this class and override the set_test_params() and run_test() methods.
 
@@ -103,8 +103,11 @@ class BitcoinTestFramework(object):
 
         check_json_precision()
 
+        self.options.cachedir = os.path.abspath(self.options.cachedir)
+
         # Set up temp directory and start logging
         if self.options.tmpdir:
+            self.options.tmpdir = os.path.abspath(self.options.tmpdir)
             os.makedirs(self.options.tmpdir, exist_ok=False)
         else:
             self.options.tmpdir = tempfile.mkdtemp(prefix="test")
