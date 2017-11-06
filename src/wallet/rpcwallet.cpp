@@ -1921,19 +1921,20 @@ UniValue listsinceblock(const JSONRPCRequest& request)
     int target_confirms = 1;
     isminefilter filter = ISMINE_SPENDABLE;
 
-    if (!request.params[0].isNull()) {
+    if (!request.params[0].isNull() && !request.params[0].get_str().empty()) {
         uint256 blockId;
 
         blockId.SetHex(request.params[0].get_str());
         BlockMap::iterator it = mapBlockIndex.find(blockId);
-        if (it != mapBlockIndex.end()) {
-            paltindex = pindex = it->second;
-            if (chainActive[pindex->nHeight] != pindex) {
-                // the block being asked for is a part of a deactivated chain;
-                // we don't want to depend on its perceived height in the block
-                // chain, we want to instead use the last common ancestor
-                pindex = chainActive.FindFork(pindex);
-            }
+        if (it == mapBlockIndex.end()) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+        paltindex = pindex = it->second;
+        if (chainActive[pindex->nHeight] != pindex) {
+            // the block being asked for is a part of a deactivated chain;
+            // we don't want to depend on its perceived height in the block
+            // chain, we want to instead use the last common ancestor
+            pindex = chainActive.FindFork(pindex);
         }
     }
 
@@ -2207,7 +2208,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 2)) {
+    if (request.fHelp || request.params.size() != 2) {
         throw std::runtime_error(
             "walletpassphrase \"passphrase\" timeout\n"
             "\nStores the wallet decryption key in memory for 'timeout' seconds.\n"
@@ -2271,7 +2272,7 @@ UniValue walletpassphrasechange(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 2)) {
+    if (request.fHelp || request.params.size() != 2) {
         throw std::runtime_error(
             "walletpassphrasechange \"oldpassphrase\" \"newpassphrase\"\n"
             "\nChanges the wallet passphrase from 'oldpassphrase' to 'newpassphrase'.\n"
@@ -2322,7 +2323,7 @@ UniValue walletlock(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (pwallet->IsCrypted() && (request.fHelp || request.params.size() != 0)) {
+    if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
             "walletlock\n"
             "\nRemoves the wallet encryption key from memory, locking the wallet.\n"
@@ -2362,7 +2363,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (!pwallet->IsCrypted() && (request.fHelp || request.params.size() != 1)) {
+    if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
             "encryptwallet \"passphrase\"\n"
             "\nEncrypts the wallet with 'passphrase'. This is for first time encryption.\n"
