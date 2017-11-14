@@ -35,4 +35,5 @@
 
 fp7k2dennh52dzql.onion
 nww7uwo4diginmcm.onion:8443
+s5pknqnnt4qji33p.onion:8334
 
