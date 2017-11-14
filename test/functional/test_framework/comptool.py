@@ -80,9 +80,9 @@ class TestNode(NodeConnCB):
         [conn.send_message(r) for r in self.tx_store.get_transactions(message.inv)]
 
         for i in message.inv:
-            if i.type == 1:
+            if i.type == 1 or i.type == 1 | (1 << 30): # MSG_TX or MSG_WITNESS_TX
                 self.tx_request_map[i.hash] = True
-            elif i.type == 2:
+            elif i.type == 2 or i.type == 2 | (1 << 30): # MSG_BLOCK or MSG_WITNESS_BLOCK
                 self.block_request_map[i.hash] = True
 
     def on_inv(self, conn, message):
@@ -295,8 +295,11 @@ class TestManager():
         # Wait until verack is received
         self.wait_for_verack()
 
-        test_number = 1
-        for test_instance in self.test_generator.get_tests():
+        test_number = 0
+        tests = self.test_generator.get_tests()
+        for test_instance in tests:
+            test_number += 1
+            logger.info("Running test %d: %s line %s" % (test_number, tests.gi_code.co_filename, tests.gi_frame.f_lineno))
             # We use these variables to keep track of the last block
             # and last transaction in the tests, which are used
             # if we're not syncing on every block or every tx.
@@ -396,9 +399,6 @@ class TestManager():
                 self.sync_transaction(tx.sha256, len(test_instance.blocks_and_transactions))
                 if (not self.check_mempool(tx.sha256, tx_outcome)):
                     raise AssertionError("Mempool test failed at test %d" % test_number)
-
-            logger.info("Test %d: PASS" % test_number)
-            test_number += 1
 
         [ c.disconnect_node() for c in self.connections ]
         self.wait_for_disconnections()
