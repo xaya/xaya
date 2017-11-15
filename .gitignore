@@ -83,6 +83,7 @@ bitcoin-qt
 namecoin-qt
 Bitcoin-Qt.app
 Namecoin-Qt.app
+background.tiff*
 
 # Unit-tests
 Makefile.test
