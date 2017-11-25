@@ -4,22 +4,22 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/bitcoin-config.h"
+#include <config/bitcoin-config.h>
 #endif
 
-#include "chainparamsbase.h"
-#include "clientversion.h"
-#include "fs.h"
-#include "rpc/client.h"
-#include "rpc/protocol.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include <chainparamsbase.h>
+#include <clientversion.h>
+#include <fs.h>
+#include <rpc/client.h>
+#include <rpc/protocol.h>
+#include <util.h>
+#include <utilstrencodings.h>
 
 #include <stdio.h>
 
 #include <event2/buffer.h>
 #include <event2/keyvalq_struct.h>
-#include "support/events.h"
+#include <support/events.h>
 
 #include <univalue.h>
 
@@ -213,6 +213,9 @@ public:
     /** Create a simulated `getinfo` request. */
     UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
     {
+        if (!args.empty()) {
+            throw std::runtime_error("-getinfo takes no arguments");
+        }
         UniValue result(UniValue::VARR);
         result.push_back(JSONRPCRequestObj("getnetworkinfo", NullUniValue, ID_NETWORKINFO));
         result.push_back(JSONRPCRequestObj("getblockchaininfo", NullUniValue, ID_BLOCKCHAININFO));

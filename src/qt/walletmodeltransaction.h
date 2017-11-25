@@ -5,7 +5,7 @@
 #ifndef BITCOIN_QT_WALLETMODELTRANSACTION_H
 #define BITCOIN_QT_WALLETMODELTRANSACTION_H
 
-#include "walletmodel.h"
+#include <qt/walletmodel.h>
 
 #include <QObject>
 
@@ -40,7 +40,7 @@ public:
 private:
     QList<SendCoinsRecipient> recipients;
     CWalletTx *walletTransaction;
-    CReserveKey *keyChange;
+    std::unique_ptr<CReserveKey> keyChange;
     CAmount fee;
 };
 
