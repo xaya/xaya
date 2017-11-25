@@ -19,8 +19,6 @@
 #include <boost/test/unit_test.hpp>
 #include <univalue.h>
 
-extern CWallet* pwalletMain;
-
 extern UniValue importmulti(const JSONRPCRequest& request);
 extern UniValue dumpwallet(const JSONRPCRequest& request);
 extern UniValue importwallet(const JSONRPCRequest& request);
