@@ -1,14 +1,14 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef H_BITCOIN_NAMES_COMMON
 #define H_BITCOIN_NAMES_COMMON
 
-#include "compat/endian.h"
-#include "primitives/transaction.h"
-#include "script/script.h"
-#include "serialize.h"
+#include <compat/endian.h>
+#include <primitives/transaction.h>
+#include <script/script.h>
+#include <serialize.h>
 
 #include <map>
 #include <set>

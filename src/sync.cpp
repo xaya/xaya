@@ -2,10 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "sync.h"
+#include <sync.h>
 
-#include "util.h"
-#include "utilstrencodings.h"
+#include <util.h>
+#include <utilstrencodings.h>
 
 #include <stdio.h>
 
@@ -153,6 +153,16 @@ void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine,
             return;
     fprintf(stderr, "Assertion failed: lock %s not held in %s:%i; locks held:\n%s", pszName, pszFile, nLine, LocksHeld().c_str());
     abort();
+}
+
+void AssertLockNotHeldInternal(const char* pszName, const char* pszFile, int nLine, void* cs)
+{
+    for (const std::pair<void*, CLockLocation>& i : *lockstack) {
+        if (i.first == cs) {
+            fprintf(stderr, "Assertion failed: lock %s held in %s:%i; locks held:\n%s", pszName, pszFile, nLine, LocksHeld().c_str());
+            abort();
+        }
+    }
 }
 
 void DeleteLock(void* cs)

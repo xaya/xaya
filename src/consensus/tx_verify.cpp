@@ -2,18 +2,18 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "tx_verify.h"
+#include <consensus/tx_verify.h>
 
-#include "consensus.h"
-#include "names/main.h"
-#include "primitives/transaction.h"
-#include "script/interpreter.h"
-#include "validation.h"
+#include <consensus/consensus.h>
+#include <names/main.h>
+#include <primitives/transaction.h>
+#include <script/interpreter.h>
+#include <consensus/validation.h>
 
 // TODO remove the following dependencies
-#include "chain.h"
-#include "coins.h"
-#include "utilmoneystr.h"
+#include <chain.h>
+#include <coins.h>
+#include <utilmoneystr.h>
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)
 {

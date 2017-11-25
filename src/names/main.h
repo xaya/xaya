@@ -5,11 +5,11 @@
 #ifndef H_BITCOIN_NAMES_MAIN
 #define H_BITCOIN_NAMES_MAIN
 
-#include "amount.h"
-#include "names/common.h"
-#include "primitives/transaction.h"
-#include "serialize.h"
-#include "uint256.h"
+#include <amount.h>
+#include <names/common.h>
+#include <primitives/transaction.h>
+#include <serialize.h>
+#include <uint256.h>
 
 #include <list>
 #include <map>
@@ -240,7 +240,7 @@ class CNameConflictTracker
 
 private:
 
-  std::vector<CTransactionRef> txNameConflicts;
+  std::shared_ptr<std::vector<CTransactionRef>> txNameConflicts;
   CTxMemPool& pool;
 
 public:
@@ -248,7 +248,7 @@ public:
   explicit CNameConflictTracker (CTxMemPool &p);
   ~CNameConflictTracker ();
 
-  inline const std::vector<CTransactionRef>&
+  inline const std::shared_ptr<const std::vector<CTransactionRef>>
   GetNameConflicts () const
   {
     return txNameConflicts;

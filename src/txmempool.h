@@ -13,15 +13,15 @@
 #include <utility>
 #include <string>
 
-#include "amount.h"
-#include "coins.h"
-#include "indirectmap.h"
-#include "policy/feerate.h"
-#include "primitives/transaction.h"
-#include "names/main.h"
-#include "random.h"
-#include "sync.h"
-#include "script/names.h"
+#include <amount.h>
+#include <coins.h>
+#include <indirectmap.h>
+#include <names/main.h>
+#include <policy/feerate.h>
+#include <primitives/transaction.h>
+#include <sync.h>
+#include <random.h>
+#include <script/names.h>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -549,6 +549,9 @@ public:
     // to track size/count of descendant transactions.  First version of
     // addUnchecked can be used to have it call CalculateMemPoolAncestors(), and
     // then invoke the second version.
+    // Note that addUnchecked is ONLY called from ATMP outside of tests
+    // and any other callers may break wallet's in-mempool tracking (due to
+    // lack of CValidationInterface::TransactionAddedToMempool callbacks).
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, bool validFeeEstimate = true);
     bool addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry, setEntries &setAncestors, bool validFeeEstimate = true);
 

@@ -1,11 +1,11 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef H_BITCOIN_SCRIPT_NAMES
 #define H_BITCOIN_SCRIPT_NAMES
 
-#include "script/script.h"
+#include <script/script.h>
 
 class uint160;
 

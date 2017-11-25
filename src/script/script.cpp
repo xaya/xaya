@@ -3,11 +3,11 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "script.h"
+#include <script/script.h>
 
-#include "script/names.h"
-#include "tinyformat.h"
-#include "utilstrencodings.h"
+#include <script/names.h>
+#include <tinyformat.h>
+#include <utilstrencodings.h>
 
 const char* GetOpName(opcodetype opcode)
 {

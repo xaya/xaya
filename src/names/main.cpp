@@ -2,20 +2,20 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "names/main.h"
+#include <names/main.h>
 
-#include "chainparams.h"
-#include "coins.h"
-#include "consensus/validation.h"
-#include "hash.h"
-#include "dbwrapper.h"
-#include "script/interpreter.h"
-#include "script/names.h"
-#include "txmempool.h"
-#include "undo.h"
-#include "util.h"
-#include "utilstrencodings.h"
-#include "validation.h"
+#include <chainparams.h>
+#include <coins.h>
+#include <consensus/validation.h>
+#include <hash.h>
+#include <dbwrapper.h>
+#include <script/interpreter.h>
+#include <script/names.h>
+#include <txmempool.h>
+#include <undo.h>
+#include <util.h>
+#include <utilstrencodings.h>
+#include <validation.h>
 
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
@@ -361,7 +361,7 @@ ConflictTrackerNotifyEntryRemoved (CNameConflictTracker* tracker,
 } // anonymous namespace
 
 CNameConflictTracker::CNameConflictTracker (CTxMemPool &p)
-  : txNameConflicts(), pool(p)
+  : txNameConflicts(std::make_shared<std::vector<CTransactionRef>>()), pool(p)
 {
   pool.NotifyEntryRemoved.connect (
     boost::bind (&ConflictTrackerNotifyEntryRemoved, this, _1, _2));
@@ -376,7 +376,7 @@ CNameConflictTracker::~CNameConflictTracker ()
 void
 CNameConflictTracker::AddConflictedEntry (CTransactionRef txRemoved)
 {
-  txNameConflicts.emplace_back (std::move (txRemoved));
+  txNameConflicts->emplace_back (std::move (txRemoved));
 }
 
 /* ************************************************************************** */

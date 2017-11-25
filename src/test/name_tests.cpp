@@ -2,19 +2,19 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "base58.h"
-#include "coins.h"
-#include "consensus/validation.h"
-#include "names/main.h"
-#include "policy/policy.h"
-#include "primitives/transaction.h"
-#include "script/names.h"
-#include "txdb.h"
-#include "txmempool.h"
-#include "undo.h"
-#include "validation.h"
+#include <base58.h>
+#include <coins.h>
+#include <consensus/validation.h>
+#include <names/main.h>
+#include <policy/policy.h>
+#include <primitives/transaction.h>
+#include <script/names.h>
+#include <txdb.h>
+#include <txmempool.h>
+#include <undo.h>
+#include <validation.h>
 
-#include "test/test_bitcoin.h"
+#include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -1018,8 +1018,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeConflicts (txReg2);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txReg1.GetHash ());
   }
   BOOST_CHECK (!mempool.registersName (nameReg));
@@ -1036,8 +1036,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeExpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txUpd1.GetHash ());
   }
   BOOST_CHECK (!mempool.updatesName (nameUpd));
@@ -1054,8 +1054,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeUnexpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txReg1.GetHash ());
   }
   BOOST_CHECK (!mempool.registersName (nameReg));

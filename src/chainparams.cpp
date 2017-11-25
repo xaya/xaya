@@ -3,16 +3,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "chainparams.h"
-#include "consensus/merkle.h"
+#include <chainparams.h>
+#include <consensus/merkle.h>
 
-#include "tinyformat.h"
-#include "util.h"
-#include "utilstrencodings.h"
+#include <tinyformat.h>
+#include <util.h>
+#include <utilstrencodings.h>
 
 #include <assert.h>
 
-#include "chainparamsseeds.h"
+#include <chainparamsseeds.h>
 
 bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const
 {

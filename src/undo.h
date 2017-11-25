@@ -6,11 +6,11 @@
 #ifndef BITCOIN_UNDO_H
 #define BITCOIN_UNDO_H
 
-#include "compressor.h" 
-#include "consensus/consensus.h"
-#include "names/main.h"
-#include "primitives/transaction.h"
-#include "serialize.h"
+#include <compressor.h>
+#include <consensus/consensus.h>
+#include <names/main.h>
+#include <primitives/transaction.h>
+#include <serialize.h>
 
 /** Undo information for a CTxIn
  *
