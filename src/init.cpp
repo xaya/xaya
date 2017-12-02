@@ -193,8 +193,8 @@ void Shutdown()
 
     // Because these depend on each-other, we make sure that neither can be
     // using the other before destroying them.
-    UnregisterValidationInterface(peerLogic.get());
-    if(g_connman) g_connman->Stop();
+    if (peerLogic) UnregisterValidationInterface(peerLogic.get());
+    if (g_connman) g_connman->Stop();
     peerLogic.reset();
     g_connman.reset();
 
@@ -919,7 +919,8 @@ bool AppInitParameterInteraction()
         // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
         const std::vector<std::string> categories = gArgs.GetArgs("-debug");
 
-        if (find(categories.begin(), categories.end(), std::string("0")) == categories.end()) {
+        if (std::none_of(categories.begin(), categories.end(),
+            [](std::string cat){return cat == "0" || cat == "none";})) {
             for (const auto& cat : categories) {
                 uint32_t flag = 0;
                 if (!GetLogCategory(&flag, &cat)) {

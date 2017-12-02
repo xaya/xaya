@@ -39,14 +39,14 @@ from test_framework.mininode import (CBlockHeader,
                                      CTxIn,
                                      CTxOut,
                                      NetworkThread,
-                                     NodeConnCB,
+                                     P2PInterface,
                                      msg_block,
                                      msg_headers)
 from test_framework.script import (CScript, OP_TRUE)
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import assert_equal
 
-class BaseNode(NodeConnCB):
+class BaseNode(P2PInterface):
     def send_header_for_blocks(self, new_blocks):
         headers_message = msg_headers()
         headers_message.headers = [CBlockHeader(b) for b in new_blocks]
@@ -67,7 +67,7 @@ class AssumeValidTest(BitcoinTestFramework):
     def send_blocks_until_disconnected(self, p2p_conn):
         """Keep sending blocks to the node until we're disconnected."""
         for i in range(len(self.blocks)):
-            if not p2p_conn.connection:
+            if p2p_conn.state != "connected":
                 break
             try:
                 p2p_conn.send_message(msg_block(self.blocks[i]))
