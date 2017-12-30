@@ -22,8 +22,9 @@ What can it be used for?
 * Create Virtual Game Currencies
 * Asset Storage, Ownership and Management (particularly for in game items)
 * Identification Systems
-* DAPP Data storage
+* DAPPs
 * Payment Gateway (with upcoming third party plugins)
+* Decentralised Autonomous Universes
 * and much more
 
 This Readme will be updated with more information soon
