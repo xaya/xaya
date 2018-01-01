@@ -34,6 +34,7 @@ BITCOIN_TESTS =\
   test/base64_tests.cpp \
   test/bech32_tests.cpp \
   test/bip32_tests.cpp \
+  test/blockchain_tests.cpp \
   test/blockencodings_tests.cpp \
   test/bloom_tests.cpp \
   test/bswap_tests.cpp \
@@ -86,7 +87,6 @@ BITCOIN_TESTS =\
   test/txvalidationcache_tests.cpp \
   test/versionbits_tests.cpp \
   test/uint256_tests.cpp \
-  test/univalue_tests.cpp \
   test/util_tests.cpp
 
 if ENABLE_WALLET
