@@ -46,6 +46,7 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   obj.pushKV ("value", ValtypeToString (value));
   obj.pushKV ("txid", outp.hash.GetHex ());
   obj.pushKV ("vout", static_cast<int> (outp.n));
+  obj.pushKV ("height", height);
 
   /* Try to extract the address.  May fail if we can't parse the script
      as a "standard" script.  */
@@ -56,17 +57,6 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
   else
     addrStr = "<nonstandard>";
   obj.pushKV ("address", addrStr);
-
-  /* Calculate expiration data.  */
-  const int curHeight = chainActive.Height ();
-  const Consensus::Params& params = Params ().GetConsensus ();
-  const int expireDepth = params.rules->NameExpirationDepth (curHeight);
-  const int expireHeight = height + expireDepth;
-  const int expiresIn = expireHeight - curHeight;
-  const bool expired = (expiresIn <= 0);
-  obj.pushKV ("height", height);
-  obj.pushKV ("expires_in", expiresIn);
-  obj.push_back (Pair ("expired", expired));
 
   return obj;
 }
@@ -106,10 +96,6 @@ getNameInfoHelp (const std::string& indent, const std::string& trailing)
       << "(string) the address holding the name" << std::endl;
   res << indent << "  \"height\": xxxxx,         "
       << "(numeric) the name's last update height" << std::endl;
-  res << indent << "  \"expires_in\": xxxxx,     "
-      << "(numeric) expire counter for the name" << std::endl;
-  res << indent << "  \"expired\": xxxxx,        "
-      << "(boolean) whether the name is expired" << std::endl;
   res << indent << "}" << trailing << std::endl;
 
   return res.str ();

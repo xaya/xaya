@@ -198,21 +198,6 @@ public:
   void removeConflicts (const CTransaction& tx);
 
   /**
-   * Remove conflicts in the mempool due to unexpired names.  This removes
-   * conflicting name registrations that are no longer possible.
-   * @param unexpired The set of unexpired names.
-   * @param removed Put removed tx here.
-   */
-  void removeUnexpireConflicts (const std::set<valtype>& unexpired);
-  /**
-   * Remove conflicts in the mempool due to expired names.  This removes
-   * conflicting name updates that are no longer possible.
-   * @param expired The set of expired names.
-   * @param removed Put removed tx here.
-   */
-  void removeExpireConflicts (const std::set<valtype>& expired);
-
-  /**
    * Perform sanity checks.  Throws if it fails.
    * @param coins The coins view this represents.
    */
@@ -284,30 +269,6 @@ bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
  */
 void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                            CCoinsViewCache& view, CBlockUndo& undo);
-
-/**
- * Expire all names at the given height.  This removes their coins
- * from the UTXO set.
- * @param height The new block height.
- * @param view The coins view to update.
- * @param undo The block undo object to record undo information.
- * @param names List all expired names here.
- * @return True if successful.
- */
-bool ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
-                  std::set<valtype>& names);
-
-/**
- * Undo name coin expirations.  This also does some checks verifying
- * that all is fine.
- * @param nHeight The height at which the names were expired.
- * @param undo The block undo object to use.
- * @param view The coins view to update.
- * @param names List all unexpired names here.
- * @return True if successful.
- */
-bool UnexpireNames (unsigned nHeight, CBlockUndo& undo,
-                    CCoinsViewCache& view, std::set<valtype>& names);
 
 /**
  * Check the name database consistency.  This calls CCoinsView::ValidateNameDB,

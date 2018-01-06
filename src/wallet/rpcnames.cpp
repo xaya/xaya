@@ -310,7 +310,7 @@ name_firstupdate (const JSONRPCRequest& request)
     {
       LOCK (cs_main);
       CNameData oldData;
-      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+      if (pcoinsTip->GetName (name, oldData))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name is already active");
     }
@@ -429,7 +429,7 @@ name_update (const JSONRPCRequest& request)
   CNameData oldData;
   {
     LOCK (cs_main);
-    if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
+    if (!pcoinsTip->GetName (name, oldData))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
                           "this name can not be updated");
   }
@@ -492,7 +492,6 @@ sendtoname (const JSONRPCRequest& request)
         "sendtoname \"name\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
         "\nSend an amount to the owner of a name. "
         " The amount is a real and is rounded to the nearest 0.00000001.\n"
-        "\nIt is an error if the name is expired.\n"
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"        (string, required) The name to send to.\n"
@@ -541,8 +540,6 @@ sendtoname (const JSONRPCRequest& request)
       msg << "name not found: '" << nameStr << "'";
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
-  if (data.isExpired ())
-    throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "the name is expired");
 
   /* The code below is strongly based on sendtoaddress.  Make sure to
      keep it in sync.  */

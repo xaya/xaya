@@ -29,7 +29,7 @@ class NameMultisigTest (NameTestFramework):
     self.generate (0, 10)
     self.firstupdateName (0, "name", new, "value", p2sh)
     self.generate (1, 5)
-    data = self.checkName (2, "name", "value", None, False)
+    data = self.checkName (2, "name", "value")
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
@@ -82,10 +82,10 @@ class NameMultisigTest (NameTestFramework):
     self.generate (3, 1)
 
     # Check that it was transferred correctly.
-    self.checkName (3, "name", "it worked", None, False)
+    self.checkName (3, "name", "it worked")
     self.nodes[2].name_update ("name", "changed")
     self.generate (3, 1)
-    self.checkName (3, "name", "changed", None, False)
+    self.checkName (3, "name", "changed")
 
   def getNewPubkey (self, ind):
     """

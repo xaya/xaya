@@ -170,9 +170,6 @@ public:
     // Get a name's history (if it exists)
     virtual bool GetNameHistory(const valtype& name, CNameHistory& data) const;
 
-    // Query for names that were updated at the given height
-    virtual bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const;
-
     // Get a name iterator.
     virtual CNameIterator* IterateNames() const;
 
@@ -208,7 +205,6 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     bool GetName(const valtype& name, CNameData& data) const override;
     bool GetNameHistory(const valtype& name, CNameHistory& data) const override;
-    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const override;
     CNameIterator* IterateNames() const override;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
@@ -251,7 +247,6 @@ public:
     void SetBestBlock(const uint256 &hashBlock);
     bool GetName(const valtype &name, CNameData &data) const override;
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
-    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const override;
     CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
     CCoinsViewCursor* Cursor() const override {

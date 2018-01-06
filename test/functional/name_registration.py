@@ -49,7 +49,7 @@ class NameRegistrationTest (NameTestFramework):
                              self.nodes[1].name_history, "node-0")
     self.generate (0, 1)
 
-    data = self.checkName (1, "node-0", "value-0", 30, False)
+    data = self.checkName (1, "node-0", "value-0")
     assert_equal (data['address'], addrA)
     assert_equal (data['txid'], txidA)
     assert_equal (data['height'], 213)
@@ -75,45 +75,37 @@ class NameRegistrationTest (NameTestFramework):
     newSteal = self.nodes[1].name_new ("node-0")
     newSteal2 = self.nodes[1].name_new ("node-0")
     self.generate (0, 19)
-    self.checkName (1, "node-0", "value-0", 1, False)
+    self.checkName (1, "node-0", "value-0")
     assert_raises_rpc_error (-25, 'this name is already active',
                              self.firstupdateName,
                              1, "node-0", newSteal, "stolen")
-
-    # Check for "stealing" of the name after expiry.
-    self.generate (0, 1)
-    self.firstupdateName (1, "node-0", newSteal, "stolen")
-    self.checkName (1, "node-0", "value-0", 0, True)
-    self.generate (0, 1)
-    self.checkName (1, "node-0", "stolen", 30, False)
-    self.checkNameHistory (1, "node-0", ["value-0", "stolen"])
 
     # Check for firstupdating an active name, but this time without the check
     # present in the RPC call itself.  This should still be prevented by the
     # mempool logic.  There was a bug that allowed these transactiosn to get
     # into the mempool, so make sure it is no longer there.
-    self.firstupdateName (1, "node-0", newSteal2, "unstolen",
+    self.firstupdateName (1, "node-0", newSteal2, "stolen",
                           allowActive = True)
     assert_equal (self.nodes[1].getrawmempool (), [])
-    self.checkName (1, "node-0", "stolen", None, False)
+    self.checkName (1, "node-0", "value-0")
 
     # Check basic updating.
     assert_raises_rpc_error (-8, 'value is too long',
                              self.nodes[0].name_update, "test-name", "x" * 521)
     self.nodes[0].name_update ("test-name", "x" * 520)
-    self.checkName (0, "test-name", "test-value", None, False)
+    self.checkName (0, "test-name", "test-value")
     self.generate (0, 1)
-    self.checkName (1, "test-name", "x" * 520, 30, False)
+    self.checkName (1, "test-name", "x" * 520)
     self.checkNameHistory (1, "test-name", ["test-value", "x" * 520])
 
     addrB = self.nodes[1].getnewaddress ()
     self.nodes[0].name_update ("test-name", "sent", addrB)
     self.generate (0, 1)
-    data = self.checkName (0, "test-name", "sent", 30, False)
+    data = self.checkName (0, "test-name", "sent")
     assert_equal (data['address'], addrB)
     self.nodes[1].name_update ("test-name", "updated")
     self.generate (0, 1)
-    data = self.checkName (0, "test-name", "updated", 30, False)
+    data = self.checkName (0, "test-name", "updated")
     self.checkNameHistory (1, "test-name",
                            ["test-value", "x" * 520, "sent", "updated"])
 
@@ -129,36 +121,25 @@ class NameRegistrationTest (NameTestFramework):
                              self.nodes[1].name_update,
                              "test-name", "new value")
     self.generate (0, 1)
-    data = self.checkName (0, "test-name", "value", 30, False)
+    data = self.checkName (0, "test-name", "value")
     self.checkNameHistory (1, "test-name", ["test-value", "x" * 520, "sent",
                                             "updated", "value"])
     
-    # Update failing after expiry.  Re-registration possible.
-    self.checkName (1, "node-1", "x" * 520, None, True)
-    assert_raises_rpc_error (-25, 'this name can not be updated',
-                             self.nodes[1].name_update, "node-1", "updated?")
-
-    newSteal = self.nodes[0].name_new ("node-1")
-    self.generate (0, 10)
-    self.firstupdateName (0, "node-1", newSteal, "reregistered")
-    self.generate (0, 10)
-    self.checkName (1, "node-1", "reregistered", 23, False)
-    self.checkNameHistory (1, "node-1", ["x" * 520, "reregistered"])
-
     # Test that name updates are even possible with less balance in the wallet
     # than what is locked in a name (0.01 NMC).  There was a bug preventing
     # this from working.
+    self.generate (0, 50)  # make node1 not get maturing rewards
     balance = self.nodes[1].getbalance ()
     keep = Decimal ("0.001")
     addr0 = self.nodes[0].getnewaddress ()
     self.nodes[1].sendtoaddress (addr0, balance - keep, "", "", True)
     addr1 = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("node-1", "value", addr1)
+    self.nodes[0].name_update ("node-0", "value", addr1)
     self.generate (0, 1)
     assert_equal (self.nodes[1].getbalance (), keep)
-    self.nodes[1].name_update ("node-1", "new value")
+    self.nodes[1].name_update ("node-0", "new value")
     self.generate (0, 1)
-    self.checkName (1, "node-1", "new value", None, False)
+    self.checkName (1, "node-0", "new value")
     assert self.nodes[1].getbalance () < Decimal ("0.01")
 
 if __name__ == '__main__':

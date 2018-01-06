@@ -33,7 +33,7 @@ class NameScanningTest (NameTestFramework):
     newData = self.nodes[3].name_new ("c")
 
     # Check that name_show still returns the old value.
-    self.checkName (0, "a", "old-value-a", None, False)
+    self.checkName (0, "a", "old-value-a")
 
     # Check sizes of mempool against name_pending.
     self.sync_with_mode ('mempool')

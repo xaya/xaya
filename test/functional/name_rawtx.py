@@ -53,13 +53,13 @@ class NameRawTxTest (NameTestFramework):
     firstAddr = self.nodes[0].getnewaddress ()
     firstOutp, _ = self.rawNameOp (0, newOutp, firstAddr, firstOp)
     self.generate (0, 5)
-    self.checkName (1, "raw-test-name", "first value", None, False)
+    self.checkName (1, "raw-test-name", "first value")
 
     updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
     updAddr = self.nodes[0].getnewaddress ()
     self.rawNameOp (0, firstOutp, updAddr, updOp)
     self.generate (0, 1)
-    self.checkName (1, "raw-test-name", "new value", None, False)
+    self.checkName (1, "raw-test-name", "new value")
 
     # Verify range check of vout in namerawtransaction.
     tx = self.nodes[0].createrawtransaction ([], {})
@@ -80,7 +80,7 @@ class NameRawTxTest (NameTestFramework):
     self.atomicTrade ("my-name", "enjoy", price, fee, 0, 1)
     self.generate (2, 1)
 
-    data = self.checkName (2, "my-name", "enjoy", None, False)
+    data = self.checkName (2, "my-name", "enjoy")
     validate = self.nodes[1].validateaddress (data['address'])
     assert validate['ismine']
     data = self.nodes[0].name_list ("my-name")

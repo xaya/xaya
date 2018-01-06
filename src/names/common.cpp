@@ -233,44 +233,6 @@ CNameCache::setHistory (const valtype& name, const CNameHistory& data)
 }
 
 void
-CNameCache::updateNamesForHeight (unsigned nHeight,
-                                  std::set<valtype>& names) const
-{
-  /* Seek in the map of cached entries to the first one corresponding
-     to our height.  */
-
-  const ExpireEntry seekEntry(nHeight, valtype ());
-  std::map<ExpireEntry, bool>::const_iterator it;
-
-  for (it = expireIndex.lower_bound (seekEntry); it != expireIndex.end (); ++it)
-    {
-      const ExpireEntry& cur = it->first;
-      assert (cur.nHeight >= nHeight);
-      if (cur.nHeight > nHeight)
-        break;
-
-      if (it->second)
-        names.insert (cur.name);
-      else
-        names.erase (cur.name);
-    }
-}
-
-void
-CNameCache::addExpireIndex (const valtype& name, unsigned height)
-{
-  const ExpireEntry entry(height, name);
-  expireIndex[entry] = true;
-}
-
-void
-CNameCache::removeExpireIndex (const valtype& name, unsigned height)
-{
-  const ExpireEntry entry(height, name);
-  expireIndex[entry] = false;
-}
-
-void
 CNameCache::apply (const CNameCache& cache)
 {
   for (EntryMap::const_iterator i = cache.entries.begin ();
@@ -284,8 +246,4 @@ CNameCache::apply (const CNameCache& cache)
   for (std::map<valtype, CNameHistory>::const_iterator i
         = cache.history.begin (); i != cache.history.end (); ++i)
     setHistory (i->first, i->second);
-
-  for (std::map<ExpireEntry, bool>::const_iterator i
-        = cache.expireIndex.begin (); i != cache.expireIndex.end (); ++i)
-    expireIndex[i->first] = i->second;
 }

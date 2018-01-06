@@ -24,7 +24,7 @@ class NameScanningTest (NameTestFramework):
     assert_equal (self.nodes[0].name_filter ("", 0, 0, 0, "stat"),
                   {"blocks": 201,"count": 0})
 
-    # Register some names with various data, heights and expiration status.
+    # Register some names with various data and heights.
     # Using both "aa" and "b" ensures that we can also check for the expected
     # comparison order between string length and lexicographic ordering.
 
@@ -45,10 +45,10 @@ class NameScanningTest (NameTestFramework):
     # Check the expected name_scan data values.
     scan = self.nodes[3].name_scan ()
     assert_equal (len (scan), 4)
-    self.checkNameData (scan[0], "a", "value a", 11, False)
-    self.checkNameData (scan[1], "b", "value b", -4, True)
-    self.checkNameData (scan[2], "c", "value c", 11, False)
-    self.checkNameData (scan[3], "aa", "value aa", -4, True)
+    self.checkNameData (scan[0], "a", "value a")
+    self.checkNameData (scan[1], "b", "value b")
+    self.checkNameData (scan[2], "c", "value c")
+    self.checkNameData (scan[3], "aa", "value aa")
 
     # Check for expected names in various name_scan calls.
     self.checkList (self.nodes[3].name_scan (), ["a", "b", "c", "aa"])
@@ -62,10 +62,10 @@ class NameScanningTest (NameTestFramework):
     # Check the expected name_filter data values.
     scan = self.nodes[3].name_scan ()
     assert_equal (len (scan), 4)
-    self.checkNameData (scan[0], "a", "value a", 11, False)
-    self.checkNameData (scan[1], "b", "value b", -4, True)
-    self.checkNameData (scan[2], "c", "value c", 11, False)
-    self.checkNameData (scan[3], "aa", "value aa", -4, True)
+    self.checkNameData (scan[0], "a", "value a")
+    self.checkNameData (scan[1], "b", "value b")
+    self.checkNameData (scan[2], "c", "value c")
+    self.checkNameData (scan[3], "aa", "value aa")
 
     # Check for expected names in various name_filter calls.
     height = self.nodes[3].getblockcount ()

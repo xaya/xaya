@@ -94,22 +94,6 @@ public:
         ssValue.clear();
     }
 
-    /* Write an empty value.  This is used for the expire-index
-       in the name database.  */
-    template <typename K>
-    void Write(const K& key)
-    {
-        ssKey.reserve(DBWRAPPER_PREALLOC_KEY_SIZE);
-        ssKey << key;
-        leveldb::Slice slKey(ssKey.data(), ssKey.size());
-
-        char dummy;
-        leveldb::Slice slValue(&dummy, 0);
-
-        batch.Put(slKey, slValue);
-        ssKey.clear();
-    }
-
     template <typename K>
     void Erase(const K& key)
     {

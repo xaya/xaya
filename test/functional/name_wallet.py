@@ -190,7 +190,7 @@ class NameWalletTest (NameTestFramework):
     self.generate (0, 5)
     self.firstupdateName (0, "destination", newDest, "value", addrDest)
     self.generate (0, 10)
-    self.checkName (3, "destination", "value", None, False)
+    self.checkName (3, "destination", "value")
 
     assert_raises_rpc_error (-5, 'name not found',
                              self.nodes[3].sendtoname, "non-existant", 10)
@@ -204,11 +204,6 @@ class NameWalletTest (NameTestFramework):
     fee = self.getFee (3, txid)
     self.generate (0, 1)
     self.checkBalances (-10 + fee, 10)
-
-    self.generate (0, 30)
-    self.checkName (3, "destination", "value", None, True)
-    assert_raises_rpc_error (-5, 'the name is expired',
-                             self.nodes[3].sendtoname, "destination", 10)
 
 if __name__ == '__main__':
   NameWalletTest ().main ()

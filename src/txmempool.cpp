@@ -962,7 +962,6 @@ int CTxMemPool::Expire(int64_t time) {
     for (txiter removeit : toremove) {
         CalculateDescendants(removeit, stage);
     }
-    RemoveStaged(stage, false, MemPoolRemovalReason::EXPIRY);
     return stage.size();
 }
 

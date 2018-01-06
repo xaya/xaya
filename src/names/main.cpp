@@ -17,40 +17,6 @@
 #include <utilstrencodings.h>
 #include <validation.h>
 
-/**
- * Check whether a name at nPrevHeight is expired at nHeight.  Also
- * heights of MEMPOOL_HEIGHT are supported.  For nHeight == MEMPOOL_HEIGHT,
- * we check at the current best tip's height.
- * @param nPrevHeight The name's output.
- * @param nHeight The height at which it should be updated.
- * @return True iff the name is expired.
- */
-static bool
-isExpired (unsigned nPrevHeight, unsigned nHeight)
-{
-  assert (nHeight != MEMPOOL_HEIGHT);
-  if (nPrevHeight == MEMPOOL_HEIGHT)
-    return false;
-
-  const Consensus::Params& params = Params ().GetConsensus ();
-  return nPrevHeight + params.rules->NameExpirationDepth (nHeight) <= nHeight;
-}
-
-/* ************************************************************************** */
-/* CNameData.  */
-
-bool
-CNameData::isExpired () const
-{
-  return isExpired (chainActive.Height ());
-}
-
-bool
-CNameData::isExpired (unsigned h) const
-{
-  return ::isExpired (nHeight, h);
-}
-
 /* ************************************************************************** */
 /* CNameTxUndo.  */
 
@@ -171,58 +137,9 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
 }
 
 void
-CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired)
-{
-  AssertLockHeld (pool.cs);
-
-  for (const auto& name : unexpired)
-    {
-      LogPrint (BCLog::NAMES, "unexpired: %s, mempool: %u\n",
-                ValtypeToString (name).c_str (), mapNameRegs.count (name));
-
-      const NameTxMap::const_iterator mit = mapNameRegs.find (name);
-      if (mit != mapNameRegs.end ())
-        {
-          const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
-          assert (mit2 != pool.mapTx.end ());
-          pool.removeRecursive (mit2->GetTx (),
-                                MemPoolRemovalReason::NAME_CONFLICT);
-        }
-    }
-}
-
-void
-CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
-{
-  AssertLockHeld (pool.cs);
-
-  for (const auto& name : expired)
-    {
-      LogPrint (BCLog::NAMES, "expired: %s, mempool: %u\n",
-                ValtypeToString (name).c_str (), mapNameUpdates.count (name));
-
-      const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
-      if (mit != mapNameUpdates.end ())
-        {
-          const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
-          assert (mit2 != pool.mapTx.end ());
-          pool.removeRecursive (mit2->GetTx (),
-                                MemPoolRemovalReason::NAME_CONFLICT);
-        }
-    }
-}
-
-void
 CNameMemPool::check (const CCoinsView& coins) const
 {
   AssertLockHeld (pool.cs);
-
-  const uint256 blockHash = coins.GetBestBlock ();
-  int nHeight;
-  if (blockHash.IsNull())
-    nHeight = 0;
-  else
-    nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   std::set<valtype> nameUpdates;
@@ -249,12 +166,9 @@ CNameMemPool::check (const CCoinsView& coins) const
           assert (nameRegs.count (name) == 0);
           nameRegs.insert (name);
 
-          /* The old name should be expired already.  Note that we use
-             nHeight+1 for the check, because that's the height at which
-             the mempool tx will actually be mined.  */
+          /* There should be no existing name.  */
           CNameData data;
-          if (coins.GetName (name, data))
-            assert (data.isExpired (nHeight + 1));
+          assert (!coins.GetName (name, data));
         }
 
       if (entry.isNameUpdate ())
@@ -268,11 +182,9 @@ CNameMemPool::check (const CCoinsView& coins) const
           assert (nameUpdates.count (name) == 0);
           nameUpdates.insert (name);
 
-          /* As above, use nHeight+1 for the expiration check.  */
           CNameData data;
           if (!coins.GetName (name, data))
             assert (false);
-          assert (!data.isExpired (nHeight + 1));
         }
     }
 
@@ -505,16 +417,11 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         return state.Invalid (error ("%s: NAME_UPDATE name mismatch to prev tx"
                                      " found in %s", __func__, txid));
 
-      /* This is actually redundant, since expired names are removed
-         from the UTXO set and thus not available to be spent anyway.
-         But it does not hurt to enforce this here, too.  It is also
-         exercised by the unit tests.  */
+      /* This is actually redundant, since updates need an existing name coin
+         to spend anyway.  But it does not hurt to enforce this here, too.  */
       CNameData oldName;
       if (!view.GetName (name, oldName))
         return state.Invalid (error ("%s: NAME_UPDATE name does not exist",
-                                     __func__));
-      if (oldName.isExpired (nHeight))
-        return state.Invalid (error ("%s: trying to update expired name",
                                      __func__));
 
       /* This is an internal consistency check.  If everything is fine,
@@ -558,9 +465,9 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   }
 
   CNameData oldName;
-  if (view.GetName (name, oldName) && !oldName.isExpired (nHeight))
+  if (view.GetName (name, oldName))
     return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
-                                 " on an unexpired name"));
+                                 " on an existing name"));
 
   /* We don't have to specifically check that miners don't create blocks with
      conflicting NAME_FIRSTUPDATE's, since the mining's CCoinsViewCache
@@ -622,126 +529,6 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
     }
 }
 
-bool
-ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
-             std::set<valtype>& names)
-{
-  names.clear ();
-
-  /* The genesis block contains no name expirations.  */
-  if (nHeight == 0)
-    return true;
-
-  /* Otherwise, find out at which update heights names have expired
-     since the last block.  If the expiration depth changes, this could
-     be multiple heights at once.  */
-
-  const Consensus::Params& params = Params ().GetConsensus ();
-  const unsigned expDepthOld = params.rules->NameExpirationDepth (nHeight - 1);
-  const unsigned expDepthNow = params.rules->NameExpirationDepth (nHeight);
-
-  if (expDepthNow > nHeight)
-    return true;
-
-  /* Both are inclusive!  The last expireTo was nHeight - 1 - expDepthOld,
-     now we start at this value + 1.  */
-  const unsigned expireFrom = nHeight - expDepthOld;
-  const unsigned expireTo = nHeight - expDepthNow;
-
-  /* It is possible that expireFrom = expireTo + 1, in case that the
-     expiration period is raised together with the block height.  In this
-     case, no names expire in the current step.  This case means that
-     the absolute expiration height "n - expirationDepth(n)" is
-     flat -- which is fine.  */
-  assert (expireFrom <= expireTo + 1);
-
-  /* Find all names that expire at those depths.  Note that GetNamesForHeight
-     clears the output set, to we union all sets here.  */
-  for (unsigned h = expireFrom; h <= expireTo; ++h)
-    {
-      std::set<valtype> newNames;
-      view.GetNamesForHeight (h, newNames);
-      names.insert (newNames.begin (), newNames.end ());
-    }
-
-  /* Expire all those names.  */
-  for (std::set<valtype>::const_iterator i = names.begin ();
-       i != names.end (); ++i)
-    {
-      const std::string nameStr = ValtypeToString (*i);
-
-      CNameData data;
-      if (!view.GetName (*i, data))
-        return error ("%s : name '%s' not found in the database",
-                      __func__, nameStr.c_str ());
-      if (!data.isExpired (nHeight))
-        return error ("%s : name '%s' is not actually expired",
-                      __func__, nameStr.c_str ());
-
-      /* Special rule:  When d/postmortem expires (the name used by
-         libcoin in the name-stealing demonstration), it's coin
-         is already spent.  Ignore.  */
-      if (nHeight == 175868 && nameStr == "d/postmortem")
-        continue;
-
-      const COutPoint& out = data.getUpdateOutpoint ();
-      Coin coin;
-      if (!view.GetCoin(out, coin))
-        return error ("%s : name coin for '%s' is not available",
-                      __func__, nameStr.c_str ());
-      const CNameScript nameOp(coin.out.scriptPubKey);
-      if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
-          || nameOp.getOpName () != *i)
-        return error ("%s : name coin to be expired is wrong script", __func__);
-
-      if (!view.SpendCoin (out, &coin))
-        return error ("%s : spending name coin failed", __func__);
-      undo.vexpired.push_back (coin);
-    }
-
-  return true;
-}
-
-bool
-UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
-               std::set<valtype>& names)
-{
-  names.clear ();
-
-  /* The genesis block contains no name expirations.  */
-  if (nHeight == 0)
-    return true;
-
-  std::vector<Coin>::reverse_iterator i;
-  for (i = undo.vexpired.rbegin (); i != undo.vexpired.rend (); ++i)
-    {
-      const CNameScript nameOp(i->out.scriptPubKey);
-      if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
-        return error ("%s : wrong script to be unexpired", __func__);
-
-      const valtype& name = nameOp.getOpName ();
-      if (names.count (name) > 0)
-        return error ("%s : name '%s' unexpired twice",
-                      __func__, ValtypeToString (name).c_str ());
-      names.insert (name);
-
-      CNameData data;
-      if (!view.GetName (nameOp.getOpName (), data))
-        return error ("%s : no data for name '%s' to be unexpired",
-                      __func__, ValtypeToString (name).c_str ());
-      if (!data.isExpired (nHeight) || data.isExpired (nHeight - 1))
-        return error ("%s : name '%s' to be unexpired is not expired in the DB"
-                      " or it was already expired before the current height",
-                      __func__, ValtypeToString (name).c_str ());
-
-      if (ApplyTxInUndo (std::move(*i), view,
-                         data.getUpdateOutpoint ()) != DISCONNECT_OK)
-        return error ("%s : failed to undo name coin spending", __func__);
-    }
-
-  return true;
-}
-
 void
 CheckNameDB (bool disconnect)
 {
@@ -759,20 +546,5 @@ CheckNameDB (bool disconnect)
     }
 
   pcoinsTip->Flush ();
-  const bool ok = pcoinsTip->ValidateNameDB ();
-
-  /* The DB is inconsistent (mismatch between UTXO set and names DB) between
-     (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's
-     "name stealing" bug.  For instance, d/postmortem is removed from
-     the UTXO set shortly after registration (when it is used to steal
-     names), but it remains in the name DB until it expires.  */
-  if (!ok)
-    {
-      const unsigned nHeight = chainActive.Height ();
-      LogPrintf ("ERROR: %s : name database is inconsistent\n", __func__);
-      if (nHeight >= 139000 && nHeight <= 180000)
-        LogPrintf ("This is expected due to 'name stealing'.\n");
-      else
-        assert (false);
-    }
+  assert (pcoinsTip->ValidateNameDB ());
 }

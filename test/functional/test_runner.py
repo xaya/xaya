@@ -139,7 +139,6 @@ BASE_SCRIPTS= [
     'auxpow_mining.py',
 
     # name tests
-    'name_expiration.py',
     'name_list.py',
     'name_multisig.py',
     'name_pending.py',

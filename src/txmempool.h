@@ -346,7 +346,6 @@ struct TxMempoolInfo
  */
 enum class MemPoolRemovalReason {
     UNKNOWN = 0, //! Manually removed or unknown reason
-    EXPIRY,      //! Expired from mempool
     SIZELIMIT,   //! Removed in size limiting
     REORG,       //! Removed for reorganization
     BLOCK,       //! Removed for block
@@ -572,20 +571,6 @@ public:
      * the tx is not dependent on other mempool transactions to be included in a block.
      */
     bool HasNoInputsOf(const CTransaction& tx) const;
-
-    /* Remove entries that conflict with name expirations / unexpirations.  */
-    inline void
-    removeUnexpireConflicts (const std::set<valtype>& unexpired)
-    {
-        LOCK(cs);
-        names.removeUnexpireConflicts (unexpired);
-    }
-    inline void
-    removeExpireConflicts (const std::set<valtype>& expired)
-    {
-        LOCK(cs);
-        names.removeExpireConflicts (expired);
-    }
 
     /** Affect CreateNewBlock prioritisation of transactions */
     void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta);

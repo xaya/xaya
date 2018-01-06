@@ -134,19 +134,6 @@ public:
   }
 
   /**
-   * Check if the name is expired at the current chain height.
-   * @return True iff the name is expired.
-   */
-  bool isExpired () const;
-
-  /**
-   * Check if the name is expired at the given height.
-   * @param h The height at which to check.
-   * @return True iff the name is expired at height h.
-   */
-  bool isExpired (unsigned h) const;
-
-  /**
    * Set from a name update operation.
    * @param h The height (not available from script).
    * @param out The update outpoint.
@@ -293,77 +280,6 @@ private:
 public:
 
   /**
-   * Type for expire-index entries.  We have to make sure that
-   * it is serialised in such a way that ordering is done correctly
-   * by height.  This is not true if we use a std::pair, since then
-   * the height is serialised as byte-array with little-endian order,
-   * which does not correspond to the ordering by actual value.
-   */
-  class ExpireEntry
-  {
-  public:
-
-    unsigned nHeight;
-    valtype name;
-
-    inline ExpireEntry ()
-      : nHeight(0), name()
-    {}
-
-    inline ExpireEntry (unsigned h, const valtype& n)
-      : nHeight(h), name(n)
-    {}
-
-    /* Default copy and assignment.  */
-
-    template<typename Stream>
-      inline void
-      Serialize (Stream& s) const
-    {
-      /* Flip the byte order of nHeight to big endian.  */
-      const uint32_t nHeightFlipped = htobe32 (nHeight);
-
-      ::Serialize (s, nHeightFlipped);
-      ::Serialize (s, name);
-    }
-
-    template<typename Stream>
-      inline void
-      Unserialize (Stream& s)
-    {
-      uint32_t nHeightFlipped;
-
-      ::Unserialize (s, nHeightFlipped);
-      ::Unserialize (s, name);
-
-      /* Unflip the byte order.  */
-      nHeight = be32toh (nHeightFlipped);
-    }
-
-    friend inline bool
-    operator== (const ExpireEntry& a, const ExpireEntry& b)
-    {
-      return a.nHeight == b.nHeight && a.name == b.name;
-    }
-
-    friend inline bool
-    operator!= (const ExpireEntry& a, const ExpireEntry& b)
-    {
-      return !(a == b);
-    }
-
-    friend inline bool
-    operator< (const ExpireEntry& a, const ExpireEntry& b)
-    {
-      if (a.nHeight != b.nHeight)
-        return a.nHeight < b.nHeight;
-
-      return a.name < b.name;
-    }
-
-  };
-
-  /**
    * Type of name entry map.  This is public because it is also used
    * by the unit tests.
    */
@@ -382,12 +298,6 @@ private:
    */
   std::map<valtype, CNameHistory> history;
 
-  /**
-   * Changes to be performed to the expire index.  The entry is mapped
-   * to either "true" (meaning to add it) or "false" (delete).
-   */
-  std::map<ExpireEntry, bool> expireIndex;
-
   friend class CCacheNameIterator;
 
 public:
@@ -398,7 +308,6 @@ public:
     entries.clear ();
     deleted.clear ();
     history.clear ();
-    expireIndex.clear ();
   }
 
   /**
@@ -412,7 +321,7 @@ public:
   {
     if (entries.empty () && deleted.empty ())
       {
-        assert (history.empty () && expireIndex.empty ());
+        assert (history.empty ());
         return true;
       }
 
@@ -456,18 +365,6 @@ public:
    * @param data The new history entry.
    */
   void setHistory (const valtype& name, const CNameHistory& data);
-
-  /* Query the cached changes to the expire index.  In particular,
-     for a given height and a given set of names that were indexed to
-     this update height, apply possible changes to the set that
-     are represented by the cached expire index changes.  */
-  void updateNamesForHeight (unsigned nHeight, std::set<valtype>& names) const;
-
-  /* Add an expire-index entry.  */
-  void addExpireIndex (const valtype& name, unsigned height);
-
-  /* Remove an expire-index entry.  */
-  void removeExpireIndex (const valtype& name, unsigned height);
 
   /* Apply all the changes in the passed-in record on top of this one.  */
   void apply (const CNameCache& cache);

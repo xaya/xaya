@@ -77,7 +77,6 @@ public:
     std::vector<uint256> GetHeadBlocks() const override;
     bool GetName(const valtype &name, CNameData &data) const override;
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
-    bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& data) const override;
     CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor *Cursor() const override;
