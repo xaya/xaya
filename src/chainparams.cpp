@@ -180,11 +180,9 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 00000000000000000166d612d5595e2b1cd88d71d695fc580af64d8da8658c23 (height 446482).
-            1442977054, // * UNIX timestamp of last known number of transactions
-            3000785,    // * total number of transactions between genesis and that timestamp
-                        //   (the tx=... number in the SetBestChain debug.log lines)
-            0.0189      // * estimated number of transactions per second after checkpoint
+            0,
+            0,
+            0
         };
 
         /* See also doc/NamecoinBugs.txt for more explanation on the
@@ -322,9 +320,9 @@ public:
         };
 
         chainTxData = ChainTxData{
-            1464247300,
-            173446,
-            0.0027
+            0,
+            0,
+            0
         };
 
         assert(mapHistoricBugs.empty());
