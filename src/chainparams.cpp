@@ -97,15 +97,10 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 210000;
-        /* Note that these are not the actual activation heights, but blocks
-           after them.  They are too deep in the chain to be ever reorged,
-           and thus this is also fine.  */
-        // FIXME: Activate BIP16 with a softfork.
-        consensus.BIP16Height = 10000000;
-        consensus.BIP34Height = 250000;
-        consensus.BIP34Hash = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a");
-        consensus.BIP65Height = 335000;
-        consensus.BIP66Height = 250000;
+        consensus.BIP16Height = 0;
+        consensus.BIP34Height = 0;
+        consensus.BIP65Height = 0;
+        consensus.BIP66Height = 0;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -128,13 +123,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 0; // Not yet enabled
 
         // The best chain should have at least this much work.
-        // The value is the chain work of the Namecoin mainnet chain at height
-        // 312,290, with best block hash:
-        // c98df864dce972b1948314e98e96c8a86d2c0aaa80b421fe651e203f6bab9010
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000010d441df8a789cb99792b2");
+        consensus.nMinimumChainWork = uint256S("0x00");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a"); //250000
+        consensus.defaultAssumeValid = uint256S("0x00");
 
         consensus.nAuxpowChainId = 0x0001;
         consensus.nAuxpowStartHeight = 19200;
@@ -265,14 +257,10 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 210000;
-        /* As before, these are not the actual activation heights but some
-           blocks after them.  */
-        // FIXME: Activate BIP16 with a softfork.
-        consensus.BIP16Height = 10000000;
-        consensus.BIP34Height = 130000;
-        consensus.BIP34Hash = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954");
-        consensus.BIP65Height = 130000;
-        consensus.BIP66Height = 130000;
+        consensus.BIP16Height = 0;
+        consensus.BIP34Height = 0;
+        consensus.BIP65Height = 0;
+        consensus.BIP66Height = 0;
         consensus.powLimit = uint256S("0000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -296,13 +284,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 0; // Not yet enabled
 
         // The best chain should have at least this much work.
-        // The value is the chain work of the Namecoin testnet chain at height
-        // 158,460, with best block hash:
-        // cebebb916288ed48cd8a359576d900c550203883bf69fc8d5ed92c5d778a1e32
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000005cfea5e7ee2dd9d9");
+        consensus.nMinimumChainWork = uint256S("0x00");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954"); //130000
+        consensus.defaultAssumeValid = uint256S("0x00");
 
         consensus.nAuxpowStartHeight = 0;
         consensus.nAuxpowChainId = 0x0001;
@@ -386,7 +371,6 @@ public:
         consensus.nSubsidyHalvingInterval = 150;
         consensus.BIP16Height = 0; // always enforce P2SH BIP16 on regtest
         consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
