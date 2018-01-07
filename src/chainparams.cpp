@@ -14,21 +14,6 @@
 
 #include <chainparamsseeds.h>
 
-bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const
-{
-    const std::pair<unsigned, uint256> key(nHeight, txid);
-    std::map<std::pair<unsigned, uint256>, BugType>::const_iterator mi;
-
-    mi = mapHistoricBugs.find (key);
-    if (mi != mapHistoricBugs.end ())
-    {
-        type = mi->second;
-        return true;
-    }
-
-    return false;
-}
-
 static CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;
@@ -184,47 +169,6 @@ public:
             0,
             0
         };
-
-        /* See also doc/NamecoinBugs.txt for more explanation on the
-           historical bugs added below.  */
-
-        /* These transactions have name outputs but a non-Namecoin tx version.
-           They contain NAME_NEWs, which are fine, and also NAME_FIRSTUPDATE.
-           The latter are not interpreted by namecoind, thus also ignore
-           them for us here.  */
-        addBug(98423, "bff3ed6873e5698b97bf0c28c29302b59588590b747787c7d1ef32decdabe0d1", BUG_FULLY_IGNORE);
-        addBug(98424, "e9b211007e5cac471769212ca0f47bb066b81966a8e541d44acf0f8a1bd24976", BUG_FULLY_IGNORE);
-        addBug(98425, "8aa2b0fc7d1033de28e0192526765a72e9df0c635f7305bdc57cb451ed01a4ca", BUG_FULLY_IGNORE);
-
-        /* These are non-Namecoin tx that contain just NAME_NEWs.  Those were
-           handled with a special rule previously, but now they are fully
-           disallowed and we handle the few exceptions here.  It is fine to
-           "ignore" them, as their outputs need no special Namecoin handling
-           before they are reused in a NAME_FIRSTUPDATE.  */
-        addBug(98318, "0ae5e958ff05ad8e273222656d98d076097def6d36f781a627c584b859f4727b", BUG_FULLY_IGNORE);
-        addBug(98321, "aca8ce46da1bbb9bb8e563880efcd9d6dd18342c446d6f0e3d4b964a990d1c27", BUG_FULLY_IGNORE);
-        addBug(98424, "c29b0d9d478411462a8ac29946bf6fdeca358a77b4be15cd921567eb66852180", BUG_FULLY_IGNORE);
-        addBug(98425, "221719b360f0c83fa5b1c26fb6b67c5e74e4e7c6aa3dce55025da6759f5f7060", BUG_FULLY_IGNORE);
-        addBug(193518, "597370b632efb35d5ed554c634c7af44affa6066f2a87a88046532d4057b46f8", BUG_FULLY_IGNORE);
-        addBug(195605, "0bb8c7807a9756aefe62c271770b313b31dee73151f515b1ac2066c50eaeeb91", BUG_FULLY_IGNORE);
-        addBug(195639, "3181930765b970fc43cd31d53fc6fc1da9439a28257d9067c3b5912d23eab01c", BUG_FULLY_IGNORE);
-        addBug(195639, "e815e7d774937d96a4b265ed4866b7e3dc8d9f2acb8563402e216aba6edd1e9e", BUG_FULLY_IGNORE);
-        addBug(195639, "cdfe6eda068e09fe760a70bec201feb041b8c660d0e98cbc05c8aa4106eae6ab", BUG_FULLY_IGNORE);
-        addBug(195641, "1e29e937b2a9e1f18af500371b8714157cf5ac7c95461913e08ce402de64ae75", BUG_FULLY_IGNORE);
-        addBug(195648, "d44ed6c0fac251931465f9123ada8459ec954cc6c7b648a56c9326ff7b13f552", BUG_FULLY_IGNORE);
-        addBug(197711, "dd77aea50a189935d0ef36a04856805cd74600a53193c539eb90c1e1c0f9ecac", BUG_FULLY_IGNORE);
-        addBug(204151, "f31875dfaf94bd3a93cfbed0e22d405d1f2e49b4d0750cb13812adc5e57f1e47", BUG_FULLY_IGNORE);
-
-        /* This transaction has both a NAME_NEW and a NAME_FIRSTUPDATE as
-           inputs.  This was accepted due to the "argument concatenation" bug.
-           It is fine to accept it as valid and just process the NAME_UPDATE
-           output that builds on the NAME_FIRSTUPDATE input.  (NAME_NEW has no
-           special side-effect in applying anyway.)  */
-        addBug(99381, "774d4c446cecfc40b1c02fdc5a13be6d2007233f9d91daefab6b3c2e70042f05", BUG_FULLY_APPLY);
-
-        /* These were libcoin's name stealing bugs.  */
-        addBug(139872, "2f034f2499c136a2c5a922ca4be65c1292815c753bbb100a2a26d5ad532c3919", BUG_IN_UTXO);
-        addBug(139936, "c3e76d5384139228221cce60250397d1b87adf7366086bc8d6b5e6eee03c55c7", BUG_FULLY_IGNORE);
     }
 
     int DefaultCheckNameDB () const
@@ -324,8 +268,6 @@ public:
             0,
             0
         };
-
-        assert(mapHistoricBugs.empty());
     }
 
     int DefaultCheckNameDB () const
@@ -415,8 +357,6 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         bech32_hrp = "ncrt";
-
-        assert(mapHistoricBugs.empty());
     }
 
     int DefaultCheckNameDB () const

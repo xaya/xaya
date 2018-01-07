@@ -302,11 +302,6 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   const char* txid = strTxid.c_str ();
   const bool fMempool = (flags & SCRIPT_VERIFY_NAMES_MEMPOOL);
 
-  /* Ignore historic bugs.  */
-  CChainParams::BugType type;
-  if (Params ().IsHistoricBug (tx.GetHash (), nHeight, type))
-    return true;
-
   /* As a first step, try to locate inputs and outputs of the transaction
      that are name scripts.  At most one input and output should be
      a name operation.  */
@@ -481,24 +476,6 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                       CCoinsViewCache& view, CBlockUndo& undo)
 {
   assert (nHeight != MEMPOOL_HEIGHT);
-
-  /* Handle historic bugs that should *not* be applied.  Names that are
-     outputs should be marked as unspendable in this case.  Otherwise,
-     we get an inconsistency between the UTXO set and the name database.  */
-  CChainParams::BugType type;
-  const uint256 txHash = tx.GetHash ();
-  if (Params ().IsHistoricBug (txHash, nHeight, type)
-      && type != CChainParams::BUG_FULLY_APPLY)
-    {
-      if (type == CChainParams::BUG_FULLY_IGNORE)
-        for (unsigned i = 0; i < tx.vout.size (); ++i)
-          {
-            const CNameScript op(tx.vout[i].scriptPubKey);
-            if (op.isNameOp () && op.isAnyUpdate ())
-              view.SpendCoin (COutPoint (txHash, i));
-          }
-      return;
-    }
 
   /* This check must be done *after* the historic bug fixing above!  Some
      of the names that must be handled above are actually produced by

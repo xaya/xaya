@@ -1590,13 +1590,7 @@ static DisconnectResult DisconnectBlock(const CBlock& block, const CBlockIndex* 
                 Coin coin;
                 bool is_spent = view.SpendCoin(out, &coin);
                 if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
-                    /* This may be due to a historic bug.  For them, some names
-                       are marked immediately as unspendable.  They fail this check
-                       when undoing, thus ignore them here.  */
-                    CChainParams::BugType type;
-                    if (!Params ().IsHistoricBug (tx.GetHash (), pindex->nHeight, type) || type != CChainParams::BUG_FULLY_IGNORE) {
-                        fClean = false; // transaction output mismatch
-                    }
+                    fClean = false;
                 }
             }
         }

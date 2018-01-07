@@ -99,12 +99,6 @@ public:
     const ChainTxData& TxData() const { return chainTxData; }
     void UpdateVersionBitsParameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout);
 
-    /* Check whether the given tx is a "historic relic" for which to
-       skip the validity check.  Return also the "type" of the bug,
-       which determines further actions.  */
-    /* FIXME: Move to consensus params!  */
-    bool IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const;
-
 protected:
     CChainParams() {}
 
@@ -123,17 +117,6 @@ protected:
     bool fMineBlocksOnDemand;
     CCheckpointData checkpointData;
     ChainTxData chainTxData;
-
-    /* Map (block height, txid) pairs for buggy transactions onto their
-       bug type value.  */
-    std::map<std::pair<unsigned, uint256>, BugType> mapHistoricBugs;
-
-    /* Utility routine to insert into historic bug map.  */
-    inline void addBug(unsigned nHeight, const char* txid, BugType type)
-    {
-        std::pair<unsigned, uint256> key(nHeight, uint256S(txid));
-        mapHistoricBugs.insert(std::make_pair(key, type));
-    }
 };
 
 /**
