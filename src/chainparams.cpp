@@ -125,11 +125,11 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xf9;
+        pchMessageStart[0] = 0xcc;
         pchMessageStart[1] = 0xbe;
         pchMessageStart[2] = 0xb4;
         pchMessageStart[3] = 0xfe;
-        nDefaultPort = 8334;
+        nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
         genesis = CreateGenesisBlock(1303000001, 0xa21ea192u, 0x1c007fff, 1, 50 * COIN);
@@ -224,11 +224,11 @@ public:
 
         consensus.rules.reset(new Consensus::TestNetConsensus());
 
-        pchMessageStart[0] = 0xfa;
+        pchMessageStart[0] = 0xcc;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xfe;
-        nDefaultPort = 18334;
+        nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
         genesis = CreateTestnetGenesisBlock(1296688602, 0x16ec0bff, 0x1d07fff8, 1, 50 * COIN);
@@ -319,11 +319,11 @@ public:
 
         consensus.rules.reset(new Consensus::RegTestConsensus());
 
-        pchMessageStart[0] = 0xfa;
+        pchMessageStart[0] = 0xcc;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
-        nDefaultPort = 18445;
+        nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
         genesis = CreateTestnetGenesisBlock(1296688602, 2, 0x207fffff, 1, 50 * COIN);
