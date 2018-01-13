@@ -119,6 +119,13 @@ class NameWalletTest (NameTestFramework):
 
     self.checkBalances ()
 
+    # Check that we use legacy addresses.
+    # FIXME: Remove once we have segwit.
+    addr = self.nodes[0].getnewaddress ()
+    info = self.nodes[0].validateaddress (addr)
+    assert not info['isscript']
+    assert not info['iswitness']
+
     # Register and update a name.  Check changes to the balance.
     newA = self.nodes[2].name_new ("name-a")
     newFee = self.getFee (2, newA[0], nameFee)

@@ -82,6 +82,7 @@ BASE_SCRIPTS= [
     # FIXME: Enable once we activate BIP9.
     #'bip68-112-113-p2p.py',
     'rawtransactions.py',
+    'address_types.py',
     'reindex.py',
     # vv Tests less than 30s vv
     'keypool-topup.py',
@@ -90,12 +91,14 @@ BASE_SCRIPTS= [
     'mempool_resurrect_test.py',
     'txn_doublespend.py --mineblock',
     'txn_clone.py',
+    'txn_clone.py --segwit',
     'getchaintips.py',
     'rest.py',
     'mempool_spendcoinbase.py',
     'mempool_reorg.py',
     'mempool_persist.py',
     'multiwallet.py',
+    'multiwallet.py --usecli',
     'httpbasics.py',
     'multi_rpc.py',
     'proxy_test.py',
