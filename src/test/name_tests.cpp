@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -51,29 +51,15 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   const valtype name = ValtypeFromString ("my-cool-name");
   const valtype value = ValtypeFromString ("42!");
 
-  const valtype rand(20, 'x');
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  const uint160 hash = Hash160 (toHash);
-
   CScript script;
-  script = CNameScript::buildNameNew (addr, hash);
-  const CNameScript opNew(script);
-  BOOST_CHECK (opNew.isNameOp ());
-  BOOST_CHECK (opNew.getAddress () == addr);
-  BOOST_CHECK (!opNew.isAnyUpdate ());
-  BOOST_CHECK (opNew.getNameOp () == OP_NAME_NEW);
-  BOOST_CHECK (uint160 (opNew.getOpHash ()) == hash);
-
-  script = CNameScript::buildNameFirstupdate (addr, name, value, rand);
+  script = CNameScript::buildNameRegister (addr, name, value);
   const CNameScript opFirstupdate(script);
   BOOST_CHECK (opFirstupdate.isNameOp ());
   BOOST_CHECK (opFirstupdate.getAddress () == addr);
   BOOST_CHECK (opFirstupdate.isAnyUpdate ());
-  BOOST_CHECK (opFirstupdate.getNameOp () == OP_NAME_FIRSTUPDATE);
+  BOOST_CHECK (opFirstupdate.getNameOp () == OP_NAME_REGISTER);
   BOOST_CHECK (opFirstupdate.getOpName () == name);
   BOOST_CHECK (opFirstupdate.getOpValue () == value);
-  BOOST_CHECK (opFirstupdate.getOpRand () == rand);
 
   script = CNameScript::buildNameUpdate (addr, name, value);
   const CNameScript opUpdate(script);
@@ -473,30 +459,19 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   const CScript addr = getTestAddress ();
 
-  const valtype rand(20, 'x');
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name1.begin (), name1.end ());
-  const uint160 hash = Hash160 (toHash);
-
   /* We use a basic coin view as standard situation for all the tests.
      Set it up with some basic input coins.  */
 
   CCoinsView dummyView;
   CCoinsViewCache view(&dummyView);
 
-  const CScript scrNew = CNameScript::buildNameNew (addr, hash);
-  const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name1,
-                                                              value, rand);
+  const CScript scrRegister
+    = CNameScript::buildNameRegister (addr, name1, value);
   const CScript scrUpdate = CNameScript::buildNameUpdate (addr, name1, value);
 
   const COutPoint inCoin = addTestCoin (addr, 1, view);
-  const COutPoint inNew = addTestCoin (scrNew, 100000, view);
-  const COutPoint inFirst = addTestCoin (scrFirst, 100000, view);
+  const COutPoint inRegister = addTestCoin (scrRegister, 100000, view);
   const COutPoint inUpdate = addTestCoin (scrUpdate, 100000, view);
-
-  CNameData data1;
-  data1.fromScript (100000, inFirst, CNameScript (scrFirst));
-  view.SetName (name1, data1, false);
 
   /* ****************************************************** */
   /* Try out the Namecoin / non-Namecoin tx version check.  */
@@ -517,7 +492,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   /* Name tx should be Namecoin version.  */
   mtx = CMutableTransaction (baseTx);
-  mtx.vin.push_back (CTxIn (inNew));
+  mtx.vin.push_back (CTxIn (inRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
   mtx.SetNamecoin ();
   mtx.vin.push_back (CTxIn (inUpdate));
@@ -525,40 +500,24 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   /* Duplicate name outs are not allowed.  */
   mtx = CMutableTransaction (baseTx);
-  mtx.vout.push_back (CTxOut (COIN, scrNew));
+  mtx.vout.push_back (CTxOut (COIN, scrRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
   mtx.SetNamecoin ();
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
-  mtx.vout.push_back (CTxOut (COIN, scrNew));
+  mtx.vout.push_back (CTxOut (COIN, scrRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
-
-  /* ************************** */
-  /* Test NAME_NEW validation.  */
-
-  /* Basic verification of NAME_NEW.  */
-  mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
-  mtx.vout.push_back (CTxOut (COIN, scrNew));
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
-  mtx.vin.push_back (CTxIn (inNew));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
-
-  /* Greedy names.  */
-  mtx.vin.clear ();
-  mtx.vout[1].nValue = COIN / 100;
-  BOOST_CHECK (CheckNameTransaction (mtx, 212500, view, state, 0));
-  mtx.vout[1].nValue = COIN / 100 - 1;
-  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, view, state, 0));
 
   /* ***************************** */
   /* Test NAME_UPDATE validation.  */
 
   /* Construct two versions of the coin view.  Since CheckNameTransaction
      verifies the name update against the name database, we have to ensure
-     that it fits to the current test.  One version has the NAME_FIRSTUPDATE
+     that it fits to the current test.  One version has the NAME_REGISTER
      as previous state of the name, and one has the NAME_UPDATE.  */
-  CCoinsViewCache viewFirst(&view);
+  CCoinsViewCache viewRegister(&view);
+  CNameData data1;
+  data1.fromScript (100000, inRegister, CNameScript (scrRegister));
+  viewRegister.SetName (name1, data1, false);
   CCoinsViewCache viewUpd(&view);
   data1.fromScript (100000, inUpdate, CNameScript (scrUpdate));
   viewUpd.SetName (name1, data1, false);
@@ -572,16 +531,16 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewUpd, state, 0));
   BOOST_CHECK (IsStandardTx (mtx, reason));
 
-  /* Check update of FIRSTUPDATE output.  */
+  /* Check update of REGISTER output.  */
   mtx.vin.clear ();
-  mtx.vin.push_back (CTxIn (inFirst));
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewFirst, state, 0));
+  mtx.vin.push_back (CTxIn (inRegister));
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewRegister, state, 0));
 
   /* "Greedy" names.  */
   mtx.vout[1].nValue = COIN / 100;
-  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewFirst, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewRegister, state, 0));
   mtx.vout[1].nValue = COIN / 100 - 1;
-  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewFirst, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewRegister, state, 0));
 
   /* Value length limits.  */
   mtx = CMutableTransaction (baseTx);
@@ -597,55 +556,28 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vout.push_back (CTxOut (COIN, scr));
   BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state, 0));
 
-  /* Previous NAME_NEW is not allowed!  */
-  mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
-  mtx.vout.push_back (CTxOut (COIN, scrUpdate));
-  mtx.vin.push_back (CTxIn (inNew));
-  CCoinsViewCache viewNew(&view);
-  viewNew.DeleteName (name1);
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewNew, state, 0));
-
-  /* ********************************** */
-  /* Test NAME_FIRSTUPDATE validation.  */
+  /* ******************************* */
+  /* Test NAME_REGISTER validation.  */
 
   CCoinsViewCache viewClean(&view);
-  viewClean.DeleteName (name1);
 
-  /* Basic valid transaction.  */
+  /* Name exists already.  */
+  viewClean.SetName (name1, data1, false);
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
-  mtx.vout.push_back (CTxOut (COIN, scrFirst));
+  mtx.vout.push_back (CTxOut (COIN, scrRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-  mtx.vin.push_back (CTxIn (inNew));
+
+  /* Basic valid transaction.  */
+  viewClean.DeleteName (name1);
   BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state, 0));
   BOOST_CHECK (IsStandardTx (mtx, reason));
-
-  /* Maturity of prev out, acceptable for mempool.  */
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100011, viewClean, state, 0));
-  BOOST_CHECK (CheckNameTransaction (mtx, 100011, viewClean, state,
-                                     SCRIPT_VERIFY_NAMES_MEMPOOL));
 
   /* "Greedy" names.  */
   mtx.vout[1].nValue = COIN / 100;
   BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewClean, state, 0));
   mtx.vout[1].nValue = COIN / 100 - 1;
   BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewClean, state, 0));
-
-  /* Rand mismatch (wrong name activated).  */
-  mtx.vout.clear ();
-  scr = CNameScript::buildNameFirstupdate (addr, name2, value, rand);
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-
-  /* Non-NAME_NEW prev output.  */
-  mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
-  mtx.vout.push_back (CTxOut (COIN, scrFirst));
-  mtx.vin.push_back (CTxIn (inUpdate));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-  mtx.vin.clear ();
-  mtx.vin.push_back (CTxIn (inFirst));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
 }
 
 /* ************************************************************************** */
@@ -666,14 +598,8 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   CNameData data;
   CNameHistory history;
 
-  const valtype rand(20, 'x');
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  const uint160 hash = Hash160 (toHash);
-
-  const CScript scrNew = CNameScript::buildNameNew (addr, hash);
-  const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name,
-                                                              value1, rand);
+  const CScript scrRegister
+    = CNameScript::buildNameRegister (addr, name, value1);
   const CScript scrUpdate = CNameScript::buildNameUpdate (addr, name, value2);
 
   /* The constructed tx needs not be valid.  We only test
@@ -681,14 +607,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
 
   CMutableTransaction mtx;
   mtx.SetNamecoin ();
-  mtx.vout.push_back (CTxOut (COIN, scrNew));
-  ApplyNameTransaction (mtx, 100, view, undo);
-  BOOST_CHECK (!view.GetName (name, data));
-  BOOST_CHECK (undo.vnameundo.empty ());
-  BOOST_CHECK (!view.GetNameHistory (name, history));
-
-  mtx.vout.clear ();
-  mtx.vout.push_back (CTxOut (COIN, scrFirst));
+  mtx.vout.push_back (CTxOut (COIN, scrRegister));
   ApplyNameTransaction (mtx, 200, view, undo);
   BOOST_CHECK (view.GetName (name, data));
   BOOST_CHECK (data.getHeight () == 200);
@@ -739,47 +658,20 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   const valtype valueB = ValtypeFromString ("value-b");
   const CScript addr = getTestAddress ();
 
-  const valtype rand1(20, 'a');
-  const valtype rand2(20, 'b');
-
-  const uint160 hash1 = Hash160 (rand1);
-  const uint160 hash2 = Hash160 (rand2);
-  const valtype vchHash1(hash1.begin (), hash1.end ());
-  const valtype vchHash2(hash2.begin (), hash2.end ());
-  const CScript addr2 = (CScript (addr) << OP_RETURN);
-
-  const CScript new1
-    = CNameScript::buildNameNew (addr, hash1);
-  const CScript new1p
-    = CNameScript::buildNameNew (addr2, hash1);
-  const CScript new2
-    = CNameScript::buildNameNew (addr, hash2);
-  const CScript first1
-    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand1);
-  const CScript first2
-    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand2);
+  const CScript reg1 = CNameScript::buildNameRegister (addr, nameReg, value);
+  const CScript reg2 = CNameScript::buildNameRegister (addr, nameReg, value);
   const CScript upd1 = CNameScript::buildNameUpdate (addr, nameUpd, valueA);
   const CScript upd2 = CNameScript::buildNameUpdate (addr, nameUpd, valueB);
 
   /* The constructed tx needs not be valid.  We only test
      the mempool acceptance and not validation.  */
 
-  CMutableTransaction txNew1;
-  txNew1.SetNamecoin ();
-  txNew1.vout.push_back (CTxOut (COIN, new1));
-  CMutableTransaction txNew1p;
-  txNew1p.SetNamecoin ();
-  txNew1p.vout.push_back (CTxOut (COIN, new1p));
-  CMutableTransaction txNew2;
-  txNew2.SetNamecoin ();
-  txNew2.vout.push_back (CTxOut (COIN, new2));
-
   CMutableTransaction txReg1;
   txReg1.SetNamecoin ();
-  txReg1.vout.push_back (CTxOut (COIN, first1));
+  txReg1.vout.push_back (CTxOut (COIN, reg1));
   CMutableTransaction txReg2;
   txReg2.SetNamecoin ();
-  txReg2.vout.push_back (CTxOut (COIN, first2));
+  txReg2.vout.push_back (CTxOut (COIN, reg2));
 
   CMutableTransaction txUpd1;
   txUpd1.SetNamecoin ();
@@ -795,10 +687,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   txInvalid.SetNamecoin ();
   mempool.checkNameOps (txInvalid);
 
-  txInvalid.vout.push_back (CTxOut (COIN, new1));
-  txInvalid.vout.push_back (CTxOut (COIN, new2));
-  txInvalid.vout.push_back (CTxOut (COIN, first1));
-  txInvalid.vout.push_back (CTxOut (COIN, first2));
+  txInvalid.vout.push_back (CTxOut (COIN, reg1));
+  txInvalid.vout.push_back (CTxOut (COIN, reg2));
   txInvalid.vout.push_back (CTxOut (COIN, upd1));
   txInvalid.vout.push_back (CTxOut (COIN, upd2));
   mempool.checkNameOps (txInvalid);
@@ -806,26 +696,11 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   /* For an empty mempool, all tx should be fine.  */
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (!mempool.updatesName (nameUpd));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew1p)
-                && mempool.checkNameOps (txNew2));
   BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
 
-  /* Add name_new's with "stealing" check.  */
-  const LockPoints lp;
-  const CTxMemPoolEntry entryNew1(MakeTransactionRef(txNew1), 0, 0, 100,
-                                  false, 1, lp);
-  const CTxMemPoolEntry entryNew2(MakeTransactionRef(txNew2), 0, 0, 100,
-                                  false, 1, lp);
-  BOOST_CHECK (entryNew1.isNameNew () && entryNew2.isNameNew ());
-  BOOST_CHECK (entryNew1.getNameNewHash () == vchHash1
-                && entryNew2.getNameNewHash () == vchHash2);
-  mempool.addUnchecked (entryNew1.GetTx ().GetHash (), entryNew1);
-  mempool.addUnchecked (entryNew2.GetTx ().GetHash (), entryNew2);
-  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
-
   /* Add a name registration.  */
+  const LockPoints lp;
   const CTxMemPoolEntry entryReg(MakeTransactionRef(txReg1), 0, 0, 100,
                                  false, 1, lp);
   BOOST_CHECK (entryReg.isNameRegistration () && !entryReg.isNameUpdate ());
@@ -868,11 +743,6 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (!mempool.updatesName (nameUpd));
   BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
   BOOST_CHECK (mempool.checkNameOps (txReg1));
-
-  mempool.removeRecursive (txNew1);
-  mempool.removeRecursive (txNew2);
-  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
 
   /* Check getTxForName with non-existent names.  */
   BOOST_CHECK (mempool.getTxForName (nameReg).IsNull ());
