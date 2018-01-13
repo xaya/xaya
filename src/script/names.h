@@ -54,8 +54,7 @@ public:
   {
     switch (op)
       {
-      case OP_NAME_NEW:
-      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_REGISTER:
       case OP_NAME_UPDATE:
         return true;
 
@@ -87,8 +86,7 @@ public:
   {
     switch (op)
       {
-      case OP_NAME_NEW:
-      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_REGISTER:
       case OP_NAME_UPDATE:
         return op;
 
@@ -107,10 +105,7 @@ public:
   {
     switch (op)
       {
-      case OP_NAME_NEW:
-        return false;
-
-      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_REGISTER:
       case OP_NAME_UPDATE:
         return true;
 
@@ -129,7 +124,7 @@ public:
   {
     switch (op)
       {
-      case OP_NAME_FIRSTUPDATE:
+      case OP_NAME_REGISTER:
       case OP_NAME_UPDATE:
         return args[0];
 
@@ -148,39 +143,13 @@ public:
   {
     switch (op)
       {
-      case OP_NAME_FIRSTUPDATE:
-        return args[2];
-
+      case OP_NAME_REGISTER:
       case OP_NAME_UPDATE:
         return args[1];
 
       default:
         assert (false);
       }
-  }
-
-  /**
-   * Return the name operation's rand value.  This is only valid
-   * for OP_NAME_FIRSTUPDATE.
-   * @return The name operation's rand.
-   */
-  inline const valtype&
-  getOpRand () const
-  {
-    assert (op == OP_NAME_FIRSTUPDATE);
-    return args[1];
-  }
-
-  /**
-   * Return the name operation's hash value.  This is only valid
-   * for OP_NAME_NEW.
-   * @return The name operation's hash.
-   */
-  inline const valtype&
-  getOpHash () const
-  {
-    assert (op == OP_NAME_NEW);
-    return args[0];
   }
 
   /**
@@ -196,26 +165,14 @@ public:
   }
 
   /**
-   * Build a NAME_NEW transaction.
-   * @param addr The address script to append.
-   * @param hash The hash to use.
-   * @return The full NAME_NEW script.
-   */
-  static CScript buildNameNew (const CScript& addr, const uint160& hash);
-
-  /**
-   * Build a NAME_FIRSTUPDATE transaction.  Note that the arguments to this
-   * function are not in the same order as in the script.  They are chosen
-   * to mimic the arguments to NAME_UPDATE.
+   * Build a NAME_REGISTER transaction.
    * @param addr The address script to append.
    * @param name The name to firstupdate.
    * @param value The value to set it to.
-   * @param rand The rand value to use.
-   * @return The full NAME_FIRSTUPDATE script.
+   * @return The full NAME_REGISTER script.
    */
-  static CScript buildNameFirstupdate (const CScript& addr, const valtype& name,
-                                       const valtype& value,
-                                       const valtype& rand);
+  static CScript buildNameRegister (const CScript& addr, const valtype& name,
+                                    const valtype& value);
 
   /**
    * Build a NAME_UPDATE transaction.

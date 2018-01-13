@@ -140,37 +140,19 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     const CNameScript nameOp(scriptPubKey);
     if (nameOp.isNameOp ())
     {
+        const std::string name = ValtypeToString (nameOp.getOpName ());
+        const std::string value = ValtypeToString (nameOp.getOpValue ());
         UniValue jsonOp(UniValue::VOBJ);
+        jsonOp.pushKV ("name", name);
+        jsonOp.pushKV ("value", value);
         switch (nameOp.getNameOp ())
         {
-        case OP_NAME_NEW:
-            jsonOp.pushKV ("op", "name_new");
-            jsonOp.pushKV ("hash", HexStr (nameOp.getOpHash ()));
+        case OP_NAME_REGISTER:
+            jsonOp.pushKV ("op", "name_register");
             break;
-
-        case OP_NAME_FIRSTUPDATE:
-        {
-            const std::string name = ValtypeToString (nameOp.getOpName ());
-            const std::string value = ValtypeToString (nameOp.getOpValue ());
-
-            jsonOp.pushKV ("op", "name_firstupdate");
-            jsonOp.pushKV ("name", name);
-            jsonOp.pushKV ("value", value);
-            jsonOp.pushKV ("rand", HexStr (nameOp.getOpRand ()));
-            break;
-        }
-
         case OP_NAME_UPDATE:
-        {
-            const std::string name = ValtypeToString (nameOp.getOpName ());
-            const std::string value = ValtypeToString (nameOp.getOpValue ());
-
-            jsonOp.pushKV ("op", "name_update");
-            jsonOp.pushKV ("name", name);
             jsonOp.pushKV ("value", value);
             break;
-        }
-
         default:
             assert (false);
         }

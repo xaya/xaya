@@ -40,16 +40,7 @@ CNameScript::CNameScript (const CScript& script)
      op and address members, if everything is valid.  */
   switch (nameOp)
     {
-    case OP_NAME_NEW:
-      if (args.size () != 1)
-        return;
-      break;
-
-    case OP_NAME_FIRSTUPDATE:
-      if (args.size () != 3)
-        return;
-      break;
-
+    case OP_NAME_REGISTER:
     case OP_NAME_UPDATE:
       if (args.size () != 2)
         return;
@@ -64,21 +55,11 @@ CNameScript::CNameScript (const CScript& script)
 }
 
 CScript
-CNameScript::buildNameNew (const CScript& addr, const uint160& hash)
+CNameScript::buildNameRegister (const CScript& addr, const valtype& name,
+                                const valtype& value)
 {
   CScript prefix;
-  prefix << OP_NAME_NEW << ToByteVector (hash) << OP_2DROP;
-
-  return prefix + addr;
-}
-
-CScript
-CNameScript::buildNameFirstupdate (const CScript& addr, const valtype& name,
-                                   const valtype& value, const valtype& rand)
-{
-  CScript prefix;
-  prefix << OP_NAME_FIRSTUPDATE << name << rand << value
-         << OP_2DROP << OP_2DROP;
+  prefix << OP_NAME_REGISTER << name << value << OP_2DROP << OP_DROP;
 
   return prefix + addr;
 }
