@@ -42,7 +42,7 @@ class DecodeScriptTest(BitcoinTestFramework):
         # thus, such a spending scriptSig would just need to pass the outer redeemScript
         # hash test and leave true on the top of the stack.
         rpc_result = self.nodes[0].decodescript('5100')
-        assert_equal('OP_NAME_NEW 0', rpc_result['asm'])
+        assert_equal('OP_NAME_REGISTER 0', rpc_result['asm'])
 
         # 5) null data scriptSig - no such thing because null data scripts can not be spent.
         # thus, no test case for that standard transaction type is here.
@@ -70,7 +70,7 @@ class DecodeScriptTest(BitcoinTestFramework):
         # just imagine that the pub keys used below are different.
         # for our purposes here it does not matter that they are the same even though it is unrealistic.
         rpc_result = self.nodes[0].decodescript('52' + push_public_key + push_public_key + push_public_key + '53ae')
-        assert_equal('OP_NAME_FIRSTUPDATE ' + public_key + ' ' + public_key + ' ' + public_key +  ' OP_NAME_UPDATE OP_CHECKMULTISIG', rpc_result['asm'])
+        assert_equal('OP_NAME_UPDATE ' + public_key + ' ' + public_key + ' ' + public_key +  ' 3 OP_CHECKMULTISIG', rpc_result['asm'])
 
         # 4) P2SH scriptPubKey
         # OP_HASH160 <Hash160(redeemScript)> OP_EQUAL.

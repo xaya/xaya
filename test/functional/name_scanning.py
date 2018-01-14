@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,17 +28,11 @@ class NameScanningTest (NameTestFramework):
     # Using both "aa" and "b" ensures that we can also check for the expected
     # comparison order between string length and lexicographic ordering.
 
-    newA = self.nodes[0].name_new ("a")
-    newAA = self.nodes[0].name_new ("aa")
-    newB = self.nodes[1].name_new ("b")
-    newC = self.nodes[2].name_new ("c")
+    self.nodes[0].name_register ("a", "wrong value")
+    self.nodes[0].name_register ("aa", "value aa")
+    self.nodes[1].name_register ("b", "value b")
     self.generate (3, 15)
-
-    self.firstupdateName (0, "a", newA, "wrong value")
-    self.firstupdateName (0, "aa", newAA, "value aa")
-    self.firstupdateName (1, "b", newB, "value b")
-    self.generate (3, 15)
-    self.firstupdateName (2, "c", newC, "value c")
+    self.nodes[2].name_register ("c", "value c")
     self.nodes[0].name_update ("a", "value a")
     self.generate (3, 20)
 

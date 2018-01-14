@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,82 +14,48 @@ class NameRegistrationTest (NameTestFramework):
     self.setup_name_test ([[]] * 2)
 
   def run_test (self):
-    # Perform name_new's.  Check for too long names exception.
-    newA = self.nodes[0].name_new ("node-0")
-    newAconfl = self.nodes[1].name_new ("node-0")
-    newB = self.nodes[1].name_new ("node-1")
-    self.nodes[0].name_new ("x" * 255)
+    # Perform name registrations's.  Check for too long names exception and
+    # too long values.
+    addrA = self.nodes[0].getnewaddress ()
+    txidA = self.nodes[0].name_register ("node-0", "value-0", addrA)
+    self.nodes[1].name_register ("node-1", "x" * 520)
+    assert_raises_rpc_error (-8, 'value is too long',
+                             self.nodes[0].name_register,
+                             "dummy name", "x" * 521)
+    self.nodes[0].name_register ("x" * 255, "value")
     assert_raises_rpc_error (-8, 'name is too long',
-                             self.nodes[0].name_new, "x" * 256)
-    self.generate (0, 5)
+                             self.nodes[0].name_register,
+                             "x" * 256, "dummy value")
 
     # Check for exception with name_history and without -namehistory.
     assert_raises_rpc_error (-1, 'namehistory is not enabled',
                              self.nodes[0].name_history, "node-0")
 
-    # first_update the names.  Check for too long values.
-    addrA = self.nodes[0].getnewaddress ()
-    txidA = self.firstupdateName (0, "node-0", newA, "value-0", addrA)
-    assert_raises_rpc_error (-8, 'value is too long',
-                             self.firstupdateName, 1, "node-1", newB, "x" * 521)
-    self.firstupdateName (1, "node-1", newB, "x" * 520)
-
     # Check for mempool conflict detection with registration of "node-0".
     self.sync_with_mode ('both')
-    assert_raises_rpc_error (-25, 'is already being registered',
-                             self.firstupdateName,
-                             1, "node-0", newAconfl, "foo")
+    assert_raises_rpc_error (-25, 'is already a pending registration',
+                             self.nodes[1].name_register,
+                             "node-0", "foo")
     
-    # Check that the name appears when the name_new is ripe.
+    # Check that the name data appears when the tx are mined.
 
-    self.generate (0, 7)
-    assert_raises_rpc_error (-4, 'name not found',
-                             self.nodes[1].name_show, "node-0")
-    assert_raises_rpc_error (-4, 'name not found',
-                             self.nodes[1].name_history, "node-0")
     self.generate (0, 1)
-
     data = self.checkName (1, "node-0", "value-0")
     assert_equal (data['address'], addrA)
     assert_equal (data['txid'], txidA)
-    assert_equal (data['height'], 213)
+    assert_equal (data['height'], 201)
 
     self.checkNameHistory (1, "node-0", ["value-0"])
     self.checkNameHistory (1, "node-1", ["x" * 520])
 
-    # Check for error with rand mismatch (wrong name)
-    newA = self.nodes[0].name_new ("test-name")
-    self.generate (0, 10)
-    assert_raises_rpc_error (-25, 'rand value is wrong',
-                             self.firstupdateName,
-                             0, "test-name-wrong", newA, "value")
-
-    # Check for mismatch with prev tx from another node for name_firstupdate
-    # and name_update.
-    assert_raises_rpc_error (-4, 'Input tx not found in wallet',
-                             self.firstupdateName,
-                             1, "test-name", newA, "value")
-    self.firstupdateName (0, "test-name", newA, "test-value")
-
-    # Check for disallowed firstupdate when the name is active.
-    newSteal = self.nodes[1].name_new ("node-0")
-    newSteal2 = self.nodes[1].name_new ("node-0")
-    self.generate (0, 19)
+    # Check for disallowed registration when the name is active.
     self.checkName (1, "node-0", "value-0")
-    assert_raises_rpc_error (-25, 'this name is already active',
-                             self.firstupdateName,
-                             1, "node-0", newSteal, "stolen")
-
-    # Check for firstupdating an active name, but this time without the check
-    # present in the RPC call itself.  This should still be prevented by the
-    # mempool logic.  There was a bug that allowed these transactiosn to get
-    # into the mempool, so make sure it is no longer there.
-    self.firstupdateName (1, "node-0", newSteal2, "stolen",
-                          allowActive = True)
-    assert_equal (self.nodes[1].getrawmempool (), [])
-    self.checkName (1, "node-0", "value-0")
+    assert_raises_rpc_error (-25, 'exists already',
+                             self.nodes[1].name_register, "node-0", "stolen")
 
     # Check basic updating.
+    self.nodes[0].name_register ("test-name", "test-value")
+    self.generate (0, 1)
     assert_raises_rpc_error (-8, 'value is too long',
                              self.nodes[0].name_update, "test-name", "x" * 521)
     self.nodes[0].name_update ("test-name", "x" * 520)

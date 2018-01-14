@@ -151,7 +151,7 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
             jsonOp.pushKV ("op", "name_register");
             break;
         case OP_NAME_UPDATE:
-            jsonOp.pushKV ("value", value);
+            jsonOp.pushKV ("op", "name_update");
             break;
         default:
             assert (false);

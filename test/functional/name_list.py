@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,12 +17,9 @@ class NameListTest (NameTestFramework):
     assert_equal (self.nodes[0].name_list (), [])
     assert_equal (self.nodes[1].name_list (), [])
 
-    newA = self.nodes[0].name_new ("name-a")
-    newB = self.nodes[1].name_new ("name-b");
-    self.generate (0, 10)
-    self.firstupdateName (0, "name-a", newA, "value-a")
-    self.firstupdateName (1, "name-b", newB, "value-b")
-    self.generate (1, 5)
+    self.nodes[0].name_register ("name-a", "value-a")
+    self.nodes[1].name_register ("name-b", "value-b")
+    self.generate (1, 1)
 
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)

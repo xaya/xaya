@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,25 +43,6 @@ class NameTestFramework (BitcoinTestFramework):
         [sync_blocks(group) for group in node_groups]
     if modes[mode]['mempool']:
         [sync_mempools(group) for group in node_groups]
-
-  def firstupdateName (self, ind, name, newData, value,
-                       toAddr = None, allowActive = False):
-    """
-    Utility routine to perform a name_firstupdate command.  The rand
-    and txid are taken from 'newData', as it is returned by name_new.
-    """
-
-    node = self.nodes[ind]
-
-    if allowActive:
-      if toAddr is None:
-        toAddr = node.getnewaddress ()
-      return node.name_firstupdate (name, newData[1], newData[0],
-                                    value, toAddr, True)
-
-    if toAddr is None:
-      return node.name_firstupdate (name, newData[1], newData[0], value)
-    return node.name_firstupdate (name, newData[1], newData[0], value, toAddr)
 
   def generate (self, ind, blocks, syncBefore = True):
     """

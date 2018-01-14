@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,21 +16,13 @@ class NameRawTxTest (NameTestFramework):
     self.setup_name_test ([[]] * 3)
 
   def run_test (self):
-    # Decode name_new.
-    new = self.nodes[0].name_new ("my-name")
-    self.generate (0, 10)
-    data = self.decodeNameTx (0, new[0])
-    assert_equal (data['op'], "name_new")
-    assert 'hash' in data
-
-    # Decode name_firstupdate.
-    first = self.firstupdateName (0, "my-name", new, "initial value")
-    self.generate (0, 5)
-    data = self.decodeNameTx (0, first)
-    assert_equal (data['op'], "name_firstupdate")
+    # Decode name_register.
+    reg = self.nodes[0].name_register ("my-name", "initial value")
+    self.generate (0, 1)
+    data = self.decodeNameTx (0, reg)
+    assert_equal (data['op'], "name_register")
     assert_equal (data['name'], "my-name")
     assert_equal (data['value'], "initial value")
-    assert_equal (data['rand'], new[1])
 
     # Decode name_update.
     upd = self.nodes[0].name_update ("my-name", "new value")
@@ -40,24 +32,19 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data['name'], "my-name")
     assert_equal (data['value'], "new value")
 
-    # Go through the full name "life cycle" (name_new, name_firstupdate and
-    # name_update) with raw transactions.
+    # Go through the full name "life cycle" (name_register and name_update)
+    # with raw transactions.
 
-    newOp = {"op": "name_new", "name": "raw-test-name"}
-    newAddr = self.nodes[0].getnewaddress ()
-    newOutp, newData = self.rawNameOp (0, None, newAddr, newOp)
-    self.generate (0, 10)
-
-    firstOp = {"op": "name_firstupdate", "rand": newData["rand"],
-               "name": "raw-test-name", "value": "first value"}
-    firstAddr = self.nodes[0].getnewaddress ()
-    firstOutp, _ = self.rawNameOp (0, newOutp, firstAddr, firstOp)
-    self.generate (0, 5)
+    regOp = {"op": "name_register", "name": "raw-test-name",
+             "value": "first value"}
+    regAddr = self.nodes[0].getnewaddress ()
+    regOutp, _ = self.rawNameOp (0, None, regAddr, regOp)
+    self.generate (0, 1)
     self.checkName (1, "raw-test-name", "first value")
 
     updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
     updAddr = self.nodes[0].getnewaddress ()
-    self.rawNameOp (0, firstOutp, updAddr, updOp)
+    self.rawNameOp (0, regOutp, updAddr, updOp)
     self.generate (0, 1)
     self.checkName (1, "raw-test-name", "new value")
 
@@ -92,21 +79,18 @@ class NameRawTxTest (NameTestFramework):
     assert_equal (data[0]['name'], "my-name")
     assert_equal (data[0]['transferred'], False)
 
-    assert_equal (balanceA + price, self.nodes[0].getbalance ())
-    # Node 1 gets a block matured, take this into account.
-    assert_equal (balanceB - price - fee + Decimal ("50"),
-                  self.nodes[1].getbalance ())
+    # Node 0 gets a block matured, take this into account.
+    assert_equal (balanceA + price + Decimal ("50"),
+                  self.nodes[0].getbalance ())
+    assert_equal (balanceB - price - fee, self.nodes[1].getbalance ())
 
     # Try to construct and relay a transaction that updates two names at once.
     # This used to crash the client, #116.  It should lead to an error (as such
     # a transaction is invalid), but not a crash.
 
-    newA = self.nodes[0].name_new ("a")
-    newB = self.nodes[0].name_new ("b")
-    self.generate (0, 10)
-    self.firstupdateName (0, "a", newA, "value a")
-    self.firstupdateName (0, "b", newB, "value b")
-    self.generate (0, 5)
+    self.nodes[0].name_register ("a", "value a")
+    self.nodes[0].name_register ("b", "value b")
+    self.generate (0, 1)
 
     inA, outA = self.constructUpdateTx (0, "a", "new value a")
     inB, outB = self.constructUpdateTx (0, "b", "new value b")
