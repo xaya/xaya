@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -471,8 +471,8 @@ name_pending (const JSONRPCRequest& request)
           std::string strOp;
           switch (op.getNameOp ())
             {
-            case OP_NAME_FIRSTUPDATE:
-              strOp = "name_firstupdate";
+            case OP_NAME_REGISTER:
+              strOp = "name_register";
               break;
             case OP_NAME_UPDATE:
               strOp = "name_update";
@@ -519,16 +519,10 @@ namerawtransaction (const JSONRPCRequest& request)
         "3. nameop            (object, required) Json object for name operation.\n"
         "                     The operation can be either of:\n"
         "    {\n"
-        "      \"op\": \"name_new\",\n"
+        "      \"op\": \"name_register\",\n"
         "      \"name\": xxx,         (string, required) The name to register\n"
-        "      \"rand\": xxx,         (string, optional) The nonce value to use\n"
-        "    }\n"
-        "    {\n"
-        "      \"op\": \"name_firstupdate\",\n"
-        "      \"name\": xxx,         (string, required) The name to register\n"
-        "      \"value\": xxx,        (string, required) The name's value\n"
-        "      \"rand\": xxx,         (string, required) The nonce used in name_new\n"
-        "    }\n"
+        "      \"value\": xxx,        (string, required) The new value\n"
+        "    },\n"
         "    {\n"
         "      \"op\": \"name_update\",\n"
         "      \"name\": xxx,         (string, required) The name to update\n"
@@ -539,8 +533,7 @@ namerawtransaction (const JSONRPCRequest& request)
         "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
         "  \"rand\": xxx,       (string) If this is a name_new, the nonce used to create it\n"
         "}\n"
-        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_new\",\"name\":\"my-name\")")
-        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_firstupdate\",\"name\":\"my-name\",\"value\":\"new value\",\"rand\":\"00112233\")")
+        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
       );
@@ -561,88 +554,26 @@ namerawtransaction (const JSONRPCRequest& request)
   RPCTypeCheckObj (nameOp,
     {
       {"op", UniValueType (UniValue::VSTR)},
+      {"name", UniValueType (UniValue::VSTR)},
+      {"value", UniValueType (UniValue::VSTR)},
     }
   );
   const std::string op = find_value (nameOp, "op").get_str ();
+  const valtype name
+    = ValtypeFromString (find_value (nameOp, "name").get_str ());
+  const valtype value
+    = ValtypeFromString (find_value (nameOp, "value").get_str ());
 
   UniValue result(UniValue::VOBJ);
 
-  if (op == "name_new")
-    {
-      RPCTypeCheckObj (nameOp,
-        {
-          {"name", UniValueType (UniValue::VSTR)},
-          {"rand", UniValueType (UniValue::VSTR)},
-        },
-        true);
-
-      valtype rand;
-      if (nameOp.exists ("rand"))
-        {
-          const std::string randStr = find_value (nameOp, "rand").get_str ();
-          if (!IsHex (randStr))
-            throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
-          rand = ParseHex (randStr);
-        }
-      else
-        {
-          rand.resize (20);
-          GetRandBytes (&rand[0], rand.size ());
-        }
-
-      const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
-
-      valtype toHash(rand);
-      toHash.insert (toHash.end (), name.begin (), name.end ());
-      const uint160 hash = Hash160 (toHash);
-
-      mtx.vout[nOut].scriptPubKey
-        = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, hash);
-      result.pushKV ("rand", HexStr (rand.begin (), rand.end ()));
-    }
-  else if (op == "name_firstupdate")
-    {
-      RPCTypeCheckObj (nameOp,
-        {
-          {"name", UniValueType (UniValue::VSTR)},
-          {"value", UniValueType (UniValue::VSTR)},
-          {"rand", UniValueType (UniValue::VSTR)},
-        }
-      );
-
-      const std::string randStr = find_value (nameOp, "rand").get_str ();
-      if (!IsHex (randStr))
-        throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
-      const valtype rand = ParseHex (randStr);
-
-      const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
-      const valtype value
-        = ValtypeFromString (find_value (nameOp, "value").get_str ());
-
-      mtx.vout[nOut].scriptPubKey
-        = CNameScript::buildNameFirstupdate (mtx.vout[nOut].scriptPubKey,
-                                             name, value, rand);
-    }
-  else if (op == "name_update")
-    {
-      RPCTypeCheckObj (nameOp,
-        {
-          {"name", UniValueType (UniValue::VSTR)},
-          {"value", UniValueType (UniValue::VSTR)},
-        }
-      );
-
-      const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
-      const valtype value
-        = ValtypeFromString (find_value (nameOp, "value").get_str ());
-
-      mtx.vout[nOut].scriptPubKey
-        = CNameScript::buildNameUpdate (mtx.vout[nOut].scriptPubKey,
+  if (op == "name_register")
+    mtx.vout[nOut].scriptPubKey
+      = CNameScript::buildNameRegister (mtx.vout[nOut].scriptPubKey,
                                         name, value);
-    }
+  else if (op == "name_update")
+    mtx.vout[nOut].scriptPubKey
+      = CNameScript::buildNameUpdate (mtx.vout[nOut].scriptPubKey,
+                                      name, value);
   else
     throw JSONRPCError (RPC_INVALID_PARAMETER, "Invalid name operation");
 

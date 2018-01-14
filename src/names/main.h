@@ -114,13 +114,6 @@ private:
   /** Map pending name updates to transaction IDs.  */
   NameTxMap mapNameUpdates;
 
-  /**
-   * Map NAME_NEW hashes to the corresponding transaction IDs.  This is
-   * data that is kept only in memory but never cleared (until a restart).
-   * It is used to prevent "name_new stealing", at least in a "soft" way.
-   */
-  NameTxMap mapNameNews;
-
 public:
 
   /**
@@ -128,7 +121,7 @@ public:
    * @param p The parent pool.
    */
   explicit inline CNameMemPool (CTxMemPool& p)
-    : pool(p), mapNameRegs(), mapNameUpdates(), mapNameNews()
+    : pool(p), mapNameRegs(), mapNameUpdates()
   {}
 
   /**
@@ -171,7 +164,6 @@ public:
   {
     mapNameRegs.clear ();
     mapNameUpdates.clear ();
-    mapNameNews.clear ();
   }
 
   /**

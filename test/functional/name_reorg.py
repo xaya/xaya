@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,13 +17,8 @@ class NameRegistrationTest (NameTestFramework):
   def run_test (self):
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
-    newA = self.nodes[3].name_new ("a")
-    newBshort = self.nodes[3].name_new ("b")
-    newBlong = self.nodes[0].name_new ("b")
-    newC = self.nodes[3].name_new ("c")
-    self.generate (0, 10)
-    self.firstupdateName (3, "a", newA, "initial value")
-    self.generate (0, 5)
+    self.nodes[3].name_register ("a", "initial value")
+    self.generate (0, 1)
 
     # Split the network.
     self.split_network ()
@@ -31,7 +26,7 @@ class NameRegistrationTest (NameTestFramework):
     # Build a long chain that registers "b" (to clash with
     # the same registration on the short chain).
     self.generate (0, 2)
-    self.firstupdateName (0, "b", newBlong, "b long")
+    self.nodes[0].name_register ("b", "b long")
     self.generate (0, 2)
     self.checkName (0, "a", "initial value")
     self.checkName (0, "b", "b long")
@@ -40,8 +35,8 @@ class NameRegistrationTest (NameTestFramework):
 
     # Build a short chain with an update to "a" and registrations.
     self.generate (3, 1)
-    txidB = self.firstupdateName (3, "b", newBshort, "b short")
-    self.firstupdateName (3, "c", newC, "c registered")
+    txidB = self.nodes[3].name_register ("b", "b short")
+    self.nodes[3].name_register ("c", "c registered")
     self.nodes[3].name_update ("a", "changed value")
     self.generate (3, 1)
     self.checkName (3, "a", "changed value")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2017 Daniel Kraft
+# Copyright (c) 2015-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,22 +15,17 @@ class NameScanningTest (NameTestFramework):
 
   def run_test (self):
     # Register a name that can then be update'd in the mempool.
-    newData = self.nodes[1].name_new ("a")
-    self.generate (0, 10)
-    self.firstupdateName (1, "a", newData, "old-value-a")
-    self.generate (0, 10)
+    self.nodes[1].name_register ("a", "old-value-a")
+    self.generate (0, 1)
 
     # Start a new name registration so we can first_update it.
-    newData = self.nodes[2].name_new ("b")
-    self.generate (0, 15)
+    txb = self.nodes[2].name_register ("b", "value-b")
 
     # Perform the unconfirmed updates.  Include a currency transaction
-    # and a name_new to check that those are not shown.
+    # to check that it is not shown.
     txa = self.nodes[1].name_update ("a", "value-a")
-    txb = self.firstupdateName (2, "b", newData, "value-b")
     addrC = self.nodes[3].getnewaddress ()
     self.nodes[2].sendtoaddress (addrC, 1)
-    newData = self.nodes[3].name_new ("c")
 
     # Check that name_show still returns the old value.
     self.checkName (0, "a", "old-value-a")
@@ -38,7 +33,7 @@ class NameScanningTest (NameTestFramework):
     # Check sizes of mempool against name_pending.
     self.sync_with_mode ('mempool')
     mempool = self.nodes[0].getrawmempool ()
-    assert_equal (len (mempool), 4)
+    assert_equal (len (mempool), 3)
     pending = self.nodes[0].name_pending ()
     assert_equal (len (pending), 2)
 
@@ -51,7 +46,7 @@ class NameScanningTest (NameTestFramework):
         assert_equal (op['value'], 'value-a')
         assert_equal (op['txid'], txa)
       elif op['name'] == 'b':
-        assert_equal (op['op'], 'name_firstupdate')
+        assert_equal (op['op'], 'name_register')
         assert_equal (op['value'], 'value-b')
         assert_equal (op['txid'], txb)
       else:

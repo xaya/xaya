@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,10 +25,8 @@ class NameMultisigTest (NameTestFramework):
     assert_equal (p2sh, p2sh_)
 
     # Register a new name to that address.
-    new = self.nodes[0].name_new ("name")
-    self.generate (0, 10)
-    self.firstupdateName (0, "name", new, "value", p2sh)
-    self.generate (1, 5)
+    self.nodes[0].name_register ("name", "value", p2sh)
+    self.generate (1, 1)
     data = self.checkName (2, "name", "value")
     assert_equal (data['address'], p2sh)
 

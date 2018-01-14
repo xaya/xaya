@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,53 +20,6 @@
 #include "wallet/wallet.h"
 
 #include <univalue.h>
-
-namespace
-{
-
-// Maximum number of outputs that are checked for the NAME_NEW prevout.
-constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
-
-/**
- * Helper routine to fetch the name output of a previous transaction.  This
- * is required for name_firstupdate.
- * @param txid Previous transaction ID.
- * @param txOut Set to the corresponding output.
- * @param txIn Set to the CTxIn to include in the new tx.
- * @return True if the output could be found.
- */
-static bool
-getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
-{
-  AssertLockHeld (cs_main);
-
-  // Unfortunately, with the change of the txdb to be based on outputs rather
-  // than full transactions, we can no longer just look up the txid and iterate
-  // over all outputs.  Since this is only necessary for a corner case, we just
-  // keep trying with indices until we find the output (up to a maximum number
-  // of trials).
-
-  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
-    {
-      const COutPoint outp(txid, i);
-
-      Coin coin;
-      if (!pcoinsTip->GetCoin (outp, coin))
-        continue;
-
-      if (!coin.out.IsNull ()
-          && CNameScript::isNameScript (coin.out.scriptPubKey))
-        {
-          txOut = coin.out;
-          txIn = CTxIn (outp);
-          return true;
-        }
-    }
-
-  return false;
-}
-
-} // namespace
 
 /* ************************************************************************** */
 
@@ -170,116 +123,32 @@ name_list (const JSONRPCRequest& request)
 /* ************************************************************************** */
 
 UniValue
-name_new (const JSONRPCRequest& request)
+name_register (const JSONRPCRequest& request)
 {
   CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp
+      || (request.params.size () != 2 && request.params.size () != 3))
     throw std::runtime_error (
-        "name_new \"name\"\n"
-        "\nStart registration of the given name.  Must be followed up with"
-        " name_firstupdate to finish the registration.\n"
+        "name_register \"name\" \"value\" (\"toaddress\")\n"
+        "\nRegister a new name.\n"
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
-        "\nResult:\n"
-        "[\n"
-        "  xxxxx,   (string) the txid, required for name_firstupdate\n"
-        "  xxxxx    (string) random value for name_firstupdate\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_new", "\"myname\"")
-        + HelpExampleRpc ("name_new", "\"myname\"")
-      );
-
-  RPCTypeCheck (request.params, {UniValue::VSTR});
-
-  ObserveSafeMode ();
-
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
-  if (name.size () > MAX_NAME_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
-
-  valtype rand(20);
-  GetRandBytes (&rand[0], rand.size ());
-
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  const uint160 hash = Hash160 (toHash);
-
-  /* No explicit locking should be necessary.  CReserveKey takes care
-     of locking the wallet, and CommitTransaction (called when sending
-     the tx) locks cs_main as necessary.  */
-
-  EnsureWalletIsUnlocked (pwallet);
-
-  CReserveKey keyName(pwallet);
-  CPubKey pubKey;
-  const bool ok = keyName.GetReservedKey (pubKey, true);
-  assert (ok);
-  const CScript addrName = GetScriptForDestination (pubKey.GetID ());
-  const CScript newScript = CNameScript::buildNameNew (addrName, hash);
-
-  CCoinControl coinControl;
-  CWalletTx wtx;
-  SendMoneyToScript (pwallet, newScript, nullptr,
-                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
-
-  keyName.KeepKey ();
-
-  const std::string randStr = HexStr (rand);
-  const std::string txid = wtx.GetHash ().GetHex ();
-  LogPrintf ("name_new: name=%s, rand=%s, tx=%s\n",
-             nameStr.c_str (), randStr.c_str (), txid.c_str ());
-
-  UniValue res(UniValue::VARR);
-  res.push_back (txid);
-  res.push_back (randStr);
-
-  return res;
-}
-
-/* ************************************************************************** */
-
-UniValue
-name_firstupdate (const JSONRPCRequest& request)
-{
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
-  /* There is an undocumented sixth argument that can be used to disable
-     the check for already existing names here (it will still be checked
-     by the mempool and tx validation logic, of course).  This is used
-     by the regtests to catch a bug that was previously present but
-     has presumably no other use.  */
-
-  if (request.fHelp || request.params.size () < 4 || request.params.size () > 6)
-    throw std::runtime_error (
-        "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"toaddress\")\n"
-        "\nFinish the registration of a name.  Depends on name_new being"
-        " already issued.\n"
-        + HelpRequiringPassphrase (pwallet) +
-        "\nArguments:\n"
-        "1. \"name\"          (string, required) the name to register\n"
-        "2. \"rand\"          (string, required) the rand value of name_new\n"
-        "3. \"tx\"            (string, required) the name_new txid\n"
         "4. \"value\"         (string, required) value for the name\n"
         "5. \"toaddress\"     (string, optional) address to send the name to\n"
         "\nResult:\n"
-        "\"txid\"             (string) the name_firstupdate's txid\n"
+        "\"txid\"             (string) the name_register's txid\n"
         "\nExamples:\n"
-        + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
-        + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
-        + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
+        + HelpExampleCli ("name_register", "\"myname\", \"new-value\"")
+        + HelpExampleCli ("name_register", "\"myname\", \"new-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
+        + HelpExampleRpc ("name_register", "\"myname\", \"new-value\"")
       );
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
-                 UniValue::VSTR});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
 
   ObserveSafeMode ();
 
@@ -288,50 +157,29 @@ name_firstupdate (const JSONRPCRequest& request)
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const valtype rand = ParseHexV (request.params[1], "rand");
-  if (rand.size () > 20)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid rand value");
-
-  const uint256 prevTxid = ParseHashV (request.params[2], "txid");
-
-  const std::string valueStr = request.params[3].get_str ();
+  const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
+  /* Reject updates to a name for which the mempool already has
+     a pending registration.  This is not a hard rule enforced by network
+     rules, but it is necessary with the current mempool implementation.  */
   {
     LOCK (mempool.cs);
     if (mempool.registersName (name))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                          "this name is already being registered");
+                          "there is already a pending registration"
+                          " for this name");
   }
 
-  if (request.params.size () < 6 || !request.params[5].get_bool ())
-    {
-      LOCK (cs_main);
-      CNameData oldData;
-      if (pcoinsTip->GetName (name, oldData))
-        throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                            "this name is already active");
-    }
-
-  CTxOut prevOut;
-  CTxIn txIn;
   {
     LOCK (cs_main);
-    if (!getNamePrevout (prevTxid, prevOut, txIn))
-      throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
+    CNameData data;
+    if (pcoinsTip->GetName (name, data))
+      throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                          "this name exists already");
   }
-
-  const CNameScript prevNameOp(prevOut.scriptPubKey);
-  assert (prevNameOp.isNameOp ());
-  if (prevNameOp.getNameOp () != OP_NAME_NEW)
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous tx is not name_new");
-
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  if (uint160 (prevNameOp.getOpHash ()) != Hash160 (toHash))
-    throw JSONRPCError (RPC_TRANSACTION_ERROR, "rand value is wrong");
 
   /* No more locking required, similarly to name_new.  */
 
@@ -344,12 +192,12 @@ name_firstupdate (const JSONRPCRequest& request)
   bool usedKey = false;
 
   CScript addrName;
-  if (request.params.size () >= 5)
+  if (request.params.size () == 3)
     {
       keyName.ReturnKey ();
       const CTxDestination dest
-        = DecodeDestination(request.params[4].get_str ());
-      if (!IsValidDestination(dest))
+        = DecodeDestination (request.params[2].get_str ());
+      if (!IsValidDestination (dest))
         throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
 
       addrName = GetScriptForDestination (dest);
@@ -361,11 +209,11 @@ name_firstupdate (const JSONRPCRequest& request)
     }
 
   const CScript nameScript
-    = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
+    = CNameScript::buildNameRegister (addrName, name, value);
 
   CCoinControl coinControl;
   CWalletTx wtx;
-  SendMoneyToScript (pwallet, nameScript, &txIn,
+  SendMoneyToScript (pwallet, nameScript, nullptr,
                      NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   if (usedKey)

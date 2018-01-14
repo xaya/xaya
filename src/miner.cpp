@@ -238,40 +238,8 @@ bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& packa
 bool
 BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
 {
-  if (!tx.IsNamecoin ())
-    return true;
-
-  bool nameOutFound = false;
-  CNameScript nameOpOut;
-  for (const auto& txOut : tx.vout)
-    {
-      const CNameScript op(txOut.scriptPubKey);
-      if (op.isNameOp ())
-        {
-          nameOutFound = true;
-          nameOpOut = op;
-          break;
-        }
-    }
-
-  if (nameOutFound && nameOpOut.getNameOp () == OP_NAME_FIRSTUPDATE)
-    {
-      for (const auto& txIn : tx.vin)
-        {
-          Coin coin;
-          if (!pcoinsTip->GetCoin (txIn.prevout, coin))
-            continue;
-
-          const CNameScript op(coin.out.scriptPubKey);
-          if (op.isNameOp () && op.getNameOp () == OP_NAME_NEW)
-            {
-              const int minHeight = coin.nHeight + MIN_FIRSTUPDATE_DEPTH;
-              if (minHeight > nHeight)
-                return false;
-            }
-        }
-    }
-
+  // This function was only used to check for maturity of name_new's.  With
+  // only one-tx registration in CHI, this is no longer relevant.
   return true;
 }
 

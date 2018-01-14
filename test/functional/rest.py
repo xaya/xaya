@@ -340,10 +340,8 @@ class RESTTest (BitcoinTestFramework):
         name = "d/some weird.name++"
         binData = bytearray ([0, 1]).decode ("ascii")
         value = "correct value\nwith newlines\nand binary: " + binData
-        newData = self.nodes[0].name_new(name)
-        self.nodes[0].generate(10)
-        self.nodes[0].name_firstupdate(name, newData[1], newData[0], value)
-        self.nodes[0].generate(5)
+        self.nodes[0].name_register(name, value)
+        self.nodes[0].generate(1)
         nameData = self.nodes[0].name_show(name)
         assert_equal(nameData['name'], name)
         assert_equal(nameData['value'], value)

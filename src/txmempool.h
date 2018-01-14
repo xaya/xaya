@@ -133,24 +133,14 @@ public:
     int64_t GetSigOpCostWithAncestors() const { return nSigOpCostWithAncestors; }
 
     inline bool
-    isNameNew() const
-    {
-        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_NEW;
-    }
-    inline bool
     isNameRegistration() const
     {
-        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_FIRSTUPDATE;
+        return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_REGISTER;
     }
     inline bool
     isNameUpdate() const
     {
         return nameOp.isNameOp() && nameOp.getNameOp() == OP_NAME_UPDATE;
-    }
-    inline const valtype&
-    getNameNewHash() const
-    {
-        return nameOp.getOpHash();
     }
     inline const valtype&
     getName() const

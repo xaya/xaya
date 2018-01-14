@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -120,40 +120,28 @@ class NameWalletTest (NameTestFramework):
     self.checkBalances ()
 
     # Register and update a name.  Check changes to the balance.
-    newA = self.nodes[2].name_new ("name-a")
-    newFee = self.getFee (2, newA[0], nameFee)
-    self.generate (0, 5)
-    self.checkBalances (newFee)
-    firstA = self.firstupdateName (2, "name-a", newA, "value")
-    firstFee = self.getFee (2, firstA)
-    self.generate (0, 10)
-    self.checkBalances (firstFee)
+    regA = self.nodes[2].name_register ("name-a", "value")
+    regFee = self.getFee (2, regA, nameFee)
+    self.generate (0, 1)
+    self.checkBalances (regFee)
     updA = self.nodes[2].name_update ("name-a", "new value")
     updFee = self.getFee (2, updA)
     self.generate (0, 1)
     self.checkBalances (updFee)
 
     # Check the transactions.
-    self.checkTx (2, newA[0], zero, -newFee,
-                  [['send', 'new', zero, -newFee]])
-    self.checkTx (2, firstA, zero, -firstFee,
-                  [['send', 'update: name-a', zero, -firstFee]])
+    self.checkTx (2, regA, zero, -regFee,
+                  [['send', 'update: name-a', zero, -regFee]])
     self.checkTx (2, updA, zero, -updFee,
                   [['send', 'update: name-a', zero, -updFee]])
 
     # Send a name from 1 to 2 by firstupdate and update.
     addrB = self.nodes[3].getnewaddress ()
-    newB = self.nodes[2].name_new ("name-b")
-    fee = self.getFee (2, newB[0], nameFee)
-    newC = self.nodes[2].name_new ("name-c")
-    fee += self.getFee (2, newC[0], nameFee)
-    self.generate (0, 5)
-    self.checkBalances (fee)
-    firstB = self.firstupdateName (2, "name-b", newB, "value", addrB)
-    fee = self.getFee (2, firstB)
-    firstC = self.firstupdateName (2, "name-c", newC, "value")
-    fee += self.getFee (2, firstC)
-    self.generate (0, 10)
+    regB = self.nodes[2].name_register ("name-b", "value", addrB)
+    fee = self.getFee (2, regB, nameFee)
+    regC = self.nodes[2].name_register ("name-c", "value")
+    fee += self.getFee (2, regC, nameFee)
+    self.generate (0, 1)
     self.checkBalances (fee)
     updC = self.nodes[2].name_update ("name-c", "new value", addrB)
     fee = self.getFee (2, updC)
@@ -161,7 +149,7 @@ class NameWalletTest (NameTestFramework):
     self.checkBalances (fee)
 
     # Check the receiving transactions on B.
-    self.checkTx (3, firstB, zero, None,
+    self.checkTx (3, regB, zero, None,
                   [['receive', 'update: name-b', zero, None]])
     self.checkTx (3, updC, zero, None,
                   [['receive', 'update: name-c', zero, None]])
@@ -186,10 +174,8 @@ class NameWalletTest (NameTestFramework):
     # Test sendtoname RPC command.
 
     addrDest = self.nodes[2].getnewaddress ()
-    newDest = self.nodes[0].name_new ("destination")
-    self.generate (0, 5)
-    self.firstupdateName (0, "destination", newDest, "value", addrDest)
-    self.generate (0, 10)
+    self.nodes[0].name_register ("destination", "value", addrDest)
+    self.generate (0, 1)
     self.checkName (3, "destination", "value")
 
     assert_raises_rpc_error (-5, 'name not found',

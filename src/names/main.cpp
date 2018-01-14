@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -66,16 +66,6 @@ CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
 {
   AssertLockHeld (pool.cs);
 
-  if (entry.isNameNew ())
-    {
-      const valtype& newHash = entry.getNameNewHash ();
-      const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
-      if (mit != mapNameNews.end ())
-        assert (mit->second == hash);
-      else
-        mapNameNews.insert (std::make_pair (newHash, hash));
-    }
-
   if (entry.isNameRegistration ())
     {
       const valtype& name = entry.getName ();
@@ -121,7 +111,7 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
   for (const auto& txout : tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
-      if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_FIRSTUPDATE)
+      if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_REGISTER)
         {
           const valtype& name = nameOp.getOpName ();
           const NameTxMap::const_iterator mit = mapNameRegs.find (name);
@@ -146,15 +136,6 @@ CNameMemPool::check (const CCoinsView& coins) const
   for (const auto& entry : pool.mapTx)
     {
       const uint256 txHash = entry.GetTx ().GetHash ();
-      if (entry.isNameNew ())
-        {
-          const valtype& newHash = entry.getNameNewHash ();
-          const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
-
-          assert (mit != mapNameNews.end ());
-          assert (mit->second == txHash);
-        }
-
       if (entry.isNameRegistration ())
         {
           const valtype& name = entry.getName ();
@@ -221,17 +202,7 @@ CNameMemPool::checkTx (const CTransaction& tx) const
 
       switch (nameOp.getNameOp ())
         {
-        case OP_NAME_NEW:
-          {
-            const valtype& newHash = nameOp.getOpHash ();
-            std::map<valtype, uint256>::const_iterator mi;
-            mi = mapNameNews.find (newHash);
-            if (mi != mapNameNews.end () && mi->second != tx.GetHash ())
-              return false;
-            break;
-          }
-
-        case OP_NAME_FIRSTUPDATE:
+        case OP_NAME_REGISTER:
           {
             const valtype& name = nameOp.getOpName ();
             if (registersName (name))
@@ -300,7 +271,6 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 {
   const std::string strTxid = tx.GetHash ().GetHex ();
   const char* txid = strTxid.c_str ();
-  const bool fMempool = (flags & SCRIPT_VERIFY_NAMES_MEMPOOL);
 
   /* As a first step, try to locate inputs and outputs of the transaction
      that are name scripts.  At most one input and output should be
@@ -345,7 +315,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   /* Check that no name inputs/outputs are present for a non-Namecoin tx.
      If that's the case, all is fine.  For a Namecoin tx instead, there
-     should be at least an output (for NAME_NEW, no inputs are expected).  */
+     should be at least an output (for NAME_REGISTER, no inputs are
+     expected).  */
 
   if (!tx.IsNamecoin ())
     {
@@ -370,27 +341,16 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   if (tx.vout[nameOut].nValue < params.rules->MinNameCoinAmount(nHeight))
     return state.Invalid (error ("%s: greedy name", __func__));
 
-  /* Handle NAME_NEW now, since this is easy and different from the other
-     operations.  */
-
-  if (nameOpOut.getNameOp () == OP_NAME_NEW)
-    {
-      if (nameIn != -1)
-        return state.Invalid (error ("CheckNameTransaction: NAME_NEW with"
-                                     " previous name input"));
-
-      if (nameOpOut.getOpHash ().size () != 20)
-        return state.Invalid (error ("CheckNameTransaction: NAME_NEW's hash"
-                                     " has wrong size"));
-
-      return true;
-    }
-
   /* Now that we have ruled out NAME_NEW, check that we have a previous
      name input that is being updated.  */
 
   assert (nameOpOut.isAnyUpdate ());
-  if (nameIn == -1)
+  if (nameOpOut.getNameOp () == OP_NAME_REGISTER) {
+    if (nameIn != -1)
+      return state.Invalid (error ("%s: name registration with"
+                                   " name input", __func__));
+  }
+  else if (nameIn == -1)
     return state.Invalid (error ("CheckNameTransaction: update without"
                                  " previous name input"));
   const valtype& name = nameOpOut.getOpName ();
@@ -428,40 +388,11 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       return true;
     }
 
-  /* Finally, NAME_FIRSTUPDATE.  */
-
-  assert (nameOpOut.getNameOp () == OP_NAME_FIRSTUPDATE);
-  if (nameOpIn.getNameOp () != OP_NAME_NEW)
-    return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
-                                 " with non-NAME_NEW prev tx"));
-
-  /* Maturity of NAME_NEW is checked only if we're not adding
-     to the mempool.  */
-  if (!fMempool)
-    {
-      assert (static_cast<unsigned> (coinIn.nHeight) != MEMPOOL_HEIGHT);
-      if (coinIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)
-        return state.Invalid (error ("CheckNameTransaction: NAME_NEW"
-                                     " is not mature for FIRST_UPDATE"));
-    }
-
-  if (nameOpOut.getOpRand ().size () > 20)
-    return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
-                                 " rand too large, %d bytes",
-                                 nameOpOut.getOpRand ().size ()));
-
-  {
-    valtype toHash(nameOpOut.getOpRand ());
-    toHash.insert (toHash.end (), name.begin (), name.end ());
-    const uint160 hash = Hash160 (toHash);
-    if (hash != uint160 (nameOpIn.getOpHash ()))
-      return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
-                                   " hash mismatch"));
-  }
+  /* Finally, NAME_REGISTER.  */
 
   CNameData oldName;
   if (view.GetName (name, oldName))
-    return state.Invalid (error ("CheckNameTransaction: NAME_FIRSTUPDATE"
+    return state.Invalid (error ("CheckNameTransaction: NAME_REGISTER"
                                  " on an existing name"));
 
   /* We don't have to specifically check that miners don't create blocks with
@@ -476,10 +407,6 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                       CCoinsViewCache& view, CBlockUndo& undo)
 {
   assert (nHeight != MEMPOOL_HEIGHT);
-
-  /* This check must be done *after* the historic bug fixing above!  Some
-     of the names that must be handled above are actually produced by
-     transactions *not* marked as Namecoin tx.  */
   if (!tx.IsNamecoin ())
     return;
 
