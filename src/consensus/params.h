@@ -100,8 +100,6 @@ struct Params {
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
     uint256 powLimit;
-    bool fPowAllowMinDifficultyBlocks;
-    int64_t nMinDifficultySince;
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
@@ -117,19 +115,6 @@ struct Params {
 
     /** Consensus rule interface.  */
     std::unique_ptr<ConsensusRules> rules;
-
-    /**
-     * Check whether or not minimum difficulty blocks are allowed
-     * with the given time stamp.
-     * @param nBlockTime Time of the block with minimum difficulty.
-     * @return True if it is allowed to have minimum difficulty.
-     */
-    bool AllowMinDifficultyBlocks(int64_t nBlockTime) const
-    {
-        if (!fPowAllowMinDifficultyBlocks)
-            return false;
-        return nBlockTime > nMinDifficultySince;
-    }
 
     /**
      * Check whether or not to allow legacy blocks at the given height.
