@@ -15,6 +15,7 @@ SOURCES = [
     "src/rpc/blockchain.cpp",
     "src/rpc/mining.cpp",
     "src/rpc/misc.cpp",
+    "src/rpc/names.cpp",
     "src/rpc/net.cpp",
     "src/rpc/rawtransaction.cpp",
     "src/wallet/rpcwallet.cpp",
