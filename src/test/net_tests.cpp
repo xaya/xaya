@@ -1,17 +1,17 @@
-// Copyright (c) 2012-2016 The Bitcoin Core developers
+// Copyright (c) 2012-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "addrman.h"
-#include "test/test_bitcoin.h"
+#include <addrman.h>
+#include <test/test_bitcoin.h>
 #include <string>
 #include <boost/test/unit_test.hpp>
-#include "hash.h"
-#include "serialize.h"
-#include "streams.h"
-#include "net.h"
-#include "netbase.h"
-#include "chainparams.h"
-#include "util.h"
+#include <hash.h>
+#include <serialize.h>
+#include <streams.h>
+#include <net.h>
+#include <netbase.h>
+#include <chainparams.h>
+#include <util.h>
 
 class CAddrManSerializationMock : public CAddrMan
 {
@@ -29,7 +29,7 @@ public:
 class CAddrManUncorrupted : public CAddrManSerializationMock
 {
 public:
-    void Serialize(CDataStream& s) const
+    void Serialize(CDataStream& s) const override
     {
         CAddrMan::Serialize(s);
     }
@@ -38,7 +38,7 @@ public:
 class CAddrManCorrupted : public CAddrManSerializationMock
 {
 public:
-    void Serialize(CDataStream& s) const
+    void Serialize(CDataStream& s) const override
     {
         // Produces corrupt output that claims addrman has 20 addrs when it only has one addr.
         unsigned char nVersion = 1;
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(cnode_listen_port)
     BOOST_CHECK(port == Params().GetDefaultPort());
     // test set port
     unsigned short altPort = 12345;
-    SoftSetArg("-port", std::to_string(altPort));
+    gArgs.SoftSetArg("-port", std::to_string(altPort));
     port = GetListenPort();
     BOOST_CHECK(port == altPort);
 }

@@ -10,6 +10,9 @@ from test_framework.util import *
 
 class NameScanningTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Register a name that can then be update'd in the mempool.
     newData = self.nodes[1].name_new ("a")
@@ -87,6 +90,7 @@ class NameScanningTest (NameTestFramework):
     assert_equal (obj['name'], name)
     assert_equal (obj['value'], value)
     assert_equal (obj['txid'], txid)
+    assert isinstance (obj['ismine'], bool)
     assert_equal (obj['ismine'], mine)
 
 if __name__ == '__main__':

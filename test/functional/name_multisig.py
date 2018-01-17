@@ -13,6 +13,9 @@ import binascii
 
 class NameMultisigTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Construct a 2-of-2 multisig address shared between two nodes.
     pubkeyA = self.getNewPubkey (0)
@@ -30,31 +33,33 @@ class NameMultisigTest (NameTestFramework):
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
-    assert_raises_jsonrpc (-4, None,
-                           self.nodes[0].name_update, "name", "new value")
-    assert_raises_jsonrpc (-4, None,
-                           self.nodes[1].name_update, "name", "new value")
+    assert_raises_rpc_error (-4, None,
+                             self.nodes[0].name_update, "name", "new value")
+    assert_raises_rpc_error (-4, None,
+                             self.nodes[1].name_update, "name", "new value")
 
     # Find some other input to add as fee.
     unspents = self.nodes[0].listunspent ()
     assert len (unspents) > 0
     feeInput = unspents[0]
     changeAddr = self.nodes[0].getnewaddress ()
-    changeAmount = feeInput['amount'] - Decimal ("0.01")
+    nameAmount = Decimal ("0.01")
+    changeAmount = feeInput['amount'] - nameAmount
 
     # Construct the name update as raw transaction.
     addr = self.nodes[2].getnewaddress ()
     inputs = [{"txid": data['txid'], "vout": data['vout']}, feeInput]
-    outputs = {changeAddr: changeAmount}
-    op = {"op": "name_update", "name": "name",
-          "value": "it worked", "address": addr}
-    txRaw = self.nodes[3].createrawtransaction (inputs, outputs, op)
+    outputs = {changeAddr: changeAmount, addr: nameAmount}
+    txRaw = self.nodes[3].createrawtransaction (inputs, outputs)
+    op = {"op": "name_update", "name": "name", "value": "it worked"}
+    nameInd = self.rawtxOutputIndex (3, txRaw, addr)
+    txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
 
     # Sign it partially.
-    partial = self.nodes[0].signrawtransaction (txRaw)
+    partial = self.nodes[0].signrawtransaction (txRaw['hex'])
     assert not partial['complete']
-    assert_raises_jsonrpc (-26, None,
-                           self.nodes[2].sendrawtransaction, partial['hex'])
+    assert_raises_rpc_error (-26, None,
+                             self.nodes[2].sendrawtransaction, partial['hex'])
 
     # Sign it fully and transmit it.
     signed = self.nodes[1].signrawtransaction (partial['hex'])
@@ -71,8 +76,8 @@ class NameMultisigTest (NameTestFramework):
     # Send the tx.  The manipulation should be caught (independently of
     # when strict P2SH checks are enabled, since they are enforced
     # mandatorily in the mempool).
-    assert_raises_jsonrpc (-26, None,
-                           self.nodes[2].sendrawtransaction, txManipulated)
+    assert_raises_rpc_error (-26, None,
+                             self.nodes[2].sendrawtransaction, txManipulated)
     self.nodes[2].sendrawtransaction (tx)
     self.generate (3, 1)
 

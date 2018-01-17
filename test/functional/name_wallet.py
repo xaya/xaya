@@ -20,9 +20,9 @@ class NameWalletTest (NameTestFramework):
   spentA = zero
   spentB = zero
 
-  def __init__ (self):
+  def set_test_params (self):
     # Set paytxfee to an explicitly known value.
-    super ().__init__ ([["-paytxfee=%s" % txFee]] * 4)
+    self.setup_name_test ([["-paytxfee=%s" % txFee]] * 4)
 
   def getFee (self, ind, txid, extra = zero):
     """
@@ -119,6 +119,13 @@ class NameWalletTest (NameTestFramework):
 
     self.checkBalances ()
 
+    # Check that we use legacy addresses.
+    # FIXME: Remove once we have segwit.
+    addr = self.nodes[0].getnewaddress ()
+    info = self.nodes[0].validateaddress (addr)
+    assert not info['isscript']
+    assert not info['iswitness']
+
     # Register and update a name.  Check changes to the balance.
     newA = self.nodes[2].name_new ("name-a")
     newFee = self.getFee (2, newA[0], nameFee)
@@ -192,8 +199,8 @@ class NameWalletTest (NameTestFramework):
     self.generate (0, 10)
     self.checkName (3, "destination", "value", None, False)
 
-    assert_raises_jsonrpc (-5, 'name not found',
-                           self.nodes[3].sendtoname, "non-existant", 10)
+    assert_raises_rpc_error (-5, 'name not found',
+                             self.nodes[3].sendtoname, "non-existant", 10)
 
     txid = self.nodes[3].sendtoname ("destination", 10)
     fee = self.getFee (3, txid)
@@ -207,8 +214,8 @@ class NameWalletTest (NameTestFramework):
 
     self.generate (0, 30)
     self.checkName (3, "destination", "value", None, True)
-    assert_raises_jsonrpc (-5, 'the name is expired',
-                           self.nodes[3].sendtoname, "destination", 10)
+    assert_raises_rpc_error (-5, 'the name is expired',
+                             self.nodes[3].sendtoname, "destination", 10)
 
 if __name__ == '__main__':
   NameWalletTest ().main ()

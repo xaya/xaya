@@ -1,10 +1,10 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "names/common.h"
+#include <names/common.h>
 
-#include "script/names.h"
+#include <script/names.h>
 
 bool fNameHistory = false;
 

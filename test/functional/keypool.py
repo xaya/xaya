@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the wallet keypool and interaction with wallet encryption/locking."""
@@ -9,6 +9,8 @@ from test_framework.util import *
 from test_framework import auxpow
 
 class KeyPoolTest(BitcoinTestFramework):
+    def set_test_params(self):
+        self.num_nodes = 1
 
     def run_test(self):
         nodes = self.nodes
@@ -18,17 +20,16 @@ class KeyPoolTest(BitcoinTestFramework):
         assert(addr_before_encrypting_data['hdmasterkeyid'] == wallet_info_old['hdmasterkeyid'])
         
         # Encrypt wallet and wait to terminate
-        nodes[0].encryptwallet('test')
-        bitcoind_processes[0].wait()
+        nodes[0].node_encrypt_wallet('test')
         # Restart node 0
-        nodes[0] = self.start_node(0, self.options.tmpdir)
+        self.start_node(0)
         # Keep creating keys
         addr = nodes[0].getnewaddress()
         addr_data = nodes[0].validateaddress(addr)
         wallet_info = nodes[0].getwalletinfo()
         assert(addr_before_encrypting_data['hdmasterkeyid'] != wallet_info['hdmasterkeyid'])
         assert(addr_data['hdmasterkeyid'] == wallet_info['hdmasterkeyid'])
-        assert_raises_jsonrpc(-12, "Error: Keypool ran out, please call keypoolrefill first", nodes[0].getnewaddress)
+        assert_raises_rpc_error(-12, "Error: Keypool ran out, please call keypoolrefill first", nodes[0].getnewaddress)
 
         # put six (plus 2) new keys in the keypool (100% external-, +100% internal-keys, 1 in min)
         nodes[0].walletpassphrase('test', 12000)
@@ -47,7 +48,7 @@ class KeyPoolTest(BitcoinTestFramework):
         nodes[0].getrawchangeaddress()
         addr = set()
         # the next one should fail
-        assert_raises_jsonrpc(-12, "Keypool ran out", nodes[0].getrawchangeaddress)
+        assert_raises_rpc_error(-12, "Keypool ran out", nodes[0].getrawchangeaddress)
 
         # drain the external keys
         addr.add(nodes[0].getnewaddress())
@@ -58,7 +59,7 @@ class KeyPoolTest(BitcoinTestFramework):
         addr.add(nodes[0].getnewaddress())
         assert(len(addr) == 6)
         # the next one should fail
-        assert_raises_jsonrpc(-12, "Error: Keypool ran out, please call keypoolrefill first", nodes[0].getnewaddress)
+        assert_raises_rpc_error(-12, "Error: Keypool ran out, please call keypoolrefill first", nodes[0].getnewaddress)
 
         # refill keypool with three new addresses
         nodes[0].walletpassphrase('test', 1)
@@ -72,7 +73,7 @@ class KeyPoolTest(BitcoinTestFramework):
         nodes[0].generate(1)
         nodes[0].generate(1)
         nodes[0].generate(1)
-        assert_raises_jsonrpc(-12, "Keypool ran out", nodes[0].generate, 1)
+        assert_raises_rpc_error(-12, "Keypool ran out", nodes[0].generate, 1)
 
         # test draining with getauxblock
         test_auxpow(nodes)
@@ -82,11 +83,6 @@ class KeyPoolTest(BitcoinTestFramework):
         wi = nodes[0].getwalletinfo()
         assert_equal(wi['keypoolsize_hd_internal'], 100)
         assert_equal(wi['keypoolsize'], 100)
-
-    def __init__(self):
-        super().__init__()
-        self.setup_clean_chain = False
-        self.num_nodes = 1
 
 def test_auxpow(nodes):
     """
@@ -115,7 +111,7 @@ def test_auxpow(nodes):
     assert res
     assert_equal(nodes[0].getwalletinfo()['keypoolsize'], 0)
 
-    assert_raises_jsonrpc (-12, 'Keypool ran out', nodes[0].getauxblock)
+    assert_raises_rpc_error (-12, 'Keypool ran out', nodes[0].getauxblock)
 
 if __name__ == '__main__':
     KeyPoolTest().main()

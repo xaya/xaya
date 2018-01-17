@@ -11,8 +11,8 @@ from test_framework.util import *
 
 class NameExpirationTest (NameTestFramework):
 
-  def __init__ (self):
-    super ().__init__ ([["-debug=names"]] * 4)
+  def set_test_params (self):
+    self.setup_name_test ([["-debug=names"]] * 4)
 
   def checkUTXO (self, ind, name, shouldBeThere):
     """

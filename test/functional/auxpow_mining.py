@@ -13,9 +13,12 @@ from test_framework import auxpow
 
 class AuxpowMiningTest (BitcoinTestFramework):
 
+  def set_test_params (self):
+    self.num_nodes = 2
+
   def run_test (self):
     # Enable mock time to be out of IBD.
-    enable_mocktime ()
+    self.enable_mocktime ()
 
     # Test with getauxblock and createauxblock/submitauxblock.
     self.test_getauxblock ()
@@ -44,12 +47,12 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.sync_all ()
     auxblock2 = create ()
     assert auxblock['hash'] != auxblock2['hash']
-    assert_raises_jsonrpc (-8, 'block hash unknown', submit,
-                           auxblock['hash'], "x")
+    assert_raises_rpc_error (-8, 'block hash unknown', submit,
+                             auxblock['hash'], "x")
 
     # Invalid format for auxpow.
-    assert_raises_jsonrpc (-1, None, submit,
-                           auxblock2['hash'], "x")
+    assert_raises_rpc_error (-1, None, submit,
+                             auxblock2['hash'], "x")
 
     # Invalidate the block again, send a transaction and query for the
     # auxblock to solve that contains the transaction.
@@ -141,10 +144,10 @@ class AuxpowMiningTest (BitcoinTestFramework):
     """
 
     # Check for errors with wrong parameters.
-    assert_raises_jsonrpc (-1, None, self.nodes[0].createauxblock)
-    assert_raises_jsonrpc (-8, "Invalid coinbase payout address",
-                           self.nodes[0].createauxblock,
-                           "this_an_invalid_address")
+    assert_raises_rpc_error (-1, None, self.nodes[0].createauxblock)
+    assert_raises_rpc_error (-5, "Invalid coinbase payout address",
+                             self.nodes[0].createauxblock,
+                             "this_an_invalid_address")
 
     # Fix a coinbase address and construct methods for it.
     coinbaseAddr = self.nodes[0].getnewaddress ()

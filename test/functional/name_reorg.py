@@ -11,6 +11,9 @@ from test_framework.util import *
 
 class NameRegistrationTest (NameTestFramework):
 
+  def set_test_params (self):
+    self.setup_name_test ()
+
   def run_test (self):
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
@@ -54,9 +57,9 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (3, "b", "b long", None, False)
     self.checkNameHistory (2, "a", ["initial value"])
     self.checkNameHistory (2, "b", ["b long"])
-    assert_raises_jsonrpc (-4, 'name not found', self.nodes[3].name_show, "c")
-    assert_raises_jsonrpc (-4, 'name not found',
-                           self.nodes[2].name_history, "c")
+    assert_raises_rpc_error (-4, 'name not found', self.nodes[3].name_show, "c")
+    assert_raises_rpc_error (-4, 'name not found',
+                             self.nodes[2].name_history, "c")
 
     # Mine another block.  This should at least perform the
     # non-conflicting transactions.  It is done on node 3 so

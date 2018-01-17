@@ -1,48 +1,37 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Base class for RPC testing."""
 
-from collections import deque
 from enum import Enum
 import logging
 import optparse
 import os
+import pdb
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
 
+from .authproxy import JSONRPCException
+from . import coverage
+from .test_node import TestNode
 from .util import (
-    PortSeed,
     MAX_NODES,
+    PortSeed,
+    assert_equal,
     base_node_args,
-    bitcoind_processes,
     check_json_precision,
     connect_nodes_bi,
-    disable_mocktime,
     disconnect_nodes,
-    enable_coverage,
-    enable_mocktime,
-    get_mocktime,
-    get_rpc_proxy,
     initialize_datadir,
-    get_datadir_path,
     log_filename,
     p2p_port,
-    rpc_url,
     set_node_times,
-    _start_node,
-    _start_nodes,
-    _stop_node,
-    _stop_nodes,
     sync_blocks,
     sync_mempools,
-    wait_for_bitcoind_start,
 )
-from .authproxy import JSONRPCException
 
 class TestStatus(Enum):
     PASSED = 1
@@ -53,68 +42,43 @@ TEST_EXIT_PASSED = 0
 TEST_EXIT_FAILED = 1
 TEST_EXIT_SKIPPED = 77
 
-class BitcoinTestFramework(object):
+class BitcoinTestFramework():
     """Base class for a bitcoin test script.
 
-    Individual bitcoin test scripts should subclass this class and override the following methods:
+    Individual bitcoin test scripts should subclass this class and override the set_test_params() and run_test() methods.
 
-    - __init__()
+    Individual tests can also override the following methods to customize the test setup:
+
     - add_options()
     - setup_chain()
     - setup_network()
-    - run_test()
+    - setup_nodes()
 
-    The main() method should not be overridden.
+    The __init__() and main() methods should not be overridden.
 
     This class also contains various public and private helper methods."""
 
-    # Methods to override in subclass test scripts.
     def __init__(self):
-        self.num_nodes = 4
+        """Sets test framework defaults. Do not override this method. Instead, override the set_test_params() method"""
         self.setup_clean_chain = False
-        self.nodes = None
+        self.nodes = []
+        self.mocktime = 0
+        self.supports_cli = False
+        self.set_test_params()
 
-    def add_options(self, parser):
-        pass
-
-    def setup_chain(self):
-        self.log.info("Initializing test directory "+self.options.tmpdir)
-        if self.setup_clean_chain:
-            self._initialize_chain_clean(self.options.tmpdir, self.num_nodes)
-        else:
-            self._initialize_chain(self.options.tmpdir, self.num_nodes, self.options.cachedir)
-
-    def setup_network(self):
-        self.setup_nodes()
-
-        # Connect the nodes as a "chain".  This allows us
-        # to split the network between nodes 1 and 2 to get
-        # two halves that can work on competing chains.
-        for i in range(self.num_nodes - 1):
-            connect_nodes_bi(self.nodes, i, i + 1)
-        self.sync_all()
-
-    def setup_nodes(self):
-        extra_args = None
-        if hasattr(self, "extra_args"):
-            extra_args = self.extra_args
-        self.nodes = _start_nodes(self.num_nodes, self.options.tmpdir, extra_args)
-
-    def run_test(self):
-        raise NotImplementedError
-
-    # Main function. This should not be overridden by the subclass test scripts.
+        assert hasattr(self, "num_nodes"), "Test must set self.num_nodes in set_test_params()"
 
     def main(self):
+        """Main function. This should not be overridden by the subclass test scripts."""
 
         parser = optparse.OptionParser(usage="%prog [options]")
         parser.add_option("--nocleanup", dest="nocleanup", default=False, action="store_true",
                           help="Leave namecoinds and test.* datadir on exit or error")
         parser.add_option("--noshutdown", dest="noshutdown", default=False, action="store_true",
                           help="Don't stop namecoinds after the test execution")
-        parser.add_option("--srcdir", dest="srcdir", default=os.path.normpath(os.path.dirname(os.path.realpath(__file__))+"/../../../src"),
+        parser.add_option("--srcdir", dest="srcdir", default=os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + "/../../../src"),
                           help="Source directory containing namecoind/namecoin-cli (default: %default)")
-        parser.add_option("--cachedir", dest="cachedir", default=os.path.normpath(os.path.dirname(os.path.realpath(__file__))+"/../../cache"),
+        parser.add_option("--cachedir", dest="cachedir", default=os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + "/../../cache"),
                           help="Directory for caching pregenerated datadirs")
         parser.add_option("--tmpdir", dest="tmpdir", help="Root directory for datadirs")
         parser.add_option("-l", "--loglevel", dest="loglevel", default="INFO",
@@ -127,20 +91,24 @@ class BitcoinTestFramework(object):
                           help="Write tested RPC commands into this directory")
         parser.add_option("--configfile", dest="configfile",
                           help="Location of the test framework config file")
+        parser.add_option("--pdbonfailure", dest="pdbonfailure", default=False, action="store_true",
+                          help="Attach a python debugger if test fails")
+        parser.add_option("--usecli", dest="usecli", default=False, action="store_true",
+                          help="use bitcoin-cli instead of RPC for all commands")
         self.add_options(parser)
         (self.options, self.args) = parser.parse_args()
 
-        if self.options.coveragedir:
-            enable_coverage(self.options.coveragedir)
-
         PortSeed.n = self.options.port_seed
 
-        os.environ['PATH'] = self.options.srcdir+":"+self.options.srcdir+"/qt:"+os.environ['PATH']
+        os.environ['PATH'] = self.options.srcdir + ":" + self.options.srcdir + "/qt:" + os.environ['PATH']
 
         check_json_precision()
 
+        self.options.cachedir = os.path.abspath(self.options.cachedir)
+
         # Set up temp directory and start logging
         if self.options.tmpdir:
+            self.options.tmpdir = os.path.abspath(self.options.tmpdir)
             os.makedirs(self.options.tmpdir, exist_ok=False)
         else:
             self.options.tmpdir = tempfile.mkdtemp(prefix="test")
@@ -149,6 +117,8 @@ class BitcoinTestFramework(object):
         success = TestStatus.FAILED
 
         try:
+            if self.options.usecli and not self.supports_cli:
+                raise SkipTest("--usecli specified but test does not support using CLI")
             self.setup_chain()
             self.setup_network()
             self.run_test()
@@ -167,6 +137,10 @@ class BitcoinTestFramework(object):
         except KeyboardInterrupt as e:
             self.log.warning("Exiting after keyboard interrupt")
 
+        if success == TestStatus.FAILED and self.options.pdbonfailure:
+            print("Testcase failed. Attaching python debugger. Enter ? for help")
+            pdb.set_trace()
+
         if not self.options.noshutdown:
             self.log.info("Stopping nodes")
             if self.nodes:
@@ -179,46 +153,148 @@ class BitcoinTestFramework(object):
             shutil.rmtree(self.options.tmpdir)
         else:
             self.log.warning("Not cleaning up dir %s" % self.options.tmpdir)
-            if os.getenv("PYTHON_DEBUG", ""):
-                # Dump the end of the debug logs, to aid in debugging rare
-                # travis failures.
-                import glob
-                filenames = [self.options.tmpdir + "/test_framework.log"]
-                filenames += glob.glob(self.options.tmpdir + "/node*/regtest/debug.log")
-                MAX_LINES_TO_PRINT = 1000
-                for fn in filenames:
-                    try:
-                        with open(fn, 'r') as f:
-                            print("From" , fn, ":")
-                            print("".join(deque(f, MAX_LINES_TO_PRINT)))
-                    except OSError:
-                        print("Opening file %s failed." % fn)
-                        traceback.print_exc()
 
         if success == TestStatus.PASSED:
             self.log.info("Tests successful")
-            sys.exit(TEST_EXIT_PASSED)
+            exit_code = TEST_EXIT_PASSED
         elif success == TestStatus.SKIPPED:
             self.log.info("Test skipped")
-            sys.exit(TEST_EXIT_SKIPPED)
+            exit_code = TEST_EXIT_SKIPPED
         else:
             self.log.error("Test failed. Test logging available at %s/test_framework.log", self.options.tmpdir)
-            logging.shutdown()
-            sys.exit(TEST_EXIT_FAILED)
+            self.log.error("Hint: Call {} '{}' to consolidate all logs".format(os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + "/../combine_logs.py"), self.options.tmpdir))
+            exit_code = TEST_EXIT_FAILED
+        logging.shutdown()
+        sys.exit(exit_code)
+
+    # Methods to override in subclass test scripts.
+    def set_test_params(self):
+        """Tests must this method to change default values for number of nodes, topology, etc"""
+        raise NotImplementedError
+
+    def add_options(self, parser):
+        """Override this method to add command-line options to the test"""
+        pass
+
+    def setup_chain(self):
+        """Override this method to customize blockchain setup"""
+        self.log.info("Initializing test directory " + self.options.tmpdir)
+        if self.setup_clean_chain:
+            self._initialize_chain_clean()
+        else:
+            self._initialize_chain()
+
+    def setup_network(self):
+        """Override this method to customize test network topology"""
+        self.setup_nodes()
+
+        # Connect the nodes as a "chain".  This allows us
+        # to split the network between nodes 1 and 2 to get
+        # two halves that can work on competing chains.
+        for i in range(self.num_nodes - 1):
+            connect_nodes_bi(self.nodes, i, i + 1)
+        self.sync_all()
+
+    def setup_nodes(self):
+        """Override this method to customize test node setup"""
+        extra_args = None
+        if hasattr(self, "extra_args"):
+            extra_args = self.extra_args
+        self.add_nodes(self.num_nodes, extra_args)
+        self.start_nodes()
+
+    def run_test(self):
+        """Tests must override this method to define test logic"""
+        raise NotImplementedError
 
     # Public helper methods. These can be accessed by the subclass test scripts.
 
-    def start_node(self, i, dirname, extra_args=None, rpchost=None, timewait=None, binary=None, stderr=None):
-        return _start_node(i, dirname, extra_args, rpchost, timewait, binary, stderr)
+    def add_nodes(self, num_nodes, extra_args=None, rpchost=None, timewait=None, binary=None):
+        """Instantiate TestNode objects"""
 
-    def start_nodes(self, num_nodes, dirname, extra_args=None, rpchost=None, timewait=None, binary=None):
-        return _start_nodes(num_nodes, dirname, extra_args, rpchost, timewait, binary)
+        if extra_args is None:
+            extra_args = [[]] * num_nodes
+        if binary is None:
+            binary = [None] * num_nodes
+        assert_equal(len(extra_args), num_nodes)
+        assert_equal(len(binary), num_nodes)
+        for i in range(num_nodes):
+            self.nodes.append(TestNode(i, self.options.tmpdir, extra_args[i], rpchost, timewait=timewait, binary=binary[i], stderr=None, mocktime=self.mocktime, coverage_dir=self.options.coveragedir, use_cli=self.options.usecli))
 
-    def stop_node(self, num_node):
-        _stop_node(self.nodes[num_node], num_node)
+    def start_node(self, i, extra_args=None, stderr=None):
+        """Start a bitcoind"""
+
+        node = self.nodes[i]
+
+        node.start(extra_args, stderr)
+        node.wait_for_rpc_connection()
+
+        if self.options.coveragedir is not None:
+            coverage.write_all_rpc_commands(self.options.coveragedir, node.rpc)
+
+    def start_nodes(self, extra_args=None):
+        """Start multiple bitcoinds"""
+
+        if extra_args is None:
+            extra_args = [None] * self.num_nodes
+        assert_equal(len(extra_args), self.num_nodes)
+        try:
+            for i, node in enumerate(self.nodes):
+                node.start(extra_args[i])
+            for node in self.nodes:
+                node.wait_for_rpc_connection()
+        except:
+            # If one node failed to start, stop the others
+            self.stop_nodes()
+            raise
+
+        if self.options.coveragedir is not None:
+            for node in self.nodes:
+                coverage.write_all_rpc_commands(self.options.coveragedir, node.rpc)
+
+    def stop_node(self, i):
+        """Stop a namecoind test node"""
+        self.nodes[i].stop_node()
+        self.nodes[i].wait_until_stopped()
 
     def stop_nodes(self):
-        _stop_nodes(self.nodes)
+        """Stop multiple namecoind test nodes"""
+        for node in self.nodes:
+            # Issue RPC to stop nodes
+            node.stop_node()
+
+        for node in self.nodes:
+            # Wait for nodes to stop
+            node.wait_until_stopped()
+
+    def restart_node(self, i, extra_args=None):
+        """Stop and start a test node"""
+        self.stop_node(i)
+        self.start_node(i, extra_args)
+
+    def assert_start_raises_init_error(self, i, extra_args=None, expected_msg=None):
+        with tempfile.SpooledTemporaryFile(max_size=2**16) as log_stderr:
+            try:
+                self.start_node(i, extra_args, stderr=log_stderr)
+                self.stop_node(i)
+            except Exception as e:
+                assert 'namecoind exited' in str(e)  # node must have shutdown
+                self.nodes[i].running = False
+                self.nodes[i].process = None
+                if expected_msg is not None:
+                    log_stderr.seek(0)
+                    stderr = log_stderr.read().decode('utf-8')
+                    if expected_msg not in stderr:
+                        raise AssertionError("Expected error \"" + expected_msg + "\" not found in:\n" + stderr)
+            else:
+                if expected_msg is None:
+                    assert_msg = "namecoind should have exited with an error"
+                else:
+                    assert_msg = "namecoind should have exited with expected error " + expected_msg
+                raise AssertionError(assert_msg)
+
+    def wait_for_node_exit(self, i, timeout):
+        self.nodes[i].process.wait(timeout)
 
     def split_network(self):
         """
@@ -246,6 +322,21 @@ class BitcoinTestFramework(object):
             sync_blocks(group)
             sync_mempools(group)
 
+    def enable_mocktime(self):
+        """Enable mocktime for the script.
+
+        mocktime may be needed for scripts that use the cached version of the
+        blockchain.  If the cached version of the blockchain is used without
+        mocktime then the mempools will not sync due to IBD.
+
+        For backwared compatibility of the python scripts with previous
+        versions of the cache, this helper function sets mocktime to Jan 1,
+        2014 + (201 * 10 * 60)"""
+        self.mocktime = 1388534400 + (201 * 10 * 60)
+
+    def disable_mocktime(self):
+        self.mocktime = 0
+
     # Private helper methods. These should not be accessed by the subclass test scripts.
 
     def _start_logging(self):
@@ -261,7 +352,7 @@ class BitcoinTestFramework(object):
         ll = int(self.options.loglevel) if self.options.loglevel.isdigit() else self.options.loglevel.upper()
         ch.setLevel(ll)
         # Format logs the same as bitcoind's debug.log with microprecision (so log files can be concatenated and sorted)
-        formatter = logging.Formatter(fmt = '%(asctime)s.%(msecs)03d000 %(name)s (%(levelname)s): %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(fmt='%(asctime)s.%(msecs)03d000 %(name)s (%(levelname)s): %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         formatter.converter = time.gmtime
         fh.setFormatter(formatter)
         ch.setFormatter(formatter)
@@ -276,16 +367,16 @@ class BitcoinTestFramework(object):
             rpc_handler.setLevel(logging.DEBUG)
             rpc_logger.addHandler(rpc_handler)
 
-    def _initialize_chain(self, test_dir, num_nodes, cachedir):
+    def _initialize_chain(self):
         """Initialize a pre-mined blockchain for use by the test.
 
         Create a cache of a 200-block-long chain (with wallet) for MAX_NODES
         Afterward, create num_nodes copies from the cache."""
 
-        assert num_nodes <= MAX_NODES
+        assert self.num_nodes <= MAX_NODES
         create_cache = False
         for i in range(MAX_NODES):
-            if not os.path.isdir(os.path.join(cachedir, 'node' + str(i))):
+            if not os.path.isdir(os.path.join(self.options.cachedir, 'node' + str(i))):
                 create_cache = True
                 break
 
@@ -294,28 +385,23 @@ class BitcoinTestFramework(object):
 
             # find and delete old cache directories if any exist
             for i in range(MAX_NODES):
-                if os.path.isdir(os.path.join(cachedir, "node" + str(i))):
-                    shutil.rmtree(os.path.join(cachedir, "node" + str(i)))
+                if os.path.isdir(os.path.join(self.options.cachedir, "node" + str(i))):
+                    shutil.rmtree(os.path.join(self.options.cachedir, "node" + str(i)))
 
             # Create cache directories, run bitcoinds:
             for i in range(MAX_NODES):
-                datadir = initialize_datadir(cachedir, i)
+                datadir = initialize_datadir(self.options.cachedir, i)
                 args = [os.getenv("BITCOIND", "namecoind"), "-server", "-keypool=1", "-datadir=" + datadir, "-discover=0"]
                 args.extend(base_node_args(i))
                 if i > 0:
                     args.append("-connect=127.0.0.1:" + str(p2p_port(0)))
-                bitcoind_processes[i] = subprocess.Popen(args)
-                self.log.debug("initialize_chain: namecoind started, waiting for RPC to come up")
-                wait_for_bitcoind_start(bitcoind_processes[i], datadir, i)
-                self.log.debug("initialize_chain: RPC successfully started")
+                self.nodes.append(TestNode(i, self.options.cachedir, extra_args=[], rpchost=None, timewait=None, binary=None, stderr=None, mocktime=self.mocktime, coverage_dir=None))
+                self.nodes[i].args = args
+                self.start_node(i)
 
-            self.nodes = []
-            for i in range(MAX_NODES):
-                try:
-                    self.nodes.append(get_rpc_proxy(rpc_url(get_datadir_path(cachedir, i), i), i))
-                except:
-                    self.log.exception("Error connecting to node %d" % i)
-                    sys.exit(1)
+            # Wait for RPC connections to be ready
+            for node in self.nodes:
+                node.wait_for_rpc_connection()
 
             # Create a 200-block-long chain; each of the 4 first nodes
             # gets 25 mature blocks and 25 immature.
@@ -324,8 +410,8 @@ class BitcoinTestFramework(object):
             #
             # blocks are created with timestamps 10 minutes apart
             # starting from 2010 minutes in the past
-            enable_mocktime()
-            block_time = get_mocktime() - (201 * 10 * 60)
+            self.enable_mocktime()
+            block_time = self.mocktime - (201 * 10 * 60)
             for i in range(2):
                 for peer in range(4):
                     for j in range(25):
@@ -338,42 +424,36 @@ class BitcoinTestFramework(object):
             # Shut them down, and clean up cache directories:
             self.stop_nodes()
             self.nodes = []
-            disable_mocktime()
+            self.disable_mocktime()
             for i in range(MAX_NODES):
-                os.remove(log_filename(cachedir, i, "debug.log"))
-                os.remove(log_filename(cachedir, i, "db.log"))
-                os.remove(log_filename(cachedir, i, "peers.dat"))
-                os.remove(log_filename(cachedir, i, "fee_estimates.dat"))
+                os.remove(log_filename(self.options.cachedir, i, "debug.log"))
+                os.remove(log_filename(self.options.cachedir, i, "wallets/db.log"))
+                os.remove(log_filename(self.options.cachedir, i, "peers.dat"))
+                os.remove(log_filename(self.options.cachedir, i, "fee_estimates.dat"))
 
-        for i in range(num_nodes):
-            from_dir = os.path.join(cachedir, "node" + str(i))
-            to_dir = os.path.join(test_dir, "node" + str(i))
+        for i in range(self.num_nodes):
+            from_dir = os.path.join(self.options.cachedir, "node" + str(i))
+            to_dir = os.path.join(self.options.tmpdir, "node" + str(i))
             shutil.copytree(from_dir, to_dir)
-            initialize_datadir(test_dir, i)  # Overwrite port/rpcport in bitcoin.conf
+            initialize_datadir(self.options.tmpdir, i)  # Overwrite port/rpcport in bitcoin.conf
 
-    def _initialize_chain_clean(self, test_dir, num_nodes):
+    def _initialize_chain_clean(self):
         """Initialize empty blockchain for use by the test.
 
         Create an empty blockchain and num_nodes wallets.
         Useful if a test case wants complete control over initialization."""
-        for i in range(num_nodes):
-            initialize_datadir(test_dir, i)
-
-# Test framework for doing p2p comparison testing, which sets up some bitcoind
-# binaries:
-# 1 binary: test binary
-# 2 binaries: 1 test binary, 1 ref binary
-# n>2 binaries: 1 test binary, n-1 ref binaries
-
-class SkipTest(Exception):
-    """This exception is raised to skip a test"""
-    def __init__(self, message):
-        self.message = message
+        for i in range(self.num_nodes):
+            initialize_datadir(self.options.tmpdir, i)
 
 class ComparisonTestFramework(BitcoinTestFramework):
+    """Test framework for doing p2p comparison testing
 
-    def __init__(self):
-        super().__init__()
+    Sets up some namecoind binaries:
+    - 1 binary: test binary
+    - 2 binaries: 1 test binary, 1 ref binary
+    - n>2 binaries: 1 test binary, n-1 ref binaries"""
+
+    def set_test_params(self):
         self.num_nodes = 2
         self.setup_clean_chain = True
 
@@ -386,8 +466,15 @@ class ComparisonTestFramework(BitcoinTestFramework):
                           help="namecoind binary to use for reference nodes (if any)")
 
     def setup_network(self):
-        self.nodes = self.start_nodes(
-            self.num_nodes, self.options.tmpdir,
-            extra_args=[['-whitelist=127.0.0.1']] * self.num_nodes,
-            binary=[self.options.testbinary] +
-            [self.options.refbinary]*(self.num_nodes-1))
+        extra_args = [['-whitelist=127.0.0.1']] * self.num_nodes
+        if hasattr(self, "extra_args"):
+            extra_args = self.extra_args
+        self.add_nodes(self.num_nodes, extra_args,
+                       binary=[self.options.testbinary] +
+                       [self.options.refbinary] * (self.num_nodes - 1))
+        self.start_nodes()
+
+class SkipTest(Exception):
+    """This exception is raised to skip a test"""
+    def __init__(self, message):
+        self.message = message

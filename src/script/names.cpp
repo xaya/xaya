@@ -1,10 +1,10 @@
-// Copyright (c) 2014 Daniel Kraft
+// Copyright (c) 2014-2017 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "script/names.h"
+#include <script/names.h>
 
-#include "uint256.h"
+#include <uint256.h>
 
 CNameScript::CNameScript (const CScript& script)
   : op(OP_NOP), address(script)

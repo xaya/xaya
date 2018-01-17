@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016 The Bitcoin Core developers
+# Copyright (c) 2016-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test compact blocks (BIP 152).
@@ -15,7 +15,7 @@ from test_framework.blocktools import create_block, create_coinbase, add_witness
 from test_framework.script import CScript, OP_TRUE
 
 # TestNode: A peer we use to send messages to bitcoind, and store responses.
-class TestNode(NodeConnCB):
+class TestNode(P2PInterface):
     def __init__(self):
         super().__init__()
         self.last_sendcmpct = []
@@ -25,21 +25,21 @@ class TestNode(NodeConnCB):
         # so we can eg wait until a particular block is announced.
         self.announced_blockhashes = set()
 
-    def on_sendcmpct(self, conn, message):
+    def on_sendcmpct(self, message):
         self.last_sendcmpct.append(message)
 
-    def on_cmpctblock(self, conn, message):
+    def on_cmpctblock(self, message):
         self.block_announced = True
         self.last_message["cmpctblock"].header_and_shortids.header.calc_sha256()
         self.announced_blockhashes.add(self.last_message["cmpctblock"].header_and_shortids.header.sha256)
 
-    def on_headers(self, conn, message):
+    def on_headers(self, message):
         self.block_announced = True
         for x in self.last_message["headers"].headers:
             x.calc_sha256()
             self.announced_blockhashes.add(x.sha256)
 
-    def on_inv(self, conn, message):
+    def on_inv(self, message):
         for x in self.last_message["inv"].inv:
             if x.type == 2:
                 self.block_announced = True
@@ -60,7 +60,7 @@ class TestNode(NodeConnCB):
         msg = msg_getheaders()
         msg.locator.vHave = locator
         msg.hashstop = hashstop
-        self.connection.send_message(msg)
+        self.send_message(msg)
 
     def send_header_for_blocks(self, new_blocks):
         headers_message = msg_headers()
@@ -70,7 +70,7 @@ class TestNode(NodeConnCB):
     def request_headers_and_sync(self, locator, hashstop=0):
         self.clear_block_announcement()
         self.get_headers(locator, hashstop)
-        assert wait_until(self.received_block_announcement, timeout=30)
+        wait_until(self.received_block_announcement, timeout=30, lock=mininode_lock)
         self.clear_block_announcement()
 
     # Block until a block announcement for a particular block hash is
@@ -78,7 +78,7 @@ class TestNode(NodeConnCB):
     def wait_for_block_announcement(self, block_hash, timeout=30):
         def received_hash():
             return (block_hash in self.announced_blockhashes)
-        return wait_until(received_hash, timeout=timeout)
+        wait_until(received_hash, timeout=timeout, lock=mininode_lock)
 
     def send_await_disconnect(self, message, timeout=30):
         """Sends a message to the node and wait for disconnect.
@@ -86,19 +86,16 @@ class TestNode(NodeConnCB):
         This is used when we want to send a message into the node that we expect
         will get us disconnected, eg an invalid block."""
         self.send_message(message)
-        success = wait_until(lambda: not self.connected, timeout=timeout)
-        if not success:
-            logger.error("send_await_disconnect failed!")
-            raise AssertionError("send_await_disconnect failed!")
-        return success
+        wait_until(lambda: self.state != "connected", timeout=timeout, lock=mininode_lock)
 
 class CompactBlocksTest(BitcoinTestFramework):
-    def __init__(self):
-        super().__init__()
+    def set_test_params(self):
         self.setup_clean_chain = True
         # Node0 = pre-segwit, node1 = segwit-aware
         self.num_nodes = 2
-        self.extra_args = [["-vbparams=segwit:0:0"], ["-txindex"]]
+        # This test was written assuming SegWit is activated using BIP9 at height 432 (3x confirmation window).
+        # TODO: Rewrite this test to support SegWit being always active.
+        self.extra_args = [["-vbparams=segwit:0:0"], ["-vbparams=segwit:0:999999999999", "-txindex"]]
         self.utxos = []
 
     def build_block_on_tip(self, node, segwit=False):
@@ -150,9 +147,7 @@ class CompactBlocksTest(BitcoinTestFramework):
         # Make sure we get a SENDCMPCT message from our peer
         def received_sendcmpct():
             return (len(test_node.last_sendcmpct) > 0)
-        got_message = wait_until(received_sendcmpct, timeout=30)
-        assert(received_sendcmpct())
-        assert(got_message)
+        wait_until(received_sendcmpct, timeout=30, lock=mininode_lock)
         with mininode_lock:
             # Check that the first version received is the preferred one
             assert_equal(test_node.last_sendcmpct[0].version, preferred_version)
@@ -167,7 +162,6 @@ class CompactBlocksTest(BitcoinTestFramework):
             block_hash = int(node.generate(1)[0], 16)
             peer.wait_for_block_announcement(block_hash, timeout=30)
             assert(peer.block_announced)
-            assert(got_message)
 
             with mininode_lock:
                 assert predicate(peer), (
@@ -282,7 +276,7 @@ class CompactBlocksTest(BitcoinTestFramework):
 
         # Wait until we've seen the block announcement for the resulting tip
         tip = int(node.getbestblockhash(), 16)
-        assert(test_node.wait_for_block_announcement(tip))
+        test_node.wait_for_block_announcement(tip)
 
         # Make sure we will receive a fast-announce compact block
         self.request_cb_announcements(test_node, node, version)
@@ -293,12 +287,12 @@ class CompactBlocksTest(BitcoinTestFramework):
 
         # Store the raw block in our internal format.
         block = FromHex(CBlock(), node.getblock("%02x" % block_hash, False))
-        [tx.calc_sha256() for tx in block.vtx]
+        for tx in block.vtx:
+            tx.calc_sha256()
         block.rehash()
 
         # Wait until the block was announced (via compact blocks)
-        wait_until(test_node.received_block_announcement, timeout=30)
-        assert(test_node.received_block_announcement())
+        wait_until(test_node.received_block_announcement, timeout=30, lock=mininode_lock)
 
         # Now fetch and check the compact block
         header_and_shortids = None
@@ -314,8 +308,7 @@ class CompactBlocksTest(BitcoinTestFramework):
             inv = CInv(4, block_hash)  # 4 == "CompactBlock"
             test_node.send_message(msg_getdata([inv]))
 
-        wait_until(test_node.received_block_announcement, timeout=30)
-        assert(test_node.received_block_announcement())
+        wait_until(test_node.received_block_announcement, timeout=30, lock=mininode_lock)
 
         # Now fetch and check the compact block
         header_and_shortids = None
@@ -386,13 +379,11 @@ class CompactBlocksTest(BitcoinTestFramework):
 
             if announce == "inv":
                 test_node.send_message(msg_inv([CInv(2, block.sha256)]))
-                success = wait_until(lambda: "getheaders" in test_node.last_message, timeout=30)
-                assert(success)
+                wait_until(lambda: "getheaders" in test_node.last_message, timeout=30, lock=mininode_lock)
                 test_node.send_header_for_blocks([block])
             else:
                 test_node.send_header_for_blocks([block])
-            success = wait_until(lambda: "getdata" in test_node.last_message, timeout=30)
-            assert(success)
+            wait_until(lambda: "getdata" in test_node.last_message, timeout=30, lock=mininode_lock)
             assert_equal(len(test_node.last_message["getdata"].inv), 1)
             assert_equal(test_node.last_message["getdata"].inv[0].type, 4)
             assert_equal(test_node.last_message["getdata"].inv[0].hash, block.sha256)
@@ -571,8 +562,7 @@ class CompactBlocksTest(BitcoinTestFramework):
         assert_equal(int(node.getbestblockhash(), 16), block.hashPrevBlock)
 
         # We should receive a getdata request
-        success = wait_until(lambda: "getdata" in test_node.last_message, timeout=10)
-        assert(success)
+        wait_until(lambda: "getdata" in test_node.last_message, timeout=10, lock=mininode_lock)
         assert_equal(len(test_node.last_message["getdata"].inv), 1)
         assert(test_node.last_message["getdata"].inv[0].type == 2 or test_node.last_message["getdata"].inv[0].type == 2|MSG_WITNESS_FLAG)
         assert_equal(test_node.last_message["getdata"].inv[0].hash, block.sha256)
@@ -599,8 +589,7 @@ class CompactBlocksTest(BitcoinTestFramework):
             num_to_request = random.randint(1, len(block.vtx))
             msg.block_txn_request.from_absolute(sorted(random.sample(range(len(block.vtx)), num_to_request)))
             test_node.send_message(msg)
-            success = wait_until(lambda: "blocktxn" in test_node.last_message, timeout=10)
-            assert(success)
+            wait_until(lambda: "blocktxn" in test_node.last_message, timeout=10, lock=mininode_lock)
 
             [tx.calc_sha256() for tx in block.vtx]
             with mininode_lock:
@@ -639,22 +628,20 @@ class CompactBlocksTest(BitcoinTestFramework):
         for i in range(MAX_CMPCTBLOCK_DEPTH + 1):
             test_node.clear_block_announcement()
             new_blocks.append(node.generate(1)[0])
-            wait_until(test_node.received_block_announcement, timeout=30)
+            wait_until(test_node.received_block_announcement, timeout=30, lock=mininode_lock)
 
         test_node.clear_block_announcement()
         test_node.send_message(msg_getdata([CInv(4, int(new_blocks[0], 16))]))
-        success = wait_until(lambda: "cmpctblock" in test_node.last_message, timeout=30)
-        assert(success)
+        wait_until(lambda: "cmpctblock" in test_node.last_message, timeout=30, lock=mininode_lock)
 
         test_node.clear_block_announcement()
         node.generate(1)
-        wait_until(test_node.received_block_announcement, timeout=30)
+        wait_until(test_node.received_block_announcement, timeout=30, lock=mininode_lock)
         test_node.clear_block_announcement()
         with mininode_lock:
             test_node.last_message.pop("block", None)
         test_node.send_message(msg_getdata([CInv(4, int(new_blocks[0], 16))]))
-        success = wait_until(lambda: "block" in test_node.last_message, timeout=30)
-        assert(success)
+        wait_until(lambda: "block" in test_node.last_message, timeout=30, lock=mininode_lock)
         with mininode_lock:
             test_node.last_message["block"].block.calc_sha256()
             assert_equal(test_node.last_message["block"].block.sha256, int(new_blocks[0], 16))
@@ -705,7 +692,7 @@ class CompactBlocksTest(BitcoinTestFramework):
         node.submitblock(ToHex(block))
 
         for l in listeners:
-            wait_until(lambda: l.received_block_announcement(), timeout=30)
+            wait_until(lambda: l.received_block_announcement(), timeout=30, lock=mininode_lock)
         with mininode_lock:
             for l in listeners:
                 assert "cmpctblock" in l.last_message
@@ -801,23 +788,12 @@ class CompactBlocksTest(BitcoinTestFramework):
 
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
-        self.test_node = TestNode()
-        self.segwit_node = TestNode()
-        self.old_node = TestNode()  # version 1 peer <--> segwit node
+        self.test_node = self.nodes[0].add_p2p_connection(TestNode())
+        self.segwit_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK|NODE_WITNESS)
+        self.old_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK)
 
-        connections = []
-        connections.append(NodeConn('127.0.0.1', p2p_port(0), self.nodes[0], self.test_node))
-        connections.append(NodeConn('127.0.0.1', p2p_port(1), self.nodes[1],
-                    self.segwit_node, services=NODE_NETWORK|NODE_WITNESS))
-        connections.append(NodeConn('127.0.0.1', p2p_port(1), self.nodes[1],
-                    self.old_node, services=NODE_NETWORK))
-        self.test_node.add_connection(connections[0])
-        self.segwit_node.add_connection(connections[1])
-        self.old_node.add_connection(connections[2])
+        network_thread_start()
 
-        NetworkThread().start()  # Start up network handling in another thread
-
-        # Test logic begins here
         self.test_node.wait_for_verack()
 
         # We will need UTXOs to construct transactions in later tests.

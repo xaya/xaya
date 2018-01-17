@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the wallet backup features.
@@ -30,17 +30,16 @@ confirm 1/2/3/4 balances are same as before.
 Shutdown again, restore using importwallet,
 and confirm again balances are correct.
 """
+from random import randint
+import shutil
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
-from random import randint
 
 class WalletBackupTest(BitcoinTestFramework):
-
-    def __init__(self):
-        super().__init__()
-        self.setup_clean_chain = True
+    def set_test_params(self):
         self.num_nodes = 4
+        self.setup_clean_chain = True
         # nodes 1, 2,3 are spenders, let's give them a keypool=100
         self.extra_args = [["-keypool=100"], ["-keypool=100"], ["-keypool=100"], []]
 
@@ -77,9 +76,9 @@ class WalletBackupTest(BitcoinTestFramework):
 
     # As above, this mirrors the original bash test.
     def start_three(self):
-        self.nodes[0] = self.start_node(0, self.options.tmpdir)
-        self.nodes[1] = self.start_node(1, self.options.tmpdir)
-        self.nodes[2] = self.start_node(2, self.options.tmpdir)
+        self.start_node(0)
+        self.start_node(1)
+        self.start_node(2)
         connect_nodes(self.nodes[0], 3)
         connect_nodes(self.nodes[1], 3)
         connect_nodes(self.nodes[2], 3)
@@ -91,9 +90,9 @@ class WalletBackupTest(BitcoinTestFramework):
         self.stop_node(2)
 
     def erase_three(self):
-        os.remove(self.options.tmpdir + "/node0/regtest/wallet.dat")
-        os.remove(self.options.tmpdir + "/node1/regtest/wallet.dat")
-        os.remove(self.options.tmpdir + "/node2/regtest/wallet.dat")
+        os.remove(self.options.tmpdir + "/node0/regtest/wallets/wallet.dat")
+        os.remove(self.options.tmpdir + "/node1/regtest/wallets/wallet.dat")
+        os.remove(self.options.tmpdir + "/node2/regtest/wallets/wallet.dat")
 
     def run_test(self):
         self.log.info("Generating initial blockchain")
@@ -155,9 +154,9 @@ class WalletBackupTest(BitcoinTestFramework):
         shutil.rmtree(self.options.tmpdir + "/node2/regtest/chainstate")
 
         # Restore wallets from backup
-        shutil.copyfile(tmpdir + "/node0/wallet.bak", tmpdir + "/node0/regtest/wallet.dat")
-        shutil.copyfile(tmpdir + "/node1/wallet.bak", tmpdir + "/node1/regtest/wallet.dat")
-        shutil.copyfile(tmpdir + "/node2/wallet.bak", tmpdir + "/node2/regtest/wallet.dat")
+        shutil.copyfile(tmpdir + "/node0/wallet.bak", tmpdir + "/node0/regtest/wallets/wallet.dat")
+        shutil.copyfile(tmpdir + "/node1/wallet.bak", tmpdir + "/node1/regtest/wallets/wallet.dat")
+        shutil.copyfile(tmpdir + "/node2/wallet.bak", tmpdir + "/node2/regtest/wallets/wallet.dat")
 
         self.log.info("Re-starting nodes")
         self.start_three()
@@ -190,6 +189,16 @@ class WalletBackupTest(BitcoinTestFramework):
         assert_equal(self.nodes[0].getbalance(), balance0)
         assert_equal(self.nodes[1].getbalance(), balance1)
         assert_equal(self.nodes[2].getbalance(), balance2)
+
+        # Backup to source wallet file must fail
+        sourcePaths = [
+            tmpdir + "/node0/regtest/wallets/wallet.dat",
+            tmpdir + "/node0/./regtest/wallets/wallet.dat",
+            tmpdir + "/node0/regtest/wallets/",
+            tmpdir + "/node0/regtest/wallets"]
+
+        for sourcePath in sourcePaths:
+            assert_raises_rpc_error(-4, "backup failed", self.nodes[0].backupwallet, sourcePath)
 
 
 if __name__ == '__main__':

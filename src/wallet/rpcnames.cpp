@@ -9,14 +9,20 @@
 #include "names/main.h"
 #include "primitives/transaction.h"
 #include "random.h"
+#include "rpc/mining.h"
+#include "rpc/safemode.h"
 #include "rpc/server.h"
 #include "script/names.h"
 #include "txmempool.h"
 #include "util.h"
 #include "validation.h"
+#include "wallet/coincontrol.h"
 #include "wallet/wallet.h"
 
 #include <univalue.h>
+
+namespace
+{
 
 // Maximum number of outputs that are checked for the NAME_NEW prevout.
 constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
@@ -60,6 +66,8 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
   return false;
 }
 
+} // namespace
+
 /* ************************************************************************** */
 
 UniValue
@@ -85,6 +93,10 @@ name_list (const JSONRPCRequest& request)
         + HelpExampleCli ("name_list", "\"myname\"")
         + HelpExampleRpc ("name_list", "")
       );
+
+  RPCTypeCheck (request.params, {UniValue::VSTR});
+
+  ObserveSafeMode ();
 
   valtype nameFilter;
   if (request.params.size () == 1)
@@ -182,6 +194,10 @@ name_new (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_new", "\"myname\"")
       );
 
+  RPCTypeCheck (request.params, {UniValue::VSTR});
+
+  ObserveSafeMode ();
+
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
   if (name.size () > MAX_NAME_LENGTH)
@@ -207,8 +223,10 @@ name_new (const JSONRPCRequest& request)
   const CScript addrName = GetScriptForDestination (pubKey.GetID ());
   const CScript newScript = CNameScript::buildNameNew (addrName, hash);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
-  SendMoneyToScript (pwallet, newScript, NULL, NAME_LOCKED_AMOUNT, false, wtx);
+  SendMoneyToScript (pwallet, newScript, nullptr,
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   keyName.KeepKey ();
 
@@ -258,6 +276,12 @@ name_firstupdate (const JSONRPCRequest& request)
         + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
         + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
       );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
+                 UniValue::VSTR});
+
+  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -323,11 +347,12 @@ name_firstupdate (const JSONRPCRequest& request)
   if (request.params.size () >= 5)
     {
       keyName.ReturnKey ();
-      const CBitcoinAddress toAddress(request.params[4].get_str ());
-      if (!toAddress.IsValid ())
+      const CTxDestination dest
+        = DecodeDestination(request.params[4].get_str ());
+      if (!IsValidDestination(dest))
         throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
 
-      addrName = GetScriptForDestination (toAddress.Get ());
+      addrName = GetScriptForDestination (dest);
     }
   else
     {
@@ -338,9 +363,10 @@ name_firstupdate (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameFirstupdate (addrName, name, value, rand);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
   SendMoneyToScript (pwallet, nameScript, &txIn,
-                     NAME_LOCKED_AMOUNT, false, wtx);
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -374,6 +400,11 @@ name_update (const JSONRPCRequest& request)
         + HelpExampleCli ("name_update", "\"myname\", \"new-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       );
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
+
+  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -420,11 +451,12 @@ name_update (const JSONRPCRequest& request)
   if (request.params.size () == 3)
     {
       keyName.ReturnKey ();
-      const CBitcoinAddress toAddress(request.params[2].get_str ());
-      if (!toAddress.IsValid ())
+      const CTxDestination dest
+        = DecodeDestination (request.params[2].get_str ());
+      if (!IsValidDestination (dest))
         throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
 
-      addrName = GetScriptForDestination (toAddress.Get ());
+      addrName = GetScriptForDestination (dest);
     }
   else
     {
@@ -435,9 +467,10 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (addrName, name, value);
 
+  CCoinControl coinControl;
   CWalletTx wtx;
   SendMoneyToScript (pwallet, nameScript, &txIn,
-                     NAME_LOCKED_AMOUNT, false, wtx);
+                     NAME_LOCKED_AMOUNT, false, wtx, coinControl);
 
   if (usedKey)
     keyName.KeepKey ();
@@ -454,9 +487,9 @@ sendtoname (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
   
-  if (request.fHelp || request.params.size () < 2 || request.params.size () > 5)
+  if (request.fHelp || request.params.size () < 2 || request.params.size () > 8)
     throw std::runtime_error (
-        "sendtoname \"name\" amount ( \"comment\" \"comment-to\" subtractfeefromamount )\n"
+        "sendtoname \"name\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
         "\nSend an amount to the owner of a name. "
         " The amount is a real and is rounded to the nearest 0.00000001.\n"
         "\nIt is an error if the name is expired.\n"
@@ -471,6 +504,12 @@ sendtoname (const JSONRPCRequest& request)
         "                             transaction, just kept in your wallet.\n"
         "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
         "                             The recipient will receive less namecoins than you enter in the amount field.\n"
+        "6. replaceable            (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
+        "7. conf_target            (numeric, optional) Confirmation target (in blocks)\n"
+        "8. \"estimate_mode\"      (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+        "       \"UNSET\"\n"
+        "       \"ECONOMICAL\"\n"
+        "       \"CONSERVATIVE\"\n"
         "\nResult:\n"
         "\"transactionid\"  (string) The transaction id.\n"
         "\nExamples:\n"
@@ -480,10 +519,16 @@ sendtoname (const JSONRPCRequest& request)
         + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
       );
 
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,
+                 UniValue::VSTR, UniValue::VBOOL, UniValue::VBOOL,
+                 UniValue::VNUM, UniValue::VSTR});
+
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  ObserveSafeMode ();
   LOCK2 (cs_main, pwallet->cs_wallet);
 
   const std::string nameStr = request.params[0].get_str ();
@@ -517,13 +562,30 @@ sendtoname (const JSONRPCRequest& request)
       wtx.mapValue["to"]      = request.params[3].get_str();
 
   bool fSubtractFeeFromAmount = false;
-  if (request.params.size() > 4)
+  if (!request.params[4].isNull())
       fSubtractFeeFromAmount = request.params[4].get_bool();
+
+  CCoinControl coin_control;
+  if (!request.params[5].isNull()) {
+      coin_control.signalRbf = request.params[5].get_bool();
+  }
+
+  if (!request.params[6].isNull()) {
+      coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
+  }
+
+  if (!request.params[7].isNull()) {
+      if (!FeeModeFromString(request.params[7].get_str(),
+          coin_control.m_fee_mode)) {
+          throw JSONRPCError(RPC_INVALID_PARAMETER,
+                             "Invalid estimate_mode parameter");
+      }
+  }
 
   EnsureWalletIsUnlocked(pwallet);
 
-  SendMoneyToScript (pwallet, data.getAddress (), NULL,
-                     nAmount, fSubtractFeeFromAmount, wtx);
+  SendMoneyToScript (pwallet, data.getAddress (), nullptr,
+                     nAmount, fSubtractFeeFromAmount, wtx, coin_control);
 
   return wtx.GetHash ().GetHex ();
 }

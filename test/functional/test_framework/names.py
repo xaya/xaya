@@ -10,15 +10,14 @@ from .util import *
 
 class NameTestFramework (BitcoinTestFramework):
 
-  def __init__ (self, args = [[]] * 4):
-    super ().__init__ ()
+  def setup_name_test (self, args = [[]] * 4):
     self.num_nodes = len (args)
     self.extra_args = args
     self.node_groups = None
 
     # Since we use a cached chain, enable mocktime so nodes do not see
     # themselves in IBD.
-    enable_mocktime ()
+    self.enable_mocktime ()
 
   def split_network (self):
     # Override this method to keep track of the node groups, so that we can
@@ -97,6 +96,7 @@ class NameTestFramework (BitcoinTestFramework):
     assert_equal (data['value'], value)
     if (expiresIn is not None):
       assert_equal (data['expires_in'], expiresIn)
+    assert isinstance (data['expired'], bool)
     assert_equal (data['expired'], expired)
 
   def checkNameHistory (self, ind, name, values):
@@ -114,6 +114,21 @@ class NameTestFramework (BitcoinTestFramework):
 
     assert_equal (valuesFound, values)
 
+  def rawtxOutputIndex (self, ind, txhex, addr):
+    """
+    Returns the index of the tx output in the given raw transaction that
+    is sent to the given address.
+
+    This is useful for building raw transactions with namerawtransaction.
+    """
+
+    tx = self.nodes[ind].decoderawtransaction (txhex)
+    for i, vout in enumerate (tx['vout']):
+      if addr in vout['scriptPubKey']['addresses']:
+        return i
+
+    return None
+
   def atomicTrade (self, name, value, price, fee, nameFrom, nameTo):
     """
     Perform an atomic name trade, sending 'name' from the first to the
@@ -129,21 +144,28 @@ class NameTestFramework (BitcoinTestFramework):
     inputs = []
 
     unspents = self.nodes[nameTo].listunspent ()
-    assert (len (unspents) > 0)
-    txin = unspents[0]
-    assert (txin['amount'] >= price + fee)
+    txin = None
+    for u in unspents:
+      if u['amount'] >= price + fee:
+        txin = u
+        break
+    assert txin is not None
     change = txin['amount'] - price - fee
     inputs.append ({"txid": txin['txid'], "vout": txin['vout']})
 
     data = self.nodes[nameFrom].name_show (name)
+    nameTxo = self.nodes[nameFrom].gettxout (data['txid'], data['vout'])
+    nameAmount = nameTxo['value']
+
     inputs.append ({"txid": data['txid'], "vout": data['vout']})
+    outputs = {addrA: price, addrChange: change, addrB: nameAmount}
+    tx = self.nodes[nameFrom].createrawtransaction (inputs, outputs)
 
-    outputs = {addrA: price, addrChange: change}
-    nameOp = {"op": "name_update", "name": name,
-              "value": value, "address": addrB}
+    nameInd = self.rawtxOutputIndex (nameFrom, tx, addrB)
+    nameOp = {"op": "name_update", "name": name, "value": value}
+    tx = self.nodes[nameFrom].namerawtransaction (tx, nameInd, nameOp)
 
-    tx = self.nodes[nameFrom].createrawtransaction (inputs, outputs, nameOp)
-    signed = self.nodes[nameFrom].signrawtransaction (tx)
+    signed = self.nodes[nameFrom].signrawtransaction (tx['hex'])
     assert not signed['complete']
     signed = self.nodes[nameTo].signrawtransaction (signed['hex'])
     assert signed['complete']

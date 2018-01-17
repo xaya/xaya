@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 The Bitcoin Core developers
+# Copyright (c) 2014-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test logic for skipping signature validation on old blocks.
@@ -38,38 +38,40 @@ from test_framework.mininode import (CBlockHeader,
                                      CTransaction,
                                      CTxIn,
                                      CTxOut,
-                                     NetworkThread,
-                                     NodeConn,
-                                     NodeConnCB,
+                                     network_thread_join,
+                                     network_thread_start,
+                                     P2PInterface,
                                      msg_block,
                                      msg_headers)
 from test_framework.script import (CScript, OP_TRUE)
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import (p2p_port, assert_equal)
+from test_framework.util import assert_equal
 
-class BaseNode(NodeConnCB):
+class BaseNode(P2PInterface):
     def send_header_for_blocks(self, new_blocks):
         headers_message = msg_headers()
         headers_message.headers = [CBlockHeader(b) for b in new_blocks]
         self.send_message(headers_message)
 
 class AssumeValidTest(BitcoinTestFramework):
-    def __init__(self):
-        super().__init__()
+    def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
 
     def setup_network(self):
+        self.add_nodes(3)
         # Start node0. We don't start the other nodes yet since
         # we need to pre-mine a block with an invalid transaction
         # signature so we can pass in the block hash as assumevalid.
-        self.nodes = [self.start_node(0, self.options.tmpdir)]
+        self.start_node(0)
 
-    def send_blocks_until_disconnected(self, node):
+    def send_blocks_until_disconnected(self, p2p_conn):
         """Keep sending blocks to the node until we're disconnected."""
         for i in range(len(self.blocks)):
+            if p2p_conn.state != "connected":
+                break
             try:
-                node.send_message(msg_block(self.blocks[i]))
+                p2p_conn.send_message(msg_block(self.blocks[i]))
             except IOError as e:
                 assert str(e) == 'Not connected, no pushbuf'
                 break
@@ -95,13 +97,10 @@ class AssumeValidTest(BitcoinTestFramework):
     def run_test(self):
 
         # Connect to node0
-        node0 = BaseNode()
-        connections = []
-        connections.append(NodeConn('127.0.0.1', p2p_port(0), self.nodes[0], node0))
-        node0.add_connection(connections[0])
+        p2p0 = self.nodes[0].add_p2p_connection(BaseNode())
 
-        NetworkThread().start()  # Start up network handling in another thread
-        node0.wait_for_verack()
+        network_thread_start()
+        self.nodes[0].p2p.wait_for_verack()
 
         # Build the blockchain
         self.tip = int(self.nodes[0].getbestblockhash(), 16)
@@ -161,41 +160,44 @@ class AssumeValidTest(BitcoinTestFramework):
             self.block_time += 1
             height += 1
 
-        # Start node1 and node2 with assumevalid so they accept a block with a bad signature.
-        self.nodes.append(self.start_node(1, self.options.tmpdir,
-                                     ["-assumevalid=" + hex(block102.sha256)]))
-        node1 = BaseNode()  # connects to node1
-        connections.append(NodeConn('127.0.0.1', p2p_port(1), self.nodes[1], node1))
-        node1.add_connection(connections[1])
-        node1.wait_for_verack()
+        # We're adding new connections so terminate the network thread
+        self.nodes[0].disconnect_p2ps()
+        network_thread_join()
 
-        self.nodes.append(self.start_node(2, self.options.tmpdir,
-                                     ["-assumevalid=" + hex(block102.sha256)]))
-        node2 = BaseNode()  # connects to node2
-        connections.append(NodeConn('127.0.0.1', p2p_port(2), self.nodes[2], node2))
-        node2.add_connection(connections[2])
-        node2.wait_for_verack()
+        # Start node1 and node2 with assumevalid so they accept a block with a bad signature.
+        self.start_node(1, extra_args=["-assumevalid=" + hex(block102.sha256)])
+        self.start_node(2, extra_args=["-assumevalid=" + hex(block102.sha256)])
+
+        p2p0 = self.nodes[0].add_p2p_connection(BaseNode())
+        p2p1 = self.nodes[1].add_p2p_connection(BaseNode())
+        p2p2 = self.nodes[2].add_p2p_connection(BaseNode())
+
+        network_thread_start()
+
+        p2p0.wait_for_verack()
+        p2p1.wait_for_verack()
+        p2p2.wait_for_verack()
 
         # send header lists to all three nodes
-        node0.send_header_for_blocks(self.blocks[0:2000])
-        node0.send_header_for_blocks(self.blocks[2000:])
-        node1.send_header_for_blocks(self.blocks[0:2000])
-        node1.send_header_for_blocks(self.blocks[2000:])
-        node2.send_header_for_blocks(self.blocks[0:200])
+        p2p0.send_header_for_blocks(self.blocks[0:2000])
+        p2p0.send_header_for_blocks(self.blocks[2000:])
+        p2p1.send_header_for_blocks(self.blocks[0:2000])
+        p2p1.send_header_for_blocks(self.blocks[2000:])
+        p2p2.send_header_for_blocks(self.blocks[0:200])
 
         # Send blocks to node0. Block 102 will be rejected.
-        self.send_blocks_until_disconnected(node0)
+        self.send_blocks_until_disconnected(p2p0)
         self.assert_blockchain_height(self.nodes[0], 101)
 
         # Send all blocks to node1. All blocks will be accepted.
         for i in range(2202):
-            node1.send_message(msg_block(self.blocks[i]))
+            p2p1.send_message(msg_block(self.blocks[i]))
         # Syncing 2200 blocks can take a while on slow systems. Give it plenty of time to sync.
-        node1.sync_with_ping(120)
+        p2p1.sync_with_ping(120)
         assert_equal(self.nodes[1].getblock(self.nodes[1].getbestblockhash())['height'], 2202)
 
         # Send blocks to node2. Block 102 will be rejected.
-        self.send_blocks_until_disconnected(node2)
+        self.send_blocks_until_disconnected(p2p2)
         self.assert_blockchain_height(self.nodes[2], 101)
 
 if __name__ == '__main__':

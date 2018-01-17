@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016 The Bitcoin Core developers
+# Copyright (c) 2016-2017 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the dumpwallet RPC."""
@@ -7,16 +7,17 @@
 import os
 
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import (assert_equal, bitcoind_processes)
+from test_framework.util import (assert_equal, assert_raises_rpc_error)
 
 
-def read_dump(file_name, addrs, hd_master_addr_old):
+def read_dump(file_name, addrs, script_addrs, hd_master_addr_old):
     """
     Read the given dump, count the addrs that match, count change and reserve.
     Also check that the old hd_master is inactive
     """
     with open(file_name, encoding='utf8') as inputfile:
         found_addr = 0
+        found_script_addr = 0
         found_addr_chg = 0
         found_addr_rsv = 0
         hd_master_addr_ret = None
@@ -38,6 +39,9 @@ def read_dump(file_name, addrs, hd_master_addr_old):
                         # ensure we have generated a new hd master key
                         assert(hd_master_addr_old != addr)
                         hd_master_addr_ret = addr
+                    elif keytype == "script=1":
+                        # scripts don't have keypaths
+                        keypath = None
                     else:
                         keypath = addr_keypath.rstrip().split("hdkeypath=")[1]
 
@@ -52,23 +56,28 @@ def read_dump(file_name, addrs, hd_master_addr_old):
                         elif keytype == "reserve=1":
                             found_addr_rsv += 1
                             break
-        return found_addr, found_addr_chg, found_addr_rsv, hd_master_addr_ret
+
+                    # count scripts
+                    for script_addr in script_addrs:
+                        if script_addr == addr.rstrip() and keytype == "script=1":
+                            found_script_addr += 1
+                            break
+
+        return found_addr, found_script_addr, found_addr_chg, found_addr_rsv, hd_master_addr_ret
 
 
 class WalletDumpTest(BitcoinTestFramework):
-
-    def __init__(self):
-        super().__init__()
-        self.setup_clean_chain = False
+    def set_test_params(self):
         self.num_nodes = 1
-        self.extra_args = [["-keypool=90"]]
+        self.extra_args = [["-keypool=90", "-addresstype=legacy"]]
 
     def setup_network(self, split=False):
         # Use 1 minute timeout because the initial getnewaddress RPC can take
         # longer than the default 30 seconds due to an expensive
         # CWallet::TopUpKeyPool call, and the encryptwallet RPC made later in
         # the test often takes even longer.
-        self.nodes = self.start_nodes(self.num_nodes, self.options.tmpdir, self.extra_args, timewait=60)
+        self.add_nodes(self.num_nodes, self.extra_args, timewait=60)
+        self.start_nodes()
 
     def run_test (self):
         tmpdir = self.options.tmpdir
@@ -83,30 +92,53 @@ class WalletDumpTest(BitcoinTestFramework):
         # Should be a no-op:
         self.nodes[0].keypoolrefill()
 
+        # Test scripts dump by adding a P2SH witness and a 1-of-1 multisig address
+        witness_addr = self.nodes[0].addwitnessaddress(addrs[0]["address"], True)
+        multisig_addr = self.nodes[0].addmultisigaddress(1, [addrs[1]["address"]])
+        script_addrs = [witness_addr, multisig_addr]
+
         # dump unencrypted wallet
         result = self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.unencrypted.dump")
         assert_equal(result['filename'], os.path.abspath(tmpdir + "/node0/wallet.unencrypted.dump"))
 
-        found_addr, found_addr_chg, found_addr_rsv, hd_master_addr_unenc = \
-            read_dump(tmpdir + "/node0/wallet.unencrypted.dump", addrs, None)
+        found_addr, found_script_addr, found_addr_chg, found_addr_rsv, hd_master_addr_unenc = \
+            read_dump(tmpdir + "/node0/wallet.unencrypted.dump", addrs, script_addrs, None)
         assert_equal(found_addr, test_addr_count)  # all keys must be in the dump
+        assert_equal(found_script_addr, 2)  # all scripts must be in the dump
         assert_equal(found_addr_chg, 50)  # 50 blocks where mined
         assert_equal(found_addr_rsv, 90*2) # 90 keys plus 100% internal keys
 
         #encrypt wallet, restart, unlock and dump
-        self.nodes[0].encryptwallet('test')
-        bitcoind_processes[0].wait()
-        self.nodes[0] = self.start_node(0, self.options.tmpdir, self.extra_args[0])
+        self.nodes[0].node_encrypt_wallet('test')
+        self.start_node(0)
         self.nodes[0].walletpassphrase('test', 10)
         # Should be a no-op:
         self.nodes[0].keypoolrefill()
         self.nodes[0].dumpwallet(tmpdir + "/node0/wallet.encrypted.dump")
 
-        found_addr, found_addr_chg, found_addr_rsv, hd_master_addr_enc = \
-            read_dump(tmpdir + "/node0/wallet.encrypted.dump", addrs, hd_master_addr_unenc)
+        found_addr, found_script_addr, found_addr_chg, found_addr_rsv, _ = \
+            read_dump(tmpdir + "/node0/wallet.encrypted.dump", addrs, script_addrs, hd_master_addr_unenc)
         assert_equal(found_addr, test_addr_count)
+        assert_equal(found_script_addr, 2)
         assert_equal(found_addr_chg, 90*2 + 50)  # old reserve keys are marked as change now
         assert_equal(found_addr_rsv, 90*2) 
+
+        # Overwriting should fail
+        assert_raises_rpc_error(-8, "already exists", self.nodes[0].dumpwallet, tmpdir + "/node0/wallet.unencrypted.dump")
+
+        # Restart node with new wallet, and test importwallet
+        self.stop_node(0)
+        self.start_node(0, ['-wallet=w2'])
+
+        # Make sure the address is not IsMine before import
+        result = self.nodes[0].validateaddress(multisig_addr)
+        assert(result['ismine'] == False)
+
+        self.nodes[0].importwallet(os.path.abspath(tmpdir + "/node0/wallet.unencrypted.dump"))
+
+        # Now check IsMine is true
+        result = self.nodes[0].validateaddress(multisig_addr)
+        assert(result['ismine'] == True)
 
 if __name__ == '__main__':
     WalletDumpTest().main ()

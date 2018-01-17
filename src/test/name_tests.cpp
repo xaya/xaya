@@ -2,20 +2,19 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "base58.h"
-#include "coins.h"
-#include "consensus/validation.h"
-#include "names/main.h"
-#include "policy/policy.h"
-#include "primitives/transaction.h"
-#include "script/names.h"
-#include "txdb.h"
-#include "txmempool.h"
-#include "undo.h"
-#include "validation.h"
+#include <base58.h>
+#include <coins.h>
+#include <consensus/validation.h>
+#include <names/main.h>
+#include <policy/policy.h>
+#include <primitives/transaction.h>
+#include <script/names.h>
+#include <txdb.h>
+#include <txmempool.h>
+#include <undo.h>
+#include <validation.h>
 
-#include "test/test_bitcoin.h"
-#include "test/testutil.h"
+#include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -33,10 +32,11 @@ BOOST_FIXTURE_TEST_SUITE (name_tests, TestingSetup)
 static CScript
 getTestAddress ()
 {
-  CBitcoinAddress addr("N5e1vXUUL3KfhPyVjQZSes1qQ7eyarDbUU");
-  BOOST_CHECK (addr.IsValid ());
+  const CTxDestination dest
+    = DecodeDestination ("N5e1vXUUL3KfhPyVjQZSes1qQ7eyarDbUU");
+  BOOST_CHECK (IsValidDestination (dest));
 
-  return GetScriptForDestination (addr.Get ());
+  return GetScriptForDestination (dest);
 }
 
 /* ************************************************************************** */
@@ -370,6 +370,13 @@ void
 NameIterationTester::verify ()
 {
   verify (hybrid);
+
+  /* Flush calls BatchWrite internally, and for that to work, we need to have
+     a non-zero block hash.  Just set the block hash based on our counter.  */
+  uint256 dummyBlockHash;
+  *reinterpret_cast<unsigned*> (dummyBlockHash.begin ()) = counter;
+  hybrid.SetBestBlock (dummyBlockHash);
+
   hybrid.Flush ();
   verify (db);
   verify (cache);
@@ -777,7 +784,7 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
 
   /* Use a "real" backing view, since GetNamesForHeight calls through
      to the base in any case.  */
-  CCoinsViewCache view(pcoinsTip);
+  CCoinsViewCache view(pcoinsTip.get());
 
   const COutPoint coinId1 = addTestCoin (upd1, 100000, view);
   const COutPoint coinId2 = addTestCoin (upd2, 100010, view);
@@ -974,7 +981,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   BOOST_CHECK (mempool.getTxForName (nameUpd) == txUpd1.GetHash ());
 
   /* Run mempool sanity check.  */
-  CCoinsViewCache view(pcoinsTip);
+  CCoinsViewCache view(pcoinsTip.get());
   const CNameScript nameOp(upd1);
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
@@ -1011,8 +1018,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeConflicts (txReg2);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txReg1.GetHash ());
   }
   BOOST_CHECK (!mempool.registersName (nameReg));
@@ -1029,8 +1036,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeExpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txUpd1.GetHash ());
   }
   BOOST_CHECK (!mempool.updatesName (nameUpd));
@@ -1047,8 +1054,8 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   {
     CNameConflictTracker tracker(mempool);
     mempool.removeUnexpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ().size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ().front ()->GetHash ()
+    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
                   == txReg1.GetHash ());
   }
   BOOST_CHECK (!mempool.registersName (nameReg));
