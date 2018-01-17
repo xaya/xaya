@@ -134,7 +134,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "name_filter", 1, "maxage" },
     { "name_filter", 2, "from" },
     { "name_filter", 3, "nb" },
-    { "name_firstupdate", 5, "allow_active" },
     { "namerawtransaction", 1, "vout" },
     { "namerawtransaction", 2, "nameop" },
     { "sendtoname", 1, "amount" },
