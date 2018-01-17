@@ -82,7 +82,7 @@
   { "exec": "./namecoin-tx",
     "args":
     ["-create",
-     "outaddr=1:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1:garbage"],
+     "outaddr=1:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8:garbage"],
     "return_code": 1,
     "error_txt": "error: TX output missing or too many separators",
     "description": "Malformed outaddr argument (too many separators). Expected to fail."
@@ -109,8 +109,8 @@
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
      "in=bf829c6bcf84579331337659d31f89dfd138f7f7785802d5501c92333145ca7c:18",
      "in=22a6f904655d53ae2ff70e701a0bbd90aa3975c0f40bfc6cc996a9049e31cdfc:1",
-     "outaddr=0.18:NC5bKA1hrFzd7ZxLSRsBmx32FnXpCb35t6",
-     "outaddr=4:N4ZLnKnrjuLgzjb6dCH2B5oZpBMvQ5RXRE"],
+     "outaddr=0.18:CXy7gYrnovsbVAcFrMsY8wW99gMB56K9zL",
+     "outaddr=4:CQSs9idwhaDfNLF238HNY5Ggi5BHLZuknM"],
     "output_cmp": "txcreate1.hex",
     "description": "Creates a new transaction with three inputs and two outputs"
   },
@@ -121,8 +121,8 @@
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
      "in=bf829c6bcf84579331337659d31f89dfd138f7f7785802d5501c92333145ca7c:18",
      "in=22a6f904655d53ae2ff70e701a0bbd90aa3975c0f40bfc6cc996a9049e31cdfc:1",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
-     "outaddr=4:NJiLia4V47bHDvG7G6yQskDVXkmaBJJpUL"],
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
+     "outaddr=4:Cebs5xua1nUFbWv2g2ymEjgcReaw1YCwtL"],
     "output_cmp": "txcreate1.json",
     "description": "Creates a new transaction with three inputs and two outputs (output in json)"
   },
@@ -190,10 +190,10 @@
     "args":
     ["-create",
      "in=4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc59485:0",
-     "set=privatekeys:[\"72tzkjnkPajmGfbxBLirgivPqXrG1kgce3kNuxpMvxCoq86mi8f\"]",
+     "set=privatekeys:[\"5Mhmw9M9nJvSXeYgrMgtzgwg3q4MWYYqJ6CziURYEBsR9yNRpAQ\"]",
      "set=prevtxs:[{\"txid\":\"4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc59485\",\"vout\":0,\"scriptPubKey\":\"76a91491b24bf9f5288532960ac687abb035127b1d28a588ac\"}]",
      "sign=ALL",
-     "outaddr=0.001:N5Tk6cvP91f2Cbb72PoKKMMLTuKTXZ6w7c"],
+     "outaddr=0.001:CRMGU1mU6gXzaCF2SKofgLpTMo8pPqRVDm"],
     "output_cmp": "txcreatesign.hex",
     "description": "Creates a new transaction with a single input and a single output, and then signs the transaction"
   },
@@ -205,7 +205,7 @@
      "set=privatekeys:[\"5HpHagT65TZzG1PH3CSu63k8DbpvD8s5ip4nEB3kEsreAnchuDf\"]",
      "set=prevtxs:[{\"txid\":\"4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc59485\",\"vout\":0,\"scriptPubKey\":\"76a91491b24bf9f5288532960ac687abb035127b1d28a588ac\"}]",
      "sign=ALL",
-     "outaddr=0.001:N4ckHzPuMSsmKHURcyE6zXqnAfEk2Mxd2P"],
+     "outaddr=0.001:CQWGfPEzK7kjgt8M2uETMXJu4Z46wvFacB"],
     "output_cmp": "txcreatesign.json",
     "description": "Creates a new transaction with a single input and a single output, and then signs the transaction (output in json)"
   },
@@ -274,7 +274,7 @@
     "args":
     ["-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
      "outdata=4:54686973204f505f52455455524e207472616e73616374696f6e206f7574707574207761732063726561746564206279206d6f646966696564206372656174657261777472616e73616374696f6e2e"],
     "output_cmp": "txcreatedata1.hex",
     "description": "Creates a new transaction with one input, one address output and one data output"
@@ -284,7 +284,7 @@
     ["-json",
      "-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
      "outdata=4:54686973204f505f52455455524e207472616e73616374696f6e206f7574707574207761732063726561746564206279206d6f646966696564206372656174657261777472616e73616374696f6e2e"],
     "output_cmp": "txcreatedata1.json",
     "description": "Creates a new transaction with one input, one address output and one data output (output in json)"
@@ -293,7 +293,7 @@
     "args":
     ["-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
      "outdata=54686973204f505f52455455524e207472616e73616374696f6e206f7574707574207761732063726561746564206279206d6f646966696564206372656174657261777472616e73616374696f6e2e"],
     "output_cmp": "txcreatedata2.hex",
     "description": "Creates a new transaction with one input, one address output and one data (zero value) output"
@@ -303,7 +303,7 @@
     ["-json",
      "-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
      "outdata=54686973204f505f52455455524e207472616e73616374696f6e206f7574707574207761732063726561746564206279206d6f646966696564206372656174657261777472616e73616374696f6e2e"],
     "output_cmp": "txcreatedata2.json",
     "description": "Creates a new transaction with one input, one address output and one data (zero value) output (output in json)"
@@ -312,7 +312,7 @@
     "args":
     ["-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0:4294967293",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1"],
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8"],
     "output_cmp": "txcreatedata_seq0.hex",
     "description": "Creates a new transaction with one input with sequence number and one address output"
   },
@@ -321,7 +321,7 @@
     ["-json",
      "-create",
      "in=5897de6bd6027a475eadd57019d4e6872c396d0716c4875a5f1a6fcfdf385c1f:0:4294967293",
-     "outaddr=0.18:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1"],
+     "outaddr=0.18:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8"],
     "output_cmp": "txcreatedata_seq0.json",
     "description": "Creates a new transaction with one input with sequence number and one address output (output in json)"
   },

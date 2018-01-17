@@ -142,14 +142,14 @@ public:
         vSeeds.emplace_back("nmc.seed.quisquis.de", false);
         vSeeds.emplace_back("dnsseed.namecoin.webbtc.com", false);
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,180);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,28);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,30);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,130);
         /* FIXME: Update these below.  */
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
-        bech32_hrp = "nc";
+        bech32_hrp = "chi";
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
@@ -238,14 +238,14 @@ public:
         // nodes with support for servicebits filtering should be at the top
         vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com", false);
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,88);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,90);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,230);
         /* FIXME: Update these below.  */
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
-        bech32_hrp = "tn";
+        bech32_hrp = "chitn";
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
@@ -345,13 +345,13 @@ public:
             0
         };
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,88);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,90);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,230);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
-        bech32_hrp = "ncrt";
+        bech32_hrp = "chirt";
     }
 
     int DefaultCheckNameDB () const

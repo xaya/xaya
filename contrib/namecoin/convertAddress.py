@@ -28,7 +28,7 @@ addr = sys.argv[1]
 if len (sys.argv) >= 3:
   magic = int (sys.argv[2])
 else:
-  magic = 52
+  magic = 28
 
 keyHex = b58check_to_hex (addr)
 newAddr = hex_to_b58check (keyHex, magic)
