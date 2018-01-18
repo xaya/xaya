@@ -112,11 +112,6 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
 
-        consensus.nAuxpowChainId = 0x0001;
-        consensus.nAuxpowStartHeight = 19200;
-        consensus.fStrictChainId = true;
-        consensus.nLegacyBlocksBefore = 19200;
-
         consensus.rules.reset(new Consensus::MainNetConsensus());
 
         /**
@@ -214,11 +209,6 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
 
-        consensus.nAuxpowStartHeight = 0;
-        consensus.nAuxpowChainId = 0x0001;
-        consensus.fStrictChainId = false;
-        consensus.nLegacyBlocksBefore = -1;
-
         consensus.rules.reset(new Consensus::TestNetConsensus());
 
         pchMessageStart[0] = 0xcc;
@@ -306,11 +296,6 @@ public:
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
-
-        consensus.nAuxpowStartHeight = 0;
-        consensus.nAuxpowChainId = 0x0001;
-        consensus.fStrictChainId = true;
-        consensus.nLegacyBlocksBefore = 0;
 
         consensus.rules.reset(new Consensus::RegTestConsensus());
 

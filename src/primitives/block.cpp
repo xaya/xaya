@@ -10,19 +10,6 @@
 #include <utilstrencodings.h>
 #include <crypto/common.h>
 
-void CBlockHeader::SetAuxpow (CAuxPow* apow)
-{
-    if (apow)
-    {
-        auxpow.reset(apow);
-        SetAuxpowVersion(true);
-    } else
-    {
-        auxpow.reset();
-        SetAuxpowVersion(false);
-    }
-}
-
 std::string CBlock::ToString() const
 {
     std::stringstream s;

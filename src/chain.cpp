@@ -5,25 +5,10 @@
 
 #include <chain.h>
 
-#include "validation.h"
-
-/* Moved here from the header, because we need auxpow and the logic
-   becomes more involved.  */
-CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
+CBlockHeader CBlockIndex::GetBlockHeader() const
 {
     CBlockHeader block;
-
     block.nVersion       = nVersion;
-
-    /* The CBlockIndex object's block header is missing the auxpow.
-       So if this is an auxpow block, read it from disk instead.  We only
-       have to read the actual *header*, not the full block.  */
-    if (block.IsAuxpow())
-    {
-        ReadBlockHeaderFromDisk(block, this, consensusParams);
-        return block;
-    }
-
     if (pprev)
         block.hashPrevBlock = pprev->GetBlockHash();
     block.hashMerkleRoot = hashMerkleRoot;

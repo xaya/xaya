@@ -6,7 +6,6 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
-#include <auxpow.h>
 #include <primitives/transaction.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
@@ -22,46 +21,7 @@
  * of the block.
  */
 class CBlockHeader : public CPureBlockHeader
-{
-public:
-
-    // auxpow (if this is a merge-minded block)
-    boost::shared_ptr<CAuxPow> auxpow;
-
-    CBlockHeader()
-    {
-        SetNull();
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CPureBlockHeader*)this);
-
-        if (this->IsAuxpow())
-        {
-            if (ser_action.ForRead())
-                auxpow.reset (new CAuxPow());
-            assert(auxpow);
-            READWRITE(*auxpow);
-        } else if (ser_action.ForRead())
-            auxpow.reset();
-    }
-
-    void SetNull()
-    {
-        CPureBlockHeader::SetNull();
-        auxpow.reset();
-    }
-
-    /**
-     * Set the block's auxpow (or unset it).  This takes care of updating
-     * the version accordingly.
-     * @param apow Pointer to the auxpow to use or NULL.
-     */
-    void SetAuxpow (CAuxPow* apow);
-};
+{};
 
 
 class CBlock : public CBlockHeader
@@ -108,7 +68,6 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-        block.auxpow         = auxpow;
         return block;
     }
 

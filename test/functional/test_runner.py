@@ -135,9 +135,6 @@ BASE_SCRIPTS= [
     'p2p-acceptblock.py',
     'feature_logging.py',
 
-    # auxpow tests
-    'auxpow_mining.py',
-
     # name tests
     'name_list.py',
     'name_multisig.py',

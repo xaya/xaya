@@ -75,7 +75,7 @@ class BIP66Test(BitcoinTestFramework):
         tip = self.nodes[0].getbestblockhash()
         block_time = self.nodes[0].getblockheader(tip)['mediantime'] + 1
         block = create_block(int(tip, 16), create_coinbase(DERSIG_HEIGHT - 1), block_time)
-        block.set_base_version(2)
+        block.nVersion = 2
         block.vtx.append(spendtx)
         block.hashMerkleRoot = block.calc_merkle_root()
         block.rehash()
@@ -88,7 +88,7 @@ class BIP66Test(BitcoinTestFramework):
         tip = block.sha256
         block_time += 1
         block = create_block(tip, create_coinbase(DERSIG_HEIGHT), block_time)
-        block.set_base_version(2)
+        block.nVersion = 2
         block.rehash()
         block.solve()
         self.nodes[0].p2p.send_and_ping(msg_block(block))
@@ -97,12 +97,12 @@ class BIP66Test(BitcoinTestFramework):
         wait_until(lambda: "reject" in self.nodes[0].p2p.last_message.keys(), lock=mininode_lock)
         with mininode_lock:
             assert_equal(self.nodes[0].p2p.last_message["reject"].code, REJECT_OBSOLETE)
-            assert_equal(self.nodes[0].p2p.last_message["reject"].reason, b'bad-version(0x00010002)')
+            assert_equal(self.nodes[0].p2p.last_message["reject"].reason, b'bad-version(0x00000002)')
             assert_equal(self.nodes[0].p2p.last_message["reject"].data, block.sha256)
             del self.nodes[0].p2p.last_message["reject"]
 
         self.log.info("Test that transactions with non-DER signatures cannot appear in a block")
-        block.set_base_version(3)
+        block.nVersion = 3
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_blocks[1],
                 self.nodeaddress, 1.0)
