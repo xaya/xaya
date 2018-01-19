@@ -2867,36 +2867,6 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
     return true;
 }
 
-/* Temporary check that blocks are compatible with BDB's 10,000 lock limit.
-   This is based on Bitcoin's commit 8c222dca4f961ad13ec64d690134a40d09b20813.
-   Each "object" touched in the DB may cause two locks (one read and one
-   write lock).  Objects are transaction IDs and names.  Thus, count the
-   total number of transaction IDs (tx themselves plus all distinct inputs).
-   In addition, each Namecoin transaction could touch at most one name,
-   so add them as well.  */
-bool CheckDbLockLimit(const std::vector<CTransactionRef>& vtx)
-{
-    std::set<uint256> setTxIds;
-    unsigned nNames = 0;
-    for (const auto& tx : vtx)
-    {
-        setTxIds.insert(tx->GetHash());
-        if (tx->IsNamecoin())
-            ++nNames;
-
-        for (const auto& txIn : tx->vin)
-            setTxIds.insert(txIn.prevout.hash);
-    }
-
-    const unsigned nTotalIds = setTxIds.size() + nNames;
-    if (nTotalIds > 4500)
-        return error("%s : %u locks estimated, that is too much for BDB",
-                     __func__, nTotalIds);
-
-    //LogPrintf ("%s : need %u locks\n", __func__, nTotalIds);
-    return true;
-}
-
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
@@ -2941,12 +2911,6 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // Size limits
     if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-length", false, "size limits failed");
-
-    // Enforce the temporary DB lock limit.
-    // TODO: Remove with a hardfork in the future.
-    if (!CheckDbLockLimit(block.vtx))
-        return state.DoS(100, error("%s : DB lock limit failed", __func__),
-                         REJECT_INVALID, "bad-db-locks");
 
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())

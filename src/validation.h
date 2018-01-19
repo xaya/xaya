@@ -425,8 +425,6 @@ bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex, con
 /** Functions for validating blocks and updating the block tree */
 
 int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out);
-// TODO: Remove when this check is no longer necessary.
-bool CheckDbLockLimit(const std::vector<CTransactionRef>& vtx);
 
 /** Context-independent validity checks */
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true, bool fCheckMerkleRoot = true);

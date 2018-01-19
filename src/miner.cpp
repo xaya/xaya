@@ -235,18 +235,6 @@ BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
   return true;
 }
 
-bool
-BlockAssembler::DbLockLimitOk (const CTxMemPool::setEntries& candidates) const
-{
-  std::vector<CTransactionRef> vtx;
-  for (const auto& iter : inBlock)
-    vtx.push_back(MakeTransactionRef(iter->GetTx()));
-  for (const auto& iter : candidates)
-    vtx.push_back(MakeTransactionRef(iter->GetTx()));
-
-  return CheckDbLockLimit (vtx);
-}
-
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
 {
     pblock->vtx.emplace_back(iter->GetSharedTx());
@@ -431,7 +419,7 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
         ancestors.insert(iter);
 
         // Test if all tx's are Final
-        if (!TestPackageTransactions(ancestors) || !DbLockLimitOk(ancestors)) {
+        if (!TestPackageTransactions(ancestors)) {
             if (fUsingModified) {
                 mapModifiedTx.get<ancestor_score>().erase(modit);
                 failedTx.insert(iter);
