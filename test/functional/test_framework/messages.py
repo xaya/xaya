@@ -485,37 +485,6 @@ class CTransaction():
             % (self.nVersion, repr(self.vin), repr(self.vout), repr(self.wit), self.nLockTime)
 
 
-class CAuxPow(CTransaction):
-    def __init__(self):
-        super(CAuxPow, self).__init__()
-        self.hashBlock = 0
-        self.vMerkleBranch = []
-        self.nIndex = 0
-        self.vChainMerkleBranch = []
-        self.nChainIndex = 0
-        self.parentBlock = CBlockHeader()
-
-    def deserialize(self, f):
-        super(CAuxPow, self).deserialize(f)
-        self.hashBlock = deser_uint256(f)
-        self.vMerkleBranch = deser_uint256_vector(f)
-        self.nIndex = struct.unpack("<I", f.read(4))[0]
-        self.vChainMerkleBranch = deser_uint256_vector(f)
-        self.nChainIndex = struct.unpack("<I", f.read(4))[0]
-        self.parentBlock.deserialize(f)
-
-    def serialize(self):
-        r = b""
-        r += super(CAuxPow, self).serialize()
-        r += ser_uint256(self.hashBlock)
-        r += ser_uint256_vector(self.vMerkleBranch)
-        r += struct.pack("<I", self.nIndex)
-        r += ser_uint256_vector(self.vChainMerkleBranch)
-        r += struct.pack("<I", self.nChainIndex)
-        r += self.parentBlock.serialize()
-        return r
-
-
 class CBlockHeader():
     def __init__(self, header=None):
         if header is None:
