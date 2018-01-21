@@ -125,8 +125,6 @@ BASE_SCRIPTS= [
     'listsinceblock.py',
     'p2p-leaktests.py',
     'wallet-encryption.py',
-    'bipdersig-p2p.py',
-    'bip65-cltv-p2p.py',
     'uptime.py',
     'resendwallettransactions.py',
     'minchainwork.py',
@@ -182,6 +180,11 @@ SKIPPED = [
     'bip68-112-113-p2p.py',
     'p2p-versionbits-warning.py',
     'nulldummy.py',
+    # Disabled, as they take too long with neoscrypt (they mine a lot of
+    # blocks).  They are also not relevant, since all BIP34-activated forks
+    # are active from the start in Chimaera.
+    'bipdersig-p2p.py',
+    'bip65-cltv-p2p.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests

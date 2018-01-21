@@ -1025,7 +1025,7 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
-    if (!CheckProofOfWork(block.GetHash(), block.nBits, params))
+    if (!CheckProofOfWork(block.GetPowHash(), block.nBits, params))
         return error("%s : proof of work failed", __func__);
     return true;
 }
