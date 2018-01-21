@@ -188,6 +188,10 @@ void PaymentServerTests::paymentServerTests()
     // compares 50001 <= BIP70_MAX_PAYMENTREQUEST_SIZE == false
     QCOMPARE(PaymentServer::verifySize(tempFile.size()), false);
 
+    #if 0
+    FIXME: Disabled, since the amount is valid for Chimaera.
+    When we have time to recreate the request data, we could reenable this.
+
     // Payment request with amount overflow (amount is set to 21000001 BTC):
     data = DecodeBase64(paymentrequest5_cert2_BASE64);
     byteArray = QByteArray((const char*)data.data(), data.size());
@@ -201,6 +205,7 @@ void PaymentServerTests::paymentServerTests()
         if (ExtractDestination(sendingTo.first, dest))
             QCOMPARE(PaymentServer::verifyAmount(sendingTo.second), false);
     }
+    #endif
 
     delete server;
 }

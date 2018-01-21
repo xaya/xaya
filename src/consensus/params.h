@@ -82,6 +82,8 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    /** Initial block reward.  */
+    CAmount initialSubsidy;
     /** Block height at which BIP16 becomes active */
     int BIP16Height;
     /** Block height at which BIP34 becomes active */
@@ -102,8 +104,6 @@ struct Params {
     uint256 powLimit;
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
-    int64_t nPowTargetTimespan;
-    int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 

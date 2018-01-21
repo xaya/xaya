@@ -56,10 +56,6 @@ UniValue GetNetworkHashPS(int lookup, int height) {
     if (pb == nullptr || !pb->nHeight)
         return 0;
 
-    // If lookup is -1, then use blocks since last difficulty change.
-    if (lookup <= 0)
-        lookup = pb->nHeight % Params().GetConsensus().DifficultyAdjustmentInterval() + 1;
-
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pb->nHeight)
         lookup = pb->nHeight;
@@ -90,10 +86,10 @@ UniValue getnetworkhashps(const JSONRPCRequest& request)
         throw std::runtime_error(
             "getnetworkhashps ( nblocks height )\n"
             "\nReturns the estimated network hashes per second based on the last n blocks.\n"
-            "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
+            "Pass in [blocks] to override # of blocks.\n"
             "Pass in [height] to estimate the network speed at the time when a certain block was found.\n"
             "\nArguments:\n"
-            "1. nblocks     (numeric, optional, default=120) The number of blocks, or -1 for blocks since last difficulty change.\n"
+            "1. nblocks     (numeric, optional, default=120) The number of blocks.\n"
             "2. height      (numeric, optional, default=-1) To estimate at the time of the given height.\n"
             "\nResult:\n"
             "x             (numeric) Hashes per second estimated\n"
