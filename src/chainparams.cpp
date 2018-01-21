@@ -13,12 +13,47 @@
 
 #include <chainparamsseeds.h>
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <limits>
 
 namespace
 {
+
+// FIXME: Update this in time before launch.
+constexpr const char pszTimestamp[] = "Decentralised Virtual Worlds - Chimaera";
+
+/* Premined amount is 333,333,333 CHI.  This is the maximum possible number of
+   coins needed in case everything is sold in the ICO.  If this is not the case
+   and we need to reduce the coin supply, excessive coins will be burnt by
+   sending to an unspendable OP_RETURN output.  */
+constexpr CAmount premineAmount = 333333333 * COIN;
+
+/*
+The premine on testnet and regtest is sent to a 1-of-2 multisig address.
+
+The two addresses and corresponding privkeys are:
+  cRH94YMZVk4MnRwPqRVebkLWerCPJDrXGN:
+    b69iyynFSWcU54LqXisbbqZ8uTJ7Dawk3V3yhht6ykxgttqMQFjb
+  ceREF8QnXPsJ2iVQ1M4emggoXiXEynm59D:
+    b3fgAKVQpMj24gbuh6DiXVwCCjCbo1cWiZC2fXgWEU9nXy6sdxD5
+
+This results in the multisig address: dHNvNaqcD7XPDnoRjAoyfcMpHRi5upJD7p
+Redeem script:
+  512103c278d06b977e67b8ea45ef24e3c96a9258c47bc4cce3d0b497b690d672497b6e21
+  0221ac9dc97fe12a98374344d08b458a9c2c1df9afb29dd6089b94a3b4dc9ad57052ae
+
+The constant below is the HASH160 of the dedeem script.  In other words, the
+final premine script will be:
+  OP_HASH160 hexPremineAddress OP_EQUAL
+*/
+constexpr const char hexPremineAddressTestnet[]
+  = "2b6defe41aa3aa47795b702c893c73e716d485ab";
+
+// FIXME: Update this in time before launch.
+constexpr const char hexPremineAddressMainnet[]
+  = "2b6defe41aa3aa47795b702c893c73e716d485ab";
 
 CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -46,24 +81,24 @@ CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& gene
  * transaction cannot be spent since it did not originally exist in the
  * database.
  */
-CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+CBlock
+CreateGenesisBlock (const uint32_t nTime, const uint32_t nNonce,
+                    const uint32_t nBits,
+                    const uint160& premineP2sh)
 {
-    const char* pszTimestamp = "... choose what comes next.  Lives of your own, or a return to chains. -- V";
-    const CScript genesisInputScript = CScript() << 0x1c007fff << CScriptNum(522) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    const CScript genesisOutputScript = CScript() << ParseHex("04b620369050cd899ffbbc4e8ee51e8c4534a855bb463439d63d235d4779685d8b6f4870a238cf365ac94fa13ef9a2a22cd99d0d5ee86dcabcafce36c7acf43ce5") << OP_CHECKSIG;
-    return CreateGenesisBlock(genesisInputScript, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
-}
+  const std::vector<unsigned char>
+    timestampData(pszTimestamp, pszTimestamp + strlen (pszTimestamp));
+  const CScript genesisInput = CScript () << timestampData;
 
-/**
- * Build genesis block for testnet.  In Namecoin, it has a changed timestamp
- * and output script (it uses Bitcoin's).
- */
-CBlock CreateTestnetGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
-{
-    const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-    const CScript genesisInputScript = CScript() << 0x1d00ffff << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-    return CreateGenesisBlock(genesisInputScript, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
+  std::vector<unsigned char>
+    scriptHash (premineP2sh.begin (), premineP2sh.end ());
+  std::reverse (scriptHash.begin (), scriptHash.end ());
+  const CScript genesisOutput = CScript ()
+    << OP_HASH160 << scriptHash << OP_EQUAL;
+
+  const int32_t nVersion = 1;
+  return CreateGenesisBlock (genesisInput, genesisOutput, nTime, nNonce, nBits,
+                             nVersion, premineAmount);
 }
 
 /**
@@ -156,10 +191,11 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1303000001, 2435328, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock (1303000001, 56433, 0x1e0ffff0,
+                                      uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x3f48aa2699925e80bff6f2c4a0b28664f49d713266f57ea26786aa8261f69cf2"));
-        assert(genesis.hashMerkleRoot == uint256S("0x41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d"));
+        assert(consensus.hashGenesisBlock == uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656"));
+        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
 
         // Note that of those with the service bits flag, most only support a subset of possible options
         vSeeds.emplace_back("namecoindnsseed.digi-masters.com", false);
@@ -184,7 +220,7 @@ public:
 
         checkpointData = (CCheckpointData) {
             {
-                {     0, uint256S("0x3f48aa2699925e80bff6f2c4a0b28664f49d713266f57ea26786aa8261f69cf2")},
+                {     0, uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656")},
             }
         };
 
@@ -248,10 +284,11 @@ public:
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateTestnetGenesisBlock(1296688602, 4859, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock (1296688602, 81223, 0x1e0ffff0,
+                                      uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x76c83f29f4874b348640b129d008d89b86cfedd0238343d5c3b69c0ab9f598b2"));
-        assert(genesis.hashMerkleRoot == uint256S("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        assert(consensus.hashGenesisBlock == uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578"));
+        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -276,7 +313,7 @@ public:
 
         checkpointData = (CCheckpointData) {
             {
-                {     0, uint256S("0x76c83f29f4874b348640b129d008d89b86cfedd0238343d5c3b69c0ab9f598b2")},
+                {     0, uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578")},
             }
         };
 
@@ -338,10 +375,11 @@ public:
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateTestnetGenesisBlock(1296688602, 5, 0x207fffff, 1, 50 * COIN);
+        genesis = CreateGenesisBlock (1296688602, 3, 0x207fffff,
+                                      uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x3ee9c19bdba21dad7ecf384d93091717a7d85ac01460280feec740e322efaa22"));
-        assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
+        assert(consensus.hashGenesisBlock == uint256S("18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619"));
+        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
@@ -352,7 +390,7 @@ public:
 
         checkpointData = (CCheckpointData) {
             {
-                {0, uint256S("0x3ee9c19bdba21dad7ecf384d93091717a7d85ac01460280feec740e322efaa22")},
+                {0, uint256S("18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619")},
             }
         };
 
