@@ -36,7 +36,7 @@ class NameWalletTest (NameTestFramework):
     assert totalFee >= extra
 
     absFee = totalFee - extra
-    size = Decimal (len (info['hex']) / 2)
+    size = count_bytes (info['hex'])
     assert_fee_amount (absFee, size, txFee)
 
     return totalFee

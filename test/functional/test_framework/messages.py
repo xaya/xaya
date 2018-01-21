@@ -23,6 +23,7 @@ import socket
 import struct
 import time
 
+from test_framework import powhash
 from test_framework.siphash import siphash256
 from test_framework.util import hex_str_to_bytes, bytes_to_hex_str, wait_until
 
@@ -497,6 +498,7 @@ class CBlockHeader():
             self.nBits = header.nBits
             self.nNonce = header.nNonce
             self.sha256 = header.sha256
+            self.powHash = header.powHash
             self.hash = header.hash
             self.calc_sha256()
 
@@ -508,6 +510,7 @@ class CBlockHeader():
         self.nBits = 0
         self.nNonce = 0
         self.sha256 = None
+        self.powHash = None
         self.hash = None
 
     def deserialize(self, f):
@@ -518,6 +521,7 @@ class CBlockHeader():
         self.nBits = struct.unpack("<I", f.read(4))[0]
         self.nNonce = struct.unpack("<I", f.read(4))[0]
         self.sha256 = None
+        self.powHash = None
         self.hash = None
 
     def serialize(self):
@@ -531,7 +535,7 @@ class CBlockHeader():
         return r
 
     def calc_sha256(self):
-        if self.sha256 is None:
+        if self.sha256 is None or self.powHash is None:
             r = b""
             r += struct.pack("<i", self.nVersion)
             r += ser_uint256(self.hashPrevBlock)
@@ -540,6 +544,7 @@ class CBlockHeader():
             r += struct.pack("<I", self.nBits)
             r += struct.pack("<I", self.nNonce)
             self.sha256 = uint256_from_str(hash256(r))
+            self.powHash = uint256_from_str(powhash.forHeader(r))
             self.hash = encode(hash256(r)[::-1], 'hex_codec').decode('ascii')
 
     def rehash(self):
@@ -604,7 +609,7 @@ class CBlock(CBlockHeader):
         self.calc_sha256()
         target = uint256_from_compact(self.nBits)
 
-        if self.sha256 > target:
+        if self.powHash > target:
             return False
         for tx in self.vtx:
             if not tx.is_valid():
@@ -616,7 +621,7 @@ class CBlock(CBlockHeader):
     def solve(self):
         self.rehash()
         target = uint256_from_compact(self.nBits)
-        while self.sha256 > target:
+        while self.powHash > target:
             self.nNonce += 1
             self.rehash()
 
