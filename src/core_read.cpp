@@ -5,6 +5,7 @@
 #include <core_io.h>
 
 #include <primitives/block.h>
+#include <primitives/pureheader.h>
 #include <primitives/transaction.h>
 #include <script/script.h>
 #include <serialize.h>
@@ -143,21 +144,37 @@ bool DecodeHexTx(CMutableTransaction& tx, const std::string& strHexTx, bool fTry
     return true;
 }
 
+namespace
+{
+template<typename T>
+bool DecodeHexObject (T& obj, const std::string& strHex)
+{
+  if (!IsHex (strHex))
+    return false;
+
+  std::vector<unsigned char> data(ParseHex (strHex));
+  CDataStream ssData(data, SER_NETWORK, PROTOCOL_VERSION);
+  try
+    {
+      ssData >> obj;
+    }
+  catch (const std::exception&)
+    {
+      return false;
+    }
+
+  return true;
+}
+} // anonymous namespace
+
+bool DecodeHexHeader (CPureBlockHeader& header, const std::string& strHex)
+{
+  return DecodeHexObject (header, strHex);
+}
+
 bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
 {
-    if (!IsHex(strHexBlk))
-        return false;
-
-    std::vector<unsigned char> blockData(ParseHex(strHexBlk));
-    CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
-    try {
-        ssBlock >> block;
-    }
-    catch (const std::exception&) {
-        return false;
-    }
-
-    return true;
+  return DecodeHexObject (block, strHexBlk);
 }
 
 uint256 ParseHashUV(const UniValue& v, const std::string& strName)

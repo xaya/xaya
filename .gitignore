@@ -10,6 +10,7 @@ src/qt/test/test_bitcoin-qt
 src/namecoind
 src/namecoin-cli
 src/namecoin-tx
+src/chimaera-hash
 src/test/test_namecoin
 src/test/test_namecoin_fuzzy
 src/qt/test/test_namecoin-qt

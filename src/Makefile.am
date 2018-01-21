@@ -60,7 +60,7 @@ EXTRA_LIBRARIES += \
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
 bin_PROGRAMS =
-noinst_PROGRAMS =
+noinst_PROGRAMS = chimaera-hash
 TESTS =
 BENCHMARKS =
 
@@ -454,6 +454,20 @@ namecoin_tx_LDADD = \
   $(LIBSECP256K1)
 
 namecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+#
+
+# chimaera-hash binary #
+chimaera_hash_SOURCES = chimaera-hash.cpp
+chimaera_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+chimaera_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+chimaera_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+chimaera_hash_LDADD = \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_CRYPTO)
+chimaera_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
 # namecoinconsensus library #
