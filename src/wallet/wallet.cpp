@@ -4205,7 +4205,16 @@ int CMerkleTx::GetBlocksToMaturity() const
 {
     if (!IsCoinBase())
         return 0;
-    return std::max(0, (COINBASE_MATURITY+1) - GetDepthInMainChain());
+
+    const CBlockIndex* pindex = nullptr;
+    const int depth = GetDepthInMainChain(pindex);
+    assert (depth <= 0 || pindex != nullptr);
+
+    /* Special rule:  The genesis premine is spendable immediately.  */
+    if (depth > 0 && pindex->nHeight == 0)
+        return 0;
+
+    return std::max(0, (COINBASE_MATURITY+1) - depth);
 }
 
 bool CWalletTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& state)
