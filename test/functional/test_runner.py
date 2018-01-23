@@ -142,6 +142,9 @@ BASE_SCRIPTS= [
     'name_reorg.py',
     'name_scanning.py',
     'name_wallet.py',
+
+    # Chimaera-specific tests
+    'premine.py',
 ]
 
 EXTENDED_SCRIPTS = [
