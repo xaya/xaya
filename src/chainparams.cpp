@@ -198,8 +198,9 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
 
         // Note that of those with the service bits flag, most only support a subset of possible options
-        vSeeds.emplace_back("namecoindnsseed.digi-masters.com", false);
-        vSeeds.emplace_back("namecoindnsseed.digi-masters.uk", false);
+		// this is what need to change?
+        vSeeds.emplace_back("chimaeradnsseed.digi-masters.com", false);
+        vSeeds.emplace_back("chimaeradnsseed.digi-masters.uk", false);
         vSeeds.emplace_back("nmc.seed.quisquis.de", false);
         vSeeds.emplace_back("dnsseed.namecoin.webbtc.com", false);
 

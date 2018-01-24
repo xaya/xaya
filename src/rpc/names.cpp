@@ -126,7 +126,7 @@ name_show (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
+                       "Chimaera is downloading blocks...");
 
   ObserveSafeMode ();
 
@@ -176,7 +176,7 @@ name_history (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
+                       "Chimaera is downloading blocks...");
 
   ObserveSafeMode ();
 
@@ -236,7 +236,7 @@ name_scan (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
+                       "Chimaera is downloading blocks...");
 
   ObserveSafeMode ();
 
@@ -296,7 +296,7 @@ name_filter (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
+                       "Chimaera is downloading blocks...");
 
   ObserveSafeMode ();
 
@@ -611,12 +611,12 @@ name_checkdb (const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "namecoin",           "name_show",              &name_show,              {"name"} },
-    { "namecoin",           "name_history",           &name_history,           {"name"} },
-    { "namecoin",           "name_scan",              &name_scan,              {"start","count"} },
-    { "namecoin",           "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
-    { "namecoin",           "name_pending",           &name_pending,           {"name"} },
-    { "namecoin",           "name_checkdb",           &name_checkdb,           {} },
+    { "chimaera",           "name_show",              &name_show,              {"name"} },
+    { "chimaera",           "name_history",           &name_history,           {"name"} },
+    { "chimaera",           "name_scan",              &name_scan,              {"start","count"} },
+    { "chimaera",           "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
+    { "chimaera",           "name_pending",           &name_pending,           {"name"} },
+    { "chimaera",           "name_checkdb",           &name_checkdb,           {} },
     { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
 };
 

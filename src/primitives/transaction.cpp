@@ -66,7 +66,7 @@ uint256 CMutableTransaction::GetHash() const
 void CMutableTransaction::SetNamecoin()
 {
     assert (nVersion == CTransaction::CURRENT_VERSION);
-    nVersion = CTransaction::NAMECOIN_VERSION;
+    nVersion = CTransaction::CHIMAERA_VERSION;
 }
 
 uint256 CTransaction::ComputeHash() const

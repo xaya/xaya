@@ -1,3 +1,5 @@
+# this file can be removed?
+
 # Release Notes for Namecoin
 
 - Previously, `createrawtransaction` supported a separate argument for creating
@@ -6,4 +8,4 @@
   RPC method `namerawtransaction` has been added, which takes an already created
   transaction and changes its output to be a name operation.
 
-  For more details, see: https://github.com/namecoin/namecoin-core/issues/181
+  For more details, see: https://github.com/chimaera/proto-chi/issues/181

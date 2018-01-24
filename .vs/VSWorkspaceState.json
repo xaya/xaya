@@ -1,7 +1,11 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\.github",
+    "\\Debug",
+    "\\depends\\builders",
+    "\\depends\\hosts"
   ],
-  "SelectedNode": "\\.gitignore",
+  "SelectedNode": "\\TODO",
   "PreviewInSolutionExplorer": false
 }

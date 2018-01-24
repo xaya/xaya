@@ -62,7 +62,7 @@ class BumpFeeTest(BitcoinTestFramework):
         self.log.info("Running tests")
         dest_address = peer_node.getnewaddress()
         test_simple_bumpfee_succeeds(rbf_node, peer_node, dest_address)
-        # FIXME: Reenable when segwit is active for Namecoin.
+        # FIXME: Reenable when segwit is active for Chimaera.
         #test_segwit_bumpfee_succeeds(rbf_node, dest_address)
         test_nonrbf_bumpfee_fails(peer_node, dest_address)
         test_notmine_bumpfee_fails(rbf_node, peer_node, dest_address)

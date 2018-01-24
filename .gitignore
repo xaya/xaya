@@ -7,13 +7,19 @@ src/bitcoin-tx
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
-src/namecoind
-src/namecoin-cli
-src/namecoin-tx
+src/chimaerad
+src/chimaera-cli
+src/chimaera-tx
+src/chimaerad
+src/chimaera-cli
+src/chimaera-tx
 src/chimaera-hash
-src/test/test_namecoin
-src/test/test_namecoin_fuzzy
-src/qt/test/test_namecoin-qt
+src/test/test_chimaera
+src/test/test_chimaera_fuzzy
+src/qt/test/test_chimaera-qt
+src/test/test_chimaera
+src/test/test_chimaera_fuzzy
+src/qt/test/test_chimaera-qt
 
 # autoreconf
 Makefile.in
@@ -100,10 +106,12 @@ ipch/
 *.qm
 Makefile
 bitcoin-qt
-namecoin-qt
+chimaera-qt
 Bitcoin-Qt.app
 Namecoin-Qt.app
 background.tiff*
+chimaera-qt
+chimaera-Qt.app
 
 # Unit-tests
 Makefile.test
@@ -138,3 +146,4 @@ test/cache/*
 libbitcoinconsensus.pc
 libnamecoinconsensus.pc
 contrib/devtools/split-debug.sh
+libchimaeraconsensus.pc

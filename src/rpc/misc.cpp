@@ -125,9 +125,9 @@ UniValue validateaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "validateaddress \"address\"\n"
-            "\nReturn information about the given namecoin address.\n"
+            "\nReturn information about the given chimaera address.\n"
             "\nArguments:\n"
-            "1. \"address\"     (string, required) The namecoin address to validate\n"
+            "1. \"address\"     (string, required) The chimaera address to validate\n"
             "\nResult:\n"
             "{\n"
             "  \"isvalid\" : true|false,       (boolean) If the address is valid or not. If not, this is the only property returned.\n"
@@ -152,8 +152,8 @@ UniValue validateaddress(const JSONRPCRequest& request)
             "  \"hdmasterkeyid\" : \"<hash160>\" (string, optional) The Hash160 of the HD master pubkey\n"
             "}\n"
             "\nExamples:\n"
-            + HelpExampleCli("validateaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\"")
-            + HelpExampleRpc("validateaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\"")
+            + HelpExampleCli("validateaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\"")
+            + HelpExampleRpc("validateaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\"")
         );
 
 #ifdef ENABLE_WALLET
@@ -288,9 +288,9 @@ UniValue createmultisig(const JSONRPCRequest& request)
 
             "\nArguments:\n"
             "1. nrequired      (numeric, required) The number of required signatures out of the n keys or addresses.\n"
-            "2. \"keys\"       (string, required) A json array of keys which are namecoin addresses or hex-encoded public keys\n"
+            "2. \"keys\"       (string, required) A json array of keys which are chimaera addresses or hex-encoded public keys\n"
             "     [\n"
-            "       \"key\"    (string) namecoin address or hex-encoded public key\n"
+            "       \"key\"    (string) chimaera address or hex-encoded public key\n"
             "       ,...\n"
             "     ]\n"
 
@@ -302,9 +302,9 @@ UniValue createmultisig(const JSONRPCRequest& request)
 
             "\nExamples:\n"
             "\nCreate a multisig address from 2 addresses\n"
-            + HelpExampleCli("createmultisig", "2 \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"") +
+            + HelpExampleCli("createmultisig", "2 \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("createmultisig", "2, \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"")
+            + HelpExampleRpc("createmultisig", "2, \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"")
         ;
         throw std::runtime_error(msg);
     }
@@ -336,11 +336,11 @@ UniValue verifymessage(const JSONRPCRequest& request)
             "\nUnlock the wallet for 30 seconds\n"
             + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
             "\nCreate the signature\n"
-            + HelpExampleCli("signmessage", "\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\" \"my message\"") +
+            + HelpExampleCli("signmessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\" \"my message\"") +
             "\nVerify the signature\n"
-            + HelpExampleCli("verifymessage", "\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\" \"signature\" \"my message\"") +
+            + HelpExampleCli("verifymessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\" \"signature\" \"my message\"") +
             "\nAs json rpc\n"
-            + HelpExampleRpc("verifymessage", "\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\", \"signature\", \"my message\"")
+            + HelpExampleRpc("verifymessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\", \"signature\", \"my message\"")
         );
 
     LOCK(cs_main);

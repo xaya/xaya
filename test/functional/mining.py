@@ -93,7 +93,7 @@ class MiningTest(BitcoinTestFramework):
         bad_tx.vin[0].prevout.hash = 255
         bad_tx.rehash()
         bad_block.vtx.append(bad_tx)
-        # In Namecoin, we fail not with bad-txns-inputs-missingorspent, but
+        # In Chimaera, we fail not with bad-txns-inputs-missingorspent, but
         # in CheckNameTransaction due to the missing input.
         assert_template(node, bad_block, 'rejected')
 

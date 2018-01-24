@@ -866,7 +866,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // invalid blocks (using TestBlockValidity), however allowing such
         // transactions into the mempool can be exploited as a DoS attack.
         //
-        // Namecoin actually allows some scripts into the mempool that would
+        // Chimaera actually allows some scripts into the mempool that would
         // not (yet) be valid in a block, namely premature NAME_FIRSTUPDATE's.
         // Thus add the mempool-flag here.
         unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
@@ -1742,7 +1742,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     assert(hashPrevBlock == view.GetBestBlock());
 
     /* In Chimaera, the genesis block tx is spendable (premine).  Thus no
-       special rule is needed here (as in Bitcoin and Namecoin).  */
+       special rule is needed here (as in Bitcoin and Namecoin and Chimaera).  */
 
     nBlocksTotal++;
 

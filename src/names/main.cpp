@@ -313,18 +313,18 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         }
     }
 
-  /* Check that no name inputs/outputs are present for a non-Namecoin tx.
-     If that's the case, all is fine.  For a Namecoin tx instead, there
+  /* Check that no name inputs/outputs are present for a non-Chimaera tx.
+     If that's the case, all is fine.  For a Chimaera tx instead, there
      should be at least an output (for NAME_REGISTER, no inputs are
      expected).  */
 
   if (!tx.IsNamecoin ())
     {
       if (nameIn != -1)
-        return state.Invalid (error ("%s: non-Namecoin tx %s has name inputs",
+        return state.Invalid (error ("%s: non-Chimaera tx %s has name inputs",
                                      __func__, txid));
       if (nameOut != -1)
-        return state.Invalid (error ("%s: non-Namecoin tx %s at height %u"
+        return state.Invalid (error ("%s: non-Chimaera tx %s at height %u"
                                      " has name outputs",
                                      __func__, txid, nHeight));
 
@@ -333,7 +333,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   assert (tx.IsNamecoin ());
   if (nameOut == -1)
-    return state.Invalid (error ("%s: Namecoin tx %s has no name outputs",
+    return state.Invalid (error ("%s: Chimaera tx %s has no name outputs",
                                  __func__, txid));
 
   /* Reject "greedy names".  */

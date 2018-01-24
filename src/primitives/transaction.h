@@ -267,8 +267,9 @@ public:
     // Default transaction version.
     // FIXME: Upstream Bitcoin has default version set to 2 already.  Do this
     // once we forked to make the tx version irrelevant for Namecoin.
+	// is this all required?????
     static const int32_t CURRENT_VERSION=1;
-    static const int32_t NAMECOIN_VERSION=0x7100;
+    static const int32_t CHIMAERA_VERSION=0x7100;
 
     // Changing the default transaction version requires a two step process: first
     // adapting relay policy by bumping MAX_STANDARD_VERSION, and then later date
@@ -340,7 +341,7 @@ public:
 
     bool IsNamecoin() const
     {
-        return nVersion == NAMECOIN_VERSION;
+        return nVersion == CHIMAERA_VERSION;
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
@@ -414,7 +415,7 @@ struct CMutableTransaction
     }
 
     /**
-     * Turn this into a Namecoin version transaction.  It is assumed
+     * Turn this into a Chimaera version transaction.  It is assumed
      * that it isn't already.
      */
     void SetNamecoin();

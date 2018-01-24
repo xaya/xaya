@@ -25,7 +25,7 @@ class ConsensusRules
 public:
 
     /* Return minimum locked amount in a name.  */
-    virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
+    virtual CAmount MinCHIAmount(unsigned nHeight) const = 0;
 
 };
 
@@ -33,7 +33,7 @@ class MainNetConsensus : public ConsensusRules
 {
 public:
 
-    CAmount MinNameCoinAmount(unsigned nHeight) const
+    CAmount MinCHIAmount(unsigned nHeight) const
     {
         return COIN / 100;
     }

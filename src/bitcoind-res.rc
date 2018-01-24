@@ -16,14 +16,14 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
-            VALUE "CompanyName",        "Namecoin"
-            VALUE "FileDescription",    "namecoind (Namecoin node with a JSON-RPC server)"
+            VALUE "CompanyName",        "Chimaera"
+            VALUE "FileDescription",    "chimaera (Chimaera node with a JSON-RPC server)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
-            VALUE "InternalName",       "namecoind"
+            VALUE "InternalName",       "chimaerad"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
-            VALUE "OriginalFilename",   "namecoind.exe"
-            VALUE "ProductName",        "Namecoin Core"
+            VALUE "OriginalFilename",   "chimaerad.exe"
+            VALUE "ProductName",        "Chimaera"
             VALUE "ProductVersion",     VER_PRODUCTVERSION_STR
         END
     END
