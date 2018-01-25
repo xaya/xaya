@@ -217,22 +217,12 @@ bool BlockAssembler::TestPackage(uint64_t packageSize, int64_t packageSigOpsCost
 bool BlockAssembler::TestPackageTransactions(const CTxMemPool::setEntries& package)
 {
     for (const CTxMemPool::txiter it : package) {
-        if (!TxAllowedForNamecoin(it->GetTx()))
-            return false;
         if (!IsFinalTx(it->GetTx(), nHeight, nLockTimeCutoff))
             return false;
         if (!fIncludeWitness && it->GetTx().HasWitness())
             return false;
     }
     return true;
-}
-
-bool
-BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
-{
-  // This function was only used to check for maturity of name_new's.  With
-  // only one-tx registration in CHI, this is no longer relevant.
-  return true;
 }
 
 void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)

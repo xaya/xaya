@@ -199,13 +199,6 @@ private:
       * state updated assuming given transactions are inBlock. Returns number
       * of updated descendants. */
     int UpdatePackagesForAdded(const CTxMemPool::setEntries& alreadyAdded, indexed_modified_transaction_set &mapModifiedTx);
-    
-    /**
-     * Verify if a tx can be added from a Namecoin perspective.  This may not
-     * (yet) be the case if it is a NAME_FIRSTUPDATE with a not-yet-mature
-     * NAME_NEW.  Those are allowed in the mempool, but not in blocks.
-     */
-    bool TxAllowedForNamecoin(const CTransaction& tx) const;
 };
 
 /** Modify the extranonce in a block */
