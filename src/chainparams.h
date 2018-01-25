@@ -59,22 +59,6 @@ public:
         MAX_BASE58_TYPES
     };
 
-    enum BugType {
-        /* Tx is valid and all nameops should be performed.  */
-        BUG_FULLY_APPLY,
-        /* Don't apply the name operations but put the names into the UTXO
-           set.  This is done for libcoin's "d/bitcoin" stealing.  It is
-           then used as input into the "d/wav" stealing, thus needs to be in
-           the UTXO set.  We don't want the name to show up in the name
-           database, though.  */
-        BUG_IN_UTXO,
-        /* Don't apply the name operations and don't put the names into the
-           UTXO set.  They are immediately unspendable.  This is used for the
-           "d/wav" stealing output (which is not used later on) and also
-           for the NAME_FIRSTUPDATE's that are in non-Namecoin tx.  */
-        BUG_FULLY_IGNORE,
-    };
-
     const Consensus::Params& GetConsensus() const { return consensus; }
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     int GetDefaultPort() const { return nDefaultPort; }
