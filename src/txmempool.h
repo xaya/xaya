@@ -237,18 +237,14 @@ class CompareTxMemPoolEntryByDescendantScore
 public:
     bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b) const
     {
-        bool fUseADescendants = UseDescendantScore(a);
-        bool fUseBDescendants = UseDescendantScore(b);
+        double a_mod_fee, a_size, b_mod_fee, b_size;
 
-        double aModFee = fUseADescendants ? a.GetModFeesWithDescendants() : a.GetModifiedFee();
-        double aSize = fUseADescendants ? a.GetSizeWithDescendants() : a.GetTxSize();
-
-        double bModFee = fUseBDescendants ? b.GetModFeesWithDescendants() : b.GetModifiedFee();
-        double bSize = fUseBDescendants ? b.GetSizeWithDescendants() : b.GetTxSize();
+        GetModFeeAndSize(a, a_mod_fee, a_size);
+        GetModFeeAndSize(b, b_mod_fee, b_size);
 
         // Avoid division by rewriting (a/b > c/d) as (a*d > c*b).
-        double f1 = aModFee * bSize;
-        double f2 = aSize * bModFee;
+        double f1 = a_mod_fee * b_size;
+        double f2 = a_size * b_mod_fee;
 
         if (f1 == f2) {
             return a.GetTime() >= b.GetTime();
@@ -256,12 +252,21 @@ public:
         return f1 < f2;
     }
 
-    // Calculate which score to use for an entry (avoiding division).
-    bool UseDescendantScore(const CTxMemPoolEntry &a) const
+    // Return the fee/size we're using for sorting this entry.
+    void GetModFeeAndSize(const CTxMemPoolEntry &a, double &mod_fee, double &size) const
     {
+        // Compare feerate with descendants to feerate of the transaction, and
+        // return the fee/size for the max.
         double f1 = (double)a.GetModifiedFee() * a.GetSizeWithDescendants();
         double f2 = (double)a.GetModFeesWithDescendants() * a.GetTxSize();
-        return f2 > f1;
+
+        if (f2 > f1) {
+            mod_fee = a.GetModFeesWithDescendants();
+            size = a.GetSizeWithDescendants();
+        } else {
+            mod_fee = a.GetModifiedFee();
+            size = a.GetTxSize();
+        }
     }
 };
 
@@ -292,33 +297,53 @@ public:
     }
 };
 
+/** \class CompareTxMemPoolEntryByAncestorScore
+ *
+ *  Sort an entry by min(score/size of entry's tx, score/size with all ancestors).
+ */
 class CompareTxMemPoolEntryByAncestorFee
 {
 public:
-    bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b) const
+    template<typename T>
+    bool operator()(const T& a, const T& b) const
     {
-        double aFees = a.GetModFeesWithAncestors();
-        double aSize = a.GetSizeWithAncestors();
+        double a_mod_fee, a_size, b_mod_fee, b_size;
 
-        double bFees = b.GetModFeesWithAncestors();
-        double bSize = b.GetSizeWithAncestors();
+        GetModFeeAndSize(a, a_mod_fee, a_size);
+        GetModFeeAndSize(b, b_mod_fee, b_size);
 
         // Avoid division by rewriting (a/b > c/d) as (a*d > c*b).
-        double f1 = aFees * bSize;
-        double f2 = aSize * bFees;
+        double f1 = a_mod_fee * b_size;
+        double f2 = a_size * b_mod_fee;
 
         if (f1 == f2) {
             return a.GetTx().GetHash() < b.GetTx().GetHash();
         }
-
         return f1 > f2;
+    }
+
+    // Return the fee/size we're using for sorting this entry.
+    template <typename T>
+    void GetModFeeAndSize(const T &a, double &mod_fee, double &size) const
+    {
+        // Compare feerate with ancestors to feerate of the transaction, and
+        // return the fee/size for the min.
+        double f1 = (double)a.GetModifiedFee() * a.GetSizeWithAncestors();
+        double f2 = (double)a.GetModFeesWithAncestors() * a.GetTxSize();
+
+        if (f1 > f2) {
+            mod_fee = a.GetModFeesWithAncestors();
+            size = a.GetSizeWithAncestors();
+        } else {
+            mod_fee = a.GetModifiedFee();
+            size = a.GetTxSize();
+        }
     }
 };
 
 // Multi_index tag names
 struct descendant_score {};
 struct entry_time {};
-struct mining_score {};
 struct ancestor_score {};
 
 class CBlockPolicyEstimator;
@@ -388,7 +413,6 @@ public:
  * - transaction hash
  * - feerate [we use max(feerate of tx, feerate of tx with all descendants)]
  * - time in mempool
- * - mining score (feerate modified by any fee deltas from PrioritiseTransaction)
  *
  * Note: the term "descendant" refers to in-mempool transactions that depend on
  * this one, while "ancestor" refers to in-mempool transactions that a given
@@ -480,12 +504,6 @@ public:
                 boost::multi_index::tag<entry_time>,
                 boost::multi_index::identity<CTxMemPoolEntry>,
                 CompareTxMemPoolEntryByEntryTime
-            >,
-            // sorted by score (for mining prioritization)
-            boost::multi_index::ordered_unique<
-                boost::multi_index::tag<mining_score>,
-                boost::multi_index::identity<CTxMemPoolEntry>,
-                CompareTxMemPoolEntryByScore
             >,
             // sorted by fee rate with ancestors
             boost::multi_index::ordered_non_unique<
