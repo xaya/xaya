@@ -14,7 +14,7 @@ added in the future, they should try to follow the same convention and not
 make assumptions about execution order.
 """
 
-from segwit import send_to_witness
+from test_framework.blocktools import send_to_witness
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework import blocktools
 from test_framework.mininode import CTransaction
@@ -33,7 +33,7 @@ class BumpFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         self.setup_clean_chain = True
-        self.extra_args = [["-prematurewitness", "-walletprematurewitness", "-walletrbf={}".format(i)]
+        self.extra_args = [["-prematurewitness", "-walletprematurewitness", "-deprecatedrpc=addwitnessaddress", "-walletrbf={}".format(i)]
                            for i in range(self.num_nodes)]
 
     def run_test(self):

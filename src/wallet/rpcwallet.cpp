@@ -144,7 +144,7 @@ UniValue getnewaddress(const JSONRPCRequest& request)
             "so payments received with the address will be credited to 'account'.\n"
             "\nArguments:\n"
             "1. \"account\"        (string, optional) DEPRECATED. The account name for the address to be linked to. If not provided, the default account \"\" is used. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created if there is no account by the given name.\n"
-            "2. \"address_type\"   (string, optional) The address type to use. Options are \"legacy\", \"p2sh\", and \"bech32\". Default is set by -addresstype.\n"
+            "2. \"address_type\"   (string, optional) The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -addresstype.\n"
             "\nResult:\n"
             "\"address\"    (string) The new bitcoin address\n"
             "\nExamples:\n"
@@ -242,7 +242,7 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
             "\nReturns a new Bitcoin address, for receiving change.\n"
             "This is for use with raw transactions, NOT normal use.\n"
             "\nArguments:\n"
-            "1. \"address_type\"           (string, optional) The address type to use. Options are \"legacy\", \"p2sh\", and \"bech32\". Default is set by -changetype.\n"
+            "1. \"address_type\"           (string, optional) The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -changetype.\n"
             "\nResult:\n"
             "\"address\"    (string) The address\n"
             "\nExamples:\n"
@@ -1285,7 +1285,8 @@ UniValue addwitnessaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
     {
         std::string msg = "addwitnessaddress \"address\" ( p2sh )\n"
-            "\nAdd a witness address for a script (with pubkey or redeemscript known). Requires a new wallet backup.\n"
+            "\nDEPRECATED: set the address_type argument of getnewaddress, or option -addresstype=[bech32|p2sh-segwit] instead.\n"
+            "Add a witness address for a script (with pubkey or redeemscript known). Requires a new wallet backup.\n"
             "It returns the witness script.\n"
 
             "\nArguments:\n"
@@ -1297,6 +1298,12 @@ UniValue addwitnessaddress(const JSONRPCRequest& request)
             "}\n"
         ;
         throw std::runtime_error(msg);
+    }
+
+    if (!IsDeprecatedRPCEnabled("addwitnessaddress")) {
+        throw JSONRPCError(RPC_METHOD_DEPRECATED, "addwitnessaddress is deprecated and will be fully removed in v0.17. "
+            "To use addwitnessaddress in v0.16, restart bitcoind with -deprecatedrpc=addwitnessaddress.\n"
+            "Projects should transition to using the address_type argument of getnewaddress, or option -addresstype=[bech32|p2sh-segwit] instead.\n");
     }
 
     {
@@ -2283,7 +2290,8 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
             "This is needed prior to performing transactions related to private keys such as sending bitcoins\n"
             "\nArguments:\n"
             "1. \"passphrase\"     (string, required) The wallet passphrase\n"
-            "2. timeout            (numeric, required) The time to keep the decryption key in seconds.\n"
+            "2. timeout            (numeric, required) The time to keep the decryption key in seconds. Limited to at most 1073741824 (2^30) seconds.\n"
+            "                                          Any value greater than 1073741824 seconds will be set to 1073741824 seconds.\n"
             "\nNote:\n"
             "Issuing the walletpassphrase command while the wallet is already unlocked will set a new unlock\n"
             "time that overrides the old one.\n"
@@ -2312,6 +2320,17 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
     // Alternately, find a way to make request.params[0] mlock()'d to begin with.
     strWalletPass = request.params[0].get_str().c_str();
 
+    // Get the timeout
+    int64_t nSleepTime = request.params[1].get_int64();
+    // Timeout cannot be negative, otherwise it will relock immediately
+    if (nSleepTime < 0) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Timeout cannot be negative.");
+    }
+    // Clamp timeout to 2^30 seconds
+    if (nSleepTime > (int64_t)1 << 30) {
+        nSleepTime = (int64_t)1 << 30;
+    }
+
     if (strWalletPass.length() > 0)
     {
         if (!pwallet->Unlock(strWalletPass)) {
@@ -2325,7 +2344,6 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
 
     pwallet->TopUpKeyPool();
 
-    int64_t nSleepTime = request.params[1].get_int64();
     pwallet->nRelockTime = GetTime() + nSleepTime;
     RPCRunLater(strprintf("lockwallet(%s)", pwallet->GetName()), boost::bind(LockWallet, pwallet), nSleepTime);
 
@@ -3532,7 +3550,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "abandontransaction",       &abandontransaction,       {"txid"} },
     { "wallet",             "abortrescan",              &abortrescan,              {} },
     { "wallet",             "addmultisigaddress",       &addmultisigaddress,       {"nrequired","keys","account"} },
-    { "wallet",             "addwitnessaddress",        &addwitnessaddress,        {"address","p2sh"} },
+    { "hidden",             "addwitnessaddress",        &addwitnessaddress,        {"address","p2sh"} },
     { "wallet",             "backupwallet",             &backupwallet,             {"destination"} },
     { "wallet",             "bumpfee",                  &bumpfee,                  {"txid", "options"} },
     { "wallet",             "dumpprivkey",              &dumpprivkey,              {"address"}  },
