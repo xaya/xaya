@@ -108,10 +108,8 @@ Makefile
 bitcoin-qt
 chimaera-qt
 Bitcoin-Qt.app
-Namecoin-Qt.app
+Chimaera-Qt.app
 background.tiff*
-chimaera-qt
-chimaera-Qt.app
 
 # Unit-tests
 Makefile.test
@@ -144,6 +142,5 @@ test/cache/*
 /doc/doxygen/
 
 libbitcoinconsensus.pc
-libnamecoinconsensus.pc
-contrib/devtools/split-debug.sh
 libchimaeraconsensus.pc
+contrib/devtools/split-debug.sh
