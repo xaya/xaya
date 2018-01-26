@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Does this need changing to convert huc address to Chimaera? or will be done in the client? as we will not be putting HUC coins in the genesis block
 
 #   Convert Address - convert Bitcoin to Namecoin addresses
 #   Copyright (C) 2016  Daniel Kraft <d@domob.eu>
