@@ -238,9 +238,9 @@ public:
 /* ************************************************************************** */
 
 /**
- * Check a transaction according to the additional Chimaera rules.  This
+ * Check a transaction according to the additional Namecoin rules.  This
  * ensures that all name operations (if any) are valid and that it has
- * name operations iff it is marked as Chimaera tx by its version.
+ * name operations iff it is marked as Namecoin tx by its version.
  * @param tx The transaction to check.
  * @param nHeight Height at which the tx will be.
  * @param view The current chain state.

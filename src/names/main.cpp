@@ -313,8 +313,8 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         }
     }
 
-  /* Check that no name inputs/outputs are present for a non-Chimaera tx.
-     If that's the case, all is fine.  For a Chimaera tx instead, there
+  /* Check that no name inputs/outputs are present for a non-Namecoin tx.
+     If that's the case, all is fine.  For a Namecoin tx instead, there
      should be at least an output (for NAME_REGISTER, no inputs are
      expected).  */
 

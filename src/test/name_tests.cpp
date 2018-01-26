@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const COutPoint inUpdate = addTestCoin (scrUpdate, 100000, view);
 
   /* ****************************************************** */
-  /* Try out the Chimaera / non-Chimaera tx version check.  */
+  /* Try out the Namecoin / non-Namecoin tx version check.  */
 
   CValidationState state;
   CMutableTransaction mtx;
@@ -485,13 +485,12 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vout.push_back (CTxOut (COIN, addr));
   const CTransaction baseTx(mtx);
 
-  /* Non-name tx should be non-Chimaera version. 
- some branding at the code level?*/
+  /* Non-name tx should be non-Namecoin version.  */
   BOOST_CHECK (CheckNameTransaction (baseTx, 200000, view, state, 0));
   mtx.SetNamecoin ();
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
 
-  /* Name tx should be Chimaera version.  */
+  /* Name tx should be Namecoin version.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vin.push_back (CTxIn (inRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));

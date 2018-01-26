@@ -302,9 +302,9 @@ UniValue createmultisig(const JSONRPCRequest& request)
 
             "\nExamples:\n"
             "\nCreate a multisig address from 2 addresses\n"
-            + HelpExampleCli("createmultisig", "2 \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"") +
+            + HelpExampleCli("createmultisig", "2 \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"CZDygWaDAfC3umFjcZVJZ2jpuVLd9n6VWg\\\"]\"") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("createmultisig", "2, \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\"]\"")
+            + HelpExampleRpc("createmultisig", "2, \"[\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\",\\\"CZDygWaDAfC3umFjcZVJZ2jpuVLd9n6VWg\\\"]\"")
         ;
         throw std::runtime_error(msg);
     }

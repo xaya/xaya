@@ -397,8 +397,6 @@ If you want to do a test build of a pull on GitHub it can be useful to point
 the Gitian builder at an alternative repository, using the same descriptors
 and inputs.
 
-# Remove all gitian?
-
 For example:
 ```bash
 URL=https://github.com/domob1812/namecore.git

@@ -9,7 +9,6 @@
 
 #include <QUrl>
 
-// Need some Chimaera addresses to add in here
 void URITests::uriTests()
 {
     SendCoinsRecipient rv;
