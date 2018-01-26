@@ -10,13 +10,7 @@ src/qt/test/test_bitcoin-qt
 src/chimaerad
 src/chimaera-cli
 src/chimaera-tx
-src/chimaerad
-src/chimaera-cli
-src/chimaera-tx
 src/chimaera-hash
-src/test/test_chimaera
-src/test/test_chimaera_fuzzy
-src/qt/test/test_chimaera-qt
 src/test/test_chimaera
 src/test/test_chimaera_fuzzy
 src/qt/test/test_chimaera-qt
