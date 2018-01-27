@@ -267,7 +267,7 @@ CNameConflictTracker::AddConflictedEntry (CTransactionRef txRemoved)
 bool
 CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                       const CCoinsView& view,
-                      CValidationState& state, unsigned flags)
+                      CValidationState& state)
 {
   const std::string strTxid = tx.GetHash ().GetHex ();
   const char* txid = strTxid.c_str ();

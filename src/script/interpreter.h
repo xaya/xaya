@@ -106,10 +106,6 @@ enum
     // Public keys in segregated witness scripts must be compressed
     //
     SCRIPT_VERIFY_WITNESS_PUBKEYTYPE = (1U << 15),
-
-    // Perform name checks in "mempool" mode.  This allows / disallows
-    // certain stuff (e. g., it allows immature spending of name_new's).
-    SCRIPT_VERIFY_NAMES_MEMPOOL = (1U << 24),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);

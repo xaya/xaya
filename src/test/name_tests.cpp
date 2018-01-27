@@ -486,26 +486,26 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const CTransaction baseTx(mtx);
 
   /* Non-name tx should be non-Namecoin version.  */
-  BOOST_CHECK (CheckNameTransaction (baseTx, 200000, view, state, 0));
+  BOOST_CHECK (CheckNameTransaction (baseTx, 200000, view, state));
   mtx.SetNamecoin ();
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
 
   /* Name tx should be Namecoin version.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vin.push_back (CTxIn (inRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
   mtx.SetNamecoin ();
   mtx.vin.push_back (CTxIn (inUpdate));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
 
   /* Duplicate name outs are not allowed.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
   mtx.SetNamecoin ();
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
 
   /* ***************************** */
   /* Test NAME_UPDATE validation.  */
@@ -526,21 +526,21 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, viewUpd, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, viewUpd, state));
   mtx.vin.push_back (CTxIn (inUpdate));
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewUpd, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewUpd, state));
   BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* Check update of REGISTER output.  */
   mtx.vin.clear ();
   mtx.vin.push_back (CTxIn (inRegister));
-  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewRegister, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewRegister, state));
 
   /* "Greedy" names.  */
   mtx.vout[1].nValue = COIN / 100;
-  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewRegister, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewRegister, state));
   mtx.vout[1].nValue = COIN / 100 - 1;
-  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewRegister, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewRegister, state));
 
   /* Value length limits.  */
   mtx = CMutableTransaction (baseTx);
@@ -548,13 +548,13 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vin.push_back (CTxIn (inUpdate));
   scr = CNameScript::buildNameUpdate (addr, name1, tooLongValue);
   mtx.vout.push_back (CTxOut (COIN, scr));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state));
   
   /* Name mismatch to prev out.  */
   mtx.vout.clear ();
   scr = CNameScript::buildNameUpdate (addr, name2, value);
   mtx.vout.push_back (CTxOut (COIN, scr));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewUpd, state));
 
   /* ******************************* */
   /* Test NAME_REGISTER validation.  */
@@ -566,18 +566,18 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx = CMutableTransaction (baseTx);
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state));
 
   /* Basic valid transaction.  */
   viewClean.DeleteName (name1);
-  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
   BOOST_CHECK (IsStandardTx (mtx, reason));
 
   /* "Greedy" names.  */
   mtx.vout[1].nValue = COIN / 100;
-  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewClean, state, 0));
+  BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewClean, state));
   mtx.vout[1].nValue = COIN / 100 - 1;
-  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewClean, state, 0));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewClean, state));
 }
 
 /* ************************************************************************** */

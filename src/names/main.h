@@ -245,12 +245,11 @@ public:
  * @param nHeight Height at which the tx will be.
  * @param view The current chain state.
  * @param state Resulting validation state.
- * @param flags Verification flags.
  * @return True in case of success.
  */
 bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                            const CCoinsView& view,
-                           CValidationState& state, unsigned flags);
+                           CValidationState& state);
 
 /**
  * Apply the changes of a name transaction to the name database.
