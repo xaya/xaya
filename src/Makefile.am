@@ -65,11 +65,11 @@ TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += namecoind
+  bin_PROGRAMS += chimaerad
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += namecoin-cli namecoin-tx
+  bin_PROGRAMS += chimaera-cli chimaera-tx
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -391,16 +391,16 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
-namecoind_SOURCES = bitcoind.cpp
-namecoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-namecoind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-namecoind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+chimaerad_SOURCES = bitcoind.cpp
+chimaerad_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+chimaerad_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+chimaerad_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-namecoind_SOURCES += bitcoind-res.rc
+chimaerad_SOURCES += bitcoind-res.rc
 endif
 
-namecoind_LDADD = \
+chimaerad_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
@@ -414,38 +414,38 @@ namecoind_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-namecoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+chimaerad_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 # bitcoin-cli binary #
-namecoin_cli_SOURCES = bitcoin-cli.cpp
-namecoin_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-namecoin_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-namecoin_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+chimaera_cli_SOURCES = bitcoin-cli.cpp
+chimaera_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+chimaera_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+chimaera_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-namecoin_cli_SOURCES += bitcoin-cli-res.rc
+chimaera_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
-namecoin_cli_LDADD = \
+chimaera_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-namecoin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+chimaera_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoin-tx binary #
-namecoin_tx_SOURCES = bitcoin-tx.cpp
-namecoin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-namecoin_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-namecoin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+chimaera_tx_SOURCES = bitcoin-tx.cpp
+chimaera_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+chimaera_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+chimaera_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-namecoin_tx_SOURCES += bitcoin-tx-res.rc
+chimaera_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-namecoin_tx_LDADD = \
+chimaera_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
@@ -453,7 +453,7 @@ namecoin_tx_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-namecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+chimaera_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
 # chimaera-hash binary #

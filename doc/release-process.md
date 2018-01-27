@@ -3,7 +3,7 @@ Release Process
 
 Before every release candidate:
 
-* ( **Not in Namecoin yet.** ) Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/namecoin/namecoin-core/blob/master/doc/translation_process.md#syncing-with-transifex)
+* ( **Not in Namecoin yet.** ) Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/chimaera/proto-chi/blob/master/doc/translation_process.md#syncing-with-transifex)
 
 * Update manpages, see [gen-manpages.sh](https://github.com/bitcoin/bitcoin/blob/master/contrib/devtools/README.md#gen-manpagessh).
 
@@ -36,7 +36,7 @@ Check out the source code in the following directory hierarchy.
     git clone https://github.com/namecoin/gitian.sigs.git
     #git clone https://github.com/namecoin/namecoin-detached-sigs.git # Namecoin doesn't use detached sigs yet, so don't do this.
     git clone https://github.com/devrandom/gitian-builder.git
-    git clone https://github.com/namecoin/namecoin-core.git
+    git clone https://github.com/chimaera/proto-chi.git
 
 ### Namecoin maintainers/release engineers, suggestion for writing release notes
 
@@ -114,7 +114,7 @@ NOTE: Offline builds must use the --url flag to ensure Gitian fetches only from 
 
 The gbuild invocations below <b>DO NOT DO THIS</b> by default.
 
-### Build and sign Namecoin Core for Linux, Windows, and OS X:
+### Build and sign Chimaera for Linux, Windows, and OS X:
 
     pushd ./gitian-builder
     ./bin/gbuild --memory 3000 --commit namecoin=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml

@@ -29,16 +29,16 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>Namecoin-Qt</string>
+  <string>Chimaera-Qt</string>
   
   <key>CFBundleName</key>
-  <string>Namecoin-Qt</string>
+  <string>Chimaera-Qt</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>org.namecoin.Namecoin-Qt</string>
+  <string>io.chimaera.Chimaera-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -46,10 +46,10 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>org.namecoin.NamecoinPayment</string>
+      <string>io.chimaera.ChimaeraPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>namecoin</string>
+        <string>chimaera</string>
       </array>
     </dict>
   </array>
@@ -58,9 +58,9 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>org.namecoin.paymentrequest</string>
+      <string>io.chimaera.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>Namecoin payment request</string>
+      <string>Chimaera payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
@@ -68,10 +68,10 @@
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.mime-type</key>
-        <string>application/x-namecoin-payment-request</string>
+        <string>application/x-chimaera-payment-request</string>
         <key>public.filename-extension</key>
         <array>
-          <string>namecoinpaymentrequest</string>
+          <string>chimaerapaymentrequest</string>
         </array>
       </dict>
     </dict>
@@ -84,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>org.namecoin.paymentrequest</string>
+        <string>io.chimaera.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>

@@ -16,14 +16,14 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
-            VALUE "CompanyName",        "Namecoin"
-            VALUE "FileDescription",    "namecoin-tx (CLI Namecoin transaction editor utility)"
+            VALUE "CompanyName",        "Chimaera"
+            VALUE "FileDescription",    "chimaera-tx (CLI Chimaera transaction editor utility)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
-            VALUE "InternalName",       "namecoin-tx"
+            VALUE "InternalName",       "chimaera-tx"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
-            VALUE "OriginalFilename",   "namecoin-tx.exe"
-            VALUE "ProductName",        "Namecoin Core"
+            VALUE "OriginalFilename",   "chimaera-tx.exe"
+            VALUE "ProductName",        "Chimaera"
             VALUE "ProductVersion",     VER_PRODUCTVERSION_STR
         END
     END

@@ -139,13 +139,13 @@ UniValue getnewaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "getnewaddress ( \"account\" )\n"
-            "\nReturns a new Namecoin address for receiving payments.\n"
+            "\nReturns a new Chimaera address for receiving payments.\n"
             "If 'account' is specified (DEPRECATED), it is added to the address book \n"
             "so payments received with the address will be credited to 'account'.\n"
             "\nArguments:\n"
             "1. \"account\"        (string, optional) DEPRECATED. The account name for the address to be linked to. If not provided, the default account \"\" is used. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created if there is no account by the given name.\n"
             "\nResult:\n"
-            "\"address\"    (string) The new namecoin address\n"
+            "\"address\"    (string) The new chimaera address\n"
             "\nExamples:\n"
             + HelpExampleCli("getnewaddress", "")
             + HelpExampleRpc("getnewaddress", "")
@@ -195,11 +195,11 @@ UniValue getaccountaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "getaccountaddress \"account\"\n"
-            "\nDEPRECATED. Returns the current Namecoin address for receiving payments to this account.\n"
+            "\nDEPRECATED. Returns the current Chimaera address for receiving payments to this account.\n"
             "\nArguments:\n"
             "1. \"account\"       (string, required) The account name for the address. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created and a new address created  if there is no account by the given name.\n"
             "\nResult:\n"
-            "\"address\"          (string) The account namecoin address\n"
+            "\"address\"          (string) The account chimaera address\n"
             "\nExamples:\n"
             + HelpExampleCli("getaccountaddress", "")
             + HelpExampleCli("getaccountaddress", "\"\"")
@@ -229,7 +229,7 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 0)
         throw std::runtime_error(
             "getrawchangeaddress\n"
-            "\nReturns a new Namecoin address, for receiving change.\n"
+            "\nReturns a new Chimaera address, for receiving change.\n"
             "This is for use with raw transactions, NOT normal use.\n"
             "\nResult:\n"
             "\"address\"    (string) The address\n"
@@ -269,18 +269,18 @@ UniValue setaccount(const JSONRPCRequest& request)
             "setaccount \"address\" \"account\"\n"
             "\nDEPRECATED. Sets the account associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The namecoin address to be associated with an account.\n"
+            "1. \"address\"         (string, required) The chimaera address to be associated with an account.\n"
             "2. \"account\"         (string, required) The account to assign the address to.\n"
             "\nExamples:\n"
-            + HelpExampleCli("setaccount", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" \"tabby\"")
-            + HelpExampleRpc("setaccount", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\", \"tabby\"")
+            + HelpExampleCli("setaccount", "\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\" \"tabby\"")
+            + HelpExampleRpc("setaccount", "\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\", \"tabby\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
     }
 
     std::string strAccount;
@@ -317,19 +317,19 @@ UniValue getaccount(const JSONRPCRequest& request)
             "getaccount \"address\"\n"
             "\nDEPRECATED. Returns the account associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The namecoin address for account lookup.\n"
+            "1. \"address\"         (string, required) The chimaera address for account lookup.\n"
             "\nResult:\n"
             "\"accountname\"        (string) the account address\n"
             "\nExamples:\n"
-            + HelpExampleCli("getaccount", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\"")
-            + HelpExampleRpc("getaccount", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\"")
+            + HelpExampleCli("getaccount", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\"")
+            + HelpExampleRpc("getaccount", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
     }
 
     std::string strAccount;
@@ -356,7 +356,7 @@ UniValue getaddressesbyaccount(const JSONRPCRequest& request)
             "1. \"account\"        (string, required) The account name.\n"
             "\nResult:\n"
             "[                     (json array of string)\n"
-            "  \"address\"         (string) a namecoin address associated with the given account\n"
+            "  \"address\"         (string) a chimaera address associated with the given account\n"
             "  ,...\n"
             "]\n"
             "\nExamples:\n"
@@ -452,7 +452,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "\nSend an amount to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
-            "1. \"address\"            (string, required) The namecoin address to send to.\n"
+            "1. \"address\"            (string, required) The chimaera address to send to.\n"
             "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
             "3. \"comment\"            (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
@@ -460,7 +460,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "                             to which you're sending the transaction. This is not part of the \n"
             "                             transaction, just kept in your wallet.\n"
             "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-            "                             The recipient will receive less namecoins than you enter in the amount field.\n"
+            "                             The recipient will receive less CHI than you enter in the amount field.\n"
             "6. replaceable            (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
             "7. conf_target            (numeric, optional) Confirmation target (in blocks)\n"
             "8. \"estimate_mode\"      (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
@@ -470,10 +470,10 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             "\nResult:\n"
             "\"txid\"                  (string) The transaction id.\n"
             "\nExamples:\n"
-            + HelpExampleCli("sendtoaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\" 0.1")
-            + HelpExampleCli("sendtoaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\" 0.1 \"donation\" \"seans outpost\"")
-            + HelpExampleCli("sendtoaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\" 0.1 \"\" \"\" true")
-            + HelpExampleRpc("sendtoaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\", 0.1, \"donation\", \"seans outpost\"")
+            + HelpExampleCli("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.1")
+            + HelpExampleCli("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.1 \"donation\" \"seans outpost\"")
+            + HelpExampleCli("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.1 \"\" \"\" true")
+            + HelpExampleRpc("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 0.1, \"donation\", \"seans outpost\"")
         );
 
     ObserveSafeMode();
@@ -549,7 +549,7 @@ UniValue listaddressgroupings(const JSONRPCRequest& request)
             "[\n"
             "  [\n"
             "    [\n"
-            "      \"address\",            (string) The namecoin address\n"
+            "      \"address\",            (string) The chimaera address\n"
             "      amount,                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
             "      \"account\"             (string, optional) DEPRECATED. The account\n"
             "    ]\n"
@@ -604,7 +604,7 @@ UniValue signmessage(const JSONRPCRequest& request)
             "\nSign a message with the private key of an address"
             + HelpRequiringPassphrase(pwallet) + "\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The namecoin address to use for the private key.\n"
+            "1. \"address\"         (string, required) The chimaera address to use for the private key.\n"
             "2. \"message\"         (string, required) The message to create a signature of.\n"
             "\nResult:\n"
             "\"signature\"          (string) The signature of the message encoded in base 64\n"
@@ -612,11 +612,11 @@ UniValue signmessage(const JSONRPCRequest& request)
             "\nUnlock the wallet for 30 seconds\n"
             + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
             "\nCreate the signature\n"
-            + HelpExampleCli("signmessage", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" \"my message\"") +
+            + HelpExampleCli("signmessage", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" \"my message\"") +
             "\nVerify the signature\n"
-            + HelpExampleCli("verifymessage", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" \"signature\" \"my message\"") +
+            + HelpExampleCli("verifymessage", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" \"signature\" \"my message\"") +
             "\nAs json rpc\n"
-            + HelpExampleRpc("signmessage", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\", \"my message\"")
+            + HelpExampleRpc("signmessage", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", \"my message\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
@@ -664,19 +664,19 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
             "getreceivedbyaddress \"address\" ( minconf )\n"
             "\nReturns the total amount received by the given address in transactions with at least minconf confirmations.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The namecoin address for transactions.\n"
+            "1. \"address\"         (string, required) The chimaera address for transactions.\n"
             "2. minconf             (numeric, optional, default=1) Only include transactions confirmed at least this many times.\n"
             "\nResult:\n"
             "amount   (numeric) The total amount in " + CURRENCY_UNIT + " received at this address.\n"
             "\nExamples:\n"
             "\nThe amount from transactions with at least 1 confirmation\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\"") +
+            + HelpExampleCli("getreceivedbyaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\"") +
             "\nThe amount including unconfirmed transactions, zero confirmations\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" 0") +
+            + HelpExampleCli("getreceivedbyaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0") +
             "\nThe amount with at least 6 confirmations\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" 6") +
+            + HelpExampleCli("getreceivedbyaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 6") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\", 6")
+            + HelpExampleRpc("getreceivedbyaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 6")
        );
 
     ObserveSafeMode();
@@ -690,7 +690,7 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
     // Bitcoin address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
     if (!IsMine(*pwallet, scriptPubKey)) {
@@ -954,7 +954,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
             "                       Specifying an account does not influence coin selection, but it does associate the newly created\n"
             "                       transaction with the account, so the account's balance computation and transaction history can reflect\n"
             "                       the spend.\n"
-            "2. \"toaddress\"         (string, required) The namecoin address to send funds to.\n"
+            "2. \"toaddress\"         (string, required) The chimaera address to send funds to.\n"
             "3. amount                (numeric or string, required) The amount in " + CURRENCY_UNIT + " (transaction fee is added on top).\n"
             "4. minconf               (numeric, optional, default=1) Only use funds with at least this many confirmations.\n"
             "5. \"comment\"           (string, optional) A comment used to store what the transaction is for. \n"
@@ -966,11 +966,11 @@ UniValue sendfrom(const JSONRPCRequest& request)
             "\"txid\"                 (string) The transaction id.\n"
             "\nExamples:\n"
             "\nSend 0.01 " + CURRENCY_UNIT + " from the default account to the address, must have at least 1 confirmation\n"
-            + HelpExampleCli("sendfrom", "\"\" \"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\" 0.01") +
+            + HelpExampleCli("sendfrom", "\"\" \"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.01") +
             "\nSend 0.01 from the tabby account to the given address, funds must have at least 6 confirmations\n"
-            + HelpExampleCli("sendfrom", "\"tabby\" \"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\" 0.01 6 \"donation\" \"seans outpost\"") +
+            + HelpExampleCli("sendfrom", "\"tabby\" \"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.01 6 \"donation\" \"seans outpost\"") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("sendfrom", "\"tabby\", \"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\", 0.01, 6, \"donation\", \"seans outpost\"")
+            + HelpExampleRpc("sendfrom", "\"tabby\", \"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 0.01, 6, \"donation\", \"seans outpost\"")
         );
 
     ObserveSafeMode();
@@ -984,7 +984,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
     std::string strAccount = AccountFromValue(request.params[0]);
     CTxDestination dest = DecodeDestination(request.params[1].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
     }
     CAmount nAmount = AmountFromValue(request.params[2]);
     if (nAmount <= 0)
@@ -1030,14 +1030,14 @@ UniValue sendmany(const JSONRPCRequest& request)
             "1. \"fromaccount\"         (string, required) DEPRECATED. The account to send the funds from. Should be \"\" for the default account\n"
             "2. \"amounts\"             (string, required) A json object with addresses and amounts\n"
             "    {\n"
-            "      \"address\":amount   (numeric or string) The namecoin address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value\n"
+            "      \"address\":amount   (numeric or string) The chimaera address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value\n"
             "      ,...\n"
             "    }\n"
             "3. minconf                 (numeric, optional, default=1) Only use the balance confirmed at least this many times.\n"
             "4. \"comment\"             (string, optional) A comment\n"
             "5. subtractfeefrom         (array, optional) A json array with addresses.\n"
             "                           The fee will be equally deducted from the amount of each selected address.\n"
-            "                           Those recipients will receive less namecoins than you enter in their corresponding amount field.\n"
+            "                           Those recipients will receive less CHI than you enter in their corresponding amount field.\n"
             "                           If no addresses are specified here, the sender pays the fee.\n"
             "    [\n"
             "      \"address\"          (string) Subtract fee from this address\n"
@@ -1054,13 +1054,13 @@ UniValue sendmany(const JSONRPCRequest& request)
             "                                    the number of addresses.\n"
             "\nExamples:\n"
             "\nSend two amounts to two different addresses:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\"") +
             "\nSend two amounts to two different addresses setting the confirmation and comment:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\" 6 \"testing\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\" 6 \"testing\"") +
             "\nSend two amounts to two different addresses, subtract fee from amount:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\" 1 \"\" \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\" 1 \"\" \"[\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\",\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("sendmany", "\"\", \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\", 6, \"testing\"")
+            + HelpExampleRpc("sendmany", "\"\", \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\", 6, \"testing\"")
         );
 
     ObserveSafeMode();
@@ -1113,7 +1113,7 @@ UniValue sendmany(const JSONRPCRequest& request)
     for (const std::string& name_ : keys) {
         CTxDestination dest = DecodeDestination(name_);
         if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Namecoin address: ") + name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Chimaera address: ") + name_);
         }
 
         if (destinations.count(dest)) {
@@ -1176,26 +1176,26 @@ UniValue addmultisigaddress(const JSONRPCRequest& request)
     {
         std::string msg = "addmultisigaddress nrequired [\"key\",...] ( \"account\" )\n"
             "\nAdd a nrequired-to-sign multisignature address to the wallet. Requires a new wallet backup.\n"
-            "Each key is a Namecoin address or hex-encoded public key.\n"
+            "Each key is a Chimaera address or hex-encoded public key.\n"
             "If 'account' is specified (DEPRECATED), assign address to that account.\n"
 
             "\nArguments:\n"
             "1. nrequired        (numeric, required) The number of required signatures out of the n keys or addresses.\n"
-            "2. \"keys\"         (string, required) A json array of namecoin addresses or hex-encoded public keys\n"
+            "2. \"keys\"         (string, required) A json array of chimaera addresses or hex-encoded public keys\n"
             "     [\n"
-            "       \"address\"  (string) namecoin address or hex-encoded public key\n"
+            "       \"address\"  (string) chimaera address or hex-encoded public key\n"
             "       ...,\n"
             "     ]\n"
             "3. \"account\"      (string, optional) DEPRECATED. An account to assign the addresses to.\n"
 
             "\nResult:\n"
-            "\"address\"         (string) A namecoin address associated with the keys.\n"
+            "\"address\"         (string) A chimaera address associated with the keys.\n"
 
             "\nExamples:\n"
             "\nAdd a multisig address from 2 addresses\n"
-            + HelpExampleCli("addmultisigaddress", "2 \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"") +
+            + HelpExampleCli("addmultisigaddress", "2 \"[\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\",\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"") +
             "\nAs json rpc call\n"
-            + HelpExampleRpc("addmultisigaddress", "2, \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"")
+            + HelpExampleRpc("addmultisigaddress", "2, \"[\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\",\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"")
         ;
         throw std::runtime_error(msg);
     }
@@ -1715,7 +1715,7 @@ UniValue listtransactions(const JSONRPCRequest& request)
             "  {\n"
             "    \"account\":\"accountname\",       (string) DEPRECATED. The account name associated with the transaction. \n"
             "                                                It will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The namecoin address of the transaction. Not present for \n"
+            "    \"address\":\"address\",    (string) The chimaera address of the transaction. Not present for \n"
             "                                                move transactions (category = move).\n"
             "    \"category\":\"send|receive|move\", (string) The transaction category. 'move' is a local (off blockchain)\n"
             "                                                transaction between accounts, and not associated with an address,\n"
@@ -1941,7 +1941,7 @@ UniValue listsinceblock(const JSONRPCRequest& request)
             "{\n"
             "  \"transactions\": [\n"
             "    \"account\":\"accountname\",       (string) DEPRECATED. The account name associated with the transaction. Will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The namecoin address of the transaction. Not present for move transactions (category = move).\n"
+            "    \"address\":\"address\",    (string) The chimaera address of the transaction. Not present for move transactions (category = move).\n"
             "    \"category\":\"send|receive\",     (string) The transaction category. 'send' has negative amounts, 'receive' has positive amounts.\n"
             "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_UNIT + ". This is negative for the 'send' category, and for the 'move' category for moves \n"
             "                                          outbound. It is positive for the 'receive' category, and for the 'move' category for inbound funds.\n"
@@ -2091,7 +2091,7 @@ UniValue gettransaction(const JSONRPCRequest& request)
             "  \"details\" : [\n"
             "    {\n"
             "      \"account\" : \"accountname\",      (string) DEPRECATED. The account name involved in the transaction, can be \"\" for the default account.\n"
-            "      \"address\" : \"address\",          (string) The namecoin address involved in the transaction\n"
+            "      \"address\" : \"address\",          (string) The chimaera address involved in the transaction\n"
             "      \"category\" : \"send|receive\",    (string) The category, either 'send' or 'receive'\n"
             "      \"amount\" : x.xxx,                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
             "      \"label\" : \"label\",              (string) A comment for the address/transaction, if any\n"
@@ -2292,7 +2292,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
         throw std::runtime_error(
             "walletpassphrase \"passphrase\" timeout\n"
             "\nStores the wallet decryption key in memory for 'timeout' seconds.\n"
-            "This is needed prior to performing transactions related to private keys such as sending namecoins\n"
+            "This is needed prior to performing transactions related to private keys such as sending CHI\n"
             "\nArguments:\n"
             "1. \"passphrase\"     (string, required) The wallet passphrase\n"
             "2. timeout            (numeric, required) The time to keep the decryption key in seconds.\n"
@@ -2457,7 +2457,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
             "\nExamples:\n"
             "\nEncrypt your wallet\n"
             + HelpExampleCli("encryptwallet", "\"my pass phrase\"") +
-            "\nNow set the passphrase to use the wallet, such as for signing or sending namecoin\n"
+            "\nNow set the passphrase to use the wallet, such as for signing or sending CHI\n"
             + HelpExampleCli("walletpassphrase", "\"my pass phrase\"") +
             "\nNow we can do something like sign\n"
             + HelpExampleCli("signmessage", "\"address\" \"test message\"") +
@@ -2495,7 +2495,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys. So:
     StartShutdown();
-    return "wallet encrypted; Namecoin server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
+    return "wallet encrypted; Chimaera server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
 }
 
 UniValue lockunspent(const JSONRPCRequest& request)
@@ -2511,7 +2511,7 @@ UniValue lockunspent(const JSONRPCRequest& request)
             "\nUpdates list of temporarily unspendable outputs.\n"
             "Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.\n"
             "If no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.\n"
-            "A locked transaction output will not be chosen by automatic coin selection, when spending namecoins.\n"
+            "A locked transaction output will not be chosen by automatic coin selection, when spending CHI.\n"
             "Locks are stored in memory only. Nodes start with zero locked outputs, and the locked output list\n"
             "is always cleared (by virtue of process exit) when a node stops or fails.\n"
             "Also see the listunspent call\n"
@@ -2853,9 +2853,9 @@ UniValue listunspent(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. minconf          (numeric, optional, default=1) The minimum confirmations to filter\n"
             "2. maxconf          (numeric, optional, default=9999999) The maximum confirmations to filter\n"
-            "3. \"addresses\"      (string) A json array of namecoin addresses to filter\n"
+            "3. \"addresses\"      (string) A json array of chimaera addresses to filter\n"
             "    [\n"
-            "      \"address\"     (string) namecoin address\n"
+            "      \"address\"     (string) chimaera address\n"
             "      ,...\n"
             "    ]\n"
             "4. include_unsafe (bool, optional, default=true) Include outputs that are not safe to spend\n"
@@ -2872,7 +2872,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             "  {\n"
             "    \"txid\" : \"txid\",          (string) the transaction id \n"
             "    \"vout\" : n,               (numeric) the vout value\n"
-            "    \"address\" : \"address\",    (string) the namecoin address\n"
+            "    \"address\" : \"address\",    (string) the chimaera address\n"
             "    \"account\" : \"account\",    (string) DEPRECATED. The associated account, or \"\" for the default account\n"
             "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
             "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
@@ -2889,8 +2889,8 @@ UniValue listunspent(const JSONRPCRequest& request)
 
             "\nExamples\n"
             + HelpExampleCli("listunspent", "")
-            + HelpExampleCli("listunspent", "6 9999999 \"[\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\",\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\"]\"")
-            + HelpExampleRpc("listunspent", "6, 9999999 \"[\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\",\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\"]\"")
+            + HelpExampleCli("listunspent", "6 9999999 \"[\\\"CZDygWaDAfC3umFjcZVJZ2jpuVLd9n6VWg\\\",\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"")
+            + HelpExampleRpc("listunspent", "6, 9999999 \"[\\\"CZDygWaDAfC3umFjcZVJZ2jpuVLd9n6VWg\\\",\\\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"")
             + HelpExampleCli("listunspent", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
             + HelpExampleRpc("listunspent", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
         );
@@ -2917,7 +2917,7 @@ UniValue listunspent(const JSONRPCRequest& request)
             const UniValue& input = inputs[idx];
             CTxDestination dest = DecodeDestination(input.get_str());
             if (!IsValidDestination(dest)) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Namecoin address: ") + input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Chimaera address: ") + input.get_str());
             }
             if (!destinations.insert(dest).second) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());
@@ -3529,11 +3529,11 @@ static const CRPCCommand commands[] =
 
     { "generating",         "generate",                 &generate,                 {"nblocks","maxtries"} },
 
-    // Namecoin-specific wallet calls.
-    { "namecoin",           "name_list",                &name_list,                {"name"} },
-    { "namecoin",           "name_register",            &name_register,            {"name","value","toaddress"} },
-    { "namecoin",           "name_update",              &name_update,              {"name","value","toaddress"} },
-    { "namecoin",           "sendtoname",               &sendtoname,               {"name","amount","comment","comment_to","subtractfeefromamount"} },
+    // Chimaera-specific wallet calls.
+    { "chimaera",           "name_list",                &name_list,                {"name"} },
+    { "chimaera",           "name_register",            &name_register,            {"name","value","toaddress"} },
+    { "chimaera",           "name_update",              &name_update,              {"name","value","toaddress"} },
+    { "chimaera",           "sendtoname",               &sendtoname,               {"name","amount","comment","comment_to","subtractfeefromamount"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)

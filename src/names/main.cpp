@@ -321,10 +321,10 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   if (!tx.IsNamecoin ())
     {
       if (nameIn != -1)
-        return state.Invalid (error ("%s: non-Namecoin tx %s has name inputs",
+        return state.Invalid (error ("%s: non-Chimaera tx %s has name inputs",
                                      __func__, txid));
       if (nameOut != -1)
-        return state.Invalid (error ("%s: non-Namecoin tx %s at height %u"
+        return state.Invalid (error ("%s: non-Chimaera tx %s at height %u"
                                      " has name outputs",
                                      __func__, txid, nHeight));
 
@@ -333,7 +333,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   assert (tx.IsNamecoin ());
   if (nameOut == -1)
-    return state.Invalid (error ("%s: Namecoin tx %s has no name outputs",
+    return state.Invalid (error ("%s: Chimaera tx %s has no name outputs",
                                  __func__, txid));
 
   /* Reject "greedy names".  */

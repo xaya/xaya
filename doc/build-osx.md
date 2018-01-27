@@ -40,17 +40,17 @@ from the root of the repository.
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-Build Namecoin Core
+Build Chimaera Erebus
 ------------------------
 
-1. Clone the namecoin source code and cd into `namecoin-core`
+1. Clone the Chimaera source code and cd into `proto-chi`
 
-        git clone https://github.com/namecoin/namecoin-core
-        cd namecoin-core
+        git clone https://github.com/chimaera/proto-chi.git
+        cd proto-chi
 
-2.  Build namecoin-core:
+2.  Build chimaera:
 
-    Configure and build the headless namecoin binaries as well as the GUI (if Qt is found).
+    Configure and build the headless chimaera binaries as well as the GUI (if Qt is found).
 
     You can disable the GUI build by passing `--without-gui` to configure.
 
@@ -69,37 +69,37 @@ Build Namecoin Core
 Running
 -------
 
-Namecoin Core is now available at `./src/namecoind`
+Chimaera is now available at `./src/chimaerad`
 
 Before running, it's recommended you create an RPC configuration file.
 
-    echo -e "rpcuser=namecoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
+    echo -e "rpcuser=chimaerarpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Chimaera/chimaera.conf"
 
-    chmod 600 "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
+    chmod 600 "/Users/${USER}/Library/Application Support/Chimaera/chimaera.conf"
 
-The first time you run namecoind, it will start downloading the blockchain. This process could take several hours.
+The first time you run chimaerad, it will start downloading the blockchain. This process could take several hours.
 
 You can monitor the download process by looking at the debug.log file:
 
-    tail -f $HOME/Library/Application\ Support/Namecoin/debug.log
+    tail -f $HOME/Library/Application\ Support/Chimaera/debug.log
 
 Other commands:
 -------
 
-    ./src/namecoind -daemon # Starts the namecoin daemon.
-    ./src/namecoin-cli --help # Outputs a list of command-line options.
-    ./src/namecoin-cli help # Outputs a list of RPC commands when the daemon is running.
+    ./src/chimaerad -daemon # Starts the chimaera daemon.
+    ./src/chimaera-cli --help # Outputs a list of command-line options.
+    ./src/chimaera-cli help # Outputs a list of RPC commands when the daemon is running.
 
 Using Qt Creator as IDE
 ------------------------
-You can use Qt Creator as an IDE, for namecoin development.
+You can use Qt Creator as an IDE, for chimaera development.
 Download and install the community edition of [Qt Creator](https://www.qt.io/download/).
 Uncheck everything except Qt Creator during the installation process.
 
 1. Make sure you installed everything through Homebrew mentioned above
 2. Do a proper ./configure --enable-debug
 3. In Qt Creator do "New Project" -> Import Project -> Import Existing Project
-4. Enter "namecoin-qt" as project name, enter src/qt as location
+4. Enter "chimaera-qt" as project name, enter src/qt as location
 5. Leave the file selection as it is
 6. Confirm the "summary page"
 7. In the "Projects" tab select "Manage Kits..."
