@@ -105,9 +105,6 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
 {
   AssertLockHeld (pool.cs);
 
-  if (!tx.IsNamecoin ())
-    return;
-
   for (const auto& txout : tx.vout)
     {
       const CNameScript nameOp(txout.scriptPubKey);
@@ -185,9 +182,6 @@ bool
 CNameMemPool::checkTx (const CTransaction& tx) const
 {
   AssertLockHeld (pool.cs);
-
-  if (!tx.IsNamecoin ())
-    return true;
 
   /* In principle, multiple name_updates could be performed within the
      mempool at once (building upon each other).  This is disallowed, though,
@@ -313,28 +307,16 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         }
     }
 
-  /* Check that no name inputs/outputs are present for a non-Namecoin tx.
-     If that's the case, all is fine.  For a Namecoin tx instead, there
-     should be at least an output (for NAME_REGISTER, no inputs are
-     expected).  */
-
-  if (!tx.IsNamecoin ())
+  /* If there are no name outputs, then this transaction is not a name
+     operation.  In this case, there should also be no name inputs, but
+     otherwise the validation is done.  */
+  if (nameOut == -1)
     {
       if (nameIn != -1)
-        return state.Invalid (error ("%s: non-Chimaera tx %s has name inputs",
+        return state.Invalid (error ("%s: tx %s has name inputs but no outputs",
                                      __func__, txid));
-      if (nameOut != -1)
-        return state.Invalid (error ("%s: non-Chimaera tx %s at height %u"
-                                     " has name outputs",
-                                     __func__, txid, nHeight));
-
       return true;
     }
-
-  assert (tx.IsNamecoin ());
-  if (nameOut == -1)
-    return state.Invalid (error ("%s: Chimaera tx %s has no name outputs",
-                                 __func__, txid));
 
   /* Reject "greedy names".  */
   const Consensus::Params& params = Params ().GetConsensus ();
@@ -407,8 +389,6 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
                       CCoinsViewCache& view, CBlockUndo& undo)
 {
   assert (nHeight != MEMPOOL_HEIGHT);
-  if (!tx.IsNamecoin ())
-    return;
 
   /* Changes are encoded in the outputs.  We don't have to do any checks,
      so simply apply all these.  */

@@ -265,10 +265,7 @@ class CTransaction
 {
 public:
     // Default transaction version.
-    // FIXME: Upstream Bitcoin has default version set to 2 already.  Do this
-    // once we forked to make the tx version irrelevant for Namecoin.
-    static const int32_t CURRENT_VERSION=1;
-    static const int32_t NAMECOIN_VERSION=0x7100;
+    static const int32_t CURRENT_VERSION=2;
 
     // Changing the default transaction version requires a two step process: first
     // adapting relay policy by bumping MAX_STANDARD_VERSION, and then later date
@@ -336,11 +333,6 @@ public:
     bool IsCoinBase() const
     {
         return (vin.size() == 1 && vin[0].prevout.IsNull());
-    }
-
-    bool IsNamecoin() const
-    {
-        return nVersion == NAMECOIN_VERSION;
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
@@ -412,12 +404,6 @@ struct CMutableTransaction
         }
         return false;
     }
-
-    /**
-     * Turn this into a Namecoin version transaction.  It is assumed
-     * that it isn't already.
-     */
-    void SetNamecoin();
 };
 
 typedef std::shared_ptr<const CTransaction> CTransactionRef;

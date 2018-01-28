@@ -40,19 +40,14 @@ CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFe
     nModFeesWithAncestors = nFee;
     nSigOpCostWithAncestors = sigOpCost;
 
-    if (_tx->IsNamecoin())
+    for (const auto& txOut : _tx->vout)
     {
-        for (const auto& txOut : _tx->vout)
-        {
-            const CNameScript curNameOp(txOut.scriptPubKey);
-            if (!curNameOp.isNameOp())
-                continue;
+        const CNameScript curNameOp(txOut.scriptPubKey);
+        if (!curNameOp.isNameOp())
+            continue;
 
-            assert(!nameOp.isNameOp());
-            nameOp = curNameOp;
-        }
-
-        assert(nameOp.isNameOp());
+        assert(!nameOp.isNameOp());
+        nameOp = curNameOp;
     }
 }
 

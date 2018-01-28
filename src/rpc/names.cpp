@@ -453,7 +453,7 @@ name_pending (const JSONRPCRequest& request)
        i != txHashes.end (); ++i)
     {
       std::shared_ptr<const CTransaction> tx = mempool.get (*i);
-      if (!tx || !tx->IsNamecoin ())
+      if (!tx)
         continue;
 
       for (const auto& txOut : tx->vout)
@@ -544,7 +544,6 @@ namerawtransaction (const JSONRPCRequest& request)
   CMutableTransaction mtx;
   if (!DecodeHexTx (mtx, request.params[0].get_str (), true))
     throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "TX decode failed");
-  mtx.SetNamecoin ();
 
   const size_t nOut = request.params[1].get_int ();
   if (nOut >= mtx.vout.size ())

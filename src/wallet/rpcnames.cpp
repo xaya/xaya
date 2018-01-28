@@ -63,8 +63,6 @@ name_list (const JSONRPCRequest& request)
   for (const auto& item : pwallet->mapWallet)
     {
       const CWalletTx& tx = item.second;
-      if (!tx.tx->IsNamecoin ())
-        continue;
 
       CNameScript nameOp;
       int nOut = -1;

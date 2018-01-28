@@ -473,8 +473,8 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const COutPoint inRegister = addTestCoin (scrRegister, 100000, view);
   const COutPoint inUpdate = addTestCoin (scrUpdate, 100000, view);
 
-  /* ****************************************************** */
-  /* Try out the Namecoin / non-Namecoin tx version check.  */
+  /* ************************************************** */
+  /* General checks for name/non-name in- and outputs.  */
 
   CValidationState state;
   CMutableTransaction mtx;
@@ -485,24 +485,17 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vout.push_back (CTxOut (COIN, addr));
   const CTransaction baseTx(mtx);
 
-  /* Non-name tx should be non-Namecoin version.  */
+  /* Transaction without name in- and outputs is fine.  */
   BOOST_CHECK (CheckNameTransaction (baseTx, 200000, view, state));
-  mtx.SetNamecoin ();
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
 
-  /* Name tx should be Namecoin version.  */
+  /* If there are name inputs, there must also be outputs.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vin.push_back (CTxIn (inRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
-  mtx.SetNamecoin ();
-  mtx.vin.push_back (CTxIn (inUpdate));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
 
   /* Duplicate name outs are not allowed.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
-  BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
-  mtx.SetNamecoin ();
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state));
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state));
@@ -524,7 +517,6 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   /* Check update of UPDATE output.  */
   mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, viewUpd, state));
   mtx.vin.push_back (CTxIn (inUpdate));
@@ -544,7 +536,6 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
 
   /* Value length limits.  */
   mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
   mtx.vin.push_back (CTxIn (inUpdate));
   scr = CNameScript::buildNameUpdate (addr, name1, tooLongValue);
   mtx.vout.push_back (CTxOut (COIN, scr));
@@ -564,7 +555,6 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* Name exists already.  */
   viewClean.SetName (name1, data1, false);
   mtx = CMutableTransaction (baseTx);
-  mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
   BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state));
 
@@ -606,7 +596,6 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
      ApplyNameTransaction and not validation.  */
 
   CMutableTransaction mtx;
-  mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
   ApplyNameTransaction (mtx, 200, view, undo);
   BOOST_CHECK (view.GetName (name, data));
@@ -667,24 +656,19 @@ BOOST_AUTO_TEST_CASE (name_mempool)
      the mempool acceptance and not validation.  */
 
   CMutableTransaction txReg1;
-  txReg1.SetNamecoin ();
   txReg1.vout.push_back (CTxOut (COIN, reg1));
   CMutableTransaction txReg2;
-  txReg2.SetNamecoin ();
   txReg2.vout.push_back (CTxOut (COIN, reg2));
 
   CMutableTransaction txUpd1;
-  txUpd1.SetNamecoin ();
   txUpd1.vout.push_back (CTxOut (COIN, upd1));
   CMutableTransaction txUpd2;
-  txUpd2.SetNamecoin ();
   txUpd2.vout.push_back (CTxOut (COIN, upd2));
 
   /* Build an invalid transaction.  It should not crash (assert fail)
      the mempool check.  */
 
   CMutableTransaction txInvalid;
-  txInvalid.SetNamecoin ();
   mempool.checkNameOps (txInvalid);
 
   txInvalid.vout.push_back (CTxOut (COIN, reg1));
