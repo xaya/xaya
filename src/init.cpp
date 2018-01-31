@@ -510,7 +510,7 @@ std::string HelpMessage(HelpMessageMode mode)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/chimaera/proto-chi>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/chimaera/chimaera>";
     const std::string URL_WEBSITE = "<https://chimaera.io/>";
     // todo: remove urls from translations on next change
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR) + " ") + "\n" +
