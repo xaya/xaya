@@ -22,7 +22,7 @@ packages:
 - "ca-certificates"
 - "python"
 remotes:
-- "url": "https://github.com/chimaera/proto-chi.git"
+- "url": "https://github.com/chimaera/chimaera.git"
   "dir": "chimaera"
 files: []
 script: |

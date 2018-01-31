@@ -43,10 +43,10 @@ from the root of the repository.
 Build Chimaera Erebus
 ------------------------
 
-1. Clone the Chimaera source code and cd into `proto-chi`
+1. Clone the Chimaera source code and cd into `chimaera`
 
-        git clone https://github.com/chimaera/proto-chi.git
-        cd proto-chi
+        git clone https://github.com/chimaera/chimaera.git
+        cd chimaera
 
 2.  Build chimaera:
 

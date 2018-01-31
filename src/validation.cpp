@@ -1769,7 +1769,7 @@ static bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockInd
     int64_t nTime1 = GetTimeMicros(); nTimeCheck += nTime1 - nTimeStart;
     LogPrint(BCLog::BENCH, "    - Sanity checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime1 - nTimeStart), nTimeCheck * MICRO, nTimeCheck * MILLI / nBlocksTotal);
 
-    // Proto-CHI has BIP34 activated from the start, so there's no need for the
+    // Chimaera has BIP34 activated from the start, so there's no need for the
     // BIP30 checks.
 
     // Start enforcing BIP68 (sequence locks) and BIP112 (CHECKSEQUENCEVERIFY) using versionbits logic.
