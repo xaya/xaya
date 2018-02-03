@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,9 +20,10 @@ class NameMultisigTest (NameTestFramework):
     # Construct a 2-of-2 multisig address shared between two nodes.
     pubkeyA = self.getNewPubkey (0)
     pubkeyB = self.getNewPubkey (1)
-    p2sh = self.nodes[0].addmultisigaddress (2, [pubkeyA, pubkeyB])
-    p2sh_ = self.nodes[1].addmultisigaddress (2, [pubkeyA, pubkeyB])
-    assert_equal (p2sh, p2sh_)
+    multisig = self.nodes[0].addmultisigaddress (2, [pubkeyA, pubkeyB])
+    multisig_ = self.nodes[1].addmultisigaddress (2, [pubkeyA, pubkeyB])
+    assert_equal (multisig, multisig_)
+    p2sh = multisig['address']
 
     # Register a new name to that address.
     new = self.nodes[0].name_new ("name")
