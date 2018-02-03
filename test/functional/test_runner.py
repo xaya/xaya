@@ -175,11 +175,11 @@ EXTENDED_SCRIPTS = [
 
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
-    'p2p-segwit.py',
-    'segwit.py',
-    'bip68-112-113-p2p.py',
-    'p2p-versionbits-warning.py',
-    'nulldummy.py',
+    'feature_csv_activation.py',
+    'feature_nulldummy.py',
+    'feature_segwit.py',
+    'feature_versionbits_warning.py',
+    'p2p_segwit.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests
@@ -489,21 +489,15 @@ class TestResult():
 
 
 def check_script_prefixes():
-    """Check that at most a handful of the
-       test scripts don't start with one of the allowed name prefixes."""
+    """Check that test scripts start with one of the allowed name prefixes."""
 
-    # LEEWAY is provided as a transition measure, so that pull-requests
-    # that introduce new tests that don't conform with the naming
-    # convention don't immediately cause the tests to fail.
-    LEEWAY = 10
-
-    good_prefixes_re = re.compile("(example|feature|interface|mempool|mining|p2p|rpc|wallet)_")
+    good_prefixes_re = re.compile("(example|feature|interface|mempool|mining|p2p|rpc|wallet|auxpow)_")
     bad_script_names = [script for script in ALL_SCRIPTS if good_prefixes_re.match(script) is None]
 
-    if len(bad_script_names) > 0:
-        print("INFO: %d tests not meeting naming conventions:" % (len(bad_script_names)))
+    if bad_script_names:
+        print("%sERROR:%s %d tests not meeting naming conventions:" % (BOLD[1], BOLD[0], len(bad_script_names)))
         print("  %s" % ("\n  ".join(sorted(bad_script_names))))
-    assert len(bad_script_names) <= LEEWAY, "Too many tests not following naming convention! (%d found, maximum: %d)" % (len(bad_script_names), LEEWAY)
+        raise AssertionError("Some tests are not following naming convention!")
 
 
 def check_script_list(src_dir):
