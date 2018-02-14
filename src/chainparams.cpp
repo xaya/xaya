@@ -147,7 +147,7 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 2100000;
-        consensus.initialSubsidy = 10 * COIN;
+        consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;
@@ -245,7 +245,7 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 2100000;
-        consensus.initialSubsidy = 10 * COIN;
+        consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;

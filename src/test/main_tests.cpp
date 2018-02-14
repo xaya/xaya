@@ -15,7 +15,7 @@ BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
 namespace
 {
-constexpr CAmount nInitialSubsidy = 10 * COIN;
+constexpr CAmount nInitialSubsidy = 1 * COIN;
 } // anonymous namespace
 
 static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
         nSum += nSubsidy * 10000;
         BOOST_CHECK(MoneyRange(nSum));
     }
-    BOOST_CHECK_EQUAL(nSum, 4199999972700000ULL);
+    BOOST_CHECK_EQUAL(nSum, 419999974800000ULL);
 }
 
 bool ReturnFalse() { return false; }
