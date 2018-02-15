@@ -388,7 +388,6 @@ void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
 
     pollShutdownTimer = new QTimer(window);
     connect(pollShutdownTimer, SIGNAL(timeout()), window, SLOT(detectShutdown()));
-    pollShutdownTimer->start(200);
 }
 
 void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
@@ -515,14 +514,16 @@ void BitcoinApplication::initializeResult(bool success)
                          window, SLOT(message(QString,QString,unsigned int)));
         QTimer::singleShot(100, paymentServer, SLOT(uiReady()));
 #endif
+        pollShutdownTimer->start(200);
     } else {
-        quit(); // Exit main loop
+        Q_EMIT splashFinished(window); // Make sure splash screen doesn't stick around during shutdown
+        quit(); // Exit first main loop invocation
     }
 }
 
 void BitcoinApplication::shutdownResult()
 {
-    quit(); // Exit main loop after shutdown finished
+    quit(); // Exit second main loop invocation after shutdown finished
 }
 
 void BitcoinApplication::handleRunawayException(const QString &message)
@@ -705,7 +706,7 @@ int main(int argc, char *argv[])
         if (BitcoinCore::baseInitialize()) {
             app.requestInitialize();
 #if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
-            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(QObject::tr(PACKAGE_NAME)), (HWND)app.getMainWinId());
+            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(QObject::tr(PACKAGE_NAME)), static_cast<HWND>(app.getMainWinId()));
 #endif
             app.exec();
             app.requestShutdown();
