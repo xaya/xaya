@@ -34,7 +34,6 @@
 #include <future>
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/thread.hpp>
 
 std::vector<CWalletRef> vpwallets;
 /** Transaction fee set by the user */
@@ -974,7 +973,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
     if (!strCmd.empty())
     {
         boost::replace_all(strCmd, "%s", wtxIn.GetHash().GetHex());
-        boost::thread t(runCommand, strCmd); // thread runs free
+        std::thread t(runCommand, strCmd);
+        t.detach(); // thread runs free
     }
 
     return true;
@@ -3090,7 +3090,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
         {
             // Broadcast
             if (!wtx.AcceptToMemoryPool(maxTxFee, state)) {
-                LogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", state.GetRejectReason());
+                LogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", FormatStateMessage(state));
                 // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
             } else {
                 wtx.RelayWalletTransaction(connman);
@@ -4141,11 +4141,6 @@ CWalletKey::CWalletKey(int64_t nExpires)
 
 bool CWalletTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& state)
 {
-    // Quick check to avoid re-setting fInMempool to false
-    if (mempool.exists(tx->GetHash())) {
-        return false;
-    }
-
     // We must set fInMempool here - while it will be re-set to true by the
     // entered-mempool callback, if we did not there would be a race where a
     // user could call sendmoney in a loop and hit spurious out of funds errors
@@ -4153,7 +4148,7 @@ bool CWalletTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& 
     // unavailable as we're not yet aware its in mempool.
     bool ret = ::AcceptToMemoryPool(mempool, state, tx, nullptr /* pfMissingInputs */,
                                 nullptr /* plTxnReplaced */, false /* bypass_limits */, nAbsurdFee);
-    fInMempool = ret;
+    fInMempool |= ret;
     return ret;
 }
 
