@@ -133,10 +133,10 @@ class AuxpowMiningTest (BitcoinTestFramework):
     addr1 = auxpow.getCoinbaseAddr (self.nodes[1], hash1)
     addr2 = auxpow.getCoinbaseAddr (self.nodes[1], hash2)
     assert addr1 != addr2
-    valid = self.nodes[0].validateaddress (addr1)
-    assert valid['ismine']
-    valid = self.nodes[0].validateaddress (addr2)
-    assert valid['ismine']
+    info = self.nodes[0].getaddressinfo (addr1)
+    assert info['ismine']
+    info = self.nodes[0].getaddressinfo (addr2)
+    assert info['ismine']
 
   def test_create_submit_auxblock (self):
     """

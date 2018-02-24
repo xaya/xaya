@@ -57,13 +57,13 @@ class NameMultisigTest (NameTestFramework):
     txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
 
     # Sign it partially.
-    partial = self.nodes[0].signrawtransaction (txRaw['hex'])
+    partial = self.nodes[0].signrawtransactionwithwallet (txRaw['hex'])
     assert not partial['complete']
     assert_raises_rpc_error (-26, None,
                              self.nodes[2].sendrawtransaction, partial['hex'])
 
     # Sign it fully and transmit it.
-    signed = self.nodes[1].signrawtransaction (partial['hex'])
+    signed = self.nodes[1].signrawtransactionwithwallet (partial['hex'])
     assert signed['complete']
     tx = signed['hex']
 
@@ -95,7 +95,7 @@ class NameMultisigTest (NameTestFramework):
     """
 
     addr = self.nodes[ind].getnewaddress ()
-    data = self.nodes[ind].validateaddress (addr)
+    data = self.nodes[ind].getaddressinfo (addr)
 
     return data['pubkey']
 
