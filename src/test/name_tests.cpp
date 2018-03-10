@@ -5,6 +5,7 @@
 #include <base58.h>
 #include <coins.h>
 #include <consensus/validation.h>
+#include <key_io.h>
 #include <names/main.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>

@@ -4,9 +4,9 @@
 
 #include <bloom.h>
 
-#include <base58.h>
 #include <clientversion.h>
 #include <key.h>
+#include <key_io.h>
 #include <merkleblock.h>
 #include <primitives/block.h>
 #include <random.h>
@@ -84,11 +84,8 @@ BOOST_AUTO_TEST_CASE(bloom_create_insert_serialize_with_tweak)
 
 BOOST_AUTO_TEST_CASE(bloom_create_insert_key)
 {
-    std::string strSecret = std::string("5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C");
-    CBitcoinSecret vchSecret;
-    BOOST_CHECK(vchSecret.SetString(strSecret));
-
-    CKey key = vchSecret.GetKey();
+    std::string strSecret = std::string("74kirqWPtTq6jbvNXxYPe5qhHxnSPZETVxpiyzKoFURcZqSV5Pa");
+    CKey key = DecodeSecret(strSecret);
     CPubKey pubkey = key.GetPubKey();
     std::vector<unsigned char> vchPubKey(pubkey.begin(), pubkey.end());
 

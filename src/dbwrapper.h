@@ -214,6 +214,9 @@ private:
     //! the database itself
     leveldb::DB* pdb;
 
+    //! the name of this database
+    std::string m_name;
+
     //! a key used for optional XOR-obfuscation of the database
     std::vector<unsigned char> obfuscate_key;
 
@@ -299,6 +302,9 @@ public:
     }
 
     bool WriteBatch(CDBBatch& batch, bool fSync = false);
+
+    // Get an estimate of LevelDB memory usage (in bytes).
+    size_t DynamicMemoryUsage() const;
 
     // not available for LevelDB; provide for compatibility with BDB
     bool Flush()

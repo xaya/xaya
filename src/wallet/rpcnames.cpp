@@ -1,10 +1,11 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "base58.h"
 #include "coins.h"
 #include "init.h"
+#include "key_io.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
