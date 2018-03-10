@@ -1631,7 +1631,8 @@ void CConnman::ThreadDNSAddressSeed()
             if (!resolveSource.SetInternal(host)) {
                 continue;
             }
-            if (LookupHost(host.c_str(), vIPs, 0, true))
+            unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
+            if (LookupHost(host.c_str(), vIPs, nMaxIPs, true))
             {
                 for (const CNetAddr& ip : vIPs)
                 {
@@ -1828,11 +1829,18 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             }
         }
 
+        addrman.ResolveCollisions();
+
         int64_t nANow = GetAdjustedTime();
         int nTries = 0;
         while (!interruptNet)
         {
-            CAddrInfo addr = addrman.Select(fFeeler);
+            CAddrInfo addr = addrman.SelectTriedCollision();
+
+            // SelectTriedCollision returns an invalid address if it is empty.
+            if (!fFeeler || !addr.IsValid()) {
+                addr = addrman.Select(fFeeler);
+            }
 
             // if we selected an invalid address, restart
             if (!addr.IsValid() || setConnected.count(addr.GetGroup()) || IsLocal(addr))
