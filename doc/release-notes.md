@@ -61,7 +61,8 @@ RPC changes
 
 ### Low-level changes
 
-- The `fundrawtransaction` rpc will reject the previously deprecated `reserveChangeKey` option.
+- The `createrawtransaction` RPC will now accept an array or dictionary (kept for compatibility) for the `outputs` parameter. This means the order of transaction outputs can be specified by the client.
+- The `fundrawtransaction` RPC will reject the previously deprecated `reserveChangeKey` option.
 
 External wallet files
 ---------------------
@@ -92,6 +93,10 @@ Low-level RPC changes
   now the empty string `""` instead of `"wallet.dat"`. If bitcoin is started
   with any `-wallet=<path>` options, there is no change in behavior, and the
   name of any wallet is just its `<path>` string.
+
+### Logging
+
+- The log timestamp format is now ISO 8601 (e.g. "2018-02-28T12:34:56Z").
 
 Credits
 =======
