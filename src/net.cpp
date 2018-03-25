@@ -42,12 +42,13 @@
 // We add a random period time (0 to 1 seconds) to feeler connections to prevent synchronization.
 #define FEELER_SLEEP_WINDOW 1
 
-#if !defined(HAVE_MSG_NOSIGNAL)
+// MSG_NOSIGNAL is not available on some platforms, if it doesn't exist define it as 0
+#if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
 #endif
 
 // MSG_DONTWAIT is not available on some platforms, if it doesn't exist define it as 0
-#if !defined(HAVE_MSG_DONTWAIT)
+#if !defined(MSG_DONTWAIT)
 #define MSG_DONTWAIT 0
 #endif
 
@@ -1954,7 +1955,7 @@ void CConnman::ThreadOpenAddedConnections()
         for (const AddedNodeInfo& info : vInfo) {
             if (!info.fConnected) {
                 if (!grant.TryAcquire()) {
-                    // If we've used up our semaphore and need a new one, lets not wait here since while we are waiting
+                    // If we've used up our semaphore and need a new one, let's not wait here since while we are waiting
                     // the addednodeinfo state might change.
                     break;
                 }

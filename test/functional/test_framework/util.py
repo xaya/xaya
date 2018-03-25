@@ -284,7 +284,7 @@ def rpc_url(datadir, i, rpchost=None):
 ################
 
 def initialize_datadir(dirname, n):
-    datadir = os.path.join(dirname, "node" + str(n))
+    datadir = get_datadir_path(dirname, n)
     if not os.path.isdir(datadir):
         os.makedirs(datadir)
     with open(os.path.join(datadir, "bitcoin.conf"), 'w', encoding='utf8') as f:
@@ -300,8 +300,7 @@ def initialize_datadir(dirname, n):
 def get_datadir_path(dirname, n):
     return os.path.join(dirname, "node" + str(n))
 
-def append_config(dirname, n, options):
-    datadir = get_datadir_path(dirname, n)
+def append_config(datadir, options):
     with open(os.path.join(datadir, "bitcoin.conf"), 'a', encoding='utf8') as f:
         for option in options:
             f.write(option + "\n")
@@ -340,20 +339,15 @@ def disconnect_nodes(from_connection, node_num):
     for peer_id in [peer['id'] for peer in from_connection.getpeerinfo() if "testnode%d" % node_num in peer['subver']]:
         from_connection.disconnectnode(nodeid=peer_id)
 
-    for _ in range(50):
-        if [peer['id'] for peer in from_connection.getpeerinfo() if "testnode%d" % node_num in peer['subver']] == []:
-            break
-        time.sleep(0.1)
-    else:
-        raise AssertionError("timed out waiting for disconnect")
+    # wait to disconnect
+    wait_until(lambda: [peer['id'] for peer in from_connection.getpeerinfo() if "testnode%d" % node_num in peer['subver']] == [], timeout=5)
 
 def connect_nodes(from_connection, node_num):
     ip_port = "127.0.0.1:" + str(p2p_port(node_num))
     from_connection.addnode(ip_port, "onetry")
     # poll until version handshake complete to avoid race conditions
     # with transaction relaying
-    while any(peer['version'] == 0 for peer in from_connection.getpeerinfo()):
-        time.sleep(0.1)
+    wait_until(lambda:  all(peer['version'] != 0 for peer in from_connection.getpeerinfo()))
 
 def connect_nodes_bi(nodes, a, b):
     connect_nodes(nodes[a], b)

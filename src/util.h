@@ -136,7 +136,7 @@ template<typename T, typename... Args> static inline void MarkUsed(const T& t, c
 
 // Be conservative when using LogPrintf/error or other things which
 // unconditionally log to debug.log! It should not be the case that an inbound
-// peer can fill up a users disk with debug.log entries.
+// peer can fill up a user's disk with debug.log entries.
 
 #ifdef USE_COVERAGE
 #define LogPrintf(...) do { MarkUsed(__VA_ARGS__); } while(0)
@@ -174,6 +174,7 @@ int RaiseFileDescriptorLimit(int nMinFD);
 void AllocateFileRange(FILE *file, unsigned int offset, unsigned int length);
 bool RenameOver(fs::path src, fs::path dest);
 bool LockDirectory(const fs::path& directory, const std::string lockfile_name, bool probe_only=false);
+bool DirIsWritable(const fs::path& directory);
 
 /** Release all directory locks. This is used for unit testing only, at runtime
  * the global destructor will take care of the locks.

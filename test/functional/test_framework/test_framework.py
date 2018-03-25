@@ -228,7 +228,7 @@ class BitcoinTestFramework():
         assert_equal(len(extra_args), num_nodes)
         assert_equal(len(binary), num_nodes)
         for i in range(num_nodes):
-            self.nodes.append(TestNode(i, self.options.tmpdir, rpchost=rpchost, timewait=timewait, binary=binary[i], stderr=None, mocktime=self.mocktime, coverage_dir=self.options.coveragedir, extra_conf=extra_confs[i], extra_args=extra_args[i], use_cli=self.options.usecli))
+            self.nodes.append(TestNode(i, get_datadir_path(self.options.tmpdir, i), rpchost=rpchost, timewait=timewait, binary=binary[i], stderr=None, mocktime=self.mocktime, coverage_dir=self.options.coveragedir, extra_conf=extra_confs[i], extra_args=extra_args[i], use_cli=self.options.usecli))
 
     def start_node(self, i, *args, **kwargs):
         """Start a bitcoind"""
@@ -281,27 +281,6 @@ class BitcoinTestFramework():
         self.stop_node(i)
         self.start_node(i, extra_args)
 
-    def assert_start_raises_init_error(self, i, extra_args=None, expected_msg=None, *args, **kwargs):
-        with tempfile.SpooledTemporaryFile(max_size=2**16) as log_stderr:
-            try:
-                self.start_node(i, extra_args, stderr=log_stderr, *args, **kwargs)
-                self.stop_node(i)
-            except Exception as e:
-                assert 'bitcoind exited' in str(e)  # node must have shutdown
-                self.nodes[i].running = False
-                self.nodes[i].process = None
-                if expected_msg is not None:
-                    log_stderr.seek(0)
-                    stderr = log_stderr.read().decode('utf-8')
-                    if expected_msg not in stderr:
-                        raise AssertionError("Expected error \"" + expected_msg + "\" not found in:\n" + stderr)
-            else:
-                if expected_msg is None:
-                    assert_msg = "bitcoind should have exited with an error"
-                else:
-                    assert_msg = "bitcoind should have exited with expected error " + expected_msg
-                raise AssertionError(assert_msg)
-
     def wait_for_node_exit(self, i, timeout):
         self.nodes[i].process.wait(timeout)
 
@@ -335,7 +314,7 @@ class BitcoinTestFramework():
         blockchain.  If the cached version of the blockchain is used without
         mocktime then the mempools will not sync due to IBD.
 
-        For backwared compatibility of the python scripts with previous
+        For backward compatibility of the python scripts with previous
         versions of the cache, this helper function sets mocktime to Jan 1,
         2014 + (201 * 10 * 60)"""
         self.mocktime = 1388534400 + (201 * 10 * 60)
@@ -400,7 +379,7 @@ class BitcoinTestFramework():
                 args = [os.getenv("BITCOIND", "bitcoind"), "-datadir=" + datadir]
                 if i > 0:
                     args.append("-connect=127.0.0.1:" + str(p2p_port(0)))
-                self.nodes.append(TestNode(i, self.options.cachedir, extra_conf=["bind=127.0.0.1"], extra_args=[],rpchost=None, timewait=None, binary=None, stderr=None, mocktime=self.mocktime, coverage_dir=None))
+                self.nodes.append(TestNode(i, get_datadir_path(self.options.cachedir, i), extra_conf=["bind=127.0.0.1"], extra_args=[],rpchost=None, timewait=None, binary=None, stderr=None, mocktime=self.mocktime, coverage_dir=None))
                 self.nodes[i].args = args
                 self.start_node(i)
 
