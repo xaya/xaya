@@ -1162,20 +1162,20 @@ static UniValue BIP9SoftForkDesc(const Consensus::Params& consensusParams, Conse
     UniValue rv(UniValue::VOBJ);
     const ThresholdState thresholdState = VersionBitsTipState(consensusParams, id);
     switch (thresholdState) {
-    case THRESHOLD_DEFINED: rv.pushKV("status", "defined"); break;
-    case THRESHOLD_STARTED: rv.pushKV("status", "started"); break;
-    case THRESHOLD_LOCKED_IN: rv.pushKV("status", "locked_in"); break;
-    case THRESHOLD_ACTIVE: rv.pushKV("status", "active"); break;
-    case THRESHOLD_FAILED: rv.pushKV("status", "failed"); break;
+    case ThresholdState::DEFINED: rv.pushKV("status", "defined"); break;
+    case ThresholdState::STARTED: rv.pushKV("status", "started"); break;
+    case ThresholdState::LOCKED_IN: rv.pushKV("status", "locked_in"); break;
+    case ThresholdState::ACTIVE: rv.pushKV("status", "active"); break;
+    case ThresholdState::FAILED: rv.pushKV("status", "failed"); break;
     }
-    if (THRESHOLD_STARTED == thresholdState)
+    if (ThresholdState::STARTED == thresholdState)
     {
         rv.pushKV("bit", consensusParams.vDeployments[id].bit);
     }
     rv.pushKV("startTime", consensusParams.vDeployments[id].nStartTime);
     rv.pushKV("timeout", consensusParams.vDeployments[id].nTimeout);
     rv.pushKV("since", VersionBitsTipStateSinceHeight(consensusParams, id));
-    if (THRESHOLD_STARTED == thresholdState)
+    if (ThresholdState::STARTED == thresholdState)
     {
         UniValue statsUV(UniValue::VOBJ);
         BIP9Stats statsStruct = VersionBitsTipStatistics(consensusParams, id);
@@ -1649,11 +1649,15 @@ UniValue savemempool(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
             "savemempool\n"
-            "\nDumps the mempool to disk.\n"
+            "\nDumps the mempool to disk. It will fail until the previous dump is fully loaded.\n"
             "\nExamples:\n"
             + HelpExampleCli("savemempool", "")
             + HelpExampleRpc("savemempool", "")
         );
+    }
+
+    if (!g_is_mempool_loaded) {
+        throw JSONRPCError(RPC_MISC_ERROR, "The mempool was not loaded yet");
     }
 
     if (!DumpMempool()) {
