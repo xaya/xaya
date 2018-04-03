@@ -454,8 +454,8 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const valtype name2 = ValtypeFromString ("test-name-2");
   const valtype value = ValtypeFromString ("my-value");
 
-  const valtype tooLongName(256, 'x');
-  const valtype tooLongValue(1024, 'x');
+  const valtype tooLongName(257, 'x');
+  const valtype tooLongValue(2049, 'x');
 
   const CScript addr = getTestAddress ();
 

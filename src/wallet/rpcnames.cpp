@@ -157,7 +157,7 @@ name_register (const JSONRPCRequest& request)
 
   const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
-  if (value.size () > MAX_VALUE_LENGTH_UI)
+  if (value.size () > MAX_VALUE_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
   /* Reject updates to a name for which the mempool already has
@@ -259,7 +259,7 @@ name_update (const JSONRPCRequest& request)
 
   const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
-  if (value.size () > MAX_VALUE_LENGTH_UI)
+  if (value.size () > MAX_VALUE_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
   /* Reject updates to a name for which the mempool already has

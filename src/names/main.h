@@ -25,13 +25,11 @@ class CTxMemPoolEntry;
 class CValidationState;
 
 /* Some constants defining name limits.  */
-static const unsigned MAX_VALUE_LENGTH = 1023;
-static const unsigned MAX_NAME_LENGTH = 255;
-static const unsigned MIN_FIRSTUPDATE_DEPTH = 12;
-static const unsigned MAX_VALUE_LENGTH_UI = 520;
+static constexpr unsigned MAX_VALUE_LENGTH = 2048;
+static constexpr unsigned MAX_NAME_LENGTH = 256;
 
 /** The amount of coins to lock in created transactions.  */
-static const CAmount NAME_LOCKED_AMOUNT = COIN / 100;
+static constexpr CAmount NAME_LOCKED_AMOUNT = COIN / 100;
 
 /* ************************************************************************** */
 /* CNameTxUndo.  */

@@ -18,14 +18,14 @@ class NameRegistrationTest (NameTestFramework):
     # too long values.
     addrA = self.nodes[0].getnewaddress ()
     txidA = self.nodes[0].name_register ("node-0", "value-0", addrA)
-    self.nodes[1].name_register ("node-1", "x" * 520)
+    self.nodes[1].name_register ("node-1", "x" * 2048)
     assert_raises_rpc_error (-8, 'value is too long',
                              self.nodes[0].name_register,
-                             "dummy name", "x" * 521)
-    self.nodes[0].name_register ("x" * 255, "value")
+                             "dummy name", "x" * 2049)
+    self.nodes[0].name_register ("x" * 256, "value")
     assert_raises_rpc_error (-8, 'name is too long',
                              self.nodes[0].name_register,
-                             "x" * 256, "dummy value")
+                             "x" * 257, "dummy value")
 
     # Check for exception with name_history and without -namehistory.
     assert_raises_rpc_error (-1, 'namehistory is not enabled',
@@ -46,7 +46,7 @@ class NameRegistrationTest (NameTestFramework):
     assert_equal (data['height'], 201)
 
     self.checkNameHistory (1, "node-0", ["value-0"])
-    self.checkNameHistory (1, "node-1", ["x" * 520])
+    self.checkNameHistory (1, "node-1", ["x" * 2048])
 
     # Check for disallowed registration when the name is active.
     self.checkName (1, "node-0", "value-0")
@@ -57,12 +57,12 @@ class NameRegistrationTest (NameTestFramework):
     self.nodes[0].name_register ("test-name", "test-value")
     self.generate (0, 1)
     assert_raises_rpc_error (-8, 'value is too long',
-                             self.nodes[0].name_update, "test-name", "x" * 521)
-    self.nodes[0].name_update ("test-name", "x" * 520)
+                             self.nodes[0].name_update, "test-name", "x" * 2049)
+    self.nodes[0].name_update ("test-name", "x" * 2048)
     self.checkName (0, "test-name", "test-value")
     self.generate (0, 1)
-    self.checkName (1, "test-name", "x" * 520)
-    self.checkNameHistory (1, "test-name", ["test-value", "x" * 520])
+    self.checkName (1, "test-name", "x" * 2048)
+    self.checkNameHistory (1, "test-name", ["test-value", "x" * 2048])
 
     addrB = self.nodes[1].getnewaddress ()
     self.nodes[0].name_update ("test-name", "sent", addrB)
@@ -73,7 +73,7 @@ class NameRegistrationTest (NameTestFramework):
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "updated")
     self.checkNameHistory (1, "test-name",
-                           ["test-value", "x" * 520, "sent", "updated"])
+                           ["test-value", "x" * 2048, "sent", "updated"])
 
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
@@ -88,7 +88,7 @@ class NameRegistrationTest (NameTestFramework):
                              "test-name", "new value")
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "value")
-    self.checkNameHistory (1, "test-name", ["test-value", "x" * 520, "sent",
+    self.checkNameHistory (1, "test-name", ["test-value", "x" * 2048, "sent",
                                             "updated", "value"])
     
     # Test that name updates are even possible with less balance in the wallet

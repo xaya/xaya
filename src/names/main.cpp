@@ -11,11 +11,19 @@
 #include <dbwrapper.h>
 #include <script/interpreter.h>
 #include <script/names.h>
+#include <script/script.h>
 #include <txmempool.h>
 #include <undo.h>
 #include <util.h>
 #include <utilstrencodings.h>
 #include <validation.h>
+
+/* Ensure that the name length fits to the script element size limit to avoid
+   a situation as in Namecoin where names can become unspendable.  */
+static_assert (MAX_VALUE_LENGTH <= MAX_SCRIPT_ELEMENT_SIZE,
+               "Maximum value size is too large for script element size");
+static_assert (MAX_NAME_LENGTH <= MAX_SCRIPT_ELEMENT_SIZE,
+               "Maximum name size is too large for script element size");
 
 /* ************************************************************************** */
 /* CNameTxUndo.  */
