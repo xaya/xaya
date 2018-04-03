@@ -531,9 +531,9 @@ def gen_return_txouts():
     script_pubkey = "6a4d0200"  # OP_RETURN OP_PUSH2 512 bytes
     for i in range(512):
         script_pubkey = script_pubkey + "01"
-    # concatenate 128 txouts of above script_pubkey which we'll insert before the txout for change
-    txouts = "81"
-    for k in range(128):
+    # concatenate 16 txouts of above script_pubkey which we'll insert before the txout for change
+    txouts = "11"
+    for k in range(16):
         # add txout value
         txouts = txouts + "0000000000000000"
         # add length of script_pubkey
@@ -571,9 +571,9 @@ def create_lots_of_big_transactions(node, txouts, utxos, num, fee):
     return txids
 
 def mine_large_block(node, utxos=None):
-    # generate a 66k transaction,
-    # and 14 of them is close to the 1MB block limit
-    num = 14
+    # generate a 8k transaction,
+    # and 10 of them is close to the 100k block limit
+    num = 10
     txouts = gen_return_txouts()
     utxos = utxos if utxos is not None else []
     if len(utxos) < num:
