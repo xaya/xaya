@@ -146,14 +146,14 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
-        consensus.nSubsidyHalvingInterval = 2100000;
+        consensus.nSubsidyHalvingInterval = 4200000;
         consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 1 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
@@ -244,14 +244,14 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        consensus.nSubsidyHalvingInterval = 2100000;
+        consensus.nSubsidyHalvingInterval = 4200000;
         consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 1 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
@@ -346,7 +346,7 @@ public:
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowTargetSpacing = 1 * 30;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)
