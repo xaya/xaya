@@ -24,11 +24,11 @@ namespace
 // FIXME: Update this in time before launch.
 constexpr const char pszTimestamp[] = "Decentralised Virtual Worlds - Chimaera";
 
-/* Premined amount is 333,333,333 CHI.  This is the maximum possible number of
+/* Premined amount is 222,222,222 CHI.  This is the maximum possible number of
    coins needed in case everything is sold in the ICO.  If this is not the case
    and we need to reduce the coin supply, excessive coins will be burnt by
    sending to an unspendable OP_RETURN output.  */
-constexpr CAmount premineAmount = 333333333 * COIN;
+constexpr CAmount premineAmount = 222222222 * COIN;
 
 /*
 The premine on testnet and regtest is sent to a 1-of-2 multisig address.
@@ -120,6 +120,7 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
 
   std::cout << "Found nonce: " << block.nNonce << std::endl;
   std::cout << "Block hash: " << block.GetHash ().GetHex () << std::endl;
+  std::cout << "Merkle root: " << block.hashMerkleRoot.GetHex () << std::endl;
   exit (EXIT_SUCCESS);
 }
 
@@ -191,11 +192,11 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock (1303000001, 56433, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1303000001, 310776, 0x1e0ffff0,
                                       uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656"));
-        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
+        assert(consensus.hashGenesisBlock == uint256S("f789d04cae99ae95d9961f3fdb6e4f0600a9c1e2116a6715fed18d691be84ea4"));
+        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         // Note that of those with the service bits flag, most only support a subset of possible options
         vSeeds.emplace_back("namecoindnsseed.digi-masters.com", false);
@@ -284,11 +285,11 @@ public:
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1296688602, 81223, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1296688602, 1466517, 0x1e0ffff0,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578"));
-        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
+        assert(consensus.hashGenesisBlock == uint256S("439ad03576282227a2a802dc816cc8d040c5cb66385719b0c36f58d3c3ae6fd1"));
+        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -375,11 +376,11 @@ public:
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1296688602, 3, 0x207fffff,
+        genesis = CreateGenesisBlock (1296688602, 0, 0x207fffff,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619"));
-        assert(genesis.hashMerkleRoot == uint256S("afd04a8df97e3039251746d739de39167eb25471491c9b5a3aef7315a72051d7"));
+        assert(consensus.hashGenesisBlock == uint256S("b2978ea31a9926837e3855fca6d01a2d3c7fc36d1138762145daa7075d48daca"));
+        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.

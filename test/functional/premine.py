@@ -10,7 +10,7 @@ from test_framework.util import *
 
 import codecs
 
-PREMINE_VALUE = Decimal ('333333333')
+PREMINE_VALUE = Decimal ('222222222')
 PREMINE_ADDRESS = 'dHNvNaqcD7XPDnoRjAoyfcMpHRi5upJD7p'
 PREMINE_PRIVKEYS = ['b69iyynFSWcU54LqXisbbqZ8uTJ7Dawk3V3yhht6ykxgttqMQFjb',
                     'b3fgAKVQpMj24gbuh6DiXVwCCjCbo1cWiZC2fXgWEU9nXy6sdxD5']

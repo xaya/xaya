@@ -33,6 +33,8 @@ from test_framework.util import (
     assert_is_hash_string,
 )
 
+PREMINE_VALUE = Decimal ('222222222')
+
 class BlockchainTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
@@ -133,7 +135,7 @@ class BlockchainTest(BitcoinTestFramework):
         node = self.nodes[0]
         res = node.gettxoutsetinfo()
 
-        assert_equal(res['total_amount'], Decimal('8725.00000000') + Decimal('333333333'))
+        assert_equal(res['total_amount'], Decimal('8725.00000000') + PREMINE_VALUE)
         assert_equal(res['transactions'], 201)
         assert_equal(res['height'], 200)
         assert_equal(res['txouts'], 201)
@@ -151,7 +153,7 @@ class BlockchainTest(BitcoinTestFramework):
 
         res2 = node.gettxoutsetinfo()
         assert_equal(res2['transactions'], 1)
-        assert_equal(res2['total_amount'], Decimal('333333333'))
+        assert_equal(res2['total_amount'], PREMINE_VALUE)
         assert_equal(res2['height'], 0)
         assert_equal(res2['txouts'], 1)
         assert_equal(res2['bogosize'], 73),
