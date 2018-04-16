@@ -3,16 +3,52 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <wallet/init.h>
-
 #include <chainparams.h>
+#include <init.h>
 #include <net.h>
 #include <util.h>
 #include <utilmoneystr.h>
 #include <validation.h>
+#include <walletinitinterface.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
+
+class WalletInit : public WalletInitInterface {
+public:
+
+    //! Return the wallets help message.
+    std::string GetHelpString(bool showDebug) override;
+
+    //! Wallets parameter interaction
+    bool ParameterInteraction() override;
+
+    //! Register wallet RPCs.
+    void RegisterRPC(CRPCTable &tableRPC) override;
+
+    //! Responsible for reading and validating the -wallet arguments and verifying the wallet database.
+    //  This function will perform salvage on the wallet if requested, as long as only one wallet is
+    //  being loaded (WalletParameterInteraction forbids -salvagewallet, -zapwallettxes or -upgradewallet with multiwallet).
+    bool Verify() override;
+
+    //! Load wallet databases.
+    bool Open() override;
+
+    //! Complete startup of wallets.
+    void Start(CScheduler& scheduler) override;
+
+    //! Flush all wallets in preparation for shutdown.
+    void Flush() override;
+
+    //! Stop all wallets. Wallets will be flushed first.
+    void Stop() override;
+
+    //! Close all wallets.
+    void Close() override;
+};
+
+static WalletInit g_wallet_init;
+WalletInitInterface* const g_wallet_init_interface = &g_wallet_init;
 
 std::string WalletInit::GetHelpString(bool showDebug)
 {
@@ -241,21 +277,21 @@ bool WalletInit::Verify()
         }
 
         std::string strError;
-        if (!CWalletDB::VerifyEnvironment(wallet_path, strError)) {
+        if (!WalletBatch::VerifyEnvironment(wallet_path, strError)) {
             return InitError(strError);
         }
 
         if (gArgs.GetBoolArg("-salvagewallet", false)) {
             // Recover readable keypairs:
-            CWallet dummyWallet("dummy", CWalletDBWrapper::CreateDummy());
+            CWallet dummyWallet("dummy", WalletDatabase::CreateDummy());
             std::string backup_filename;
-            if (!CWalletDB::Recover(wallet_path, (void *)&dummyWallet, CWalletDB::RecoverKeysOnlyFilter, backup_filename)) {
+            if (!WalletBatch::Recover(wallet_path, (void *)&dummyWallet, WalletBatch::RecoverKeysOnlyFilter, backup_filename)) {
                 return false;
             }
         }
 
         std::string strWarning;
-        bool dbV = CWalletDB::VerifyDatabaseFile(wallet_path, strWarning, strError);
+        bool dbV = WalletBatch::VerifyDatabaseFile(wallet_path, strWarning, strError);
         if (!strWarning.empty()) {
             InitWarning(strWarning);
         }

@@ -17,8 +17,6 @@
 #include <rpc/register.h>
 #include <script/sigcache.h>
 
-#include <memory>
-
 void CConnmanTest::AddNode(CNode& node)
 {
     LOCK(g_connman->cs_vNodes);
@@ -68,7 +66,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
 
         RegisterAllCoreRPCCommands(tableRPC);
         ClearDatadirCache();
-        pathTemp = fs::temp_directory_path() / strprintf("test_bitcoin_%lu_%i", (unsigned long)GetTime(), (int)(InsecureRandRange(100000)));
+        pathTemp = fs::temp_directory_path() / strprintf("test_bitcoin_%lu_%i", (unsigned long)GetTime(), (int)(InsecureRandRange(1 << 30)));
         fs::create_directories(pathTemp);
         gArgs.ForceSetArg("-datadir", pathTemp.string());
 

@@ -508,7 +508,7 @@ void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool f
 
 // Used to avoid mempool polluting consensus critical paths if CCoinsViewMempool
 // were somehow broken and returning the wrong scriptPubKeys
-static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, CValidationState &state, const CCoinsViewCache &view, CTxMemPool& pool,
+static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& view, const CTxMemPool& pool,
                  unsigned int flags, bool cacheSigStore, PrecomputedTransactionData& txdata) {
     AssertLockHeld(cs_main);
 
@@ -918,8 +918,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // invalid blocks (using TestBlockValidity), however allowing such
         // transactions into the mempool can be exploited as a DoS attack.
         unsigned int currentBlockScriptVerifyFlags = GetBlockScriptFlags(chainActive.Tip(), Params().GetConsensus());
-        if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata))
-        {
+        if (!CheckInputsFromMempoolAndCache(tx, state, view, pool, currentBlockScriptVerifyFlags, true, txdata)) {
             // If we're using promiscuousmempoolflags, we may hit this normally
             // Check if current block has some flags that scriptVerifyFlags
             // does not before printing an ominous warning
@@ -1853,8 +1852,15 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // is enforced in ContextualCheckBlockHeader(); we wouldn't want to
     // re-enforce that rule here (at least until we make it impossible for
     // GetAdjustedTime() to go backward).
-    if (!CheckBlock(block, state, chainparams.GetConsensus(), !fJustCheck, !fJustCheck))
+    if (!CheckBlock(block, state, chainparams.GetConsensus(), !fJustCheck, !fJustCheck)) {
+        if (state.CorruptionPossible()) {
+            // We don't write down blocks to disk if they may have been
+            // corrupted, so this should be impossible unless we're having hardware
+            // problems.
+            return AbortNode(state, "Corrupt block found indicating potential hardware failure; shutting down");
+        }
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
+    }
 
     // verify that the view's current state corresponds to the previous block
     uint256 hashPrevBlock = pindex->pprev == nullptr ? uint256() : pindex->pprev->GetBlockHash();
@@ -2117,6 +2123,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
  * The caches and indexes are flushed depending on the mode we're called with
  * if they're too large, if it's been a while since the last write,
  * or always and in all cases if we're in prune mode and are deleting files.
+ *
+ * If FlushStateMode::NONE is used, then FlushStateToDisk(...) won't do anything
+ * besides checking if we need to prune.
  */
 bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState &state, FlushStateMode mode, int nManualPruneHeight) {
     int64_t nMempoolUsage = mempool.DynamicMemoryUsage();
@@ -2290,13 +2299,13 @@ void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainPar
             DoWarning(strWarning);
         }
     }
-    LogPrintf("%s: new best=%s height=%d version=0x%08x log2_work=%.8g tx=%lu date='%s' progress=%f cache=%.1fMiB(%utxo)", __func__,
+    LogPrintf("%s: new best=%s height=%d version=0x%08x log2_work=%.8g tx=%lu date='%s' progress=%f cache=%.1fMiB(%utxo)", __func__, /* Continued */
       pindexNew->GetBlockHash().ToString(), pindexNew->nHeight, pindexNew->nVersion,
       log(pindexNew->nChainWork.getdouble())/log(2.0), (unsigned long)pindexNew->nChainTx,
       FormatISO8601DateTime(pindexNew->GetBlockTime()),
       GuessVerificationProgress(chainParams.TxData(), pindexNew), pcoinsTip->DynamicMemoryUsage() * (1.0 / (1<<20)), pcoinsTip->GetCacheSize());
     if (!warningMessages.empty())
-        LogPrintf(" warning='%s'", boost::algorithm::join(warningMessages, ", "));
+        LogPrintf(" warning='%s'", boost::algorithm::join(warningMessages, ", ")); /* Continued */
     LogPrintf("\n");
 
 }
@@ -3513,8 +3522,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
         return AbortNode(state, std::string("System error: ") + e.what());
     }
 
-    if (fCheckForPruning)
-        FlushStateToDisk(chainparams, state, FlushStateMode::NONE); // we just allocated more disk space for block files
+    FlushStateToDisk(chainparams, state, FlushStateMode::NONE);
 
     CheckBlockIndex(chainparams.GetConsensus());
 
@@ -3968,14 +3976,14 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
     int nGoodTransactions = 0;
     CValidationState state;
     int reportDone = 0;
-    LogPrintf("[0%%]...");
+    LogPrintf("[0%%]..."); /* Continued */
     for (CBlockIndex* pindex = chainActive.Tip(); pindex && pindex->pprev; pindex = pindex->pprev)
     {
         boost::this_thread::interruption_point();
         int percentageDone = std::max(1, std::min(99, (int)(((double)(chainActive.Height() - pindex->nHeight)) / (double)nCheckDepth * (nCheckLevel >= 4 ? 50 : 100))));
         if (reportDone < percentageDone/10) {
             // report every 10% step
-            LogPrintf("[%d%%]...", percentageDone);
+            LogPrintf("[%d%%]...", percentageDone); /* Continued */
             reportDone = percentageDone/10;
         }
         uiInterface.ShowProgress(_("Verifying blocks..."), percentageDone, false);

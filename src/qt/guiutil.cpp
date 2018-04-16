@@ -13,7 +13,7 @@
 #include <chainparams.h>
 #include <primitives/transaction.h>
 #include <key_io.h>
-#include <interface/node.h>
+#include <interfaces/node.h>
 #include <policy/policy.h>
 #include <protocol.h>
 #include <script/script.h>
@@ -232,7 +232,7 @@ QString formatBitcoinURI(const SendCoinsRecipient &info)
     return ret;
 }
 
-bool isDust(interface::Node& node, const QString& address, const CAmount& amount)
+bool isDust(interfaces::Node& node, const QString& address, const CAmount& amount)
 {
     CTxDestination dest = DecodeDestination(address.toStdString());
     CScript script = GetScriptForDestination(dest);
@@ -599,7 +599,7 @@ TableViewLastColumnResizingFixer::TableViewLastColumnResizingFixer(QTableView* t
 #ifdef WIN32
 fs::path static StartupShortcutPath()
 {
-    std::string chain = ChainNameFromCommandLine();
+    std::string chain = gArgs.GetChainName();
     if (chain == CBaseChainParams::MAIN)
         return GetSpecialFolderPath(CSIDL_STARTUP) / "Bitcoin.lnk";
     if (chain == CBaseChainParams::TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
@@ -697,7 +697,7 @@ fs::path static GetAutostartDir()
 
 fs::path static GetAutostartFilePath()
 {
-    std::string chain = ChainNameFromCommandLine();
+    std::string chain = gArgs.GetChainName();
     if (chain == CBaseChainParams::MAIN)
         return GetAutostartDir() / "bitcoin.desktop";
     return GetAutostartDir() / strprintf("bitcoin-%s.lnk", chain);
@@ -739,7 +739,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
         fs::ofstream optionFile(GetAutostartFilePath(), std::ios_base::out|std::ios_base::trunc);
         if (!optionFile.good())
             return false;
-        std::string chain = ChainNameFromCommandLine();
+        std::string chain = gArgs.GetChainName();
         // Write a bitcoin.desktop file to the autostart directory:
         optionFile << "[Desktop Entry]\n";
         optionFile << "Type=Application\n";

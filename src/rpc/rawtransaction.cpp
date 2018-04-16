@@ -774,9 +774,6 @@ UniValue SignTransaction(CMutableTransaction& mtx, const UniValue& prevTxsUnival
             if (is_temp_keystore && (scriptPubKey.IsPayToScriptHash() || scriptPubKey.IsPayToWitnessScriptHash())) {
                 RPCTypeCheckObj(prevOut,
                     {
-                        {"txid", UniValueType(UniValue::VSTR)},
-                        {"vout", UniValueType(UniValue::VNUM)},
-                        {"scriptPubKey", UniValueType(UniValue::VSTR)},
                         {"redeemScript", UniValueType(UniValue::VSTR)},
                     });
                 UniValue v = find_value(prevOut, "redeemScript");
@@ -1198,7 +1195,7 @@ UniValue testmempoolaccept(const JSONRPCRequest& request)
     {
         LOCK(cs_main);
         test_accept_res = AcceptToMemoryPool(mempool, state, std::move(tx), &missing_inputs,
-            nullptr /* plTxnReplaced */, false /* bypass_limits */, max_raw_tx_fee, /* test_accpet */ true);
+            nullptr /* plTxnReplaced */, false /* bypass_limits */, max_raw_tx_fee, /* test_accept */ true);
     }
     result_0.pushKV("allowed", test_accept_res);
     if (!test_accept_res) {
