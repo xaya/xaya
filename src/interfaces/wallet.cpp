@@ -2,12 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <interface/wallet.h>
+#include <interfaces/wallet.h>
 
 #include <amount.h>
 #include <chain.h>
 #include <consensus/validation.h>
-#include <interface/handler.h>
+#include <interfaces/handler.h>
 #include <net.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
@@ -22,9 +22,7 @@
 #include <wallet/feebumper.h>
 #include <wallet/wallet.h>
 
-#include <memory>
-
-namespace interface {
+namespace interfaces {
 namespace {
 
 class PendingWalletTxImpl : public PendingWalletTx
@@ -283,7 +281,7 @@ public:
         return result;
     }
     bool tryGetTxStatus(const uint256& txid,
-        interface::WalletTxStatus& tx_status,
+        interfaces::WalletTxStatus& tx_status,
         int& num_blocks,
         int64_t& adjusted_time) override
     {
@@ -424,7 +422,7 @@ public:
     std::unique_ptr<Handler> handleTransactionChanged(TransactionChangedFn fn) override
     {
         return MakeHandler(m_wallet.NotifyTransactionChanged.connect(
-            [fn, this](CWallet*, const uint256& txid, ChangeType status) { fn(txid, status); }));
+            [fn](CWallet*, const uint256& txid, ChangeType status) { fn(txid, status); }));
     }
     std::unique_ptr<Handler> handleWatchOnlyChanged(WatchOnlyChangedFn fn) override
     {
@@ -438,4 +436,4 @@ public:
 
 std::unique_ptr<Wallet> MakeWallet(CWallet& wallet) { return MakeUnique<WalletImpl>(wallet); }
 
-} // namespace interface
+} // namespace interfaces

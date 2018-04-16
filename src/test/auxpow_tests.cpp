@@ -19,7 +19,9 @@
 #include <algorithm>
 #include <vector>
 
-BOOST_FIXTURE_TEST_SUITE (auxpow_tests, BasicTestingSetup)
+/* No space between BOOST_FIXTURE_TEST_SUITE and '(', so that extraction of
+   the test-suite name works with grep as done in the Makefile.  */
+BOOST_FIXTURE_TEST_SUITE(auxpow_tests, BasicTestingSetup)
 
 /* ************************************************************************** */
 
