@@ -203,8 +203,9 @@ CCriticalSection cs_main;
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
 CBlockIndex *pindexBestHeader = nullptr;
-CWaitableCriticalSection csBestBlock;
-CConditionVariable cvBlockChange;
+CWaitableCriticalSection g_best_block_mutex;
+CConditionVariable g_best_block_cv;
+uint256 g_best_block;
 int nScriptCheckThreads = 0;
 std::atomic_bool fImporting(false);
 std::atomic_bool fReindex(false);
@@ -264,7 +265,8 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 {
     AssertLockHeld(cs_main);
 
-    // Find the first block the caller has in the main chain
+    // Find the latest block common to locator and chain - we expect that
+    // locator.vHave is sorted descending by height.
     for (const uint256& hash : locator.vHave) {
         CBlockIndex* pindex = LookupBlockIndex(hash);
         if (pindex) {
@@ -353,7 +355,7 @@ bool CheckSequenceLocks(const CTransaction &tx, int flags, LockPoints* lp, bool 
 
     CBlockIndex* tip = chainActive.Tip();
     assert(tip != nullptr);
-    
+
     CBlockIndex index;
     index.pprev = tip;
     // CheckSequenceLocks() uses chainActive.Height()+1 to evaluate
@@ -1783,14 +1785,36 @@ public:
 // Protected by cs_main
 static ThresholdConditionCache warningcache[VERSIONBITS_NUM_BITS];
 
+// 0.13.0 was shipped with a segwit deployment defined for testnet, but not for
+// mainnet. We no longer need to support disabling the segwit deployment
+// except for testing purposes, due to limitations of the functional test
+// environment. See test/functional/p2p-segwit.py.
+static bool IsScriptWitnessEnabled(const Consensus::Params& params)
+{
+    return params.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout != 0;
+}
+
 static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& consensusparams) {
     AssertLockHeld(cs_main);
 
     unsigned int flags = SCRIPT_VERIFY_NONE;
 
-    // Start enforcing P2SH (BIP16)
-    if (pindex->nHeight >= consensusparams.BIP16Height) {
+    // BIP16 didn't become active until Apr 1 2012 (on mainnet, and
+    // retroactively applied to testnet)
+    // However, only one historical block violated the P2SH rules (on both
+    // mainnet and testnet), so for simplicity, always leave P2SH
+    // on except for the one violating block.
+    if (consensusparams.BIP16Exception.IsNull() || // no bip16 exception on this chain
+        pindex->phashBlock == nullptr || // this is a new candidate block, eg from TestBlockValidity()
+        *pindex->phashBlock != consensusparams.BIP16Exception) // this block isn't the historical exception
+    {
         flags |= SCRIPT_VERIFY_P2SH;
+    }
+
+    // Enforce WITNESS rules whenever P2SH is in effect (and the segwit
+    // deployment is defined).
+    if (flags & SCRIPT_VERIFY_P2SH && IsScriptWitnessEnabled(consensusparams)) {
+        flags |= SCRIPT_VERIFY_WITNESS;
     }
 
     // Start enforcing the DERSIG (BIP66) rule
@@ -1808,9 +1832,7 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
     }
 
-    // Start enforcing WITNESS rules using versionbits logic.
-    if (IsWitnessEnabled(pindex->pprev, consensusparams)) {
-        flags |= SCRIPT_VERIFY_WITNESS;
+    if (IsNullDummyEnabled(pindex->pprev, consensusparams)) {
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
 
@@ -2263,7 +2285,11 @@ void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainPar
     // New best block
     mempool.AddTransactionsUpdated(1);
 
-    cvBlockChange.notify_all();
+    {
+        WaitableLock lock(g_best_block_mutex);
+        g_best_block = pindexNew->GetBlockHash();
+        g_best_block_cv.notify_all();
+    }
 
     std::vector<std::string> warningMessages;
     if (!IsInitialBlockDownload())
@@ -2731,18 +2757,17 @@ bool CChainState::ActivateBestChain(CValidationState &state, const CChainParams&
                 assert(trace.pblock && trace.pindex);
                 GetMainSignals().BlockConnected(trace.pblock, trace.pindex, trace.conflictedTxs);
             }
+
+            // Notify external listeners about the new tip.
+            // Enqueue while holding cs_main to ensure that UpdatedBlockTip is called in the order in which blocks are connected
+            GetMainSignals().UpdatedBlockTip(pindexNewTip, pindexFork, fInitialDownload);
+
+            // Always notify the UI if a new block tip was connected
+            if (pindexFork != pindexNewTip) {
+                uiInterface.NotifyBlockTip(fInitialDownload, pindexNewTip);
+            }
         }
         // When we reach this point, we switched to a new tip (stored in pindexNewTip).
-
-        // Notifications/callbacks that can run without cs_main
-
-        // Notify external listeners about the new tip.
-        GetMainSignals().UpdatedBlockTip(pindexNewTip, pindexFork, fInitialDownload);
-
-        // Always notify the UI if a new block tip was connected
-        if (pindexFork != pindexNewTip) {
-            uiInterface.NotifyBlockTip(fInitialDownload, pindexNewTip);
-        }
 
         if (nStopAtHeight && pindexNewTip && pindexNewTip->nHeight >= nStopAtHeight) StartShutdown();
 
@@ -3148,6 +3173,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
 }
 
 bool IsWitnessEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
+{
+    LOCK(cs_main);
+    return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_SEGWIT, versionbitscache) == ThresholdState::ACTIVE);
+}
+
+bool IsNullDummyEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params)
 {
     LOCK(cs_main);
     return (VersionBitsState(pindexPrev, params, Consensus::DEPLOYMENT_SEGWIT, versionbitscache) == ThresholdState::ACTIVE);
@@ -4151,6 +4182,9 @@ bool CChainState::RewindBlockIndex(const CChainParams& params)
 
     int nHeight = 1;
     while (nHeight <= chainActive.Height()) {
+        // Although SCRIPT_VERIFY_WITNESS is now generally enforced on all
+        // blocks in ConnectBlock, we don't need to go back and
+        // re-download/re-verify blocks from before segwit actually activated.
         if (IsWitnessEnabled(chainActive[nHeight - 1], params.GetConsensus()) && !(chainActive[nHeight]->nStatus & BLOCK_OPT_WITNESS)) {
             break;
         }
