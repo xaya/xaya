@@ -93,6 +93,7 @@ UniValue getrawtransaction(const JSONRPCRequest& request)
             "  \"hash\" : \"id\",        (string) The transaction hash (differs from txid for witness transactions)\n"
             "  \"size\" : n,             (numeric) The serialized transaction size\n"
             "  \"vsize\" : n,            (numeric) The virtual transaction size (differs from size for witness transactions)\n"
+            "  \"weight\" : n,           (numeric) The transaction's weight (between vsize*4-3 and vsize*4)\n"
             "  \"version\" : n,          (numeric) The version\n"
             "  \"locktime\" : ttt,       (numeric) The lock time\n"
             "  \"vin\" : [               (array of json objects)\n"
@@ -493,6 +494,7 @@ UniValue decoderawtransaction(const JSONRPCRequest& request)
             "  \"hash\" : \"id\",        (string) The transaction hash (differs from txid for witness transactions)\n"
             "  \"size\" : n,             (numeric) The transaction size\n"
             "  \"vsize\" : n,            (numeric) The virtual transaction size (differs from size for witness transactions)\n"
+            "  \"weight\" : n,           (numeric) The transaction's weight (between vsize*4 - 3 and vsize*4)\n"
             "  \"version\" : n,          (numeric) The version\n"
             "  \"locktime\" : ttt,       (numeric) The lock time\n"
             "  \"vin\" : [               (array of json objects)\n"
@@ -827,7 +829,7 @@ UniValue SignTransaction(CMutableTransaction& mtx, const UniValue& prevTxsUnival
         SignatureData sigdata;
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mtx.vout.size())) {
-            ProduceSignature(MutableTransactionSignatureCreator(keystore, &mtx, i, amount, nHashType), prevPubKey, sigdata);
+            ProduceSignature(*keystore, MutableTransactionSignatureCreator(&mtx, i, amount, nHashType), prevPubKey, sigdata);
         }
         sigdata = CombineSignatures(prevPubKey, TransactionSignatureChecker(&txConst, i, amount), sigdata, DataFromTransaction(mtx, i));
 

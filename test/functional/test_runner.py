@@ -64,14 +64,13 @@ BASE_SCRIPTS = [
     # Does not satisfy Namecoin's BDB limit.
     #'feature_block.py',
     'rpc_fundrawtransaction.py',
-    'p2p_compactblocks.py',
-    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
-    #'feature_segwit.py',
+    # FIXME: Reenable when it supports always-segit.
+    #'p2p_compactblocks.py',
+    'feature_segwit.py',
     # vv Tests less than 2m vv
     'wallet_basic.py',
     'wallet_labels.py',
-    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
-    #'p2p_segwit.py',
+    'p2p_segwit.py',
     'wallet_dump.py',
     'rpc_listtransactions.py',
     # vv Tests less than 60s vv
@@ -94,7 +93,8 @@ BASE_SCRIPTS = [
     'mempool_resurrect.py',
     'wallet_txn_doublespend.py --mineblock',
     'wallet_txn_clone.py',
-    'wallet_txn_clone.py --segwit',
+    # FIXME: Debug and re-enable.
+    #'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
     'interface_rest.py',
     'mempool_spend_coinbase.py',
@@ -122,8 +122,7 @@ BASE_SCRIPTS = [
     'rpc_preciousblock.py',
     'wallet_importprunedfunds.py',
     'rpc_signmessage.py',
-    # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
-    #'feature_nulldummy.py',
+    'feature_nulldummy.py',
     'mempool_accept.py',
     'wallet_import_rescan.py',
     'mining_basic.py',
@@ -151,6 +150,7 @@ BASE_SCRIPTS = [
 
     # auxpow tests
     'auxpow_mining.py',
+    'auxpow_mining.py --segwit',
 
     # name tests
     'name_expiration.py',
@@ -195,10 +195,8 @@ EXTENDED_SCRIPTS = [
 SKIPPED = [
     'feature_block.py',
     'feature_csv_activation.py',
-    'feature_nulldummy.py',
-    'feature_segwit.py',
     'feature_versionbits_warning.py',
-    'p2p_segwit.py',
+    'p2p_compactblocks.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests

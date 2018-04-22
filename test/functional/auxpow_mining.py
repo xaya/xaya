@@ -16,9 +16,19 @@ class AuxpowMiningTest (BitcoinTestFramework):
   def set_test_params (self):
     self.num_nodes = 2
 
+  def add_options (self, parser):
+    parser.add_option ("--segwit", dest="segwit", default=False,
+                       action="store_true",
+                       help="Test behaviour with SegWit active")
+
   def run_test (self):
     # Enable mock time to be out of IBD.
     self.enable_mocktime ()
+
+    # Activate segwit if requested.
+    if self.options.segwit:
+      self.nodes[0].generate (500)
+      self.sync_all ()
 
     # Test with getauxblock and createauxblock/submitauxblock.
     self.test_getauxblock ()
@@ -104,18 +114,20 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (t['category'], "immature")
     assert_equal (t['blockhash'], auxblock['hash'])
     assert t['generated']
-    assert t['amount'] >= Decimal ("25")
+    assert_greater_than_or_equal (t['amount'], Decimal ("1"))
     assert_equal (t['confirmations'], 1)
 
     # Verify the coinbase script.  Ensure that it includes the block height
     # to make the coinbase tx unique.  The expected block height is around
     # 200, so that the serialisation of the CScriptNum ends in an extra 00.
     # The vector has length 2, which makes up for 02XX00 as the serialised
-    # height.  Check this.
-    blk = self.nodes[1].getblock (auxblock['hash'])
-    tx = self.nodes[1].getrawtransaction (blk['tx'][0], 1)
-    coinbase = tx['vin'][0]['coinbase']
-    assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
+    # height.  Check this.  (With segwit, the height is different, so we skip
+    # this for simplicity.)
+    if not self.options.segwit:
+      blk = self.nodes[1].getblock (auxblock['hash'])
+      tx = self.nodes[1].getrawtransaction (blk['tx'][0], 1)
+      coinbase = tx['vin'][0]['coinbase']
+      assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
 
   def test_getauxblock (self):
     """

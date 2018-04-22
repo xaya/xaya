@@ -85,8 +85,6 @@ public:
 enum DeploymentPos
 {
     DEPLOYMENT_TESTDUMMY,
-    DEPLOYMENT_CSV, // Deployment of BIP68, BIP112, and BIP113.
-    DEPLOYMENT_SEGWIT, // Deployment of BIP141, BIP143, and BIP147.
     // NOTE: Also add new deployments to VersionBitsDeploymentInfo in versionbits.cpp
     MAX_VERSION_BITS_DEPLOYMENTS
 };
@@ -118,7 +116,7 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
-    /** Block height at which BIP16 becomes active */
+    /** Block height at with BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */
     int BIP34Height;

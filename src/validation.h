@@ -189,8 +189,9 @@ extern BlockMap& mapBlockIndex;
 extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockWeight;
 extern const std::string strMessageMagic;
-extern CWaitableCriticalSection csBestBlock;
-extern CConditionVariable cvBlockChange;
+extern CWaitableCriticalSection g_best_block_mutex;
+extern CConditionVariable g_best_block_cv;
+extern uint256 g_best_block;
 extern std::atomic_bool fImporting;
 extern std::atomic_bool fReindex;
 extern int nScriptCheckThreads;
@@ -438,6 +439,9 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
 
 /** Check whether witness commitments are required for block. */
 bool IsWitnessEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params);
+
+/** Check whether NULLDUMMY (BIP 147) has activated. */
+bool IsNullDummyEnabled(const CBlockIndex* pindexPrev, const Consensus::Params& params);
 
 /** When there are blocks in the active chain with missing data, rewind the chainstate and remove them from the block index */
 bool RewindBlockIndex(const CChainParams& params);

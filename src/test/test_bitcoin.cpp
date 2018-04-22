@@ -115,7 +115,7 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
 {
     // CreateAndProcessBlock() does not support building SegWit blocks, so don't activate in these tests.
     // TODO: fix the code to support SegWit blocks.
-    UpdateVersionBitsParameters(Consensus::DEPLOYMENT_SEGWIT, 0, Consensus::BIP9Deployment::NO_TIMEOUT);
+    TurnOffSegwitForUnitTests();
     // Generate a 100-block chain:
     coinbaseKey.MakeNewKey(true);
     CScript scriptPubKey = CScript() <<  ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG;
@@ -123,7 +123,7 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
     {
         std::vector<CMutableTransaction> noTxns;
         CBlock b = CreateAndProcessBlock(noTxns, scriptPubKey);
-        coinbaseTxns.push_back(*b.vtx[0]);
+        m_coinbase_txns.push_back(b.vtx[0]);
     }
 }
 
@@ -164,12 +164,12 @@ TestChain100Setup::~TestChain100Setup()
 
 
 CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CMutableTransaction &tx) {
-    CTransaction txn(tx);
-    return FromTx(txn);
+    return FromTx(MakeTransactionRef(tx));
 }
 
-CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CTransaction &txn) {
-    return CTxMemPoolEntry(MakeTransactionRef(txn), nFee, nTime, nHeight,
+CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CTransactionRef& tx)
+{
+    return CTxMemPoolEntry(tx, nFee, nTime, nHeight,
                            spendsCoinbase, sigOpCost, lp);
 }
 
