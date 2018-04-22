@@ -179,7 +179,7 @@ class MempoolAcceptanceTest(BitcoinTestFramework):
 
         self.log.info('A really large transaction')
         tx.deserialize(BytesIO(hex_str_to_bytes(raw_tx_reference)))
-        tx.vin = [tx.vin[0]] * (MAX_BLOCK_BASE_SIZE // len(tx.vin[0].serialize()))
+        tx.vin = [tx.vin[0]] * (MAX_BLOCK_BASE_SIZE // len(tx.vin[0].serialize()) + 1)
         self.check_mempool_result(
             result_expected=[{'txid': tx.rehash(), 'allowed': False, 'reject-reason': '16: bad-txns-oversize'}],
             rawtxs=[bytes_to_hex_str(tx.serialize())],
