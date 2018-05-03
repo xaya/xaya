@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -108,7 +108,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert 'auxpow' in data
 
     # Check that it paid correctly to the first node.
-    t = self.nodes[0].listtransactions ("", 1)
+    t = self.nodes[0].listtransactions ("*", 1)
     assert_equal (len (t), 1)
     t = t[0]
     assert_equal (t['category'], "immature")
