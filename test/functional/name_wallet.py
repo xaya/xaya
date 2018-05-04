@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -49,11 +49,7 @@ class NameWalletTest (NameTestFramework):
 
     bal = self.nodes[ind].getbalance ()
     assert_equal (bal, initialBalance - spent)
-
     assert_equal (self.nodes[ind].getbalance (), bal)
-    assert_equal (self.nodes[ind].getbalance (""), bal)
-    assert_equal (self.nodes[ind].getbalance ("*"), bal)
-    assert_equal (self.nodes[ind].listaccounts (), {"":bal})
 
   def checkBalances (self, spentA = zero, spentB = zero):
     """
