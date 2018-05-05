@@ -160,7 +160,7 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices)
     return ret;
 }
 
-int GetnScore(const CService& addr)
+static int GetnScore(const CService& addr)
 {
     LOCK(cs_mapLocalHost);
     if (mapLocalHost.count(addr) == LOCAL_NONE)
@@ -395,7 +395,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
         if (Lookup(pszDest, resolved,  default_port, fNameLookup && !HaveNameProxy(), 256) && !resolved.empty()) {
             addrConnect = CAddress(resolved[GetRand(resolved.size())], NODE_NONE);
             if (!addrConnect.IsValid()) {
-                LogPrint(BCLog::NET, "Resolver returned invalid address %s for %s", addrConnect.ToString(), pszDest);
+                LogPrint(BCLog::NET, "Resolver returned invalid address %s for %s\n", addrConnect.ToString(), pszDest);
                 return nullptr;
             }
             // It is possible that we already have a connection to the IP/port pszDest resolved to.
@@ -1466,7 +1466,7 @@ void CConnman::WakeMessageHandler()
 #ifdef USE_UPNP
 static CThreadInterrupt g_upnp_interrupt;
 static std::thread g_upnp_thread;
-void ThreadMapPort()
+static void ThreadMapPort()
 {
     std::string port = strprintf("%u", GetListenPort());
     const char * multicastif = nullptr;
