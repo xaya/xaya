@@ -11,7 +11,6 @@
 #include "primitives/transaction.h"
 #include "random.h"
 #include "rpc/mining.h"
-#include "rpc/safemode.h"
 #include "rpc/server.h"
 #include "script/names.h"
 #include "txmempool.h"
@@ -96,8 +95,6 @@ name_list (const JSONRPCRequest& request)
       );
 
   RPCTypeCheck (request.params, {UniValue::VSTR});
-
-  ObserveSafeMode ();
 
   valtype nameFilter;
   if (request.params.size () == 1)
@@ -197,8 +194,6 @@ name_new (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
-  ObserveSafeMode ();
-
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
   if (name.size () > MAX_NAME_LENGTH)
@@ -281,8 +276,6 @@ name_firstupdate (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
                  UniValue::VSTR});
-
-  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -404,8 +397,6 @@ name_update (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
-
-  ObserveSafeMode ();
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -529,7 +520,6 @@ sendtoname (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  ObserveSafeMode ();
   LOCK2 (cs_main, pwallet->cs_wallet);
 
   const std::string nameStr = request.params[0].get_str ();
