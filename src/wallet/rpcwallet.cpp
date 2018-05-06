@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -1062,7 +1062,7 @@ UniValue sendmany(const JSONRPCRequest& request)
             "\nSend two amounts to two different addresses, subtract fee from amount:\n"
             + HelpExampleCli("sendmany", "\"\" \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\" 1 \"\" \"[\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\",\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\"]\"") +
             "\nAs a json rpc call\n"
-            + HelpExampleRpc("sendmany", "\"\", \"{\\\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\\\":0.01,\\\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\\\":0.02}\", 6, \"testing\"")
+            + HelpExampleRpc("sendmany", "\"\", {\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\":0.01,\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\":0.02}, 6, \"testing\"")
         );
 
     ObserveSafeMode();
