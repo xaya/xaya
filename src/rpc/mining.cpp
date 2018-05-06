@@ -30,8 +30,6 @@
 #include <stdint.h>
 #include <utility>
 
-#include <univalue.h>
-
 unsigned int ParseConfirmTarget(const UniValue& value)
 {
     int target = value.get_int();

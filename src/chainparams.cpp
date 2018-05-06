@@ -219,7 +219,7 @@ public:
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
 
-        checkpointData = (CCheckpointData) {
+        checkpointData = {
             {
                 {     0, uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656")},
             }
@@ -312,7 +312,7 @@ public:
         fMineBlocksOnDemand = false;
 
 
-        checkpointData = (CCheckpointData) {
+        checkpointData = {
             {
                 {     0, uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578")},
             }
@@ -389,7 +389,7 @@ public:
         fRequireStandard = false;
         fMineBlocksOnDemand = true;
 
-        checkpointData = (CCheckpointData) {
+        checkpointData = {
             {
                 {0, uint256S("18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619")},
             }
