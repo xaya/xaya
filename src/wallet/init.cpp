@@ -31,7 +31,7 @@ std::string GetWalletHelpString(bool showDebug)
     strUsage += HelpMessageOpt("-salvagewallet", _("Attempt to recover private keys from a corrupt wallet on startup"));
     strUsage += HelpMessageOpt("-spendzeroconfchange", strprintf(_("Spend unconfirmed change when sending transactions (default: %u)"), DEFAULT_SPEND_ZEROCONF_CHANGE));
     strUsage += HelpMessageOpt("-txconfirmtarget=<n>", strprintf(_("If paytxfee is not set, include enough fee so transactions begin confirmation on average within n blocks (default: %u)"), DEFAULT_TX_CONFIRM_TARGET));
-    strUsage += HelpMessageOpt("-walletrbf", strprintf(_("Send transactions with full-RBF opt-in enabled (default: %u)"), DEFAULT_WALLET_RBF));
+    strUsage += HelpMessageOpt("-walletrbf", strprintf(_("Send transactions with full-RBF opt-in enabled (RPC only, default: %u)"), DEFAULT_WALLET_RBF));
     strUsage += HelpMessageOpt("-upgradewallet", _("Upgrade wallet to latest format on startup"));
     strUsage += HelpMessageOpt("-wallet=<file>", _("Specify wallet file (within data directory)") + " " + strprintf(_("(default: %s)"), DEFAULT_WALLET_DAT));
     strUsage += HelpMessageOpt("-walletbroadcast", _("Make the wallet broadcast transactions") + " " + strprintf(_("(default: %u)"), DEFAULT_WALLETBROADCAST));
@@ -194,7 +194,10 @@ bool VerifyWallets()
     }
 
     if (gArgs.IsArgSet("-walletdir") && !fs::is_directory(GetWalletDir())) {
-        return InitError(strprintf(_("Error: Specified wallet directory \"%s\" does not exist."), gArgs.GetArg("-walletdir", "").c_str()));
+        if (fs::exists(fs::system_complete(gArgs.GetArg("-walletdir", "")))) {
+            return InitError(strprintf(_("Specified -walletdir \"%s\" is not a directory"), gArgs.GetArg("-walletdir", "").c_str()));
+        }
+        return InitError(strprintf(_("Specified -walletdir \"%s\" does not exist"), gArgs.GetArg("-walletdir", "").c_str()));
     }
 
     LogPrintf("Using wallet directory %s\n", GetWalletDir().string());

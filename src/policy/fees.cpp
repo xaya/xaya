@@ -411,15 +411,13 @@ void TxConfirmStats::Read(CAutoFile& filein, int nFileVersion, size_t numBuckets
     size_t maxConfirms, maxPeriods;
 
     // The current version will store the decay with each individual TxConfirmStats and also keep a scale factor
-    if (nFileVersion >= 149900) {
-        filein >> decay;
-        if (decay <= 0 || decay >= 1) {
-            throw std::runtime_error("Corrupt estimates file. Decay must be between 0 and 1 (non-inclusive)");
-        }
-        filein >> scale;
-        if (scale == 0) {
-            throw std::runtime_error("Corrupt estimates file. Scale must be non-zero");
-        }
+    filein >> decay;
+    if (decay <= 0 || decay >= 1) {
+        throw std::runtime_error("Corrupt estimates file. Decay must be between 0 and 1 (non-inclusive)");
+    }
+    filein >> scale;
+    if (scale == 0) {
+        throw std::runtime_error("Corrupt estimates file. Scale must be non-zero");
     }
 
     filein >> avg;
@@ -443,20 +441,13 @@ void TxConfirmStats::Read(CAutoFile& filein, int nFileVersion, size_t numBuckets
         }
     }
 
-    if (nFileVersion >= 149900) {
-        filein >> failAvg;
-        if (maxPeriods != failAvg.size()) {
-            throw std::runtime_error("Corrupt estimates file. Mismatch in confirms tracked for failures");
-        }
-        for (unsigned int i = 0; i < maxPeriods; i++) {
-            if (failAvg[i].size() != numBuckets) {
-                throw std::runtime_error("Corrupt estimates file. Mismatch in one of failure average bucket counts");
-            }
-        }
-    } else {
-        failAvg.resize(confAvg.size());
-        for (unsigned int i = 0; i < failAvg.size(); i++) {
-            failAvg[i].resize(numBuckets);
+    filein >> failAvg;
+    if (maxPeriods != failAvg.size()) {
+        throw std::runtime_error("Corrupt estimates file. Mismatch in confirms tracked for failures");
+    }
+    for (unsigned int i = 0; i < maxPeriods; i++) {
+        if (failAvg[i].size() != numBuckets) {
+            throw std::runtime_error("Corrupt estimates file. Mismatch in one of failure average bucket counts");
         }
     }
 
@@ -563,7 +554,7 @@ void CBlockPolicyEstimator::processTransaction(const CTxMemPoolEntry& entry, boo
     if (mapMemPoolTxs.count(hash)) {
         LogPrint(BCLog::ESTIMATEFEE, "Blockpolicy error mempool tx %s already being tracked\n",
                  hash.ToString().c_str());
-	return;
+        return;
     }
 
     if (txHeight != nBestSeenHeight) {
@@ -944,32 +935,9 @@ bool CBlockPolicyEstimator::Read(CAutoFile& filein)
         unsigned int nFileBestSeenHeight;
         filein >> nFileBestSeenHeight;
 
-        if (nVersionThatWrote < 149900) {
-            // Read the old fee estimates file for temporary use, but then discard.  Will start collecting data from scratch.
-            // decay is stored before buckets in old versions, so pre-read decay and pass into TxConfirmStats constructor
-            double tempDecay;
-            filein >> tempDecay;
-            if (tempDecay <= 0 || tempDecay >= 1)
-                throw std::runtime_error("Corrupt estimates file. Decay must be between 0 and 1 (non-inclusive)");
-
-            std::vector<double> tempBuckets;
-            filein >> tempBuckets;
-            size_t tempNum = tempBuckets.size();
-            if (tempNum <= 1 || tempNum > 1000)
-                throw std::runtime_error("Corrupt estimates file. Must have between 2 and 1000 feerate buckets");
-
-            std::map<double, unsigned int> tempMap;
-
-            std::unique_ptr<TxConfirmStats> tempFeeStats(new TxConfirmStats(tempBuckets, tempMap, MED_BLOCK_PERIODS, tempDecay, 1));
-            tempFeeStats->Read(filein, nVersionThatWrote, tempNum);
-            // if nVersionThatWrote < 139900 then another TxConfirmStats (for priority) follows but can be ignored.
-
-            tempMap.clear();
-            for (unsigned int i = 0; i < tempBuckets.size(); i++) {
-                tempMap[tempBuckets[i]] = i;
-            }
-        }
-        else { // nVersionThatWrote >= 149900
+        if (nVersionRequired < 149900) {
+            LogPrintf("%s: incompatible old fee estimation data (non-fatal). Version: %d\n", __func__, nVersionRequired);
+        } else { // New format introduced in 149900
             unsigned int nFileHistoricalFirst, nFileHistoricalBest;
             filein >> nFileHistoricalFirst >> nFileHistoricalBest;
             if (nFileHistoricalFirst > nFileHistoricalBest || nFileHistoricalBest > nFileBestSeenHeight) {
