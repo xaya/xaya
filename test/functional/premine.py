@@ -45,7 +45,8 @@ class PremineTest(BitcoinTestFramework):
     pubkeys = []
     for addr in node.getaddressesbyaccount ('premine'):
       data = node.validateaddress (addr)
-      pubkeys.append (data['pubkey'])
+      if (not data['isscript']) and (not data['iswitness']):
+        pubkeys.append (data['pubkey'])
     p2shAddr = node.addmultisigaddress (1, pubkeys)
     assert_equal (p2shAddr, PREMINE_ADDRESS)
     node.rescanblockchain ()
