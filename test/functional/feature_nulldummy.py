@@ -46,9 +46,9 @@ class NULLDUMMYTest(BitcoinTestFramework):
 
     def run_test(self):
         self.address = self.nodes[0].getnewaddress()
-        self.ms_address = self.nodes[0].addmultisigaddress(1,[self.address])
+        self.ms_address = self.nodes[0].addmultisigaddress(1,[self.address])['address']
         self.wit_address = self.nodes[0].addwitnessaddress(self.address)
-        self.wit_ms_address = self.nodes[0].addwitnessaddress(self.ms_address)
+        self.wit_ms_address = self.nodes[0].addmultisigaddress(1, [self.address], '', 'p2sh-segwit')['address']
 
         network_thread_start()
         self.coinbase_blocks = self.nodes[0].generate(2) # Block 2

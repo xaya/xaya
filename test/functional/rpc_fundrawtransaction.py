@@ -212,6 +212,19 @@ class RawTransactionsTest(BitcoinTestFramework):
         out = dec_tx['vout'][0]
         assert_equal(change, out['scriptPubKey']['addresses'][0])
 
+        #########################################################
+        # test a fundrawtransaction with a provided change type #
+        #########################################################
+        utx = get_unspent(self.nodes[2].listunspent(), 5)
+
+        inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']} ]
+        outputs = { self.nodes[0].getnewaddress() : Decimal(4.0) }
+        rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
+        assert_raises_rpc_error(-1, "JSON value is not a string as expected", self.nodes[2].fundrawtransaction, rawtx, {'change_type': None})
+        assert_raises_rpc_error(-5, "Unknown change type", self.nodes[2].fundrawtransaction, rawtx, {'change_type': ''})
+        rawtx = self.nodes[2].fundrawtransaction(rawtx, {'change_type': 'bech32'})
+        tx  = self.nodes[2].decoderawtransaction(rawtx['hex'])
+        assert_equal('witness_v0_keyhash', tx['vout'][rawtx['changepos']]['scriptPubKey']['type'])
 
         #########################################################################
         # test a fundrawtransaction with a VIN smaller than the required amount #
@@ -358,7 +371,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         addr1Obj = self.nodes[1].validateaddress(addr1)
         addr2Obj = self.nodes[1].validateaddress(addr2)
 
-        mSigObj = self.nodes[1].addmultisigaddress(2, [addr1Obj['pubkey'], addr2Obj['pubkey']])
+        mSigObj = self.nodes[1].addmultisigaddress(2, [addr1Obj['pubkey'], addr2Obj['pubkey']])['address']
 
         inputs = []
         outputs = {mSigObj:1.1}
@@ -391,7 +404,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         addr4Obj = self.nodes[1].validateaddress(addr4)
         addr5Obj = self.nodes[1].validateaddress(addr5)
 
-        mSigObj = self.nodes[1].addmultisigaddress(4, [addr1Obj['pubkey'], addr2Obj['pubkey'], addr3Obj['pubkey'], addr4Obj['pubkey'], addr5Obj['pubkey']])
+        mSigObj = self.nodes[1].addmultisigaddress(4, [addr1Obj['pubkey'], addr2Obj['pubkey'], addr3Obj['pubkey'], addr4Obj['pubkey'], addr5Obj['pubkey']])['address']
 
         inputs = []
         outputs = {mSigObj:1.1}
@@ -418,7 +431,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         addr1Obj = self.nodes[2].validateaddress(addr1)
         addr2Obj = self.nodes[2].validateaddress(addr2)
 
-        mSigObj = self.nodes[2].addmultisigaddress(2, [addr1Obj['pubkey'], addr2Obj['pubkey']])
+        mSigObj = self.nodes[2].addmultisigaddress(2, [addr1Obj['pubkey'], addr2Obj['pubkey']])['address']
 
 
         # send 1.2 BTC to msig addr

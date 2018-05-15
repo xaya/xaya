@@ -47,8 +47,8 @@ class PremineTest(BitcoinTestFramework):
       data = node.validateaddress (addr)
       if (not data['isscript']) and (not data['iswitness']):
         pubkeys.append (data['pubkey'])
-    p2shAddr = node.addmultisigaddress (1, pubkeys)
-    assert_equal (p2shAddr, PREMINE_ADDRESS)
+    p2sh = node.addmultisigaddress (1, pubkeys)
+    assert_equal (p2sh['address'], PREMINE_ADDRESS)
     node.rescanblockchain ()
     assert_equal (node.getbalance (), PREMINE_VALUE)
 
