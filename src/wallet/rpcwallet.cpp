@@ -2994,6 +2994,53 @@ static UniValue listwallets(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue loadwallet(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "loadwallet \"filename\"\n"
+            "\nLoads a wallet from a wallet file or directory."
+            "\nNote that all wallet command-line options used when starting bitcoind will be"
+            "\napplied to the new wallet (eg -zapwallettxes, upgradewallet, rescan, etc).\n"
+            "\nArguments:\n"
+            "1. \"filename\"    (string, required) The wallet directory or .dat file.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"name\" :    <wallet_name>,        (string) The wallet name if loaded successfully.\n"
+            "  \"warning\" : <warning>,            (string) Warning message if wallet was not loaded cleanly.\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("loadwallet", "\"test.dat\"")
+            + HelpExampleRpc("loadwallet", "\"test.dat\"")
+        );
+    std::string wallet_file = request.params[0].get_str();
+    std::string error;
+
+    fs::path wallet_path = fs::absolute(wallet_file, GetWalletDir());
+    if (fs::symlink_status(wallet_path).type() == fs::file_not_found) {
+        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + wallet_file + " not found.");
+    }
+
+    std::string warning;
+    if (!CWallet::Verify(wallet_file, false, error, warning)) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Wallet file verification failed: " + error);
+    }
+
+    CWallet * const wallet = CWallet::CreateWalletFromFile(wallet_file, fs::absolute(wallet_file, GetWalletDir()));
+    if (!wallet) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Wallet loading failed.");
+    }
+    AddWallet(wallet);
+
+    wallet->postInitProcess();
+
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("name", wallet->GetName());
+    obj.pushKV("warning", warning);
+
+    return obj;
+}
+
 static UniValue resendwallettransactions(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -4080,6 +4127,75 @@ static UniValue listlabels(const JSONRPCRequest& request)
     return ret;
 }
 
+UniValue sethdseed(const JSONRPCRequest& request)
+{
+    CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 2) {
+        throw std::runtime_error(
+            "sethdseed ( \"newkeypool\" \"seed\" )\n"
+            "\nSet or generate a new HD wallet seed. Non-HD wallets will not be upgraded to being a HD wallet. Wallets that are already\n"
+            "HD will have a new HD seed set so that new keys added to the keypool will be derived from this new seed.\n"
+            "\nNote that you will need to MAKE A NEW BACKUP of your wallet after setting the HD wallet seed.\n"
+            + HelpRequiringPassphrase(pwallet) +
+            "\nArguments:\n"
+            "1. \"newkeypool\"         (boolean, optional, default=true) Whether to flush old unused addresses, including change addresses, from the keypool and regenerate it.\n"
+            "                             If true, the next address from getnewaddress and change address from getrawchangeaddress will be from this new seed.\n"
+            "                             If false, addresses (including change addresses if the wallet already had HD Chain Split enabled) from the existing\n"
+            "                             keypool will be used until it has been depleted.\n"
+            "2. \"seed\"               (string, optional) The WIF private key to use as the new HD seed; if not provided a random seed will be used.\n"
+            "                             The seed value can be retrieved using the dumpwallet command. It is the private key marked hdmaster=1\n"
+            "\nExamples:\n"
+            + HelpExampleCli("sethdseed", "")
+            + HelpExampleCli("sethdseed", "false")
+            + HelpExampleCli("sethdseed", "true \"wifkey\"")
+            + HelpExampleRpc("sethdseed", "true, \"wifkey\"")
+            );
+    }
+
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Cannot set a new HD seed while still in Initial Block Download");
+    }
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    // Do not do anything to non-HD wallets
+    if (!pwallet->IsHDEnabled()) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Cannot set a HD seed on a non-HD wallet. Start with -upgradewallet in order to upgrade a non-HD wallet to HD");
+    }
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    bool flush_key_pool = true;
+    if (!request.params[0].isNull()) {
+        flush_key_pool = request.params[0].get_bool();
+    }
+
+    CPubKey master_pub_key;
+    if (request.params[1].isNull()) {
+        master_pub_key = pwallet->GenerateNewHDMasterKey();
+    } else {
+        CKey key = DecodeSecret(request.params[1].get_str());
+        if (!key.IsValid()) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+        }
+
+        if (HaveKey(*pwallet, key)) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Already have this key (either as an HD seed or as a loose private key)");
+        }
+
+        master_pub_key = pwallet->DeriveNewMasterHDKey(key);
+    }
+
+    pwallet->SetHDMasterKey(master_pub_key);
+    if (flush_key_pool) pwallet->NewKeyPool();
+
+    return NullUniValue;
+}
+
 UniValue getauxblock(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
@@ -4190,6 +4306,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listtransactions",                 &listtransactions,              {"account|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
+    { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
     { "wallet",             "sendfrom",                         &sendfrom,                      {"fromaccount","toaddress","amount","minconf","comment","comment_to"} },
     { "wallet",             "sendmany",                         &sendmany,                      {"fromaccount|dummy","amounts","minconf","comment","subtractfeefrom","replaceable","conf_target","estimate_mode"} },
@@ -4202,6 +4319,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",                 &walletpassphrase,              {"passphrase","timeout"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
+    { "wallet",             "sethdseed",                        &sethdseed,                     {"newkeypool","seed"} },
 
     /** Account functions (deprecated) */
     { "wallet",             "getaccountaddress",                &getlabeladdress,               {"account"} },
