@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,6 +7,7 @@
 #include "coins.h"
 #include "consensus/merkle.h"
 #include "validation.h"
+#include "pow.h"
 #include "primitives/block.h"
 #include "script/script.h"
 #include "utilstrencodings.h"

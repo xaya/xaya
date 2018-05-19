@@ -120,6 +120,9 @@ struct TestMemPoolEntryHelper
 
 CBlock getBlock13b8a();
 
+// define an implicit conversion here so that uint256 may be used directly in BOOST_CHECK_*
+std::ostream& operator<<(std::ostream& os, const uint256& num);
+
 // Define == for coin equality (used by multiple tests).
 bool operator==(const Coin &a, const Coin &b);
 
