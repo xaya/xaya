@@ -62,8 +62,8 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
         nLastSubsidy = nSubsidy;
         BOOST_CHECK(MoneyRange(nSum));
     }
-    BOOST_CHECK_EQUAL(nLastSubsidy, 0);
-    BOOST_CHECK_EQUAL(nSum, 839999949600000LL);
+    BOOST_CHECK_EQUAL(nLastSubsidy, CAmount{0});
+    BOOST_CHECK_EQUAL(nSum, CAmount{839999949600000});
 }
 
 bool ReturnFalse() { return false; }

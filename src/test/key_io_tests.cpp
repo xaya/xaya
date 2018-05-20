@@ -19,9 +19,6 @@ extern UniValue read_json(const std::string& jsondata);
 
 BOOST_FIXTURE_TEST_SUITE(key_io_tests, BasicTestingSetup)
 
-#if 0
-FIXME: Enable after updating the version in data/key_io_valid.json
-
 // Goal: check that parsed keys match test payload
 BOOST_AUTO_TEST_CASE(key_io_valid_parse)
 {
@@ -148,7 +145,5 @@ BOOST_AUTO_TEST_CASE(key_io_invalid)
         }
     }
 }
-
-#endif
 
 BOOST_AUTO_TEST_SUITE_END()
