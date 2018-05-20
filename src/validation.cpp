@@ -1819,9 +1819,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 {
     AssertLockHeld(cs_main);
     assert(pindex);
-    // pindex->phashBlock can be null if called by CreateNewBlock/TestBlockValidity
-    assert((pindex->phashBlock == nullptr) ||
-           (*pindex->phashBlock == block.GetHash()));
+    assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
 
     // Check it again in case a previous version let a bad block in
@@ -3464,9 +3462,11 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     AssertLockHeld(cs_main);
     assert(pindexPrev && pindexPrev == chainActive.Tip());
     CCoinsViewCache viewNew(pcoinsTip.get());
+    uint256 block_hash(block.GetHash());
     CBlockIndex indexDummy(block);
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
+    indexDummy.phashBlock = &block_hash;
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))

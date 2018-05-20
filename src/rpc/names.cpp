@@ -6,6 +6,7 @@
 #include "chainparams.h"
 #include "core_io.h"
 #include "init.h"
+#include "key_io.h"
 #include "names/common.h"
 #include "names/main.h"
 #include "primitives/transaction.h"
