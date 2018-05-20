@@ -42,8 +42,6 @@ CFeeRate payTxFee(DEFAULT_TRANSACTION_FEE);
 unsigned int nTxConfirmTarget = DEFAULT_TX_CONFIRM_TARGET;
 bool bSpendZeroConfChange = DEFAULT_SPEND_ZEROCONF_CHANGE;
 bool fWalletRbf = DEFAULT_WALLET_RBF;
-OutputType g_address_type = OUTPUT_TYPE_NONE;
-OutputType g_change_type = OUTPUT_TYPE_NONE;
 bool g_wallet_allow_fallback_fee = true; //<! will be defined via chainparams
 
 const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
@@ -823,7 +821,7 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
             bForceNew = true;
         else {
             // Check if the current key has been used (TODO: check other addresses with the same key)
-            CScript scriptPubKey = GetScriptForDestination(GetDestinationForKey(account.vchPubKey, g_address_type));
+            CScript scriptPubKey = GetScriptForDestination(GetDestinationForKey(account.vchPubKey, m_default_address_type));
             for (std::map<uint256, CWalletTx>::iterator it = mapWallet.begin();
                  it != mapWallet.end() && account.vchPubKey.IsValid();
                  ++it)
@@ -840,12 +838,12 @@ bool CWallet::GetAccountDestination(CTxDestination &dest, std::string strAccount
         if (!GetKeyFromPool(account.vchPubKey, false))
             return false;
 
-        LearnRelatedScripts(account.vchPubKey, g_address_type);
-        dest = GetDestinationForKey(account.vchPubKey, g_address_type);
+        LearnRelatedScripts(account.vchPubKey, m_default_address_type);
+        dest = GetDestinationForKey(account.vchPubKey, m_default_address_type);
         SetAddressBook(dest, strAccount, "receive");
         walletdb.WriteAccount(strAccount, account);
     } else {
-        dest = GetDestinationForKey(account.vchPubKey, g_address_type);
+        dest = GetDestinationForKey(account.vchPubKey, m_default_address_type);
     }
 
     return true;
@@ -1287,7 +1285,7 @@ void CWallet::BlockUntilSyncedToCurrentChain() {
         // chainActive.Tip()...
         // We could also take cs_wallet here, and call m_last_block_processed
         // protected by cs_wallet instead of cs_main, but as long as we need
-        // cs_main here anyway, its easier to just call it cs_main-protected.
+        // cs_main here anyway, it's easier to just call it cs_main-protected.
         LOCK(cs_main);
         const CBlockIndex* initialChainTip = chainActive.Tip();
 
@@ -2468,21 +2466,21 @@ const CTxOut& CWallet::FindNonChangeParentOutput(const CTransaction& tx, int out
     return ptx->vout[n];
 }
 
-bool CWallet::OutputEligibleForSpending(const COutput& output, const CoinEligibilityFilter& eligibilty_filter) const
+bool CWallet::OutputEligibleForSpending(const COutput& output, const CoinEligibilityFilter& eligibility_filter) const
 {
     if (!output.fSpendable)
         return false;
 
-    if (output.nDepth < (output.tx->IsFromMe(ISMINE_ALL) ? eligibilty_filter.conf_mine : eligibilty_filter.conf_theirs))
+    if (output.nDepth < (output.tx->IsFromMe(ISMINE_ALL) ? eligibility_filter.conf_mine : eligibility_filter.conf_theirs))
         return false;
 
-    if (!mempool.TransactionWithinChainLimit(output.tx->GetHash(), eligibilty_filter.max_ancestors))
+    if (!mempool.TransactionWithinChainLimit(output.tx->GetHash(), eligibility_filter.max_ancestors))
         return false;
 
     return true;
 }
 
-bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibilty_filter, std::vector<COutput> vCoins,
+bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<COutput> vCoins,
                                  std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {
     setCoinsRet.clear();
@@ -2503,7 +2501,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
         // Filter by the min conf specs and add to utxo_pool and calculate effective value
         for (const COutput &output : vCoins)
         {
-            if (!OutputEligibleForSpending(output, eligibilty_filter))
+            if (!OutputEligibleForSpending(output, eligibility_filter))
                 continue;
 
             CInputCoin coin(output.tx->tx, output.i);
@@ -2523,7 +2521,7 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
         // Filter by the min conf specs and add to utxo_pool
         for (const COutput &output : vCoins)
         {
-            if (!OutputEligibleForSpending(output, eligibilty_filter))
+            if (!OutputEligibleForSpending(output, eligibility_filter))
                 continue;
 
             CInputCoin coin = CInputCoin(output.tx->tx, output.i);
@@ -2720,14 +2718,14 @@ CWallet::FindValueInNameInput (const CTxIn& nameInput,
 OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vector<CRecipient>& vecSend)
 {
     // If -changetype is specified, always use that change type.
-    if (change_type != OUTPUT_TYPE_NONE) {
+    if (change_type != OutputType::NONE) {
         return change_type;
     }
 
-    // if g_address_type is legacy, use legacy address as change (even
+    // if m_default_address_type is legacy, use legacy address as change (even
     // if some of the outputs are P2WPKH or P2WSH).
-    if (g_address_type == OUTPUT_TYPE_LEGACY) {
-        return OUTPUT_TYPE_LEGACY;
+    if (m_default_address_type == OutputType::LEGACY) {
+        return OutputType::LEGACY;
     }
 
     // if any destination is P2WPKH or P2WSH, use P2WPKH for the change
@@ -2737,12 +2735,12 @@ OutputType CWallet::TransactionChangeType(OutputType change_type, const std::vec
         int witnessversion = 0;
         std::vector<unsigned char> witnessprogram;
         if (recipient.scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
-            return OUTPUT_TYPE_BECH32;
+            return OutputType::BECH32;
         }
     }
 
-    // else use g_address_type for change
-    return g_address_type;
+    // else use m_default_address_type for change
+    return m_default_address_type;
 }
 
 bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend,
@@ -2857,7 +2855,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend,
                     return false;
                 }
 
-                const OutputType change_type = TransactionChangeType(coin_control.change_type, vecSend);
+                const OutputType change_type = TransactionChangeType(coin_control.m_change_type ? *coin_control.m_change_type : m_default_change_type, vecSend);
 
                 LearnRelatedScripts(vchPubKey, change_type);
                 scriptChange = GetScriptForDestination(GetDestinationForKey(vchPubKey, change_type));
@@ -4093,8 +4091,7 @@ CWallet* CWallet::CreateWalletFromFile(const std::string& name, const fs::path& 
         }
 
         walletInstance->SetBestChain(chainActive.GetLocator());
-    }
-    else if (gArgs.IsArgSet("-usehd")) {
+    } else if (gArgs.IsArgSet("-usehd")) {
         bool useHD = gArgs.GetBoolArg("-usehd", true);
         if (walletInstance->IsHDEnabled() && !useHD) {
             InitError(strprintf(_("Error loading %s: You can't disable HD on an already existing HD wallet"), walletFile));
@@ -4104,6 +4101,20 @@ CWallet* CWallet::CreateWalletFromFile(const std::string& name, const fs::path& 
             InitError(strprintf(_("Error loading %s: You can't enable HD on an already existing non-HD wallet"), walletFile));
             return nullptr;
         }
+    }
+
+    walletInstance->m_default_address_type = ParseOutputType(gArgs.GetArg("-addresstype", ""), DEFAULT_ADDRESS_TYPE);
+    if (walletInstance->m_default_address_type == OutputType::NONE) {
+        InitError(strprintf("Unknown address type '%s'", gArgs.GetArg("-addresstype", "")));
+        return nullptr;
+    }
+
+    // If changetype is set in config file or parameter, check that it's valid.
+    // Default to OutputType::NONE if not set.
+    walletInstance->m_default_change_type = ParseOutputType(gArgs.GetArg("-changetype", ""), OutputType::NONE);
+    if (walletInstance->m_default_change_type == OutputType::NONE && !gArgs.GetArg("-changetype", "").empty()) {
+        InitError(strprintf("Unknown change type '%s'", gArgs.GetArg("-changetype", "")));
+        return nullptr;
     }
 
     LogPrintf(" wallet      %15dms\n", GetTimeMillis() - nStart);
@@ -4288,8 +4299,8 @@ bool CWalletTx::AcceptToMemoryPool(const CAmount& nAbsurdFee, CValidationState& 
     // We must set fInMempool here - while it will be re-set to true by the
     // entered-mempool callback, if we did not there would be a race where a
     // user could call sendmoney in a loop and hit spurious out of funds errors
-    // because we think that the transaction they just generated's change is
-    // unavailable as we're not yet aware its in mempool.
+    // because we think that this newly generated transaction's change is
+    // unavailable as we're not yet aware that it is in the mempool.
     bool ret = ::AcceptToMemoryPool(mempool, state, tx, nullptr /* pfMissingInputs */,
                                 nullptr /* plTxnReplaced */, false /* bypass_limits */, nAbsurdFee);
     fInMempool |= ret;
@@ -4305,29 +4316,29 @@ OutputType ParseOutputType(const std::string& type, OutputType default_type)
     if (type.empty()) {
         return default_type;
     } else if (type == OUTPUT_TYPE_STRING_LEGACY) {
-        return OUTPUT_TYPE_LEGACY;
+        return OutputType::LEGACY;
     } else if (type == OUTPUT_TYPE_STRING_P2SH_SEGWIT) {
-        return OUTPUT_TYPE_P2SH_SEGWIT;
+        return OutputType::P2SH_SEGWIT;
     } else if (type == OUTPUT_TYPE_STRING_BECH32) {
-        return OUTPUT_TYPE_BECH32;
+        return OutputType::BECH32;
     } else {
-        return OUTPUT_TYPE_NONE;
+        return OutputType::NONE;
     }
 }
 
 const std::string& FormatOutputType(OutputType type)
 {
     switch (type) {
-    case OUTPUT_TYPE_LEGACY: return OUTPUT_TYPE_STRING_LEGACY;
-    case OUTPUT_TYPE_P2SH_SEGWIT: return OUTPUT_TYPE_STRING_P2SH_SEGWIT;
-    case OUTPUT_TYPE_BECH32: return OUTPUT_TYPE_STRING_BECH32;
+    case OutputType::LEGACY: return OUTPUT_TYPE_STRING_LEGACY;
+    case OutputType::P2SH_SEGWIT: return OUTPUT_TYPE_STRING_P2SH_SEGWIT;
+    case OutputType::BECH32: return OUTPUT_TYPE_STRING_BECH32;
     default: assert(false);
     }
 }
 
 void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 {
-    if (key.IsCompressed() && (type == OUTPUT_TYPE_P2SH_SEGWIT || type == OUTPUT_TYPE_BECH32)) {
+    if (key.IsCompressed() && (type == OutputType::P2SH_SEGWIT || type == OutputType::BECH32)) {
         CTxDestination witdest = WitnessV0KeyHash(key.GetID());
         CScript witprog = GetScriptForDestination(witdest);
         // Make sure the resulting program is solvable.
@@ -4338,20 +4349,20 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 
 void CWallet::LearnAllRelatedScripts(const CPubKey& key)
 {
-    // OUTPUT_TYPE_P2SH_SEGWIT always adds all necessary scripts for all types.
-    LearnRelatedScripts(key, OUTPUT_TYPE_P2SH_SEGWIT);
+    // OutputType::P2SH_SEGWIT always adds all necessary scripts for all types.
+    LearnRelatedScripts(key, OutputType::P2SH_SEGWIT);
 }
 
 CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
 {
     switch (type) {
-    case OUTPUT_TYPE_LEGACY: return key.GetID();
-    case OUTPUT_TYPE_P2SH_SEGWIT:
-    case OUTPUT_TYPE_BECH32: {
+    case OutputType::LEGACY: return key.GetID();
+    case OutputType::P2SH_SEGWIT:
+    case OutputType::BECH32: {
         if (!key.IsCompressed()) return key.GetID();
         CTxDestination witdest = WitnessV0KeyHash(key.GetID());
         CScript witprog = GetScriptForDestination(witdest);
-        if (type == OUTPUT_TYPE_P2SH_SEGWIT) {
+        if (type == OutputType::P2SH_SEGWIT) {
             return CScriptID(witprog);
         } else {
             return witdest;
@@ -4377,10 +4388,10 @@ CTxDestination CWallet::AddAndGetDestinationForScript(const CScript& script, Out
 {
     // Note that scripts over 520 bytes are not yet supported.
     switch (type) {
-    case OUTPUT_TYPE_LEGACY:
+    case OutputType::LEGACY:
         return CScriptID(script);
-    case OUTPUT_TYPE_P2SH_SEGWIT:
-    case OUTPUT_TYPE_BECH32: {
+    case OutputType::P2SH_SEGWIT:
+    case OutputType::BECH32: {
         WitnessV0ScriptHash hash;
         CSHA256().Write(script.data(), script.size()).Finalize(hash.begin());
         CTxDestination witdest = hash;
@@ -4389,7 +4400,7 @@ CTxDestination CWallet::AddAndGetDestinationForScript(const CScript& script, Out
         if (!IsSolvable(*this, witprog)) return CScriptID(script);
         // Add the redeemscript, so that P2WSH and P2SH-P2WSH outputs are recognized as ours.
         AddCScript(witprog);
-        if (type == OUTPUT_TYPE_BECH32) {
+        if (type == OutputType::BECH32) {
             return witdest;
         } else {
             return CScriptID(witprog);

@@ -45,6 +45,7 @@ extern bool bSpendZeroConfChange;
 extern bool fWalletRbf;
 extern bool g_wallet_allow_fallback_fee;
 
+//! Default for -keypool
 static const unsigned int DEFAULT_KEYPOOL_SIZE = 1000;
 //! -paytxfee default
 static const CAmount DEFAULT_TRANSACTION_FEE = 0;
@@ -98,19 +99,15 @@ enum WalletFeature
     FEATURE_LATEST = FEATURE_COMPRPUBKEY // HD is optional, use FEATURE_COMPRPUBKEY as latest version
 };
 
-enum OutputType : int
-{
-    OUTPUT_TYPE_NONE,
-    OUTPUT_TYPE_LEGACY,
-    OUTPUT_TYPE_P2SH_SEGWIT,
-    OUTPUT_TYPE_BECH32,
-
-    // FIXME: Update once we have segwit on Namecoin.
-    OUTPUT_TYPE_DEFAULT = OUTPUT_TYPE_LEGACY,
+enum class OutputType {
+    NONE,
+    LEGACY,
+    P2SH_SEGWIT,
+    BECH32,
 };
 
-extern OutputType g_address_type;
-extern OutputType g_change_type;
+//! Default for -addresstype
+constexpr OutputType DEFAULT_ADDRESS_TYPE{OutputType::LEGACY};
 
 
 /** A key pool entry */
@@ -863,7 +860,7 @@ public:
      * completion the coin set and corresponding actual target value is
      * assembled
      */
-    bool SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibilty_filter, std::vector<COutput> vCoins,
+    bool SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<COutput> vCoins,
         std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const;
 
     bool IsSpent(const uint256& hash, unsigned int n) const;
@@ -1007,6 +1004,8 @@ public:
     static CFeeRate minTxFee;
     static CFeeRate fallbackFee;
     static CFeeRate m_discard_rate;
+    OutputType m_default_address_type{DEFAULT_ADDRESS_TYPE};
+    OutputType m_default_change_type{OutputType::NONE}; // Default to OutputType::NONE if not set by -changetype
 
     bool NewKeyPool();
     size_t KeypoolCountExternalKeys();
@@ -1185,7 +1184,7 @@ public:
     CTxDestination AddAndGetDestinationForScript(const CScript& script, OutputType);
 
     /** Whether a given output is spendable by this wallet */
-    bool OutputEligibleForSpending(const COutput& output, const CoinEligibilityFilter& eligibilty_filter) const;
+    bool OutputEligibleForSpending(const COutput& output, const CoinEligibilityFilter& eligibility_filter) const;
 };
 
 /** A key allocated from the key pool. */
@@ -1250,7 +1249,7 @@ public:
     }
 };
 
-OutputType ParseOutputType(const std::string& str, OutputType default_type = OUTPUT_TYPE_DEFAULT);
+OutputType ParseOutputType(const std::string& str, OutputType default_type);
 const std::string& FormatOutputType(OutputType type);
 
 /**

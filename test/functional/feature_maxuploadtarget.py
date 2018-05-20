@@ -6,7 +6,7 @@
 
 * Verify that getdata requests for old blocks (>1week) are dropped
 if uploadtarget has been reached.
-* Verify that getdata requests for recent blocks are respecteved even
+* Verify that getdata requests for recent blocks are respected even
 if uploadtarget has been reached.
 * Verify that the upload counters are reset after 24 hours.
 """
@@ -17,7 +17,7 @@ from test_framework.mininode import *
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
-class TestNode(P2PInterface):
+class TestP2PConn(P2PInterface):
     def __init__(self):
         super().__init__()
         self.block_receive_map = defaultdict(int)
@@ -55,7 +55,7 @@ class MaxUploadTest(BitcoinTestFramework):
         p2p_conns = []
 
         for _ in range(3):
-            p2p_conns.append(self.nodes[0].add_p2p_connection(TestNode()))
+            p2p_conns.append(self.nodes[0].add_p2p_connection(TestP2PConn()))
 
         network_thread_start()
         for p2pc in p2p_conns:
@@ -147,7 +147,7 @@ class MaxUploadTest(BitcoinTestFramework):
         self.start_node(0, ["-whitelist=127.0.0.1", "-maxuploadtarget=1", "-blockmaxsize=999000"])
 
         # Reconnect to self.nodes[0]
-        self.nodes[0].add_p2p_connection(TestNode())
+        self.nodes[0].add_p2p_connection(TestP2PConn())
 
         network_thread_start()
         self.nodes[0].p2p.wait_for_verack()

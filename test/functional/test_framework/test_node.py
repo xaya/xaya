@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import subprocess
+import tempfile
 import time
 
 from .authproxy import JSONRPCException
@@ -44,9 +45,9 @@ class TestNode():
     To make things easier for the test writer, any unrecognised messages will
     be dispatched to the RPC connection."""
 
-    def __init__(self, i, dirname, rpchost, timewait, binary, stderr, mocktime, coverage_dir, extra_conf=None, extra_args=None, use_cli=False):
+    def __init__(self, i, datadir, rpchost, timewait, binary, stderr, mocktime, coverage_dir, extra_conf=None, extra_args=None, use_cli=False):
         self.index = i
-        self.datadir = os.path.join(dirname, "node" + str(i))
+        self.datadir = datadir
         self.rpchost = rpchost
         if timewait:
             self.rpc_timeout = timewait
@@ -60,14 +61,14 @@ class TestNode():
         self.stderr = stderr
         self.coverage_dir = coverage_dir
         if extra_conf != None:
-            append_config(dirname, i, extra_conf)
+            append_config(datadir, extra_conf)
         # Most callers will just need to add extra args to the standard list below.
-        # For those callers that need more flexibity, they can just set the args property directly.
+        # For those callers that need more flexibility, they can just set the args property directly.
         # Note that common args are set in the config file (see initialize_datadir)
         self.extra_args = extra_args
         self.args = [self.binary, "-datadir=" + self.datadir, "-logtimemicros", "-debug", "-debugexclude=libevent", "-debugexclude=leveldb", "-mocktime=" + str(mocktime), "-uacomment=testnode%d" % i]
 
-        self.cli = TestNodeCLI(os.getenv("BITCOINCLI", "bitcoin-cli"), self.datadir)
+        self.cli = TestNodeCLI(os.getenv("BITCOINCLI", "chimaera-cli"), self.datadir)
         self.use_cli = use_cli
 
         self.running = False
@@ -167,6 +168,41 @@ class TestNode():
     def wait_until_stopped(self, timeout=BITCOIND_PROC_WAIT_TIMEOUT):
         wait_until(self.is_node_stopped, timeout=timeout)
 
+    def assert_start_raises_init_error(self, extra_args=None, expected_msg=None, partial_match=False, *args, **kwargs):
+        """Attempt to start the node and expect it to raise an error.
+
+        extra_args: extra arguments to pass through to bitcoind
+        expected_msg: regex that stderr should match when bitcoind fails
+
+        Will throw if bitcoind starts without an error.
+        Will throw if an expected_msg is provided and it does not match bitcoind's stdout."""
+        with tempfile.SpooledTemporaryFile(max_size=2**16) as log_stderr:
+            try:
+                self.start(extra_args, stderr=log_stderr, *args, **kwargs)
+                self.wait_for_rpc_connection()
+                self.stop_node()
+                self.wait_util_stopped()
+            except Exception as e:
+                assert 'chimaerad exited' in str(e)  # node must have shutdown
+                self.running = False
+                self.process = None
+                # Check stderr for expected message
+                if expected_msg is not None:
+                    log_stderr.seek(0)
+                    stderr = log_stderr.read().decode('utf-8').strip()
+                    if partial_match:
+                        if re.search(expected_msg, stderr, flags=re.MULTILINE) is None:
+                            raise AssertionError('Expected message "{}" does not partially match stderr:\n"{}"'.format(expected_msg, stderr))
+                    else:
+                        if re.fullmatch(expected_msg, stderr) is None:
+                            raise AssertionError('Expected message "{}" does not fully match stderr:\n"{}"'.format(expected_msg, stderr))
+            else:
+                if expected_msg is None:
+                    assert_msg = "chimaerad should have exited with an error"
+                else:
+                    assert_msg = "chimaerad should have exited with expected error " + expected_msg
+                raise AssertionError(assert_msg)
+
     def node_encrypt_wallet(self, passphrase):
         """"Encrypts the wallet.
 
@@ -224,7 +260,7 @@ class TestNodeCLI():
         self.binary = binary
         self.datadir = datadir
         self.input = None
-        self.log = logging.getLogger('TestFramework.bitcoincli')
+        self.log = logging.getLogger('TestFramework.namecoincli')
 
     def __call__(self, *options, input=None):
         # TestNodeCLI is callable with bitcoin-cli command-line options
@@ -250,14 +286,14 @@ class TestNodeCLI():
 
         pos_args = [str(arg) for arg in args]
         named_args = [str(key) + "=" + str(value) for (key, value) in kwargs.items()]
-        assert not (pos_args and named_args), "Cannot use positional arguments and named arguments in the same bitcoin-cli call"
+        assert not (pos_args and named_args), "Cannot use positional arguments and named arguments in the same chimaera-cli call"
         p_args = [self.binary, "-datadir=" + self.datadir] + self.options
         if named_args:
             p_args += ["-named"]
         if command is not None:
             p_args += [command]
         p_args += pos_args + named_args
-        self.log.debug("Running bitcoin-cli command: %s" % command)
+        self.log.debug("Running namecoin-cli command: %s" % command)
         process = subprocess.Popen(p_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         cli_stdout, cli_stderr = process.communicate(input=self.input)
         returncode = process.poll()
