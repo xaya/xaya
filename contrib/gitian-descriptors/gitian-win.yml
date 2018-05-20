@@ -1,5 +1,5 @@
 ---
-name: "chimaera-win-0.16"
+name: "chimaera-win-0.1"
 enable_cache: true
 suites:
 - "trusty"

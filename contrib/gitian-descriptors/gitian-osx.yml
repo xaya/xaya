@@ -1,5 +1,5 @@
 ---
-name: "chimaera-osx-0.16"
+name: "chimaera-osx-0.1"
 enable_cache: true
 suites:
 - "trusty"
