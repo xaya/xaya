@@ -44,7 +44,7 @@ class PremineTest(BitcoinTestFramework):
       node.importprivkey (key, 'premine') 
     pubkeys = []
     for addr in node.getaddressesbyaccount ('premine'):
-      data = node.validateaddress (addr)
+      data = node.getaddressinfo (addr)
       if (not data['isscript']) and (not data['iswitness']):
         pubkeys.append (data['pubkey'])
     p2sh = node.addmultisigaddress (1, pubkeys)
@@ -61,7 +61,7 @@ class PremineTest(BitcoinTestFramework):
     # Try to "sign" it by just adding the redeem script, which would have been
     # valid before the P2SH softfork.  Doing so should fail, which verifies that
     # P2SH is enforced right from the start and thus that the premine is safe.
-    data = node.validateaddress (PREMINE_ADDRESS)
+    data = node.getaddressinfo (PREMINE_ADDRESS)
     redeemScript = data['hex']
     # Prepend script size, so that it will correctly push the script hash
     # to the stack.
@@ -74,7 +74,7 @@ class PremineTest(BitcoinTestFramework):
                              node.sendrawtransaction, forgedTx, True)
 
     # Sign and send the raw tx, should succeed.
-    signed = node.signrawtransaction (rawTx)
+    signed = node.signrawtransactionwithwallet (rawTx)
     assert signed['complete']
     signedTx = signed['hex']
     sendId = node.sendrawtransaction (signedTx, True)

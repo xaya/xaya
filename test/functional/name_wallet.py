@@ -122,7 +122,7 @@ class NameWalletTest (NameTestFramework):
     # Check that we use legacy addresses.
     # FIXME: Remove once we have segwit.
     addr = self.nodes[0].getnewaddress ()
-    info = self.nodes[0].validateaddress (addr)
+    info = self.nodes[0].getaddressinfo (addr)
     assert not info['isscript']
     assert not info['iswitness']
 

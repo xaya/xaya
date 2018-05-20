@@ -142,9 +142,9 @@ class NameTestFramework (BitcoinTestFramework):
     nameOp = {"op": "name_update", "name": name, "value": value}
     tx = self.nodes[nameFrom].namerawtransaction (tx, nameInd, nameOp)
 
-    signed = self.nodes[nameFrom].signrawtransaction (tx['hex'])
+    signed = self.nodes[nameFrom].signrawtransactionwithwallet (tx['hex'])
     assert not signed['complete']
-    signed = self.nodes[nameTo].signrawtransaction (signed['hex'])
+    signed = self.nodes[nameTo].signrawtransactionwithwallet (signed['hex'])
     assert signed['complete']
     tx = signed['hex']
     

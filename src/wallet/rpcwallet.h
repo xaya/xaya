@@ -12,6 +12,7 @@ class CRPCTable;
 class CWallet;
 class CWalletTx;
 class JSONRPCRequest;
+class UniValue;
 
 void RegisterWalletRPCCommands(CRPCTable &t);
 
@@ -31,4 +32,6 @@ void SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                        bool fSubtractFeeFromAmount, CWalletTx& wtxNew,
                        const CCoinControl& coin_control);
 
+UniValue getaddressinfo(const JSONRPCRequest& request);
+UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
 #endif //BITCOIN_WALLET_RPCWALLET_H
