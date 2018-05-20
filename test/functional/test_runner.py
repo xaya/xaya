@@ -55,7 +55,7 @@ TEST_EXIT_SKIPPED = 77
 # 20 minutes represented in seconds
 TRAVIS_TIMEOUT_DURATION = 20 * 60
 
-BASE_SCRIPTS= [
+BASE_SCRIPTS = [
     # Scripts that are run by the travis build process.
     # Longest test should go first, to favor running tests in parallel
     'wallet_hd.py',
@@ -124,6 +124,7 @@ BASE_SCRIPTS= [
     'rpc_signmessage.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'feature_nulldummy.py',
+    'mempool_accept.py',
     'wallet_import_rescan.py',
     'mining_basic.py',
     'wallet_bumpfee.py',
@@ -142,6 +143,7 @@ BASE_SCRIPTS= [
     'p2p_node_network_limited.py',
     'feature_blocksdir.py',
     'feature_config_args.py',
+    'feature_help.py',
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time
 
@@ -174,7 +176,6 @@ EXTENDED_SCRIPTS = [
     'mining_getblocktemplate_longpoll.py',
     'p2p_timeouts.py',
     # vv Tests less than 60s vv
-    'feature_bip9_softforks.py',
     'p2p_feefilter.py',
     'rpc_bind.py',
     # vv Tests less than 30s vv

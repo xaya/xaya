@@ -6,6 +6,7 @@
 
 import decimal
 import errno
+from enum import Enum
 import http.client
 import json
 import logging
@@ -30,6 +31,17 @@ from .util import (
 JSONDecodeError = getattr(json, "JSONDecodeError", ValueError)
 
 BITCOIND_PROC_WAIT_TIMEOUT = 60
+
+
+class FailedToStartError(Exception):
+    """Raised when a node fails to start correctly."""
+
+
+class ErrorMatch(Enum):
+    FULL_TEXT = 1
+    FULL_REGEX = 2
+    PARTIAL_REGEX = 3
+
 
 class TestNode():
     """A class for representing a namecoind node under test.
@@ -104,7 +116,8 @@ class TestNode():
         # Poll at a rate of four times per second
         poll_per_s = 4
         for _ in range(poll_per_s * self.rpc_timeout):
-            assert self.process.poll() is None, "chimaerad exited with status %i during initialization" % self.process.returncode
+            if self.process.poll() is not None:
+                raise FailedToStartError('chimaerad exited with status {} during initialization'.format(self.process.returncode))
             try:
                 self.rpc = get_rpc_proxy(rpc_url(self.datadir, self.index, self.rpchost), self.index, timeout=self.rpc_timeout, coveragedir=self.coverage_dir)
                 self.rpc.getblockcount()
@@ -168,7 +181,7 @@ class TestNode():
     def wait_until_stopped(self, timeout=BITCOIND_PROC_WAIT_TIMEOUT):
         wait_until(self.is_node_stopped, timeout=timeout)
 
-    def assert_start_raises_init_error(self, extra_args=None, expected_msg=None, partial_match=False, *args, **kwargs):
+    def assert_start_raises_init_error(self, extra_args=None, expected_msg=None, match=ErrorMatch.FULL_TEXT, *args, **kwargs):
         """Attempt to start the node and expect it to raise an error.
 
         extra_args: extra arguments to pass through to bitcoind
@@ -181,20 +194,23 @@ class TestNode():
                 self.start(extra_args, stderr=log_stderr, *args, **kwargs)
                 self.wait_for_rpc_connection()
                 self.stop_node()
-                self.wait_util_stopped()
-            except Exception as e:
-                assert 'chimaerad exited' in str(e)  # node must have shutdown
+                self.wait_until_stopped()
+            except FailedToStartError as e:
+                self.log.debug('chimaerad failed to start: %s', e)
                 self.running = False
                 self.process = None
                 # Check stderr for expected message
                 if expected_msg is not None:
                     log_stderr.seek(0)
                     stderr = log_stderr.read().decode('utf-8').strip()
-                    if partial_match:
+                    if match == ErrorMatch.PARTIAL_REGEX:
                         if re.search(expected_msg, stderr, flags=re.MULTILINE) is None:
                             raise AssertionError('Expected message "{}" does not partially match stderr:\n"{}"'.format(expected_msg, stderr))
-                    else:
+                    elif match == ErrorMatch.FULL_REGEX:
                         if re.fullmatch(expected_msg, stderr) is None:
+                            raise AssertionError('Expected message "{}" does not fully match stderr:\n"{}"'.format(expected_msg, stderr))
+                    elif match == ErrorMatch.FULL_TEXT:
+                        if expected_msg != stderr:
                             raise AssertionError('Expected message "{}" does not fully match stderr:\n"{}"'.format(expected_msg, stderr))
             else:
                 if expected_msg is None:

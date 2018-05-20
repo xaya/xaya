@@ -71,6 +71,8 @@ code.
   - Constant names are all uppercase, and use `_` to separate words.
   - Class names, function names and method names are UpperCamelCase
     (PascalCase). Do not prefix class names with `C`.
+  - Test suite naming convention: The Boost test suite in file
+    `src/test/foo_tests.cpp` should be named `foo_tests`.
 
 - **Miscellaneous**
   - `++i` is preferred over `i++`.
@@ -604,6 +606,16 @@ namespace {
     source file into account. This allows quoted includes to stand out more when
     the location of the source file actually is relevant.
 
+- Use include guards to avoid the problem of double inclusion. The header file
+  `foo/bar.h` should use the include guard identifier `BITCOIN_FOO_BAR_H`, e.g.
+
+```c++
+#ifndef BITCOIN_FOO_BAR_H
+#define BITCOIN_FOO_BAR_H
+...
+#endif // BITCOIN_FOO_BAR_H
+```
+
 GUI
 -----
 
@@ -612,6 +624,19 @@ GUI
   - *Rationale*: Model classes pass through events and data from the core, they
     should not interact with the user. That's where View classes come in. The converse also
     holds: try to not directly access core data structures from Views.
+
+- Avoid adding slow or blocking code in the GUI thread. In particular do not
+  add new `interface::Node` and `interface::Wallet` method calls, even if they
+  may be fast now, in case they are changed to lock or communicate across
+  processes in the future.
+
+  Prefer to offload work from the GUI thread to worker threads (see
+  `RPCExecutor` in console code as an example) or take other steps (see
+  https://doc.qt.io/archives/qq/qq27-responsive-guis.html) to keep the GUI
+  responsive.
+
+  - *Rationale*: Blocking the GUI thread can increase latency, and lead to
+    hangs and deadlocks.
 
 Subtrees
 ----------

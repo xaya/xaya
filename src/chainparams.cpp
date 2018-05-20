@@ -11,6 +11,8 @@
 #include <util.h>
 #include <utilstrencodings.h>
 
+#include <assert.h>
+
 #include <chainparamsseeds.h>
 
 #include <algorithm>
