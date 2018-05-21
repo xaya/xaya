@@ -471,7 +471,7 @@ static bool IsCurrentForFeeEstimation()
  * and instead just erase from the mempool as needed.
  */
 
-void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool fAddToMempool)
+static void UpdateMempoolForReorg(DisconnectedBlockTransactions &disconnectpool, bool fAddToMempool)
 {
     AssertLockHeld(cs_main);
     std::vector<uint256> vHashUpdate;
@@ -1526,7 +1526,7 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex *pindex)
 }
 
 /** Abort with a message */
-bool AbortNode(const std::string& strMessage, const std::string& userMessage="")
+static bool AbortNode(const std::string& strMessage, const std::string& userMessage="")
 {
     SetMiscWarning(strMessage);
     LogPrintf("*** %s\n", strMessage);
@@ -1537,7 +1537,7 @@ bool AbortNode(const std::string& strMessage, const std::string& userMessage="")
     return false;
 }
 
-bool AbortNode(CValidationState& state, const std::string& strMessage, const std::string& userMessage="")
+static bool AbortNode(CValidationState& state, const std::string& strMessage, const std::string& userMessage="")
 {
     AbortNode(strMessage, userMessage);
     return state.Error(strMessage);
@@ -2007,13 +2007,12 @@ bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState &
     LOCK(cs_main);
     static int64_t nLastWrite = 0;
     static int64_t nLastFlush = 0;
-    static int64_t nLastSetChain = 0;
     std::set<int> setFilesToPrune;
-    bool fFlushForPrune = false;
-    bool fDoFullFlush = false;
-    int64_t nNow = 0;
+    bool full_flush_completed = false;
     try {
     {
+        bool fFlushForPrune = false;
+        bool fDoFullFlush = false;
         LOCK(cs_LastBlockFile);
         if (fPruneMode && (fCheckForPruning || nManualPruneHeight > 0) && !fReindex) {
             if (nManualPruneHeight > 0) {
@@ -2030,16 +2029,13 @@ bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState &
                 }
             }
         }
-        nNow = GetTimeMicros();
+        int64_t nNow = GetTimeMicros();
         // Avoid writing/flushing immediately after startup.
         if (nLastWrite == 0) {
             nLastWrite = nNow;
         }
         if (nLastFlush == 0) {
             nLastFlush = nNow;
-        }
-        if (nLastSetChain == 0) {
-            nLastSetChain = nNow;
         }
         int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
         int64_t cacheSize = pcoinsTip->DynamicMemoryUsage();
@@ -2097,12 +2093,12 @@ bool static FlushStateToDisk(const CChainParams& chainparams, CValidationState &
             if (!pcoinsTip->Flush())
                 return AbortNode(state, "Failed to write to coin database");
             nLastFlush = nNow;
+            full_flush_completed = true;
         }
     }
-    if (fDoFullFlush || ((mode == FlushStateMode::ALWAYS || mode == FlushStateMode::PERIODIC) && nNow > nLastSetChain + (int64_t)DATABASE_WRITE_INTERVAL * 1000000)) {
+    if (full_flush_completed) {
         // Update best block in wallet (so we can detect restored wallets).
-        GetMainSignals().SetBestChain(chainActive.GetLocator());
-        nLastSetChain = nNow;
+        GetMainSignals().ChainStateFlushed(chainActive.GetLocator());
     }
     } catch (const std::runtime_error& e) {
         return AbortNode(state, std::string("System error while flushing: ") + e.what());

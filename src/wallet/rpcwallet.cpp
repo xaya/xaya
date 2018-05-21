@@ -17,7 +17,6 @@
 #include <policy/rbf.h>
 #include <rpc/mining.h>
 #include <rpc/rawtransaction.h>
-#include <rpc/safemode.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/sign.h>
@@ -85,7 +84,7 @@ void EnsureWalletIsUnlocked(CWallet * const pwallet)
     }
 }
 
-void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
+static void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
 {
     int confirms = wtx.GetDepthInMainChain();
     entry.pushKV("confirmations", confirms);
@@ -124,7 +123,7 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
         entry.pushKV(item.first, item.second);
 }
 
-std::string LabelFromValue(const UniValue& value)
+static std::string LabelFromValue(const UniValue& value)
 {
     std::string label = value.get_str();
     if (label == "*")
@@ -132,7 +131,7 @@ std::string LabelFromValue(const UniValue& value)
     return label;
 }
 
-UniValue getnewaddress(const JSONRPCRequest& request)
+static UniValue getnewaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -164,8 +163,7 @@ UniValue getnewaddress(const JSONRPCRequest& request)
 
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[1].isNull()) {
-        output_type = ParseOutputType(request.params[1].get_str(), pwallet->m_default_address_type);
-        if (output_type == OutputType::NONE) {
+        if (!ParseOutputType(request.params[1].get_str(), output_type)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[1].get_str()));
         }
     }
@@ -197,7 +195,7 @@ CTxDestination GetLabelDestination(CWallet* const pwallet, const std::string& la
     return dest;
 }
 
-UniValue getlabeladdress(const JSONRPCRequest& request)
+static UniValue getlabeladdress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -255,7 +253,7 @@ UniValue getlabeladdress(const JSONRPCRequest& request)
 }
 
 
-UniValue getrawchangeaddress(const JSONRPCRequest& request)
+static UniValue getrawchangeaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -282,10 +280,9 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
         pwallet->TopUpKeyPool();
     }
 
-    OutputType output_type = pwallet->m_default_change_type != OutputType::NONE ? pwallet->m_default_change_type : pwallet->m_default_address_type;
+    OutputType output_type = pwallet->m_default_change_type != OutputType::CHANGE_AUTO ? pwallet->m_default_change_type : pwallet->m_default_address_type;
     if (!request.params[0].isNull()) {
-        output_type = ParseOutputType(request.params[0].get_str(), output_type);
-        if (output_type == OutputType::NONE) {
+        if (!ParseOutputType(request.params[0].get_str(), output_type)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[0].get_str()));
         }
     }
@@ -304,7 +301,7 @@ UniValue getrawchangeaddress(const JSONRPCRequest& request)
 }
 
 
-UniValue setlabel(const JSONRPCRequest& request)
+static UniValue setlabel(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -358,7 +355,7 @@ UniValue setlabel(const JSONRPCRequest& request)
 }
 
 
-UniValue getaccount(const JSONRPCRequest& request)
+static UniValue getaccount(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -401,7 +398,7 @@ UniValue getaccount(const JSONRPCRequest& request)
 }
 
 
-UniValue getaddressesbyaccount(const JSONRPCRequest& request)
+static UniValue getaddressesbyaccount(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -509,7 +506,7 @@ CTransactionRef SendMoneyToScript(
     return tx;
 }
 
-UniValue sendtoaddress(const JSONRPCRequest& request)
+static UniValue sendtoaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -545,8 +542,6 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
             + HelpExampleCli("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\" 0.1 \"\" \"\" true")
             + HelpExampleRpc("sendtoaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 0.1, \"donation\", \"seans outpost\"")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -601,7 +596,7 @@ UniValue sendtoaddress(const JSONRPCRequest& request)
     return tx->GetHash().GetHex();
 }
 
-UniValue listaddressgroupings(const JSONRPCRequest& request)
+static UniValue listaddressgroupings(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -631,8 +626,6 @@ UniValue listaddressgroupings(const JSONRPCRequest& request)
             + HelpExampleRpc("listaddressgroupings", "")
         );
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -660,7 +653,7 @@ UniValue listaddressgroupings(const JSONRPCRequest& request)
     return jsonGroupings;
 }
 
-UniValue signmessage(const JSONRPCRequest& request)
+static UniValue signmessage(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -721,7 +714,7 @@ UniValue signmessage(const JSONRPCRequest& request)
     return EncodeBase64(vchSig.data(), vchSig.size());
 }
 
-UniValue getreceivedbyaddress(const JSONRPCRequest& request)
+static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -747,8 +740,6 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
             "\nAs a json rpc call\n"
             + HelpExampleRpc("getreceivedbyaddress", "\"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 6")
        );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -788,7 +779,7 @@ UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 }
 
 
-UniValue getreceivedbylabel(const JSONRPCRequest& request)
+static UniValue getreceivedbylabel(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -821,8 +812,6 @@ UniValue getreceivedbylabel(const JSONRPCRequest& request)
             "\nAs a json rpc call\n"
             + HelpExampleRpc("getreceivedbylabel", "\"tabby\", 6")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -860,7 +849,7 @@ UniValue getreceivedbylabel(const JSONRPCRequest& request)
 }
 
 
-UniValue getbalance(const JSONRPCRequest& request)
+static UniValue getbalance(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -903,8 +892,6 @@ UniValue getbalance(const JSONRPCRequest& request)
             + HelpExampleRpc("getbalance", "\"*\", 6")
         );
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -945,7 +932,7 @@ UniValue getbalance(const JSONRPCRequest& request)
     return ValueFromAmount(pwallet->GetBalance());
 }
 
-UniValue getunconfirmedbalance(const JSONRPCRequest &request)
+static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -957,8 +944,6 @@ UniValue getunconfirmedbalance(const JSONRPCRequest &request)
                 "getunconfirmedbalance\n"
                 "Returns the server's total unconfirmed balance\n");
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -969,7 +954,7 @@ UniValue getunconfirmedbalance(const JSONRPCRequest &request)
 }
 
 
-UniValue movecmd(const JSONRPCRequest& request)
+static UniValue movecmd(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1004,7 +989,6 @@ UniValue movecmd(const JSONRPCRequest& request)
             + HelpExampleRpc("move", "\"timotei\", \"akiko\", 0.01, 6, \"happy birthday!\"")
         );
 
-    ObserveSafeMode();
     LOCK2(cs_main, pwallet->cs_wallet);
 
     std::string strFrom = LabelFromValue(request.params[0]);
@@ -1027,7 +1011,7 @@ UniValue movecmd(const JSONRPCRequest& request)
 }
 
 
-UniValue sendfrom(const JSONRPCRequest& request)
+static UniValue sendfrom(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1062,8 +1046,6 @@ UniValue sendfrom(const JSONRPCRequest& request)
             "\nAs a json rpc call\n"
             + HelpExampleRpc("sendfrom", "\"tabby\", \"CJDPZBVLi6tx2mST1Z4BSANNeztHunz9LT\", 0.01, 6, \"donation\", \"seans outpost\"")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -1102,7 +1084,7 @@ UniValue sendfrom(const JSONRPCRequest& request)
 }
 
 
-UniValue sendmany(const JSONRPCRequest& request)
+static UniValue sendmany(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1193,8 +1175,6 @@ UniValue sendmany(const JSONRPCRequest& request)
     }
 
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 8) throw std::runtime_error(help_text);
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -1299,7 +1279,7 @@ UniValue sendmany(const JSONRPCRequest& request)
     return tx->GetHash().GetHex();
 }
 
-UniValue addmultisigaddress(const JSONRPCRequest& request)
+static UniValue addmultisigaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1359,8 +1339,7 @@ UniValue addmultisigaddress(const JSONRPCRequest& request)
 
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[3].isNull()) {
-        output_type = ParseOutputType(request.params[3].get_str(), output_type);
-        if (output_type == OutputType::NONE) {
+        if (!ParseOutputType(request.params[3].get_str(), output_type)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[3].get_str()));
         }
     }
@@ -1435,7 +1414,7 @@ public:
     bool operator()(const T& dest) { return false; }
 };
 
-UniValue addwitnessaddress(const JSONRPCRequest& request)
+static UniValue addwitnessaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1521,7 +1500,7 @@ struct tallyitem
     }
 };
 
-UniValue ListReceived(CWallet * const pwallet, const UniValue& params, bool by_label)
+static UniValue ListReceived(CWallet * const pwallet, const UniValue& params, bool by_label)
 {
     // Minimum confirmations
     int nMinDepth = 1;
@@ -1667,7 +1646,7 @@ UniValue ListReceived(CWallet * const pwallet, const UniValue& params, bool by_l
     return ret;
 }
 
-UniValue listreceivedbyaddress(const JSONRPCRequest& request)
+static UniValue listreceivedbyaddress(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1707,8 +1686,6 @@ UniValue listreceivedbyaddress(const JSONRPCRequest& request)
             + HelpExampleRpc("listreceivedbyaddress", "6, true, true, \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")
         );
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -1718,7 +1695,7 @@ UniValue listreceivedbyaddress(const JSONRPCRequest& request)
     return ListReceived(pwallet, request.params, false);
 }
 
-UniValue listreceivedbylabel(const JSONRPCRequest& request)
+static UniValue listreceivedbylabel(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -1759,8 +1736,6 @@ UniValue listreceivedbylabel(const JSONRPCRequest& request)
             + HelpExampleRpc("listreceivedbylabel", "6, true, true")
         );
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -1788,7 +1763,7 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
  * @param  ret        The UniValue into which the result is stored.
  * @param  filter     The "is mine" filter bool.
  */
-void ListTransactions(CWallet* const pwallet, const CWalletTx& wtx, const std::string& strAccount, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter)
+static void ListTransactions(CWallet* const pwallet, const CWalletTx& wtx, const std::string& strAccount, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter)
 {
     CAmount nFee;
     std::string strSentAccount;
@@ -1872,7 +1847,7 @@ void ListTransactions(CWallet* const pwallet, const CWalletTx& wtx, const std::s
     }
 }
 
-void AcentryToJSON(const CAccountingEntry& acentry, const std::string& strAccount, UniValue& ret)
+static void AcentryToJSON(const CAccountingEntry& acentry, const std::string& strAccount, UniValue& ret)
 {
     bool fAllAccounts = (strAccount == std::string("*"));
 
@@ -2002,8 +1977,6 @@ UniValue listtransactions(const JSONRPCRequest& request)
     }
     if (request.fHelp || request.params.size() > 4) throw std::runtime_error(help_text);
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -2079,7 +2052,7 @@ UniValue listtransactions(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue listaccounts(const JSONRPCRequest& request)
+static UniValue listaccounts(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2115,8 +2088,6 @@ UniValue listaccounts(const JSONRPCRequest& request)
             "\nAs json rpc call\n"
             + HelpExampleRpc("listaccounts", "6")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -2174,7 +2145,7 @@ UniValue listaccounts(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue listsinceblock(const JSONRPCRequest& request)
+static UniValue listsinceblock(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2229,8 +2200,6 @@ UniValue listsinceblock(const JSONRPCRequest& request)
             + HelpExampleCli("listsinceblock", "\"000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad\" 6")
             + HelpExampleRpc("listsinceblock", "\"000000000000000bacf66f7497b7dc45ef753ee9a7d38571037cdb1a57f663ad\", 6")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -2315,7 +2284,7 @@ UniValue listsinceblock(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue gettransaction(const JSONRPCRequest& request)
+static UniValue gettransaction(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2367,8 +2336,6 @@ UniValue gettransaction(const JSONRPCRequest& request)
             + HelpExampleRpc("gettransaction", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"")
         );
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -2411,7 +2378,7 @@ UniValue gettransaction(const JSONRPCRequest& request)
     return entry;
 }
 
-UniValue abandontransaction(const JSONRPCRequest& request)
+static UniValue abandontransaction(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2435,8 +2402,6 @@ UniValue abandontransaction(const JSONRPCRequest& request)
         );
     }
 
-    ObserveSafeMode();
-
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -2457,7 +2422,7 @@ UniValue abandontransaction(const JSONRPCRequest& request)
 }
 
 
-UniValue backupwallet(const JSONRPCRequest& request)
+static UniValue backupwallet(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2490,7 +2455,7 @@ UniValue backupwallet(const JSONRPCRequest& request)
 }
 
 
-UniValue keypoolrefill(const JSONRPCRequest& request)
+static UniValue keypoolrefill(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2537,7 +2502,7 @@ static void LockWallet(CWallet* pWallet)
     pWallet->Lock();
 }
 
-UniValue walletpassphrase(const JSONRPCRequest& request)
+static UniValue walletpassphrase(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2610,7 +2575,7 @@ UniValue walletpassphrase(const JSONRPCRequest& request)
 }
 
 
-UniValue walletpassphrasechange(const JSONRPCRequest& request)
+static UniValue walletpassphrasechange(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2659,7 +2624,7 @@ UniValue walletpassphrasechange(const JSONRPCRequest& request)
 }
 
 
-UniValue walletlock(const JSONRPCRequest& request)
+static UniValue walletlock(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2697,7 +2662,7 @@ UniValue walletlock(const JSONRPCRequest& request)
 }
 
 
-UniValue encryptwallet(const JSONRPCRequest& request)
+static UniValue encryptwallet(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2757,7 +2722,7 @@ UniValue encryptwallet(const JSONRPCRequest& request)
     return "wallet encrypted; Chimaera server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
 }
 
-UniValue lockunspent(const JSONRPCRequest& request)
+static UniValue lockunspent(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2884,7 +2849,7 @@ UniValue lockunspent(const JSONRPCRequest& request)
     return true;
 }
 
-UniValue listlockunspent(const JSONRPCRequest& request)
+static UniValue listlockunspent(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2917,7 +2882,6 @@ UniValue listlockunspent(const JSONRPCRequest& request)
             + HelpExampleRpc("listlockunspent", "")
         );
 
-    ObserveSafeMode();
     LOCK2(cs_main, pwallet->cs_wallet);
 
     std::vector<COutPoint> vOutpts;
@@ -2936,7 +2900,7 @@ UniValue listlockunspent(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue settxfee(const JSONRPCRequest& request)
+static UniValue settxfee(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2965,7 +2929,7 @@ UniValue settxfee(const JSONRPCRequest& request)
     return true;
 }
 
-UniValue getwalletinfo(const JSONRPCRequest& request)
+static UniValue getwalletinfo(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -2995,8 +2959,6 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
             + HelpExampleCli("getwalletinfo", "")
             + HelpExampleRpc("getwalletinfo", "")
         );
-
-    ObserveSafeMode();
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -3028,7 +2990,7 @@ UniValue getwalletinfo(const JSONRPCRequest& request)
     return obj;
 }
 
-UniValue listwallets(const JSONRPCRequest& request)
+static UniValue listwallets(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0)
         throw std::runtime_error(
@@ -3060,7 +3022,7 @@ UniValue listwallets(const JSONRPCRequest& request)
     return obj;
 }
 
-UniValue resendwallettransactions(const JSONRPCRequest& request)
+static UniValue resendwallettransactions(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -3095,7 +3057,7 @@ UniValue resendwallettransactions(const JSONRPCRequest& request)
     return result;
 }
 
-UniValue listunspent(const JSONRPCRequest& request)
+static UniValue listunspent(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -3153,8 +3115,6 @@ UniValue listunspent(const JSONRPCRequest& request)
             + HelpExampleCli("listunspent", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
             + HelpExampleRpc("listunspent", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
         );
-
-    ObserveSafeMode();
 
     int nMinDepth = 1;
     if (!request.params[0].isNull()) {
@@ -3217,9 +3177,13 @@ UniValue listunspent(const JSONRPCRequest& request)
 
     UniValue results(UniValue::VARR);
     std::vector<COutput> vecOutputs;
-    LOCK2(cs_main, pwallet->cs_wallet);
+    {
+        LOCK2(cs_main, pwallet->cs_wallet);
+        pwallet->AvailableCoins(vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+    }
 
-    pwallet->AvailableCoins(vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+    LOCK(pwallet->cs_wallet);
+
     for (const COutput& out : vecOutputs) {
         CTxDestination address;
         const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
@@ -3235,10 +3199,11 @@ UniValue listunspent(const JSONRPCRequest& request)
         if (fValidAddress) {
             entry.pushKV("address", EncodeDestination(address));
 
-            if (pwallet->mapAddressBook.count(address)) {
-                entry.pushKV("label", pwallet->mapAddressBook[address].name);
+            auto i = pwallet->mapAddressBook.find(address);
+            if (i != pwallet->mapAddressBook.end()) {
+                entry.pushKV("label", i->second.name);
                 if (IsDeprecatedRPCEnabled("accounts")) {
-                    entry.pushKV("account", pwallet->mapAddressBook[address].name);
+                    entry.pushKV("account", i->second.name);
                 }
             }
 
@@ -3263,7 +3228,7 @@ UniValue listunspent(const JSONRPCRequest& request)
     return results;
 }
 
-UniValue fundrawtransaction(const JSONRPCRequest& request)
+static UniValue fundrawtransaction(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -3328,7 +3293,6 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
                             + HelpExampleCli("sendrawtransaction", "\"signedtransactionhex\"")
                             );
 
-    ObserveSafeMode();
     RPCTypeCheck(request.params, {UniValue::VSTR});
 
     // Make sure the results are valid at least up to the most recent block
@@ -3383,8 +3347,8 @@ UniValue fundrawtransaction(const JSONRPCRequest& request)
             if (options.exists("changeAddress")) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot specify both changeAddress and address_type options");
             }
-            coinControl.m_change_type = ParseOutputType(options["change_type"].get_str(), pwallet->m_default_change_type);
-            if (coinControl.m_change_type == OutputType::NONE) {
+            coinControl.m_change_type = pwallet->m_default_change_type;
+            if (!ParseOutputType(options["change_type"].get_str(), *coinControl.m_change_type)) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown change type '%s'", options["change_type"].get_str()));
             }
         }
@@ -3533,7 +3497,7 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     return SignTransaction(mtx, request.params[1], pwallet, false, request.params[2]);
 }
 
-UniValue bumpfee(const JSONRPCRequest& request)
+static UniValue bumpfee(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
 
@@ -3913,7 +3877,7 @@ public:
     UniValue operator()(const WitnessUnknown& id) const { return UniValue(UniValue::VOBJ); }
 };
 
-UniValue DescribeWalletAddress(CWallet* pwallet, const CTxDestination& dest)
+static UniValue DescribeWalletAddress(CWallet* pwallet, const CTxDestination& dest)
 {
     UniValue ret(UniValue::VOBJ);
     UniValue detail = DescribeAddress(dest);
@@ -4049,7 +4013,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue getaddressesbylabel(const JSONRPCRequest& request)
+static UniValue getaddressesbylabel(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -4092,7 +4056,7 @@ UniValue getaddressesbylabel(const JSONRPCRequest& request)
     return ret;
 }
 
-UniValue listlabels(const JSONRPCRequest& request)
+static UniValue listlabels(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {

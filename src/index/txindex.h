@@ -56,7 +56,7 @@ protected:
                         const std::vector<CTransactionRef>& txn_conflicted,
                         const std::vector<CTransactionRef>& name_conflicts) override;
 
-    void SetBestChain(const CBlockLocator& locator) override;
+    void ChainStateFlushed(const CBlockLocator& locator) override;
 
 public:
     /// Constructs the TxIndex, which becomes available to be queried.
