@@ -14,6 +14,10 @@ PREMINE_VALUE = Decimal ('222222222')
 PREMINE_ADDRESS = 'dHNvNaqcD7XPDnoRjAoyfcMpHRi5upJD7p'
 PREMINE_PRIVKEYS = ['b69iyynFSWcU54LqXisbbqZ8uTJ7Dawk3V3yhht6ykxgttqMQFjb',
                     'b3fgAKVQpMj24gbuh6DiXVwCCjCbo1cWiZC2fXgWEU9nXy6sdxD5']
+PREMINE_PUBKEYS = [
+  '03c278d06b977e67b8ea45ef24e3c96a9258c47bc4cce3d0b497b690d672497b6e',
+  '0221ac9dc97fe12a98374344d08b458a9c2c1df9afb29dd6089b94a3b4dc9ad570',
+]
 
 class PremineTest(BitcoinTestFramework):
   def set_test_params(self):
@@ -47,7 +51,8 @@ class PremineTest(BitcoinTestFramework):
       data = node.getaddressinfo (addr)
       if (not data['isscript']) and (not data['iswitness']):
         pubkeys.append (data['pubkey'])
-    p2sh = node.addmultisigaddress (1, pubkeys)
+    assert_equal (set (pubkeys), set (PREMINE_PUBKEYS))
+    p2sh = node.addmultisigaddress (1, PREMINE_PUBKEYS)
     assert_equal (p2sh['address'], PREMINE_ADDRESS)
     node.rescanblockchain ()
     assert_equal (node.getbalance (), PREMINE_VALUE)
