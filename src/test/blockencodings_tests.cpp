@@ -5,6 +5,7 @@
 #include <blockencodings.h>
 #include <consensus/merkle.h>
 #include <chainparams.h>
+#include <pow.h>
 #include <primitives/pureheader.h>
 #include <random.h>
 
