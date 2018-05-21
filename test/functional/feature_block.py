@@ -97,6 +97,12 @@ class FullBlockTest(BitcoinTestFramework):
         self.block_heights[self.genesis_hash] = 0
         self.spendable_outputs = []
 
+        # Activate P2SH at height 432.
+        blocks = []
+        for i in range(500):
+            blocks.append(self.next_block(10000 + i))
+        self.sync_blocks(blocks)
+
         # Create a new block
         b0 = self.next_block(0)
         self.save_spendable_output()
@@ -1066,18 +1072,18 @@ class FullBlockTest(BitcoinTestFramework):
         self.log.info("Test transaction resurrection during a re-org")
         self.move_tip(76)
         b77 = self.next_block(77)
-        tx77 = self.create_and_sign_transaction(out[24].tx, out[24].n, 10 * COIN)
+        tx77 = self.create_and_sign_transaction(out[24].tx, out[24].n, 5 * COIN)
         b77 = self.update_block(77, [tx77])
         self.sync_blocks([b77], True)
         self.save_spendable_output()
 
         b78 = self.next_block(78)
-        tx78 = self.create_tx(tx77, 0, 9 * COIN)
+        tx78 = self.create_tx(tx77, 0, 4 * COIN)
         b78 = self.update_block(78, [tx78])
         self.sync_blocks([b78], True)
 
         b79 = self.next_block(79)
-        tx79 = self.create_tx(tx78, 0, 8 * COIN)
+        tx79 = self.create_tx(tx78, 0, 3 * COIN)
         b79 = self.update_block(79, [tx79])
         self.sync_blocks([b79], True)
 

@@ -48,7 +48,7 @@ class BumpFeeTest(BitcoinTestFramework):
 
         # fund rbf node with 10 coins of 0.01 btc (1,000,000 satoshis)
         self.log.info("Mining blocks...")
-        peer_node.generate(110)
+        peer_node.generate(500) # Activates segwit at block 432.
         self.sync_all()
         for i in range(25):
             peer_node.sendtoaddress(rbf_node_address, 0.01)
