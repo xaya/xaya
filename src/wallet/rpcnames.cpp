@@ -411,7 +411,7 @@ sendtoname (const JSONRPCRequest& request)
 
   CCoinControl coin_control;
   if (!request.params[5].isNull()) {
-      coin_control.signalRbf = request.params[5].get_bool();
+      coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
   }
 
   if (!request.params[6].isNull()) {

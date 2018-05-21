@@ -43,7 +43,7 @@ class PremineTest(BitcoinTestFramework):
     for key in PREMINE_PRIVKEYS:
       node.importprivkey (key, 'premine') 
     pubkeys = []
-    for addr in node.getaddressesbyaccount ('premine'):
+    for addr in node.getaddressesbylabel ('premine'):
       data = node.getaddressinfo (addr)
       if (not data['isscript']) and (not data['iswitness']):
         pubkeys.append (data['pubkey'])

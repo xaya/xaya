@@ -6,10 +6,14 @@
 #define BITCOIN_RPC_RAWTRANSACTION_H
 
 class CBasicKeyStore;
+class CTransaction;
 struct CMutableTransaction;
 class UniValue;
+class uint256;
 
 /** Sign a transaction with the given keystore and previous transactions */
 UniValue SignTransaction(CMutableTransaction& mtx, const UniValue& prevTxs, CBasicKeyStore *keystore, bool tempKeystore, const UniValue& hashType);
+
+void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
 
 #endif // BITCOIN_RPC_RAWTRANSACTION_H
