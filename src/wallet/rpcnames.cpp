@@ -73,7 +73,9 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 UniValue
 name_list (const JSONRPCRequest& request)
 {
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
+
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
@@ -170,7 +172,9 @@ name_list (const JSONRPCRequest& request)
 UniValue
 name_new (const JSONRPCRequest& request)
 {
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
+
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
@@ -243,7 +247,9 @@ name_new (const JSONRPCRequest& request)
 UniValue
 name_firstupdate (const JSONRPCRequest& request)
 {
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
+
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
@@ -373,7 +379,9 @@ name_firstupdate (const JSONRPCRequest& request)
 UniValue
 name_update (const JSONRPCRequest& request)
 {
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
+
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
@@ -475,7 +483,9 @@ name_update (const JSONRPCRequest& request)
 UniValue
 sendtoname (const JSONRPCRequest& request)
 {
-  CWallet* const pwallet = GetWalletForJSONRPCRequest(request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
+
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
   

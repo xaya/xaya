@@ -4,6 +4,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <auxpow.h>
 #include <chainparams.h>
 #include <consensus/merkle.h>
 #include <consensus/validation.h>
@@ -71,8 +72,11 @@ std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
 {
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
-    while (!CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus())) {
-        ++(pblock->nNonce);
+    CAuxPow::initAuxPow(*pblock);
+    CPureBlockHeader& miningHeader = pblock->auxpow->parentBlock;
+
+    while (!CheckProofOfWork(miningHeader.GetHash(), pblock->nBits, Params().GetConsensus())) {
+        ++(miningHeader.nNonce);
     }
 
     return pblock;

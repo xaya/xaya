@@ -436,7 +436,8 @@ name_pending (const JSONRPCRequest& request)
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
 #ifdef ENABLE_WALLET
-  CWallet* pwallet = GetWalletForJSONRPCRequest (request);
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  CWallet* const pwallet = wallet.get ();
   LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
 #else
   LOCK (mempool.cs);
