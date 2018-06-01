@@ -18,12 +18,22 @@
 #include <utilstrencodings.h>
 #include <validation.h>
 
+#include <univalue.h>
+
+namespace
+{
+
+constexpr unsigned MAX_VALUE_LENGTH = 2048;
+constexpr unsigned MAX_NAME_LENGTH = 256;
+
 /* Ensure that the name length fits to the script element size limit to avoid
    a situation as in Namecoin where names can become unspendable.  */
 static_assert (MAX_VALUE_LENGTH <= MAX_SCRIPT_ELEMENT_SIZE,
                "Maximum value size is too large for script element size");
 static_assert (MAX_NAME_LENGTH <= MAX_SCRIPT_ELEMENT_SIZE,
                "Maximum name size is too large for script element size");
+
+}  // anonymous namespace
 
 /* ************************************************************************** */
 /* CNameTxUndo.  */
@@ -267,6 +277,51 @@ CNameConflictTracker::AddConflictedEntry (CTransactionRef txRemoved)
 /* ************************************************************************** */
 
 bool
+IsNameValid (const valtype& name, CValidationState& state)
+{
+  if (name.size () > MAX_NAME_LENGTH)
+    return state.Invalid (false, 0, "the name is too long");
+
+  /* All names must have a namespace.  This means that they must start with
+     some lower-case letters and /.  As a regexp, that is: [a-z]+\/.* */
+  bool foundNamespace = false;
+  for (size_t i = 0; i < name.size (); ++i)
+    {
+      if (name[i] == '/')
+        {
+          if (i == 0)
+            return state.Invalid (false, 0, "the empty namespace is not valid");
+
+          foundNamespace = true;
+          break;
+        }
+
+      if (name[i] < 'a' || name[i] > 'z')
+        return state.Invalid (false, 0,
+                              "the namespace must only consist of lower-case"
+                              " letters");
+    }
+  if (!foundNamespace)
+    return state.Invalid (false, 0, "the name has no namespace");
+
+  /* Only valid UTF-8 strings can be names.  */
+  return IsValidUtf8String (ValtypeToString (name));
+}
+
+bool
+IsValueValid (const valtype& value, CValidationState& state)
+{
+  if (value.size () > MAX_VALUE_LENGTH)
+    return state.Invalid (false, 0, "the value is too long");
+
+  /* The value must parse with Univalue as JSON and be an object.  */
+  UniValue jsonValue;
+  if (!jsonValue.read (ValtypeToString (value)))
+    return false;
+  return jsonValue.isObject ();
+}
+
+bool
 CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                       const CCoinsView& view,
                       CValidationState& state)
@@ -345,10 +400,10 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                                  " previous name input"));
   const valtype& name = nameOpOut.getOpName ();
 
-  if (name.size () > MAX_NAME_LENGTH)
-    return state.Invalid (error ("CheckNameTransaction: name too long"));
-  if (nameOpOut.getOpValue ().size () > MAX_VALUE_LENGTH)
-    return state.Invalid (error ("CheckNameTransaction: value too long"));
+  if (!IsNameValid (name, state))
+    return false;
+  if (!IsValueValid (nameOpOut.getOpValue (), state))
+    return false;
 
   /* Process NAME_UPDATE next.  */
 

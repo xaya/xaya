@@ -4,6 +4,7 @@
 
 #include "base58.h"
 #include "coins.h"
+#include "consensus/validation.h"
 #include "init.h"
 #include "key_io.h"
 #include "names/common.h"
@@ -152,13 +153,15 @@ name_register (const JSONRPCRequest& request)
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
-  if (name.size () > MAX_NAME_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
+
+  CValidationState state;
+  if (!IsNameValid (name, state))
+    throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
   const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
-  if (value.size () > MAX_VALUE_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
+  if (!IsValueValid (value, state))
+    throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
   /* Reject updates to a name for which the mempool already has
      a pending registration.  This is not a hard rule enforced by network
@@ -254,13 +257,15 @@ name_update (const JSONRPCRequest& request)
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
-  if (name.size () > MAX_NAME_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
+
+  CValidationState state;
+  if (!IsNameValid (name, state))
+    throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
   const std::string valueStr = request.params[1].get_str ();
   const valtype value = ValtypeFromString (valueStr);
-  if (value.size () > MAX_VALUE_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
+  if (!IsValueValid (value, state))
+    throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
   /* Reject updates to a name for which the mempool already has
      a pending update.  This is not a hard rule enforced by network

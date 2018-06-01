@@ -5,7 +5,7 @@
 
 # RPC test for multisig handling with names.
 
-from test_framework.names import NameTestFramework
+from test_framework.names import NameTestFramework, val
 from test_framework.util import *
 
 from decimal import Decimal
@@ -26,16 +26,18 @@ class NameMultisigTest (NameTestFramework):
     p2sh = multisig['address']
 
     # Register a new name to that address.
-    self.nodes[0].name_register ("name", "value", p2sh)
+    self.nodes[0].name_register ("x/name", val ("value"), p2sh)
     self.generate (1, 1)
-    data = self.checkName (2, "name", "value")
+    data = self.checkName (2, "x/name", val ("value"))
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
     assert_raises_rpc_error (-4, None,
-                             self.nodes[0].name_update, "name", "new value")
+                             self.nodes[0].name_update,
+                             "x/name", val ("new value"))
     assert_raises_rpc_error (-4, None,
-                             self.nodes[1].name_update, "name", "new value")
+                             self.nodes[1].name_update,
+                             "x/name", val ("new value"))
 
     # Find some other input to add as fee.
     unspents = self.nodes[0].listunspent ()
@@ -50,7 +52,7 @@ class NameMultisigTest (NameTestFramework):
     inputs = [{"txid": data['txid'], "vout": data['vout']}, feeInput]
     outputs = {changeAddr: changeAmount, addr: nameAmount}
     txRaw = self.nodes[3].createrawtransaction (inputs, outputs)
-    op = {"op": "name_update", "name": "name", "value": "it worked"}
+    op = {"op": "name_update", "name": "x/name", "value": val ("it worked")}
     nameInd = self.rawtxOutputIndex (3, txRaw, addr)
     txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
 
@@ -81,10 +83,10 @@ class NameMultisigTest (NameTestFramework):
     self.generate (3, 1)
 
     # Check that it was transferred correctly.
-    self.checkName (3, "name", "it worked")
-    self.nodes[2].name_update ("name", "changed")
+    self.checkName (3, "x/name", val ("it worked"))
+    self.nodes[2].name_update ("x/name", val ("changed"))
     self.generate (3, 1)
-    self.checkName (3, "name", "changed")
+    self.checkName (3, "x/name", val ("changed"))
 
   def getNewPubkey (self, ind):
     """
