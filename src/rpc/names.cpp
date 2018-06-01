@@ -2,22 +2,22 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "base58.h"
-#include "chainparams.h"
-#include "core_io.h"
-#include "init.h"
-#include "key_io.h"
-#include "names/common.h"
-#include "names/main.h"
-#include "primitives/transaction.h"
-#include "rpc/server.h"
-#include "script/names.h"
-#include "txmempool.h"
-#include "utilstrencodings.h"
-#include "validation.h"
+#include <base58.h>
+#include <chainparams.h>
+#include <core_io.h>
+#include <init.h>
+#include <key_io.h>
+#include <names/common.h>
+#include <names/main.h>
+#include <primitives/transaction.h>
+#include <rpc/server.h>
+#include <script/names.h>
+#include <txmempool.h>
+#include <utilstrencodings.h>
+#include <validation.h>
 #ifdef ENABLE_WALLET
-# include "wallet/rpcwallet.h"
-# include "wallet/wallet.h"
+# include <wallet/rpcwallet.h>
+# include <wallet/wallet.h>
 #endif
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
