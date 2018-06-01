@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,10 +23,6 @@ class CCoinsViewCache;
 class CTxMemPool;
 class CTxMemPoolEntry;
 class CValidationState;
-
-/* Some constants defining name limits.  */
-static constexpr unsigned MAX_VALUE_LENGTH = 2048;
-static constexpr unsigned MAX_NAME_LENGTH = 256;
 
 /** The amount of coins to lock in created transactions.  */
 static constexpr CAmount NAME_LOCKED_AMOUNT = COIN / 100;
@@ -234,6 +230,18 @@ public:
 };
 
 /* ************************************************************************** */
+
+/**
+ * Verifies whether a given name is valid according to the restrictions we
+ * put on its format
+ */
+bool IsNameValid (const valtype& name, CValidationState& state);
+
+/**
+ * Verifies whether a given value is valid according to the restrictions we
+ * have for it.
+ */
+bool IsValueValid (const valtype& value, CValidationState& state);
 
 /**
  * Check a transaction according to the additional Namecoin rules.  This

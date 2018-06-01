@@ -451,6 +451,30 @@ addTestCoin (const CScript& scr, unsigned nHeight, CCoinsViewCache& view)
   return outp;
 }
 
+BOOST_AUTO_TEST_CASE (is_name_valid)
+{
+  CValidationState state;
+
+  BOOST_CHECK (IsNameValid (ValtypeFromString (""), state));
+  BOOST_CHECK (IsNameValid (ValtypeFromString ("abc"), state));
+  BOOST_CHECK (IsNameValid (ValtypeFromString ("a\xFF" "c"), state));
+
+  BOOST_CHECK (IsNameValid (valtype (256, 'x'), state));
+  BOOST_CHECK (!IsNameValid (valtype (257, 'x'), state));
+}
+
+BOOST_AUTO_TEST_CASE (is_value_valid)
+{
+  CValidationState state;
+
+  BOOST_CHECK (IsValueValid (ValtypeFromString (""), state));
+  BOOST_CHECK (IsValueValid (ValtypeFromString ("foo"), state));
+  BOOST_CHECK (IsValueValid (ValtypeFromString ("f\xFF" "o"), state));
+
+  BOOST_CHECK (IsValueValid (valtype (2048, 'x'), state));
+  BOOST_CHECK (!IsValueValid (valtype (2049, 'x'), state));
+}
+
 BOOST_AUTO_TEST_CASE (name_tx_verification)
 {
   const valtype name1 = ValtypeFromString ("test-name-1");
@@ -537,7 +561,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vout[1].nValue = COIN / 100 - 1;
   BOOST_CHECK (!CheckNameTransaction (mtx, 212500, viewRegister, state));
 
-  /* Value length limits.  */
+  /* Invalid value is caught.  */
   mtx = CMutableTransaction (baseTx);
   mtx.vin.push_back (CTxIn (inUpdate));
   scr = CNameScript::buildNameUpdate (addr, name1, tooLongValue);
@@ -566,7 +590,20 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
   BOOST_CHECK (IsStandardTx (mtx, reason));
 
+  /* Invalid name or value is caught.  */
+  mtx = CMutableTransaction (baseTx);
+  scr = CNameScript::buildNameRegister (addr, tooLongName, value);
+  mtx.vout.push_back (CTxOut (COIN, scr));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewClean, state));
+  mtx = CMutableTransaction (baseTx);
+  scr = CNameScript::buildNameRegister (addr, name1, tooLongValue);
+  mtx.vout.push_back (CTxOut (COIN, scr));
+  BOOST_CHECK (!CheckNameTransaction (mtx, 110000, viewClean, state));
+
   /* "Greedy" names.  */
+  mtx = CMutableTransaction (baseTx);
+  scr = CNameScript::buildNameRegister (addr, name1, value);
+  mtx.vout.push_back (CTxOut (COIN, scr));
   mtx.vout[1].nValue = COIN / 100;
   BOOST_CHECK (CheckNameTransaction (mtx, 212500, viewClean, state));
   mtx.vout[1].nValue = COIN / 100 - 1;
