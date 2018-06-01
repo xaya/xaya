@@ -15,6 +15,8 @@
 #include <undo.h>
 #include <validation.h>
 
+#include <univalue.h>
+
 #include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
@@ -28,11 +30,14 @@
    the test-suite name works with grep as done in the Makefile.  */
 BOOST_FIXTURE_TEST_SUITE(name_tests, TestingSetup)
 
+namespace
+{
+
 /**
  * Utility function that returns a sample address script to use in the tests.
  * @return A script that represents a simple address.
  */
-static CScript
+CScript
 getTestAddress ()
 {
   const CTxDestination dest
@@ -41,6 +46,19 @@ getTestAddress ()
 
   return GetScriptForDestination (dest);
 }
+
+/**
+ * Converts a given test into a valid JSON value for name updates.
+ */
+std::string
+val (const std::string& text)
+{
+  UniValue obj;
+  obj.pushKV ("text", text);
+  return obj.write ();
+}
+
+}  // anonymous namespace
 
 /* ************************************************************************** */
 
@@ -51,8 +69,8 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   BOOST_CHECK (!opNone.isNameOp ());
   BOOST_CHECK (opNone.getAddress () == addr);
 
-  const valtype name = ValtypeFromString ("my-cool-name");
-  const valtype value = ValtypeFromString ("42!");
+  const valtype name = ValtypeFromString ("x/my-cool-name");
+  const valtype value = ValtypeFromString (val ("42!"));
 
   CScript script;
   script = CNameScript::buildNameRegister (addr, name, value);
@@ -78,9 +96,9 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 BOOST_AUTO_TEST_CASE (name_database)
 {
-  const valtype name1 = ValtypeFromString ("database-test-name-1");
-  const valtype name2 = ValtypeFromString ("database-test-name-2");
-  const valtype value = ValtypeFromString ("my-value");
+  const valtype name1 = ValtypeFromString ("x/database-test-name-1");
+  const valtype name2 = ValtypeFromString ("x/database-test-name-2");
+  const valtype value = ValtypeFromString (val ("my-value"));
   const CScript addr = getTestAddress ();
 
   /* Choose two height values.  To verify that serialisation of the
@@ -265,8 +283,8 @@ CNameData
 NameIterationTester::getNextData ()
 {
   const CScript addr = getTestAddress ();
-  const valtype name = ValtypeFromString ("dummy");
-  const valtype value = ValtypeFromString ("abc");
+  const valtype name = ValtypeFromString ("x/dummy");
+  const valtype value = ValtypeFromString (val ("abc"));
   const CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
   const CNameScript nameOp(updateScript);
 
@@ -403,23 +421,23 @@ BOOST_AUTO_TEST_CASE (name_iteration)
 
   tester.verify ();
 
-  tester.add ("");
-  tester.add ("a");
-  tester.add ("aa");
-  tester.add ("b");
+  tester.add ("x/");
+  tester.add ("x/a");
+  tester.add ("x/aa");
+  tester.add ("x/b");
   
-  tester.remove ("aa");
-  tester.remove ("b");
-  tester.add ("b");
-  tester.add ("aa");
-  tester.remove ("b");
-  tester.remove ("aa");
+  tester.remove ("x/aa");
+  tester.remove ("x/b");
+  tester.add ("x/b");
+  tester.add ("x/aa");
+  tester.remove ("x/b");
+  tester.remove ("x/aa");
 
-  tester.update ("");
-  tester.add ("aa");
-  tester.add ("b");
-  tester.update ("b");
-  tester.update ("aa");
+  tester.update ("x/");
+  tester.add ("x/aa");
+  tester.add ("x/b");
+  tester.update ("x/b");
+  tester.update ("x/aa");
 }
 
 /* ************************************************************************** */
@@ -477,12 +495,13 @@ BOOST_AUTO_TEST_CASE (is_value_valid)
 
 BOOST_AUTO_TEST_CASE (name_tx_verification)
 {
-  const valtype name1 = ValtypeFromString ("test-name-1");
-  const valtype name2 = ValtypeFromString ("test-name-2");
-  const valtype value = ValtypeFromString ("my-value");
+  const valtype name1 = ValtypeFromString ("x/test-name-1");
+  const valtype name2 = ValtypeFromString ("x/test-name-2");
+  const valtype value = ValtypeFromString (val ("my-value"));
 
-  const valtype tooLongName(257, 'x');
-  const valtype tooLongValue(2049, 'x');
+  const auto tooLongName = ValtypeFromString ("x/" + std::string (255, 'x'));
+  const auto tooLongValue = ValtypeFromString (
+      "{\"text\": \"" + std::string (2049, 'x') + "\"}");
 
   const CScript addr = getTestAddress ();
 
@@ -617,9 +636,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   /* Enable name history to test this on the go.  */
   fNameHistory = true;
 
-  const valtype name = ValtypeFromString ("database-test-name");
-  const valtype value1 = ValtypeFromString ("old-value");
-  const valtype value2 = ValtypeFromString ("new-value");
+  const valtype name = ValtypeFromString ("x/database-test-name");
+  const valtype value1 = ValtypeFromString (val ("old-value"));
+  const valtype value2 = ValtypeFromString (val ("new-value"));
   const CScript addr = getTestAddress ();
 
   CCoinsView dummyView;
@@ -680,11 +699,11 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   LOCK(mempool.cs);
   mempool.clear ();
 
-  const valtype nameReg = ValtypeFromString ("name-reg");
-  const valtype nameUpd = ValtypeFromString ("name-upd");
-  const valtype value = ValtypeFromString ("value");
-  const valtype valueA = ValtypeFromString ("value-a");
-  const valtype valueB = ValtypeFromString ("value-b");
+  const valtype nameReg = ValtypeFromString ("x/name-reg");
+  const valtype nameUpd = ValtypeFromString ("x/name-upd");
+  const valtype value = ValtypeFromString (val ("value"));
+  const valtype valueA = ValtypeFromString (val ("value-a"));
+  const valtype valueB = ValtypeFromString (val ("value-b"));
   const CScript addr = getTestAddress ();
 
   const CScript reg1 = CNameScript::buildNameRegister (addr, nameReg, value);

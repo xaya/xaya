@@ -14,6 +14,7 @@ from struct import pack, unpack
 import http.client
 import urllib.parse
 
+from test_framework import names
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -306,9 +307,8 @@ class RESTTest (BitcoinTestFramework):
         """
 
         # Start by registering a test name.
-        name = "d/some weird.name++"
-        binData = bytearray ([0, 1]).decode ("ascii")
-        value = "correct value\nwith newlines\nand binary: " + binData
+        name = u"d/some weird.name++ä"
+        value = names.val (u"correct value\nwith newlines\nand utf-8: äöü")
         self.nodes[0].name_register(name, value)
         self.nodes[0].generate(1)
         nameData = self.nodes[0].name_show(name)
@@ -316,7 +316,8 @@ class RESTTest (BitcoinTestFramework):
         assert_equal(nameData['value'], value)
 
         # Different variants of the encoded name that should all work.
-        variants = [urllib.parse.quote_plus(name), "d/some+weird.name%2b%2B"]
+        variants = [urllib.parse.quote_plus(name),
+                    "d/some+weird.name%2b%2B%C3%a4"]
 
         for encName in variants:
             query = '/name/' + encName

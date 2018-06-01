@@ -8,6 +8,13 @@
 from .test_framework import BitcoinTestFramework
 from .util import *
 
+import json
+
+def val (text):
+  """Returns a valid JSON value for name updates with the given text as part."""
+  obj = {'text': text}
+  return json.dumps (obj)
+
 class NameTestFramework (BitcoinTestFramework):
 
   def setup_name_test (self, args = [[]] * 4):

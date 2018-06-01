@@ -5,7 +5,7 @@
 
 # RPC tests for name operations and the rawtx API.
 
-from test_framework.names import NameTestFramework
+from test_framework.names import NameTestFramework, val
 from test_framework.util import *
 
 from decimal import Decimal
@@ -17,36 +17,37 @@ class NameRawTxTest (NameTestFramework):
 
   def run_test (self):
     # Decode name_register.
-    reg = self.nodes[0].name_register ("my-name", "initial value")
+    reg = self.nodes[0].name_register ("x/my-name", val ("initial value"))
     self.generate (0, 1)
     data = self.decodeNameTx (0, reg)
     assert_equal (data['op'], "name_register")
-    assert_equal (data['name'], "my-name")
-    assert_equal (data['value'], "initial value")
+    assert_equal (data['name'], "x/my-name")
+    assert_equal (data['value'], val ("initial value"))
 
     # Decode name_update.
-    upd = self.nodes[0].name_update ("my-name", "new value")
+    upd = self.nodes[0].name_update ("x/my-name", val ("new value"))
     self.generate (0, 1)
     data = self.decodeNameTx (0, upd)
     assert_equal (data['op'], "name_update")
-    assert_equal (data['name'], "my-name")
-    assert_equal (data['value'], "new value")
+    assert_equal (data['name'], "x/my-name")
+    assert_equal (data['value'], val ("new value"))
 
     # Go through the full name "life cycle" (name_register and name_update)
     # with raw transactions.
 
-    regOp = {"op": "name_register", "name": "raw-test-name",
-             "value": "first value"}
+    regOp = {"op": "name_register", "name": "x/raw-test-name",
+             "value": val ("first value")}
     regAddr = self.nodes[0].getnewaddress ()
     regOutp, _ = self.rawNameOp (0, None, regAddr, regOp)
     self.generate (0, 1)
-    self.checkName (1, "raw-test-name", "first value")
+    self.checkName (1, "x/raw-test-name", val ("first value"))
 
-    updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
+    updOp = {"op": "name_update", "name": "x/raw-test-name",
+             "value": val ("new value")}
     updAddr = self.nodes[0].getnewaddress ()
     self.rawNameOp (0, regOutp, updAddr, updOp)
     self.generate (0, 1)
-    self.checkName (1, "raw-test-name", "new value")
+    self.checkName (1, "x/raw-test-name", val ("new value"))
 
     # Verify range check of vout in namerawtransaction.
     tx = self.nodes[0].createrawtransaction ([], {})
@@ -64,19 +65,19 @@ class NameRawTxTest (NameTestFramework):
     price = Decimal ("1.0")
     fee = Decimal ("0.01")
 
-    self.atomicTrade ("my-name", "enjoy", price, fee, 0, 1)
+    self.atomicTrade ("x/my-name", val ("enjoy"), price, fee, 0, 1)
     self.generate (2, 1)
 
-    data = self.checkName (2, "my-name", "enjoy")
+    data = self.checkName (2, "x/my-name", val ("enjoy"))
     info = self.nodes[1].getaddressinfo (data['address'])
     assert info['ismine']
-    data = self.nodes[0].name_list ("my-name")
+    data = self.nodes[0].name_list ("x/my-name")
     assert_equal (len (data), 1)
-    assert_equal (data[0]['name'], "my-name")
+    assert_equal (data[0]['name'], "x/my-name")
     assert_equal (data[0]['transferred'], True)
-    data = self.nodes[1].name_list ("my-name")
+    data = self.nodes[1].name_list ("x/my-name")
     assert_equal (len (data), 1)
-    assert_equal (data[0]['name'], "my-name")
+    assert_equal (data[0]['name'], "x/my-name")
     assert_equal (data[0]['transferred'], False)
 
     # Node 0 gets a block matured, take this into account.
@@ -88,12 +89,12 @@ class NameRawTxTest (NameTestFramework):
     # This used to crash the client, #116.  It should lead to an error (as such
     # a transaction is invalid), but not a crash.
 
-    self.nodes[0].name_register ("a", "value a")
-    self.nodes[0].name_register ("b", "value b")
+    self.nodes[0].name_register ("x/a", val ("value a"))
+    self.nodes[0].name_register ("x/b", val ("value b"))
     self.generate (0, 1)
 
-    inA, outA = self.constructUpdateTx (0, "a", "new value a")
-    inB, outB = self.constructUpdateTx (0, "b", "new value b")
+    inA, outA = self.constructUpdateTx (0, "x/a", val ("new value a"))
+    inB, outB = self.constructUpdateTx (0, "x/b", val ("new value b"))
 
     tx = outA[:8]      # version
     tx += '02'         # number of txin

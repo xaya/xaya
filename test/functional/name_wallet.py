@@ -5,7 +5,7 @@
 
 # RPC tests for the handling of names in the wallet.
 
-from test_framework.names import NameTestFramework
+from test_framework.names import NameTestFramework, val
 from test_framework.util import *
 
 from decimal import Decimal
@@ -123,39 +123,39 @@ class NameWalletTest (NameTestFramework):
     assert not info['iswitness']
 
     # Register and update a name.  Check changes to the balance.
-    regA = self.nodes[2].name_register ("name-a", "value")
+    regA = self.nodes[2].name_register ("x/name-a", val ("value"))
     regFee = self.getFee (2, regA, nameFee)
     self.generate (0, 1)
     self.checkBalances (regFee)
-    updA = self.nodes[2].name_update ("name-a", "new value")
+    updA = self.nodes[2].name_update ("x/name-a", val ("new value"))
     updFee = self.getFee (2, updA)
     self.generate (0, 1)
     self.checkBalances (updFee)
 
     # Check the transactions.
     self.checkTx (2, regA, zero, -regFee,
-                  [['send', 'update: name-a', zero, -regFee]])
+                  [['send', 'update: x/name-a', zero, -regFee]])
     self.checkTx (2, updA, zero, -updFee,
-                  [['send', 'update: name-a', zero, -updFee]])
+                  [['send', 'update: x/name-a', zero, -updFee]])
 
     # Send a name from 1 to 2 by firstupdate and update.
     addrB = self.nodes[3].getnewaddress ()
-    regB = self.nodes[2].name_register ("name-b", "value", addrB)
+    regB = self.nodes[2].name_register ("x/name-b", val ("value"), addrB)
     fee = self.getFee (2, regB, nameFee)
-    regC = self.nodes[2].name_register ("name-c", "value")
+    regC = self.nodes[2].name_register ("x/name-c", val ("value"))
     fee += self.getFee (2, regC, nameFee)
     self.generate (0, 1)
     self.checkBalances (fee)
-    updC = self.nodes[2].name_update ("name-c", "new value", addrB)
+    updC = self.nodes[2].name_update ("x/name-c", val ("new value"), addrB)
     fee = self.getFee (2, updC)
     self.generate (0, 1)
     self.checkBalances (fee)
 
     # Check the receiving transactions on B.
     self.checkTx (3, regB, zero, None,
-                  [['receive', 'update: name-b', zero, None]])
+                  [['receive', 'update: x/name-b', zero, None]])
     self.checkTx (3, updC, zero, None,
-                  [['receive', 'update: name-c', zero, None]])
+                  [['receive', 'update: x/name-c', zero, None]])
 
     # Use the rawtx API to build a simultaneous name update and currency send.
     # This is done as an atomic name trade.  Note, though, that the
@@ -164,7 +164,7 @@ class NameWalletTest (NameTestFramework):
 
     price = Decimal ("1.0")
     fee = Decimal ("0.01")
-    txid = self.atomicTrade ("name-a", "enjoy", price, fee, 2, 3)
+    txid = self.atomicTrade ("x/name-a", val ("enjoy"), price, fee, 2, 3)
     self.generate (0, 1)
 
     self.checkBalances (-price, price + fee)
@@ -172,24 +172,24 @@ class NameWalletTest (NameTestFramework):
                   [['receive', "none", price, None]])
     self.checkTx (3, txid, -price, -fee,
                   [['send', "none", -price, -fee],
-                   ['send', 'update: name-a', zero, -fee]])
+                   ['send', 'update: x/name-a', zero, -fee]])
 
     # Test sendtoname RPC command.
 
     addrDest = self.nodes[2].getnewaddress ()
-    self.nodes[0].name_register ("destination", "value", addrDest)
+    self.nodes[0].name_register ("x/destination", val ("value"), addrDest)
     self.generate (0, 1)
-    self.checkName (3, "destination", "value")
+    self.checkName (3, "x/destination", val ("value"))
 
     assert_raises_rpc_error (-5, 'name not found',
-                             self.nodes[3].sendtoname, "non-existant", 10)
+                             self.nodes[3].sendtoname, "x/non-existant", 10)
 
-    txid = self.nodes[3].sendtoname ("destination", 10)
+    txid = self.nodes[3].sendtoname ("x/destination", 10)
     fee = self.getFee (3, txid)
     self.generate (0, 1)
     self.checkBalances (-10, 10 + fee)
 
-    txid = self.nodes[3].sendtoname ("destination", 10, "foo", "bar", True)
+    txid = self.nodes[3].sendtoname ("x/destination", 10, "foo", "bar", True)
     fee = self.getFee (3, txid)
     self.generate (0, 1)
     self.checkBalances (-10 + fee, 10)

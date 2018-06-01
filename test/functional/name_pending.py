@@ -5,7 +5,7 @@
 
 # RPC test for name_pending call.
 
-from test_framework.names import NameTestFramework
+from test_framework.names import NameTestFramework, val
 from test_framework.util import *
 
 class NameScanningTest (NameTestFramework):
@@ -15,20 +15,20 @@ class NameScanningTest (NameTestFramework):
 
   def run_test (self):
     # Register a name that can then be update'd in the mempool.
-    self.nodes[1].name_register ("a", "old-value-a")
+    self.nodes[1].name_register ("x/a", val ("old-value-a"))
     self.generate (0, 1)
 
     # Start a new name registration so we can first_update it.
-    txb = self.nodes[2].name_register ("b", "value-b")
+    txb = self.nodes[2].name_register ("x/b", val ("value-b"))
 
     # Perform the unconfirmed updates.  Include a currency transaction
     # to check that it is not shown.
-    txa = self.nodes[1].name_update ("a", "value-a")
+    txa = self.nodes[1].name_update ("x/a", val ("value-a"))
     addrC = self.nodes[3].getnewaddress ()
     self.nodes[2].sendtoaddress (addrC, 1)
 
     # Check that name_show still returns the old value.
-    self.checkName (0, "a", "old-value-a")
+    self.checkName (0, "x/a", val ("old-value-a"))
 
     # Check sizes of mempool against name_pending.
     self.sync_with_mode ('mempool')
@@ -41,24 +41,24 @@ class NameScanningTest (NameTestFramework):
     for op in pending:
       assert op['txid'] in mempool
       assert not op['ismine']
-      if op['name'] == 'a':
+      if op['name'] == 'x/a':
         assert_equal (op['op'], 'name_update')
-        assert_equal (op['value'], 'value-a')
+        assert_equal (op['value'], val ('value-a'))
         assert_equal (op['txid'], txa)
-      elif op['name'] == 'b':
+      elif op['name'] == 'x/b':
         assert_equal (op['op'], 'name_register')
-        assert_equal (op['value'], 'value-b')
+        assert_equal (op['value'], val ('value-b'))
         assert_equal (op['txid'], txb)
       else:
         assert False
 
     # Check name_pending with name filter that does not match any name.
-    pending = self.nodes[0].name_pending ('does not exist')
+    pending = self.nodes[0].name_pending ('x/does not exist')
     assert_equal (pending, [])
 
     # Check name_pending with name filter and ismine.
-    self.checkPendingName (1, 'a', 'name_update', 'value-a', txa, True)
-    self.checkPendingName (2, 'a', 'name_update', 'value-a', txa, False)
+    self.checkPendingName (1, 'x/a', 'name_update', val ('value-a'), txa, True)
+    self.checkPendingName (2, 'x/a', 'name_update', val ('value-a'), txa, False)
 
     # Mine a block and check that all mempool is cleared.
     self.generate (0, 1)
@@ -66,10 +66,10 @@ class NameScanningTest (NameTestFramework):
     assert_equal (self.nodes[3].name_pending (), [])
 
     # Send a name and check that ismine is handled correctly.
-    tx = self.nodes[1].name_update ('a', 'sent-a', addrC)
+    tx = self.nodes[1].name_update ('x/a', val ('sent-a'), addrC)
     self.sync_with_mode ('mempool')
-    self.checkPendingName (1, 'a', 'name_update', 'sent-a', tx, False)
-    self.checkPendingName (3, 'a', 'name_update', 'sent-a', tx, True)
+    self.checkPendingName (1, 'x/a', 'name_update', val ('sent-a'), tx, False)
+    self.checkPendingName (3, 'x/a', 'name_update', val ('sent-a'), tx, True)
 
   def checkPendingName (self, ind, name, op, value, txid, mine):
     """
