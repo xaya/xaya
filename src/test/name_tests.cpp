@@ -21,6 +21,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <cassert>
 #include <list>
 #include <memory>
 
@@ -53,9 +54,28 @@ getTestAddress ()
 std::string
 val (const std::string& text)
 {
-  UniValue obj;
+  UniValue obj(UniValue::VOBJ);
   obj.pushKV ("text", text);
   return obj.write ();
+}
+
+/**
+ * Returns a valid JSON value with the given length in bytes.
+ */
+std::string
+ValueOfLength (const size_t len)
+{
+  const std::string prefix = "{\"text\": \"";
+  const std::string suffix = "\"}";
+  const size_t overhead = prefix.size () + suffix.size ();
+  assert (len >= overhead);
+
+  std::string result = prefix;
+  result += std::string (len - overhead, 'x');
+  result += suffix;
+  assert (result.size () == len);
+
+  return result;
 }
 
 }  // anonymous namespace
@@ -473,24 +493,56 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
 {
   CValidationState state;
 
-  BOOST_CHECK (IsNameValid (ValtypeFromString (""), state));
-  BOOST_CHECK (IsNameValid (ValtypeFromString ("abc"), state));
-  BOOST_CHECK (IsNameValid (ValtypeFromString ("a\xFF" "c"), state));
+  /* Test the length limit.  */
+  std::string name;
+  name = "x/" + std::string (254, 'x');
+  BOOST_CHECK (IsNameValid (ValtypeFromString (name), state));
+  name += 'x';
+  BOOST_CHECK (!IsNameValid (ValtypeFromString (name), state));
 
-  BOOST_CHECK (IsNameValid (valtype (256, 'x'), state));
-  BOOST_CHECK (!IsNameValid (valtype (257, 'x'), state));
+  /* Some valid names, including UTF-8.  */
+  BOOST_CHECK (IsNameValid (ValtypeFromString ("x/"), state));
+  BOOST_CHECK (IsNameValid (ValtypeFromString ("foo/bar"), state));
+  BOOST_CHECK (IsNameValid (ValtypeFromString (u8"foo/äöü+/2 5"), state));
+
+  /* Invalid due to namespace rule.  */
+  BOOST_CHECK (!IsNameValid (ValtypeFromString (""), state));
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("abc"), state));
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("/"), state));
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("c14/foo"), state));
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("Z/foo"), state));
+
+  /* Invalid due to not being valid UTF-8.  */
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("x/\xFF"), state));
 }
 
 BOOST_AUTO_TEST_CASE (is_value_valid)
 {
   CValidationState state;
 
-  BOOST_CHECK (IsValueValid (ValtypeFromString (""), state));
-  BOOST_CHECK (IsValueValid (ValtypeFromString ("foo"), state));
-  BOOST_CHECK (IsValueValid (ValtypeFromString ("f\xFF" "o"), state));
+  /* Test the length limit.  */
+  BOOST_CHECK (IsValueValid (ValtypeFromString (ValueOfLength (2048)), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString (ValueOfLength (2049)), state));
 
-  BOOST_CHECK (IsValueValid (valtype (2048, 'x'), state));
-  BOOST_CHECK (!IsValueValid (valtype (2049, 'x'), state));
+  /* Valid JSON values, including some UTF-8.  */
+  BOOST_CHECK (IsValueValid (ValtypeFromString ("{}"), state));
+  BOOST_CHECK (IsValueValid (ValtypeFromString (u8R"(
+    {
+      "text": "äöü",
+      "array": [1, 2, 3],
+      "flag": true,
+      "pi": 3.1415927
+    }
+  )"), state));
+
+  /* Invalid JSON or not a JSON object.  */
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("abc"), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("{'foo':1}"), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("{\"foo"), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("[]"), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("false"), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("\"abc\""), state));
+  BOOST_CHECK (!IsValueValid (ValtypeFromString ("42"), state));
 }
 
 BOOST_AUTO_TEST_CASE (name_tx_verification)
@@ -500,8 +552,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const valtype value = ValtypeFromString (val ("my-value"));
 
   const auto tooLongName = ValtypeFromString ("x/" + std::string (255, 'x'));
-  const auto tooLongValue = ValtypeFromString (
-      "{\"text\": \"" + std::string (2049, 'x') + "\"}");
+  const auto tooLongValue = ValtypeFromString (ValueOfLength (2049));
 
   const CScript addr = getTestAddress ();
 

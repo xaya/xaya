@@ -18,6 +18,8 @@
 #include <utilstrencodings.h>
 #include <validation.h>
 
+#include <univalue.h>
+
 namespace
 {
 
@@ -280,7 +282,30 @@ IsNameValid (const valtype& name, CValidationState& state)
   if (name.size () > MAX_NAME_LENGTH)
     return state.Invalid (false, 0, "the name is too long");
 
-  return true;
+  /* All names must have a namespace.  This means that they must start with
+     some lower-case letters and /.  As a regexp, that is: [a-z]+\/.* */
+  bool foundNamespace = false;
+  for (size_t i = 0; i < name.size (); ++i)
+    {
+      if (name[i] == '/')
+        {
+          if (i == 0)
+            return state.Invalid (false, 0, "the empty namespace is not valid");
+
+          foundNamespace = true;
+          break;
+        }
+
+      if (name[i] < 'a' || name[i] > 'z')
+        return state.Invalid (false, 0,
+                              "the namespace must only consist of lower-case"
+                              " letters");
+    }
+  if (!foundNamespace)
+    return state.Invalid (false, 0, "the name has no namespace");
+
+  /* Only valid UTF-8 strings can be names.  */
+  return IsValidUtf8String (ValtypeToString (name));
 }
 
 bool
@@ -289,7 +314,11 @@ IsValueValid (const valtype& value, CValidationState& state)
   if (value.size () > MAX_VALUE_LENGTH)
     return state.Invalid (false, 0, "the value is too long");
 
-  return true;
+  /* The value must parse with Univalue as JSON and be an object.  */
+  UniValue jsonValue;
+  if (!jsonValue.read (ValtypeToString (value)))
+    return false;
+  return jsonValue.isObject ();
 }
 
 bool
