@@ -2,23 +2,23 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "base58.h"
-#include "coins.h"
-#include "consensus/validation.h"
-#include "init.h"
-#include "key_io.h"
-#include "names/common.h"
-#include "names/main.h"
-#include "primitives/transaction.h"
-#include "random.h"
-#include "rpc/mining.h"
-#include "rpc/server.h"
-#include "script/names.h"
-#include "txmempool.h"
-#include "util.h"
-#include "validation.h"
-#include "wallet/coincontrol.h"
-#include "wallet/wallet.h"
+#include <base58.h>
+#include <coins.h>
+#include <consensus/validation.h>
+#include <init.h>
+#include <key_io.h>
+#include <names/common.h>
+#include <names/main.h>
+#include <primitives/transaction.h>
+#include <random.h>
+#include <rpc/mining.h>
+#include <rpc/server.h>
+#include <script/names.h>
+#include <txmempool.h>
+#include <util.h>
+#include <validation.h>
+#include <wallet/coincontrol.h>
+#include <wallet/wallet.h>
 
 #include <univalue.h>
 
