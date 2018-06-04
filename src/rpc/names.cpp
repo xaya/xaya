@@ -102,6 +102,9 @@ getNameInfoHelp (const std::string& indent, const std::string& trailing)
       << "(string) the name's current value" << std::endl;
   res << indent << "  \"txid\": xxxxx,           "
       << "(string) the name's last update tx" << std::endl;
+  res << indent << "  \"vout\": xxxxx,           "
+      << "(numeric) the index of the name output in the last update"
+      << std::endl;
   res << indent << "  \"address\": xxxxx,        "
       << "(string) the address holding the name" << std::endl;
   res << indent << "  \"height\": xxxxx,         "
