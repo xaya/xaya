@@ -304,6 +304,15 @@ IsNameValid (const valtype& name, CValidationState& state)
   if (!foundNamespace)
     return state.Invalid (false, 0, "the name has no namespace");
 
+  /* Non-printable ASCII characters are not allowed.  This check works also for
+     UTF-8 encoded strings, as characters <0x80 are encoded as a single byte
+     and never occur as part of some other UTF-8 sequence.  */
+  for (const unsigned char c : name)
+    if (c < 0x20)
+      return state.Invalid (false, 0,
+                            "non-printable ASCII characters are not allowed"
+                            " in names");
+
   /* Only valid UTF-8 strings can be names.  */
   return IsValidUtf8String (ValtypeToString (name));
 }

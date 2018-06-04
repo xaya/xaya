@@ -512,6 +512,10 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
   BOOST_CHECK (!IsNameValid (ValtypeFromString ("c14/foo"), state));
   BOOST_CHECK (!IsNameValid (ValtypeFromString ("Z/foo"), state));
 
+  /* Unprintable ASCII characters.  */
+  BOOST_CHECK (!IsNameValid ({65, 0}, state));
+  BOOST_CHECK (!IsNameValid (ValtypeFromString ("\t"), state));
+
   /* Invalid due to not being valid UTF-8.  */
   BOOST_CHECK (!IsNameValid (ValtypeFromString ("x/\xFF"), state));
 }
