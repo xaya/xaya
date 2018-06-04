@@ -326,7 +326,7 @@ def get_datadir_path(dirname, n):
     return os.path.join(dirname, "node" + str(n))
 
 def append_config(datadir, options):
-    with open(os.path.join(datadir, "namecoin.conf"), 'a', encoding='utf8') as f:
+    with open(os.path.join(datadir, "chimaera.conf"), 'a', encoding='utf8') as f:
         for option in options:
             f.write(option + "\n")
 
