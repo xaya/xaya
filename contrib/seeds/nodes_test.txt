@@ -1,2 +1,5 @@
-# List of fixed seed nodes for testnet
+# See https://github.com/chimaera/chimaera/issues/8#issuecomment-375992872.
 
+46.101.15.140
+178.62.99.51
+139.59.173.255
