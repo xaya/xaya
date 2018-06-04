@@ -424,6 +424,7 @@ name_pending (const JSONRPCRequest& request)
         "    \"name\": xxxx     (string) the name operated on\n"
         "    \"value\": xxxx    (string) the name's new value\n"
         "    \"txid\": xxxx     (string) the txid corresponding to the operation\n"
+        "    \"vout\": xxxx     (numeric) the vout of the tx's name output\n"
         "    \"ismine\": xxxx   (boolean) whether the name is owned by the wallet\n"
         "  },\n"
         "  ...\n"
@@ -456,15 +457,15 @@ name_pending (const JSONRPCRequest& request)
     }
 
   UniValue arr(UniValue::VARR);
-  for (std::vector<uint256>::const_iterator i = txHashes.begin ();
-       i != txHashes.end (); ++i)
+  for (const auto& txHash : txHashes)
     {
-      std::shared_ptr<const CTransaction> tx = mempool.get (*i);
+      std::shared_ptr<const CTransaction> tx = mempool.get (txHash);
       if (!tx || !tx->IsNamecoin ())
         continue;
 
-      for (const auto& txOut : tx->vout)
+      for (size_t n = 0; n < tx->vout.size (); ++n)
         {
+          const auto& txOut = tx->vout[n];
           const CNameScript op(txOut.scriptPubKey);
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
@@ -493,6 +494,7 @@ name_pending (const JSONRPCRequest& request)
           obj.pushKV ("name", name);
           obj.pushKV ("value", value);
           obj.pushKV ("txid", tx->GetHash ().GetHex ());
+          obj.pushKV ("vout", static_cast<int> (n));
 
 #ifdef ENABLE_WALLET
           isminetype mine = ISMINE_NO;
