@@ -280,7 +280,7 @@ bool
 IsNameValid (const valtype& name, CValidationState& state)
 {
   if (name.size () > MAX_NAME_LENGTH)
-    return state.Invalid (false, 0, "the name is too long");
+    return state.Invalid (false, REJECT_INVALID, "the name is too long");
 
   /* All names must have a namespace.  This means that they must start with
      some lower-case letters and /.  As a regexp, that is: [a-z]+\/.* */
@@ -290,44 +290,52 @@ IsNameValid (const valtype& name, CValidationState& state)
       if (name[i] == '/')
         {
           if (i == 0)
-            return state.Invalid (false, 0, "the empty namespace is not valid");
+            return state.Invalid (false, REJECT_INVALID,
+                                  "the empty namespace is not valid");
 
           foundNamespace = true;
           break;
         }
 
       if (name[i] < 'a' || name[i] > 'z')
-        return state.Invalid (false, 0,
+        return state.Invalid (false, REJECT_INVALID,
                               "the namespace must only consist of lower-case"
                               " letters");
     }
   if (!foundNamespace)
-    return state.Invalid (false, 0, "the name has no namespace");
+    return state.Invalid (false, REJECT_INVALID, "the name has no namespace");
 
   /* Non-printable ASCII characters are not allowed.  This check works also for
      UTF-8 encoded strings, as characters <0x80 are encoded as a single byte
      and never occur as part of some other UTF-8 sequence.  */
   for (const unsigned char c : name)
     if (c < 0x20)
-      return state.Invalid (false, 0,
+      return state.Invalid (false, REJECT_INVALID,
                             "non-printable ASCII characters are not allowed"
                             " in names");
 
   /* Only valid UTF-8 strings can be names.  */
-  return IsValidUtf8String (ValtypeToString (name));
+  if (!IsValidUtf8String (ValtypeToString (name)))
+    return state.Invalid (false, REJECT_INVALID, "the name is not valid UTF-8");
+
+  return true;
 }
 
 bool
 IsValueValid (const valtype& value, CValidationState& state)
 {
   if (value.size () > MAX_VALUE_LENGTH)
-    return state.Invalid (false, 0, "the value is too long");
+    return state.Invalid (false, REJECT_INVALID, "the value is too long");
 
   /* The value must parse with Univalue as JSON and be an object.  */
   UniValue jsonValue;
   if (!jsonValue.read (ValtypeToString (value)))
-    return false;
-  return jsonValue.isObject ();
+    return state.Invalid (false, REJECT_INVALID, "the value is not valid JSON");
+  if (!jsonValue.isObject ())
+    return state.Invalid (false, REJECT_INVALID,
+                          "the value must be a JSON object");
+
+  return true;
 }
 
 bool
@@ -410,9 +418,15 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   const valtype& name = nameOpOut.getOpName ();
 
   if (!IsNameValid (name, state))
-    return false;
+    {
+      error ("%s: Name is invalid: %s", __func__, state.GetRejectReason ());
+      return false;
+    }
   if (!IsValueValid (nameOpOut.getOpValue (), state))
-    return false;
+    {
+      error ("%s: Value is invalid: %s", __func__, state.GetRejectReason ());
+      return false;
+    }
 
   /* Process NAME_UPDATE next.  */
 
