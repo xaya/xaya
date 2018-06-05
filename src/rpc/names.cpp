@@ -22,6 +22,7 @@
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
+#include <cassert>
 #include <memory>
 #include <sstream>
 
@@ -85,38 +86,44 @@ getNameInfo (const valtype& name, const CNameData& data)
   return result;
 }
 
-/**
- * Return the help string description to use for name info objects.
- * @param indent Indentation at the line starts.
- * @param trailing Trailing string (e. g., comma for an array of these objects).
- * @return The description string.
- */
-std::string
-getNameInfoHelp (const std::string& indent, const std::string& trailing)
+NameInfoHelp::NameInfoHelp (const std::string& ind)
+  : indent(ind)
 {
-  std::ostringstream res;
+  result << indent << "{" << std::endl;
+  withField ("\"name\": xxxxx", "(string) the requested name");
+  withField ("\"value\": xxxxx", "(string) the name's current value");
+  withField ("\"txid\": xxxxx", "(string) the name's last update tx");
+  withField ("\"vout\": xxxxx",
+           "(numeric) the index of the name output in the last update");
+  withField ("\"address\": xxxxx", "(string) the address holding the name");
+}
 
-  res << indent << "{" << std::endl;
-  res << indent << "  \"name\": xxxxx,           "
-      << "(string) the requested name" << std::endl;
-  res << indent << "  \"value\": xxxxx,          "
-      << "(string) the name's current value" << std::endl;
-  res << indent << "  \"txid\": xxxxx,           "
-      << "(string) the name's last update tx" << std::endl;
-  res << indent << "  \"vout\": xxxxx,           "
-      << "(numeric) the index of the name output in the last update"
-      << std::endl;
-  res << indent << "  \"address\": xxxxx,        "
-      << "(string) the address holding the name" << std::endl;
-  res << indent << "  \"height\": xxxxx,         "
-      << "(numeric) the name's last update height" << std::endl;
-  res << indent << "  \"expires_in\": xxxxx,     "
-      << "(numeric) expire counter for the name" << std::endl;
-  res << indent << "  \"expired\": xxxxx,        "
-      << "(boolean) whether the name is expired" << std::endl;
-  res << indent << "}" << trailing << std::endl;
+NameInfoHelp&
+NameInfoHelp::withField (const std::string& field, const std::string& doc)
+{
+  constexpr size_t len = 25;
+  assert (field.size () < len);
 
-  return res.str ();
+  result << indent << "  " << field << ",";
+  result << std::string (len - field.size (), ' ') << doc << std::endl;
+
+  return *this;
+}
+
+NameInfoHelp&
+NameInfoHelp::withExpiration ()
+{
+  withField ("\"height\": xxxxx", "(numeric) the name's last update height");
+  withField ("\"expires_in\": xxxxx", "(numeric) expire counter for the name");
+  withField ("\"expired\": xxxxx", "(boolean) whether the name is expired");
+  return *this;
+}
+
+std::string
+NameInfoHelp::finish (const std::string& trailing)
+{
+  result << indent << "}" << trailing << std::endl;
+  return result.str ();
 }
 
 /* ************************************************************************** */
@@ -134,7 +141,7 @@ name_show (const JSONRPCRequest& request)
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
-        + getNameInfoHelp ("", "") +
+        + NameInfoHelp ("").withExpiration ().finish ("") +
         "\nExamples:\n"
         + HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
@@ -177,7 +184,7 @@ name_history (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
         "[\n"
-        + getNameInfoHelp ("  ", ",") +
+        + NameInfoHelp ("  ").withExpiration ().finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -236,7 +243,7 @@ name_scan (const JSONRPCRequest& request)
         "2. \"count\"       (numeric, optional, default=500) stop after this many names\n"
         "\nResult:\n"
         "[\n"
-        + getNameInfoHelp ("  ", ",") +
+        + NameInfoHelp ("  ").withExpiration ().finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -292,7 +299,7 @@ name_filter (const JSONRPCRequest& request)
         "5. \"stat\"        (string, optional) if set to the string \"stat\", print statistics instead of returning the names\n"
         "\nResult:\n"
         "[\n"
-        + getNameInfoHelp ("  ", ",") +
+        + NameInfoHelp ("  ").withExpiration ().finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -423,13 +430,12 @@ name_pending (const JSONRPCRequest& request)
         "1. \"name\"        (string, optional) only look for this name\n"
         "\nResult:\n"
         "[\n"
-        "  {\n"
-        "    \"op\": xxxx       (string) the operation being performed\n"
-        "    \"name\": xxxx     (string) the name operated on\n"
-        "    \"value\": xxxx    (string) the name's new value\n"
-        "    \"txid\": xxxx     (string) the txid corresponding to the operation\n"
-        "    \"vout\": xxxx     (numeric) the vout of the tx's name output\n"
-        "    \"ismine\": xxxx   (boolean) whether the name is owned by the wallet\n"
+        + NameInfoHelp ("  ")
+            .withField ("\"op\": xxxxx",
+                        "(string) the operation being performed")
+            .withField ("\"ismine\": xxxxx",
+                        "(boolean) whether the name is owned by the wallet")
+            .finish (",") +
         "  },\n"
         "  ...\n"
         "]\n"

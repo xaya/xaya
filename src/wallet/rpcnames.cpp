@@ -87,7 +87,12 @@ name_list (const JSONRPCRequest& request)
         "1. \"name\"          (string, optional) only include this name\n"
         "\nResult:\n"
         "[\n"
-        + getNameInfoHelp ("  ", ",") +
+        + NameInfoHelp ("  ")
+            .withExpiration ()
+            .withField ("\"transferred\": xxxxx",
+                        "(boolean) whether the name was transferred and is"
+                        " no longer owned by the wallet")
+            .finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
