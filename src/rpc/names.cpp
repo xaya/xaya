@@ -30,16 +30,10 @@
 /**
  * Utility routine to construct a "name info" object to return.  This is used
  * for name_show and also name_list.
- * @param name The name.
- * @param value The name's value.
- * @param outp The last update's outpoint.
- * @param addr The name's address script.
- * @param height The name's last update height.
- * @return A JSON object to return.
  */
 UniValue
-getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
-             const CScript& addr, int height)
+getNameInfo (const valtype& name, const valtype& value,
+             const COutPoint& outp, const CScript& addr)
 {
   UniValue obj(UniValue::VOBJ);
   obj.pushKV ("name", ValtypeToString (name));
@@ -57,31 +51,38 @@ getNameInfo (const valtype& name, const valtype& value, const COutPoint& outp,
     addrStr = "<nonstandard>";
   obj.pushKV ("address", addrStr);
 
-  /* Calculate expiration data.  */
+  return obj;
+}
+
+/**
+ * Adds expiration information to the JSON object, based on the last-update
+ * height for the name given.
+ */
+void
+addExpirationInfo (const int height, UniValue& data)
+{
   const int curHeight = chainActive.Height ();
   const Consensus::Params& params = Params ().GetConsensus ();
   const int expireDepth = params.rules->NameExpirationDepth (curHeight);
   const int expireHeight = height + expireDepth;
   const int expiresIn = expireHeight - curHeight;
   const bool expired = (expiresIn <= 0);
-  obj.pushKV ("height", height);
-  obj.pushKV ("expires_in", expiresIn);
-  obj.push_back (Pair ("expired", expired));
-
-  return obj;
+  data.pushKV ("height", height);
+  data.pushKV ("expires_in", expiresIn);
+  data.push_back (Pair ("expired", expired));
 }
 
 /**
  * Return name info object for a CNameData object.
- * @param name The name.
- * @param data The name's data.
- * @return A JSON object to return.
  */
 UniValue
 getNameInfo (const valtype& name, const CNameData& data)
 {
-  return getNameInfo (name, data.getValue (), data.getUpdateOutpoint (),
-                      data.getAddress (), data.getHeight ());
+  UniValue result = getNameInfo (name, data.getValue (),
+                                 data.getUpdateOutpoint (),
+                                 data.getAddress ());
+  addExpirationInfo (data.getHeight (), result);
+  return result;
 }
 
 /**
@@ -473,31 +474,20 @@ name_pending (const JSONRPCRequest& request)
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
 
-          const valtype vchName = op.getOpName ();
-          const valtype vchValue = op.getOpValue ();
-
-          const std::string name = ValtypeToString (vchName);
-          const std::string value = ValtypeToString (vchValue);
-
-          std::string strOp;
+          UniValue obj = getNameInfo (op.getOpName (), op.getOpValue (),
+                                      COutPoint (tx->GetHash (), n),
+                                      op.getAddress ());
           switch (op.getNameOp ())
             {
             case OP_NAME_FIRSTUPDATE:
-              strOp = "name_firstupdate";
+              obj.pushKV ("op", "name_firstupdate");
               break;
             case OP_NAME_UPDATE:
-              strOp = "name_update";
+              obj.pushKV ("op", "name_update");
               break;
             default:
               assert (false);
             }
-
-          UniValue obj(UniValue::VOBJ);
-          obj.pushKV ("op", strOp);
-          obj.pushKV ("name", name);
-          obj.pushKV ("value", value);
-          obj.pushKV ("txid", tx->GetHash ().GetHex ());
-          obj.pushKV ("vout", static_cast<int> (n));
 
 #ifdef ENABLE_WALLET
           isminetype mine = ISMINE_NO;

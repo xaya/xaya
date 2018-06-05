@@ -35,7 +35,7 @@ constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
  * @param txIn Set to the CTxIn to include in the new tx.
  * @return True if the output could be found.
  */
-static bool
+bool
 getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 {
   AssertLockHeld (cs_main);
@@ -150,7 +150,8 @@ name_list (const JSONRPCRequest& request)
       UniValue obj
         = getNameInfo (name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
-                       nameOp.getAddress (), pindex->nHeight);
+                       nameOp.getAddress ());
+      addExpirationInfo (pindex->nHeight, obj);
 
       const bool mine = IsMine (*pwallet, nameOp.getAddress ());
       obj.pushKV ("transferred", !mine);

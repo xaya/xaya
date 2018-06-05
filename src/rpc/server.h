@@ -203,7 +203,8 @@ extern CAmount AmountFromValue(const UniValue& value);
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
 
-extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr, int height);
+extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
+extern void addExpirationInfo(int height, UniValue& data);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
 extern std::string getNameInfoHelp(const std::string& indent, const std::string& trailing);
 
