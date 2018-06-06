@@ -278,14 +278,16 @@ name_new (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
-        "name_new \"name\"\n"
+        "name_new \"name\" (\"options\")\n"
         "\nStart registration of the given name.  Must be followed up with"
         " name_firstupdate to finish the registration.\n"
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
+        "2. \"options\"       (object, optional)\n"
+        + getNameOpOptionsHelp () +
         "\nResult:\n"
         "[\n"
         "  xxxxx,   (string) the txid, required for name_firstupdate\n"
@@ -296,7 +298,7 @@ name_new (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_new", "\"myname\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -316,19 +318,18 @@ name_new (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwallet);
-  CPubKey pubKey;
-  const bool ok = keyName.GetReservedKey (pubKey, true);
-  assert (ok);
-  const CScript addrName = GetScriptForDestination (pubKey.GetID ());
-  const CScript newScript = CNameScript::buildNameNew (addrName, hash);
+  DestinationAddressHelper destHelper(*pwallet);
+  if (request.params.size () >= 2)
+    destHelper.setOptions (request.params[1].get_obj ());
+
+  const CScript newScript
+      = CNameScript::buildNameNew (destHelper.getScript (), hash);
 
   CCoinControl coinControl;
   CTransactionRef tx = SendMoneyToScript (pwallet, newScript, nullptr,
                                           NAME_LOCKED_AMOUNT, false,
                                           coinControl, {}, {});
-
-  keyName.KeepKey ();
+  destHelper.finalise ();
 
   const std::string randStr = HexStr (rand);
   const std::string txid = tx->GetHash ().GetHex ();
@@ -449,8 +450,8 @@ name_firstupdate (const JSONRPCRequest& request)
   CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, &txIn,
                                           NAME_LOCKED_AMOUNT, false,
                                           coinControl, {}, {});
-
   destHelper.finalise ();
+
   return tx->GetHash ().GetHex ();
 }
 
@@ -465,8 +466,7 @@ name_update (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
-  if (request.fHelp
-      || (request.params.size () != 2 && request.params.size () != 3))
+  if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
         "name_update \"name\" \"value\" (\"options\")\n"
         "\nUpdate a name and possibly transfer it.\n"
@@ -532,8 +532,8 @@ name_update (const JSONRPCRequest& request)
   CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, &txIn,
                                           NAME_LOCKED_AMOUNT, false,
                                           coinControl, {}, {});
-
   destHelper.finalise ();
+
   return tx->GetHash ().GetHex ();
 }
 

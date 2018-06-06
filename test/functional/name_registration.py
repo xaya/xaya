@@ -17,11 +17,24 @@ class NameRegistrationTest (NameTestFramework):
     # Perform name_new's.  Check for too long names exception.
     newA = self.nodes[0].name_new ("node-0")
     newAconfl = self.nodes[1].name_new ("node-0")
-    newB = self.nodes[1].name_new ("node-1")
+    addrB = self.nodes[1].getnewaddress ()
+    newB = self.nodes[1].name_new ("node-1", {"destAddress": addrB})
     self.nodes[0].name_new ("x" * 255)
     assert_raises_rpc_error (-8, 'name is too long',
                              self.nodes[0].name_new, "x" * 256)
     self.generate (0, 5)
+
+    # Verify that the name_new with explicit address sent really to this
+    # address.  Since there is no equivalent to name_show while we only
+    # have a name_new, explicitly check the raw tx.
+    newTx = self.nodes[1].getrawtransaction (newB[0], 1)
+    found = False
+    for out in newTx['vout']:
+      if 'nameOp' in out['scriptPubKey']:
+        assert not found
+        found = True
+        assert_equal (out['scriptPubKey']['addresses'], [addrB])
+    assert found
 
     # Check for exception with name_history and without -namehistory.
     assert_raises_rpc_error (-1, 'namehistory is not enabled',

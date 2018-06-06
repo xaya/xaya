@@ -147,6 +147,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "name_filter", 1, "maxage" },
     { "name_filter", 2, "from" },
     { "name_filter", 3, "nb" },
+    { "name_new", 1, "options" },
     { "name_firstupdate", 4, "options" },
     { "name_firstupdate", 5, "allow_active" },
     { "name_update", 2, "options" },
