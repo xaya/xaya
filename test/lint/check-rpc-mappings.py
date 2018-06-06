@@ -19,6 +19,8 @@ SOURCES = [
     "src/rpc/net.cpp",
     "src/rpc/rawtransaction.cpp",
     "src/wallet/rpcwallet.cpp",
+    # The dispatch table for src/wallet/rpcnames.cpp is in rpcwallet.cpp, so
+    # already covered by the list above.
 ]
 # Source file (relative to root) containing conversion mapping
 SOURCE_CLIENT = 'src/rpc/client.cpp'
