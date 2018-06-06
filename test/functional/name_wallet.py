@@ -152,13 +152,15 @@ class NameWalletTest (NameTestFramework):
     fee += self.getFee (2, newC[0], nameFee)
     self.generate (0, 5)
     self.checkBalances (fee)
-    firstB = self.firstupdateName (2, "name-b", newB, "value", addrB)
+    firstB = self.firstupdateName (2, "name-b", newB, "value",
+                                   {"destAddress": addrB})
     fee = self.getFee (2, firstB)
     firstC = self.firstupdateName (2, "name-c", newC, "value")
     fee += self.getFee (2, firstC)
     self.generate (0, 10)
     self.checkBalances (fee)
-    updC = self.nodes[2].name_update ("name-c", "new value", addrB)
+    updC = self.nodes[2].name_update ("name-c", "new value",
+                                      {"destAddress": addrB})
     fee = self.getFee (2, updC)
     self.generate (0, 1)
     self.checkBalances (fee)
@@ -191,7 +193,8 @@ class NameWalletTest (NameTestFramework):
     addrDest = self.nodes[2].getnewaddress ()
     newDest = self.nodes[0].name_new ("destination")
     self.generate (0, 5)
-    self.firstupdateName (0, "destination", newDest, "value", addrDest)
+    self.firstupdateName (0, "destination", newDest, "value",
+                          {"destAddress": addrDest})
     self.generate (0, 10)
     self.checkName (3, "destination", "value", None, False)
 

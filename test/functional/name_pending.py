@@ -83,7 +83,7 @@ class NameScanningTest (NameTestFramework):
     assert_equal (pending['vout'], confirmed['vout'])
 
     # Send a name and check that ismine is handled correctly.
-    tx = self.nodes[1].name_update ('a', 'sent-a', addrC)
+    tx = self.nodes[1].name_update ('a', 'sent-a', {"destAddress":addrC})
     self.sync_with_mode ('mempool')
     self.checkPendingName (1, 'a', 'name_update', 'sent-a', tx, False)
     self.checkPendingName (3, 'a', 'name_update', 'sent-a', tx, True)

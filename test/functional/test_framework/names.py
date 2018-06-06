@@ -45,7 +45,7 @@ class NameTestFramework (BitcoinTestFramework):
         [sync_mempools(group) for group in node_groups]
 
   def firstupdateName (self, ind, name, newData, value,
-                       toAddr = None, allowActive = False):
+                       opt = None, allowActive = False):
     """
     Utility routine to perform a name_firstupdate command.  The rand
     and txid are taken from 'newData', as it is returned by name_new.
@@ -54,14 +54,14 @@ class NameTestFramework (BitcoinTestFramework):
     node = self.nodes[ind]
 
     if allowActive:
-      if toAddr is None:
-        toAddr = node.getnewaddress ()
+      if opt is None:
+        opt = {}
       return node.name_firstupdate (name, newData[1], newData[0],
-                                    value, toAddr, True)
+                                    value, opt, True)
 
-    if toAddr is None:
+    if opt is None:
       return node.name_firstupdate (name, newData[1], newData[0], value)
-    return node.name_firstupdate (name, newData[1], newData[0], value, toAddr)
+    return node.name_firstupdate (name, newData[1], newData[0], value, opt)
 
   def generate (self, ind, blocks, syncBefore = True):
     """
