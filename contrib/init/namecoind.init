@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+#  namecoind The Namecoin core server.
+#
+#
+# chkconfig: 345 80 20
+# description: namecoind
+# processname: namecoind
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+# you can override defaults in /etc/sysconfig/namecoind, see below
+if [ -f /etc/sysconfig/namecoind ]; then
+        . /etc/sysconfig/namecoind
+fi
+
+RETVAL=0
+
+prog=namecoind
+# you can override the lockfile via NAMECOIND_LOCKFILE
+# in /etc/sysconfig/namecoind
+lockfile=${NAMECOIND_LOCKFILE-/var/lock/subsys/namecoind}
+
+# namecoind defaults to /usr/bin/namecoind, override with NAMECOIND_BIN
+namecoind=${NAMECOIND_BIN-/usr/bin/namecoind}
+
+# namecoind opts default to -disablewallet, override with NAMECOIND_OPTS
+namecoind_opts=${NAMECOIND_OPTS--disablewallet}
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon $DAEMONOPTS $namecoind $namecoind_opts
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch $lockfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc $prog
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $prog
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: service $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
