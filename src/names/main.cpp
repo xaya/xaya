@@ -419,12 +419,12 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   if (!IsNameValid (name, state))
     {
-      error ("%s: Name is invalid: %s", __func__, state.GetRejectReason ());
+      error ("%s: Name is invalid: %s", __func__, FormatStateMessage (state));
       return false;
     }
   if (!IsValueValid (nameOpOut.getOpValue (), state))
     {
-      error ("%s: Value is invalid: %s", __func__, state.GetRejectReason ());
+      error ("%s: Value is invalid: %s", __func__, FormatStateMessage (state));
       return false;
     }
 
