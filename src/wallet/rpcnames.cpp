@@ -23,50 +23,9 @@
 
 #include <memory>
 
+/* ************************************************************************** */
 namespace
 {
-
-// Maximum number of outputs that are checked for the NAME_NEW prevout.
-constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
-
-/**
- * Helper routine to fetch the name output of a previous transaction.  This
- * is required for name_firstupdate.
- * @param txid Previous transaction ID.
- * @param txOut Set to the corresponding output.
- * @param txIn Set to the CTxIn to include in the new tx.
- * @return True if the output could be found.
- */
-bool
-getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
-{
-  AssertLockHeld (cs_main);
-
-  // Unfortunately, with the change of the txdb to be based on outputs rather
-  // than full transactions, we can no longer just look up the txid and iterate
-  // over all outputs.  Since this is only necessary for a corner case, we just
-  // keep trying with indices until we find the output (up to a maximum number
-  // of trials).
-
-  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
-    {
-      const COutPoint outp(txid, i);
-
-      Coin coin;
-      if (!pcoinsTip->GetCoin (outp, coin))
-        continue;
-
-      if (!coin.out.IsNull ()
-          && CNameScript::isNameScript (coin.out.scriptPubKey))
-        {
-          txOut = coin.out;
-          txIn = CTxIn (outp);
-          return true;
-        }
-    }
-
-  return false;
-}
 
 /**
  * A simple helper class that handles determination of the address to which
@@ -160,8 +119,7 @@ std::string getNameOpOptionsHelp ()
          "  }\n";
 }
 
-} // namespace
-
+} // anonymous namespace
 /* ************************************************************************** */
 
 UniValue
@@ -344,6 +302,53 @@ name_new (const JSONRPCRequest& request)
 }
 
 /* ************************************************************************** */
+
+namespace
+{
+
+/**
+ * Helper routine to fetch the name output of a previous transaction.  This
+ * is required for name_firstupdate.
+ * @param txid Previous transaction ID.
+ * @param txOut Set to the corresponding output.
+ * @param txIn Set to the CTxIn to include in the new tx.
+ * @return True if the output could be found.
+ */
+bool
+getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
+{
+  AssertLockHeld (cs_main);
+
+  // Maximum number of outputs that are checked for the NAME_NEW prevout.
+  constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
+
+  // Unfortunately, with the change of the txdb to be based on outputs rather
+  // than full transactions, we can no longer just look up the txid and iterate
+  // over all outputs.  Since this is only necessary for a corner case, we just
+  // keep trying with indices until we find the output (up to a maximum number
+  // of trials).
+
+  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
+    {
+      const COutPoint outp(txid, i);
+
+      Coin coin;
+      if (!pcoinsTip->GetCoin (outp, coin))
+        continue;
+
+      if (!coin.out.IsNull ()
+          && CNameScript::isNameScript (coin.out.scriptPubKey))
+        {
+          txOut = coin.out;
+          txIn = CTxIn (outp);
+          return true;
+        }
+    }
+
+  return false;
+}
+
+}  // anonymous namespace
 
 UniValue
 name_firstupdate (const JSONRPCRequest& request)
