@@ -24,5 +24,8 @@ echo "\nName reorgs..."
 echo "\nName scanning..."
 ./name_scanning.py
 
+echo "\nName operation with sendCoins..."
+./name_sendcoins.py
+
 echo "\nName wallet..."
 ./name_wallet.py
