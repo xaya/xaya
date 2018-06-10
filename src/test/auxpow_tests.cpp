@@ -2,6 +2,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <arith_uint256.h>
 #include <auxpow.h>
 #include <chainparams.h>
 #include <coins.h>
@@ -9,9 +10,12 @@
 #include <validation.h>
 #include <pow.h>
 #include <primitives/block.h>
+#include <rpc/auxpow_miner.h>
 #include <script/script.h>
 #include <utilstrencodings.h>
+#include <utiltime.h>
 #include <uint256.h>
+#include <univalue.h>
 
 #include <test/test_bitcoin.h>
 
@@ -20,9 +24,29 @@
 #include <algorithm>
 #include <vector>
 
-/* No space between BOOST_FIXTURE_TEST_SUITE and '(', so that extraction of
+/**
+ * Helper class that is friend to AuxpowMiner and makes the tested methods
+ * accessible to the test code.
+ *
+ * This needs to be defined before the BOOST_FIXTURE_TEST_SUITE to be not
+ * wrapped into an internal namespace (otherwise the friend declaration with
+ * AuxpowMiner doesn't work).
+ */
+class AuxpowMinerForTest : public AuxpowMiner
+{
+
+public:
+
+  using AuxpowMiner::cs;
+
+  using AuxpowMiner::getCurrentBlock;
+  using AuxpowMiner::lookupSavedBlock;
+
+};
+
+/* No space between BOOST_AUTO_TEST_SUITE and '(', so that extraction of
    the test-suite name works with grep as done in the Makefile.  */
-BOOST_FIXTURE_TEST_SUITE(auxpow_tests, BasicTestingSetup)
+BOOST_AUTO_TEST_SUITE(auxpow_tests)
 
 /* ************************************************************************** */
 
@@ -187,7 +211,7 @@ CAuxpowBuilder::buildCoinbaseData (bool header, const valtype& auxRoot,
 
 /* ************************************************************************** */
 
-BOOST_AUTO_TEST_CASE (check_auxpow)
+BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
 {
   const Consensus::Params& params = Params ().GetConsensus ();
   CAuxpowBuilder builder(5, 42);
@@ -357,13 +381,13 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
     BOOST_CHECK (!CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus()));
 }
 
-BOOST_AUTO_TEST_CASE (auxpow_pow)
+BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
 {
   /* Use regtest parameters to allow mining with easy difficulty.  */
   SelectParams (CBaseChainParams::REGTEST);
-  const Consensus::Params& params = Params().GetConsensus();
+  const Consensus::Params& params = Params ().GetConsensus ();
 
-  const arith_uint256 target = (~arith_uint256(0) >> 1);
+  const arith_uint256 target = (~arith_uint256 (0) >> 1);
   CBlockHeader block;
   block.nBits = target.GetCompact ();
 
@@ -448,6 +472,70 @@ BOOST_AUTO_TEST_CASE (auxpow_pow)
   BOOST_CHECK (CheckProofOfWork (block, params));
   tamperWith (block.hashMerkleRoot);
   BOOST_CHECK (!CheckProofOfWork (block, params));
+}
+
+/* ************************************************************************** */
+
+BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
+{
+  AuxpowMinerForTest miner;
+  LOCK (miner.cs);
+
+  /* We use mocktime so that we can control GetTime() as it is used in the
+     logic that determines whether or not to reconstruct a block.  The "base"
+     time is set such that the blocks we have from the fixture are fresh.  */
+  const int64_t baseTime = chainActive.Tip ()->GetMedianTimePast () + 1;
+  SetMockTime (baseTime);
+
+  /* Construct a first block.  */
+  CScript scriptPubKey;
+  uint256 target;
+  const CBlock* pblock1 = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock1 != nullptr);
+
+  /* Verify target computation.  */
+  arith_uint256 expected;
+  expected.SetCompact (pblock1->nBits);
+  BOOST_CHECK (target == ArithToUint256 (expected));
+
+  /* Calling the method again should return the same, cached block a second
+     time (even if we advance the clock, since there are no new
+     transactions).  */
+  SetMockTime (baseTime + 100);
+  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) == pblock1);
+
+  /* Mine a block, then we should get a new auxpow block constructed.  */
+  CreateAndProcessBlock ({}, scriptPubKey);
+  const CBlock* pblock2 = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock2 != pblock1);
+
+  /* Add a new transaction to the mempool.  */
+  TestMemPoolEntryHelper entry;
+  CMutableTransaction mtx;
+  mtx.vout.emplace_back (1234, scriptPubKey);
+  mempool.addUnchecked (mtx.GetHash (), entry.FromTx (mtx));
+
+  /* We should still get back the cached block, for now.  */
+  SetMockTime (baseTime + 160);
+  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) == pblock2);
+
+  /* With time advanced too far, we get a new block.  */
+  SetMockTime (baseTime + 161);
+  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) != pblock2);
+}
+
+BOOST_FIXTURE_TEST_CASE (auxpow_miner_createAndLookupBlock, TestChain100Setup)
+{
+  AuxpowMinerForTest miner;
+  LOCK (miner.cs);
+
+  CScript scriptPubKey;
+  uint256 target;
+  const CBlock* pblock = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock != nullptr);
+
+  BOOST_CHECK (miner.lookupSavedBlock (pblock->GetHash ().GetHex ()) == pblock);
+  BOOST_CHECK_THROW (miner.lookupSavedBlock ("foobar"), UniValue);
 }
 
 /* ************************************************************************** */

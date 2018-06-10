@@ -63,6 +63,8 @@ private:
    */
   const CBlock* lookupSavedBlock (const std::string& hashHex) const;
 
+  friend class AuxpowMinerForTest;
+
 public:
 
   AuxpowMiner () = default;
