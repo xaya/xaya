@@ -15,6 +15,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
+#include <rpc/auxpow_miner.h>
 #include <rpc/mining.h>
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
@@ -4408,23 +4409,24 @@ UniValue getauxblock(const JSONRPCRequest& request)
     std::shared_ptr<CReserveScript> coinbaseScript;
     pwallet->GetScriptForMining(coinbaseScript);
 
-    // If the keypool is exhausted, no script is returned at all.  Catch this.
+    /* If the keypool is exhausted, no script is returned at all.
+       Catch this.  */
     if (!coinbaseScript)
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
 
-    //throw an error if no script was provided
+    /* Throw an error if no script was provided.  */
     if (!coinbaseScript->reserveScript.size())
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available (mining requires a wallet)");
 
     /* Create a new block */
     if (request.params.size() == 0)
-        return AuxMiningCreateBlock(coinbaseScript->reserveScript);
+        return g_auxpow_miner->createAuxBlock(coinbaseScript->reserveScript);
 
-    /* Submit a block instead.  Note that this need not lock cs_main,
-       since ProcessNewBlock below locks it instead.  */
+    /* Submit a block instead.  */
     assert(request.params.size() == 2);
-    bool fAccepted = AuxMiningSubmitBlock(request.params[0].get_str(), 
-                                          request.params[1].get_str());
+    bool fAccepted
+        = g_auxpow_miner->submitAuxBlock(request.params[0].get_str(),
+                                         request.params[1].get_str());
     if (fAccepted)
         coinbaseScript->KeepScript();
 
