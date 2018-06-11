@@ -4458,8 +4458,8 @@ static const CRPCCommand commands[] =
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },
-    { "names",              "name_register",                    &name_register,                 {"name","value","toaddress"} },
-    { "names",              "name_update",                      &name_update,                   {"name","value","toaddress"} },
+    { "names",              "name_register",                    &name_register,                 {"name","value","options"} },
+    { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
     { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },
 };
 

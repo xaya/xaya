@@ -60,13 +60,26 @@ class NameScanningTest (NameTestFramework):
     self.checkPendingName (1, 'x/a', 'name_update', val ('value-a'), txa, True)
     self.checkPendingName (2, 'x/a', 'name_update', val ('value-a'), txa, False)
 
+    # We don't know the golden value for vout, as this is randomised.  But we
+    # can store the output now and then verify it with name_show after the
+    # update has been mined.
+    pending = self.nodes[0].name_pending ('x/a')
+    assert_equal (len (pending), 1)
+    pending = pending[0]
+    assert 'vout' in pending
+
     # Mine a block and check that all mempool is cleared.
     self.generate (0, 1)
     assert_equal (self.nodes[3].getrawmempool (), [])
     assert_equal (self.nodes[3].name_pending (), [])
 
+    # Verify vout from before against name_show.
+    confirmed = self.nodes[0].name_show ('x/a')
+    assert_equal (pending['vout'], confirmed['vout'])
+
     # Send a name and check that ismine is handled correctly.
-    tx = self.nodes[1].name_update ('x/a', val ('sent-a'), addrC)
+    tx = self.nodes[1].name_update ('x/a', val ('sent-a'),
+                                    {"destAddress": addrC})
     self.sync_with_mode ('mempool')
     self.checkPendingName (1, 'x/a', 'name_update', val ('sent-a'), tx, False)
     self.checkPendingName (3, 'x/a', 'name_update', val ('sent-a'), tx, True)
@@ -87,6 +100,11 @@ class NameScanningTest (NameTestFramework):
     assert_equal (obj['txid'], txid)
     assert isinstance (obj['ismine'], bool)
     assert_equal (obj['ismine'], mine)
+
+    # There is no golden value for vout, but we can decode the transaction
+    # to make sure it is correct.
+    rawtx = self.nodes[ind].getrawtransaction (txid, 1)
+    assert 'nameOp' in rawtx['vout'][obj['vout']]['scriptPubKey']
 
 if __name__ == '__main__':
   NameScanningTest ().main ()

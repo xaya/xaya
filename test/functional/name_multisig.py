@@ -26,7 +26,7 @@ class NameMultisigTest (NameTestFramework):
     p2sh = multisig['address']
 
     # Register a new name to that address.
-    self.nodes[0].name_register ("x/name", val ("value"), p2sh)
+    self.nodes[0].name_register ("x/name", val ("value"), {"destAddress": p2sh})
     self.generate (1, 1)
     data = self.checkName (2, "x/name", val ("value"))
     assert_equal (data['address'], p2sh)

@@ -7,9 +7,11 @@
 
 #include <script/script.h>
 
-#include <string>
-
 #include <univalue.h>
+
+#include <memory>
+
+class AuxpowMiner;
 
 /** Generate blocks (mine) */
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, bool keepScript);

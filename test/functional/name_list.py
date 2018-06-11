@@ -34,7 +34,8 @@ class NameListTest (NameTestFramework):
     # Transfer a name away and check that name_list updates accordingly.
 
     addrB = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("x/name-a", val ("enjoy"), addrB)
+    self.nodes[0].name_update ("x/name-a", val ("enjoy"),
+                               {"destAddress": addrB})
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "x/name-a", val ("value-a"), False)
@@ -61,7 +62,7 @@ class NameListTest (NameTestFramework):
 
     # Transfer it back and see that it updates in wallet A.
     addrA = self.nodes[0].getnewaddress ()
-    self.nodes[1].name_update ("x/name-a", val ("sent"), addrA)
+    self.nodes[1].name_update ("x/name-a", val ("sent"), {"destAddress": addrA})
     self.generate (0, 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)

@@ -9,6 +9,7 @@
 #include <key_io.h>
 #include <names/common.h>
 #include <names/main.h>
+#include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
 #include <rpc/mining.h>
@@ -16,12 +17,214 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util.h>
+#include <utilmoneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/wallet.h>
 
 #include <univalue.h>
 
+#include <algorithm>
+#include <memory>
+
+/* ************************************************************************** */
+namespace
+{
+
+/**
+ * A simple helper class that handles determination of the address to which
+ * name outputs should be sent.  It handles the CReserveKey reservation
+ * as well as parsing the explicit options given by the user (if any).
+ */
+class DestinationAddressHelper
+{
+
+private:
+
+  /** Reference to the wallet that should be used.  */
+  CWallet& wallet;
+
+  /**
+   * The reserve key that was used if no override is given.  When finalising
+   * (after the sending succeeded), this key needs to be marked as KeepKey().
+   */
+  std::unique_ptr<CReserveKey> reserveKey;
+
+  /** Set if a valid override destination was added.  */
+  std::unique_ptr<CTxDestination> overrideDest;
+
+public:
+
+  explicit DestinationAddressHelper (CWallet& w)
+    : wallet(w)
+  {}
+
+  /**
+   * Processes the given options object to see if it contains an override
+   * destination.  If it does, remembers it.
+   */
+  void setOptions (const UniValue& opt);
+
+  /**
+   * Returns the script that should be used as destination.
+   */
+  CScript getScript ();
+
+  /**
+   * Marks the key as used if one has been reserved.  This should be called
+   * when sending succeeded.
+   */
+  void finalise ();
+
+};
+
+void DestinationAddressHelper::setOptions (const UniValue& opt)
+{
+  RPCTypeCheckObj (opt,
+    {
+      {"destAddress", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+  if (!opt.exists ("destAddress"))
+    return;
+
+  CTxDestination dest = DecodeDestination (opt["destAddress"].get_str ());
+  if (!IsValidDestination (dest))
+    throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
+  overrideDest.reset (new CTxDestination (std::move (dest)));
+}
+
+CScript DestinationAddressHelper::getScript ()
+{
+  if (overrideDest != nullptr)
+    return GetScriptForDestination (*overrideDest);
+
+  reserveKey.reset (new CReserveKey (&wallet));
+  CPubKey pubKeyReserve;
+  const bool ok = reserveKey->GetReservedKey (pubKeyReserve, true);
+  assert (ok);
+
+  return GetScriptForDestination (pubKeyReserve.GetID ());
+}
+
+void DestinationAddressHelper::finalise ()
+{
+  if (reserveKey != nullptr)
+    reserveKey->KeepKey ();
+}
+
+/**
+ * Returns the help text for the options argument for name operations.
+ */
+std::string getNameOpOptionsHelp ()
+{
+  return "  {\n"
+         "    \"destAddress\"  (string, optional) The address to send the name output to\n"
+         "    \"sendCoins\"    (object, optional) Addresses to which coins should be sent additionally\n"
+         "      {\n"
+         "        \"addr1\": x,\n"
+         "        \"addr2\": y,\n"
+         "        ...\n"
+         "      }\n"
+         "  }\n";
+}
+
+/**
+ * Sends a name output to the given name script.  This is the "final" step that
+ * is common between name_new, name_firstupdate and name_update.  This method
+ * also implements the "sendCoins" option, if included.
+ */
+CTransactionRef
+SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
+                const CTxIn* nameInput, const UniValue& opt)
+{
+  RPCTypeCheckObj (opt,
+    {
+      {"sendCoins", UniValueType (UniValue::VOBJ)},
+    },
+    true, false);
+
+  if (wallet.GetBroadcastTransactions () && !g_connman)
+    throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
+                        "Error: Peer-to-peer functionality missing"
+                        " or disabled");
+
+  std::vector<CRecipient> vecSend;
+  vecSend.push_back ({nameOutScript, NAME_LOCKED_AMOUNT, false});
+
+  if (opt.exists ("sendCoins"))
+    for (const std::string& addr : opt["sendCoins"].getKeys ())
+      {
+        const CTxDestination dest = DecodeDestination (addr);
+        if (!IsValidDestination (dest))
+          throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
+                              "Invalid address: " + addr);
+
+        const CAmount nAmount = AmountFromValue (opt["sendCoins"][addr]);
+        if (nAmount <= 0)
+          throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for send");
+
+        vecSend.push_back ({GetScriptForDestination (dest), nAmount, false});
+      }
+
+  /* Shuffle the recipient list for privacy.  */
+  std::shuffle (vecSend.begin (), vecSend.end (), FastRandomContext ());
+
+  /* Check balance against total amount sent.  If we have a name input, we have
+     to take its value into account.  */
+
+  const CAmount curBalance = wallet.GetBalance ();
+
+  CAmount totalSpend = 0;
+  for (const auto& recv : vecSend)
+    totalSpend += recv.nAmount;
+
+  CAmount lockedValue = 0;
+  std::string strError;
+  if (nameInput != nullptr)
+    {
+      const CWalletTx* dummyWalletTx;
+      if (!wallet.FindValueInNameInput (*nameInput, lockedValue,
+                                        dummyWalletTx, strError))
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+
+  if (totalSpend > curBalance + lockedValue)
+    throw JSONRPCError (RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+
+  /* Create and send the transaction.  This code is based on the corresponding
+     part of SendMoneyToScript and should stay in sync.  */
+
+  CCoinControl coinControl;
+  CReserveKey keyChange(&wallet);
+  CAmount nFeeRequired;
+  int nChangePosRet = -1;
+
+  CTransactionRef tx;
+  if (!wallet.CreateTransaction (vecSend, nameInput, tx, keyChange,
+                                 nFeeRequired, nChangePosRet, strError,
+                                 coinControl))
+    {
+      if (totalSpend + nFeeRequired > curBalance)
+        strError = strprintf ("Error: This transaction requires a transaction"
+                              " fee of at least %s",
+                              FormatMoney (nFeeRequired));
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  CValidationState state;
+  if (!wallet.CommitTransaction (tx, {}, {}, {}, keyChange, g_connman.get (),
+                                 state))
+    {
+      strError = strprintf ("Error: The transaction was rejected!"
+                            "  Reason given: %s", FormatStateMessage (state));
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  return tx;
+}
+
+} // anonymous namespace
 /* ************************************************************************** */
 
 UniValue
@@ -41,7 +244,11 @@ name_list (const JSONRPCRequest& request)
         "1. \"name\"          (string, optional) only include this name\n"
         "\nResult:\n"
         "[\n"
-        + getNameInfoHelp ("  ", ",") +
+        + NameInfoHelp ("  ")
+            .withField ("\"transferred\": xxxxx",
+                        "(boolean) whether the name was transferred and is"
+                        " no longer owned by the wallet")
+            .finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -102,7 +309,7 @@ name_list (const JSONRPCRequest& request)
       UniValue obj
         = getNameInfo (name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
-                       nameOp.getAddress (), pindex->nHeight);
+                       nameOp.getAddress ());
 
       const bool mine = IsMine (*pwallet, nameOp.getAddress ());
       obj.pushKV ("transferred", !mine);
@@ -133,13 +340,14 @@ name_register (const JSONRPCRequest& request)
   if (request.fHelp
       || (request.params.size () != 2 && request.params.size () != 3))
     throw std::runtime_error (
-        "name_register \"name\" \"value\" (\"toaddress\")\n"
+        "name_register \"name\" \"value\" (\"options\")\n"
         "\nRegister a new name.\n"
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
-        "4. \"value\"         (string, required) value for the name\n"
-        "5. \"toaddress\"     (string, optional) address to send the name to\n"
+        "2. \"value\"         (string, required) value for the name\n"
+        "3. \"options\"       (object, optional)\n"
+        + getNameOpOptionsHelp () +
         "\nResult:\n"
         "\"txid\"             (string) the name_register's txid\n"
         "\nExamples:\n"
@@ -149,7 +357,7 @@ name_register (const JSONRPCRequest& request)
       );
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -162,6 +370,10 @@ name_register (const JSONRPCRequest& request)
   const valtype value = ValtypeFromString (valueStr);
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
+
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
 
   /* Reject updates to a name for which the mempool already has
      a pending registration.  This is not a hard rule enforced by network
@@ -186,39 +398,15 @@ name_register (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwallet);
-  CPubKey pubKeyReserve;
-  const bool ok = keyName.GetReservedKey (pubKeyReserve, true);
-  assert (ok);
-  bool usedKey = false;
-
-  CScript addrName;
-  if (request.params.size () == 3)
-    {
-      keyName.ReturnKey ();
-      const CTxDestination dest
-        = DecodeDestination (request.params[2].get_str ());
-      if (!IsValidDestination (dest))
-        throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
-
-      addrName = GetScriptForDestination (dest);
-    }
-  else
-    {
-      usedKey = true;
-      addrName = GetScriptForDestination (pubKeyReserve.GetID ());
-    }
+  DestinationAddressHelper destHelper(*pwallet);
+  destHelper.setOptions (options);
 
   const CScript nameScript
-    = CNameScript::buildNameRegister (addrName, name, value);
+    = CNameScript::buildNameRegister (destHelper.getScript (), name, value);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, nullptr,
-                                          NAME_LOCKED_AMOUNT, false,
-                                          coinControl, {}, {});
-
-  if (usedKey)
-    keyName.KeepKey ();
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, nullptr, options);
+  destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
 }
@@ -234,26 +422,25 @@ name_update (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
-  if (request.fHelp
-      || (request.params.size () != 2 && request.params.size () != 3))
+  if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
-        "name_update \"name\" \"value\" (\"toaddress\")\n"
+        "name_update \"name\" \"value\" (\"options\")\n"
         "\nUpdate a name and possibly transfer it.\n"
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to update\n"
-        "4. \"value\"         (string, required) value for the name\n"
-        "5. \"toaddress\"     (string, optional) address to send the name to\n"
+        "2. \"value\"         (string, required) value for the name\n"
+        "3. \"options\"       (object, optional)\n"
+        + getNameOpOptionsHelp () +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
         "\nExamples:\n"
         + HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
-        + HelpExampleCli ("name_update", "\"myname\", \"new-value\", \"NEX4nME5p3iyNK3gFh4FUeUriHXxEFemo9\"")
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       );
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -266,6 +453,10 @@ name_update (const JSONRPCRequest& request)
   const valtype value = ValtypeFromString (valueStr);
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
+
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
 
   /* Reject updates to a name for which the mempool already has
      a pending update.  This is not a hard rule enforced by network
@@ -292,39 +483,15 @@ name_update (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked (pwallet);
 
-  CReserveKey keyName(pwallet);
-  CPubKey pubKeyReserve;
-  const bool ok = keyName.GetReservedKey (pubKeyReserve, true);
-  assert (ok);
-  bool usedKey = false;
-
-  CScript addrName;
-  if (request.params.size () == 3)
-    {
-      keyName.ReturnKey ();
-      const CTxDestination dest
-        = DecodeDestination (request.params[2].get_str ());
-      if (!IsValidDestination (dest))
-        throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "invalid address");
-
-      addrName = GetScriptForDestination (dest);
-    }
-  else
-    {
-      usedKey = true;
-      addrName = GetScriptForDestination (pubKeyReserve.GetID ());
-    }
+  DestinationAddressHelper destHelper(*pwallet);
+  destHelper.setOptions (options);
 
   const CScript nameScript
-    = CNameScript::buildNameUpdate (addrName, name, value);
+    = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, &txIn,
-                                          NAME_LOCKED_AMOUNT, false,
-                                          coinControl, {}, {});
-
-  if (usedKey)
-    keyName.KeepKey ();
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
+  destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
 }

@@ -140,13 +140,15 @@ class NameWalletTest (NameTestFramework):
 
     # Send a name from 1 to 2 by firstupdate and update.
     addrB = self.nodes[3].getnewaddress ()
-    regB = self.nodes[2].name_register ("x/name-b", val ("value"), addrB)
+    regB = self.nodes[2].name_register ("x/name-b", val ("value"),
+                                        {"destAddress": addrB})
     fee = self.getFee (2, regB, nameFee)
     regC = self.nodes[2].name_register ("x/name-c", val ("value"))
     fee += self.getFee (2, regC, nameFee)
     self.generate (0, 1)
     self.checkBalances (fee)
-    updC = self.nodes[2].name_update ("x/name-c", val ("new value"), addrB)
+    updC = self.nodes[2].name_update ("x/name-c", val ("new value"),
+                                      {"destAddress": addrB})
     fee = self.getFee (2, updC)
     self.generate (0, 1)
     self.checkBalances (fee)
@@ -177,7 +179,8 @@ class NameWalletTest (NameTestFramework):
     # Test sendtoname RPC command.
 
     addrDest = self.nodes[2].getnewaddress ()
-    self.nodes[0].name_register ("x/destination", val ("value"), addrDest)
+    self.nodes[0].name_register ("x/destination", val ("value"),
+                                 {"destAddress": addrDest})
     self.generate (0, 1)
     self.checkName (3, "x/destination", val ("value"))
 

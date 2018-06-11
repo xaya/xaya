@@ -26,8 +26,8 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
-#include <memory>
 #include <stdint.h>
+#include <string>
 #include <utility>
 
 unsigned int ParseConfirmTarget(const UniValue& value)

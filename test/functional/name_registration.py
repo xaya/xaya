@@ -24,10 +24,11 @@ class NameRegistrationTest (NameTestFramework):
     self.setup_name_test ([[]] * 2)
 
   def run_test (self):
-    # Perform name registrations's.  Check for too long names exception and
+    # Perform name_register's.  Check for too long names exception and
     # too long values.
     addrA = self.nodes[0].getnewaddress ()
-    txidA = self.nodes[0].name_register ("x/node-0", val ("value-0"), addrA)
+    txidA = self.nodes[0].name_register ("x/node-0", val ("value-0"),
+                                         {"destAddress": addrA})
     self.nodes[1].name_register ("x/node-1", valueOfLength (2048))
     assert_raises_rpc_error (-8, 'value is too long',
                              self.nodes[0].name_register,
@@ -48,12 +49,10 @@ class NameRegistrationTest (NameTestFramework):
                              "x/node-0", val ("foo"))
     
     # Check that the name data appears when the tx are mined.
-
     self.generate (0, 1)
     data = self.checkName (1, "x/node-0", val ("value-0"))
     assert_equal (data['address'], addrA)
     assert_equal (data['txid'], txidA)
-    assert_equal (data['height'], 201)
 
     self.checkNameHistory (1, "x/node-0", [val ("value-0")])
     self.checkNameHistory (1, "x/node-1", [valueOfLength (2048)])
@@ -79,7 +78,8 @@ class NameRegistrationTest (NameTestFramework):
                            [val ("test-value"), valueOfLength (2048)])
 
     addrB = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("x/test-name", val ("sent"), addrB)
+    self.nodes[0].name_update ("x/test-name", val ("sent"),
+                               {"destAddress": addrB})
     self.generate (0, 1)
     data = self.checkName (0, "x/test-name", val ("sent"))
     assert_equal (data['address'], addrB)
@@ -118,7 +118,8 @@ class NameRegistrationTest (NameTestFramework):
     addr0 = self.nodes[0].getnewaddress ()
     self.nodes[1].sendtoaddress (addr0, balance - keep, "", "", True)
     addr1 = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("x/node-0", val ("value"), addr1)
+    self.nodes[0].name_update ("x/node-0", val ("value"),
+                               {"destAddress": addr1})
     self.generate (0, 1)
     assert_equal (self.nodes[1].getbalance (), keep)
     self.nodes[1].name_update ("x/node-0", val ("new value"))
