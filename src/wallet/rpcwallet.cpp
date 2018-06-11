@@ -4524,9 +4524,9 @@ static const CRPCCommand commands[] =
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },
-    { "names",              "name_new",                         &name_new,                      {"name"} },
-    { "names",              "name_firstupdate",                 &name_firstupdate,              {"name","rand","tx","value","toaddress","allow_active"} },
-    { "names",              "name_update",                      &name_update,                   {"name","value","toaddress"} },
+    { "names",              "name_new",                         &name_new,                      {"name","options"} },
+    { "names",              "name_firstupdate",                 &name_firstupdate,              {"name","rand","tx","value","options","allow_active"} },
+    { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
     { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },
 };
 

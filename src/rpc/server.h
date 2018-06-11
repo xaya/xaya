@@ -13,6 +13,7 @@
 
 #include <list>
 #include <map>
+#include <sstream>
 #include <stdint.h>
 #include <string>
 
@@ -203,9 +204,32 @@ extern CAmount AmountFromValue(const UniValue& value);
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
 
-extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr, int height);
+extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
+extern void addExpirationInfo(int height, UniValue& data);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
-extern std::string getNameInfoHelp(const std::string& indent, const std::string& trailing);
+
+/**
+ * Builder class for the help text of RPCs that return information about
+ * names (like name_show, name_scan, name_pending or name_list).  Since the
+ * exact fields contained and formatting to use depend on the case, this class
+ * provides a simple and fluent interface to build the right help text for
+ * each case.
+ */
+class NameInfoHelp
+{
+private:
+  std::ostringstream result;
+  const std::string indent;
+
+
+public:
+  explicit NameInfoHelp (const std::string& ind);
+
+  NameInfoHelp& withField (const std::string& field, const std::string& doc);
+  NameInfoHelp& withExpiration ();
+
+  std::string finish (const std::string& trailing);
+};
 
 bool StartRPC();
 void InterruptRPC();

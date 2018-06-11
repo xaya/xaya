@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,11 +17,24 @@ class NameRegistrationTest (NameTestFramework):
     # Perform name_new's.  Check for too long names exception.
     newA = self.nodes[0].name_new ("node-0")
     newAconfl = self.nodes[1].name_new ("node-0")
-    newB = self.nodes[1].name_new ("node-1")
+    addrB = self.nodes[1].getnewaddress ()
+    newB = self.nodes[1].name_new ("node-1", {"destAddress": addrB})
     self.nodes[0].name_new ("x" * 255)
     assert_raises_rpc_error (-8, 'name is too long',
                              self.nodes[0].name_new, "x" * 256)
     self.generate (0, 5)
+
+    # Verify that the name_new with explicit address sent really to this
+    # address.  Since there is no equivalent to name_show while we only
+    # have a name_new, explicitly check the raw tx.
+    newTx = self.nodes[1].getrawtransaction (newB[0], 1)
+    found = False
+    for out in newTx['vout']:
+      if 'nameOp' in out['scriptPubKey']:
+        assert not found
+        found = True
+        assert_equal (out['scriptPubKey']['addresses'], [addrB])
+    assert found
 
     # Check for exception with name_history and without -namehistory.
     assert_raises_rpc_error (-1, 'namehistory is not enabled',
@@ -29,7 +42,8 @@ class NameRegistrationTest (NameTestFramework):
 
     # first_update the names.  Check for too long values.
     addrA = self.nodes[0].getnewaddress ()
-    txidA = self.firstupdateName (0, "node-0", newA, "value-0", addrA)
+    txidA = self.firstupdateName (0, "node-0", newA, "value-0",
+                                  {"destAddress": addrA})
     assert_raises_rpc_error (-8, 'value is too long',
                              self.firstupdateName, 1, "node-1", newB, "x" * 521)
     self.firstupdateName (1, "node-1", newB, "x" * 520)
@@ -107,7 +121,7 @@ class NameRegistrationTest (NameTestFramework):
     self.checkNameHistory (1, "test-name", ["test-value", "x" * 520])
 
     addrB = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("test-name", "sent", addrB)
+    self.nodes[0].name_update ("test-name", "sent", {"destAddress": addrB})
     self.generate (0, 1)
     data = self.checkName (0, "test-name", "sent", 30, False)
     assert_equal (data['address'], addrB)
@@ -153,7 +167,7 @@ class NameRegistrationTest (NameTestFramework):
     addr0 = self.nodes[0].getnewaddress ()
     self.nodes[1].sendtoaddress (addr0, balance - keep, "", "", True)
     addr1 = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("node-1", "value", addr1)
+    self.nodes[0].name_update ("node-1", "value", {"destAddress": addr1})
     self.generate (0, 1)
     assert_equal (self.nodes[1].getbalance (), keep)
     self.nodes[1].name_update ("node-1", "new value")
