@@ -24,26 +24,6 @@
 #include <algorithm>
 #include <vector>
 
-/**
- * Helper class that is friend to AuxpowMiner and makes the tested methods
- * accessible to the test code.
- *
- * This needs to be defined before the BOOST_FIXTURE_TEST_SUITE to be not
- * wrapped into an internal namespace (otherwise the friend declaration with
- * AuxpowMiner doesn't work).
- */
-class AuxpowMinerForTest : public AuxpowMiner
-{
-
-public:
-
-  using AuxpowMiner::cs;
-
-  using AuxpowMiner::getCurrentBlock;
-  using AuxpowMiner::lookupSavedBlock;
-
-};
-
 /* No space between BOOST_AUTO_TEST_SUITE and '(', so that extraction of
    the test-suite name works with grep as done in the Makefile.  */
 BOOST_AUTO_TEST_SUITE(auxpow_tests)
@@ -477,6 +457,22 @@ BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
 }
 
 /* ************************************************************************** */
+
+/**
+ * Helper class that is friend to AuxpowMiner and makes the tested methods
+ * accessible to the test code.
+ */
+class AuxpowMinerForTest : public AuxpowMiner
+{
+
+public:
+
+  using AuxpowMiner::cs;
+
+  using AuxpowMiner::getCurrentBlock;
+  using AuxpowMiner::lookupSavedBlock;
+
+};
 
 BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
 {
