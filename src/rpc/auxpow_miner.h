@@ -16,6 +16,11 @@
 #include <string>
 #include <vector>
 
+namespace auxpow_tests
+{
+class AuxpowMinerForTest;
+}
+
 /**
  * This class holds "global" state used to construct blocks for the auxpow
  * mining RPCs and the map of already constructed blocks to look them up
@@ -63,7 +68,7 @@ private:
    */
   const CBlock* lookupSavedBlock (const std::string& hashHex) const;
 
-  friend class AuxpowMinerForTest;
+  friend class auxpow_tests::AuxpowMinerForTest;
 
 public:
 
