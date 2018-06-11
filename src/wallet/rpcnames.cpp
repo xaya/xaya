@@ -4,10 +4,12 @@
 
 #include <base58.h>
 #include <coins.h>
+#include <consensus/validation.h>
 #include <init.h>
 #include <key_io.h>
 #include <names/common.h>
 #include <names/main.h>
+#include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
 #include <rpc/mining.h>
@@ -15,58 +17,19 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util.h>
+#include <utilmoneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/wallet.h>
 
 #include <univalue.h>
 
+#include <algorithm>
 #include <memory>
 
+/* ************************************************************************** */
 namespace
 {
-
-// Maximum number of outputs that are checked for the NAME_NEW prevout.
-constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
-
-/**
- * Helper routine to fetch the name output of a previous transaction.  This
- * is required for name_firstupdate.
- * @param txid Previous transaction ID.
- * @param txOut Set to the corresponding output.
- * @param txIn Set to the CTxIn to include in the new tx.
- * @return True if the output could be found.
- */
-bool
-getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
-{
-  AssertLockHeld (cs_main);
-
-  // Unfortunately, with the change of the txdb to be based on outputs rather
-  // than full transactions, we can no longer just look up the txid and iterate
-  // over all outputs.  Since this is only necessary for a corner case, we just
-  // keep trying with indices until we find the output (up to a maximum number
-  // of trials).
-
-  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
-    {
-      const COutPoint outp(txid, i);
-
-      Coin coin;
-      if (!pcoinsTip->GetCoin (outp, coin))
-        continue;
-
-      if (!coin.out.IsNull ()
-          && CNameScript::isNameScript (coin.out.scriptPubKey))
-        {
-          txOut = coin.out;
-          txIn = CTxIn (outp);
-          return true;
-        }
-    }
-
-  return false;
-}
 
 /**
  * A simple helper class that handles determination of the address to which
@@ -157,11 +120,111 @@ std::string getNameOpOptionsHelp ()
 {
   return "  {\n"
          "    \"destAddress\"  (string, optional) The address to send the name output to\n"
+         "    \"sendCoins\"    (object, optional) Addresses to which coins should be sent additionally\n"
+         "      {\n"
+         "        \"addr1\": x,\n"
+         "        \"addr2\": y,\n"
+         "        ...\n"
+         "      }\n"
          "  }\n";
 }
 
-} // namespace
+/**
+ * Sends a name output to the given name script.  This is the "final" step that
+ * is common between name_new, name_firstupdate and name_update.  This method
+ * also implements the "sendCoins" option, if included.
+ */
+CTransactionRef
+SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
+                const CTxIn* nameInput, const UniValue& opt)
+{
+  RPCTypeCheckObj (opt,
+    {
+      {"sendCoins", UniValueType (UniValue::VOBJ)},
+    },
+    true, false);
 
+  if (wallet.GetBroadcastTransactions () && !g_connman)
+    throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
+                        "Error: Peer-to-peer functionality missing"
+                        " or disabled");
+
+  std::vector<CRecipient> vecSend;
+  vecSend.push_back ({nameOutScript, NAME_LOCKED_AMOUNT, false});
+
+  if (opt.exists ("sendCoins"))
+    for (const std::string& addr : opt["sendCoins"].getKeys ())
+      {
+        const CTxDestination dest = DecodeDestination (addr);
+        if (!IsValidDestination (dest))
+          throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
+                              "Invalid address: " + addr);
+
+        const CAmount nAmount = AmountFromValue (opt["sendCoins"][addr]);
+        if (nAmount <= 0)
+          throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for send");
+
+        vecSend.push_back ({GetScriptForDestination (dest), nAmount, false});
+      }
+
+  /* Shuffle the recipient list for privacy.  */
+  std::shuffle (vecSend.begin (), vecSend.end (), FastRandomContext ());
+
+  /* Check balance against total amount sent.  If we have a name input, we have
+     to take its value into account.  */
+
+  const CAmount curBalance = wallet.GetBalance ();
+
+  CAmount totalSpend = 0;
+  for (const auto& recv : vecSend)
+    totalSpend += recv.nAmount;
+
+  CAmount lockedValue = 0;
+  std::string strError;
+  if (nameInput != nullptr)
+    {
+      const CWalletTx* dummyWalletTx;
+      if (!wallet.FindValueInNameInput (*nameInput, lockedValue,
+                                        dummyWalletTx, strError))
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+
+  if (totalSpend > curBalance + lockedValue)
+    throw JSONRPCError (RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+
+  /* Create and send the transaction.  This code is based on the corresponding
+     part of SendMoneyToScript and should stay in sync.  */
+
+  CCoinControl coinControl;
+  CReserveKey keyChange(&wallet);
+  CAmount nFeeRequired;
+  int nChangePosRet = -1;
+
+  CTransactionRef tx;
+  if (!wallet.CreateTransaction (vecSend, nameInput, tx, keyChange,
+                                 nFeeRequired, nChangePosRet, strError,
+                                 coinControl))
+    {
+      if (totalSpend + nFeeRequired > curBalance)
+        strError = strprintf ("Error: This transaction requires a transaction"
+                              " fee of at least %s",
+                              FormatMoney (nFeeRequired));
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  CValidationState state;
+  if (!wallet.CommitTransaction (tx, {}, {}, {}, keyChange, g_connman.get (),
+                                 state))
+    {
+      strError = strprintf ("Error: The transaction was rejected!"
+                            "  Reason given: %s", FormatStateMessage (state));
+      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+    }
+
+  return tx;
+}
+
+} // anonymous namespace
 /* ************************************************************************** */
 
 UniValue
@@ -305,6 +368,10 @@ name_new (const JSONRPCRequest& request)
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   valtype rand(20);
   GetRandBytes (&rand[0], rand.size ());
 
@@ -319,16 +386,13 @@ name_new (const JSONRPCRequest& request)
   EnsureWalletIsUnlocked (pwallet);
 
   DestinationAddressHelper destHelper(*pwallet);
-  if (request.params.size () >= 2)
-    destHelper.setOptions (request.params[1].get_obj ());
+  destHelper.setOptions (options);
 
   const CScript newScript
       = CNameScript::buildNameNew (destHelper.getScript (), hash);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendMoneyToScript (pwallet, newScript, nullptr,
-                                          NAME_LOCKED_AMOUNT, false,
-                                          coinControl, {}, {});
+  CTransactionRef tx = SendNameOutput (*pwallet, newScript, nullptr, options);
   destHelper.finalise ();
 
   const std::string randStr = HexStr (rand);
@@ -344,6 +408,53 @@ name_new (const JSONRPCRequest& request)
 }
 
 /* ************************************************************************** */
+
+namespace
+{
+
+/**
+ * Helper routine to fetch the name output of a previous transaction.  This
+ * is required for name_firstupdate.
+ * @param txid Previous transaction ID.
+ * @param txOut Set to the corresponding output.
+ * @param txIn Set to the CTxIn to include in the new tx.
+ * @return True if the output could be found.
+ */
+bool
+getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
+{
+  AssertLockHeld (cs_main);
+
+  // Maximum number of outputs that are checked for the NAME_NEW prevout.
+  constexpr unsigned MAX_NAME_PREVOUT_TRIALS = 1000;
+
+  // Unfortunately, with the change of the txdb to be based on outputs rather
+  // than full transactions, we can no longer just look up the txid and iterate
+  // over all outputs.  Since this is only necessary for a corner case, we just
+  // keep trying with indices until we find the output (up to a maximum number
+  // of trials).
+
+  for (unsigned i = 0; i < MAX_NAME_PREVOUT_TRIALS; ++i)
+    {
+      const COutPoint outp(txid, i);
+
+      Coin coin;
+      if (!pcoinsTip->GetCoin (outp, coin))
+        continue;
+
+      if (!coin.out.IsNull ()
+          && CNameScript::isNameScript (coin.out.scriptPubKey))
+        {
+          txOut = coin.out;
+          txIn = CTxIn (outp);
+          return true;
+        }
+    }
+
+  return false;
+}
+
+}  // anonymous namespace
 
 UniValue
 name_firstupdate (const JSONRPCRequest& request)
@@ -400,6 +511,10 @@ name_firstupdate (const JSONRPCRequest& request)
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 5)
+    options = request.params[4].get_obj ();
+
   {
     LOCK (mempool.cs);
     if (mempool.registersName (name))
@@ -439,17 +554,14 @@ name_firstupdate (const JSONRPCRequest& request)
   EnsureWalletIsUnlocked (pwallet);
 
   DestinationAddressHelper destHelper(*pwallet);
-  if (request.params.size () >= 5)
-    destHelper.setOptions (request.params[4].get_obj ());
+  destHelper.setOptions (options);
 
   const CScript nameScript
     = CNameScript::buildNameFirstupdate (destHelper.getScript (), name, value,
                                          rand);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, &txIn,
-                                          NAME_LOCKED_AMOUNT, false,
-                                          coinControl, {}, {});
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -496,6 +608,10 @@ name_update (const JSONRPCRequest& request)
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
+
   /* Reject updates to a name for which the mempool already has
      a pending update.  This is not a hard rule enforced by network
      rules, but it is necessary with the current mempool implementation.  */
@@ -522,16 +638,13 @@ name_update (const JSONRPCRequest& request)
   EnsureWalletIsUnlocked (pwallet);
 
   DestinationAddressHelper destHelper(*pwallet);
-  if (request.params.size () >= 3)
-    destHelper.setOptions (request.params[2].get_obj ());
+  destHelper.setOptions (options);
 
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendMoneyToScript (pwallet, nameScript, &txIn,
-                                          NAME_LOCKED_AMOUNT, false,
-                                          coinControl, {}, {});
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();

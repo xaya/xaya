@@ -436,7 +436,6 @@ name_pending (const JSONRPCRequest& request)
             .withField ("\"ismine\": xxxxx",
                         "(boolean) whether the name is owned by the wallet")
             .finish (",") +
-        "  },\n"
         "  ...\n"
         "]\n"
         + HelpExampleCli ("name_pending", "")
