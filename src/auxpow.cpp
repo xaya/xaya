@@ -34,13 +34,6 @@ void CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
     nIndex = posInBlock;
 }
 
-void CMerkleTx::InitMerkleBranch(const CBlock& block, int posInBlock)
-{
-    hashBlock = block.GetHash();
-    nIndex = posInBlock;
-    vMerkleBranch = BlockMerkleBranch (block, nIndex);
-}
-
 int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
 {
     if (hashUnset())

@@ -81,14 +81,6 @@ public:
     void SetMerkleBranch(const CBlockIndex* pindex, int posInBlock);
 
     /**
-     * Actually compute the Merkle branch.  This is used for unit tests when
-     * constructing an auxpow.  It is not needed for actual production, since
-     * we do not care in the Namecoin client how the auxpow is constructed
-     * by a miner.
-     */
-    void InitMerkleBranch(const CBlock& block, int posInBlock);
-
-    /**
      * Return depth of transaction in blockchain:
      * <0  : conflicts with a transaction this deep in the blockchain
      *  0  : in memory pool, waiting to be included in a block
