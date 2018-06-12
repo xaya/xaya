@@ -20,6 +20,7 @@
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+#include <script/names.h>
 #include <script/sign.h>
 #include <timedata.h>
 #include <util.h>
@@ -3258,6 +3259,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "      \"maximumAmount\"    (numeric or string, default=unlimited) Maximum value of each UTXO in " + CURRENCY_UNIT + "\n"
             "      \"maximumCount\"     (numeric or string, default=unlimited) Maximum number of UTXOs\n"
             "      \"minimumSumAmount\" (numeric or string, default=unlimited) Minimum sum value of all UTXOs in " + CURRENCY_UNIT + "\n"
+            "      \"includeNames\"     (boolean, default=false) Whether to also include name outputs\n"
             "    }\n"
             "\nResult\n"
             "[                   (array of json object)\n"
@@ -3326,6 +3328,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
     CAmount nMaximumAmount = MAX_MONEY;
     CAmount nMinimumSumAmount = MAX_MONEY;
     uint64_t nMaximumCount = 0;
+    bool includeNames = false;
 
     if (!request.params[4].isNull()) {
         const UniValue& options = request.params[4].get_obj();
@@ -3341,6 +3344,9 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
         if (options.exists("maximumCount"))
             nMaximumCount = options["maximumCount"].get_int64();
+
+        if (options.exists("includeNames"))
+            includeNames = options["includeNames"].get_bool();
     }
 
     // Make sure the results are valid at least up to the most recent block
@@ -3349,9 +3355,16 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
     UniValue results(UniValue::VARR);
     std::vector<COutput> vecOutputs;
+    int expireDepth;
     {
         LOCK2(cs_main, pwallet->cs_wallet);
         pwallet->AvailableCoins(vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+
+        /* Retrieve and store "current" expiration depth.  We use that later
+           to determine, based on confirmations, whether or not names
+           are expired.  */
+        expireDepth = Params().GetConsensus()
+                        .rules->NameExpirationDepth(chainActive.Height());
     }
 
     LOCK(pwallet->cs_wallet);
@@ -3364,9 +3377,28 @@ static UniValue listunspent(const JSONRPCRequest& request)
         if (destinations.size() && (!fValidAddress || !destinations.count(address)))
             continue;
 
+        /* Check if this is a name output.  If it is, we have to apply
+           additional rules:  If the name is already expired, then the output
+           is definitely unspendable; in that case, exclude it always.
+           Otherwise, we may include the output only if the user opted to
+           receive also name outputs.  */
+        const CNameScript nameOp(scriptPubKey);
+        if (nameOp.isNameOp ())
+          {
+            if (!includeNames)
+              continue;
+
+            /* Name new's don't expire, so check for being an actual update.  */
+            if (nameOp.isAnyUpdate () && out.nDepth > expireDepth)
+              continue;
+          }
+
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", out.tx->GetHash().GetHex());
         entry.pushKV("vout", out.i);
+
+        if (nameOp.isNameOp())
+            entry.pushKV("nameOp", NameOpToUniv(nameOp));
 
         if (fValidAddress) {
             entry.pushKV("address", EncodeDestination(address));
