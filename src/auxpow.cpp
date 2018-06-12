@@ -19,6 +19,7 @@
 #include <validation.h>
 
 #include <algorithm>
+#include <memory>
 
 /* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
    of an enabled (or disabled) wallet.  Always include the code.  */
@@ -216,10 +217,11 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   parent.hashMerkleRoot = BlockMerkleRoot (parent);
 
   /* Construct the auxpow object.  */
-  header.SetAuxpow (new CAuxPow (coinbaseRef));
-  assert (header.auxpow->vChainMerkleBranch.empty ());
-  header.auxpow->nChainIndex = 0;
-  assert (header.auxpow->vMerkleBranch.empty ());
-  header.auxpow->nIndex = 0;
-  header.auxpow->parentBlock = parent;
+  std::unique_ptr<CAuxPow> auxpow(new CAuxPow (coinbaseRef));
+  assert (auxpow->vChainMerkleBranch.empty ());
+  auxpow->nChainIndex = 0;
+  assert (auxpow->vMerkleBranch.empty ());
+  auxpow->nIndex = 0;
+  auxpow->parentBlock = parent;
+  header.SetAuxpow (auxpow.release ());
 }
