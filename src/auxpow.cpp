@@ -223,5 +223,5 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   assert (auxpow->vMerkleBranch.empty ());
   auxpow->nIndex = 0;
   auxpow->parentBlock = parent;
-  header.SetAuxpow (auxpow.release ());
+  header.SetAuxpow (std::move (auxpow));
 }

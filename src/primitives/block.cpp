@@ -10,11 +10,11 @@
 #include <utilstrencodings.h>
 #include <crypto/common.h>
 
-void CBlockHeader::SetAuxpow (CAuxPow* apow)
+void CBlockHeader::SetAuxpow (std::unique_ptr<CAuxPow> apow)
 {
-    if (apow)
+    if (apow != nullptr)
     {
-        auxpow.reset(apow);
+        auxpow.reset(apow.release());
         SetAuxpowVersion(true);
     } else
     {

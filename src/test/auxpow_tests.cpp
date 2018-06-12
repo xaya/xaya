@@ -105,6 +105,15 @@ public:
   }
 
   /**
+   * Returns the finished CAuxPow object and returns it as std::unique_ptr.
+   */
+  inline std::unique_ptr<CAuxPow>
+  getUnique () const
+  {
+    return std::unique_ptr<CAuxPow>(new CAuxPow (get ()));
+  }
+
+  /**
    * Build a data vector to be included in the coinbase.  It consists
    * of the aux hash, the merkle tree size and the nonce.  Optionally,
    * the header can be added as well.
@@ -161,6 +170,7 @@ CAuxPow
 CAuxpowBuilder::get (const CTransactionRef tx) const
 {
   LOCK(cs_main);
+
   CAuxPow res(tx);
   res.hashBlock = parentBlock.GetHash ();
   res.nIndex = 0;
@@ -422,10 +432,10 @@ BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
   data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
   builder.setCoinbase (CScript () << data);
   mineBlock (builder.parentBlock, false, block.nBits);
-  block.SetAuxpow (new CAuxPow (builder.get ()));
+  block.SetAuxpow (builder.getUnique ());
   BOOST_CHECK (!CheckProofOfWork (block, params));
   mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (new CAuxPow (builder.get ()));
+  block.SetAuxpow (builder.getUnique ());
   BOOST_CHECK (CheckProofOfWork (block, params));
 
   /* Mismatch between auxpow being present and block.nVersion.  Note that
@@ -438,7 +448,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
   data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
   builder.setCoinbase (CScript () << data);
   mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (new CAuxPow (builder.get ()));
+  block.SetAuxpow (builder.getUnique ());
   BOOST_CHECK (hashAux != block.GetHash ());
   block.SetAuxpowVersion (false);
   BOOST_CHECK (hashAux == block.GetHash ());
@@ -450,7 +460,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
   data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
   builder.setCoinbase (CScript () << data);
   mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (new CAuxPow (builder.get ()));
+  block.SetAuxpow (builder.getUnique ());
   BOOST_CHECK (CheckProofOfWork (block, params));
   tamperWith (block.hashMerkleRoot);
   BOOST_CHECK (!CheckProofOfWork (block, params));
