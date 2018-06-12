@@ -490,6 +490,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
   uint256 target;
   const CBlock* pblock1 = miner.getCurrentBlock (scriptPubKey, target);
   BOOST_CHECK (pblock1 != nullptr);
+  const uint256 hash1 = pblock1->GetHash ();
 
   /* Verify target computation.  */
   arith_uint256 expected;
@@ -500,12 +501,17 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
      time (even if we advance the clock, since there are no new
      transactions).  */
   SetMockTime (baseTime + 100);
-  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) == pblock1);
+  const CBlock* pblock = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock == pblock1 && pblock->GetHash () == hash1);
 
-  /* Mine a block, then we should get a new auxpow block constructed.  */
+  /* Mine a block, then we should get a new auxpow block constructed.  Note that
+     it can be the same *pointer* if the memory was reused after clearing it,
+     so we can only verify that the hash is different.  */
   CreateAndProcessBlock ({}, scriptPubKey);
   const CBlock* pblock2 = miner.getCurrentBlock (scriptPubKey, target);
-  BOOST_CHECK (pblock2 != pblock1);
+  BOOST_CHECK (pblock2 != nullptr);
+  const uint256 hash2 = pblock2->GetHash ();
+  BOOST_CHECK (hash2 != hash1);
 
   /* Add a new transaction to the mempool.  */
   TestMemPoolEntryHelper entry;
@@ -515,11 +521,15 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
 
   /* We should still get back the cached block, for now.  */
   SetMockTime (baseTime + 160);
-  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) == pblock2);
+  pblock = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock == pblock2 && pblock->GetHash () == hash2);
 
-  /* With time advanced too far, we get a new block.  */
+  /* With time advanced too far, we get a new block.  This time, we should also
+     definitely get a different pointer, as there is no clearing.  The old
+     blocks are freed only after a new tip is found.  */
   SetMockTime (baseTime + 161);
-  BOOST_CHECK (miner.getCurrentBlock (scriptPubKey, target) != pblock2);
+  const CBlock* pblock3 = miner.getCurrentBlock (scriptPubKey, target);
+  BOOST_CHECK (pblock3 != pblock2 && pblock3->GetHash () != hash2);
 }
 
 BOOST_FIXTURE_TEST_CASE (auxpow_miner_createAndLookupBlock, TestChain100Setup)
