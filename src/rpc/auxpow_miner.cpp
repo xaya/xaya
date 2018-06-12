@@ -5,6 +5,7 @@
 #include <rpc/auxpow_miner.h>
 
 #include <arith_uint256.h>
+#include <auxpow.h>
 #include <chainparams.h>
 #include <net.h>
 #include <rpc/protocol.h>
