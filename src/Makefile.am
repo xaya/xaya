@@ -82,6 +82,7 @@ endif
 BITCOIN_CORE_H = \
   addrdb.h \
   addrman.h \
+  auxpow.h \
   base58.h \
   bech32.h \
   bloom.h \
@@ -140,6 +141,7 @@ BITCOIN_CORE_H = \
   random.h \
   reverse_iterator.h \
   reverselock.h \
+  rpc/auxpow_miner.h \
   rpc/blockchain.h \
   rpc/client.h \
   rpc/mining.h \
@@ -225,6 +227,7 @@ libbitcoin_server_a_SOURCES = \
   policy/policy.cpp \
   policy/rbf.cpp \
   rest.cpp \
+  rpc/auxpow_miner.cpp \
   rpc/blockchain.cpp \
   rpc/mining.cpp \
   rpc/misc.cpp \
@@ -364,6 +367,7 @@ libbitcoin_consensus_a_SOURCES = \
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
+  auxpow.cpp \
   base58.cpp \
   bech32.cpp \
   chainparams.cpp \

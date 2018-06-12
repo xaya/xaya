@@ -105,6 +105,9 @@ struct Params {
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 
+    /** Auxpow parameters */
+    int32_t nAuxpowChainId;
+
     /** Consensus rule interface.  */
     std::unique_ptr<ConsensusRules> rules;
 };
