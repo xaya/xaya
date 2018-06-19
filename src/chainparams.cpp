@@ -111,6 +111,7 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
 {
   std::cout << "Mining genesis block..." << std::endl;
 
+  block.nTime = GetTime ();
   block.nNonce = 0;
   while (!CheckProofOfWork (block.GetPowHash (), block.nBits, consensus))
     {
@@ -121,6 +122,7 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
     }
 
   std::cout << "Found nonce: " << block.nNonce << std::endl;
+  std::cout << "nTime: " << block.nTime << std::endl;
   std::cout << "Block hash: " << block.GetHash ().GetHex () << std::endl;
   std::cout << "Merkle root: " << block.hashMerkleRoot.GetHex () << std::endl;
   exit (EXIT_SUCCESS);
@@ -194,10 +196,10 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock (1303000001, 310776, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1529426076, 168832, 0x1e0ffff0,
                                       uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("f789d04cae99ae95d9961f3fdb6e4f0600a9c1e2116a6715fed18d691be84ea4"));
+        assert(consensus.hashGenesisBlock == uint256S("4475272b51ee8e8a96ce50dfde6be52109ddc41ad1efefc7e71bc98938a47745"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         // FIXME: Add seeds for Chimaera (#8).
@@ -282,10 +284,10 @@ public:
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1296688602, 1466517, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1296688602, 943025, 0x1e0ffff0,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("439ad03576282227a2a802dc816cc8d040c5cb66385719b0c36f58d3c3ae6fd1"));
+        assert(consensus.hashGenesisBlock == uint256S("60b7eea9839370e90c2cfecab407d984da89608571dc9f77e04a0f4691e84933"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         // FIXME: Add seeds for Chimaera (#8).
@@ -372,10 +374,10 @@ public:
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1296688602, 0, 0x207fffff,
+        genesis = CreateGenesisBlock (1300000000, 0, 0x207fffff,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("b2978ea31a9926837e3855fca6d01a2d3c7fc36d1138762145daa7075d48daca"));
+        assert(consensus.hashGenesisBlock == uint256S("ee7988f0ebef21eb85e6fbba0e276b5d6a0a3f8b95d0dcd6a0c26739f3f0f74e"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
