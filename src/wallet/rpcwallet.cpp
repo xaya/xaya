@@ -15,6 +15,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
+#include <rpc/auxpow_miner.h>
 #include <rpc/mining.h>
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
@@ -4367,6 +4368,68 @@ UniValue sethdseed(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+UniValue getwork(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp
+          || (request.params.size() != 0 && request.params.size() != 1))
+        throw std::runtime_error(
+            "getwork (data)\n"
+            "\nCreate or submit a stand-alone mined block.\n"
+            "\nWithout arguments, create a new block and return information\n"
+            "required to solve it.  With arguments, submit a solved\n"
+            "PoW for a previously-returned block.\n"
+            "\nArguments:\n"
+            "1. data      (string, optional) solved block header data\n"
+            "\nResult (without arguments):\n"
+            "{\n"
+            "  \"data\"               (string) data to solve (hex encoded)\n"
+            "  \"algo\": \"neoscrypt\"\n"
+            "  \"previousblockhash\"  (string) hash of the previous block\n"
+            "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
+            "  \"bits\"               (string) compressed target of the block\n"
+            "  \"height\"             (numeric) height of the block\n"
+            "  \"target\"             (string) target in reversed byte order, deprecated\n"
+            "}\n"
+            "\nResult (with arguments):\n"
+            "xxxxx        (boolean) whether the submitted block was correct\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getwork", "")
+            + HelpExampleCli("getwork", "\"solved data\"")
+            + HelpExampleRpc("getwork", "")
+            );
+
+    std::shared_ptr<CReserveScript> coinbaseScript;
+    pwallet->GetScriptForMining(coinbaseScript);
+
+    /* If the keypool is exhausted, no script is returned at all.
+       Catch this.  */
+    if (!coinbaseScript)
+        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+
+    /* Throw an error if no script was provided.  */
+    if (!coinbaseScript->reserveScript.size())
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available (mining requires a wallet)");
+
+    /* Create a new block */
+    if (request.params.size() == 0)
+        return g_auxpow_miner->createWork(coinbaseScript->reserveScript);
+
+    /* Submit a block instead.  */
+    assert(request.params.size() == 1);
+    bool fAccepted = g_auxpow_miner->submitWork(request.params[0].get_str());
+    if (fAccepted)
+        coinbaseScript->KeepScript();
+
+    return fAccepted;
+}
+
 extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 extern UniValue importprivkey(const JSONRPCRequest& request);
@@ -4455,6 +4518,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },
 
     { "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
+    { "mining",             "getwork",                          &getwork,                       {"data"} },
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },

@@ -17,6 +17,7 @@
 #include <net.h>
 #include <policy/fees.h>
 #include <pow.h>
+#include <rpc/auxpow_miner.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <rpc/server.h>
@@ -930,6 +931,64 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue creatework(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "creatework <address>\n"
+            "\ncreate a new block and return information required to mine it.\n"
+            "\nArguments:\n"
+            "1. address      (string, required) specify coinbase transaction payout address\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"data\"               (string) data to solve (hex encoded)\n"
+            "  \"algo\": \"neoscrypt\"\n"
+            "  \"previousblockhash\"  (string) hash of the previous block\n"
+            "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
+            "  \"bits\"               (string) compressed target of the block\n"
+            "  \"height\"             (numeric) height of the block\n"
+            "  \"target\"             (string) target in reversed byte order, deprecated\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("creatework", "\"address\"")
+            + HelpExampleRpc("creatework", "\"address\"")
+            );
+
+    // Check coinbase payout address
+    const CTxDestination coinbaseScript
+      = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(coinbaseScript)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,
+                           "Error: Invalid coinbase payout address");
+    }
+    const CScript scriptPubKey = GetScriptForDestination(coinbaseScript);
+
+    return g_auxpow_miner->createWork(scriptPubKey);
+}
+
+UniValue submitwork(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "submitwork <data>\n"
+            "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
+            "\nArguments:\n"
+            "1. data      (string, required) solved block header data\n"
+            "\nResult:\n"
+            "xxxxx        (boolean) whether the submitted block was correct\n"
+            "\nExamples:\n"
+            + HelpExampleCli("submitwork", "\"solved data\"")
+            + HelpExampleRpc("submitwork", "\"solved data\"")
+            );
+
+    return g_auxpow_miner->submitWork(request.params[0].get_str());
+}
+
+/* ************************************************************************** */
+/* Merge mining.  */
+
+std::unique_ptr<AuxpowMiner> g_auxpow_miner;
+
 /* ************************************************************************** */
 
 static const CRPCCommand commands[] =
@@ -940,6 +999,8 @@ static const CRPCCommand commands[] =
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
+    { "mining",             "creatework",             &creatework,             {"address"} },
+    { "mining",             "submitwork",             &submitwork,             {"data"} },
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 

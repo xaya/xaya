@@ -19,4 +19,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 /** Check bounds on a command line confirm target */
 unsigned int ParseConfirmTarget(const UniValue& value);
 
+/** Singleton instance of the AuxpowMiner, created during startup.  */
+extern std::unique_ptr<AuxpowMiner> g_auxpow_miner;
+
 #endif
