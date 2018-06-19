@@ -74,6 +74,94 @@ addExpirationInfo (const int height, UniValue& data)
 }
 
 /**
+ * Helper class that extracts the wallet for the current RPC request, if any.
+ * It handles the case of disabled wallet support or no wallet being present,
+ * so that it is suitable for the non-wallet RPCs here where we just want to
+ * provide optional extra features (like the "ismine" field).
+ *
+ * The main benefit of having this class is that we can easily LOCK2 with the
+ * wallet and another lock we need, without having to care about the special
+ * cases where no wallet is present or wallet support is disabled.
+ */
+class MaybeWalletForRequest
+{
+
+private:
+
+#ifdef ENABLE_WALLET
+  std::shared_ptr<CWallet> wallet;
+#endif
+
+public:
+
+  explicit MaybeWalletForRequest (const JSONRPCRequest& request)
+  {
+#ifdef ENABLE_WALLET
+    wallet = GetWalletForJSONRPCRequest (request);
+#endif
+  }
+
+  CCriticalSection*
+  getLock () const
+  {
+#ifdef ENABLE_WALLET
+    return (wallet != nullptr ? &wallet->cs_wallet : nullptr);
+#else
+    return nullptr;
+#endif
+  }
+
+#ifdef ENABLE_WALLET
+  CWallet*
+  getWallet ()
+  {
+    return wallet.get ();
+  }
+
+  const CWallet*
+  getWallet () const
+  {
+    return wallet.get ();
+  }
+#endif
+
+};
+
+#ifdef ENABLE_WALLET
+/**
+ * Adds the "ismine" field giving ownership info to the JSON object.
+ */
+void
+addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
+                  UniValue& data)
+{
+  if (pwallet == nullptr)
+    {
+      data.push_back (Pair ("ismine", false));
+      return;
+    }
+
+  AssertLockHeld (pwallet->cs_wallet);
+  const isminetype mine = IsMine (*pwallet, addr);
+  const bool isMine = (mine & ISMINE_SPENDABLE);
+  data.push_back (Pair ("ismine", isMine));
+}
+#endif
+
+/**
+ * Variant of addOwnershipInfo that uses a MaybeWalletForRequest.  This takes
+ * care of disabled wallet support.
+ */
+void
+addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
+                  UniValue& data)
+{
+#ifdef ENABLE_WALLET
+  addOwnershipInfo (addr, wallet.getWallet (), data);
+#endif
+}
+
+/**
  * Return name info object for a CNameData object.
  */
 UniValue
@@ -116,6 +204,16 @@ NameInfoHelp::withExpiration ()
   withField ("\"height\": xxxxx", "(numeric) the name's last update height");
   withField ("\"expires_in\": xxxxx", "(numeric) expire counter for the name");
   withField ("\"expired\": xxxxx", "(boolean) whether the name is expired");
+  return *this;
+}
+
+NameInfoHelp&
+NameInfoHelp::withOwnership ()
+{
+#ifdef ENABLE_WALLET
+  withField ("\"ismine\": xxxxx",
+             "(boolean) whether the name is owned by the wallet");
+#endif
   return *this;
 }
 
@@ -431,10 +529,9 @@ name_pending (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
+            .withOwnership ()
             .withField ("\"op\": xxxxx",
                         "(string) the operation being performed")
-            .withField ("\"ismine\": xxxxx",
-                        "(boolean) whether the name is owned by the wallet")
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -445,13 +542,8 @@ name_pending (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
-#ifdef ENABLE_WALLET
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-  LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
-#else
-  LOCK (mempool.cs);
-#endif
+  MaybeWalletForRequest wallet(request);
+  LOCK2 (wallet.getLock (), mempool.cs);
 
   std::vector<uint256> txHashes;
   if (request.params.size () == 0)
@@ -482,6 +574,7 @@ name_pending (const JSONRPCRequest& request)
           UniValue obj = getNameInfo (op.getOpName (), op.getOpValue (),
                                       COutPoint (tx->GetHash (), n),
                                       op.getAddress ());
+          addOwnershipInfo (op.getAddress (), wallet, obj);
           switch (op.getNameOp ())
             {
             case OP_NAME_FIRSTUPDATE:
@@ -493,14 +586,6 @@ name_pending (const JSONRPCRequest& request)
             default:
               assert (false);
             }
-
-#ifdef ENABLE_WALLET
-          isminetype mine = ISMINE_NO;
-          if (pwallet)
-            mine = IsMine (*pwallet, op.getAddress ());
-          const bool isMine = (mine & ISMINE_SPENDABLE);
-          obj.push_back (Pair ("ismine", isMine));
-#endif
 
           arr.push_back (obj);
         }

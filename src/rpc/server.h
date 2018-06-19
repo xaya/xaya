@@ -208,6 +208,13 @@ extern UniValue getNameInfo(const valtype& name, const valtype& value, const COu
 extern void addExpirationInfo(int height, UniValue& data);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
 
+#ifdef ENABLE_WALLET
+class CWallet;
+extern void addOwnershipInfo(const CScript& addr,
+                             const CWallet* pwallet,
+                             UniValue& data);
+#endif
+
 /**
  * Builder class for the help text of RPCs that return information about
  * names (like name_show, name_scan, name_pending or name_list).  Since the
@@ -227,6 +234,7 @@ public:
 
   NameInfoHelp& withField (const std::string& field, const std::string& doc);
   NameInfoHelp& withExpiration ();
+  NameInfoHelp& withOwnership ();
 
   std::string finish (const std::string& trailing);
 };
