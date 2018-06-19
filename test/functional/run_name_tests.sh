@@ -3,6 +3,9 @@
 echo "\nName list..."
 ./name_list.py
 
+echo "\nName listunspent..."
+./name_listunspent.py
+
 echo "\nName multisig..."
 ./name_multisig.py
 

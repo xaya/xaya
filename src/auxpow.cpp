@@ -227,5 +227,5 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   auxpow->nIndex = 0;
   auxpow->parentBlock = parent;
   // FIXME: Reenable once PoW data is in block.
-  //header.SetAuxpow (auxpow.release ());
+  //header.SetAuxpow (std::move (auxpow));
 }

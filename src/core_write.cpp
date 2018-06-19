@@ -139,26 +139,7 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
 
     const CNameScript nameOp(scriptPubKey);
     if (nameOp.isNameOp ())
-    {
-        const std::string name = ValtypeToString (nameOp.getOpName ());
-        const std::string value = ValtypeToString (nameOp.getOpValue ());
-        UniValue jsonOp(UniValue::VOBJ);
-        jsonOp.pushKV ("name", name);
-        jsonOp.pushKV ("value", value);
-        switch (nameOp.getNameOp ())
-        {
-        case OP_NAME_REGISTER:
-            jsonOp.pushKV ("op", "name_register");
-            break;
-        case OP_NAME_UPDATE:
-            jsonOp.pushKV ("op", "name_update");
-            break;
-        default:
-            assert (false);
-        }
-
-        out.pushKV ("nameOp", jsonOp);
-    }
+        out.pushKV ("nameOp", NameOpToUniv (nameOp));
 
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
     if (fIncludeHex)
@@ -237,4 +218,28 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
     if (include_hex) {
         entry.pushKV("hex", EncodeHexTx(tx, serialize_flags)); // The hex-encoded transaction. Used the name "hex" to be consistent with the verbose output of "getrawtransaction".
     }
+}
+
+UniValue NameOpToUniv (const CNameScript& nameOp)
+{
+  assert (nameOp.isNameOp ());
+
+  const std::string name = ValtypeToString (nameOp.getOpName ());
+  const std::string value = ValtypeToString (nameOp.getOpValue ());
+  UniValue result(UniValue::VOBJ);
+  result.pushKV ("name", name);
+  result.pushKV ("value", value);
+  switch (nameOp.getNameOp ())
+  {
+  case OP_NAME_REGISTER:
+      result.pushKV ("op", "name_register");
+      break;
+  case OP_NAME_UPDATE:
+      result.pushKV ("op", "name_update");
+      break;
+  default:
+      assert (false);
+  }
+
+  return result;
 }

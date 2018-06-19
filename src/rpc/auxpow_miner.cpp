@@ -232,11 +232,11 @@ AuxpowMiner::submitAuxBlock (const std::string& hashHex,
 
   const std::vector<unsigned char> vchAuxPow = ParseHex (auxpowHex);
   CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
-  CAuxPow pow;
-  ss >> pow;
+  std::unique_ptr<CAuxPow> pow(new CAuxPow ());
+  ss >> *pow;
   // FIXME: Enable once the block format is actually changed to allow for
   // external PoW data.
-  //shared_block->SetAuxpow (new CAuxPow (pow));
+  //shared_block->SetAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
   return ProcessNewBlock (Params (), shared_block, true, nullptr);

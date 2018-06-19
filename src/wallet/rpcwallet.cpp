@@ -20,6 +20,7 @@
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+#include <script/names.h>
 #include <script/sign.h>
 #include <timedata.h>
 #include <util.h>
@@ -120,7 +121,7 @@ static void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
     }
     entry.pushKV("bip125-replaceable", rbfStatus);
 
-    for (const std::pair<std::string, std::string>& item : wtx.mapValue)
+    for (const std::pair<const std::string, std::string>& item : wtx.mapValue)
         entry.pushKV(item.first, item.second);
 }
 
@@ -198,7 +199,7 @@ CTxDestination GetLabelDestination(CWallet* const pwallet, const std::string& la
     return dest;
 }
 
-static UniValue getlabeladdress(const JSONRPCRequest& request)
+static UniValue getaccountaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -207,53 +208,36 @@ static UniValue getlabeladdress(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (!IsDeprecatedRPCEnabled("accounts") && request.strMethod == "getaccountaddress") {
+    if (!IsDeprecatedRPCEnabled("accounts")) {
         if (request.fHelp) {
             throw std::runtime_error("getaccountaddress (Deprecated, will be removed in V0.18. To use this command, start bitcoind with -deprecatedrpc=accounts)");
         }
         throw JSONRPCError(RPC_METHOD_DEPRECATED, "getaccountaddress is deprecated and will be removed in V0.18. To use this command, start bitcoind with -deprecatedrpc=accounts.");
     }
 
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+    if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "getlabeladdress \"label\" ( force ) \n"
-            "\nReturns the default receiving address for this label. This will reset to a fresh address once there's a transaction that spends to it.\n"
+            "getaccountaddress \"account\"\n"
+            "\n\nDEPRECATED. Returns the current Bitcoin address for receiving payments to this account.\n"
             "\nArguments:\n"
-            "1. \"label\"         (string, required) The label for the address. It can also be set to the empty string \"\" to represent the default label.\n"
-            "2. \"force\"         (bool, optional) Whether the label should be created if it does not yet exist. If False, the RPC will return an error if called with a label that doesn't exist.\n"
-            "                                    Defaults to false (unless the getaccountaddress method alias is being called, in which case defaults to true for backwards compatibility).\n"
+            "1. \"account\"       (string, required) The account for the address. It can also be set to the empty string \"\" to represent the default account. The account does not need to exist, it will be created and a new address created  if there is no account by the given name.\n"
             "\nResult:\n"
-            "\"address\"          (string) The current receiving address for the label.\n"
+            "\"address\"          (string) The account bitcoin address\n"
             "\nExamples:\n"
-            + HelpExampleCli("getlabeladdress", "")
-            + HelpExampleCli("getlabeladdress", "\"\"")
-            + HelpExampleCli("getlabeladdress", "\"mylabel\"")
-            + HelpExampleRpc("getlabeladdress", "\"mylabel\"")
+            + HelpExampleCli("getaccountaddress", "")
+            + HelpExampleCli("getaccountaddress", "\"\"")
+            + HelpExampleCli("getaccountaddress", "\"myaccount\"")
+            + HelpExampleRpc("getaccountaddress", "\"myaccount\"")
         );
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
-    // Parse the label first so we don't generate a key if there's an error
-    std::string label = LabelFromValue(request.params[0]);
-    bool force = request.strMethod == "getaccountaddress";
-    if (!request.params[1].isNull()) {
-        force = request.params[1].get_bool();
-    }
-
-    bool label_found = false;
-    for (const std::pair<CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
-        if (item.second.name == label) {
-            label_found = true;
-            break;
-        }
-    }
-    if (!force && !label_found) {
-        throw JSONRPCError(RPC_WALLET_INVALID_LABEL_NAME, std::string("No addresses with label " + label));
-    }
+    // Parse the account first so we don't generate a key if there's an error
+    std::string account = LabelFromValue(request.params[0]);
 
     UniValue ret(UniValue::VSTR);
 
-    ret = EncodeDestination(GetLabelDestination(pwallet, label));
+    ret = EncodeDestination(GetLabelDestination(pwallet, account));
     return ret;
 }
 
@@ -343,21 +327,31 @@ static UniValue setlabel(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
     }
 
+    std::string old_label = pwallet->mapAddressBook[dest].name;
     std::string label = LabelFromValue(request.params[1]);
 
     if (IsMine(*pwallet, dest)) {
-        // Detect when changing the label of an address that is the receiving address of another label:
-        // If so, delete the account record for it. Labels, unlike addresses, can be deleted,
-        // and if we wouldn't do this, the record would stick around forever.
-        if (pwallet->mapAddressBook.count(dest)) {
-            std::string old_label = pwallet->mapAddressBook[dest].name;
-            if (old_label != label && dest == GetLabelDestination(pwallet, old_label)) {
-                pwallet->DeleteLabel(old_label);
-            }
-        }
         pwallet->SetAddressBook(dest, label, "receive");
+        if (request.strMethod == "setaccount" && old_label != label && dest == GetLabelDestination(pwallet, old_label)) {
+            // for setaccount, call GetLabelDestination so a new receive address is created for the old account
+            GetLabelDestination(pwallet, old_label, true);
+        }
     } else {
         pwallet->SetAddressBook(dest, label, "send");
+    }
+
+    // Detect when there are no addresses using this label.
+    // If so, delete the account record for it. Labels, unlike addresses, can be deleted,
+    // and if we wouldn't do this, the record would stick around forever.
+    bool found_address = false;
+    for (const std::pair<const CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
+        if (item.second.name == label) {
+            found_address = true;
+            break;
+        }
+    }
+    if (!found_address) {
+        pwallet->DeleteLabel(old_label);
     }
 
     return NullUniValue;
@@ -447,7 +441,7 @@ static UniValue getaddressesbyaccount(const JSONRPCRequest& request)
 
     // Find all addresses that have the given account
     UniValue ret(UniValue::VARR);
-    for (const std::pair<CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
+    for (const std::pair<const CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
         const CTxDestination& dest = item.first;
         const std::string& strName = item.second.name;
         if (strName == strAccount) {
@@ -785,7 +779,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     // Tally
     CAmount nAmount = 0;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<const uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
             continue;
@@ -853,7 +847,7 @@ static UniValue getreceivedbylabel(const JSONRPCRequest& request)
 
     // Tally
     CAmount nAmount = 0;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<const uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
             continue;
@@ -1482,13 +1476,6 @@ static UniValue addwitnessaddress(const JSONRPCRequest& request)
             "Projects should transition to using the address_type argument of getnewaddress, or option -addresstype=[bech32|p2sh-segwit] instead.\n");
     }
 
-    {
-        LOCK(cs_main);
-        if (!IsWitnessEnabled(chainActive.Tip(), Params().GetConsensus()) && !gArgs.GetBoolArg("-walletprematurewitness", false)) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Segregated witness not enabled on network");
-        }
-    }
-
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
@@ -1566,7 +1553,7 @@ static UniValue ListReceived(CWallet * const pwallet, const UniValue& params, bo
 
     // Tally
     std::map<CTxDestination, tallyitem> mapTally;
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<const uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
 
         if (wtx.IsCoinBase() || !CheckFinalTx(*wtx.tx))
@@ -2149,13 +2136,13 @@ static UniValue listaccounts(const JSONRPCRequest& request)
             includeWatchonly = includeWatchonly | ISMINE_WATCH_ONLY;
 
     std::map<std::string, CAmount> mapAccountBalances;
-    for (const std::pair<CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
+    for (const std::pair<const CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
         if (IsMine(*pwallet, entry.first) & includeWatchonly) {  // This address belongs to me
             mapAccountBalances[entry.second.name] = 0;
         }
     }
 
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<const uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         const CWalletTx& wtx = pairWtx.second;
         CAmount nFee;
         std::string strSentAccount;
@@ -2184,7 +2171,7 @@ static UniValue listaccounts(const JSONRPCRequest& request)
         mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
 
     UniValue ret(UniValue::VOBJ);
-    for (const std::pair<std::string, CAmount>& accountBalance : mapAccountBalances) {
+    for (const std::pair<const std::string, CAmount>& accountBalance : mapAccountBalances) {
         ret.pushKV(accountBalance.first, ValueFromAmount(accountBalance.second));
     }
     return ret;
@@ -2293,7 +2280,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
 
     UniValue transactions(UniValue::VARR);
 
-    for (const std::pair<uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
+    for (const std::pair<const uint256, CWalletTx>& pairWtx : pwallet->mapWallet) {
         CWalletTx tx = pairWtx.second;
 
         if (depth == -1 || tx.GetDepthInMainChain() < depth) {
@@ -3258,6 +3245,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "      \"maximumAmount\"    (numeric or string, default=unlimited) Maximum value of each UTXO in " + CURRENCY_UNIT + "\n"
             "      \"maximumCount\"     (numeric or string, default=unlimited) Maximum number of UTXOs\n"
             "      \"minimumSumAmount\" (numeric or string, default=unlimited) Minimum sum value of all UTXOs in " + CURRENCY_UNIT + "\n"
+            "      \"includeNames\"     (boolean, default=false) Whether to also include name outputs\n"
             "    }\n"
             "\nResult\n"
             "[                   (array of json object)\n"
@@ -3326,6 +3314,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
     CAmount nMaximumAmount = MAX_MONEY;
     CAmount nMinimumSumAmount = MAX_MONEY;
     uint64_t nMaximumCount = 0;
+    bool includeNames = false;
 
     if (!request.params[4].isNull()) {
         const UniValue& options = request.params[4].get_obj();
@@ -3341,6 +3330,9 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
         if (options.exists("maximumCount"))
             nMaximumCount = options["maximumCount"].get_int64();
+
+        if (options.exists("includeNames"))
+            includeNames = options["includeNames"].get_bool();
     }
 
     // Make sure the results are valid at least up to the most recent block
@@ -3364,9 +3356,24 @@ static UniValue listunspent(const JSONRPCRequest& request)
         if (destinations.size() && (!fValidAddress || !destinations.count(address)))
             continue;
 
+        /* Check if this is a name output.  If it is, we have to apply
+           additional rules:  If the name is already expired, then the output
+           is definitely unspendable; in that case, exclude it always.
+           Otherwise, we may include the output only if the user opted to
+           receive also name outputs.  */
+        const CNameScript nameOp(scriptPubKey);
+        if (nameOp.isNameOp ())
+          {
+            if (!includeNames)
+              continue;
+          }
+
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", out.tx->GetHash().GetHex());
         entry.pushKV("vout", out.i);
+
+        if (nameOp.isNameOp())
+            entry.pushKV("nameOp", NameOpToUniv(nameOp));
 
         if (fValidAddress) {
             entry.pushKV("address", EncodeDestination(address));
@@ -4230,7 +4237,7 @@ static UniValue getaddressesbylabel(const JSONRPCRequest& request)
 
     // Find all addresses that have the given label
     UniValue ret(UniValue::VOBJ);
-    for (const std::pair<CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
+    for (const std::pair<const CTxDestination, CAddressBookData>& item : pwallet->mapAddressBook) {
         if (item.second.name == label) {
             ret.pushKV(EncodeDestination(item.first), AddressBookDataToJSON(item.second, false));
         }
@@ -4283,7 +4290,7 @@ static UniValue listlabels(const JSONRPCRequest& request)
 
     // Add to a set to sort by label name, then insert into Univalue array
     std::set<std::string> label_set;
-    for (const std::pair<CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
+    for (const std::pair<const CTxDestination, CAddressBookData>& entry : pwallet->mapAddressBook) {
         if (purpose.empty() || entry.second.purpose == purpose) {
             label_set.insert(entry.second.name);
         }
@@ -4500,7 +4507,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "sethdseed",                        &sethdseed,                     {"newkeypool","seed"} },
 
     /** Account functions (deprecated) */
-    { "wallet",             "getaccountaddress",                &getlabeladdress,               {"account"} },
+    { "wallet",             "getaccountaddress",                &getaccountaddress,             {"account"} },
     { "wallet",             "getaccount",                       &getaccount,                    {"address"} },
     { "wallet",             "getaddressesbyaccount",            &getaddressesbyaccount,         {"account"} },
     { "wallet",             "getreceivedbyaccount",             &getreceivedbylabel,            {"account","minconf"} },
@@ -4510,7 +4517,6 @@ static const CRPCCommand commands[] =
     { "wallet",             "move",                             &movecmd,                       {"fromaccount","toaccount","amount","minconf","comment"} },
 
     /** Label functions (to replace non-balance account functions) */
-    { "wallet",             "getlabeladdress",                  &getlabeladdress,               {"label","force"} },
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getreceivedbylabel",               &getreceivedbylabel,            {"label","minconf"} },
     { "wallet",             "listlabels",                       &listlabels,                    {"purpose"} },
