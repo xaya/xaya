@@ -968,7 +968,7 @@ UniValue creatework(const JSONRPCRequest& request)
 
 UniValue submitwork(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 2)
+    if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             "submitwork <data>\n"
             "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
@@ -977,8 +977,8 @@ UniValue submitwork(const JSONRPCRequest& request)
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
-            + HelpExampleCli("submitwork", "\"hash\" \"solved data\"")
-            + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
+            + HelpExampleCli("submitwork", "\"solved data\"")
+            + HelpExampleRpc("submitwork", "\"solved data\"")
             );
 
     return g_auxpow_miner->submitWork(request.params[0].get_str());

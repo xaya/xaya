@@ -151,6 +151,10 @@ BASE_SCRIPTS = [
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time
 
+    # auxpow tests
+    'auxpow_getwork.py',
+    'auxpow_getwork.py --segwit',
+
     # name tests
     'name_list.py',
     'name_multisig.py',
