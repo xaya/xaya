@@ -159,6 +159,7 @@ BASE_SCRIPTS = [
 
     # name tests
     'name_expiration.py',
+    'name_immature_new.py',
     'name_list.py',
     'name_listunspent.py',
     'name_multisig.py',
