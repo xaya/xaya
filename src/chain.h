@@ -276,7 +276,7 @@ public:
         return ret;
     }
 
-    CBlockHeader GetBlockHeader() const;
+    CBlockHeader GetBlockHeader(const Consensus::Params& consensusParams) const;
 
     uint256 GetBlockHash() const
     {

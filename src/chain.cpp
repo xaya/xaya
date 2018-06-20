@@ -5,16 +5,12 @@
 
 #include <chain.h>
 
-CBlockHeader CBlockIndex::GetBlockHeader() const
+#include <validation.h>
+
+CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
 {
     CBlockHeader block;
-    block.nVersion       = nVersion;
-    if (pprev)
-        block.hashPrevBlock = pprev->GetBlockHash();
-    block.hashMerkleRoot = hashMerkleRoot;
-    block.nTime          = nTime;
-    block.nBits          = nBits;
-    block.nNonce         = nNonce;
+    ReadBlockHeaderFromDisk (block, this, consensusParams);
     return block;
 }
 

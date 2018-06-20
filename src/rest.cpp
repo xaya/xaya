@@ -209,7 +209,7 @@ static bool rest_headers(HTTPRequest* req,
     CDataStream ssHeader(SER_NETWORK, PROTOCOL_VERSION);
     const CChainParams& chainparams = Params();
     for (const CBlockIndex *pindex : headers) {
-        ssHeader << pindex->GetBlockHeader();
+        ssHeader << pindex->GetBlockHeader(chainparams.GetConsensus());
     }
 
     switch (rf) {
