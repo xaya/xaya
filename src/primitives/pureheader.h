@@ -9,6 +9,8 @@
 #include <serialize.h>
 #include <uint256.h>
 
+#include <vector>
+
 /**
  * A block header without auxpow information.  This "intermediate step"
  * in constructing the full header is useful, because it breaks the cyclic
@@ -67,5 +69,11 @@ public:
         return (int64_t)nTime;
     }
 };
+
+/**
+ * Swaps the endian-ness of each 4-byte word in the given vector of bytes.
+ * This is used for getwork and also for our neoscrypt PoW hash.
+ */
+void SwapGetWorkEndianness (std::vector<unsigned char>& data);
 
 #endif // BITCOIN_PRIMITIVES_PUREHEADER_H

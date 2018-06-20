@@ -8,13 +8,13 @@
 #include <auxpow.h>
 #include <chainparams.h>
 #include <net.h>
+#include <primitives/pureheader.h>
 #include <rpc/protocol.h>
 #include <streams.h>
 #include <utilstrencodings.h>
 #include <utiltime.h>
 #include <validation.h>
 
-#include <algorithm>
 #include <cassert>
 
 namespace
@@ -166,17 +166,6 @@ FormatHashBlocks(void* pbuffer, unsigned int len)
     pend[-3] = (bits >> 16) & 0xff;
     pend[-4] = (bits >> 24) & 0xff;
     return blocks;
-}
-
-void
-SwapGetWorkEndianness (std::vector<unsigned char>& data)
-{
-  assert (data.size () % 4 == 0);
-  for (size_t i = 0; i < data.size (); i += 4)
-    {
-      std::swap (data[i], data[i + 3]);
-      std::swap (data[i + 1], data[i + 2]);
-    }
 }
 
 }  // anonymous namespace
