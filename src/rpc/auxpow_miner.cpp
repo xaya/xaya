@@ -90,7 +90,7 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
   arith_uint256 arithTarget;
   bool fNegative, fOverflow;
-  arithTarget.SetCompact (pblockCur->nBits, &fNegative, &fOverflow);
+  arithTarget.SetCompact (pblockCur->pow.getBits (), &fNegative, &fOverflow);
   if (fNegative || fOverflow || arithTarget == 0)
     throw std::runtime_error ("invalid difficulty bits in block");
   target = ArithToUint256 (arithTarget);
@@ -141,7 +141,7 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
-  result.pushKV ("bits", strprintf ("%08x", pblock->nBits));
+  result.pushKV ("bits", strprintf ("%08x", pblock->pow.getBits ()));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
   result.pushKV ("_target", HexStr (BEGIN (target), END (target)));
 
@@ -199,7 +199,7 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
-  result.pushKV ("bits", strprintf ("%08x", pblock->nBits));
+  result.pushKV ("bits", strprintf ("%08x", pblock->pow.getBits ()));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
   result.pushKV ("target", HexStr (BEGIN (target), END (target)));
 

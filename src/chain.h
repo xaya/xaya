@@ -210,6 +210,11 @@ public:
     int32_t nVersion;
     uint256 hashMerkleRoot;
     uint32_t nTime;
+    /**
+     * In Xyon, nBits of the actual block header is always zero and the real
+     * nBits are stored in the PoW data.  Here in CBlockIndex, we store the
+     * actual nBits, so that the total work of a chain can be computed from it.
+     */
     uint32_t nBits;
     uint32_t nNonce;
 
@@ -254,7 +259,7 @@ public:
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
-        nBits          = block.nBits;
+        nBits          = block.pow.getBits();
         nNonce         = block.nNonce;
     }
 
@@ -403,8 +408,8 @@ public:
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
-        block.nBits           = nBits;
-        block.nNonce          = nNonce;
+        block.nBits           = 0;
+        block.nNonce          = 0;
         return block.GetHash();
     }
 

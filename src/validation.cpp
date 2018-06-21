@@ -1084,7 +1084,7 @@ bool GetTransaction(const uint256& hash, CTransactionRef& txOut, const Consensus
 
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
-    if (!CheckProofOfWork(block.GetPowHash(), block.nBits, params))
+    if (!block.pow.isValid (block.GetHash(), params))
         return error("%s : proof of work failed", __func__);
     return true;
 }
@@ -3196,9 +3196,15 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     assert(pindexPrev != nullptr);
     const int nHeight = pindexPrev->nHeight + 1;
 
+    /* Verify Xyon's requirement that the main block header must have zero bits
+       and nonce.  */
+    if (block.nBits != 0 || block.nNonce != 0)
+        return state.Invalid(false, REJECT_INVALID, "nonzero-bits-nonce",
+                             "block header has non-zero nonce or bits");
+
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
-    if (block.nBits != GetNextWorkRequired(pindexPrev, consensusParams))
+    if (block.pow.getBits() != GetNextWorkRequired(pindexPrev, consensusParams))
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
 
     // Check against checkpoints

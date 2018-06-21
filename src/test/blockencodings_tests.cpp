@@ -34,7 +34,7 @@ static CBlock BuildBlockTestCase() {
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
     block.nTime = 1234500000;
-    block.nBits = 0x207fffff;
+    block.pow.setBits(0x207fffff);
 
     tx.vin[0].prevout.hash = InsecureRand256();
     tx.vin[0].prevout.n = 0;
@@ -50,7 +50,8 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetPowHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    auto& fakeHeader = block.pow.initFakeHeader(block);
+    while (!CheckProofOfWork(fakeHeader.GetPowHash(), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
     return block;
 }
 
@@ -294,12 +295,13 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
     block.nTime = 1234500000;
-    block.nBits = 0x207fffff;
+    block.pow.setBits(0x207fffff);
 
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetPowHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    auto& fakeHeader = block.pow.initFakeHeader(block);
+    while (!CheckProofOfWork(fakeHeader.GetPowHash(), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
 
     // Test simple header round-trip with only coinbase
     {

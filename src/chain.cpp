@@ -132,6 +132,9 @@ arith_uint256 GetBlockProof(const CBlockIndex& block)
     arith_uint256 bnTarget;
     bool fNegative;
     bool fOverflow;
+    /* Note that "block" is a CBlockIndex, not a CBlock(Header).  Thus the nBits
+       on it actually represent the mining difficulty, taken from the block's
+       PoW data instance!  */
     bnTarget.SetCompact(block.nBits, &fNegative, &fOverflow);
     if (fNegative || fOverflow || bnTarget == 0)
         return 0;

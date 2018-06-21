@@ -124,14 +124,15 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetPowHash(), pblock->nBits, Params().GetConsensus())) {
-            ++pblock->nNonce;
+        auto& fakeHeader = pblock->pow.initFakeHeader (*pblock);
+        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+            ++fakeHeader.nNonce;
             --nMaxTries;
         }
         if (nMaxTries == 0) {
             break;
         }
-        if (pblock->nNonce == nInnerLoopCount) {
+        if (fakeHeader.nNonce == nInnerLoopCount) {
             continue;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
@@ -576,7 +577,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue aux(UniValue::VOBJ);
     aux.pushKV("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end()));
 
-    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
+    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->pow.getBits());
 
     UniValue aMutable(UniValue::VARR);
     aMutable.push_back("time");
@@ -664,7 +665,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
-    result.pushKV("bits", strprintf("%08x", pblock->nBits));
+    result.pushKV("bits", strprintf("%08x", pblock->pow.getBits()));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
