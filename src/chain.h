@@ -216,7 +216,6 @@ public:
      * actual nBits, so that the total work of a chain can be computed from it.
      */
     uint32_t nBits;
-    uint32_t nNonce;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -244,7 +243,6 @@ public:
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
-        nNonce         = 0;
     }
 
     CBlockIndex()
@@ -260,7 +258,6 @@ public:
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
         nBits          = block.pow.getBits();
-        nNonce         = block.nNonce;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -398,7 +395,6 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
     }
 
     uint256 GetBlockHash() const
