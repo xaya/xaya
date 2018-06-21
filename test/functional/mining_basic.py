@@ -60,8 +60,9 @@ class MiningTest(BitcoinTestFramework):
         block.nVersion = tmpl["version"]
         block.hashPrevBlock = int(tmpl["previousblockhash"], 16)
         block.nTime = tmpl["curtime"]
-        block.nBits = int(tmpl["bits"], 16)
+        block.nBits = 0
         block.nNonce = 0
+        block.powData.nBits = int(tmpl["bits"], 16)
         block.vtx = [coinbase_tx]
 
         self.log.info("getblocktemplate: Test valid block")
@@ -105,7 +106,7 @@ class MiningTest(BitcoinTestFramework):
 
         self.log.info("getblocktemplate: Test bad tx count")
         # The tx count is immediately after the block header
-        TX_COUNT_OFFSET = 80
+        TX_COUNT_OFFSET = 80 + 1 + 4 + 80
         bad_block_sn = bytearray(block.serialize())
         assert_equal(bad_block_sn[TX_COUNT_OFFSET], 1)
         bad_block_sn[TX_COUNT_OFFSET] += 1
@@ -113,7 +114,7 @@ class MiningTest(BitcoinTestFramework):
 
         self.log.info("getblocktemplate: Test bad bits")
         bad_block = copy.deepcopy(block)
-        bad_block.nBits = 469762303  # impossible in the real world
+        bad_block.powData.nBits = 469762303  # impossible in the real world
         assert_template(node, bad_block, 'bad-diffbits')
 
         self.log.info("getblocktemplate: Test bad merkle root")
