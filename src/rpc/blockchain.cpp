@@ -15,6 +15,7 @@
 #include <index/txindex.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
+#include <powdata.h>
 #include <primitives/transaction.h>
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
@@ -75,6 +76,38 @@ double GetDifficulty(const CBlockIndex* blockindex)
 
     return dDiff;
 }
+
+namespace
+{
+
+UniValue
+PowDataToJSON (const PowData& pow)
+{
+  UniValue result(UniValue::VOBJ);
+
+  switch (pow.getCoreAlgo ())
+    {
+    case PowAlgo::NEOSCRYPT:
+      result.pushKV ("algo", "neoscrypt");
+      break;
+    case PowAlgo::SHA256D:
+      result.pushKV ("algo", "sha256d");
+      break;
+    default:
+      assert (false);
+    }
+
+  result.pushKV ("mergemined", pow.isMergeMined ());
+  result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
+
+  CDataStream ss(SER_GETHASH, PROTOCOL_VERSION);
+  ss << pow.getFakeHeader ();
+  result.pushKV ("fakeheader", HexStr (ss.begin (), ss.end ()));
+
+  return result;
+}
+
+} // anonymous namespace
 
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {
@@ -139,6 +172,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("chainwork", blockindex->nChainWork.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
+
+    result.pushKV("powdata", PowDataToJSON(block.pow));
 
     if (blockindex->pprev)
         result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
