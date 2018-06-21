@@ -95,10 +95,10 @@ def mineWorkBlockWithMethods (rpc, create, submit):
   work = create ()
   target = reverseHex (work['target'])
   solved = solveData (work['data'], target, True)
-  res = submit (solved)
+  res = submit (work['hash'], solved)
   assert res
 
-  return rpc.getblockhash (work['height'])
+  return work['hash']
 
 def getCoinbaseAddr (node, blockHash):
     """
