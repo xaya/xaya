@@ -942,6 +942,7 @@ UniValue creatework(const JSONRPCRequest& request)
             "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
             "{\n"
+            "  \"hash\"               (string) hash of the created block\n"
             "  \"data\"               (string) data to solve (hex encoded)\n"
             "  \"algo\": \"neoscrypt\"\n"
             "  \"previousblockhash\"  (string) hash of the previous block\n"
@@ -969,20 +970,21 @@ UniValue creatework(const JSONRPCRequest& request)
 
 UniValue submitwork(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1)
+    if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-            "submitwork <data>\n"
+            "submitwork <hash> <data>\n"
             "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
             "\nArguments:\n"
             "1. data      (string, required) solved block header data\n"
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
-            + HelpExampleCli("submitwork", "\"solved data\"")
-            + HelpExampleRpc("submitwork", "\"solved data\"")
+            + HelpExampleCli("submitwork", "\"hash\" \"solved data\"")
+            + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
             );
 
-    return g_auxpow_miner->submitWork(request.params[0].get_str());
+    return g_auxpow_miner->submitWork(request.params[0].get_str(),
+                                      request.params[1].get_str());
 }
 
 /* ************************************************************************** */
@@ -1001,7 +1003,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
     { "mining",             "creatework",             &creatework,             {"address"} },
-    { "mining",             "submitwork",             &submitwork,             {"data"} },
+    { "mining",             "submitwork",             &submitwork,             {"hash","data"} },
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 
