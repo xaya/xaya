@@ -3841,13 +3841,14 @@ UniValue generate(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2) {
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3) {
         throw std::runtime_error(
-            "generate nblocks ( maxtries )\n"
+            "generate nblocks ( maxtries ) ( algo )\n"
             "\nMine up to nblocks blocks immediately (before the RPC call returns) to an address in the wallet.\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
             "2. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
+            "3. algo         (string, optional) Which mining algorithm to use (default: neoscrypt).\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
@@ -3875,7 +3876,7 @@ UniValue generate(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available");
     }
 
-    return generateBlocks(coinbase_script, num_generate, max_tries, true);
+    return generateBlocks(coinbase_script, num_generate, max_tries, request.params[2], true);
 }
 
 UniValue rescanblockchain(const JSONRPCRequest& request)
@@ -4525,7 +4526,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listreceivedbylabel",              &listreceivedbylabel,           {"minconf","include_empty","include_watchonly"} },
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },
 
-    { "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
+    { "generating",         "generate",                         &generate,                      {"nblocks","maxtries","algo"} },
     { "mining",             "getwork",                          &getwork,                       {"hash","data"} },
 
     // Name-related wallet calls.

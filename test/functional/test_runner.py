@@ -168,6 +168,7 @@ BASE_SCRIPTS = [
     'name_wallet.py',
 
     # Chimaera-specific tests
+    'chimaera_dualalgo.py',
     'chimaera_premine.py',
 ]
 
