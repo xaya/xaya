@@ -7,6 +7,39 @@
 #include <pow.h>
 #include <util.h>
 
+#include <sstream>
+#include <stdexcept>
+
+PowAlgo
+PowAlgoFromString (const std::string& str)
+{
+  if (str == "sha256d")
+    return PowAlgo::SHA256D;
+  if (str == "neoscrypt")
+    return PowAlgo::NEOSCRYPT;
+  throw std::invalid_argument ("invalid PowAlgo: '" + str + "'");
+}
+
+std::string
+PowAlgoToString (const PowAlgo algo)
+{
+  switch (algo)
+    {
+    case PowAlgo::SHA256D:
+      return "sha256d";
+    case PowAlgo::NEOSCRYPT:
+      return "neoscrypt";
+    default:
+      {
+        std::ostringstream msg;
+        msg << "can't convert PowAlgo "
+            << static_cast<int> (algo)
+            << " to string";
+        throw std::invalid_argument (msg.str ());
+      }
+    }
+}
+
 void
 PowData::setFakeHeader (std::unique_ptr<CPureBlockHeader> hdr)
 {

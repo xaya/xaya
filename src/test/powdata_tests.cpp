@@ -15,11 +15,31 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <stdexcept>
 #include <string>
 
 /* No space between BOOST_FIXTURE_TEST_SUITE and '(', so that extraction of
    the test-suite name works with grep as done in the Makefile.  */
 BOOST_FIXTURE_TEST_SUITE(powdata_tests, TestingSetup)
+
+/* ************************************************************************** */
+
+BOOST_AUTO_TEST_CASE (powalgo_to_string)
+{
+  BOOST_CHECK_EQUAL (PowAlgoToString (PowAlgo::SHA256D), "sha256d");
+  BOOST_CHECK_EQUAL (PowAlgoToString (PowAlgo::NEOSCRYPT), "neoscrypt");
+  BOOST_CHECK_THROW (PowAlgoToString (PowAlgo::INVALID), std::invalid_argument);
+  BOOST_CHECK_THROW (PowAlgoToString (PowAlgo::FLAG_MERGE_MINED),
+                     std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE (powalgo_from_string)
+{
+  BOOST_CHECK (PowAlgoFromString ("sha256d") == PowAlgo::SHA256D);
+  BOOST_CHECK (PowAlgoFromString ("neoscrypt") == PowAlgo::NEOSCRYPT);
+  BOOST_CHECK_THROW (PowAlgoFromString (""), std::invalid_argument);
+  BOOST_CHECK_THROW (PowAlgoFromString ("foo"), std::invalid_argument);
+}
 
 /* ************************************************************************** */
 

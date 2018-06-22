@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 /** Possible PoW algorithms and their ID.  */
 enum class PowAlgo : uint8_t
@@ -24,6 +25,12 @@ enum class PowAlgo : uint8_t
 
   FLAG_MERGE_MINED = 0x80,
 };
+
+/* Conversion between (core) PowAlgo and string representations of it for
+   the external interfaces.  The methods throw std::invalid_argument in case
+   the conversion fails.  */
+PowAlgo PowAlgoFromString (const std::string& str);
+std::string PowAlgoToString (PowAlgo algo);
 
 /**
  * The basic PoW data attached to a block header.

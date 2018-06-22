@@ -84,19 +84,7 @@ UniValue
 PowDataToJSON (const PowData& pow)
 {
   UniValue result(UniValue::VOBJ);
-
-  switch (pow.getCoreAlgo ())
-    {
-    case PowAlgo::NEOSCRYPT:
-      result.pushKV ("algo", "neoscrypt");
-      break;
-    case PowAlgo::SHA256D:
-      result.pushKV ("algo", "sha256d");
-      break;
-    default:
-      assert (false);
-    }
-
+  result.pushKV ("algo", PowAlgoToString (pow.getCoreAlgo ()));
   result.pushKV ("mergemined", pow.isMergeMined ());
   result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
 
