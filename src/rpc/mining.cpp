@@ -359,7 +359,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
+            "  \"bits\" :                          (json object) dictionary with target bits for the next block with each mining algorithm\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
 
@@ -523,10 +523,6 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
-        // FIXME: Make algo choosable through RPC, or perhaps even return both
-        // difficulties and let miner choose after the RPC.
-        pblocktemplate->SelectAlgo (PowAlgo::NEOSCRYPT);
-
         // Need to update only after we know CreateNewBlock succeeded
         pindexPrev = pindexPrevNew;
     }
@@ -672,8 +668,13 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
-    result.pushKV("bits", strprintf("%08x", pblock->pow.getBits()));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
+
+    UniValue bits(UniValue::VOBJ);
+    for (const auto& entry : pblocktemplate->bitsForAlgo)
+      bits.pushKV (PowAlgoToString (entry.first),
+                   strprintf("%08x", entry.second));
+    result.pushKV ("bits", bits);
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
         result.pushKV("default_witness_commitment", HexStr(pblocktemplate->vchCoinbaseCommitment.begin(), pblocktemplate->vchCoinbaseCommitment.end()));

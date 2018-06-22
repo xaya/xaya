@@ -62,7 +62,7 @@ class MiningTest(BitcoinTestFramework):
         block.nTime = tmpl["curtime"]
         block.nBits = 0
         block.nNonce = 0
-        block.powData.nBits = int(tmpl["bits"], 16)
+        block.powData.nBits = int(tmpl["bits"]["neoscrypt"], 16)
         block.vtx = [coinbase_tx]
 
         self.log.info("getblocktemplate: Test valid block")
