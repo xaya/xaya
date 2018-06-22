@@ -64,12 +64,14 @@ PowData::isValid (const uint256& hash, const Consensus::Params& params) const
 {
   if (algo != PowAlgo::NEOSCRYPT)
     return error ("%s: only neoscrypt is supported for now", __func__);
+  assert (!isMergeMined ());
   if (fakeHeader == nullptr)
     return error ("%s: PoW data has no fake header", __func__);
 
   if (fakeHeader->hashMerkleRoot != hash)
     return error ("%s: fake header commits to wrong hash", __func__);
-  if (!CheckProofOfWork (fakeHeader->GetPowHash (), nBits, params))
+  if (!CheckProofOfWork (fakeHeader->GetPowHash (getCoreAlgo ()),
+                         getBits (), params))
     return error ("%s: fake header PoW is invalid", __func__);
 
   return true;

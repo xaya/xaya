@@ -3,9 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 /* Command-line utility to compute the PoW hash of a block header given in hex.
-   This is used for the regtests to access the PoW hash from Python.  */
+   This is used for the regtests to access Neoscrypt from Python.  */
 
 #include <core_io.h>
+#include <powdata.h>
 #include <primitives/pureheader.h>
 #include <uint256.h>
 
@@ -14,12 +15,13 @@
 
 int main (int argc, char** argv)
 {
-  if (argc != 2)
+  if (argc != 3)
     {
-      std::cerr << "USAGE: chimaera-hash BLOCK-HEADER-HEX" << std::endl;
+      std::cerr << "USAGE: chimaera-hash ALGO BLOCK-HEADER-HEX" << std::endl;
       return EXIT_FAILURE;
     }
-  const std::string hex(argv[1]);
+  const std::string algoStr(argv[1]);
+  const std::string hex(argv[2]);
 
   CPureBlockHeader header;
   if (!DecodeHexHeader (header, hex))
@@ -28,8 +30,16 @@ int main (int argc, char** argv)
       return EXIT_FAILURE;
     }
 
-  const uint256 hash = header.GetPowHash ();
-  std::cout << hash.GetHex () << std::endl;
+  try
+    {
+      const uint256 hash = header.GetPowHash (PowAlgoFromString (algoStr));
+      std::cout << hash.GetHex () << std::endl;
+    }
+  catch (const std::exception& exc)
+    {
+      std::cerr << "Error: " << exc.what () << std::endl;
+      return EXIT_FAILURE;
+    }
 
   return EXIT_SUCCESS;
 }

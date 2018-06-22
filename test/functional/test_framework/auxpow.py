@@ -184,7 +184,7 @@ def solveData (hexData, target, ok):
 
   def neoscrypt (hexStr):
     rawData = codecs.decode (hexStr, 'hex_codec')
-    rawHash = bytearray (powhash.forHeader (rawData))
+    rawHash = bytearray (powhash.forHeader ('neoscrypt', rawData))
     rawHash.reverse ()
     return codecs.encode (rawHash, 'hex_codec')
 

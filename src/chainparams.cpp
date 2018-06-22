@@ -122,8 +122,8 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
   block.nTime = GetTime ();
 
   auto& fakeHeader = block.pow.initFakeHeader (block);
-  while (!CheckProofOfWork (fakeHeader.GetPowHash (), block.pow.getBits (),
-                            consensus))
+  while (!CheckProofOfWork (fakeHeader.GetPowHash (block.pow.getCoreAlgo ()),
+                            block.pow.getBits (), consensus))
     {
       assert (fakeHeader.nNonce < std::numeric_limits<uint32_t>::max ());
       ++fakeHeader.nNonce;

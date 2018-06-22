@@ -125,7 +125,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
         auto& fakeHeader = pblock->pow.initFakeHeader (*pblock);
-        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(fakeHeader.GetPowHash(pblock->pow.getCoreAlgo()), pblock->pow.getBits(), Params().GetConsensus())) {
             ++fakeHeader.nNonce;
             --nMaxTries;
         }

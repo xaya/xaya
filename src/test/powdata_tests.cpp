@@ -93,10 +93,12 @@ namespace
 {
 
 void
-MineFakeHeader (CPureBlockHeader& hdr, const uint32_t bits,
+MineFakeHeader (CPureBlockHeader& hdr, const PowData& data,
                 const Consensus::Params& params, const bool ok)
 {
-  while (CheckProofOfWork (hdr.GetPowHash (), bits, params) != ok)
+  while (CheckProofOfWork (hdr.GetPowHash (data.getCoreAlgo ()),
+                           data.getBits (), params)
+            != ok)
     ++hdr.nNonce;
 }
 
@@ -124,7 +126,7 @@ BOOST_AUTO_TEST_CASE (validation_fakeHeader)
   /* Valid PoW but not committing to the block hash.  */
   {
     std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
-    MineFakeHeader (*fakeHeader, pow.getBits (), params, true);
+    MineFakeHeader (*fakeHeader, pow, params, true);
     pow.setFakeHeader (std::move (fakeHeader));
     BOOST_CHECK (pow.isValid (uint256 (), params));
     BOOST_CHECK (!pow.isValid (hash, params));
@@ -133,9 +135,9 @@ BOOST_AUTO_TEST_CASE (validation_fakeHeader)
   /* Correct PoW commitment.  */
   {
     auto& fakeHeader = pow.initFakeHeader (block);
-    MineFakeHeader (fakeHeader, pow.getBits (), params, false);
+    MineFakeHeader (fakeHeader, pow, params, false);
     BOOST_CHECK (!pow.isValid (hash, params));
-    MineFakeHeader (fakeHeader, pow.getBits (), params, true);
+    MineFakeHeader (fakeHeader, pow, params, true);
     BOOST_CHECK (pow.isValid (hash, params));
 
     /* The PoW is (very likely) still invalid for higher difficulty.  */

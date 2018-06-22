@@ -11,10 +11,10 @@ import subprocess
 # the command-line options.
 chimaerahash = None
 
-def forHeader (hdrData):
+def forHeader (algo, hdrData):
   """Computes the PoW hash for the header given as bytes."""
   hexStr = codecs.encode (hdrData, 'hex_codec')
-  args = [chimaerahash, hexStr]
+  args = [chimaerahash, algo, hexStr]
   process = subprocess.Popen (args, stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               universal_newlines=True)
