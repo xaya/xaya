@@ -40,13 +40,6 @@ private:
   std::vector<std::unique_ptr<CBlockTemplate>> templates;
   /** Maps block hashes to pointers in vTemplates.  Does not own the memory.  */
   std::map<uint256, const CBlock*> blocks;
-  /**
-   * Maps block merkle roots to the pointers in templates.  This is needed
-   * temporarily for getwork, until the PoW data is implemented.
-   *
-   * FIXME:  Remove this again after switching to PoW data.
-   */
-  std::map<uint256, const CBlock*> blocksByMerkleRoot;
 
   /**
    * The block we are "currently" working on.  This does not own the memory,
@@ -74,14 +67,6 @@ private:
    * block is found, it is returned.  Otherwise, a JSONRPCError is thrown.
    */
   const CBlock* lookupSavedBlock (const std::string& hashHex) const;
-
-  /**
-   * Looks up a previously constructed block by its merkle root.  If the block
-   * is found, it is returned.  Otherwise, a JSONRPCError is thrown.
-   *
-   * FIXME: Remove once PoW data is there.
-   */
-  const CBlock* lookupBlockByMerkleRoot (const uint256& merkleRoot) const;
 
   friend class auxpow_tests::AuxpowMinerForTest;
 
@@ -113,7 +98,8 @@ public:
   /**
    * Performs the "submit" form of the "getwork" RPC.
    */
-  bool submitWork (const std::string& dataHex) const;
+  bool submitWork (const std::string& hashHex,
+                   const std::string& dataHex) const;
 
 };
 

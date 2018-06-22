@@ -58,7 +58,7 @@ public:
 
     bool IsNull() const
     {
-        return (nBits == 0);
+        return (nTime == 0);
     }
 
     uint256 GetHash() const;

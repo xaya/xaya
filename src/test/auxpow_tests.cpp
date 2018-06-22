@@ -506,7 +506,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
 
   /* Verify target computation.  */
   arith_uint256 expected;
-  expected.SetCompact (pblock1->nBits);
+  expected.SetCompact (pblock1->pow.getBits ());
   BOOST_CHECK (target == ArithToUint256 (expected));
 
   /* Calling the method again should return the same, cached block a second

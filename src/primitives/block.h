@@ -6,6 +6,7 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
+#include <powdata.h>
 #include <primitives/transaction.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
@@ -21,7 +22,23 @@
  * of the block.
  */
 class CBlockHeader : public CPureBlockHeader
-{};
+{
+public:
+
+  /** The PoW data for this block.  */
+  PowData pow;
+
+  ADD_SERIALIZE_METHODS;
+
+  template <typename Stream, typename Operation>
+    inline void
+    SerializationOp (Stream& s, Operation ser_action)
+  {
+    READWRITE (*static_cast<CPureBlockHeader*> (this));
+    READWRITE (pow);
+  }
+
+};
 
 class CBlock : public CBlockHeader
 {
@@ -67,6 +84,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+        block.pow            = pow;
         return block;
     }
 

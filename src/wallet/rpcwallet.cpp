@@ -4385,9 +4385,9 @@ UniValue getwork(const JSONRPCRequest& request)
     }
 
     if (request.fHelp
-          || (request.params.size() != 0 && request.params.size() != 1))
+          || (request.params.size() != 0 && request.params.size() != 2))
         throw std::runtime_error(
-            "getwork (data)\n"
+            "getwork (hash data)\n"
             "\nCreate or submit a stand-alone mined block.\n"
             "\nWithout arguments, create a new block and return information\n"
             "required to solve it.  With arguments, submit a solved\n"
@@ -4396,6 +4396,7 @@ UniValue getwork(const JSONRPCRequest& request)
             "1. data      (string, optional) solved block header data\n"
             "\nResult (without arguments):\n"
             "{\n"
+            "  \"hash\"               (string) hash of the created block\n"
             "  \"data\"               (string) data to solve (hex encoded)\n"
             "  \"algo\": \"neoscrypt\"\n"
             "  \"previousblockhash\"  (string) hash of the previous block\n"
@@ -4408,7 +4409,7 @@ UniValue getwork(const JSONRPCRequest& request)
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
             + HelpExampleCli("getwork", "")
-            + HelpExampleCli("getwork", "\"solved data\"")
+            + HelpExampleCli("getwork", "\"hash\" \"solved data\"")
             + HelpExampleRpc("getwork", "")
             );
 
@@ -4429,8 +4430,9 @@ UniValue getwork(const JSONRPCRequest& request)
         return g_auxpow_miner->createWork(coinbaseScript->reserveScript);
 
     /* Submit a block instead.  */
-    assert(request.params.size() == 1);
-    bool fAccepted = g_auxpow_miner->submitWork(request.params[0].get_str());
+    assert(request.params.size() == 2);
+    bool fAccepted = g_auxpow_miner->submitWork(request.params[0].get_str(),
+                                                request.params[1].get_str());
     if (fAccepted)
         coinbaseScript->KeepScript();
 
@@ -4524,7 +4526,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "setlabel",                         &setlabel,                      {"address","label"} },
 
     { "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
-    { "mining",             "getwork",                          &getwork,                       {"data"} },
+    { "mining",             "getwork",                          &getwork,                       {"hash","data"} },
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },

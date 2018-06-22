@@ -124,14 +124,15 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetPowHash(), pblock->nBits, Params().GetConsensus())) {
-            ++pblock->nNonce;
+        auto& fakeHeader = pblock->pow.initFakeHeader (*pblock);
+        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+            ++fakeHeader.nNonce;
             --nMaxTries;
         }
         if (nMaxTries == 0) {
             break;
         }
-        if (pblock->nNonce == nInnerLoopCount) {
+        if (fakeHeader.nNonce == nInnerLoopCount) {
             continue;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
@@ -576,7 +577,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue aux(UniValue::VOBJ);
     aux.pushKV("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end()));
 
-    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
+    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->pow.getBits());
 
     UniValue aMutable(UniValue::VARR);
     aMutable.push_back("time");
@@ -664,7 +665,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
-    result.pushKV("bits", strprintf("%08x", pblock->nBits));
+    result.pushKV("bits", strprintf("%08x", pblock->pow.getBits()));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
@@ -941,6 +942,7 @@ UniValue creatework(const JSONRPCRequest& request)
             "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
             "{\n"
+            "  \"hash\"               (string) hash of the created block\n"
             "  \"data\"               (string) data to solve (hex encoded)\n"
             "  \"algo\": \"neoscrypt\"\n"
             "  \"previousblockhash\"  (string) hash of the previous block\n"
@@ -968,20 +970,21 @@ UniValue creatework(const JSONRPCRequest& request)
 
 UniValue submitwork(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1)
+    if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-            "submitwork <data>\n"
+            "submitwork <hash> <data>\n"
             "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
             "\nArguments:\n"
             "1. data      (string, required) solved block header data\n"
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
-            + HelpExampleCli("submitwork", "\"solved data\"")
-            + HelpExampleRpc("submitwork", "\"solved data\"")
+            + HelpExampleCli("submitwork", "\"hash\" \"solved data\"")
+            + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
             );
 
-    return g_auxpow_miner->submitWork(request.params[0].get_str());
+    return g_auxpow_miner->submitWork(request.params[0].get_str(),
+                                      request.params[1].get_str());
 }
 
 /* ************************************************************************** */
@@ -1000,7 +1003,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
     { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
     { "mining",             "creatework",             &creatework,             {"address"} },
-    { "mining",             "submitwork",             &submitwork,             {"data"} },
+    { "mining",             "submitwork",             &submitwork,             {"hash","data"} },
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 

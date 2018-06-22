@@ -71,8 +71,9 @@ std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
 {
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
-    while (!CheckProofOfWork(pblock->GetPowHash(), pblock->nBits, Params().GetConsensus())) {
-        ++(pblock->nNonce);
+    auto& fakeHeader = pblock->pow.initFakeHeader(*pblock);
+    while (!CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+        ++(fakeHeader.nNonce);
     }
 
     return pblock;

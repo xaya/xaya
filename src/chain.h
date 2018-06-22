@@ -210,8 +210,12 @@ public:
     int32_t nVersion;
     uint256 hashMerkleRoot;
     uint32_t nTime;
+    /**
+     * In Xyon, nBits of the actual block header is always zero and the real
+     * nBits are stored in the PoW data.  Here in CBlockIndex, we store the
+     * actual nBits, so that the total work of a chain can be computed from it.
+     */
     uint32_t nBits;
-    uint32_t nNonce;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -239,7 +243,6 @@ public:
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
-        nNonce         = 0;
     }
 
     CBlockIndex()
@@ -254,8 +257,7 @@ public:
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
-        nBits          = block.nBits;
-        nNonce         = block.nNonce;
+        nBits          = block.pow.getBits();
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -276,7 +278,7 @@ public:
         return ret;
     }
 
-    CBlockHeader GetBlockHeader() const;
+    CBlockHeader GetBlockHeader(const Consensus::Params& consensusParams) const;
 
     uint256 GetBlockHash() const
     {
@@ -393,7 +395,6 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
     }
 
     uint256 GetBlockHash() const
@@ -403,8 +404,8 @@ public:
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
-        block.nBits           = nBits;
-        block.nNonce          = nNonce;
+        block.nBits           = 0;
+        block.nNonce          = 0;
         return block.GetHash();
     }
 

@@ -54,7 +54,6 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
           {
             /* Clear old blocks since they're obsolete now.  */
             blocks.clear ();
-            blocksByMerkleRoot.clear ();
             templates.clear ();
             pblockCur = nullptr;
           }
@@ -76,7 +75,6 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;
         blocks[pblockCur->GetHash ()] = pblockCur;
-        blocksByMerkleRoot[pblockCur->hashMerkleRoot] = pblockCur;
         templates.push_back (std::move (newBlock));
       }
   }
@@ -90,7 +88,7 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
   arith_uint256 arithTarget;
   bool fNegative, fOverflow;
-  arithTarget.SetCompact (pblockCur->nBits, &fNegative, &fOverflow);
+  arithTarget.SetCompact (pblockCur->pow.getBits (), &fNegative, &fOverflow);
   if (fNegative || fOverflow || arithTarget == 0)
     throw std::runtime_error ("invalid difficulty bits in block");
   target = ArithToUint256 (arithTarget);
@@ -113,18 +111,6 @@ AuxpowMiner::lookupSavedBlock (const std::string& hashHex) const
   return iter->second;
 }
 
-const CBlock*
-AuxpowMiner::lookupBlockByMerkleRoot (const uint256& merkleRoot) const
-{
-  AssertLockHeld (cs);
-
-  const auto iter = blocksByMerkleRoot.find (merkleRoot);
-  if (iter == blocksByMerkleRoot.end ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "Merkle root unknown");
-
-  return iter->second;
-}
-
 UniValue
 AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
 {
@@ -141,7 +127,7 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
-  result.pushKV ("bits", strprintf ("%08x", pblock->nBits));
+  result.pushKV ("bits", strprintf ("%08x", pblock->pow.getBits ()));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
   result.pushKV ("_target", HexStr (BEGIN (target), END (target)));
 
@@ -179,27 +165,29 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   uint256 target;
   const CBlock* pblock = getCurrentBlock (scriptPubKey, target);
 
-  /* To construct the data result, we first have to serialise the pure header
-     part of the returned block.  Then perform the byte-order swapping and
+  CPureBlockHeader fakeHeader;
+  fakeHeader.SetNull ();
+  fakeHeader.hashMerkleRoot = pblock->GetHash ();
+
+  /* To construct the data result, we first have to serialise the template
+     fake header of the PoW data.  Then perform the byte-order swapping and
      add zero-padding up to 128 bytes.  */
   std::vector<unsigned char> data;
   CVectorWriter writer(SER_GETHASH, PROTOCOL_VERSION, data, 0);
-  writer << *static_cast<const CPureBlockHeader*> (pblock);
+  writer << fakeHeader;
   const size_t len = data.size ();
   data.resize (128, 0);
   FormatHashBlocks (&data[0], len);
   SwapGetWorkEndianness (data);
 
   UniValue result(UniValue::VOBJ);
-  // FIXME: Once we switch to PoW data, start returning the block hash again.
-  // Until then, it is useless as it will change with the miner doing its job.
-  //result.pushKV ("hash", pblock->GetHash ().GetHex ());
+  result.pushKV ("hash", pblock->GetHash ().GetHex ());
   result.pushKV ("data", HexStr (data.begin (), data.end ()));
   result.pushKV ("algo", "neoscrypt");
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
-  result.pushKV ("bits", strprintf ("%08x", pblock->nBits));
+  result.pushKV ("bits", strprintf ("%08x", pblock->pow.getBits ()));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
   result.pushKV ("target", HexStr (BEGIN (target), END (target)));
 
@@ -232,9 +220,17 @@ AuxpowMiner::submitAuxBlock (const std::string& hashHex,
 }
 
 bool
-AuxpowMiner::submitWork (const std::string& dataHex) const
+AuxpowMiner::submitWork (const std::string& hashHex,
+                         const std::string& dataHex) const
 {
   auxMiningCheck ();
+
+  std::shared_ptr<CBlock> shared_block;
+  {
+    LOCK (cs);
+    const CBlock* pblock = lookupSavedBlock (hashHex);
+    shared_block = std::make_shared<CBlock> (*pblock);
+  }
 
   std::vector<unsigned char> vchData = ParseHex (dataHex);
   if (vchData.size () < 80)
@@ -243,18 +239,11 @@ AuxpowMiner::submitWork (const std::string& dataHex) const
   SwapGetWorkEndianness (vchData);
 
   CDataStream ss(vchData, SER_GETHASH, PROTOCOL_VERSION);
-  CPureBlockHeader header;
-  ss >> header;
+  std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
+  ss >> *fakeHeader;
 
-  std::shared_ptr<CBlock> shared_block;
-  {
-    LOCK (cs);
-    const CBlock* pblock = lookupBlockByMerkleRoot (header.hashMerkleRoot);
-    shared_block = std::make_shared<CBlock> (*pblock);
-  }
-
-  shared_block->nNonce = header.nNonce;
-  assert (shared_block->GetHash () == header.GetHash ());
+  shared_block->pow.setFakeHeader (std::move (fakeHeader));
+  assert (shared_block->GetHash ().GetHex () == hashHex);
 
   return ProcessNewBlock (Params (), shared_block, true, nullptr);
 }

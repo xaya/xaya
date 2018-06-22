@@ -69,12 +69,20 @@ CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& gene
 
     CBlock genesis;
     genesis.nTime    = nTime;
-    genesis.nBits    = nBits;
-    genesis.nNonce   = nNonce;
+    genesis.nBits    = 0;
+    genesis.nNonce   = 0;
     genesis.nVersion = nVersion;
     genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
+
+    std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
+    fakeHeader->SetNull ();
+    fakeHeader->nNonce = nNonce;
+    fakeHeader->hashMerkleRoot = genesis.GetHash ();
+    genesis.pow.setBits (nBits);
+    genesis.pow.setFakeHeader (std::move (fakeHeader));
+
     return genesis;
 }
 
@@ -112,16 +120,18 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
   std::cout << "Mining genesis block..." << std::endl;
 
   block.nTime = GetTime ();
-  block.nNonce = 0;
-  while (!CheckProofOfWork (block.GetPowHash (), block.nBits, consensus))
+
+  auto& fakeHeader = block.pow.initFakeHeader (block);
+  while (!CheckProofOfWork (fakeHeader.GetPowHash (), block.pow.getBits (),
+                            consensus))
     {
-      assert (block.nNonce < std::numeric_limits<uint32_t>::max ());
-      ++block.nNonce;
-      if (block.nNonce % 1000 == 0)
-        std::cout << "  nNonce = " << block.nNonce << "..." << std::endl;
+      assert (fakeHeader.nNonce < std::numeric_limits<uint32_t>::max ());
+      ++fakeHeader.nNonce;
+      if (fakeHeader.nNonce % 1000 == 0)
+        std::cout << "  nNonce = " << fakeHeader.nNonce << "..." << std::endl;
     }
 
-  std::cout << "Found nonce: " << block.nNonce << std::endl;
+  std::cout << "Found nonce: " << fakeHeader.nNonce << std::endl;
   std::cout << "nTime: " << block.nTime << std::endl;
   std::cout << "Block hash: " << block.GetHash ().GetHex () << std::endl;
   std::cout << "Merkle root: " << block.hashMerkleRoot.GetHex () << std::endl;
@@ -196,10 +206,10 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock (1529426076, 168832, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1529499726, 1642079, 0x1e0ffff0,
                                       uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("4475272b51ee8e8a96ce50dfde6be52109ddc41ad1efefc7e71bc98938a47745"));
+        assert(consensus.hashGenesisBlock == uint256S("4e81865a0b7eec37cc6eebbb59152bf0ecc8fd35e6ec28f117f674d0c406f5e4"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         // FIXME: Add seeds for Chimaera (#8).
@@ -284,10 +294,10 @@ public:
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1296688602, 943025, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1529500921, 381413, 0x1e0ffff0,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("60b7eea9839370e90c2cfecab407d984da89608571dc9f77e04a0f4691e84933"));
+        assert(consensus.hashGenesisBlock == uint256S("6364cbdf891d2bc766aeef5a2270bdb9edd659e8c479230cb9fe2d426441f5ab"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         // FIXME: Add seeds for Chimaera (#8).
@@ -374,10 +384,10 @@ public:
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1300000000, 0, 0x207fffff,
+        genesis = CreateGenesisBlock (1300000000, 1, 0x207fffff,
                                       uint160S (hexPremineAddressTestnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("ee7988f0ebef21eb85e6fbba0e276b5d6a0a3f8b95d0dcd6a0c26739f3f0f74e"));
+        assert(consensus.hashGenesisBlock == uint256S("675b53c6be64119001318a2362015ca2d4d704cdb732cc2de4e54f0bed27a21b"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.

@@ -47,6 +47,10 @@ NODE_UNSUPPORTED_SERVICE_BIT_5 = (1 << 5)
 NODE_UNSUPPORTED_SERVICE_BIT_7 = (1 << 7)
 NODE_NETWORK_LIMITED = (1 << 10)
 
+# Constants for PoW data and algorithms.
+POWALGO_NEOSCRYPT = 0x02
+POWALGO_MM_FLAG = 0x80
+
 MSG_TX = 1
 MSG_BLOCK = 2
 MSG_WITNESS_FLAG = 1 << 30
@@ -498,7 +502,7 @@ class CTransaction():
             % (self.nVersion, repr(self.vin), repr(self.vout), repr(self.wit), self.nLockTime)
 
 
-class CBlockHeader():
+class CPureBlockHeader():
     def __init__(self, header=None):
         if header is None:
             self.set_null()
@@ -565,9 +569,72 @@ class CBlockHeader():
         return self.sha256
 
     def __repr__(self):
-        return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x)" \
+        return "CPureBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x)" \
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
                time.ctime(self.nTime), self.nBits, self.nNonce)
+
+
+class PowData():
+    def __init__(self):
+        self.algo = POWALGO_NEOSCRYPT
+        self.nBits = 0
+        self.fakeHeader = CPureBlockHeader()
+
+    def is_merge_mined(self):
+        return self.algo & POWALGO_MM_FLAG != 0
+
+    def deserialize(self, f):
+        self.algo = struct.unpack("B", f.read(1))[0]
+        self.nBits = struct.unpack("<I", f.read(4))[0]
+        assert not self.is_merge_mined()
+        self.fakeHeader.deserialize(f)
+
+    def serialize(self):
+        r = b""
+        r += struct.pack("B", self.algo)
+        r += struct.pack("<I", self.nBits)
+        assert not self.is_merge_mined()
+        r += self.fakeHeader.serialize()
+        return r
+
+    def rehash(self):
+        if self.fakeHeader is not None:
+            self.fakeHeader.rehash()
+
+    def __repr__(self):
+        return "PowData(algo=%i nBits=%08x fakeHeader=%s)" \
+            % (self.algo, self.nBits, repr(self.fakeHeader))
+
+
+class CBlockHeader(CPureBlockHeader):
+    def __init__(self, header=None):
+        super(CBlockHeader, self).__init__(header)
+        if header is not None:
+            self.powData = header.powData
+
+    def set_null(self):
+        super(CBlockHeader, self).set_null()
+        self.powData = PowData()
+
+    def deserialize(self, f):
+        super(CBlockHeader, self).deserialize(f)
+        self.powData.deserialize(f)
+
+    def serialize(self):
+        r = b""
+        r += super(CBlockHeader, self).serialize()
+        r += self.powData.serialize()
+        return r
+
+    def rehash(self):
+        self.powData.rehash()
+        return super(CBlockHeader, self).rehash()
+
+    def __repr__(self):
+        return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x powData=%s)" \
+            % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
+               time.ctime(self.nTime), self.nBits, self.nNonce,
+               repr(self.powData))
 
 
 class CBlock(CBlockHeader):
@@ -632,15 +699,18 @@ class CBlock(CBlockHeader):
 
     def solve(self):
         self.rehash()
-        target = uint256_from_compact(self.nBits)
-        while self.powHash > target:
-            self.nNonce += 1
-            self.rehash()
+        self.powData.fakeHeader.hashMerkleRoot = self.sha256
+        self.powData.rehash()
+        target = uint256_from_compact(self.powData.nBits)
+        while self.powData.fakeHeader.powHash > target:
+            self.powData.fakeHeader.nNonce += 1
+            self.powData.rehash()
 
     def __repr__(self):
-        return "CBlock(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x vtx=%s)" \
+        return "CBlock(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x powData=%s vtx=%s)" \
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
-               time.ctime(self.nTime), self.nBits, self.nNonce, repr(self.vtx))
+               time.ctime(self.nTime), self.nBits, self.nNonce,
+               repr(self.powData), repr(self.vtx))
 
 
 class PrefilledTransaction():

@@ -33,7 +33,8 @@ static CBlock BuildBlockTestCase() {
     block.vtx[0] = MakeTransactionRef(tx);
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
-    block.nBits = 0x207fffff;
+    block.nTime = 1234500000;
+    block.pow.setBits(0x207fffff);
 
     tx.vin[0].prevout.hash = InsecureRand256();
     tx.vin[0].prevout.n = 0;
@@ -49,7 +50,8 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetPowHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    auto& fakeHeader = block.pow.initFakeHeader(block);
+    while (!CheckProofOfWork(fakeHeader.GetPowHash(), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
     return block;
 }
 
@@ -292,12 +294,14 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.vtx[0] = MakeTransactionRef(std::move(coinbase));
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
-    block.nBits = 0x207fffff;
+    block.nTime = 1234500000;
+    block.pow.setBits(0x207fffff);
 
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetPowHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    auto& fakeHeader = block.pow.initFakeHeader(block);
+    while (!CheckProofOfWork(fakeHeader.GetPowHash(), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
 
     // Test simple header round-trip with only coinbase
     {

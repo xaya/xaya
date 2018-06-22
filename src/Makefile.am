@@ -143,6 +143,7 @@ BITCOIN_CORE_H = \
   policy/policy.h \
   policy/rbf.h \
   pow.h \
+  powdata.h \
   protocol.h \
   random.h \
   reverse_iterator.h \
@@ -385,6 +386,7 @@ libbitcoin_common_a_SOURCES = \
   netbase.cpp \
   policy/feerate.cpp \
   pow.cpp \
+  powdata.cpp \
   protocol.cpp \
   scheduler.cpp \
   script/ismine.cpp \

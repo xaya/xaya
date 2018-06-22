@@ -67,7 +67,7 @@ DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) 
 
 } // anonymous namespace
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader* /*pblock*/, const Consensus::Params& params)
+unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
     if (params.fPowNoRetargeting)
         return pindexLast->nBits;

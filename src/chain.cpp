@@ -5,16 +5,12 @@
 
 #include <chain.h>
 
-CBlockHeader CBlockIndex::GetBlockHeader() const
+#include <validation.h>
+
+CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
 {
     CBlockHeader block;
-    block.nVersion       = nVersion;
-    if (pprev)
-        block.hashPrevBlock = pprev->GetBlockHash();
-    block.hashMerkleRoot = hashMerkleRoot;
-    block.nTime          = nTime;
-    block.nBits          = nBits;
-    block.nNonce         = nNonce;
+    ReadBlockHeaderFromDisk (block, this, consensusParams);
     return block;
 }
 
@@ -136,6 +132,9 @@ arith_uint256 GetBlockProof(const CBlockIndex& block)
     arith_uint256 bnTarget;
     bool fNegative;
     bool fOverflow;
+    /* Note that "block" is a CBlockIndex, not a CBlock(Header).  Thus the nBits
+       on it actually represent the mining difficulty, taken from the block's
+       PoW data instance!  */
     bnTarget.SetCompact(block.nBits, &fNegative, &fOverflow);
     if (fNegative || fOverflow || bnTarget == 0)
         return 0;
