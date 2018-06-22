@@ -72,12 +72,21 @@ PowData::initFakeHeader (const CPureBlockHeader& block)
 bool
 PowData::isValid (const uint256& hash, const Consensus::Params& params) const
 {
-  if (algo != PowAlgo::NEOSCRYPT)
-    return error ("%s: only neoscrypt is supported for now", __func__);
-  assert (!isMergeMined ());
+  if (isMergeMined ())
+    return error ("%s: merge-mining is not supported", __func__);
+
+  switch (getCoreAlgo ())
+    {
+    case PowAlgo::SHA256D:
+    case PowAlgo::NEOSCRYPT:
+      /* These are the valid algos.  */
+      break;
+    default:
+      return error ("%s: invalid mining algo used for PoW", __func__);
+    }
+
   if (fakeHeader == nullptr)
     return error ("%s: PoW data has no fake header", __func__);
-
   if (fakeHeader->hashMerkleRoot != hash)
     return error ("%s: fake header commits to wrong hash", __func__);
   if (!CheckProofOfWork (fakeHeader->GetPowHash (getCoreAlgo ()),

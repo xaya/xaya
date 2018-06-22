@@ -152,6 +152,36 @@ BOOST_AUTO_TEST_CASE (validation_fakeHeader)
     pow.setBits (bitsMainnet);
     BOOST_CHECK (!pow.isValid (hash, params));
   }
+
+  /* PoW also works for SHA256D.  */
+  {
+    PowData pow(powTmpl);
+    pow.setCoreAlgo (PowAlgo::SHA256D);
+    auto& fakeHeader = pow.initFakeHeader (block);
+    MineFakeHeader (fakeHeader, pow, params, true);
+    BOOST_CHECK (pow.isValid (hash, params));
+  }
+
+  /* Wrong algo (not matching what we mined).  */
+  {
+    PowData pow(powTmpl);
+    auto& fakeHeader = pow.initFakeHeader (block);
+
+    /* Since the difficulty is very low, it is likely (50%) that the PoW
+       still matches the other algo.  But if we try a couple of times, there
+       should at least be one try that does not match.  */
+    bool foundMismatch = false;
+    for (int i = 0; i < 10; ++i)
+      {
+        fakeHeader.nTime = i;
+        pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
+        MineFakeHeader (fakeHeader, pow, params, true);
+        pow.setCoreAlgo (PowAlgo::SHA256D);
+        if (!pow.isValid (hash, params))
+          foundMismatch = true;
+      }
+    BOOST_CHECK (foundMismatch);
+  }
 }
 
 /* ************************************************************************** */
