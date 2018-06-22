@@ -51,7 +51,7 @@ private:
 public:
 
   inline PowData ()
-    : algo(PowAlgo::NEOSCRYPT)
+    : algo(PowAlgo::INVALID)
   {}
 
   PowData (const PowData&) = default;
@@ -90,6 +90,8 @@ public:
   {
     return static_cast<PowAlgo> (static_cast<int> (algo) & ~mmFlag);
   }
+
+  void setCoreAlgo (PowAlgo a);
 
   inline uint32_t
   getBits () const

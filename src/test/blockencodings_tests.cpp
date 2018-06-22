@@ -6,6 +6,7 @@
 #include <consensus/merkle.h>
 #include <chainparams.h>
 #include <pow.h>
+#include <powdata.h>
 #include <primitives/pureheader.h>
 #include <random.h>
 
@@ -34,6 +35,8 @@ static CBlock BuildBlockTestCase() {
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
     block.nTime = 1234500000;
+
+    block.pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
     block.pow.setBits(0x207fffff);
 
     tx.vin[0].prevout.hash = InsecureRand256();
@@ -295,6 +298,8 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
     block.nTime = 1234500000;
+
+    block.pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
     block.pow.setBits(0x207fffff);
 
     bool mutated;

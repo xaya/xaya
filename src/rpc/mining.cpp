@@ -17,6 +17,7 @@
 #include <net.h>
 #include <policy/fees.h>
 #include <pow.h>
+#include <powdata.h>
 #include <rpc/auxpow_miner.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
@@ -117,6 +118,8 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+        // FIXME: Make mining algo selectable through the RPC interface.
+        pblocktemplate->SelectAlgo (PowAlgo::NEOSCRYPT);
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -519,6 +522,10 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, fSupportsSegwit);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
+
+        // FIXME: Make algo choosable through RPC, or perhaps even return both
+        // difficulties and let miner choose after the RPC.
+        pblocktemplate->SelectAlgo (PowAlgo::NEOSCRYPT);
 
         // Need to update only after we know CreateNewBlock succeeded
         pindexPrev = pindexPrevNew;

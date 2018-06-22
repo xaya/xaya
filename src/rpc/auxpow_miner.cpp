@@ -8,6 +8,7 @@
 #include <auxpow.h>
 #include <chainparams.h>
 #include <net.h>
+#include <powdata.h>
 #include <primitives/pureheader.h>
 #include <rpc/protocol.h>
 #include <streams.h>
@@ -71,6 +72,10 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
         /* Finalise it by building the merkle root.  */
         IncrementExtraNonce (&newBlock->block, pindexPrev, extraNonce);
+
+        /* Select a mining algorithm.  */
+        // FIXME: Postpone this step to later, so that the miner can decide.
+        newBlock->SelectAlgo (PowAlgo::NEOSCRYPT);
 
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;

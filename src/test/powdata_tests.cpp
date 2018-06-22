@@ -117,14 +117,16 @@ BOOST_AUTO_TEST_CASE (validation_fakeHeader)
   block.nTime = 1234;
   const uint256 hash = block.GetHash ();
 
-  PowData pow;
-  pow.setBits (bitsRegtest);
+  PowData powTmpl;
+  powTmpl.setCoreAlgo (PowAlgo::NEOSCRYPT);
+  powTmpl.setBits (bitsRegtest);
 
   /* No fake header set, should be invalid.  */
-  BOOST_CHECK (!pow.isValid (hash, params));
+  BOOST_CHECK (!powTmpl.isValid (hash, params));
 
   /* Valid PoW but not committing to the block hash.  */
   {
+    PowData pow(powTmpl);
     std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
     MineFakeHeader (*fakeHeader, pow, params, true);
     pow.setFakeHeader (std::move (fakeHeader));
@@ -134,13 +136,19 @@ BOOST_AUTO_TEST_CASE (validation_fakeHeader)
 
   /* Correct PoW commitment.  */
   {
+    PowData pow(powTmpl);
     auto& fakeHeader = pow.initFakeHeader (block);
     MineFakeHeader (fakeHeader, pow, params, false);
     BOOST_CHECK (!pow.isValid (hash, params));
     MineFakeHeader (fakeHeader, pow, params, true);
     BOOST_CHECK (pow.isValid (hash, params));
+  }
 
-    /* The PoW is (very likely) still invalid for higher difficulty.  */
+  /* The PoW is (very likely) still invalid for higher difficulty.  */
+  {
+    PowData pow(powTmpl);
+    auto& fakeHeader = pow.initFakeHeader (block);
+    MineFakeHeader (fakeHeader, pow, params, true);
     pow.setBits (bitsMainnet);
     BOOST_CHECK (!pow.isValid (hash, params));
   }

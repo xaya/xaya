@@ -48,6 +48,16 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     return nNewTime - nOldTime;
 }
 
+void
+CBlockTemplate::SelectAlgo (const PowAlgo algo)
+{
+  block.pow.setCoreAlgo (algo);
+
+  const auto mit = bitsForAlgo.find (algo);
+  assert (mit != bitsForAlgo.end ());
+  block.pow.setBits (mit->second);
+}
+
 BlockAssembler::Options::Options() {
     blockMinFeeRate = CFeeRate(DEFAULT_BLOCK_MIN_TX_FEE);
     nBlockMaxWeight = DEFAULT_BLOCK_MAX_WEIGHT;
@@ -171,7 +181,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->nNonce         = 0;
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
-    pblock->pow.setBits(GetNextWorkRequired(pindexPrev, chainparams.GetConsensus()));
+    /* Compute the difficulty for each possible mining algorithm.  */
+    // FIXME: Actually compute difficulty per algo.
+    const uint32_t bits = GetNextWorkRequired(pindexPrev, chainparams.GetConsensus());
+    pblocktemplate->bitsForAlgo[PowAlgo::SHA256D] = bits;
+    pblocktemplate->bitsForAlgo[PowAlgo::NEOSCRYPT] = bits;
 
     CValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false, false)) {

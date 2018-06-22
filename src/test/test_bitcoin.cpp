@@ -12,6 +12,7 @@
 #include <miner.h>
 #include <net_processing.h>
 #include <pow.h>
+#include <powdata.h>
 #include <ui_interface.h>
 #include <streams.h>
 #include <rpc/server.h>
@@ -142,6 +143,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
 {
     const CChainParams& chainparams = Params();
     std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey);
+    pblocktemplate->SelectAlgo (PowAlgo::NEOSCRYPT);
     CBlock& block = pblocktemplate->block;
 
     // Replace mempool-selected txns with just coinbase plus passed-in txns:

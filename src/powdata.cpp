@@ -41,6 +41,16 @@ PowAlgoToString (const PowAlgo algo)
 }
 
 void
+PowData::setCoreAlgo (const PowAlgo a)
+{
+  int newAlgo = static_cast<int> (a);
+  newAlgo &= ~mmFlag;
+  if (isMergeMined ())
+    newAlgo |= mmFlag;
+  algo = static_cast<PowAlgo> (newAlgo);
+}
+
+void
 PowData::setFakeHeader (std::unique_ptr<CPureBlockHeader> hdr)
 {
   /* Clear merge-mining flag (if it was set).  */

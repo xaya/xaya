@@ -7,6 +7,7 @@
 #include <consensus/merkle.h>
 
 #include <pow.h>
+#include <powdata.h>
 #include <tinyformat.h>
 #include <util.h>
 #include <utilstrencodings.h>
@@ -77,9 +78,9 @@ CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& gene
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
     std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
-    fakeHeader->SetNull ();
     fakeHeader->nNonce = nNonce;
     fakeHeader->hashMerkleRoot = genesis.GetHash ();
+    genesis.pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
     genesis.pow.setBits (nBits);
     genesis.pow.setFakeHeader (std::move (fakeHeader));
 

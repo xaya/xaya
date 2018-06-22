@@ -6,11 +6,13 @@
 #ifndef BITCOIN_MINER_H
 #define BITCOIN_MINER_H
 
+#include <powdata.h>
 #include <primitives/block.h>
 #include <txmempool.h>
 #include <validation.h>
 
 #include <stdint.h>
+#include <map>
 #include <memory>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -29,6 +31,19 @@ struct CBlockTemplate
     std::vector<CAmount> vTxFees;
     std::vector<int64_t> vTxSigOpsCost;
     std::vector<unsigned char> vchCoinbaseCommitment;
+
+    /**
+     * Since the difficulty depends on the chosen mining algorithm and the
+     * algorithm can be chosen freely after constructing the core block, we
+     * store the difficulty bits for each possible algorithm in the template.
+     */
+    std::map<PowAlgo, uint32_t> bitsForAlgo;
+
+    /**
+     * Selects one of the mining algorithms.  This updates block.pow to include
+     * the correct bits and algo for the selection.
+     */
+    void SelectAlgo (PowAlgo algo);
 };
 
 // Container for tracking updates to ancestor feerate as we include (parent)
