@@ -32,6 +32,25 @@ enum class PowAlgo : uint8_t
 PowAlgo PowAlgoFromString (const std::string& str);
 std::string PowAlgoToString (PowAlgo algo);
 
+/* Implement serialisation for PowAlgo.  The standard framework does not work
+   since it is a typesafe enum.  */
+
+template <typename Stream>
+  inline void
+  Serialize (Stream& os, const PowAlgo algo)
+{
+  Serialize (os, static_cast<uint8_t> (algo));
+}
+
+template <typename Stream>
+  inline void
+  Unserialize (Stream& is, PowAlgo& algo)
+{
+  uint8_t val;
+  Unserialize (is, val);
+  algo = static_cast<PowAlgo> (val);
+}
+
 /**
  * The basic PoW data attached to a block header.
  */
@@ -63,13 +82,7 @@ public:
     inline void
     SerializationOp (Stream& s, Operation ser_action)
   {
-    uint8_t intAlgo;
-    if (!ser_action.ForRead ())
-      intAlgo = static_cast<uint8_t> (algo);
-    READWRITE (intAlgo);
-    if (ser_action.ForRead ())
-      algo = static_cast<PowAlgo> (intAlgo);
-
+    READWRITE (algo);
     READWRITE (nBits);
 
     assert (!isMergeMined ());
