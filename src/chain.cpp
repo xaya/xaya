@@ -121,6 +121,16 @@ CBlockIndex* CBlockIndex::GetAncestor(int height)
     return const_cast<CBlockIndex*>(static_cast<const CBlockIndex*>(this)->GetAncestor(height));
 }
 
+const CBlockIndex*
+CBlockIndex::GetLastAncestorWithAlgo (const PowAlgo algo) const
+{
+  for (const CBlockIndex* pindex = this; pindex != nullptr;
+       pindex = pindex->pprev)
+    if (pindex->algo == algo)
+      return pindex;
+  return nullptr;
+}
+
 void CBlockIndex::BuildSkip()
 {
     if (pprev)
@@ -155,7 +165,24 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
         r = from.nChainWork - to.nChainWork;
         sign = -1;
     }
-    r = r * arith_uint256(params.nPowTargetSpacing) / GetBlockProof(tip);
+
+    /* We have to correct the total chain work for the current difficulty.  This
+       also depends on the PoW algo.  In general, we expect one block of each
+       algo to be mined in each nPowTargetSpacing, as the difficulty retargeting
+       and thus the target spacing is valid for each algo independently.  If one
+       algo has never been used so far, then we simply skip its correction
+       (this is an edge case anyway).  */
+    r *= arith_uint256(params.nPowTargetSpacing);
+    arith_uint256 denom;
+    for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
+      {
+        const CBlockIndex* pindexWithAlgo = tip.GetLastAncestorWithAlgo (algo);
+        if (pindexWithAlgo != nullptr)
+          denom += GetBlockProof (*pindexWithAlgo);
+      }
+    assert (denom > 0);
+    r /= denom;
+
     if (r.bits() > 63) {
         return sign * std::numeric_limits<int64_t>::max();
     }

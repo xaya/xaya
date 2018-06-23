@@ -5,6 +5,7 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <pow.h>
+#include <powdata.h>
 #include <random.h>
 #include <util.h>
 #include <test/test_bitcoin.h>
@@ -73,8 +74,15 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
     for (int i = 0; i < 10000; i++) {
         blocks[i].pprev = i ? &blocks[i - 1] : nullptr;
         blocks[i].nHeight = i;
-        blocks[i].nTime = 1269211443 + i * chainParams->GetConsensus().nPowTargetSpacing;
+        /* During one nPowTargetSpacing, we get blocks *from each* algorithm.
+           Because of that, the actual spacing between two blocks (no matter
+           what the algo) is half of the target spacing.  */
+        blocks[i].nTime = 1269211443 + i * chainParams->GetConsensus().nPowTargetSpacing / 2;
         blocks[i].nBits = 0x207fffff; /* target 0x7fffff000... */
+        if (i % 2 == 0)
+          blocks[i].algo = PowAlgo::SHA256D;
+        else
+          blocks[i].algo = PowAlgo::NEOSCRYPT;
         blocks[i].nChainWork = i ? blocks[i - 1].nChainWork + GetBlockProof(blocks[i - 1]) : arith_uint256(0);
     }
 
@@ -83,8 +91,12 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
         CBlockIndex *p2 = &blocks[InsecureRandRange(10000)];
         CBlockIndex *p3 = &blocks[InsecureRandRange(10000)];
 
-        int64_t tdiff = GetBlockProofEquivalentTime(*p1, *p2, *p3, chainParams->GetConsensus());
-        BOOST_CHECK_EQUAL(tdiff, p1->GetBlockTime() - p2->GetBlockTime());
+        const int64_t wdiff = GetBlockProofEquivalentTime(*p1, *p2, *p3, chainParams->GetConsensus());
+        const int64_t tdiff = p1->GetBlockTime() - p2->GetBlockTime();
+        /* Depending on which blocks exactly are chosen, there might be
+           "off-by-one" type differences in the number of blocks of each algo.
+           Thus we allow for a little mismatch.  */
+        BOOST_CHECK(std::abs(wdiff - tdiff) < chainParams->GetConsensus().nPowTargetSpacing);
     }
 }
 

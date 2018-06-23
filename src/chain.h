@@ -356,6 +356,12 @@ public:
     //! Efficiently find an ancestor of this block.
     CBlockIndex* GetAncestor(int height);
     const CBlockIndex* GetAncestor(int height) const;
+
+    /**
+     * Find the last previous block (including this one) mined by a particular
+     * PoW algo.  Returns nullptr if none exists.
+     */
+    const CBlockIndex* GetLastAncestorWithAlgo(PowAlgo algo) const;
 };
 
 arith_uint256 GetBlockProof(const CBlockIndex& block);
