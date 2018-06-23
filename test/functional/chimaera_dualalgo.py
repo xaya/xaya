@@ -60,5 +60,26 @@ class DualAlgoTest (BitcoinTestFramework):
     assert_equal (len (blks), 2)
     self.assertBlocksSha256d (blks)
 
+    # Verify that Neoscrypt blocks have a higher weight than SHA256 blocks:
+    # For this, we create a chain of 10 Neoscrypt blocks.  Then we invalidate
+    # it and create an alternate chain of 20 SHA256 blocks.  When we then
+    # reconsider the Neoscrypt chain, it should become the current best
+    # (and its work should be larger, while its length is smaller than that
+    # of the SHA256 chain).
+
+    neoscryptBlks = self.node.generate (10, None, 'neoscrypt')
+    neoscryptData = self.node.getblock (neoscryptBlks[-1])
+    assert_equal (self.node.getbestblockhash (), neoscryptBlks[-1])
+
+    self.node.invalidateblock (neoscryptBlks[0])
+    shaBlks = self.node.generate (20, None, 'sha256d')
+    shaData = self.node.getblock (shaBlks[-1])
+    assert_equal (self.node.getbestblockhash (), shaBlks[-1])
+
+    self.node.reconsiderblock (neoscryptBlks[0])
+    assert_equal (self.node.getbestblockhash (), neoscryptBlks[-1])
+    assert_greater_than (neoscryptData['chainwork'], shaData['chainwork'])
+    assert_greater_than (shaData['height'], neoscryptData['height'])
+
 if __name__ == '__main__':
   DualAlgoTest ().main ()

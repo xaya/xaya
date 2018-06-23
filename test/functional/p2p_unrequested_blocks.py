@@ -62,7 +62,8 @@ class AcceptBlockTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [[], ["-minimumchainwork=0x10"]]
+        minwork = (0x10 << 10)
+        self.extra_args = [[], ["-minimumchainwork=0x%x" % minwork]]
 
     def setup_network(self):
         # Node0 will be used to test behavior of processing unrequested blocks

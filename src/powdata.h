@@ -26,6 +26,13 @@ enum class PowAlgo : uint8_t
   FLAG_MERGE_MINED = 0x80,
 };
 
+/**
+ * Return the relative factor (actually, the binary log of it) of how much
+ * harder the given PowAlgo is than SHA256D.  This is used to correct the
+ * chain work to make the different algorithms comparable.
+ */
+int powAlgoLog2Weight (PowAlgo algo);
+
 /* Conversion between (core) PowAlgo and string representations of it for
    the external interfaces.  The methods throw std::invalid_argument in case
    the conversion fails.  */

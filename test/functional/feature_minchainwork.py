@@ -21,15 +21,16 @@ from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import connect_nodes, assert_equal
 
 # 2 hashes required per regtest block (with no difficulty adjustment)
-REGTEST_WORK_PER_BLOCK = 2
+REGTEST_WORK_PER_BLOCK = (2 << 10)
+MIN_WORK = (101 << 10)
 
 class MinimumChainWorkTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
 
-        self.extra_args = [[], ["-minimumchainwork=0x65"], ["-minimumchainwork=0x65"]]
-        self.node_min_work = [0, 101, 101]
+        self.extra_args = [[]] + [["-minimumchainwork=0x%x" % MIN_WORK]] * 2
+        self.node_min_work = [0, MIN_WORK, MIN_WORK]
 
     def setup_network(self):
         # This test relies on the chain setup being:

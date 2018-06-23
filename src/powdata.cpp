@@ -10,6 +10,20 @@
 #include <sstream>
 #include <stdexcept>
 
+int
+powAlgoLog2Weight (const PowAlgo algo)
+{
+  switch (algo)
+    {
+    case PowAlgo::SHA256D:
+      return 0;
+    case PowAlgo::NEOSCRYPT:
+      return 10;
+    default:
+      assert (false);
+    }
+}
+
 PowAlgo
 PowAlgoFromString (const std::string& str)
 {
