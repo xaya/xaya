@@ -10,68 +10,68 @@
 #include <powdata.h>
 #include <uint256.h>
 
-namespace
-{
-
-// DGW difficulty update taken from Dash.
 unsigned int
-DarkGravityWave(const PowAlgo algo, const CBlockIndex* pindexLast,
-                const Consensus::Params& params) {
-    /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
-    const arith_uint256 bnPowLimit
-        = UintToArith256(powLimitForAlgo(algo, params));
-    constexpr int64_t nPastBlocks = 24;
-
-    // make sure we have at least (nPastBlocks + 1) blocks, otherwise just return powLimit
-    if (!pindexLast || pindexLast->nHeight < nPastBlocks) {
-        return bnPowLimit.GetCompact();
-    }
-
-    const CBlockIndex *pindex = pindexLast;
-    arith_uint256 bnPastTargetAvg;
-
-    for (unsigned int nCountBlocks = 1; nCountBlocks <= nPastBlocks; nCountBlocks++) {
-        const arith_uint256 bnTarget = arith_uint256().SetCompact(pindex->nBits);
-        if (nCountBlocks == 1) {
-            bnPastTargetAvg = bnTarget;
-        } else {
-            // NOTE: that's not an average really...
-            bnPastTargetAvg = (bnPastTargetAvg * nCountBlocks + bnTarget) / (nCountBlocks + 1);
-        }
-
-        if(nCountBlocks != nPastBlocks) {
-            assert(pindex->pprev); // should never fail
-            pindex = pindex->pprev;
-        }
-    }
-
-    arith_uint256 bnNew(bnPastTargetAvg);
-
-    int64_t nActualTimespan = pindexLast->GetBlockTime() - pindex->GetBlockTime();
-    // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
-    int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
-
-    if (nActualTimespan < nTargetTimespan/3)
-        nActualTimespan = nTargetTimespan/3;
-    if (nActualTimespan > nTargetTimespan*3)
-        nActualTimespan = nTargetTimespan*3;
-
-    // Retarget
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
-
-    if (bnNew > bnPowLimit) {
-        bnNew = bnPowLimit;
-    }
-
-    return bnNew.GetCompact();
-}
-
-} // anonymous namespace
-
-unsigned int GetNextWorkRequired(const PowAlgo algo, const CBlockIndex* pindexLast, const Consensus::Params& params)
+GetNextWorkRequired (const PowAlgo algo, const CBlockIndex* pindexLast,
+                     const Consensus::Params& params)
 {
-    if (params.fPowNoRetargeting)
-        return UintToArith256 (powLimitForAlgo(algo, params)).GetCompact ();
-    return DarkGravityWave (algo, pindexLast, params);
+  const arith_uint256 bnPowLimit
+      = UintToArith256 (powLimitForAlgo (algo, params));
+
+  if (pindexLast == nullptr || params.fPowNoRetargeting)
+      return bnPowLimit.GetCompact ();
+
+  /* The actual difficulty update below is DGW taken from Dash, except that
+     we have to look at blocks of only one algo explicitly.  */
+
+  constexpr int64_t nPastBlocks = 24;
+
+  pindexLast = pindexLast->GetLastAncestorWithAlgo (algo);
+  if (pindexLast == nullptr)
+    return bnPowLimit.GetCompact ();
+
+  const CBlockIndex* pindex = pindexLast;
+  const CBlockIndex* pindexFirst = nullptr;
+  arith_uint256 bnResult;
+  for (size_t nCountBlocks = 1; nCountBlocks <= nPastBlocks; ++nCountBlocks)
+    {
+      assert (pindex != nullptr && pindex->algo == algo);
+
+      arith_uint256 bnTarget;
+      bnTarget.SetCompact (pindex->nBits);
+
+      if (nCountBlocks == 1)
+        bnResult = bnTarget;
+      else
+        bnResult = (bnResult * nCountBlocks + bnTarget) / (nCountBlocks + 1);
+
+      if (nCountBlocks == nPastBlocks)
+        pindexFirst = pindex;
+
+      /* We need to step back to the last block with the given algo, but at
+         least one block.  Note that GetLastAncestorWithAlgo returns the
+         block itself if it matches.  */
+      pindex = pindex->pprev;
+      if (pindex != nullptr)
+        pindex = pindex->GetLastAncestorWithAlgo (algo);
+
+      if (pindex == nullptr)
+        return bnPowLimit.GetCompact ();
+    }
+
+  int64_t nActualTimespan = pindexLast->GetBlockTime ()
+                              - pindexFirst->GetBlockTime ();
+  int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
+
+  if (nActualTimespan < nTargetTimespan / 3)
+    nActualTimespan = nTargetTimespan / 3;
+  if (nActualTimespan > nTargetTimespan * 3)
+    nActualTimespan = nTargetTimespan * 3;
+
+  bnResult *= nActualTimespan;
+  bnResult /= nTargetTimespan;
+
+  if (bnResult > bnPowLimit)
+    bnResult = bnPowLimit;
+
+  return bnResult.GetCompact ();
 }
