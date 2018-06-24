@@ -340,6 +340,9 @@ BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
 
 /* ************************************************************************** */
 
+// FIXME: Re-enable with proper auxpow support in Chimaera.
+#if 0
+
 /**
  * Mine a block (assuming minimal difficulty) that either matches
  * or doesn't match the difficulty target specified in the block header.
@@ -372,8 +375,6 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
     BOOST_CHECK (!CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus().powLimitNeoscrypt));
 }
 
-// FIXME: Re-enable with proper auxpow support in Chimaera.
-#if 0
 BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
 {
   /* Use regtest parameters to allow mining with easy difficulty.  */

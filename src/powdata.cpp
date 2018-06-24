@@ -5,7 +5,6 @@
 #include <powdata.h>
 
 #include <arith_uint256.h>
-#include <pow.h>
 #include <util.h>
 
 #include <sstream>
@@ -132,6 +131,23 @@ PowData::checkProofOfWork (const CPureBlockHeader& hdr,
                            const Consensus::Params& params) const
 {
   const PowAlgo coreAlgo = getCoreAlgo ();
-  return CheckProofOfWork (hdr.GetPowHash (coreAlgo), getBits (),
-                           powLimitForAlgo (coreAlgo, params));
+
+  /* The code below is CheckProofOfWork from upstream's pow.cpp.  It has been
+     moved here so that powdata.cpp does not depend on pow.cpp, which is
+     in the "server" library.  */
+
+  bool fNegative, fOverflow;
+  arith_uint256 bnTarget;
+  bnTarget.SetCompact (getBits (), &fNegative, &fOverflow);
+
+  // Check range
+  if (fNegative || bnTarget == 0 || fOverflow
+        || bnTarget > UintToArith256 (powLimitForAlgo (coreAlgo, params)))
+    return false;
+
+  // Check proof of work matches claimed amount
+  if (UintToArith256 (hdr.GetPowHash (coreAlgo)) > bnTarget)
+    return false;
+
+  return true;
 }
