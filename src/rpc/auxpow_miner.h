@@ -6,6 +6,7 @@
 #define BITCOIN_RPC_AUXPOW_MINER_H
 
 #include <miner.h>
+#include <powdata.h>
 #include <script/script.h>
 #include <sync.h>
 #include <uint256.h>
@@ -60,7 +61,8 @@ private:
    * that should be returned to a miner for working on at the moment.  Also
    * fills in the difficulty target value.
    */
-  const CBlock* getCurrentBlock (const CScript& scriptPubKey, uint256& target);
+  const CBlock* getCurrentBlock (PowAlgo algo, const CScript& scriptPubKey,
+                                 uint256& target);
 
   /**
    * Looks up a previously constructed block by its (hex-encoded) hash.  If the

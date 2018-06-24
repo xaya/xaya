@@ -103,19 +103,29 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
     return GetNetworkHashPS(!request.params[0].isNull() ? request.params[0].get_int() : 120, !request.params[1].isNull() ? request.params[1].get_int() : -1);
 }
 
+static PowAlgo
+powAlgoFromJson (const UniValue& algoJson)
+{
+  if (algoJson.isNull ())
+    return PowAlgo::NEOSCRYPT;
+
+  try
+    {
+      return PowAlgoFromString (algoJson.get_str ());
+    }
+  catch (const std::invalid_argument& exc)
+    {
+      throw JSONRPCError (RPC_INVALID_PARAMETER, exc.what ());
+    }
+}
+
 UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson, bool keepScript)
 {
     static const int nInnerLoopCount = 0x10000;
     int nHeightEnd = 0;
     int nHeight = 0;
 
-    PowAlgo algo = PowAlgo::NEOSCRYPT;
-    try {
-        if (!algoJson.isNull())
-            algo = PowAlgoFromString (algoJson.get_str());
-    } catch (const std::invalid_argument& exc) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, exc.what());
-    }
+    const PowAlgo algo = powAlgoFromJson(algoJson);
 
     {   // Don't keep cs_main locked
         LOCK(cs_main);
@@ -126,8 +136,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
-        pblocktemplate->SelectAlgo (algo);
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(algo, coinbaseScript->reserveScript));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -315,6 +324,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "1. template_request         (json object, optional) A json object in the following spec\n"
             "     {\n"
             "       \"mode\":\"template\"    (string, optional) This must be set to \"template\", \"proposal\" (see BIP 23), or omitted\n"
+            "       \"algo\":\"algo\"        (string, optional) The PoW algo to use (default: neoscrypt)\n"
             "       \"capabilities\":[     (array, optional) A list of strings\n"
             "           \"support\"          (string) client side supported feature, 'longpoll', 'coinbasetxn', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n"
             "           ,...\n"
@@ -368,7 +378,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
-            "  \"bits\" :                          (json object) dictionary with target bits for the next block with each mining algorithm\n"
+            "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
 
@@ -383,6 +393,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue lpval = NullUniValue;
     std::set<std::string> setClientRules;
     int64_t nMaxVersionPreVB = -1;
+    PowAlgo algo = PowAlgo::NEOSCRYPT;
     if (!request.params[0].isNull())
     {
         const UniValue& oparam = request.params[0].get_obj();
@@ -396,6 +407,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         else
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
         lpval = find_value(oparam, "longpollid");
+        algo = powAlgoFromJson(find_value(oparam, "algo"));
 
         if (strMode == "proposal")
         {
@@ -514,6 +526,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     // a segwit-block to a non-segwit caller.
     static bool fLastTemplateSupportsSegwit = true;
     if (pindexPrev != chainActive.Tip() ||
+        pblocktemplate->block.pow.getCoreAlgo() != algo ||
         (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 5) ||
         fLastTemplateSupportsSegwit != fSupportsSegwit)
     {
@@ -528,7 +541,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, fSupportsSegwit);
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(algo, scriptDummy, fSupportsSegwit);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -677,13 +690,8 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
+    result.pushKV("bits", strprintf("%08x", pblock->pow.getBits()));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
-
-    UniValue bits(UniValue::VOBJ);
-    for (const auto& entry : pblocktemplate->bitsForAlgo)
-      bits.pushKV (PowAlgoToString (entry.first),
-                   strprintf("%08x", entry.second));
-    result.pushKV ("bits", bits);
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
         result.pushKV("default_witness_commitment", HexStr(pblocktemplate->vchCoinbaseCommitment.begin(), pblocktemplate->vchCoinbaseCommitment.end()));

@@ -8,7 +8,6 @@
 #include <auxpow.h>
 #include <chainparams.h>
 #include <net.h>
-#include <powdata.h>
 #include <primitives/pureheader.h>
 #include <rpc/protocol.h>
 #include <streams.h>
@@ -41,13 +40,15 @@ void auxMiningCheck()
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
+AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
+                              uint256& target)
 {
   AssertLockHeld (cs);
 
   {
     LOCK (cs_main);
     if (pindexPrev != chainActive.Tip ()
+        || pblockCur->pow.getCoreAlgo () != algo
         || (mempool.GetTransactionsUpdated () != txUpdatedLast
             && GetTime () - startTime > 60))
       {
@@ -61,7 +62,7 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
-            = BlockAssembler (Params ()).CreateNewBlock (scriptPubKey);
+            = BlockAssembler (Params ()).CreateNewBlock (algo, scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
@@ -72,10 +73,6 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
         /* Finalise it by building the merkle root.  */
         IncrementExtraNonce (&newBlock->block, pindexPrev, extraNonce);
-
-        /* Select a mining algorithm.  */
-        // FIXME: Postpone this step to later, so that the miner can decide.
-        newBlock->SelectAlgo (PowAlgo::NEOSCRYPT);
 
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;
@@ -123,7 +120,8 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
   LOCK (cs);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (scriptPubKey, target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::SHA256D, scriptPubKey,
+                                          target);
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
@@ -168,7 +166,8 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   LOCK (cs);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (scriptPubKey, target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::NEOSCRYPT, scriptPubKey,
+                                          target);
 
   CPureBlockHeader fakeHeader;
   fakeHeader.SetNull ();
