@@ -227,7 +227,8 @@ class GetinfoRequestHandler: public BaseRequestHandler
 public:
     const int ID_NETWORKINFO = 0;
     const int ID_BLOCKCHAININFO = 1;
-    const int ID_WALLETINFO = 2;
+    const int ID_MININGINFO = 2;
+    const int ID_WALLETINFO = 3;
 
     /** Create a simulated `getinfo` request. */
     UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
@@ -238,6 +239,7 @@ public:
         UniValue result(UniValue::VARR);
         result.push_back(JSONRPCRequestObj("getnetworkinfo", NullUniValue, ID_NETWORKINFO));
         result.push_back(JSONRPCRequestObj("getblockchaininfo", NullUniValue, ID_BLOCKCHAININFO));
+        result.push_back(JSONRPCRequestObj("getmininginfo", NullUniValue, ID_MININGINFO));
         result.push_back(JSONRPCRequestObj("getwalletinfo", NullUniValue, ID_WALLETINFO));
         return result;
     }
@@ -246,7 +248,7 @@ public:
     UniValue ProcessReply(const UniValue &batch_in) override
     {
         UniValue result(UniValue::VOBJ);
-        std::vector<UniValue> batch = JSONRPCProcessBatchReply(batch_in, 3);
+        std::vector<UniValue> batch = JSONRPCProcessBatchReply(batch_in, 4);
         // Errors in getnetworkinfo() and getblockchaininfo() are fatal, pass them on
         // getwalletinfo() is allowed to fail in case there is no wallet.
         if (!batch[ID_NETWORKINFO]["error"].isNull()) {
@@ -254,6 +256,9 @@ public:
         }
         if (!batch[ID_BLOCKCHAININFO]["error"].isNull()) {
             return batch[ID_BLOCKCHAININFO];
+        }
+        if (!batch[ID_MININGINFO]["error"].isNull()) {
+            return batch[ID_MININGINFO];
         }
         result.pushKV("version", batch[ID_NETWORKINFO]["result"]["version"]);
         result.pushKV("protocolversion", batch[ID_NETWORKINFO]["result"]["protocolversion"]);
@@ -265,7 +270,7 @@ public:
         result.pushKV("timeoffset", batch[ID_NETWORKINFO]["result"]["timeoffset"]);
         result.pushKV("connections", batch[ID_NETWORKINFO]["result"]["connections"]);
         result.pushKV("proxy", batch[ID_NETWORKINFO]["result"]["networks"][0]["proxy"]);
-        result.pushKV("difficulty", batch[ID_BLOCKCHAININFO]["result"]["difficulty"]);
+        result.pushKV("difficulty", batch[ID_MININGINFO]["result"]["difficulty"]);
         result.pushKV("testnet", UniValue(batch[ID_BLOCKCHAININFO]["result"]["chain"].get_str() == "test"));
         if (!batch[ID_WALLETINFO].isNull()) {
             result.pushKV("walletversion", batch[ID_WALLETINFO]["result"]["walletversion"]);

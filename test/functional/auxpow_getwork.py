@@ -73,6 +73,7 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     assert_equal (data['algo'], 'neoscrypt')
     assert_equal (data['mergemined'], False)
     assert_equal (data['bits'], '207fffff')
+    assert 'difficulty' in data
     fakeHeader = codecs.decode (solved, 'hex_codec')
     fakeHeader = auxpow.getworkByteswap (fakeHeader)
     fakeHeader = codecs.encode (fakeHeader, 'hex_codec')

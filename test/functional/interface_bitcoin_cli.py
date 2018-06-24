@@ -48,6 +48,7 @@ class TestBitcoinCli(BitcoinTestFramework):
         cli_get_info = self.nodes[0].cli('-getinfo').send_cli()
         wallet_info = self.nodes[0].getwalletinfo()
         network_info = self.nodes[0].getnetworkinfo()
+        mining_info = self.nodes[0].getmininginfo()
         blockchain_info = self.nodes[0].getblockchaininfo()
 
         assert_equal(cli_get_info['version'], network_info['version'])
@@ -58,7 +59,7 @@ class TestBitcoinCli(BitcoinTestFramework):
         assert_equal(cli_get_info['timeoffset'], network_info['timeoffset'])
         assert_equal(cli_get_info['connections'], network_info['connections'])
         assert_equal(cli_get_info['proxy'], network_info['networks'][0]['proxy'])
-        assert_equal(cli_get_info['difficulty'], blockchain_info['difficulty'])
+        assert_equal(cli_get_info['difficulty'], mining_info['difficulty'])
         assert_equal(cli_get_info['testnet'], blockchain_info['chain'] == "test")
         assert_equal(cli_get_info['balance'], wallet_info['balance'])
         assert_equal(cli_get_info['keypoololdest'], wallet_info['keypoololdest'])
