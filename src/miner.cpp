@@ -170,7 +170,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const PowAlgo alg
     pblock->nBits          = 0;
     pblock->nNonce         = 0;
     pblock->pow.setCoreAlgo(algo);
-    pblock->pow.setBits(GetNextWorkRequired(pindexPrev, chainparams.GetConsensus()));
+    pblock->pow.setBits(GetNextWorkRequired(algo, pindexPrev, chainparams.GetConsensus()));
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;

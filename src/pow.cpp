@@ -7,6 +7,7 @@
 
 #include <arith_uint256.h>
 #include <chain.h>
+#include <powdata.h>
 #include <primitives/block.h>
 #include <uint256.h>
 
@@ -67,7 +68,7 @@ DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) 
 
 } // anonymous namespace
 
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
+unsigned int GetNextWorkRequired(const PowAlgo /*algo*/, const CBlockIndex* pindexLast, const Consensus::Params& params)
 {
     if (params.fPowNoRetargeting)
         return pindexLast->nBits;
