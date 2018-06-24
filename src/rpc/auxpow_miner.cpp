@@ -125,7 +125,7 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
-  result.pushKV ("algo", "sha256d");
+  result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("chainid", Params ().GetConsensus ().nAuxpowChainId);
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
@@ -187,7 +187,7 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
   result.pushKV ("data", HexStr (data.begin (), data.end ()));
-  result.pushKV ("algo", "neoscrypt");
+  result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
