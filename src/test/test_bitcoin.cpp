@@ -157,7 +157,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
     }
 
     auto& fakeHeader = block.pow.initFakeHeader (block);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(block.pow.getCoreAlgo()), block.pow.getBits(), chainparams.GetConsensus())) ++fakeHeader.nNonce;
+    while (!block.pow.checkProofOfWork(fakeHeader, chainparams.GetConsensus())) ++fakeHeader.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);

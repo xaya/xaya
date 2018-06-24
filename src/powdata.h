@@ -27,11 +27,18 @@ enum class PowAlgo : uint8_t
 };
 
 /**
- * Return the relative factor (actually, the binary log of it) of how much
+ * Returns the relative factor (actually, the binary log of it) of how much
  * harder the given PowAlgo is than SHA256D.  This is used to correct the
  * chain work to make the different algorithms comparable.
  */
 int powAlgoLog2Weight (PowAlgo algo);
+
+/**
+ * Returns the maximal target hash for the given PoW algo (corresponding to
+ * the minimal difficulty).  This is based on the chainparams-configured
+ * powLimitNeoscrypt and then adapted based on the relative PoW difficulties.
+ */
+uint256 powLimitForAlgo (PowAlgo algo, const Consensus::Params& params);
 
 /* Conversion between (core) PowAlgo and string representations of it for
    the external interfaces.  The methods throw std::invalid_argument in case
@@ -151,6 +158,14 @@ public:
    * main-block hash and consensus parameters.
    */
   bool isValid (const uint256& hash, const Consensus::Params& params) const;
+
+  /**
+   * Verifies whether the given PoW header has valid PoW with respect to this
+   * data's target and algorithm.  This only verifies the PoW, but does not
+   * check that any commitment to the right block header is made.
+   */
+  bool checkProofOfWork (const CPureBlockHeader& hdr,
+                         const Consensus::Params& params) const;
 
 };
 

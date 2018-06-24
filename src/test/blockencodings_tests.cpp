@@ -54,7 +54,7 @@ static CBlock BuildBlockTestCase() {
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
     auto& fakeHeader = block.pow.initFakeHeader(block);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(block.pow.getCoreAlgo()), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
+    while (!block.pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) ++fakeHeader.nNonce;
     return block;
 }
 
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
     auto& fakeHeader = block.pow.initFakeHeader(block);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(block.pow.getCoreAlgo()), block.pow.getBits(), Params().GetConsensus())) ++fakeHeader.nNonce;
+    while (!block.pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) ++fakeHeader.nNonce;
 
     // Test simple header round-trip with only coinbase
     {

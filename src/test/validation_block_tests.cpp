@@ -73,7 +73,7 @@ std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
     auto& fakeHeader = pblock->pow.initFakeHeader(*pblock);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(pblock->pow.getCoreAlgo()), pblock->pow.getBits(), Params().GetConsensus())) {
+    while (!pblock->pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
         ++(fakeHeader.nNonce);
     }
 

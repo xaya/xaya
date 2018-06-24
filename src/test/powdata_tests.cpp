@@ -2,6 +2,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <arith_uint256.h>
 #include <chainparams.h>
 #include <consensus/params.h>
 #include <pow.h>
@@ -9,6 +10,7 @@
 #include <primitives/block.h>
 #include <primitives/pureheader.h>
 #include <streams.h>
+#include <uint256.h>
 #include <utilstrencodings.h>
 
 #include <test/test_bitcoin.h>
@@ -39,6 +41,28 @@ BOOST_AUTO_TEST_CASE (powalgo_from_string)
   BOOST_CHECK (PowAlgoFromString ("neoscrypt") == PowAlgo::NEOSCRYPT);
   BOOST_CHECK_THROW (PowAlgoFromString (""), std::invalid_argument);
   BOOST_CHECK_THROW (PowAlgoFromString ("foo"), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE (powlimit_for_algo_mainnet)
+{
+  const auto& params = Params ().GetConsensus ();
+  const arith_uint256 limitSha256
+      = UintToArith256 (powLimitForAlgo (PowAlgo::SHA256D, params));
+  const arith_uint256 limitNeoscrypt
+      = UintToArith256 (powLimitForAlgo (PowAlgo::NEOSCRYPT, params));
+  BOOST_CHECK (ArithToUint256 (limitNeoscrypt) == params.powLimitNeoscrypt);
+  BOOST_CHECK (limitNeoscrypt > limitSha256);
+  BOOST_CHECK (limitSha256 == limitNeoscrypt / 1024);
+}
+
+BOOST_AUTO_TEST_CASE (powlimit_for_algo_regtest)
+{
+  SelectParams (CBaseChainParams::REGTEST);
+  const auto& params = Params ().GetConsensus ();
+  BOOST_CHECK (powLimitForAlgo (PowAlgo::SHA256D, params)
+                == params.powLimitNeoscrypt);
+  BOOST_CHECK (powLimitForAlgo (PowAlgo::SHA256D, params)
+                == powLimitForAlgo (PowAlgo::NEOSCRYPT, params));
 }
 
 /* ************************************************************************** */
@@ -96,9 +120,7 @@ void
 MineFakeHeader (CPureBlockHeader& hdr, const PowData& data,
                 const Consensus::Params& params, const bool ok)
 {
-  while (CheckProofOfWork (hdr.GetPowHash (data.getCoreAlgo ()),
-                           data.getBits (), params)
-            != ok)
+  while (data.checkProofOfWork (hdr, params) != ok)
     ++hdr.nNonce;
 }
 

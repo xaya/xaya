@@ -4,6 +4,7 @@
 
 #include <powdata.h>
 
+#include <arith_uint256.h>
 #include <pow.h>
 #include <util.h>
 
@@ -22,6 +23,23 @@ powAlgoLog2Weight (const PowAlgo algo)
     default:
       assert (false);
     }
+}
+
+uint256
+powLimitForAlgo (const PowAlgo algo, const Consensus::Params& params)
+{
+  /* Special rule for regtest net:  Always just return the minimal powLimit
+     from the chain params.  */
+  if (params.fPowNoRetargeting)
+    return params.powLimitNeoscrypt;
+
+  arith_uint256 result = UintToArith256 (params.powLimitNeoscrypt);
+  const int log2Diff = powAlgoLog2Weight (PowAlgo::NEOSCRYPT)
+                        - powAlgoLog2Weight (algo);
+  assert (log2Diff >= 0);
+  result >>= log2Diff;
+
+  return ArithToUint256 (result);
 }
 
 PowAlgo
@@ -103,9 +121,17 @@ PowData::isValid (const uint256& hash, const Consensus::Params& params) const
     return error ("%s: PoW data has no fake header", __func__);
   if (fakeHeader->hashMerkleRoot != hash)
     return error ("%s: fake header commits to wrong hash", __func__);
-  if (!CheckProofOfWork (fakeHeader->GetPowHash (getCoreAlgo ()),
-                         getBits (), params))
+  if (!checkProofOfWork (*fakeHeader, params))
     return error ("%s: fake header PoW is invalid", __func__);
 
   return true;
+}
+
+bool
+PowData::checkProofOfWork (const CPureBlockHeader& hdr,
+                           const Consensus::Params& params) const
+{
+  const PowAlgo coreAlgo = getCoreAlgo ();
+  return CheckProofOfWork (hdr.GetPowHash (coreAlgo), getBits (),
+                           powLimitForAlgo (coreAlgo, params));
 }

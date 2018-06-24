@@ -367,9 +367,9 @@ mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
     }
 
   if (ok)
-    BOOST_CHECK (CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus()));
+    BOOST_CHECK (CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus().powLimitNeoscrypt));
   else
-    BOOST_CHECK (!CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus()));
+    BOOST_CHECK (!CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus().powLimitNeoscrypt));
 }
 
 // FIXME: Re-enable with proper auxpow support in Chimaera.
