@@ -28,6 +28,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
+#include <map>
 #include <stdint.h>
 #include <stdexcept>
 #include <string>
@@ -61,24 +62,50 @@ static UniValue GetNetworkHashPS(int lookup, int height) {
     if (lookup > pb->nHeight)
         lookup = pb->nHeight;
 
+    /* With different mining algos, we can not simply look at the chain work
+       difference as upstream Bitcoin does.  But we can add up the block proofs
+       for each algo separately to estimate the hash rate in each later on.  */
+    std::map<PowAlgo, arith_uint256> proofPerAlgo;
+
+    /* Explicitly initialise both algos so that we always get them in the
+       result later, even if the number of hashes is zero.  */
+    proofPerAlgo[PowAlgo::SHA256D] = 0;
+    proofPerAlgo[PowAlgo::NEOSCRYPT] = 0;
+
     CBlockIndex *pb0 = pb;
     int64_t minTime = pb0->GetBlockTime();
     int64_t maxTime = minTime;
     for (int i = 0; i < lookup; i++) {
+        arith_uint256 currentProof = GetBlockProof (*pb0);
+        /* Undo the algo-weight correction, since we want actual hashes
+           per algo and not the comparable work.  */
+        currentProof >>= powAlgoLog2Weight (pb0->algo);
+        proofPerAlgo[pb0->algo] += currentProof;
+
         pb0 = pb0->pprev;
         int64_t time = pb0->GetBlockTime();
         minTime = std::min(time, minTime);
         maxTime = std::max(time, maxTime);
     }
+    const int64_t timeDiff = maxTime - minTime;
 
-    // In case there's a situation where minTime == maxTime, we don't want a divide by zero exception.
-    if (minTime == maxTime)
-        return 0;
+    UniValue result(UniValue::VOBJ);
+    for (const auto& entry : proofPerAlgo)
+      {
+        double hashps;
+        if (timeDiff == 0)
+          {
+            /* In case there's a situation where minTime == maxTime, we don't
+               want a divide by zero exception.  */
+            hashps = 0.0;
+          }
+        else
+          hashps = entry.second.getdouble () / timeDiff;
 
-    arith_uint256 workDiff = pb->nChainWork - pb0->nChainWork;
-    int64_t timeDiff = maxTime - minTime;
+        result.pushKV (PowAlgoToString (entry.first), hashps);
+      }
 
-    return workDiff.getdouble() / timeDiff;
+    return result;
 }
 
 static UniValue getnetworkhashps(const JSONRPCRequest& request)
@@ -93,7 +120,10 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
             "1. nblocks     (numeric, optional, default=120) The number of blocks.\n"
             "2. height      (numeric, optional, default=-1) To estimate at the time of the given height.\n"
             "\nResult:\n"
-            "x             (numeric) Hashes per second estimated\n"
+            "{\n"
+            "  \"sha256d\": x,              (numeric) Estimated hashes per second for SHA256D\n"
+            "  \"neoscrypt\": x,            (numeric) Estimated hashes per second for Neoscrypt\n"
+            "}\n"
             "\nExamples:\n"
             + HelpExampleCli("getnetworkhashps", "")
             + HelpExampleRpc("getnetworkhashps", "")
@@ -217,7 +247,7 @@ static UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"currentblockweight\": nnn, (numeric) The last block weight\n"
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
             "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
+            "  \"networkhashps\"            (json object) The network hashes per second for each algo\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
