@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2016 Daniel Kraft
+# Copyright (c) 2014-2018 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -101,6 +101,20 @@ def getCoinbaseAddr (node, blockHash):
     assert len (addr) == 1
     return addr[0]
 
+def doubleHashHex (data):
+  """
+  Perform Bitcoin's Double-SHA256 hash on the given hex string.
+  """
+
+  hasher = hashlib.sha256 ()
+  hasher.update (binascii.unhexlify (data))
+  data = hasher.digest ()
+
+  hasher = hashlib.sha256 ()
+  hasher.update (data)
+
+  return reverseHex (hasher.hexdigest ())
+
 def mineBlock (header, target, ok):
   """
   Given a block header, update the nonce until it is ok (or not)
@@ -118,20 +132,6 @@ def mineBlock (header, target, ok):
       break
 
   return (hexData, blockhash)
-
-def doubleHashHex (data):
-  """
-  Perform Bitcoin's Double-SHA256 hash on the given hex string.
-  """
-
-  hasher = hashlib.sha256 ()
-  hasher.update (binascii.unhexlify (data))
-  data = hasher.digest ()
-
-  hasher = hashlib.sha256 ()
-  hasher.update (data)
-
-  return reverseHex (hasher.hexdigest ())
 
 def reverseHex (data):
   """
