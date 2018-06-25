@@ -43,6 +43,25 @@ tamperWith (uint256& num)
 }
 
 /**
+ * Helper class that is friend to CAuxPow and makes the internals accessible
+ * to the test code.
+ */
+class CAuxPowForTest : public CAuxPow
+{
+
+public:
+
+  explicit inline CAuxPowForTest (CTransactionRef txIn)
+    : CAuxPow (txIn)
+  {}
+
+  using CAuxPow::vChainMerkleBranch;
+  using CAuxPow::nChainIndex;
+  using CAuxPow::parentBlock;
+
+};
+
+/**
  * Utility class to construct auxpow's and manipulate them.  This is used
  * to simulate various scenarios.
  */
@@ -171,7 +190,7 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
 {
   LOCK(cs_main);
 
-  CAuxPow res(tx);
+  CAuxPowForTest res(tx);
   res.hashBlock = parentBlock.GetHash ();
   res.nIndex = 0;
   res.vMerkleBranch = merkle_tests::BlockMerkleBranch (parentBlock, res.nIndex);

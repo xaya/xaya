@@ -73,7 +73,7 @@ std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
     CAuxPow::initAuxPow(*pblock);
-    CPureBlockHeader& miningHeader = pblock->auxpow->parentBlock;
+    CPureBlockHeader& miningHeader = pblock->auxpow->getParentBlock();
 
     while (!CheckProofOfWork(miningHeader.GetHash(), pblock->nBits, Params().GetConsensus())) {
         ++(miningHeader.nNonce);

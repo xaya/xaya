@@ -76,8 +76,6 @@ double GetDifficulty(const CBlockIndex* blockindex)
     return dDiff;
 }
 
-namespace
-{
 UniValue AuxpowToJSON(const CAuxPow& auxpow)
 {
     UniValue result(UniValue::VOBJ);
@@ -113,7 +111,6 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
 
     return result;
 }
-} // anonymous namespace
 
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {

@@ -19,6 +19,12 @@ class CBlock;
 class CBlockHeader;
 class CBlockIndex;
 class CValidationState;
+class UniValue;
+
+namespace auxpow_tests
+{
+class CAuxPowForTest;
+}
 
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
@@ -107,8 +113,7 @@ public:
 class CAuxPow : public CMerkleTx
 {
 
-/* Public for the unit tests.  */
-public:
+private:
 
   /** The merkle branch connecting the aux block to our coinbase.  */
   std::vector<uint256> vChainMerkleBranch;
@@ -118,6 +123,9 @@ public:
 
   /** Parent block header (on which the real PoW is done).  */
   CPureBlockHeader parentBlock;
+
+  friend UniValue AuxpowToJSON(const CAuxPow& auxpow);
+  friend class auxpow_tests::CAuxPowForTest;
 
 public:
 
@@ -154,15 +162,18 @@ public:
   bool check (const uint256& hashAuxBlock, int nChainId,
               const Consensus::Params& params) const;
 
-  /**
-   * Get the parent block's hash.  This is used to verify that it
-   * satisfies the PoW requirement.
-   * @return The parent block hash.
-   */
-  inline uint256
-  getParentBlockHash () const
+  /* Accessors for the parent block.  */
+
+  inline CPureBlockHeader&
+  getParentBlock ()
   {
-    return parentBlock.GetHash ();
+    return parentBlock;
+  }
+
+  inline const CPureBlockHeader&
+  getParentBlock () const
+  {
+    return parentBlock;
   }
 
   /**

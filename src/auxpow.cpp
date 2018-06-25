@@ -12,6 +12,7 @@
 #include <consensus/merkle.h>
 #include <consensus/validation.h>
 #include <hash.h>
+#include <primitives/block.h>
 #include <script/script.h>
 #include <txmempool.h>
 #include <util.h>
