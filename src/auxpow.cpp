@@ -68,7 +68,7 @@ bool
 CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
                 const Consensus::Params& params) const
 {
-    if (nIndex != 0)
+    if (coinbaseTx.nIndex != 0)
         return error("AuxPow is not a generate");
 
     if (params.fStrictChainId && parentBlock.GetChainId () == nChainId)
@@ -84,11 +84,12 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
     std::reverse (vchRootHash.begin (), vchRootHash.end ()); // correct endian
 
     // Check that we are in the parent block merkle tree
-    if (CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex)
+    if (CheckMerkleBranch(coinbaseTx.GetHash(), coinbaseTx.vMerkleBranch,
+                          coinbaseTx.nIndex)
           != parentBlock.hashMerkleRoot)
         return error("Aux POW merkle root incorrect");
 
-    const CScript script = tx->vin[0].scriptSig;
+    const CScript script = coinbaseTx.tx->vin[0].scriptSig;
 
     // Check that the same work is not submitted twice to our chain.
     //
@@ -220,8 +221,8 @@ CAuxPow::createAuxPow (const CPureBlockHeader& header)
   std::unique_ptr<CAuxPow> auxpow(new CAuxPow (coinbaseRef));
   assert (auxpow->vChainMerkleBranch.empty ());
   auxpow->nChainIndex = 0;
-  assert (auxpow->vMerkleBranch.empty ());
-  auxpow->nIndex = 0;
+  assert (auxpow->coinbaseTx.vMerkleBranch.empty ());
+  auxpow->coinbaseTx.nIndex = 0;
   auxpow->parentBlock = parent;
 
   return auxpow;

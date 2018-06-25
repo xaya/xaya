@@ -55,6 +55,7 @@ public:
     : CAuxPow (txIn)
   {}
 
+  using CAuxPow::coinbaseTx;
   using CAuxPow::vChainMerkleBranch;
   using CAuxPow::nChainIndex;
   using CAuxPow::parentBlock;
@@ -191,9 +192,10 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   LOCK(cs_main);
 
   CAuxPowForTest res(tx);
-  res.hashBlock = parentBlock.GetHash ();
-  res.nIndex = 0;
-  res.vMerkleBranch = merkle_tests::BlockMerkleBranch (parentBlock, res.nIndex);
+  res.coinbaseTx.hashBlock = parentBlock.GetHash ();
+  res.coinbaseTx.nIndex = 0;
+  res.coinbaseTx.vMerkleBranch
+      = merkle_tests::BlockMerkleBranch (parentBlock, res.coinbaseTx.nIndex);
 
   res.vChainMerkleBranch = auxpowChainMerkleBranch;
   res.nChainIndex = auxpowChainIndex;

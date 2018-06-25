@@ -106,15 +106,20 @@ public:
 };
 
 /**
- * Data for the merge-mining auxpow.  This is a merkle tx (the parent block's
- * coinbase tx) that can be verified to be in the parent block, and this
- * transaction's input (the coinbase script) contains the reference
- * to the actual merge-mined block.
+ * Data for the merge-mining auxpow.  This uses a merkle tx (the parent block's
+ * coinbase tx) and a manual merkle branch to link the actual Namecoin block
+ * header to the parent block header, which is mined to satisfy the PoW.
  */
-class CAuxPow : public CMerkleTx
+class CAuxPow
 {
 
 private:
+
+  /**
+   * The parent block's coinbase tx, which is used to link the auxpow from
+   * the tx input to the parent block header.
+   */
+  CMerkleTx coinbaseTx;
 
   /** The merkle branch connecting the aux block to our coinbase.  */
   std::vector<uint256> vChainMerkleBranch;
@@ -132,12 +137,10 @@ public:
 
   /* Prevent accidental conversion.  */
   inline explicit CAuxPow (CTransactionRef txIn)
-    : CMerkleTx (txIn)
+    : coinbaseTx (txIn)
   {}
 
-  inline CAuxPow ()
-    : CMerkleTx ()
-  {}
+  CAuxPow () = default;
 
   ADD_SERIALIZE_METHODS;
 
@@ -145,7 +148,7 @@ public:
     inline void
     SerializationOp (Stream& s, Operation ser_action)
   {
-    READWRITE (*static_cast<CMerkleTx*> (this));
+    READWRITE (coinbaseTx);
     READWRITE (vChainMerkleBranch);
     READWRITE (nChainIndex);
     READWRITE (parentBlock);
