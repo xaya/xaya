@@ -130,6 +130,14 @@ private:
   /** Parent block header (on which the real PoW is done).  */
   CPureBlockHeader parentBlock;
 
+  /**
+   * Check a merkle branch.  This used to be in CBlock, but was removed
+   * upstream.  Thus include it here now.
+   */
+  static uint256 CheckMerkleBranch (uint256 hash,
+                                    const std::vector<uint256>& vMerkleBranch,
+                                    int nIndex);
+
   friend UniValue AuxpowToJSON(const CAuxPow& auxpow);
   friend class auxpow_tests::CAuxPowForTest;
 
@@ -184,14 +192,6 @@ public:
    * @return The expected index for the aux hash.
    */
   static int getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h);
-
-  /**
-   * Check a merkle branch.  This used to be in CBlock, but was removed
-   * upstream.  Thus include it here now.
-   */
-  static uint256 CheckMerkleBranch (uint256 hash,
-                                    const std::vector<uint256>& vMerkleBranch,
-                                    int nIndex);
 
   /**
    * Constructs a minimal CAuxPow object for the given block header and

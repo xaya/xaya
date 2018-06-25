@@ -60,6 +60,8 @@ public:
   using CAuxPow::nChainIndex;
   using CAuxPow::parentBlock;
 
+  using CAuxPow::CheckMerkleBranch;
+
 };
 
 /**
@@ -178,7 +180,8 @@ CAuxpowBuilder::buildAuxpowChain (const uint256& hashAux, unsigned h, int index)
     auxpowChainMerkleBranch.push_back (ArithToUint256 (arith_uint256 (i)));
 
   const uint256 hash
-    = CAuxPow::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch, index);
+    = CAuxPowForTest::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch,
+                                         index);
 
   valtype res = ToByteVector (hash);
   std::reverse (res.begin (), res.end ());
