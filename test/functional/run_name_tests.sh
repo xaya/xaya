@@ -3,6 +3,9 @@
 echo "\nName expiration..."
 ./name_expiration.py
 
+echo "\nName with immature name_new..."
+./name_immature_new.py
+
 echo "\nName list..."
 ./name_list.py
 
