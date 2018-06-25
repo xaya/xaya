@@ -3,12 +3,12 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-# Test for handling of immature name_new's in the mempool and when mining.
+# Test for handling of immature inputs for name operations.
 
 from test_framework.names import NameTestFramework
 from test_framework.util import *
 
-class NameImmatureNewTest (NameTestFramework):
+class NameImmatureInputsTest (NameTestFramework):
 
   def set_test_params (self):
     # We need two nodes so that getblocktemplate doesn't complain about
@@ -106,4 +106,4 @@ class NameImmatureNewTest (NameTestFramework):
     self.checkName (0, "d", "new value", 30, False)
 
 if __name__ == '__main__':
-  NameImmatureNewTest ().main ()
+  NameImmatureInputsTest ().main ()
