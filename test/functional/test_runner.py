@@ -156,6 +156,7 @@ BASE_SCRIPTS = [
     'auxpow_getwork.py --segwit',
 
     # name tests
+    'name_immature_inputs.py',
     'name_list.py',
     'name_listunspent.py',
     'name_multisig.py',

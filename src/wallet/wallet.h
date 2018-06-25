@@ -268,6 +268,7 @@ public:
     char fFromMe;
     std::string strFromAccount;
     int64_t nOrderPos; //!< position in ordered transaction list
+    std::multimap<int64_t, std::pair<CWalletTx*, CAccountingEntry*>>::const_iterator m_it_wtxOrdered;
 
     // memory only
     mutable bool fDebitCached;
@@ -1044,6 +1045,9 @@ public:
 
     //! Flush wallet (bitdb flush)
     void Flush(bool shutdown=false);
+
+    /** Wallet is about to be unloaded */
+    boost::signals2::signal<void ()> NotifyUnload;
 
     /**
      * Address book entry changed.

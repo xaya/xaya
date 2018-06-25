@@ -1,5 +1,8 @@
 #!/bin/sh
 
+echo "\nName with immature inputs..."
+./name_immature_inputs.py
+
 echo "\nName list..."
 ./name_list.py
 
