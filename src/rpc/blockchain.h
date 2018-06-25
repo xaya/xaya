@@ -5,18 +5,17 @@
 #ifndef BITCOIN_RPC_BLOCKCHAIN_H
 #define BITCOIN_RPC_BLOCKCHAIN_H
 
+#include <cstdint>
+
 class CBlock;
 class CBlockIndex;
 class UniValue;
+class JSONRPCRequest;
 
 /**
- * Get the difficulty of the net wrt to the given block index, or the chain tip if
- * not provided.
- *
- * @return A floating point number that is a multiple of the main net minimum
- * difficulty (4295032833 hashes).
+ * Returns the numeric difficulty for the given nBits.
  */
-double GetDifficulty(const CBlockIndex* blockindex);
+double GetDifficultyForBits(uint32_t nBits);
 
 /** Callback for when block tip changed. */
 void RPCNotifyBlockChange(bool ibd, const CBlockIndex *);
@@ -32,5 +31,7 @@ UniValue mempoolToJSON(bool fVerbose = false);
 
 /** Block header to JSON */
 UniValue blockheaderToJSON(const CBlockIndex* blockindex);
+
+UniValue getdifficulty(const JSONRPCRequest& request);
 
 #endif

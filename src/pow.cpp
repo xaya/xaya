@@ -7,88 +7,71 @@
 
 #include <arith_uint256.h>
 #include <chain.h>
-#include <primitives/block.h>
+#include <powdata.h>
 #include <uint256.h>
 
-namespace
-{
-
-// DGW difficulty update taken from Dash.
 unsigned int
-DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) {
-    /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
-    const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
-    constexpr int64_t nPastBlocks = 24;
-
-    // make sure we have at least (nPastBlocks + 1) blocks, otherwise just return powLimit
-    if (!pindexLast || pindexLast->nHeight < nPastBlocks) {
-        return bnPowLimit.GetCompact();
-    }
-
-    const CBlockIndex *pindex = pindexLast;
-    arith_uint256 bnPastTargetAvg;
-
-    for (unsigned int nCountBlocks = 1; nCountBlocks <= nPastBlocks; nCountBlocks++) {
-        const arith_uint256 bnTarget = arith_uint256().SetCompact(pindex->nBits);
-        if (nCountBlocks == 1) {
-            bnPastTargetAvg = bnTarget;
-        } else {
-            // NOTE: that's not an average really...
-            bnPastTargetAvg = (bnPastTargetAvg * nCountBlocks + bnTarget) / (nCountBlocks + 1);
-        }
-
-        if(nCountBlocks != nPastBlocks) {
-            assert(pindex->pprev); // should never fail
-            pindex = pindex->pprev;
-        }
-    }
-
-    arith_uint256 bnNew(bnPastTargetAvg);
-
-    int64_t nActualTimespan = pindexLast->GetBlockTime() - pindex->GetBlockTime();
-    // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
-    int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
-
-    if (nActualTimespan < nTargetTimespan/3)
-        nActualTimespan = nTargetTimespan/3;
-    if (nActualTimespan > nTargetTimespan*3)
-        nActualTimespan = nTargetTimespan*3;
-
-    // Retarget
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
-
-    if (bnNew > bnPowLimit) {
-        bnNew = bnPowLimit;
-    }
-
-    return bnNew.GetCompact();
-}
-
-} // anonymous namespace
-
-unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params)
+GetNextWorkRequired (const PowAlgo algo, const CBlockIndex* pindexLast,
+                     const Consensus::Params& params)
 {
-    if (params.fPowNoRetargeting)
-        return pindexLast->nBits;
-    return DarkGravityWave (pindexLast, params);
-}
+  const arith_uint256 bnPowLimit
+      = UintToArith256 (powLimitForAlgo (algo, params));
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
-{
-    bool fNegative;
-    bool fOverflow;
-    arith_uint256 bnTarget;
+  if (pindexLast == nullptr || params.fPowNoRetargeting)
+      return bnPowLimit.GetCompact ();
 
-    bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+  /* The actual difficulty update below is DGW taken from Dash, except that
+     we have to look at blocks of only one algo explicitly.  */
 
-    // Check range
-    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > UintToArith256(params.powLimit))
-        return false;
+  constexpr int64_t nPastBlocks = 24;
 
-    // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
-        return false;
+  pindexLast = pindexLast->GetLastAncestorWithAlgo (algo);
+  if (pindexLast == nullptr)
+    return bnPowLimit.GetCompact ();
 
-    return true;
+  const CBlockIndex* pindex = pindexLast;
+  const CBlockIndex* pindexFirst = nullptr;
+  arith_uint256 bnResult;
+  for (size_t nCountBlocks = 1; nCountBlocks <= nPastBlocks; ++nCountBlocks)
+    {
+      assert (pindex != nullptr && pindex->algo == algo);
+
+      arith_uint256 bnTarget;
+      bnTarget.SetCompact (pindex->nBits);
+
+      if (nCountBlocks == 1)
+        bnResult = bnTarget;
+      else
+        bnResult = (bnResult * nCountBlocks + bnTarget) / (nCountBlocks + 1);
+
+      if (nCountBlocks == nPastBlocks)
+        pindexFirst = pindex;
+
+      /* We need to step back to the last block with the given algo, but at
+         least one block.  Note that GetLastAncestorWithAlgo returns the
+         block itself if it matches.  */
+      pindex = pindex->pprev;
+      if (pindex != nullptr)
+        pindex = pindex->GetLastAncestorWithAlgo (algo);
+
+      if (pindex == nullptr)
+        return bnPowLimit.GetCompact ();
+    }
+
+  int64_t nActualTimespan = pindexLast->GetBlockTime ()
+                              - pindexFirst->GetBlockTime ();
+  int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
+
+  if (nActualTimespan < nTargetTimespan / 3)
+    nActualTimespan = nTargetTimespan / 3;
+  if (nActualTimespan > nTargetTimespan * 3)
+    nActualTimespan = nTargetTimespan * 3;
+
+  bnResult *= nActualTimespan;
+  bnResult /= nTargetTimespan;
+
+  if (bnResult > bnPowLimit)
+    bnResult = bnPowLimit;
+
+  return bnResult.GetCompact ();
 }

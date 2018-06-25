@@ -17,6 +17,7 @@
 #include <net.h>
 #include <policy/fees.h>
 #include <pow.h>
+#include <powdata.h>
 #include <rpc/auxpow_miner.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
@@ -27,7 +28,9 @@
 #include <validationinterface.h>
 #include <warnings.h>
 
+#include <map>
 #include <stdint.h>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -48,35 +51,59 @@ unsigned int ParseConfirmTarget(const UniValue& value)
  */
 static UniValue GetNetworkHashPS(int lookup, int height) {
     CBlockIndex *pb = chainActive.Tip();
+    assert (pb != nullptr);
 
     if (height >= 0 && height < chainActive.Height())
         pb = chainActive[height];
-
-    if (pb == nullptr || !pb->nHeight)
-        return 0;
 
     // If lookup is larger than chain, then set it to chain length.
     if (lookup > pb->nHeight)
         lookup = pb->nHeight;
 
+    /* With different mining algos, we can not simply look at the chain work
+       difference as upstream Bitcoin does.  But we can add up the block proofs
+       for each algo separately to estimate the hash rate in each later on.  */
+    std::map<PowAlgo, arith_uint256> proofPerAlgo;
+
+    /* Explicitly initialise both algos so that we always get them in the
+       result later, even if the number of hashes is zero.  */
+    proofPerAlgo[PowAlgo::SHA256D] = 0;
+    proofPerAlgo[PowAlgo::NEOSCRYPT] = 0;
+
     CBlockIndex *pb0 = pb;
     int64_t minTime = pb0->GetBlockTime();
     int64_t maxTime = minTime;
     for (int i = 0; i < lookup; i++) {
+        arith_uint256 currentProof = GetBlockProof (*pb0);
+        /* Undo the algo-weight correction, since we want actual hashes
+           per algo and not the comparable work.  */
+        currentProof >>= powAlgoLog2Weight (pb0->algo);
+        proofPerAlgo[pb0->algo] += currentProof;
+
         pb0 = pb0->pprev;
         int64_t time = pb0->GetBlockTime();
         minTime = std::min(time, minTime);
         maxTime = std::max(time, maxTime);
     }
+    const int64_t timeDiff = maxTime - minTime;
 
-    // In case there's a situation where minTime == maxTime, we don't want a divide by zero exception.
-    if (minTime == maxTime)
-        return 0;
+    UniValue result(UniValue::VOBJ);
+    for (const auto& entry : proofPerAlgo)
+      {
+        double hashps;
+        if (timeDiff == 0)
+          {
+            /* In case there's a situation where minTime == maxTime, we don't
+               want a divide by zero exception.  */
+            hashps = 0.0;
+          }
+        else
+          hashps = entry.second.getdouble () / timeDiff;
 
-    arith_uint256 workDiff = pb->nChainWork - pb0->nChainWork;
-    int64_t timeDiff = maxTime - minTime;
+        result.pushKV (PowAlgoToString (entry.first), hashps);
+      }
 
-    return workDiff.getdouble() / timeDiff;
+    return result;
 }
 
 static UniValue getnetworkhashps(const JSONRPCRequest& request)
@@ -91,7 +118,10 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
             "1. nblocks     (numeric, optional, default=120) The number of blocks.\n"
             "2. height      (numeric, optional, default=-1) To estimate at the time of the given height.\n"
             "\nResult:\n"
-            "x             (numeric) Hashes per second estimated\n"
+            "{\n"
+            "  \"sha256d\": x,              (numeric) Estimated hashes per second for SHA256D\n"
+            "  \"neoscrypt\": x,            (numeric) Estimated hashes per second for Neoscrypt\n"
+            "}\n"
             "\nExamples:\n"
             + HelpExampleCli("getnetworkhashps", "")
             + HelpExampleRpc("getnetworkhashps", "")
@@ -101,11 +131,29 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
     return GetNetworkHashPS(!request.params[0].isNull() ? request.params[0].get_int() : 120, !request.params[1].isNull() ? request.params[1].get_int() : -1);
 }
 
-UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, bool keepScript)
+static PowAlgo
+powAlgoFromJson (const UniValue& algoJson)
+{
+  if (algoJson.isNull ())
+    return PowAlgo::NEOSCRYPT;
+
+  try
+    {
+      return PowAlgoFromString (algoJson.get_str ());
+    }
+  catch (const std::invalid_argument& exc)
+    {
+      throw JSONRPCError (RPC_INVALID_PARAMETER, exc.what ());
+    }
+}
+
+UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson, bool keepScript)
 {
     static const int nInnerLoopCount = 0x10000;
     int nHeightEnd = 0;
     int nHeight = 0;
+
+    const PowAlgo algo = powAlgoFromJson(algoJson);
 
     {   // Don't keep cs_main locked
         LOCK(cs_main);
@@ -116,7 +164,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(algo, coinbaseScript->reserveScript));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -125,7 +173,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
         auto& fakeHeader = pblock->pow.initFakeHeader (*pblock);
-        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !pblock->pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
             ++fakeHeader.nNonce;
             --nMaxTries;
         }
@@ -152,14 +200,15 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
 
 static UniValue generatetoaddress(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 2 || request.params.size() > 3)
+    if (request.fHelp || request.params.size() < 2 || request.params.size() > 4)
         throw std::runtime_error(
-            "generatetoaddress nblocks address (maxtries)\n"
+            "generatetoaddress nblocks address (maxtries) (algo)\n"
             "\nMine blocks immediately to a specified address (before the RPC call returns)\n"
             "\nArguments:\n"
             "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
             "2. address      (string, required) The address to send the newly generated bitcoin to.\n"
             "3. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
+            "4. algo         (string, optional) Which mining algorithm to use (default: neoscrypt).\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
@@ -181,7 +230,7 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
     std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
     coinbaseScript->reserveScript = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbaseScript, nGenerate, nMaxTries, false);
+    return generateBlocks(coinbaseScript, nGenerate, nMaxTries, request.params[3], false);
 }
 
 static UniValue getmininginfo(const JSONRPCRequest& request)
@@ -195,8 +244,8 @@ static UniValue getmininginfo(const JSONRPCRequest& request)
             "  \"blocks\": nnn,             (numeric) The current block\n"
             "  \"currentblockweight\": nnn, (numeric) The last block weight\n"
             "  \"currentblocktx\": nnn,     (numeric) The last block transaction\n"
-            "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
-            "  \"networkhashps\": nnn,      (numeric) The network hashes per second\n"
+            "  \"difficulty\"               (json object) The current difficulty per algo\n"
+            "  \"networkhashps\"            (json object) The network hashes per second for each algo\n"
             "  \"pooledtx\": n              (numeric) The size of the mempool\n"
             "  \"chain\": \"xxxx\",           (string) current network name as defined in BIP70 (main, test, regtest)\n"
             "  \"warnings\": \"...\"          (string) any network and blockchain warnings\n"
@@ -213,7 +262,7 @@ static UniValue getmininginfo(const JSONRPCRequest& request)
     obj.pushKV("blocks",           (int)chainActive.Height());
     obj.pushKV("currentblockweight", (uint64_t)nLastBlockWeight);
     obj.pushKV("currentblocktx",   (uint64_t)nLastBlockTx);
-    obj.pushKV("difficulty",       (double)GetDifficulty(chainActive.Tip()));
+    obj.pushKV("difficulty",       getdifficulty(request));
     obj.pushKV("networkhashps",    getnetworkhashps(request));
     obj.pushKV("pooledtx",         (uint64_t)mempool.size());
     obj.pushKV("chain",            Params().NetworkIDString());
@@ -303,6 +352,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "1. template_request         (json object, optional) A json object in the following spec\n"
             "     {\n"
             "       \"mode\":\"template\"    (string, optional) This must be set to \"template\", \"proposal\" (see BIP 23), or omitted\n"
+            "       \"algo\":\"algo\"        (string, optional) The PoW algo to use (default: neoscrypt)\n"
             "       \"capabilities\":[     (array, optional) A list of strings\n"
             "           \"support\"          (string) client side supported feature, 'longpoll', 'coinbasetxn', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n"
             "           ,...\n"
@@ -357,6 +407,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "  \"weightlimit\" : n,                (numeric) limit of block weight\n"
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"bits\" : \"xxxxxxxx\",              (string) compressed target of next block\n"
+            "  \"algo\" : \"algo\",                  (string) PoW algo to use for this block\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
             "}\n"
 
@@ -371,6 +422,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue lpval = NullUniValue;
     std::set<std::string> setClientRules;
     int64_t nMaxVersionPreVB = -1;
+    PowAlgo algo = PowAlgo::NEOSCRYPT;
     if (!request.params[0].isNull())
     {
         const UniValue& oparam = request.params[0].get_obj();
@@ -384,6 +436,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         else
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
         lpval = find_value(oparam, "longpollid");
+        algo = powAlgoFromJson(find_value(oparam, "algo"));
 
         if (strMode == "proposal")
         {
@@ -410,7 +463,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             if (block.hashPrevBlock != pindexPrev->GetBlockHash())
                 return "inconclusive-not-best-prevblk";
             CValidationState state;
-            TestBlockValidity(state, Params(), block, pindexPrev, false, true);
+            TestBlockValidity(state, Params(), block, pindexPrev, false, true, true);
             return BIP22ValidationResult(state);
         }
 
@@ -502,6 +555,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     // a segwit-block to a non-segwit caller.
     static bool fLastTemplateSupportsSegwit = true;
     if (pindexPrev != chainActive.Tip() ||
+        pblocktemplate->block.pow.getCoreAlgo() != algo ||
         (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 5) ||
         fLastTemplateSupportsSegwit != fSupportsSegwit)
     {
@@ -516,7 +570,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, fSupportsSegwit);
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(algo, scriptDummy, fSupportsSegwit);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -666,6 +720,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     }
     result.pushKV("curtime", pblock->GetBlockTime());
     result.pushKV("bits", strprintf("%08x", pblock->pow.getBits()));
+    result.pushKV("algo", PowAlgoToString(pblock->pow.getCoreAlgo()));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
@@ -1005,7 +1060,7 @@ static const CRPCCommand commands[] =
     { "mining",             "creatework",             &creatework,             {"address"} },
     { "mining",             "submitwork",             &submitwork,             {"hash","data"} },
 
-    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
+    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries","algo"} },
 
     { "hidden",             "estimatefee",            &estimatefee,            {} },
     { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },

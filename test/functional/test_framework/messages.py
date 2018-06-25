@@ -560,7 +560,7 @@ class CPureBlockHeader():
             r += struct.pack("<I", self.nBits)
             r += struct.pack("<I", self.nNonce)
             self.sha256 = uint256_from_str(hash256(r))
-            self.powHash = uint256_from_str(powhash.forHeader(r))
+            self.powHash = uint256_from_str(powhash.forHeader('neoscrypt', r))
             self.hash = encode(hash256(r)[::-1], 'hex_codec').decode('ascii')
 
     def rehash(self):
@@ -574,6 +574,8 @@ class CPureBlockHeader():
                time.ctime(self.nTime), self.nBits, self.nNonce)
 
 
+# Note that our implementation of PowData only supports neoscrypt PoW with
+# fake header (no merge mining) for now.
 class PowData():
     def __init__(self):
         self.algo = POWALGO_NEOSCRYPT

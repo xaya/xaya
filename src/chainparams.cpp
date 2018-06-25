@@ -7,6 +7,7 @@
 #include <consensus/merkle.h>
 
 #include <pow.h>
+#include <powdata.h>
 #include <tinyformat.h>
 #include <util.h>
 #include <utilstrencodings.h>
@@ -77,9 +78,9 @@ CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& gene
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
 
     std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
-    fakeHeader->SetNull ();
     fakeHeader->nNonce = nNonce;
     fakeHeader->hashMerkleRoot = genesis.GetHash ();
+    genesis.pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
     genesis.pow.setBits (nBits);
     genesis.pow.setFakeHeader (std::move (fakeHeader));
 
@@ -122,8 +123,7 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
   block.nTime = GetTime ();
 
   auto& fakeHeader = block.pow.initFakeHeader (block);
-  while (!CheckProofOfWork (fakeHeader.GetPowHash (), block.pow.getBits (),
-                            consensus))
+  while (!block.pow.checkProofOfWork (fakeHeader, consensus))
     {
       assert (fakeHeader.nNonce < std::numeric_limits<uint32_t>::max ());
       ++fakeHeader.nNonce;
@@ -172,8 +172,10 @@ public:
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 30;
+        consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        /* The target spacing is independent for each mining algorithm, so that
+           the effective block frequency is half the value (with two algos).  */
+        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
@@ -265,8 +267,8 @@ public:
         consensus.BIP34Height = 0;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
-        consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 30;
+        consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
@@ -358,8 +360,8 @@ public:
         consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
-        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 1 * 30;
+        consensus.powLimitNeoscrypt = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)

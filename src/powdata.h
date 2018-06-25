@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 /** Possible PoW algorithms and their ID.  */
 enum class PowAlgo : uint8_t
@@ -24,6 +25,45 @@ enum class PowAlgo : uint8_t
 
   FLAG_MERGE_MINED = 0x80,
 };
+
+/**
+ * Returns the relative factor (actually, the binary log of it) of how much
+ * harder the given PowAlgo is than SHA256D.  This is used to correct the
+ * chain work to make the different algorithms comparable.
+ */
+int powAlgoLog2Weight (PowAlgo algo);
+
+/**
+ * Returns the maximal target hash for the given PoW algo (corresponding to
+ * the minimal difficulty).  This is based on the chainparams-configured
+ * powLimitNeoscrypt and then adapted based on the relative PoW difficulties.
+ */
+uint256 powLimitForAlgo (PowAlgo algo, const Consensus::Params& params);
+
+/* Conversion between (core) PowAlgo and string representations of it for
+   the external interfaces.  The methods throw std::invalid_argument in case
+   the conversion fails.  */
+PowAlgo PowAlgoFromString (const std::string& str);
+std::string PowAlgoToString (PowAlgo algo);
+
+/* Implement serialisation for PowAlgo.  The standard framework does not work
+   since it is a typesafe enum.  */
+
+template <typename Stream>
+  inline void
+  Serialize (Stream& os, const PowAlgo algo)
+{
+  Serialize (os, static_cast<uint8_t> (algo));
+}
+
+template <typename Stream>
+  inline void
+  Unserialize (Stream& is, PowAlgo& algo)
+{
+  uint8_t val;
+  Unserialize (is, val);
+  algo = static_cast<PowAlgo> (val);
+}
 
 /**
  * The basic PoW data attached to a block header.
@@ -44,7 +84,7 @@ private:
 public:
 
   inline PowData ()
-    : algo(PowAlgo::NEOSCRYPT)
+    : algo(PowAlgo::INVALID)
   {}
 
   PowData (const PowData&) = default;
@@ -56,13 +96,7 @@ public:
     inline void
     SerializationOp (Stream& s, Operation ser_action)
   {
-    uint8_t intAlgo;
-    if (!ser_action.ForRead ())
-      intAlgo = static_cast<uint8_t> (algo);
-    READWRITE (intAlgo);
-    if (ser_action.ForRead ())
-      algo = static_cast<PowAlgo> (intAlgo);
-
+    READWRITE (algo);
     READWRITE (nBits);
 
     assert (!isMergeMined ());
@@ -83,6 +117,8 @@ public:
   {
     return static_cast<PowAlgo> (static_cast<int> (algo) & ~mmFlag);
   }
+
+  void setCoreAlgo (PowAlgo a);
 
   inline uint32_t
   getBits () const
@@ -122,6 +158,14 @@ public:
    * main-block hash and consensus parameters.
    */
   bool isValid (const uint256& hash, const Consensus::Params& params) const;
+
+  /**
+   * Verifies whether the given PoW header has valid PoW with respect to this
+   * data's target and algorithm.  This only verifies the PoW, but does not
+   * check that any commitment to the right block header is made.
+   */
+  bool checkProofOfWork (const CPureBlockHeader& hdr,
+                         const Consensus::Params& params) const;
 
 };
 

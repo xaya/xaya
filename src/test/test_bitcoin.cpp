@@ -12,6 +12,7 @@
 #include <miner.h>
 #include <net_processing.h>
 #include <pow.h>
+#include <powdata.h>
 #include <ui_interface.h>
 #include <streams.h>
 #include <rpc/server.h>
@@ -141,7 +142,7 @@ CBlock
 TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
     const CChainParams& chainparams = Params();
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey);
+    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey);
     CBlock& block = pblocktemplate->block;
 
     // Replace mempool-selected txns with just coinbase plus passed-in txns:
@@ -156,7 +157,7 @@ TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>&
     }
 
     auto& fakeHeader = block.pow.initFakeHeader (block);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(), block.pow.getBits(), chainparams.GetConsensus())) ++fakeHeader.nNonce;
+    while (!block.pow.checkProofOfWork(fakeHeader, chainparams.GetConsensus())) ++fakeHeader.nNonce;
 
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     ProcessNewBlock(chainparams, shared_pblock, true, nullptr);

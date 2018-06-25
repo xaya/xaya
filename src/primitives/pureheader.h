@@ -11,6 +11,8 @@
 
 #include <vector>
 
+enum class PowAlgo : uint8_t;
+
 /**
  * A block header without auxpow information.  This "intermediate step"
  * in constructing the full header is useful, because it breaks the cyclic
@@ -62,7 +64,7 @@ public:
     }
 
     uint256 GetHash() const;
-    uint256 GetPowHash() const;
+    uint256 GetPowHash(PowAlgo algo) const;
 
     int64_t GetBlockTime() const
     {

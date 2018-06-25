@@ -40,8 +40,12 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(mining_info['chain'], 'regtest')
         assert_equal(mining_info['currentblocktx'], 0)
         assert_equal(mining_info['currentblockweight'], 0)
-        assert_equal(mining_info['difficulty'], Decimal('4.656542373906925E-10'))
-        assert_equal(mining_info['networkhashps'], Decimal('0.003333333333333334'))
+        assert_equal(mining_info['difficulty'], {
+            'sha256d': Decimal('4.656542373906925E-10'),
+            'neoscrypt': Decimal('4.656542373906925E-10'),
+        })
+        assert_equal(mining_info['networkhashps']['neoscrypt'], Decimal('0.003333333333333334'))
+        assert_equal(mining_info['networkhashps']['sha256d'], Decimal('0'))
         assert_equal(mining_info['pooledtx'], 0)
 
         # Mine a block to leave initial block download
@@ -63,6 +67,7 @@ class MiningTest(BitcoinTestFramework):
         block.nBits = 0
         block.nNonce = 0
         block.powData.nBits = int(tmpl["bits"], 16)
+        assert_equal(tmpl["algo"], "neoscrypt")
         block.vtx = [coinbase_tx]
 
         self.log.info("getblocktemplate: Test valid block")

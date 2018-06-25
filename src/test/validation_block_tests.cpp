@@ -9,6 +9,7 @@
 #include <consensus/validation.h>
 #include <miner.h>
 #include <pow.h>
+#include <powdata.h>
 #include <random.h>
 #include <test/test_bitcoin.h>
 #include <validation.h>
@@ -54,7 +55,7 @@ std::shared_ptr<CBlock> Block(const uint256& prev_hash)
     CScript pubKey;
     pubKey << i++ << OP_TRUE;
 
-    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(pubKey, false);
+    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(PowAlgo::NEOSCRYPT, pubKey, false);
     auto pblock = std::make_shared<CBlock>(ptemplate->block);
     pblock->hashPrevBlock = prev_hash;
     pblock->nTime = ++time;
@@ -72,7 +73,7 @@ std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 
     auto& fakeHeader = pblock->pow.initFakeHeader(*pblock);
-    while (!CheckProofOfWork(fakeHeader.GetPowHash(), pblock->pow.getBits(), Params().GetConsensus())) {
+    while (!pblock->pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
         ++(fakeHeader.nNonce);
     }
 

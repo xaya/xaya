@@ -40,13 +40,15 @@ void auxMiningCheck()
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
+AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
+                              uint256& target)
 {
   AssertLockHeld (cs);
 
   {
     LOCK (cs_main);
     if (pindexPrev != chainActive.Tip ()
+        || pblockCur->pow.getCoreAlgo () != algo
         || (mempool.GetTransactionsUpdated () != txUpdatedLast
             && GetTime () - startTime > 60))
       {
@@ -60,7 +62,7 @@ AuxpowMiner::getCurrentBlock (const CScript& scriptPubKey, uint256& target)
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
-            = BlockAssembler (Params ()).CreateNewBlock (scriptPubKey);
+            = BlockAssembler (Params ()).CreateNewBlock (algo, scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
@@ -118,11 +120,12 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
   LOCK (cs);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (scriptPubKey, target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::SHA256D, scriptPubKey,
+                                          target);
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
-  result.pushKV ("algo", "sha256d");
+  result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("chainid", Params ().GetConsensus ().nAuxpowChainId);
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
@@ -163,7 +166,8 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   LOCK (cs);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (scriptPubKey, target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::NEOSCRYPT, scriptPubKey,
+                                          target);
 
   CPureBlockHeader fakeHeader;
   fakeHeader.SetNull ();
@@ -183,7 +187,7 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
   result.pushKV ("data", HexStr (data.begin (), data.end ()));
-  result.pushKV ("algo", "neoscrypt");
+  result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));

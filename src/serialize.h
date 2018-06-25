@@ -26,6 +26,8 @@
 
 static const unsigned int MAX_SIZE = 0x02000000;
 
+enum class PowAlgo : uint8_t;
+
 /**
  * Dummy data type to identify deserializing constructors.
  *
@@ -576,6 +578,11 @@ template<typename Stream, typename T> void Unserialize(Stream& os, std::shared_p
 template<typename Stream, typename T> void Serialize(Stream& os, const std::unique_ptr<const T>& p);
 template<typename Stream, typename T> void Unserialize(Stream& os, std::unique_ptr<const T>& p);
 
+/**
+ * PowAlgo
+ */
+template<typename Stream> void Serialize(Stream& s, PowAlgo algo);
+template<typename Stream> void Unserialize(Stream& s, PowAlgo& algo);
 
 
 /**

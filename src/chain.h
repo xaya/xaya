@@ -8,6 +8,7 @@
 
 #include <arith_uint256.h>
 #include <consensus/params.h>
+#include <powdata.h>
 #include <primitives/block.h>
 #include <tinyformat.h>
 #include <uint256.h>
@@ -217,6 +218,9 @@ public:
      */
     uint32_t nBits;
 
+    /** Mining algorithm used (necessary to evaluate chain work).  */
+    PowAlgo algo;
+
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
 
@@ -243,6 +247,8 @@ public:
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
+
+        algo = PowAlgo::INVALID;
     }
 
     CBlockIndex()
@@ -258,6 +264,8 @@ public:
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
         nBits          = block.pow.getBits();
+
+        algo = block.pow.getCoreAlgo();
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -348,6 +356,12 @@ public:
     //! Efficiently find an ancestor of this block.
     CBlockIndex* GetAncestor(int height);
     const CBlockIndex* GetAncestor(int height) const;
+
+    /**
+     * Find the last previous block (including this one) mined by a particular
+     * PoW algo.  Returns nullptr if none exists.
+     */
+    const CBlockIndex* GetLastAncestorWithAlgo(PowAlgo algo) const;
 };
 
 arith_uint256 GetBlockProof(const CBlockIndex& block);
@@ -395,6 +409,8 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
+
+        READWRITE(algo);
     }
 
     uint256 GetBlockHash() const

@@ -233,6 +233,7 @@ libbitcoin_server_a_SOURCES = \
   policy/fees.cpp \
   policy/policy.cpp \
   policy/rbf.cpp \
+  pow.cpp \
   rest.cpp \
   rpc/auxpow_miner.cpp \
   rpc/blockchain.cpp \
@@ -385,7 +386,6 @@ libbitcoin_common_a_SOURCES = \
   netaddress.cpp \
   netbase.cpp \
   policy/feerate.cpp \
-  pow.cpp \
   powdata.cpp \
   protocol.cpp \
   scheduler.cpp \

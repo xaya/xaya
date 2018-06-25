@@ -72,7 +72,6 @@ class BlockchainTest(BitcoinTestFramework):
             'blocks',
             'chain',
             'chainwork',
-            'difficulty',
             'headers',
             'initialblockdownload',
             'mediantime',
@@ -227,18 +226,19 @@ class BlockchainTest(BitcoinTestFramework):
         assert isinstance(header['mediantime'], int)
         assert isinstance(header['version'], int)
         assert isinstance(int(header['versionHex'], 16), int)
-        assert isinstance(header['difficulty'], Decimal)
 
     def _test_getdifficulty(self):
         difficulty = self.nodes[0].getdifficulty()
         # 1 hash in 2 should be valid, so difficulty should be 1/2**31
         # binary => decimal => binary math is why we do this check
-        assert abs(difficulty * 2**31 - 1) < 0.0001
+        assert abs(difficulty['sha256d'] * 2**31 - 1) < 0.0001
+        assert abs(difficulty['neoscrypt'] * 2**31 - 1) < 0.0001
 
     def _test_getnetworkhashps(self):
         hashes_per_second = self.nodes[0].getnetworkhashps()
         # This should be 2 hashes every 10 minutes or 1/300
-        assert abs(hashes_per_second * 300 - 1) < 0.0001
+        assert abs(hashes_per_second['neoscrypt'] * 300 - 1) < 0.0001
+        assert_equal (hashes_per_second['sha256d'], 0)
 
     def _test_stopatheight(self):
         assert_equal(self.nodes[0].getblockcount(), 200)
