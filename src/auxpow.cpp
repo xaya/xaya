@@ -20,7 +20,7 @@
 #include <validation.h>
 
 #include <algorithm>
-#include <memory>
+#include <cassert>
 
 /* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
    of an enabled (or disabled) wallet.  Always include the code.  */
@@ -188,11 +188,10 @@ CAuxPow::CheckMerkleBranch (uint256 hash,
   return hash;
 }
 
-void
-CAuxPow::initAuxPow (CBlockHeader& header)
+std::unique_ptr<CAuxPow>
+CAuxPow::createAuxPow (const CPureBlockHeader& header)
 {
-  /* Set auxpow flag right now, since we take the block hash below.  */
-  header.SetAuxpowVersion(true);
+  assert (header.IsAuxpow ());
 
   /* Build a minimal coinbase script input for merge-mining.  */
   const uint256 blockHash = header.GetHash ();
@@ -224,5 +223,20 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   assert (auxpow->vMerkleBranch.empty ());
   auxpow->nIndex = 0;
   auxpow->parentBlock = parent;
-  header.SetAuxpow (std::move (auxpow));
+
+  return auxpow;
+}
+
+CPureBlockHeader&
+CAuxPow::initAuxPow (CBlockHeader& header)
+{
+  /* Set auxpow flag right now, since we take the block hash below when creating
+     the minimal auxpow for header.  */
+  header.SetAuxpowVersion(true);
+
+  std::unique_ptr<CAuxPow> apow = createAuxPow (header);
+  CPureBlockHeader& result = apow->parentBlock;
+  header.SetAuxpow (std::move (apow));
+
+  return result;
 }

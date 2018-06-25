@@ -1103,7 +1103,7 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
 
     if (!block.auxpow->check(block.GetHash(), block.GetChainId(), params))
         return error("%s : AUX POW is not valid", __func__);
-    if (!CheckProofOfWork(block.auxpow->getParentBlock().GetHash(), block.nBits, params))
+    if (!CheckProofOfWork(block.auxpow->getParentBlockHash(), block.nBits, params))
         return error("%s : AUX proof of work failed", __func__);
 
     return true;

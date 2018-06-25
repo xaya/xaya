@@ -128,8 +128,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        CAuxPow::initAuxPow(*pblock);
-        CPureBlockHeader& miningHeader = pblock->auxpow->getParentBlock();
+        auto& miningHeader = CAuxPow::initAuxPow(*pblock);
         while (nMaxTries > 0 && miningHeader.nNonce < nInnerLoopCount && !CheckProofOfWork(miningHeader.GetHash(), pblock->nBits, Params().GetConsensus())) {
             ++miningHeader.nNonce;
             --nMaxTries;

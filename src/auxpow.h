@@ -13,6 +13,7 @@
 #include <serialize.h>
 #include <uint256.h>
 
+#include <memory>
 #include <vector>
 
 class CBlock;
@@ -162,18 +163,13 @@ public:
   bool check (const uint256& hashAuxBlock, int nChainId,
               const Consensus::Params& params) const;
 
-  /* Accessors for the parent block.  */
-
-  inline CPureBlockHeader&
-  getParentBlock ()
+  /**
+   * Returns the parent block hash.  This is used to validate the PoW.
+   */
+  inline uint256
+  getParentBlockHash () const
   {
-    return parentBlock;
-  }
-
-  inline const CPureBlockHeader&
-  getParentBlock () const
-  {
-    return parentBlock;
+    return parentBlock.GetHash ();
   }
 
   /**
@@ -195,13 +191,19 @@ public:
                                     int nIndex);
 
   /**
-   * Initialise the auxpow of the given block header.  This constructs
-   * a minimal CAuxPow object with a minimal parent block and sets
-   * it on the block header.  The auxpow is not necessarily valid, but
-   * can be "mined" to make it valid.
-   * @param header The header to set the auxpow on.
+   * Constructs a minimal CAuxPow object for the given block header and
+   * returns it.  The caller should make sure to set the auxpow flag on the
+   * header already, since the block hash to which the auxpow commits depends
+   * on that!
    */
-  static void initAuxPow (CBlockHeader& header);
+  static std::unique_ptr<CAuxPow> createAuxPow (const CPureBlockHeader& header);
+
+  /**
+   * Initialises the auxpow of the given block header.  This builds a minimal
+   * auxpow object like createAuxPow and sets it on the block header.  Returns
+   * a reference to the parent header so it can be mined as a follow-up.
+   */
+  static CPureBlockHeader& initAuxPow (CBlockHeader& header);
 
 };
 
