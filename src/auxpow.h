@@ -30,16 +30,14 @@ class CAuxPowForTest;
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
 
-/* Because it is needed for auxpow, the definition of CMerkleTx is moved
-   here from wallet.h.  */
-
-/** A transaction with a merkle branch linking it to the block chain. */
-class CMerkleTx
+/**
+ * Base class for CMerkleTx that just holds the fields and implements
+ * serialisation.  This is the part that is needed for CAuxPow.  The other
+ * functionality, needed by the wallet, is kept in CMerkleTx itself (defined
+ * in wallet/wallet.h as in upstream Bitcoin).
+ */
+class CBaseMerkleTx
 {
-private:
-  /** Constant used in hashBlock to indicate tx has been abandoned */
-    static const uint256 ABANDON_HASH;
-
 public:
     CTransactionRef tx;
     uint256 hashBlock;
@@ -52,13 +50,13 @@ public:
      */
     int nIndex;
 
-    CMerkleTx()
+    CBaseMerkleTx()
     {
         SetTx(MakeTransactionRef());
         Init();
     }
 
-    explicit CMerkleTx(CTransactionRef arg)
+    explicit CBaseMerkleTx(CTransactionRef arg)
     {
         SetTx(std::move(arg));
         Init();
@@ -85,24 +83,7 @@ public:
         READWRITE(nIndex);
     }
 
-    void SetMerkleBranch(const CBlockIndex* pindex, int posInBlock);
-
-    /**
-     * Return depth of transaction in blockchain:
-     * <0  : conflicts with a transaction this deep in the blockchain
-     *  0  : in memory pool, waiting to be included in a block
-     * >=1 : this many blocks deep in the main chain
-     */
-    int GetDepthInMainChain(const CBlockIndex* &pindexRet) const;
-    int GetDepthInMainChain() const { const CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet); }
-    bool IsInMainChain() const { const CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet) > 0; }
-    int GetBlocksToMaturity() const;
-    bool hashUnset() const { return (hashBlock.IsNull() || hashBlock == ABANDON_HASH); }
-    bool isAbandoned() const { return (hashBlock == ABANDON_HASH); }
-    void setAbandoned() { hashBlock = ABANDON_HASH; }
-
     const uint256& GetHash() const { return tx->GetHash(); }
-    bool IsCoinBase() const { return tx->IsCoinBase(); }
 };
 
 /**
@@ -119,7 +100,7 @@ private:
    * The parent block's coinbase tx, which is used to link the auxpow from
    * the tx input to the parent block header.
    */
-  CMerkleTx coinbaseTx;
+  CBaseMerkleTx coinbaseTx;
 
   /** The merkle branch connecting the aux block to our coinbase.  */
   std::vector<uint256> vChainMerkleBranch;
