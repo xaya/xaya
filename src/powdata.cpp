@@ -86,7 +86,10 @@ PowData::setFakeHeader (std::unique_ptr<CPureBlockHeader> hdr)
 {
   /* Clear merge-mining flag (if it was set).  */
   algo = getCoreAlgo ();
+  assert (algo == getCoreAlgo ());
+  assert (!isMergeMined ());
 
+  auxpow.reset ();
   fakeHeader.reset (hdr.release ());
 }
 
@@ -98,6 +101,26 @@ PowData::initFakeHeader (const CPureBlockHeader& block)
   hdr->hashMerkleRoot = block.GetHash ();
   setFakeHeader (std::move (hdr));
   return *fakeHeader;
+}
+
+void
+PowData::setAuxpow (std::unique_ptr<CAuxPow> apow)
+{
+  /* Add merge-mining flag to algo.  */
+  algo = static_cast<PowAlgo> (static_cast<int> (getCoreAlgo ()) | mmFlag);
+  assert (algo == getCoreAlgo ());
+  assert (isMergeMined ());
+
+  fakeHeader.reset ();
+  auxpow.reset (apow.release ());
+}
+
+CPureBlockHeader&
+PowData::initAuxpow (const CPureBlockHeader& block)
+{
+  setAuxpow (CAuxPow::createAuxPow (block));
+  assert (auxpow != nullptr);
+  return auxpow->parentBlock;
 }
 
 bool

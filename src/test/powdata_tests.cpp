@@ -111,6 +111,32 @@ BOOST_AUTO_TEST_CASE (serialisation_standalone)
       "7856000000000000000000000000000000000000000000000000000000003412");
 }
 
+BOOST_AUTO_TEST_CASE (serialisation_auxpow)
+{
+  const PowData powData = CheckPowRoundtrip (
+      "81"
+      "12345678"
+
+      /* Data constructed using auxpow.py's computeAuxpow.  */
+      "010000000100000000000000000000000000000000000000000000000000000000000000"
+      "00ffffffff2cfabe6d6d0ee43f37fdbe12d806ed691820564f40e054172166f67d5ac12f"
+      "9230beba6d870100000000000000ffffffff000000000015138e015573ed13094bb1c0b2"
+      "3e72f05f803f0089dfb4a44a31e84d27df2e480000000000000000000001000000000000"
+      "0000000000000000000000000000000000000000000000000000000000af4496476c8483"
+      "b9a329da9299b87ee2885e5f9c51c0107f103f7d7af013afbe0000000000000000000000"
+      "01"
+  );
+
+  BOOST_CHECK (powData.isMergeMined ());
+  BOOST_CHECK (powData.getCoreAlgo () == PowAlgo::SHA256D);
+  BOOST_CHECK_EQUAL (powData.getBits (), 0x78563412);
+
+  const auto& auxpow = powData.getAuxpow ();
+  BOOST_CHECK_EQUAL (
+      auxpow.getParentBlockHash ().GetHex (),
+      "15138e015573ed13094bb1c0b23e72f05f803f0089dfb4a44a31e84d27df2e48");
+}
+
 /* ************************************************************************** */
 
 namespace

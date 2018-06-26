@@ -17,7 +17,6 @@
 #include <vector>
 
 class CBlock;
-class CBlockHeader;
 class CBlockIndex;
 class CValidationState;
 class UniValue;
@@ -119,6 +118,7 @@ private:
                                     const std::vector<uint256>& vMerkleBranch,
                                     int nIndex);
 
+  friend class PowData;
   friend class auxpow_tests::CAuxPowForTest;
 
 public:
@@ -180,13 +180,6 @@ public:
    * on that!
    */
   static std::unique_ptr<CAuxPow> createAuxPow (const CPureBlockHeader& header);
-
-  /**
-   * Initialises the auxpow of the given block header.  This builds a minimal
-   * auxpow object like createAuxPow and sets it on the block header.  Returns
-   * a reference to the parent header so it can be mined as a follow-up.
-   */
-  static CPureBlockHeader& initAuxPow (CBlockHeader& header);
 
 };
 

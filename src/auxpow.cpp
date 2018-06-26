@@ -174,18 +174,6 @@ CAuxPow::createAuxPow (const CPureBlockHeader& header)
   assert (auxpow->coinbaseTx.vMerkleBranch.empty ());
   auxpow->coinbaseTx.nIndex = 0;
   auxpow->parentBlock = parent;
-  //header.SetAuxpow (std::move (auxpow));
 
   return auxpow;
-}
-
-CPureBlockHeader&
-CAuxPow::initAuxPow (CBlockHeader& header)
-{
-  std::unique_ptr<CAuxPow> apow = createAuxPow (header);
-  CPureBlockHeader& result = apow->parentBlock;
-  // FIXME: Reenable once PoW data is in block.
-  //header.SetAuxpow (std::move (apow));
-
-  return result;
 }
