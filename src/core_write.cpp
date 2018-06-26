@@ -83,6 +83,7 @@ std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDeco
 {
     std::string str;
     opcodetype opcode;
+    opcodetype lastOpcode = OP_0;
     std::vector<unsigned char> vch;
     CScript::const_iterator pc = script.begin();
     while (pc < script.end()) {
@@ -95,7 +96,13 @@ std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDeco
         }
         if (0 <= opcode && opcode <= OP_PUSHDATA4) {
             if (vch.size() <= static_cast<std::vector<unsigned char>::size_type>(4)) {
-                str += strprintf("%d", CScriptNum(vch, false).getint());
+                if ((lastOpcode == OP_NAME_REGISTER
+                      || lastOpcode == OP_NAME_UPDATE)
+                    && !vch.empty()) {
+                      str += HexStr(vch);
+                } else {
+                    str += strprintf("%d", CScriptNum(vch, false).getint());
+                }
             } else {
                 // the IsUnspendable check makes sure not to try to decode OP_RETURN data that may match the format of a signature
                 if (fAttemptSighashDecode && !script.IsUnspendable()) {
@@ -119,6 +126,7 @@ std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDeco
         } else {
             str += GetOpName(opcode);
         }
+        lastOpcode = opcode;
     }
     return str;
 }

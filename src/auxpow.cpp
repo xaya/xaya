@@ -10,73 +10,20 @@
 #include <compat/endian.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
-#include <consensus/validation.h>
 #include <hash.h>
+#include <primitives/block.h>
 #include <script/script.h>
-#include <txmempool.h>
 #include <util.h>
 #include <utilstrencodings.h>
-#include <validation.h>
 
 #include <algorithm>
-#include <memory>
-
-/* Moved from wallet.cpp.  CMerkleTx is necessary for auxpow, independent
-   of an enabled (or disabled) wallet.  Always include the code.  */
-
-const uint256 CMerkleTx::ABANDON_HASH(uint256S("0000000000000000000000000000000000000000000000000000000000000001"));
-
-void CMerkleTx::SetMerkleBranch(const CBlockIndex* pindex, int posInBlock)
-{
-    // Update the tx's hashBlock
-    hashBlock = pindex->GetBlockHash();
-
-    // set the position of the transaction in the block
-    nIndex = posInBlock;
-}
-
-int CMerkleTx::GetDepthInMainChain(const CBlockIndex* &pindexRet) const
-{
-    if (hashUnset())
-        return 0;
-
-    AssertLockHeld(cs_main);
-
-    // Find the block it claims to be in
-    BlockMap::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !chainActive.Contains(pindex))
-        return 0;
-
-    pindexRet = pindex;
-    return ((nIndex == -1) ? (-1) : 1) * (chainActive.Height() - pindex->nHeight + 1);
-}
-
-int CMerkleTx::GetBlocksToMaturity() const
-{
-    if (!IsCoinBase())
-        return 0;
-
-    const CBlockIndex* pindex = nullptr;
-    const int depth = GetDepthInMainChain(pindex);
-    assert (depth <= 0 || pindex != nullptr);
-
-    /* Special rule:  The genesis premine is spendable immediately.  */
-    if (depth > 0 && pindex->nHeight == 0)
-        return 0;
-
-    return std::max(0, (COINBASE_MATURITY+1) - depth);
-}
-
-/* ************************************************************************** */
+#include <cassert>
 
 bool
 CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
                 const Consensus::Params& params) const
 {
-    if (nIndex != 0)
+    if (coinbaseTx.nIndex != 0)
         return error("AuxPow is not a generate");
 
     if (vChainMerkleBranch.size() > 30)
@@ -89,11 +36,12 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
     std::reverse (vchRootHash.begin (), vchRootHash.end ()); // correct endian
 
     // Check that we are in the parent block merkle tree
-    if (CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex)
+    if (CheckMerkleBranch(coinbaseTx.GetHash(), coinbaseTx.vMerkleBranch,
+                          coinbaseTx.nIndex)
           != parentBlock.hashMerkleRoot)
         return error("Aux POW merkle root incorrect");
 
-    const CScript script = tx->vin[0].scriptSig;
+    const CScript script = coinbaseTx.tx->vin[0].scriptSig;
 
     // Check that the same work is not submitted twice to our chain.
     //
@@ -193,8 +141,8 @@ CAuxPow::CheckMerkleBranch (uint256 hash,
   return hash;
 }
 
-void
-CAuxPow::initAuxPow (CBlockHeader& header)
+std::unique_ptr<CAuxPow>
+CAuxPow::createAuxPow (const CPureBlockHeader& header)
 {
   /* Build a minimal coinbase script input for merge-mining.  */
   const uint256 blockHash = header.GetHash ();
@@ -223,9 +171,21 @@ CAuxPow::initAuxPow (CBlockHeader& header)
   std::unique_ptr<CAuxPow> auxpow(new CAuxPow (coinbaseRef));
   assert (auxpow->vChainMerkleBranch.empty ());
   auxpow->nChainIndex = 0;
-  assert (auxpow->vMerkleBranch.empty ());
-  auxpow->nIndex = 0;
+  assert (auxpow->coinbaseTx.vMerkleBranch.empty ());
+  auxpow->coinbaseTx.nIndex = 0;
   auxpow->parentBlock = parent;
-  // FIXME: Reenable once PoW data is in block.
   //header.SetAuxpow (std::move (auxpow));
+
+  return auxpow;
+}
+
+CPureBlockHeader&
+CAuxPow::initAuxPow (CBlockHeader& header)
+{
+  std::unique_ptr<CAuxPow> apow = createAuxPow (header);
+  CPureBlockHeader& result = apow->parentBlock;
+  // FIXME: Reenable once PoW data is in block.
+  //header.SetAuxpow (std::move (apow));
+
+  return result;
 }
