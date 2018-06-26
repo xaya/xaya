@@ -76,25 +76,23 @@ double GetDifficulty(const CBlockIndex* blockindex)
     return dDiff;
 }
 
-namespace
-{
 UniValue AuxpowToJSON(const CAuxPow& auxpow)
 {
     UniValue result(UniValue::VOBJ);
 
     {
         UniValue tx(UniValue::VOBJ);
-        tx.push_back(Pair("hex", EncodeHexTx(*auxpow.tx)));
-        TxToJSON(*auxpow.tx, auxpow.parentBlock.GetHash(), tx);
+        tx.push_back(Pair("hex", EncodeHexTx(*auxpow.coinbaseTx.tx)));
+        TxToJSON(*auxpow.coinbaseTx.tx, auxpow.parentBlock.GetHash(), tx);
         result.push_back(Pair("tx", tx));
     }
 
-    result.push_back(Pair("index", auxpow.nIndex));
+    result.push_back(Pair("index", auxpow.coinbaseTx.nIndex));
     result.push_back(Pair("chainindex", auxpow.nChainIndex));
 
     {
         UniValue branch(UniValue::VARR);
-        for (const auto& node : auxpow.vMerkleBranch)
+        for (const auto& node : auxpow.coinbaseTx.vMerkleBranch)
             branch.push_back(node.GetHex());
         result.push_back(Pair("merklebranch", branch));
     }
@@ -113,7 +111,6 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
 
     return result;
 }
-} // anonymous namespace
 
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {

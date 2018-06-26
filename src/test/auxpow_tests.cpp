@@ -43,6 +43,28 @@ tamperWith (uint256& num)
 }
 
 /**
+ * Helper class that is friend to CAuxPow and makes the internals accessible
+ * to the test code.
+ */
+class CAuxPowForTest : public CAuxPow
+{
+
+public:
+
+  explicit inline CAuxPowForTest (CTransactionRef txIn)
+    : CAuxPow (txIn)
+  {}
+
+  using CAuxPow::coinbaseTx;
+  using CAuxPow::vChainMerkleBranch;
+  using CAuxPow::nChainIndex;
+  using CAuxPow::parentBlock;
+
+  using CAuxPow::CheckMerkleBranch;
+
+};
+
+/**
  * Utility class to construct auxpow's and manipulate them.  This is used
  * to simulate various scenarios.
  */
@@ -158,7 +180,8 @@ CAuxpowBuilder::buildAuxpowChain (const uint256& hashAux, unsigned h, int index)
     auxpowChainMerkleBranch.push_back (ArithToUint256 (arith_uint256 (i)));
 
   const uint256 hash
-    = CAuxPow::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch, index);
+    = CAuxPowForTest::CheckMerkleBranch (hashAux, auxpowChainMerkleBranch,
+                                         index);
 
   valtype res = ToByteVector (hash);
   std::reverse (res.begin (), res.end ());
@@ -171,10 +194,11 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
 {
   LOCK(cs_main);
 
-  CAuxPow res(tx);
-  res.hashBlock = parentBlock.GetHash ();
-  res.nIndex = 0;
-  res.vMerkleBranch = merkle_tests::BlockMerkleBranch (parentBlock, res.nIndex);
+  CAuxPowForTest res(tx);
+  res.coinbaseTx.hashBlock = parentBlock.GetHash ();
+  res.coinbaseTx.nIndex = 0;
+  res.coinbaseTx.vMerkleBranch
+      = merkle_tests::BlockMerkleBranch (parentBlock, res.coinbaseTx.nIndex);
 
   res.vChainMerkleBranch = auxpowChainMerkleBranch;
   res.nChainIndex = auxpowChainIndex;
