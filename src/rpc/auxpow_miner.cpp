@@ -228,13 +228,6 @@ AuxpowMiner::submitWork (const std::string& hashHex,
 {
   auxMiningCheck ();
 
-  std::shared_ptr<CBlock> shared_block;
-  {
-    LOCK (cs);
-    const CBlock* pblock = lookupSavedBlock (hashHex);
-    shared_block = std::make_shared<CBlock> (*pblock);
-  }
-
   std::vector<unsigned char> vchData = ParseHex (dataHex);
   if (vchData.size () < 80)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid size of data");
@@ -245,8 +238,21 @@ AuxpowMiner::submitWork (const std::string& hashHex,
   std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
   ss >> *fakeHeader;
 
+  /* If hashHex is not given (old form of getwork), then we use the fake
+     header's hashMerkleRoot, since that must contain the block hash.  */
+  std::string hashForLookup = hashHex;
+  if (hashForLookup.empty ())
+    hashForLookup = fakeHeader->hashMerkleRoot.GetHex ();
+
+  std::shared_ptr<CBlock> shared_block;
+  {
+    LOCK (cs);
+    const CBlock* pblock = lookupSavedBlock (hashForLookup);
+    shared_block = std::make_shared<CBlock> (*pblock);
+  }
+
   shared_block->pow.setFakeHeader (std::move (fakeHeader));
-  assert (shared_block->GetHash ().GetHex () == hashHex);
+  assert (shared_block->GetHash ().GetHex () == hashForLookup);
 
   return ProcessNewBlock (Params (), shared_block, true, nullptr);
 }

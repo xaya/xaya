@@ -1097,12 +1097,15 @@ UniValue creatework(const JSONRPCRequest& request)
 
 UniValue submitwork(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
-            "submitwork <hash> <data>\n"
+            "submitwork (<hash>) <data>\n"
             "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
+            "\nIf <hash> is not given, it will be deduced from <data>.\n"
+            "This feature is deprecated, though -- prefer to add <hash>!\n"
             "\nArguments:\n"
-            "1. data      (string, required) solved block header data\n"
+            "1. hash      (string, optional) hash of the block to submit\n"
+            "2. data      (string, required) solved block header data\n"
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
@@ -1110,8 +1113,17 @@ UniValue submitwork(const JSONRPCRequest& request)
             + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
             );
 
-    return g_auxpow_miner->submitWork(request.params[0].get_str(),
-                                      request.params[1].get_str());
+    std::string hashHex;
+    std::string dataHex;
+    if (request.params.size() == 1)
+      dataHex = request.params[0].get_str();
+    else
+      {
+        hashHex = request.params[0].get_str();
+        dataHex = request.params[1].get_str();
+      }
+
+    return g_auxpow_miner->submitWork(hashHex, dataHex);
 }
 
 /* ************************************************************************** */

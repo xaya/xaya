@@ -4504,16 +4504,18 @@ UniValue getwork(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp
-          || (request.params.size() != 0 && request.params.size() != 2))
+    if (request.fHelp || request.params.size() > 2)
         throw std::runtime_error(
-            "getwork (hash data)\n"
+            "getwork ((hash) data)\n"
             "\nCreate or submit a stand-alone mined block.\n"
             "\nWithout arguments, create a new block and return information\n"
             "required to solve it.  With arguments, submit a solved\n"
             "PoW for a previously-returned block.\n"
+            "\nIf hash is not given, it will be deduced from data.\n"
+            "This feature is deprecated, though -- prefer to add hash!\n"
             "\nArguments:\n"
-            "1. data      (string, optional) solved block header data\n"
+            "1. hash      (string, optional) hash of the block to submit\n"
+            "2. data      (string, optional) solved block header data\n"
             "\nResult (without arguments):\n"
             "{\n"
             "  \"hash\"               (string) hash of the created block\n"
@@ -4550,9 +4552,18 @@ UniValue getwork(const JSONRPCRequest& request)
         return g_auxpow_miner->createWork(coinbaseScript->reserveScript);
 
     /* Submit a block instead.  */
-    assert(request.params.size() == 2);
-    bool fAccepted = g_auxpow_miner->submitWork(request.params[0].get_str(),
-                                                request.params[1].get_str());
+
+    std::string hashHex;
+    std::string dataHex;
+    if (request.params.size() == 1)
+      dataHex = request.params[0].get_str();
+    else
+      {
+        hashHex = request.params[0].get_str();
+        dataHex = request.params[1].get_str();
+      }
+
+    const bool fAccepted = g_auxpow_miner->submitWork(hashHex, dataHex);
     if (fAccepted)
         coinbaseScript->KeepScript();
 

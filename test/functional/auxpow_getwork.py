@@ -95,6 +95,14 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     assert_greater_than_or_equal (t['amount'], Decimal ("1"))
     assert_equal (t['confirmations'], 1)
 
+    # Mine a block using the hash-less form of submit.
+    work = create ()
+    target = auxpow.reverseHex (work['target'])
+    solved = auxpow.solveData (work['data'], target, True)
+    res = submit (solved)
+    assert res
+    assert_equal (self.nodes[0].getbestblockhash (), work['hash'])
+
   def test_getwork (self):
     """
     Test the getwork method.
