@@ -242,8 +242,7 @@ BOOST_FIXTURE_TEST_CASE (mmAlgoCheck_sha256d, ValidationSetup)
   auto& fakeHeader = pow.initFakeHeader (block);
   MineHeader (fakeHeader, pow, params, true);
   BOOST_CHECK (!pow.isMergeMined ());
-  // FIXME: Uncomment once we enforce SHA256D to be merge-mined.
-  //BOOST_CHECK (!pow.isValid (hash, params));
+  BOOST_CHECK (!pow.isValid (hash, params));
 
   auto& hdr = pow.initAuxpow (block);
   MineHeader (hdr, pow, params, true);

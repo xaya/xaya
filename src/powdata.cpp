@@ -130,7 +130,8 @@ PowData::isValid (const uint256& hash, const Consensus::Params& params) const
   switch (getCoreAlgo ())
     {
     case PowAlgo::SHA256D:
-      /* FIXME: Enforce SHA256D to be merge-mined.  */
+      if (!isMergeMined ())
+        return error ("%s: SHA256D must be merge-mined", __func__);
       break;
     case PowAlgo::NEOSCRYPT:
       if (isMergeMined ())
