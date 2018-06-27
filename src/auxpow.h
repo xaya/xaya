@@ -26,6 +26,11 @@ namespace auxpow_tests
 class CAuxPowForTest;
 }
 
+namespace powdata_tests
+{
+class CAuxPowForTest;
+}
+
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
 
@@ -120,6 +125,7 @@ private:
 
   friend class PowData;
   friend class auxpow_tests::CAuxPowForTest;
+  friend class powdata_tests::CAuxPowForTest;
 
 public:
 

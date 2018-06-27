@@ -139,97 +139,232 @@ BOOST_AUTO_TEST_CASE (serialisation_auxpow)
 
 /* ************************************************************************** */
 
+/**
+ * Friend class of CAuxPow that is used in the tests below to manipulate the
+ * auxpow to make it invalid.
+ */
+class CAuxPowForTest
+{
+public:
+
+  static void
+  invalidateAuxpow (CAuxPow& auxpow)
+  {
+    ++auxpow.nChainIndex;
+  }
+
+};
+
+/**
+ * Friend class of PowData to give access to internals.
+ */
+class PowDataForTest : public PowData
+{
+public:
+
+  using PowData::auxpow;
+
+};
+
 namespace
 {
 
+constexpr uint32_t bitsRegtest = 0x207fffff;
+constexpr uint32_t bitsMainnet = 0x1e0ffff0;
+
 void
-MineFakeHeader (CPureBlockHeader& hdr, const PowData& data,
-                const Consensus::Params& params, const bool ok)
+MineHeader (CPureBlockHeader& hdr, const PowData& data,
+            const Consensus::Params& params, const bool ok)
 {
   while (data.checkProofOfWork (hdr, params) != ok)
     ++hdr.nNonce;
 }
 
-constexpr uint32_t bitsRegtest = 0x207fffff;
-constexpr uint32_t bitsMainnet = 0x1e0ffff0;
-
-}
-
-BOOST_AUTO_TEST_CASE (validation_fakeHeader)
+class ValidationSetup : public TestingSetup
 {
-  /* Use regtest parameters to allow mining with easy difficulty.  */
-  SelectParams (CBaseChainParams::REGTEST);
-  const auto& params = Params ().GetConsensus ();
+public:
+
+  const Consensus::Params& params;
 
   CBlockHeader block;
-  block.nTime = 1234;
-  const uint256 hash = block.GetHash ();
+  uint256 hash;
 
-  PowData powTmpl;
-  powTmpl.setCoreAlgo (PowAlgo::NEOSCRYPT);
-  powTmpl.setBits (bitsRegtest);
+  PowDataForTest pow;
 
-  /* No fake header set, should be invalid.  */
-  BOOST_CHECK (!powTmpl.isValid (hash, params));
-
-  /* Valid PoW but not committing to the block hash.  */
+  ValidationSetup ()
+    : TestingSetup(CBaseChainParams::REGTEST),
+      params(Params ().GetConsensus ())
   {
-    PowData pow(powTmpl);
-    std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
-    MineFakeHeader (*fakeHeader, pow, params, true);
-    pow.setFakeHeader (std::move (fakeHeader));
-    BOOST_CHECK (pow.isValid (uint256 (), params));
-    BOOST_CHECK (!pow.isValid (hash, params));
+    block.nTime = 1234;
+    hash = block.GetHash ();
+
+    pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
+    pow.setBits (bitsRegtest);
   }
 
-  /* Correct PoW commitment.  */
-  {
-    PowData pow(powTmpl);
-    auto& fakeHeader = pow.initFakeHeader (block);
-    MineFakeHeader (fakeHeader, pow, params, false);
-    BOOST_CHECK (!pow.isValid (hash, params));
-    MineFakeHeader (fakeHeader, pow, params, true);
-    BOOST_CHECK (pow.isValid (hash, params));
-  }
+};
 
-  /* The PoW is (very likely) still invalid for higher difficulty.  */
-  {
-    PowData pow(powTmpl);
-    auto& fakeHeader = pow.initFakeHeader (block);
-    MineFakeHeader (fakeHeader, pow, params, true);
-    pow.setBits (bitsMainnet);
-    BOOST_CHECK (!pow.isValid (hash, params));
-  }
+class ValidationSetupSha : public ValidationSetup
+{
+public:
 
-  /* PoW also works for SHA256D.  */
+  ValidationSetupSha ()
+    : ValidationSetup ()
   {
-    PowData pow(powTmpl);
     pow.setCoreAlgo (PowAlgo::SHA256D);
-    auto& fakeHeader = pow.initFakeHeader (block);
-    MineFakeHeader (fakeHeader, pow, params, true);
-    BOOST_CHECK (pow.isValid (hash, params));
   }
 
-  /* Wrong algo (not matching what we mined).  */
-  {
-    PowData pow(powTmpl);
-    auto& fakeHeader = pow.initFakeHeader (block);
+};
 
-    /* Since the difficulty is very low, it is likely (50%) that the PoW
-       still matches the other algo.  But if we try a couple of times, there
-       should at least be one try that does not match.  */
-    bool foundMismatch = false;
-    for (int i = 0; i < 10; ++i)
-      {
-        fakeHeader.nTime = i;
-        pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
-        MineFakeHeader (fakeHeader, pow, params, true);
-        pow.setCoreAlgo (PowAlgo::SHA256D);
-        if (!pow.isValid (hash, params))
-          foundMismatch = true;
-      }
-    BOOST_CHECK (foundMismatch);
-  }
+} // anonymous namespace
+
+/* Tests for the rules about which algos must be merge vs stand-alone mined.  */
+
+BOOST_FIXTURE_TEST_CASE (mmAlgoCheck_neoscrypt, ValidationSetup)
+{
+  pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
+
+  auto& fakeHeader = pow.initFakeHeader (block);
+  MineHeader (fakeHeader, pow, params, true);
+  BOOST_CHECK (!pow.isMergeMined ());
+  BOOST_CHECK (pow.isValid (hash, params));
+
+  auto& hdr = pow.initAuxpow (block);
+  MineHeader (hdr, pow, params, true);
+  BOOST_CHECK (pow.isMergeMined ());
+  BOOST_CHECK (!pow.isValid (hash, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (mmAlgoCheck_sha256d, ValidationSetup)
+{
+  pow.setCoreAlgo (PowAlgo::SHA256D);
+
+  auto& fakeHeader = pow.initFakeHeader (block);
+  MineHeader (fakeHeader, pow, params, true);
+  BOOST_CHECK (!pow.isMergeMined ());
+  // FIXME: Uncomment once we enforce SHA256D to be merge-mined.
+  //BOOST_CHECK (!pow.isValid (hash, params));
+
+  auto& hdr = pow.initAuxpow (block);
+  MineHeader (hdr, pow, params, true);
+  BOOST_CHECK (pow.isMergeMined ());
+  BOOST_CHECK (pow.isValid (hash, params));
+}
+
+/* Tests for validation of a fake-header PoW.  */
+
+BOOST_FIXTURE_TEST_CASE (fakeHeader_unset, ValidationSetup)
+{
+  pow.setFakeHeader (nullptr);
+  BOOST_CHECK (!pow.isValid (hash, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (fakeHeader_wrongHash, ValidationSetup)
+{
+  std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
+  MineHeader (*fakeHeader, pow, params, true);
+  pow.setFakeHeader (std::move (fakeHeader));
+  BOOST_CHECK (pow.isValid (uint256 (), params));
+  BOOST_CHECK (!pow.isValid (hash, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (fakeHeader_pow, ValidationSetup)
+{
+  auto& fakeHeader = pow.initFakeHeader (block);
+  MineHeader (fakeHeader, pow, params, false);
+  BOOST_CHECK (!pow.isValid (hash, params));
+  MineHeader (fakeHeader, pow, params, true);
+  BOOST_CHECK (pow.isValid (hash, params));
+}
+
+/* Tests for validation of a merge-mined PoW.  */
+
+BOOST_FIXTURE_TEST_CASE (auxpow_unset, ValidationSetupSha)
+{
+  pow.setAuxpow (nullptr);
+  BOOST_CHECK (!pow.isValid (hash, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (auxpow_invalid, ValidationSetupSha)
+{
+  auto& hdr = pow.initAuxpow (block);
+  MineHeader (hdr, pow, params, true);
+  BOOST_CHECK (!pow.isValid (uint256 (), params));
+  BOOST_CHECK (pow.isValid (hash, params));
+  CAuxPowForTest::invalidateAuxpow (*pow.auxpow);
+  BOOST_CHECK (!pow.isValid (hash, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (auxpow_pow, ValidationSetupSha)
+{
+  auto& hdr = pow.initAuxpow (block);
+  MineHeader (hdr, pow, params, false);
+  BOOST_CHECK (!pow.isValid (hash, params));
+  MineHeader (hdr, pow, params, true);
+  BOOST_CHECK (pow.isValid (hash, params));
+}
+
+/* Tests for the checkProofOfWork method itself.  */
+
+namespace
+{
+
+class CheckPowSetup : public ValidationSetup
+{
+public:
+
+  CPureBlockHeader hdr;
+
+};
+
+/* Since the regtest difficulty is so low that we may (50% of the time) satisfy
+   (or not) a PoW accidentally, some tests repeated to make sure the underlying
+   behaviour is really correct.  */
+constexpr unsigned repeats = 10;
+
+} // anonymous namespace
+
+BOOST_FIXTURE_TEST_CASE (checkPow_neoscrypt, CheckPowSetup)
+{
+  MineHeader (hdr, pow, params, false);
+  BOOST_CHECK (!pow.checkProofOfWork (hdr, params));
+  MineHeader (hdr, pow, params, true);
+  BOOST_CHECK (pow.checkProofOfWork (hdr, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (checkPow_highDifficulty, CheckPowSetup)
+{
+  MineHeader (hdr, pow, params, true);
+  pow.setBits (bitsMainnet);
+  BOOST_CHECK (!pow.checkProofOfWork (hdr, params));
+}
+
+BOOST_FIXTURE_TEST_CASE (checkPow_sha256d, CheckPowSetup)
+{
+  for (unsigned i = 0; i < repeats; ++i)
+    {
+      pow.setCoreAlgo (PowAlgo::SHA256D);
+      hdr.nTime = i;
+      MineHeader (hdr, pow, params, true);
+      BOOST_CHECK (pow.checkProofOfWork (hdr, params));
+    }
+}
+
+BOOST_FIXTURE_TEST_CASE (checkPow_mismatchingAlgo, CheckPowSetup)
+{
+  bool foundMismatch = false;
+  for (unsigned i = 0; i < repeats; ++i)
+    {
+      hdr.nTime = i;
+
+      pow.setCoreAlgo (PowAlgo::NEOSCRYPT);
+      MineHeader (hdr, pow, params, true);
+      pow.setCoreAlgo (PowAlgo::SHA256D);
+
+      if (!pow.checkProofOfWork (hdr, params))
+        foundMismatch = true;
+    }
+  BOOST_CHECK (foundMismatch);
 }
 
 /* ************************************************************************** */

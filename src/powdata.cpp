@@ -107,8 +107,9 @@ void
 PowData::setAuxpow (std::unique_ptr<CAuxPow> apow)
 {
   /* Add merge-mining flag to algo.  */
-  algo = static_cast<PowAlgo> (static_cast<int> (getCoreAlgo ()) | mmFlag);
-  assert (algo == getCoreAlgo ());
+  const int coreAlgo = static_cast<int> (getCoreAlgo ());
+  algo = static_cast<PowAlgo> (coreAlgo | mmFlag);
+  assert (static_cast<PowAlgo> (coreAlgo) == getCoreAlgo ());
   assert (isMergeMined ());
 
   fakeHeader.reset ();
@@ -126,25 +127,37 @@ PowData::initAuxpow (const CPureBlockHeader& block)
 bool
 PowData::isValid (const uint256& hash, const Consensus::Params& params) const
 {
-  if (isMergeMined ())
-    return error ("%s: merge-mining is not supported", __func__);
-
   switch (getCoreAlgo ())
     {
     case PowAlgo::SHA256D:
+      /* FIXME: Enforce SHA256D to be merge-mined.  */
+      break;
     case PowAlgo::NEOSCRYPT:
-      /* These are the valid algos.  */
+      if (isMergeMined ())
+        return error ("%s: Neoscrypt cannot be merge-mined", __func__);
       break;
     default:
       return error ("%s: invalid mining algo used for PoW", __func__);
     }
 
-  if (fakeHeader == nullptr)
-    return error ("%s: PoW data has no fake header", __func__);
-  if (fakeHeader->hashMerkleRoot != hash)
-    return error ("%s: fake header commits to wrong hash", __func__);
-  if (!checkProofOfWork (*fakeHeader, params))
-    return error ("%s: fake header PoW is invalid", __func__);
+  if (isMergeMined ())
+    {
+      if (auxpow == nullptr)
+        return error ("%s: merge-mined PoW data has no auxpow", __func__);
+      if (!auxpow->check (hash, params.nAuxpowChainId, params))
+        return error ("%s: auxpow is invalid", __func__);
+      if (!checkProofOfWork (auxpow->parentBlock, params))
+        return error ("%s: auxpow PoW is invalid", __func__);
+    }
+  else
+    {
+      if (fakeHeader == nullptr)
+        return error ("%s: stand-alone PoW data has no fake header", __func__);
+      if (fakeHeader->hashMerkleRoot != hash)
+        return error ("%s: fake header commits to wrong hash", __func__);
+      if (!checkProofOfWork (*fakeHeader, params))
+        return error ("%s: fake header PoW is invalid", __func__);
+    }
 
   return true;
 }

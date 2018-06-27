@@ -16,6 +16,11 @@
 #include <memory>
 #include <string>
 
+namespace powdata_tests
+{
+class PowDataForTest;
+}
+
 /** Possible PoW algorithms and their ID.  */
 enum class PowAlgo : uint8_t
 {
@@ -83,6 +88,8 @@ private:
   std::shared_ptr<CPureBlockHeader> fakeHeader;
   /** The auxpow object if this is merge-mined.  */
   std::shared_ptr<CAuxPow> auxpow;
+
+  friend class powdata_tests::PowDataForTest;
 
 public:
 
