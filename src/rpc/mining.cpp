@@ -172,15 +172,27 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        auto& fakeHeader = pblock->pow.initFakeHeader (*pblock);
-        while (nMaxTries > 0 && fakeHeader.nNonce < nInnerLoopCount && !pblock->pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
-            ++fakeHeader.nNonce;
+        CPureBlockHeader* pfakeHeader = nullptr;
+        switch (algo)
+        {
+        case PowAlgo::SHA256D:
+            pfakeHeader = &pblock->pow.initAuxpow (*pblock);
+            break;
+        case PowAlgo::NEOSCRYPT:
+            pfakeHeader = &pblock->pow.initFakeHeader (*pblock);
+            break;
+        default:
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Unknown PoW algo");
+        }
+        assert (pfakeHeader != nullptr);
+        while (nMaxTries > 0 && pfakeHeader->nNonce < nInnerLoopCount && !pblock->pow.checkProofOfWork(*pfakeHeader, Params().GetConsensus())) {
+            ++pfakeHeader->nNonce;
             --nMaxTries;
         }
         if (nMaxTries == 0) {
             break;
         }
-        if (fakeHeader.nNonce == nInnerLoopCount) {
+        if (pfakeHeader->nNonce == nInnerLoopCount) {
             continue;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
