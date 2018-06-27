@@ -124,6 +124,7 @@ private:
                                     int nIndex);
 
   friend class PowData;
+  friend UniValue AuxpowToJSON(const CAuxPow& auxpow);
   friend class auxpow_tests::CAuxPowForTest;
   friend class powdata_tests::CAuxPowForTest;
 

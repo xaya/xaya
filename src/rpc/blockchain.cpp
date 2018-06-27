@@ -69,6 +69,42 @@ double GetDifficultyForBits(const uint32_t nBits)
     return dDiff;
 }
 
+UniValue AuxpowToJSON(const CAuxPow& auxpow)
+{
+    UniValue result(UniValue::VOBJ);
+
+    {
+        UniValue tx(UniValue::VOBJ);
+        tx.push_back(Pair("hex", EncodeHexTx(*auxpow.coinbaseTx.tx)));
+        TxToJSON(*auxpow.coinbaseTx.tx, auxpow.parentBlock.GetHash(), tx);
+        result.push_back(Pair("tx", tx));
+    }
+
+    result.push_back(Pair("index", auxpow.coinbaseTx.nIndex));
+    result.push_back(Pair("chainindex", auxpow.nChainIndex));
+
+    {
+        UniValue branch(UniValue::VARR);
+        for (const auto& node : auxpow.coinbaseTx.vMerkleBranch)
+            branch.push_back(node.GetHex());
+        result.push_back(Pair("merklebranch", branch));
+    }
+
+    {
+        UniValue branch(UniValue::VARR);
+        for (const auto& node : auxpow.vChainMerkleBranch)
+            branch.push_back(node.GetHex());
+        result.push_back(Pair("chainmerklebranch", branch));
+    }
+
+    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
+    ssParent << auxpow.parentBlock;
+    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
+    result.push_back(Pair("parentblock", strHex));
+
+    return result;
+}
+
 namespace
 {
 
@@ -81,9 +117,14 @@ PowDataToJSON (const PowData& pow)
   result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
   result.pushKV ("difficulty", GetDifficultyForBits (pow.getBits ()));
 
-  CDataStream ss(SER_GETHASH, PROTOCOL_VERSION);
-  ss << pow.getFakeHeader ();
-  result.pushKV ("fakeheader", HexStr (ss.begin (), ss.end ()));
+  if (pow.isMergeMined ())
+    result.pushKV ("auxpow", AuxpowToJSON (pow.getAuxpow ()));
+  else
+    {
+      CDataStream ss(SER_GETHASH, PROTOCOL_VERSION);
+      ss << pow.getFakeHeader ();
+      result.pushKV ("fakeheader", HexStr (ss.begin (), ss.end ()));
+    }
 
   return result;
 }
