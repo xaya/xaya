@@ -154,6 +154,8 @@ BASE_SCRIPTS = [
     # auxpow tests
     'auxpow_getwork.py',
     'auxpow_getwork.py --segwit',
+    'auxpow_mining.py',
+    'auxpow_mining.py --segwit',
 
     # name tests
     'name_immature_inputs.py',
