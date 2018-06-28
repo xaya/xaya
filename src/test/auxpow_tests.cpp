@@ -223,8 +223,6 @@ CAuxpowBuilder::buildCoinbaseData (bool header, const valtype& auxRoot,
 
 /* ************************************************************************** */
 
-// FIXME: Re-enable with proper auxpow support in Chimaera.
-#if 0
 BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
 {
   const Consensus::Params& params = Params ().GetConsensus ();
@@ -267,15 +265,8 @@ BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
   auxpow = builder.get (builder.parentBlock.vtx[1]);
   BOOST_CHECK (!auxpow.check (hashAux, ourChainId, params));
 
-  /* The parent chain can't have the same chain ID.  */
-  CAuxpowBuilder builder2(builder);
-  builder2.parentBlock.SetChainId (100);
-  BOOST_CHECK (builder2.get ().check (hashAux, ourChainId, params));
-  builder2.parentBlock.SetChainId (ourChainId);
-  BOOST_CHECK (!builder2.get ().check (hashAux, ourChainId, params));
-
   /* Disallow too long merkle branches.  */
-  builder2 = builder;
+  CAuxpowBuilder builder2(builder);
   index = CAuxPow::getExpectedIndex (nonce, ourChainId, height + 1);
   auxRoot = builder2.buildAuxpowChain (hashAux, height + 1, index);
   data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height + 1, nonce);
@@ -360,138 +351,6 @@ BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
   builder2.setCoinbase (CScript () << data);
   BOOST_CHECK (builder2.get ().check (hashAux, ourChainId, params));
 }
-#endif  // Disabled pending for proper auxpow support.
-
-/* ************************************************************************** */
-
-// FIXME: Re-enable with proper auxpow support in Chimaera.
-#if 0
-
-/**
- * Mine a block (assuming minimal difficulty) that either matches
- * or doesn't match the difficulty target specified in the block header.
- * @param block The block to mine (by updating nonce).
- * @param ok Whether the block should be ok for PoW.
- * @param nBits Use this as difficulty if specified.
- */
-static void
-mineBlock (CBlockHeader& block, bool ok, int nBits = -1)
-{
-  if (nBits == -1)
-    nBits = block.nBits;
-
-  arith_uint256 target;
-  target.SetCompact (nBits);
-
-  block.nNonce = 0;
-  while (true)
-    {
-      const bool nowOk = (UintToArith256 (block.GetHash ()) <= target);
-      if ((ok && nowOk) || (!ok && !nowOk))
-        break;
-
-      ++block.nNonce;
-    }
-
-  if (ok)
-    BOOST_CHECK (CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus().powLimitNeoscrypt));
-  else
-    BOOST_CHECK (!CheckProofOfWork (block.GetHash (), nBits, Params().GetConsensus().powLimitNeoscrypt));
-}
-
-BOOST_FIXTURE_TEST_CASE (auxpow_pow, BasicTestingSetup)
-{
-  /* Use regtest parameters to allow mining with easy difficulty.  */
-  SelectParams (CBaseChainParams::REGTEST);
-  const Consensus::Params& params = Params ().GetConsensus ();
-
-  const arith_uint256 target = (~arith_uint256 (0) >> 1);
-  CBlockHeader block;
-  block.nBits = target.GetCompact ();
-
-  /* Verify the block version checks.  */
-
-  block.nVersion = 1;
-  mineBlock (block, true);
-  BOOST_CHECK (CheckProofOfWork (block, params));
-
-  block.nVersion = 2;
-  mineBlock (block, true);
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-
-  block.SetBaseVersion (2, params.nAuxpowChainId);
-  mineBlock (block, true);
-  BOOST_CHECK (CheckProofOfWork (block, params));
-
-  block.SetChainId (params.nAuxpowChainId + 1);
-  mineBlock (block, true);
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-
-  /* Check the case when the block does not have auxpow (this is true
-     right now).  */
-
-  block.SetChainId (params.nAuxpowChainId);
-  block.SetAuxpowVersion (true);
-  mineBlock (block, true);
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-
-  block.SetAuxpowVersion (false);
-  mineBlock (block, true);
-  BOOST_CHECK (CheckProofOfWork (block, params));
-  mineBlock (block, false);
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-
-  /* ****************************************** */
-  /* Check the case that the block has auxpow.  */
-
-  CAuxpowBuilder builder;
-  CAuxPow auxpow;
-  const int32_t ourChainId = params.nAuxpowChainId;
-  const unsigned height = 3;
-  const int nonce = 7;
-  const int index = CAuxPow::getExpectedIndex (nonce, ourChainId, height);
-  valtype auxRoot, data;
-
-  /* Valid auxpow, PoW check of parent block.  */
-  block.SetAuxpowVersion (true);
-  auxRoot = builder.buildAuxpowChain (block.GetHash (), height, index);
-  data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
-  builder.setCoinbase (CScript () << data);
-  mineBlock (builder.parentBlock, false, block.nBits);
-  block.SetAuxpow (builder.getUnique ());
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-  mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (builder.getUnique ());
-  BOOST_CHECK (CheckProofOfWork (block, params));
-
-  /* Mismatch between auxpow being present and block.nVersion.  Note that
-     block.SetAuxpow sets also the version and that we want to ensure
-     that the block hash itself doesn't change due to version changes.
-     This requires some work arounds.  */
-  block.SetAuxpowVersion (false);
-  const uint256 hashAux = block.GetHash ();
-  auxRoot = builder.buildAuxpowChain (hashAux, height, index);
-  data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
-  builder.setCoinbase (CScript () << data);
-  mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (builder.getUnique ());
-  BOOST_CHECK (hashAux != block.GetHash ());
-  block.SetAuxpowVersion (false);
-  BOOST_CHECK (hashAux == block.GetHash ());
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-
-  /* Modifying the block invalidates the PoW.  */
-  block.SetAuxpowVersion (true);
-  auxRoot = builder.buildAuxpowChain (block.GetHash (), height, index);
-  data = CAuxpowBuilder::buildCoinbaseData (true, auxRoot, height, nonce);
-  builder.setCoinbase (CScript () << data);
-  mineBlock (builder.parentBlock, true, block.nBits);
-  block.SetAuxpow (builder.getUnique ());
-  BOOST_CHECK (CheckProofOfWork (block, params));
-  tamperWith (block.hashMerkleRoot);
-  BOOST_CHECK (!CheckProofOfWork (block, params));
-}
-#endif  // Disabled pending for proper auxpow support.
 
 /* ************************************************************************** */
 

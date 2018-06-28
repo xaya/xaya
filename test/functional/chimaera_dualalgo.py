@@ -26,16 +26,15 @@ class DualAlgoTest (BitcoinTestFramework):
 
   def assertBlocksSha256d (self, hashes):
     """
-    Verifies that the blocks with the given hashes are mined using SHA256D.
-
-    FIXME: Once we implement merge mining, verify that they are merge mined.
+    Verifies that the blocks with the given hashes are mined using SHA256D,
+    including that they are merge-mined.
     """
 
     for hash in hashes:
       powData = self.node.getblock (hash)['powdata']
       assert_equal (powData['algo'], 'sha256d')
-      assert_equal (powData['mergemined'], False)
-      assert 'fakeheader' in powData
+      assert_equal (powData['mergemined'], True)
+      assert 'auxpow' in powData
 
   def run_test (self):
     self.node = self.nodes[0]

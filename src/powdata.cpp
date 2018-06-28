@@ -86,7 +86,10 @@ PowData::setFakeHeader (std::unique_ptr<CPureBlockHeader> hdr)
 {
   /* Clear merge-mining flag (if it was set).  */
   algo = getCoreAlgo ();
+  assert (algo == getCoreAlgo ());
+  assert (!isMergeMined ());
 
+  auxpow.reset ();
   fakeHeader.reset (hdr.release ());
 }
 
@@ -100,28 +103,62 @@ PowData::initFakeHeader (const CPureBlockHeader& block)
   return *fakeHeader;
 }
 
+void
+PowData::setAuxpow (std::unique_ptr<CAuxPow> apow)
+{
+  /* Add merge-mining flag to algo.  */
+  const int coreAlgo = static_cast<int> (getCoreAlgo ());
+  algo = static_cast<PowAlgo> (coreAlgo | mmFlag);
+  assert (static_cast<PowAlgo> (coreAlgo) == getCoreAlgo ());
+  assert (isMergeMined ());
+
+  fakeHeader.reset ();
+  auxpow.reset (apow.release ());
+}
+
+CPureBlockHeader&
+PowData::initAuxpow (const CPureBlockHeader& block)
+{
+  setAuxpow (CAuxPow::createAuxPow (block));
+  assert (auxpow != nullptr);
+  return auxpow->parentBlock;
+}
+
 bool
 PowData::isValid (const uint256& hash, const Consensus::Params& params) const
 {
-  if (isMergeMined ())
-    return error ("%s: merge-mining is not supported", __func__);
-
   switch (getCoreAlgo ())
     {
     case PowAlgo::SHA256D:
+      if (!isMergeMined ())
+        return error ("%s: SHA256D must be merge-mined", __func__);
+      break;
     case PowAlgo::NEOSCRYPT:
-      /* These are the valid algos.  */
+      if (isMergeMined ())
+        return error ("%s: Neoscrypt cannot be merge-mined", __func__);
       break;
     default:
       return error ("%s: invalid mining algo used for PoW", __func__);
     }
 
-  if (fakeHeader == nullptr)
-    return error ("%s: PoW data has no fake header", __func__);
-  if (fakeHeader->hashMerkleRoot != hash)
-    return error ("%s: fake header commits to wrong hash", __func__);
-  if (!checkProofOfWork (*fakeHeader, params))
-    return error ("%s: fake header PoW is invalid", __func__);
+  if (isMergeMined ())
+    {
+      if (auxpow == nullptr)
+        return error ("%s: merge-mined PoW data has no auxpow", __func__);
+      if (!auxpow->check (hash, params.nAuxpowChainId, params))
+        return error ("%s: auxpow is invalid", __func__);
+      if (!checkProofOfWork (auxpow->parentBlock, params))
+        return error ("%s: auxpow PoW is invalid", __func__);
+    }
+  else
+    {
+      if (fakeHeader == nullptr)
+        return error ("%s: stand-alone PoW data has no fake header", __func__);
+      if (fakeHeader->hashMerkleRoot != hash)
+        return error ("%s: fake header commits to wrong hash", __func__);
+      if (!checkProofOfWork (*fakeHeader, params))
+        return error ("%s: fake header PoW is invalid", __func__);
+    }
 
   return true;
 }

@@ -5,6 +5,7 @@
 #ifndef BITCOIN_POWDATA_H
 #define BITCOIN_POWDATA_H
 
+#include <auxpow.h>
 #include <consensus/params.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
@@ -14,6 +15,11 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+
+namespace powdata_tests
+{
+class PowDataForTest;
+}
 
 /** Possible PoW algorithms and their ID.  */
 enum class PowAlgo : uint8_t
@@ -80,6 +86,10 @@ private:
 
   /** The block header satisfying PoW if this is stand-alone mined.  */
   std::shared_ptr<CPureBlockHeader> fakeHeader;
+  /** The auxpow object if this is merge-mined.  */
+  std::shared_ptr<CAuxPow> auxpow;
+
+  friend class powdata_tests::PowDataForTest;
 
 public:
 
@@ -99,11 +109,27 @@ public:
     READWRITE (algo);
     READWRITE (nBits);
 
-    assert (!isMergeMined ());
-    if (ser_action.ForRead ())
-      fakeHeader = std::make_shared<CPureBlockHeader> ();
-    assert (fakeHeader != nullptr);
-    READWRITE (*fakeHeader);
+    if (isMergeMined ())
+      {
+        if (ser_action.ForRead ())
+          {
+            fakeHeader.reset ();
+            auxpow = std::make_shared<CAuxPow> ();
+          }
+        assert (auxpow != nullptr);
+        READWRITE (*auxpow);
+
+      }
+    else
+      {
+        if (ser_action.ForRead ())
+          {
+            auxpow.reset ();
+            fakeHeader = std::make_shared<CPureBlockHeader> ();
+          }
+        assert (fakeHeader != nullptr);
+        READWRITE (*fakeHeader);
+      }
   }
 
   inline bool
@@ -158,6 +184,25 @@ public:
    * main-block hash and consensus parameters.
    */
   bool isValid (const uint256& hash, const Consensus::Params& params) const;
+
+  inline const CAuxPow&
+  getAuxpow () const
+  {
+    assert (isMergeMined ());
+    assert (auxpow != nullptr);
+    return *auxpow;
+  }
+
+  /**
+   * Sets the auxpow object and the merge-mining flag.
+   */
+  void setAuxpow (std::unique_ptr<CAuxPow> apow);
+
+  /**
+   * Sets a newly created auxpow committing to the given main header and
+   * return a reference to its parent block header that can then be mined.
+   */
+  CPureBlockHeader& initAuxpow (const CPureBlockHeader& block);
 
   /**
    * Verifies whether the given PoW header has valid PoW with respect to this

@@ -215,9 +215,8 @@ AuxpowMiner::submitAuxBlock (const std::string& hashHex,
   CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
   std::unique_ptr<CAuxPow> pow(new CAuxPow ());
   ss >> *pow;
-  // FIXME: Enable once the block format is actually changed to allow for
-  // external PoW data.
-  //shared_block->SetAuxpow (std::move (pow));
+
+  shared_block->pow.setAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
   return ProcessNewBlock (Params (), shared_block, true, nullptr);
