@@ -6,6 +6,9 @@ echo "\nName expiration..."
 echo "\nName with immature inputs..."
 ./name_immature_inputs.py
 
+echo "\nName ismine field..."
+./name_ismine.py
+
 echo "\nName list..."
 ./name_list.py
 
