@@ -246,7 +246,6 @@ name_list (const JSONRPCRequest& request)
         "[\n"
         + NameInfoHelp ("  ")
             .withExpiration ()
-            .withOwnership ()
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -311,8 +310,8 @@ name_list (const JSONRPCRequest& request)
         = getNameInfo (name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
-      addExpirationInfo (pindex->nHeight, obj);
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
+      addExpirationInfo (pindex->nHeight, obj);
 
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;

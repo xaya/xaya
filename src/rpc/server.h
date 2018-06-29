@@ -205,8 +205,8 @@ extern std::string HelpExampleCli(const std::string& methodname, const std::stri
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
 
 extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
-extern void addExpirationInfo(int height, UniValue& data);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
+extern void addExpirationInfo(int height, UniValue& data);
 
 #ifdef ENABLE_WALLET
 class CWallet;
@@ -234,7 +234,6 @@ public:
 
   NameInfoHelp& withField (const std::string& field, const std::string& doc);
   NameInfoHelp& withExpiration ();
-  NameInfoHelp& withOwnership ();
 
   std::string finish (const std::string& trailing);
 };

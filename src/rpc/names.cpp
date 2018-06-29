@@ -56,6 +56,19 @@ getNameInfo (const valtype& name, const valtype& value,
 }
 
 /**
+ * Return name info object for a CNameData object.
+ */
+UniValue
+getNameInfo (const valtype& name, const CNameData& data)
+{
+  UniValue result = getNameInfo (name, data.getValue (),
+                                 data.getUpdateOutpoint (),
+                                 data.getAddress ());
+  addExpirationInfo (data.getHeight (), result);
+  return result;
+}
+
+/**
  * Adds expiration information to the JSON object, based on the last-update
  * height for the name given.
  */
@@ -72,6 +85,30 @@ addExpirationInfo (const int height, UniValue& data)
   data.pushKV ("expires_in", expiresIn);
   data.push_back (Pair ("expired", expired));
 }
+
+#ifdef ENABLE_WALLET
+/**
+ * Adds the "ismine" field giving ownership info to the JSON object.
+ */
+void
+addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
+                  UniValue& data)
+{
+  if (pwallet == nullptr)
+    {
+      data.push_back (Pair ("ismine", false));
+      return;
+    }
+
+  AssertLockHeld (pwallet->cs_wallet);
+  const isminetype mine = IsMine (*pwallet, addr);
+  const bool isMine = (mine & ISMINE_SPENDABLE);
+  data.push_back (Pair ("ismine", isMine));
+}
+#endif
+
+namespace
+{
 
 /**
  * Helper class that extracts the wallet for the current RPC request, if any.
@@ -127,27 +164,6 @@ public:
 
 };
 
-#ifdef ENABLE_WALLET
-/**
- * Adds the "ismine" field giving ownership info to the JSON object.
- */
-void
-addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
-                  UniValue& data)
-{
-  if (pwallet == nullptr)
-    {
-      data.push_back (Pair ("ismine", false));
-      return;
-    }
-
-  AssertLockHeld (pwallet->cs_wallet);
-  const isminetype mine = IsMine (*pwallet, addr);
-  const bool isMine = (mine & ISMINE_SPENDABLE);
-  data.push_back (Pair ("ismine", isMine));
-}
-#endif
-
 /**
  * Variant of addOwnershipInfo that uses a MaybeWalletForRequest.  This takes
  * care of disabled wallet support.
@@ -162,17 +178,19 @@ addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
 }
 
 /**
- * Return name info object for a CNameData object.
+ * Utility variant of getNameInfo that already includes ownership information.
+ * This is the most common call for methods in this file.
  */
 UniValue
-getNameInfo (const valtype& name, const CNameData& data)
+getNameInfo (const valtype& name, const CNameData& data,
+             const MaybeWalletForRequest& wallet)
 {
-  UniValue result = getNameInfo (name, data.getValue (),
-                                 data.getUpdateOutpoint (),
-                                 data.getAddress ());
-  addExpirationInfo (data.getHeight (), result);
-  return result;
+  UniValue res = getNameInfo (name, data);
+  addOwnershipInfo (data.getAddress (), wallet, res);
+  return res;
 }
+
+} // anonymous namespace
 
 NameInfoHelp::NameInfoHelp (const std::string& ind)
   : indent(ind)
@@ -184,6 +202,10 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
   withField ("\"vout\": xxxxx",
            "(numeric) the index of the name output in the last update");
   withField ("\"address\": xxxxx", "(string) the address holding the name");
+#ifdef ENABLE_WALLET
+  withField ("\"ismine\": xxxxx",
+             "(boolean) whether the name is owned by the wallet");
+#endif
 }
 
 NameInfoHelp&
@@ -204,16 +226,6 @@ NameInfoHelp::withExpiration ()
   withField ("\"height\": xxxxx", "(numeric) the name's last update height");
   withField ("\"expires_in\": xxxxx", "(numeric) expire counter for the name");
   withField ("\"expired\": xxxxx", "(boolean) whether the name is expired");
-  return *this;
-}
-
-NameInfoHelp&
-NameInfoHelp::withOwnership ()
-{
-#ifdef ENABLE_WALLET
-  withField ("\"ismine\": xxxxx",
-             "(boolean) whether the name is owned by the wallet");
-#endif
   return *this;
 }
 
@@ -240,7 +252,6 @@ name_show (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
         + NameInfoHelp ("")
-            .withOwnership ()
             .withExpiration ()
             .finish ("") +
         "\nExamples:\n"
@@ -268,14 +279,9 @@ name_show (const JSONRPCRequest& request)
       }
   }
 
-  UniValue obj = getNameInfo (name, data);
-  {
-    MaybeWalletForRequest wallet(request);
-    LOCK (wallet.getLock ());
-    addOwnershipInfo (data.getAddress (), wallet, obj);
-  }
-
-  return obj;
+  MaybeWalletForRequest wallet(request);
+  LOCK (wallet.getLock ());
+  return getNameInfo (name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -293,7 +299,6 @@ name_history (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
-            .withOwnership ()
             .withExpiration ()
             .finish (",") +
         "  ...\n"
@@ -332,23 +337,13 @@ name_history (const JSONRPCRequest& request)
       assert (history.empty ());
   }
 
+  MaybeWalletForRequest wallet(request);
+  LOCK (wallet.getLock ());
+
   UniValue res(UniValue::VARR);
-  {
-    MaybeWalletForRequest wallet(request);
-    LOCK (wallet.getLock ());
-
-    UniValue obj;
-    for (const auto& entry : history.getData ())
-      {
-        obj = getNameInfo (name, entry);
-        addOwnershipInfo (entry.getAddress (), wallet, obj);
-        res.push_back (obj);
-      }
-
-    obj = getNameInfo (name, data);
-    addOwnershipInfo (data.getAddress (), wallet, obj);
-    res.push_back (obj);
-  }
+  for (const auto& entry : history.getData ())
+    res.push_back (getNameInfo (name, entry, wallet));
+  res.push_back (getNameInfo (name, data, wallet));
 
   return res;
 }
@@ -368,7 +363,6 @@ name_scan (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
-            .withOwnership ()
             .withExpiration ()
             .finish (",") +
         "  ...\n"
@@ -405,11 +399,7 @@ name_scan (const JSONRPCRequest& request)
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    {
-      UniValue obj = getNameInfo (name, data);
-      addOwnershipInfo (data.getAddress (), wallet, obj);
-      res.push_back (obj);
-    }
+    res.push_back (getNameInfo (name, data, wallet));
 
   return res;
 }
@@ -432,7 +422,6 @@ name_filter (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
-            .withOwnership ()
             .withExpiration ()
             .finish (",") +
         "  ...\n"
@@ -527,11 +516,7 @@ name_filter (const JSONRPCRequest& request)
       if (stats)
         ++count;
       else
-        {
-          UniValue obj = getNameInfo (name, data);
-          addOwnershipInfo (data.getAddress (), wallet, obj);
-          names.push_back (obj);
-        }
+        names.push_back (getNameInfo (name, data, wallet));
 
       if (nb > 0)
         {
@@ -571,7 +556,6 @@ name_pending (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
-            .withOwnership ()
             .withField ("\"op\": xxxxx",
                         "(string) the operation being performed")
             .finish (",") +
