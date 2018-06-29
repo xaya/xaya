@@ -11,16 +11,16 @@
 # chain, this is likely not very useful in production.  But it can be used
 # for testing and debugging.
 #
-# This needs python-jsonrpc and jsonrpclib from
-# https://github.com/joshmarshall/jsonrpclib.  It also imports auxpow from
-# test/functional/test_framework.
+# This needs jsonrpclib, which can be found in the 'python-jsonrpclib' Debian
+# package or at https://github.com/joshmarshall/jsonrpclib.  It also imports
+# auxpow from test/functional/test_framework.
 
 import codecs
 import optparse
 import struct
+from xmlrpclib import ProtocolError
 
-import jsonrpc
-from jsonrpc.proxy import JSONRPCException
+import jsonrpclib
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer
 
 import auxpow
@@ -95,8 +95,8 @@ class GetworkWrapper:
     auxpowHex = auxpow.finishAuxpow (w['tx'], hdrHex)
     try:
       res = self.backend.submitauxblock (w['auxblock']['hash'], auxpowHex)
-    except JSONRPCException as exc:
-      print ('Error submitting work: %s' % exc.error)
+    except ProtocolError as exc:
+      print ('Error submitting work: %s' % exc)
       return False
 
     # Clear cache of created works when a new block was accepted.
@@ -119,6 +119,6 @@ if __name__ == '__main__':
   if options.backend is None or options.port is None:
     parser.error ("--backend-url and --port must be specified")
 
-  backend = jsonrpc.ServiceProxy (options.backend)
+  backend = jsonrpclib.Server (options.backend)
   server = GetworkWrapper (backend, 'localhost', options.port)
   server.serve ()
