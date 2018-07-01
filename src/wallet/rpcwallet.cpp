@@ -149,14 +149,14 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 2)
         throw std::runtime_error(
             "getnewaddress ( \"label\" \"address_type\" )\n"
-            "\nReturns a new Chimaera address for receiving payments.\n"
+            "\nReturns a new Xyon address for receiving payments.\n"
             "If 'label' is specified, it is added to the address book \n"
             "so payments received with the address will be associated with 'label'.\n"
             "\nArguments:\n"
             "1. \"label\"          (string, optional) The label name for the address to be linked to. If not provided, the default label \"\" is used. It can also be set to the empty string \"\" to represent the default label. The label does not need to exist, it will be created if there is no label by the given name.\n"
             "2. \"address_type\"   (string, optional) The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -addresstype.\n"
             "\nResult:\n"
-            "\"address\"    (string) The new chimaera address\n"
+            "\"address\"    (string) The new xyon address\n"
             "\nExamples:\n"
             + HelpExampleCli("getnewaddress", "")
             + HelpExampleRpc("getnewaddress", "")
@@ -258,7 +258,7 @@ static UniValue getrawchangeaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "getrawchangeaddress ( \"address_type\" )\n"
-            "\nReturns a new Chimaera address, for receiving change.\n"
+            "\nReturns a new Xyon address, for receiving change.\n"
             "This is for use with raw transactions, NOT normal use.\n"
             "\nArguments:\n"
             "1. \"address_type\"           (string, optional) The address type to use. Options are \"legacy\", \"p2sh-segwit\", and \"bech32\". Default is set by -changetype.\n"
@@ -317,7 +317,7 @@ static UniValue setlabel(const JSONRPCRequest& request)
             "setlabel \"address\" \"label\"\n"
             "\nSets the label associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The Chimaera address to be associated with a label.\n"
+            "1. \"address\"         (string, required) The Xyon address to be associated with a label.\n"
             "2. \"label\"           (string, required) The label to assign to the address.\n"
             "\nExamples:\n"
             + HelpExampleCli("setlabel", "\"CeLpk96XKcgSpMNk3NVLSDNFUmur17Ng5S\" \"tabby\"")
@@ -328,7 +328,7 @@ static UniValue setlabel(const JSONRPCRequest& request)
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Xyon address");
     }
 
     std::string old_label = pwallet->mapAddressBook[dest].name;
@@ -383,7 +383,7 @@ static UniValue getaccount(const JSONRPCRequest& request)
             "getaccount \"address\"\n"
             "\nDEPRECATED. Returns the account associated with the given address.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The chimaera address for account lookup.\n"
+            "1. \"address\"         (string, required) The xyon address for account lookup.\n"
             "\nResult:\n"
             "\"accountname\"        (string) the account address\n"
             "\nExamples:\n"
@@ -395,7 +395,7 @@ static UniValue getaccount(const JSONRPCRequest& request)
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Xyon address");
     }
 
     std::string strAccount;
@@ -431,7 +431,7 @@ static UniValue getaddressesbyaccount(const JSONRPCRequest& request)
             "1. \"account\"        (string, required) The account name.\n"
             "\nResult:\n"
             "[                     (json array of string)\n"
-            "  \"address\"         (string) a chimaera address associated with the given account\n"
+            "  \"address\"         (string) a xyon address associated with the given account\n"
             "  ,...\n"
             "]\n"
             "\nExamples:\n"
@@ -532,7 +532,7 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
             "\nSend an amount to a given address.\n"
             + HelpRequiringPassphrase(pwallet) +
             "\nArguments:\n"
-            "1. \"address\"            (string, required) The chimaera address to send to.\n"
+            "1. \"address\"            (string, required) The xyon address to send to.\n"
             "2. \"amount\"             (numeric or string, required) The amount in " + CURRENCY_UNIT + " to send. eg 0.1\n"
             "3. \"comment\"            (string, optional) A comment used to store what the transaction is for. \n"
             "                             This is not part of the transaction, just kept in your wallet.\n"
@@ -628,7 +628,7 @@ static UniValue listaddressgroupings(const JSONRPCRequest& request)
             "[\n"
             "  [\n"
             "    [\n"
-            "      \"address\",            (string) The chimaera address\n"
+            "      \"address\",            (string) The xyon address\n"
             "      amount,                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
             "      \"label\"               (string, optional) The label\n"
             "    ]\n"
@@ -683,7 +683,7 @@ static UniValue signmessage(const JSONRPCRequest& request)
             "\nSign a message with the private key of an address"
             + HelpRequiringPassphrase(pwallet) + "\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The chimaera address to use for the private key.\n"
+            "1. \"address\"         (string, required) The xyon address to use for the private key.\n"
             "2. \"message\"         (string, required) The message to create a signature of.\n"
             "\nResult:\n"
             "\"signature\"          (string) The signature of the message encoded in base 64\n"
@@ -745,7 +745,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
             "getreceivedbyaddress \"address\" ( minconf )\n"
             "\nReturns the total amount received by the given address in transactions with at least minconf confirmations.\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The chimaera address for transactions.\n"
+            "1. \"address\"         (string, required) The xyon address for transactions.\n"
             "2. minconf             (numeric, optional, default=1) Only include transactions confirmed at least this many times.\n"
             "\nResult:\n"
             "amount   (numeric) The total amount in " + CURRENCY_UNIT + " received at this address.\n"
@@ -769,7 +769,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
     // Bitcoin address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Xyon address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
     if (!IsMine(*pwallet, scriptPubKey)) {
@@ -1057,7 +1057,7 @@ static UniValue sendfrom(const JSONRPCRequest& request)
             "                       Specifying an account does not influence coin selection, but it does associate the newly created\n"
             "                       transaction with the account, so the account's balance computation and transaction history can reflect\n"
             "                       the spend.\n"
-            "2. \"toaddress\"         (string, required) The chimaera address to send funds to.\n"
+            "2. \"toaddress\"         (string, required) The xyon address to send funds to.\n"
             "3. amount                (numeric or string, required) The amount in " + CURRENCY_UNIT + " (transaction fee is added on top).\n"
             "4. minconf               (numeric, optional, default=1) Only use funds with at least this many confirmations.\n"
             "5. \"comment\"           (string, optional) A comment used to store what the transaction is for. \n"
@@ -1085,7 +1085,7 @@ static UniValue sendfrom(const JSONRPCRequest& request)
     std::string strAccount = LabelFromValue(request.params[0]);
     CTxDestination dest = DecodeDestination(request.params[1].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Chimaera address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Xyon address");
     }
     CAmount nAmount = AmountFromValue(request.params[2]);
     if (nAmount <= 0)
@@ -1172,7 +1172,7 @@ static UniValue sendmany(const JSONRPCRequest& request)
             "1. \"fromaccount\"         (string, required) DEPRECATED. The account to send the funds from. Should be \"\" for the default account\n"
             "2. \"amounts\"             (string, required) A json object with addresses and amounts\n"
             "    {\n"
-            "      \"address\":amount   (numeric or string) The chimaera address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value\n"
+            "      \"address\":amount   (numeric or string) The xyon address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value\n"
             "      ,...\n"
             "    }\n"
             "3. minconf                 (numeric, optional, default=1) Only use the balance confirmed at least this many times.\n"
@@ -1257,7 +1257,7 @@ static UniValue sendmany(const JSONRPCRequest& request)
     for (const std::string& name_ : keys) {
         CTxDestination dest = DecodeDestination(name_);
         if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Chimaera address: ") + name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Xyon address: ") + name_);
         }
 
         if (destinations.count(dest)) {
@@ -1322,16 +1322,16 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 4) {
         std::string msg = "addmultisigaddress nrequired [\"key\",...] ( \"label\" \"address_type\" )\n"
             "\nAdd a nrequired-to-sign multisignature address to the wallet. Requires a new wallet backup.\n"
-            "Each key is a Chimaera address or hex-encoded public key.\n"
+            "Each key is a Xyon address or hex-encoded public key.\n"
             "This functionality is only intended for use with non-watchonly addresses.\n"
             "See `importaddress` for watchonly p2sh address support.\n"
             "If 'label' is specified, assign address to that label.\n"
 
             "\nArguments:\n"
             "1. nrequired                      (numeric, required) The number of required signatures out of the n keys or addresses.\n"
-            "2. \"keys\"                         (string, required) A json array of Chimaera addresses or hex-encoded public keys\n"
+            "2. \"keys\"                         (string, required) A json array of Xyon addresses or hex-encoded public keys\n"
             "     [\n"
-            "       \"address\"                  (string) Chimaera address or hex-encoded public key\n"
+            "       \"address\"                  (string) Xyon address or hex-encoded public key\n"
             "       ...,\n"
             "     ]\n"
             "3. \"label\"                        (string, optional) A label to assign the addresses to.\n"
@@ -1964,7 +1964,7 @@ UniValue listtransactions(const JSONRPCRequest& request)
             "  {\n"
             "    \"account\":\"accountname\",       (string) DEPRECATED. This field will be removed in V0.18. The account name associated with the transaction. \n"
             "                                                It will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The chimaera address of the transaction. Not present for \n"
+            "    \"address\":\"address\",    (string) The xyon address of the transaction. Not present for \n"
             "                                                move transactions (category = move).\n"
             "    \"category\":\"send|receive|move\", (string) The transaction category. 'move' is a local (off blockchain)\n"
             "                                                transaction between accounts, and not associated with an address,\n"
@@ -2206,7 +2206,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
             "{\n"
             "  \"transactions\": [\n"
             "    \"account\":\"accountname\",       (string) DEPRECATED. This field will be removed in V0.18. To see this deprecated field, start bitcoind with -deprecatedrpc=accounts. The account name associated with the transaction. Will be \"\" for the default account.\n"
-            "    \"address\":\"address\",    (string) The Chimaera address of the transaction. Not present for move transactions (category = move).\n"
+            "    \"address\":\"address\",    (string) The Xyon address of the transaction. Not present for move transactions (category = move).\n"
             "    \"category\":\"send|receive\",     (string) The transaction category. 'send' has negative amounts, 'receive' has positive amounts.\n"
             "    \"amount\": x.xxx,          (numeric) The amount in " + CURRENCY_UNIT + ". This is negative for the 'send' category, and for the 'move' category for moves \n"
             "                                          outbound. It is positive for the 'receive' category, and for the 'move' category for inbound funds.\n"
@@ -2355,7 +2355,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
             "  \"details\" : [\n"
             "    {\n"
             "      \"account\" : \"accountname\",      (string) DEPRECATED. This field will be removed in a V0.18. To see this deprecated field, start bitcoind with -deprecatedrpc=accounts. The account name involved in the transaction, can be \"\" for the default account.\n"
-            "      \"address\" : \"address\",          (string) The Chimaera address involved in the transaction\n"
+            "      \"address\" : \"address\",          (string) The Xyon address involved in the transaction\n"
             "      \"category\" : \"send|receive\",    (string) The category, either 'send' or 'receive'\n"
             "      \"amount\" : x.xxx,                 (numeric) The amount in " + CURRENCY_UNIT + "\n"
             "      \"label\" : \"label\",              (string) A comment for the address/transaction, if any\n"
@@ -2773,7 +2773,7 @@ static UniValue encryptwallet(const JSONRPCRequest& request)
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys. So:
     StartShutdown();
-    return "wallet encrypted; Chimaera server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
+    return "wallet encrypted; Xyon server stopping, restart to run with encrypted wallet. The keypool has been flushed and a new HD seed was generated (if you are using HD). You need to make a new backup.";
 }
 
 static UniValue lockunspent(const JSONRPCRequest& request)
@@ -3285,9 +3285,9 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. minconf          (numeric, optional, default=1) The minimum confirmations to filter\n"
             "2. maxconf          (numeric, optional, default=9999999) The maximum confirmations to filter\n"
-            "3. \"addresses\"      (string) A json array of chimaera addresses to filter\n"
+            "3. \"addresses\"      (string) A json array of xyon addresses to filter\n"
             "    [\n"
-            "      \"address\"     (string) chimaera address\n"
+            "      \"address\"     (string) xyon address\n"
             "      ,...\n"
             "    ]\n"
             "4. include_unsafe (bool, optional, default=true) Include outputs that are not safe to spend\n"
@@ -3305,7 +3305,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "  {\n"
             "    \"txid\" : \"txid\",          (string) the transaction id \n"
             "    \"vout\" : n,               (numeric) the vout value\n"
-            "    \"address\" : \"address\",    (string) the Chimaera address\n"
+            "    \"address\" : \"address\",    (string) the Xyon address\n"
             "    \"label\" : \"label\",        (string) The associated label, or \"\" for the default label\n"
             "    \"account\" : \"account\",    (string) DEPRECATED. This field will be removed in V0.18. To see this deprecated field, start bitcoind with -deprecatedrpc=accounts. The associated account, or \"\" for the default account\n"
             "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
@@ -3349,7 +3349,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             const UniValue& input = inputs[idx];
             CTxDestination dest = DecodeDestination(input.get_str());
             if (!IsValidDestination(dest)) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Chimaera address: ") + input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Xyon address: ") + input.get_str());
             }
             if (!destinations.insert(dest).second) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());

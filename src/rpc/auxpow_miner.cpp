@@ -30,11 +30,11 @@ void auxMiningCheck()
   if (g_connman->GetNodeCount (CConnman::CONNECTIONS_ALL) == 0
         && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
-                        "Chimaera is not connected!");
+                        "Xyon is not connected!");
 
   if (IsInitialBlockDownload () && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                        "Chimaera is downloading blocks...");
+                        "Xyon is downloading blocks...");
 }
 
 }  // anonymous namespace

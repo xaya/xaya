@@ -1,7 +1,7 @@
 Gitian building
-================
+===============
 
-*Setup instructions for a Gitian build of Chimaera using a Debian VM or physical system.*
+*Setup instructions for a Gitian build of Xyon using a Debian VM or physical system.*
 
 Gitian is the deterministic build process that is used to build the Namecoin
 Core executables. It provides a way to be reasonably sure that the
@@ -11,14 +11,14 @@ the same, tested dependencies are used and statically built into the executable.
 Multiple developers build the source code by following a specific descriptor
 ("recipe"), cryptographically sign the result, and upload the resulting signature.
 These results are compared and only if they match, the build is accepted and uploaded
-to chimaera.io .
+to xyon.io.
 
 More independent Gitian builders are needed, which is why this guide exists.
 It is preferred you follow these steps yourself instead of using someone else's
 VM image to avoid 'contaminating' the build.
 
 Table of Contents
-------------------
+-----------------
 
 - [Create a new VirtualBox VM](#create-a-new-virtualbox-vm)
 - [Connecting to the VM](#connecting-to-the-vm)
@@ -26,7 +26,7 @@ Table of Contents
 - [Installing Gitian](#installing-gitian)
 - [Setting up the Gitian image](#setting-up-the-gitian-image)
 - [Getting and building the inputs](#getting-and-building-the-inputs)
-- [Building Chimaera](#building-chimaera)
+- [Building Xyon](#building-xyon)
 - [Building an alternative repository](#building-an-alternative-repository)
 - [Signing externally](#signing-externally)
 - [Uploading signatures](#uploading-signatures)
@@ -46,7 +46,8 @@ Any kind of virtualization can be used, for example:
 You can also install Gitian on actual hardware instead of using virtualization.
 
 Create a new VirtualBox VM
----------------------------
+--------------------------
+
 In the VirtualBox GUI click "New" and choose the following parameters in the wizard:
 
 ![](gitian-building/create_new_vm.png)
@@ -111,7 +112,7 @@ Then start the VM. On the first launch you will be asked for a CD or DVD image. 
 ![](gitian-building/select_startup_disk.png)
 
 Installing Debian
-------------------
+-----------------
 
 This section will explain how to install Debian on the newly created VM.
 
@@ -206,7 +207,8 @@ To select a different button, press `Tab`.
 
 
 After Installation
--------------------
+------------------
+
 The next step in the guide involves logging in as root via SSH.
 SSH login for root users is disabled by default, so we'll enable that now.
 
@@ -227,7 +229,7 @@ and press enter. Then,
 and enter to restart SSH. Logout by typing 'logout' and pressing 'enter'.
 
 Connecting to the VM
-----------------------
+--------------------
 
 After the VM has booted you can connect to it using SSH, and files can be copied from and to the VM using a SFTP utility.
 Connect to `localhost`, port `22222` (or the port configured when installing the VM).
@@ -253,7 +255,7 @@ For example, to connect as `root` from a Linux command prompt use
 Replace `root` with `debian` to log in as user.
 
 Setting up Debian for Gitian building
---------------------------------------
+-------------------------------------
 
 In this section we will be setting up the Debian installation for Gitian building.
 
@@ -291,7 +293,7 @@ At the end the VM is rebooted to make sure that the changes take effect. The ste
 section only need to be performed once.
 
 Installing Gitian
-------------------
+-----------------
 
 Re-login as the user `debian` that was created during installation.
 The rest of the steps in this guide will be performed as that user.
@@ -310,16 +312,16 @@ cd ..
 
 **Note**: When sudo asks for a password, enter the password for the user *debian* not for *root*.
 
-Clone the git repositories for chimaera and Gitian.
+Clone the git repositories for xyon and Gitian.
 
 ```bash
 git clone https://github.com/devrandom/gitian-builder.git
-git clone https://github.com/chimaera/chimaera
-git clone https://github.com/chimaera/gitian.sigs.git
+git clone https://github.com/xyonplatform/xyon
+git clone https://github.com/xyonplatform/gitian.sigs.git
 ```
 
 Setting up the Gitian image
--------------------------
+---------------------------
 
 Gitian needs a virtual image of the operating system to build in.
 Currently this is Ubuntu Trusty x86_64.
@@ -339,21 +341,21 @@ There will be a lot of warnings printed during the build of the image. These can
 **Note**: When sudo asks for a password, enter the password for the user *debian* not for *root*.
 
 Getting and building the inputs
---------------------------------
+-------------------------------
 
 At this point you have two options, you can either use the automated script (found in [contrib/gitian-build.sh](/contrib/gitian-build.sh)) or you could manually do everything by following this guide. If you're using the automated script, then run it with the "--setup" command. Afterwards, run it with the "--build" command (example: "contrib/gitian-build.sh -b signer 0.13.0"). Otherwise ignore this.
 
 Follow the instructions in [doc/release-process.md](release-process.md#fetch-and-create-inputs-first-time-or-when-dependency-versions-change)
-in the chimaera repository under 'Fetch and create inputs' to install sources which require
+in the xyon repository under 'Fetch and create inputs' to install sources which require
 manual intervention. Also optionally follow the next step: 'Seed the Gitian sources cache
 and offline git repositories' which will fetch the remaining files required for building
 offline.
 
-Building Chimaera
-----------------
+Building Xyon
+-------------
 
-To build Chimaera (for Linux, OS X and Windows) just follow the steps under 'perform
-Gitian builds' in [doc/release-process.md](release-process.md#perform-gitian-builds) in the chimaera repository.
+To build Xyon (for Linux, OS X and Windows) just follow the steps under 'perform
+Gitian builds' in [doc/release-process.md](release-process.md#perform-gitian-builds) in the xyon repository.
 
 This may take some time as it will build all the dependencies needed for each descriptor.
 These dependencies will be cached after a successful build to avoid rebuilding them when possible.
@@ -367,12 +369,12 @@ tail -f var/build.log
 
 Output from `gbuild` will look something like
 
-    Initialized empty Git repository in /home/debian/gitian-builder/inputs/chimaera/.git/
+    Initialized empty Git repository in /home/debian/gitian-builder/inputs/xyon/.git/
     remote: Counting objects: 57959, done.
     remote: Total 57959 (delta 0), reused 0 (delta 0), pack-reused 57958
     Receiving objects: 100% (57959/57959), 53.76 MiB | 484.00 KiB/s, done.
     Resolving deltas: 100% (41590/41590), done.
-    From https://github.com/chimaera/chimaera
+    From https://github.com/xyonplatform/xyon
     ... (new tags, new branch etc)
     --- Building for trusty amd64 ---
     Stopping target if it is up
@@ -390,7 +392,7 @@ Output from `gbuild` will look something like
     Running build script (log in var/build.log)
 
 Building an alternative repository
------------------------------------
+----------------------------------
 
 If you want to do a test build of a pull on GitHub it can be useful to point
 the Gitian builder at an alternative repository, using the same descriptors
@@ -406,12 +408,12 @@ COMMIT=hardfork-nmc
 ```
 
 Building fully offline
------------------------
+----------------------
 
 **Note: Namecoin does not yet use detatched sigs; this section might not be relevant.**
 
 For building fully offline including attaching signatures to unsigned builds, the detached-sigs repository
-and the Chimaera git repository with the desired tag must both be available locally, and then gbuild must be
+and the Xyon git repository with the desired tag must both be available locally, and then gbuild must be
 told where to find them. It also requires an apt-cacher-ng which is fully-populated but set to offline mode, or
 manually disabling gitian-builder's use of apt-get to update the VM build environment.
 
@@ -459,7 +461,7 @@ SIGPATH=/some/root/path/namecoin-detached-sigs.git
 ```
 
 Signing externally
--------------------
+------------------
 
 If you want to do the PGP signing on another device, that's also possible; just define `SIGNER` as mentioned
 and follow the steps in the build process as normal.
@@ -479,7 +481,7 @@ This will create the `.sig` files that can be committed together with the `.asse
 Gitian build.
 
 Uploading signatures
----------------------
+--------------------
 
 After building and signing you can push your signatures (both the `.assert` and `.assert.sig` files) to the
 [namecoin/gitian.sigs](https://github.com/namecoin/gitian.sigs/) repository, or if that's not possible create a pull

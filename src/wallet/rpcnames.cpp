@@ -545,7 +545,7 @@ sendtoname (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Chimaera is downloading blocks...");
+                       "Xyon is downloading blocks...");
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 

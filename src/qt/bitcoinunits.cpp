@@ -64,7 +64,7 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("Chimaera");
+    case BTC: return QString("Xyon");
     case mBTC: return QString("Milli-CHI (1 / 1" THIN_SP_UTF8 "000)");
     case uBTC: return QString("Micro-CHI (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     case SAT: return QString("Satoshi (sat) (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");

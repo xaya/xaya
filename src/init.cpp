@@ -210,7 +210,7 @@ void Shutdown()
     /// for example if the data directory was found to be locked.
     /// Be sure that anything that writes files or flushes caches only does this if the respective
     /// module was initialized.
-    RenameThread("chimaera-shutoff");
+    RenameThread("xyon-shutoff");
     mempool.AddTransactionsUpdated(1);
 
     StopHTTPRPC();
@@ -545,8 +545,8 @@ void SetupServerArgs()
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/chimaera/chimaera>";
-    const std::string URL_WEBSITE = "<https://chimaera.io/>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/xyonplatform/xyon>";
+    const std::string URL_WEBSITE = "<https://xyon.io/>";
     // todo: remove urls from translations on next change
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR) + " ") + "\n" +
            "\n" +
@@ -651,7 +651,7 @@ static void CleanupBlockRevFiles()
 static void ThreadImport(std::vector<fs::path> vImportFiles)
 {
     const CChainParams& chainparams = Params();
-    RenameThread("chimaera-loadblk");
+    RenameThread("xyon-loadblk");
     ScheduleBatchPriority();
 
     {

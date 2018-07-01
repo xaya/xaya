@@ -232,11 +232,11 @@ UniValue stop(const JSONRPCRequest& jsonRequest)
     if (jsonRequest.fHelp || jsonRequest.params.size() > 1)
         throw std::runtime_error(
             "stop\n"
-            "\nStop Chimaera server.");
+            "\nStop Xyon server.");
     // Event loop will exit after current HTTP requests have been handled, so
     // this reply will get back to the client.
     StartShutdown();
-    return "Chimaera server stopping";
+    return "Xyon server stopping";
 }
 
 static UniValue uptime(const JSONRPCRequest& jsonRequest)
@@ -516,7 +516,7 @@ std::vector<std::string> CRPCTable::listCommands() const
 
 std::string HelpExampleCli(const std::string& methodname, const std::string& args)
 {
-    return "> chimaera-cli " + methodname + " " + args + "\n";
+    return "> xyon-cli " + methodname + " " + args + "\n";
 }
 
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)

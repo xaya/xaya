@@ -214,7 +214,7 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("4e81865a0b7eec37cc6eebbb59152bf0ecc8fd35e6ec28f117f674d0c406f5e4"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
-        // FIXME: Add seeds for Chimaera (#8).
+        // FIXME: Add seeds for Xyon (#8).
         //vSeeds.emplace_back("nmc.seed.quisquis.de");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,28);
@@ -302,7 +302,7 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("6364cbdf891d2bc766aeef5a2270bdb9edd659e8c479230cb9fe2d426441f5ab"));
         assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
 
-        // FIXME: Add seeds for Chimaera (#8).
+        // FIXME: Add seeds for Xyon (#8).
         vFixedSeeds.clear();
         vSeeds.clear();
         //vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com");

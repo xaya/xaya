@@ -123,7 +123,7 @@ name_show (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Chimaera is downloading blocks...");
+                       "Xyon is downloading blocks...");
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -171,7 +171,7 @@ name_history (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Chimaera is downloading blocks...");
+                       "Xyon is downloading blocks...");
 
   const std::string nameStr = request.params[0].get_str ();
   const valtype name = ValtypeFromString (nameStr);
@@ -229,7 +229,7 @@ name_scan (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Chimaera is downloading blocks...");
+                       "Xyon is downloading blocks...");
 
   valtype start;
   if (request.params.size () >= 1)
@@ -287,7 +287,7 @@ name_filter (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Chimaera is downloading blocks...");
+                       "Xyon is downloading blocks...");
 
   /* ********************** */
   /* Interpret parameters.  */

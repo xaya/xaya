@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Chimaera developers
+// Copyright (c) 2018 The Xyon developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,7 @@ int main (int argc, char** argv)
 {
   if (argc != 3)
     {
-      std::cerr << "USAGE: chimaera-hash ALGO BLOCK-HEADER-HEX" << std::endl;
+      std::cerr << "USAGE: xyon-hash BLOCK-HEADER-HEX" << std::endl;
       return EXIT_FAILURE;
     }
   const std::string algoStr(argv[1]);

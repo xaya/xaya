@@ -1,13 +1,13 @@
-Chimaera Core - (Erebus)
-=====================================
+Xyon Core
+=========
 
-https://chimaera.io
+https://xyon.io
 
-What is Chimaera? 
-----------------
+What is Xyon?
+-------------
 
-Chimaera Core is a decentralized open source information registration and transfer system based on the Namecoin cryptocurrency. It is primarily aimed at decentralised blockchain gaming.
-This is the first layer of the Chimaera Platform.
+Xyon Core is a decentralized open source information registration and transfer system based on the Namecoin cryptocurrency. It is primarily aimed at decentralised blockchain gaming.
+This is the first layer of the Xyon Platform.
 
 What does it do?
 ----------------
@@ -15,10 +15,10 @@ What does it do?
 * Securely record and transfer arbitrary names (keys).
 * Transact CHI Coins, the digital currency (CHI).
 * Store Data.
-* This is Chimaera's first layer and data storage.
+* This is Xyon's first layer and data storage.
 
-What can Chimaera be used for?
-----------------
+What can Xyon be used for?
+--------------------------
 
 * Along with some of Namecoin's uses cases, it is designed especially with gaming in mind.
 * Allow creation of game accounts.

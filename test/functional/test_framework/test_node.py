@@ -151,7 +151,7 @@ class TestNode():
         self.process = subprocess.Popen(self.args + extra_args + base_args, env=subp_env, stdout=stdout, stderr=stderr, *args, **kwargs)
 
         self.running = True
-        self.log.debug("chimaerad started, waiting for RPC to come up")
+        self.log.debug("xyond started, waiting for RPC to come up")
 
     def wait_for_rpc_connection(self):
         """Sets up an RPC connection to the bitcoind process. Returns False if unable to connect."""
@@ -160,7 +160,7 @@ class TestNode():
         for _ in range(poll_per_s * self.rpc_timeout):
             if self.process.poll() is not None:
                 raise FailedToStartError(self._node_msg(
-                    'chimaerad exited with status {} during initialization'.format(self.process.returncode)))
+                    'xyond exited with status {} during initialization'.format(self.process.returncode)))
             try:
                 self.rpc = get_rpc_proxy(rpc_url(self.datadir, self.index, self.rpchost), self.index, timeout=self.rpc_timeout, coveragedir=self.coverage_dir)
                 self.rpc.getblockcount()
@@ -179,7 +179,7 @@ class TestNode():
                 if "No RPC credentials" not in str(e):
                     raise
             time.sleep(1.0 / poll_per_s)
-        self._raise_assertion_error("Unable to connect to chimaerad")
+        self._raise_assertion_error("Unable to connect to xyond")
 
     def get_wallet_rpc(self, wallet_name):
         if self.use_cli:
@@ -247,7 +247,7 @@ class TestNode():
                 self.stop_node()
                 self.wait_until_stopped()
             except FailedToStartError as e:
-                self.log.debug('chimaerad failed to start: %s', e)
+                self.log.debug('xyond failed to start: %s', e)
                 self.running = False
                 self.process = None
                 # Check stderr for expected message
@@ -268,9 +268,9 @@ class TestNode():
                                 'Expected message "{}" does not fully match stderr:\n"{}"'.format(expected_msg, stderr))
             else:
                 if expected_msg is None:
-                    assert_msg = "chimaerad should have exited with an error"
+                    assert_msg = "xyond should have exited with an error"
                 else:
-                    assert_msg = "chimaerad should have exited with expected error " + expected_msg
+                    assert_msg = "xyond should have exited with expected error " + expected_msg
                 self._raise_assertion_error(assert_msg)
 
     def node_encrypt_wallet(self, passphrase):
@@ -330,7 +330,7 @@ class TestNodeCLI():
         self.binary = binary
         self.datadir = datadir
         self.input = None
-        self.log = logging.getLogger('TestFramework.chimaeracli')
+        self.log = logging.getLogger('TestFramework.xyoncli')
 
     def __call__(self, *options, input=None):
         # TestNodeCLI is callable with bitcoin-cli command-line options
@@ -356,14 +356,14 @@ class TestNodeCLI():
 
         pos_args = [str(arg) for arg in args]
         named_args = [str(key) + "=" + str(value) for (key, value) in kwargs.items()]
-        assert not (pos_args and named_args), "Cannot use positional arguments and named arguments in the same chimaera-cli call"
+        assert not (pos_args and named_args), "Cannot use positional arguments and named arguments in the same xyon-cli call"
         p_args = [self.binary, "-datadir=" + self.datadir] + self.options
         if named_args:
             p_args += ["-named"]
         if command is not None:
             p_args += [command]
         p_args += pos_args + named_args
-        self.log.debug("Running chimaera-cli command: %s" % command)
+        self.log.debug("Running xyon-cli command: %s" % command)
         process = subprocess.Popen(p_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         cli_stdout, cli_stderr = process.communicate(input=self.input)
         returncode = process.poll()

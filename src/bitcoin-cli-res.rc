@@ -16,14 +16,14 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
-            VALUE "CompanyName",        "Chimaera"
-            VALUE "FileDescription",    "chimaera-cli (JSON-RPC client for " PACKAGE_NAME ")"
+            VALUE "CompanyName",        "Xyon"
+            VALUE "FileDescription",    "xyon-cli (JSON-RPC client for " PACKAGE_NAME ")"
             VALUE "FileVersion",        VER_FILEVERSION_STR
-            VALUE "InternalName",       "chimaera-cli"
+            VALUE "InternalName",       "xyon-cli"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
-            VALUE "OriginalFilename",   "chimaera-cli.exe"
-            VALUE "ProductName",        "Chimaera"
+            VALUE "OriginalFilename",   "xyon-cli.exe"
+            VALUE "ProductName",        "Xyon"
             VALUE "ProductVersion",     VER_PRODUCTVERSION_STR
         END
     END

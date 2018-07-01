@@ -7,17 +7,17 @@ define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2018)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
-define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Bitcoin Core, Namecoin and Chimaera]])
-AC_INIT([Chimaera - Erebus],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[https://github.com/chimaera/chimaera/issues],[chimaera],[https://www.chimaera.io/])
+define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Bitcoin Core, Namecoin and Xyon]])
+AC_INIT([Xyon],[_CLIENT_VERSION_MAJOR._CLIENT_VERSION_MINOR._CLIENT_VERSION_REVISION],[https://github.com/xyonplatform/xyon/issues],[xyon],[https://xyon.io/])
 AC_CONFIG_SRCDIR([src/validation.cpp])
 AC_CONFIG_HEADERS([src/config/bitcoin-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 
-BITCOIN_DAEMON_NAME=chimaerad
-BITCOIN_GUI_NAME=chimaera-qt
-BITCOIN_CLI_NAME=chimaera-cli
-BITCOIN_TX_NAME=chimaera-tx
+BITCOIN_DAEMON_NAME=xyond
+BITCOIN_GUI_NAME=xyon-qt
+BITCOIN_CLI_NAME=xyon-cli
+BITCOIN_TX_NAME=xyon-tx
 
 dnl Unless the user specified ARFLAGS, force it to be cr
 AC_ARG_VAR(ARFLAGS, [Flags for the archiver, defaults to <cr> if not set])
@@ -385,7 +385,7 @@ CPPFLAGS="$CPPFLAGS -DHAVE_BUILD_INFO -D__STDC_FORMAT_MACROS"
 
 AC_ARG_WITH([utils],
   [AS_HELP_STRING([--with-utils],
-  [build chimaera-cli chimaera-tx (default=yes)])],
+  [build xyon-cli xyon-tx (default=yes)])],
   [build_bitcoin_utils=$withval],
   [build_bitcoin_utils=yes])
 
@@ -397,7 +397,7 @@ AC_ARG_WITH([libs],
 
 AC_ARG_WITH([daemon],
   [AS_HELP_STRING([--with-daemon],
-  [build chimaera daemon (default=yes)])],
+  [build xyon daemon (default=yes)])],
   [build_bitcoind=$withval],
   [build_bitcoind=yes])
 
@@ -1150,11 +1150,11 @@ AC_SUBST(UNIVALUE_LIBS)
 
 BITCOIN_QT_PATH_PROGS([PROTOC], [protoc],$protoc_bin_path)
 
-AC_MSG_CHECKING([whether to build chimaerad])
+AC_MSG_CHECKING([whether to build xyond])
 AM_CONDITIONAL([BUILD_BITCOIND], [test x$build_bitcoind = xyes])
 AC_MSG_RESULT($build_bitcoind)
 
-AC_MSG_CHECKING([whether to build utils (chimaera-cli chimaera-tx)])
+AC_MSG_CHECKING([whether to build utils (xyon-cli xyon-tx)])
 AM_CONDITIONAL([BUILD_BITCOIN_UTILS], [test x$build_bitcoin_utils = xyes])
 AC_MSG_RESULT($build_bitcoin_utils)
 

@@ -170,9 +170,9 @@ BASE_SCRIPTS = [
     'name_sendcoins.py',
     'name_wallet.py',
 
-    # Chimaera-specific tests
-    'chimaera_dualalgo.py',
-    'chimaera_premine.py',
+    # Xyon-specific tests
+    'xyon_dualalgo.py',
+    'xyon_premine.py',
 ]
 
 EXTENDED_SCRIPTS = [
@@ -209,7 +209,7 @@ SKIPPED = [
     'p2p_compactblocks.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of
     # blocks).  They are also not relevant, since all BIP34-activated forks
-    # are active from the start in Chimaera.
+    # are active from the start in Xyon.
     'feature_dersig.py',
     'feature_cltv.py',
 ]
@@ -342,8 +342,8 @@ def run_tests(test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=Fal
 
     # Warn if bitcoind is already running (unix only)
     try:
-        if subprocess.check_output(["pidof", "chimaerad"]) is not None:
-            print("%sWARNING!%s There is already a chimaerad process running on this system. Tests may fail unexpectedly due to resource contention!" % (BOLD[1], BOLD[0]))
+        if subprocess.check_output(["pidof", "xyond"]) is not None:
+            print("%sWARNING!%s There is already a xyond process running on this system. Tests may fail unexpectedly due to resource contention!" % (BOLD[1], BOLD[0]))
     except (OSError, subprocess.SubprocessError):
         pass
 
@@ -554,7 +554,7 @@ class TestResult():
 def check_script_prefixes():
     """Check that test scripts start with one of the allowed name prefixes."""
 
-    good_prefixes_re = re.compile("(example|feature|interface|mempool|mining|p2p|rpc|wallet|auxpow|name|chimaera)_")
+    good_prefixes_re = re.compile("(example|feature|interface|mempool|mining|p2p|rpc|wallet|auxpow|name|xyon)_")
     bad_script_names = [script for script in ALL_SCRIPTS if good_prefixes_re.match(script) is None]
 
     if bad_script_names:

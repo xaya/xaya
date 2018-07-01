@@ -29,16 +29,16 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>Chimaera-Qt</string>
+  <string>Xyon-Qt</string>
   
   <key>CFBundleName</key>
-  <string>Chimaera-Qt</string>
+  <string>Xyon-Qt</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>io.chimaera.Chimaera-Qt</string>
+  <string>io.xyon.Xyon-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -46,10 +46,10 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>io.chimaera.ChimaeraPayment</string>
+      <string>io.xyon.XyonPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>chimaera</string>
+        <string>xyon</string>
       </array>
     </dict>
   </array>
@@ -58,9 +58,9 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>io.chimaera.paymentrequest</string>
+      <string>io.xyon.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>Chimaera payment request</string>
+      <string>Xyon payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
@@ -68,10 +68,10 @@
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.mime-type</key>
-        <string>application/x-chimaera-payment-request</string>
+        <string>application/x-xyon-payment-request</string>
         <key>public.filename-extension</key>
         <array>
-          <string>chimaerapaymentrequest</string>
+          <string>xyonpaymentrequest</string>
         </array>
       </dict>
     </dict>
@@ -84,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>io.chimaera.paymentrequest</string>
+        <string>io.xyon.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 The Chimaera developers
+# Copyright (c) 2018 The Xyon developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test spendability of premine and that P2SH is enforced correctly for it."""

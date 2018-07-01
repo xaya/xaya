@@ -71,16 +71,16 @@ EXTRA_LIBRARIES += \
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
 bin_PROGRAMS =
-noinst_PROGRAMS = chimaera-hash
+noinst_PROGRAMS = xyon-hash
 TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += chimaerad
+  bin_PROGRAMS += xyond
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += chimaera-cli chimaera-tx
+  bin_PROGRAMS += xyon-cli xyon-tx
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -438,16 +438,16 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
-chimaerad_SOURCES = bitcoind.cpp
-chimaerad_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-chimaerad_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-chimaerad_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xyond_SOURCES = bitcoind.cpp
+xyond_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xyond_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xyond_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-chimaerad_SOURCES += bitcoind-res.rc
+xyond_SOURCES += bitcoind-res.rc
 endif
 
-chimaerad_LDADD = \
+xyond_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_COMMON) \
@@ -461,38 +461,38 @@ chimaerad_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-chimaerad_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+xyond_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 # bitcoin-cli binary #
-chimaera_cli_SOURCES = bitcoin-cli.cpp
-chimaera_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-chimaera_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-chimaera_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xyon_cli_SOURCES = bitcoin-cli.cpp
+xyon_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+xyon_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xyon_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-chimaera_cli_SOURCES += bitcoin-cli-res.rc
+xyon_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
-chimaera_cli_LDADD = \
+xyon_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-chimaera_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+xyon_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoin-tx binary #
-chimaera_tx_SOURCES = bitcoin-tx.cpp
-chimaera_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-chimaera_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-chimaera_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xyon_tx_SOURCES = bitcoin-tx.cpp
+xyon_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xyon_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xyon_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-chimaera_tx_SOURCES += bitcoin-tx-res.rc
+xyon_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-chimaera_tx_LDADD = \
+xyon_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
@@ -500,23 +500,23 @@ chimaera_tx_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-chimaera_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+xyon_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
-# chimaera-hash binary #
-chimaera_hash_SOURCES = chimaera-hash.cpp
-chimaera_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-chimaera_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-chimaera_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# xyon-hash binary #
+xyon_hash_SOURCES = xyon-hash.cpp
+xyon_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xyon_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xyon_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
-chimaera_hash_LDADD = \
+xyon_hash_LDADD = \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBBITCOIN_CRYPTO_SSE41) \
   $(LIBBITCOIN_CRYPTO_AVX2)
-chimaera_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+xyon_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
 # namecoinconsensus library #

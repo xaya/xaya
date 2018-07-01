@@ -7,13 +7,13 @@ src/bitcoin-tx
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
-src/chimaerad
-src/chimaera-cli
-src/chimaera-tx
-src/chimaera-hash
-src/test/test_chimaera
-src/test/test_chimaera_fuzzy
-src/qt/test/test_chimaera-qt
+src/xyond
+src/xyon-cli
+src/xyon-tx
+src/xyon-hash
+src/test/test_xyon
+src/test/test_xyon_fuzzy
+src/qt/test/test_xyon-qt
 
 # autoreconf
 Makefile.in
@@ -106,9 +106,9 @@ ipch/
 *.qm
 Makefile
 bitcoin-qt
-chimaera-qt
+xyon-qt
 Bitcoin-Qt.app
-Chimaera-Qt.app
+Xyon-Qt.app
 background.tiff*
 
 # Unit-tests
@@ -142,5 +142,5 @@ test/cache/*
 /doc/doxygen/
 
 libbitcoinconsensus.pc
-libchimaeraconsensus.pc
+libnamecoinconsensus.pc
 contrib/devtools/split-debug.sh

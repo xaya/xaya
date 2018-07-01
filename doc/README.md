@@ -1,32 +1,32 @@
-Chimaera - Erebus
-==============
+XYON
+====
 
 Setup
 ---------------------
-[Chimaera](https://chimaera.io/) is the official Namecoin client and it builds the backbone of the network. However, it downloads and stores the entire history of Chimaera transactions; depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
+[Xyon](https://xyon.io/) provides the official Xyon client and it builds the backbone of the network. However, it downloads and stores the entire history of Xyon transactions; depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
 
 Running
 ---------------------
-The following are some helpful notes on how to run Chimaera on your native platform.
+The following are some helpful notes on how to run Xyon on your native platform.
 
 ### Unix
 
 Unpack the files into a directory and run:
 
-- `bin/chimaera-qt` (GUI) or
-- `bin/chimaerad` (headless)
+- `bin/xyon-qt` (GUI) or
+- `bin/xyond` (headless)
 
 ### Windows
 
-Unpack the files into a directory, and then run chimaera-qt.exe.
+Unpack the files into a directory, and then run xyon-qt.exe.
 
 ### macOS
 
-Drag Chimaera-Qt to your applications folder, and then run Chimaera-Qt.
+Drag Xyon-Qt to your applications folder, and then run Xyon-Qt.
 
 ### Need Help?
 
-* See the documentation at the [Chimaera Site](https://chimaera.io) for help and more information.
+* See the documentation at the [Xyon Site](https://xyon.io) for help and more information.
 
 Building
 ---------------------
@@ -42,7 +42,7 @@ The following are developer notes on how to build Bitcoin on your native platfor
 
 Development
 ---------------------
-The Chimaera repo's [root README](https://github.com/chimaera/chimaera/blob/master/README.md) contains relevant information on the development process and automated testing.
+The Xyon repo's [root README](https://github.com/xyonplatform/xyon/blob/master/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Release Notes](release-notes.md)

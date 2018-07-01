@@ -1,5 +1,5 @@
 macOS Build Instructions and Notes
-====================================
+==================================
 The commands in this guide should be executed in a Terminal application.
 The built-in one is located in `/Applications/Utilities/Terminal.app`.
 
@@ -14,7 +14,7 @@ When the popup appears, click `Install`.
 Then install [Homebrew](https://brew.sh).
 
 Dependencies
-----------------------
+------------
 
     brew install automake berkeley-db4 libtool boost miniupnpc openssl pkg-config protobuf python qt libevent qrencode
 
@@ -38,17 +38,17 @@ from the root of the repository.
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-Build Chimaera Erebus
-------------------------
+Build Xyon
+----------
 
-1. Clone the Chimaera source code and cd into `chimaera`
+1. Clone the Xyon source code and cd into `xyon`
 
-        git clone https://github.com/chimaera/chimaera.git
-        cd chimaera
+        git clone https://github.com/xyonplatform/xyon.git
+        cd xyon
 
-2.  Build chimaera:
+2.  Build xyon:
 
-    Configure and build the headless chimaera binaries as well as the GUI (if Qt is found).
+    Configure and build the headless xyon binaries as well as the GUI (if Qt is found).
 
     You can disable the GUI build by passing `--without-gui` to configure.
 
@@ -67,26 +67,26 @@ Build Chimaera Erebus
 Running
 -------
 
-Chimaera is now available at `./src/chimaerad`
+Xyon is now available at `./src/xyond`
 
 Before running, it's recommended you create an RPC configuration file.
 
-    echo -e "rpcuser=chimaerarpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Chimaera/chimaera.conf"
+    echo -e "rpcuser=xyonrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Xyon/xyon.conf"
 
-    chmod 600 "/Users/${USER}/Library/Application Support/Chimaera/chimaera.conf"
+    chmod 600 "/Users/${USER}/Library/Application Support/Xyon/xyon.conf"
 
-The first time you run chimaerad, it will start downloading the blockchain. This process could take several hours.
+The first time you run xyond, it will start downloading the blockchain. This process could take several hours.
 
 You can monitor the download process by looking at the debug.log file:
 
-    tail -f $HOME/Library/Application\ Support/Chimaera/debug.log
+    tail -f $HOME/Library/Application\ Support/Xyon/debug.log
 
 Other commands:
--------
+---------------
 
-    ./src/chimaerad -daemon # Starts the chimaera daemon.
-    ./src/chimaera-cli --help # Outputs a list of command-line options.
-    ./src/chimaera-cli help # Outputs a list of RPC commands when the daemon is running.
+    ./src/xyond -daemon # Starts the xyon daemon.
+    ./src/xyon-cli --help # Outputs a list of command-line options.
+    ./src/xyon-cli help # Outputs a list of RPC commands when the daemon is running.
 
 Notes
 -----
