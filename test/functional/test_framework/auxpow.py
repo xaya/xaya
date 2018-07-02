@@ -7,15 +7,16 @@
 # solve an auxpow and to generate auxpow blocks.
 
 import binascii
+import codecs
 import hashlib
 
-def computeAuxpow (block, target, ok):
+def constructAuxpow (block):
   """
-  Build an auxpow object (serialised as hex string) that solves
-  (ok = True) or doesn't solve (ok = False) the block.
+  Starts to construct a minimal auxpow, ready to be mined.  Returns the fake
+  coinbase tx and the unmined parent block header as hex strings.
   """
 
-  block = bytes (block, "ascii")
+  block = codecs.encode (block, 'ascii')
 
   # Start by building the merge-mining coinbase.  The merkle tree
   # consists only of the block hash as root.
@@ -26,7 +27,7 @@ def computeAuxpow (block, target, ok):
   # Construct "vector" of transaction inputs.
   vin = b"01"
   vin += (b"00" * 32) + (b"ff" * 4)
-  vin += bytes ("%02x" % (len (coinbase) / 2), "ascii") + coinbase
+  vin += codecs.encode ("%02x" % (len (coinbase) / 2), "ascii") + coinbase
   vin += (b"ff" * 4)
 
   # Build up the full coinbase transaction.  It consists only
@@ -43,11 +44,17 @@ def computeAuxpow (block, target, ok):
   header += b"00" * 4
   header += b"00" * 4
 
-  # Mine the block.
-  (header, blockhash) = mineBlock (header, target, ok)
+  return (tx.decode ('ascii'), header.decode ('ascii'))
+
+def finishAuxpow (tx, header):
+  """
+  Constructs the finished auxpow hex string based on the mined header.
+  """
+
+  blockhash = doubleHashHex (header)
 
   # Build the MerkleTx part of the auxpow.
-  auxpow = tx
+  auxpow = codecs.encode (tx, 'ascii')
   auxpow += blockhash
   auxpow += b"00"
   auxpow += b"00" * 4
@@ -58,6 +65,16 @@ def computeAuxpow (block, target, ok):
   auxpow += header
 
   return auxpow.decode ("ascii")
+
+def computeAuxpow (block, target, ok):
+  """
+  Build an auxpow object (serialised as hex string) that solves
+  (ok = True) or doesn't solve (ok = False) the block.
+  """
+
+  (tx, header) = constructAuxpow (block)
+  (header, _) = mineBlock (header, target, ok)
+  return finishAuxpow (tx, header)
 
 def mineAuxpowBlock (node):
   """
@@ -142,3 +159,16 @@ def reverseHex (data):
   b.reverse ()
 
   return binascii.hexlify (b)
+
+def getworkByteswap (data):
+  """
+  Run the byte-order swapping step necessary for working with getwork.
+  """
+
+  data = bytearray (data)
+  assert len (data) % 4 == 0
+  for i in range (0, len (data), 4):
+    data[i], data[i + 3] = data[i + 3], data[i]
+    data[i + 1], data[i + 2] = data[i + 2], data[i + 1]
+
+  return data
