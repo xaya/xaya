@@ -86,11 +86,11 @@ class NameRawTxTest (NameTestFramework):
     data = self.nodes[0].name_list ("my-name")
     assert_equal (len (data), 1)
     assert_equal (data[0]['name'], "my-name")
-    assert_equal (data[0]['transferred'], True)
+    assert_equal (data[0]['ismine'], False)
     data = self.nodes[1].name_list ("my-name")
     assert_equal (len (data), 1)
     assert_equal (data[0]['name'], "my-name")
-    assert_equal (data[0]['transferred'], False)
+    assert_equal (data[0]['ismine'], True)
 
     assert_equal (balanceA + price, self.nodes[0].getbalance ())
     # Node 1 gets a block matured, take this into account.

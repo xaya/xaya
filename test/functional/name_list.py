@@ -26,10 +26,10 @@ class NameListTest (NameTestFramework):
 
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "value-a", False, False)
+    self.checkNameStatus (arr[0], "name-a", "value-a", False, True)
     arr = self.nodes[1].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-b", "value-b", False, False)
+    self.checkNameStatus (arr[0], "name-b", "value-b", False, True)
 
     assert_equal (self.nodes[0].name_list ("name-b"), [])
     assert_equal (self.nodes[1].name_list ("name-a"), [])
@@ -40,16 +40,16 @@ class NameListTest (NameTestFramework):
     self.nodes[0].name_update ("name-a", "enjoy", {"destAddress":addrB})
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "value-a", False, False)
+    self.checkNameStatus (arr[0], "name-a", "value-a", False, True)
 
     self.generate (0, 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "enjoy", False, True)
+    self.checkNameStatus (arr[0], "name-a", "enjoy", False, False)
     arr = self.nodes[1].name_list ()
     assert_equal (len (arr), 2)
-    self.checkNameStatus (arr[0], "name-a", "enjoy", False, False)
-    self.checkNameStatus (arr[1], "name-b", "value-b", False, False)
+    self.checkNameStatus (arr[0], "name-a", "enjoy", False, True)
+    self.checkNameStatus (arr[1], "name-b", "value-b", False, True)
 
     # Updating the name in the new wallet shouldn't change the
     # old wallet's name_list entry.
@@ -57,10 +57,10 @@ class NameListTest (NameTestFramework):
     self.generate (0, 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "enjoy", False, True)
+    self.checkNameStatus (arr[0], "name-a", "enjoy", False, False)
     arr = self.nodes[1].name_list ("name-a")
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "new value", False, False)
+    self.checkNameStatus (arr[0], "name-a", "new value", False, True)
 
     # Transfer it back and see that it updates in wallet A.
     addrA = self.nodes[0].getnewaddress ()
@@ -68,22 +68,22 @@ class NameListTest (NameTestFramework):
     self.generate (0, 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "name-a", "sent", False, False)
+    self.checkNameStatus (arr[0], "name-a", "sent", False, True)
 
     # Let name-b expire.
     self.generate (0, 25)
     arr = self.nodes[1].name_list ()
     assert_equal (len (arr), 2)
-    self.checkNameStatus (arr[0], "name-a", "sent", False, True)
-    self.checkNameStatus (arr[1], "name-b", "value-b", True, False)
+    self.checkNameStatus (arr[0], "name-a", "sent", False, False)
+    self.checkNameStatus (arr[1], "name-b", "value-b", True, True)
 
-  def checkNameStatus (self, data, name, value, expired, transferred):
+  def checkNameStatus (self, data, name, value, expired, mine):
     """
     Check a name_list entry for the expected data.
     """
 
     self.checkNameData (data, name, value, None, expired)
-    assert_equal (data['transferred'], transferred)
+    assert_equal (data['ismine'], mine)
 
 if __name__ == '__main__':
   NameListTest ().main ()

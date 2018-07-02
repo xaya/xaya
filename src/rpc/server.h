@@ -205,8 +205,15 @@ extern std::string HelpExampleCli(const std::string& methodname, const std::stri
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
 
 extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
-extern void addExpirationInfo(int height, UniValue& data);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
+extern void addExpirationInfo(int height, UniValue& data);
+
+#ifdef ENABLE_WALLET
+class CWallet;
+extern void addOwnershipInfo(const CScript& addr,
+                             const CWallet* pwallet,
+                             UniValue& data);
+#endif
 
 /**
  * Builder class for the help text of RPCs that return information about

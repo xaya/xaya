@@ -321,6 +321,10 @@ class RESTTest (BitcoinTestFramework):
         nameData = self.nodes[0].name_show(name)
         assert_equal(nameData['name'], name)
         assert_equal(nameData['value'], value)
+        # The REST interface explicitly does not include the 'ismine' field
+        # that the RPC interface has.  Thus remove the field for the comparison
+        # below.
+        del nameData['ismine']
 
         # Different variants of the encoded name that should all work.
         variants = [urllib.parse.quote_plus(name), "d/some+weird.name%2b%2B"]
