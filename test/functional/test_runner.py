@@ -159,6 +159,7 @@ BASE_SCRIPTS = [
 
     # name tests
     'name_immature_inputs.py',
+    'name_ismine.py',
     'name_list.py',
     'name_listunspent.py',
     'name_multisig.py',

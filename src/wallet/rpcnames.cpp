@@ -245,9 +245,6 @@ name_list (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
-            .withField ("\"transferred\": xxxxx",
-                        "(boolean) whether the name was transferred and is"
-                        " no longer owned by the wallet")
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -302,7 +299,7 @@ name_list (const JSONRPCRequest& request)
       if (depth <= 0)
         continue;
 
-      const std::map<valtype, int>::const_iterator mit = mapHeights.find (name);
+      const auto mit = mapHeights.find (name);
       if (mit != mapHeights.end () && mit->second > pindex->nHeight)
         continue;
 
@@ -310,9 +307,7 @@ name_list (const JSONRPCRequest& request)
         = getNameInfo (name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
-
-      const bool mine = IsMine (*pwallet, nameOp.getAddress ());
-      obj.pushKV ("transferred", !mine);
+      addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
 
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;

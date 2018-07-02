@@ -67,6 +67,112 @@ getNameInfo (const valtype& name, const CNameData& data)
   return result;
 }
 
+#ifdef ENABLE_WALLET
+/**
+ * Adds the "ismine" field giving ownership info to the JSON object.
+ */
+void
+addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
+                  UniValue& data)
+{
+  if (pwallet == nullptr)
+    {
+      data.push_back (Pair ("ismine", false));
+      return;
+    }
+
+  AssertLockHeld (pwallet->cs_wallet);
+  const isminetype mine = IsMine (*pwallet, addr);
+  const bool isMine = (mine & ISMINE_SPENDABLE);
+  data.push_back (Pair ("ismine", isMine));
+}
+#endif
+
+namespace
+{
+
+/**
+ * Helper class that extracts the wallet for the current RPC request, if any.
+ * It handles the case of disabled wallet support or no wallet being present,
+ * so that it is suitable for the non-wallet RPCs here where we just want to
+ * provide optional extra features (like the "ismine" field).
+ *
+ * The main benefit of having this class is that we can easily LOCK2 with the
+ * wallet and another lock we need, without having to care about the special
+ * cases where no wallet is present or wallet support is disabled.
+ */
+class MaybeWalletForRequest
+{
+
+private:
+
+#ifdef ENABLE_WALLET
+  std::shared_ptr<CWallet> wallet;
+#endif
+
+public:
+
+  explicit MaybeWalletForRequest (const JSONRPCRequest& request)
+  {
+#ifdef ENABLE_WALLET
+    wallet = GetWalletForJSONRPCRequest (request);
+#endif
+  }
+
+  CCriticalSection*
+  getLock () const
+  {
+#ifdef ENABLE_WALLET
+    return (wallet != nullptr ? &wallet->cs_wallet : nullptr);
+#else
+    return nullptr;
+#endif
+  }
+
+#ifdef ENABLE_WALLET
+  CWallet*
+  getWallet ()
+  {
+    return wallet.get ();
+  }
+
+  const CWallet*
+  getWallet () const
+  {
+    return wallet.get ();
+  }
+#endif
+
+};
+
+/**
+ * Variant of addOwnershipInfo that uses a MaybeWalletForRequest.  This takes
+ * care of disabled wallet support.
+ */
+void
+addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
+                  UniValue& data)
+{
+#ifdef ENABLE_WALLET
+  addOwnershipInfo (addr, wallet.getWallet (), data);
+#endif
+}
+
+/**
+ * Utility variant of getNameInfo that already includes ownership information.
+ * This is the most common call for methods in this file.
+ */
+UniValue
+getNameInfo (const valtype& name, const CNameData& data,
+             const MaybeWalletForRequest& wallet)
+{
+  UniValue res = getNameInfo (name, data);
+  addOwnershipInfo (data.getAddress (), wallet, res);
+  return res;
+}
+
+} // anonymous namespace
+
 NameInfoHelp::NameInfoHelp (const std::string& ind)
   : indent(ind)
 {
@@ -77,6 +183,10 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
   withField ("\"vout\": xxxxx",
            "(numeric) the index of the name output in the last update");
   withField ("\"address\": xxxxx", "(string) the address holding the name");
+#ifdef ENABLE_WALLET
+  withField ("\"ismine\": xxxxx",
+             "(boolean) whether the name is owned by the wallet");
+#endif
 }
 
 NameInfoHelp&
@@ -113,7 +223,8 @@ name_show (const JSONRPCRequest& request)
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
-        + NameInfoHelp ("").finish ("") +
+        + NameInfoHelp ("")
+            .finish ("") +
         "\nExamples:\n"
         + HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
@@ -139,7 +250,9 @@ name_show (const JSONRPCRequest& request)
       }
   }
 
-  return getNameInfo (name, data);
+  MaybeWalletForRequest wallet(request);
+  LOCK (wallet.getLock ());
+  return getNameInfo (name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -156,7 +269,8 @@ name_history (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
         "[\n"
-        + NameInfoHelp ("  ").finish (",") +
+        + NameInfoHelp ("  ")
+            .finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -193,10 +307,13 @@ name_history (const JSONRPCRequest& request)
       assert (history.empty ());
   }
 
+  MaybeWalletForRequest wallet(request);
+  LOCK (wallet.getLock ());
+
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (name, entry));
-  res.push_back (getNameInfo (name, data));
+    res.push_back (getNameInfo (name, entry, wallet));
+  res.push_back (getNameInfo (name, data, wallet));
 
   return res;
 }
@@ -215,7 +332,8 @@ name_scan (const JSONRPCRequest& request)
         "2. \"count\"       (numeric, optional, default=500) stop after this many names\n"
         "\nResult:\n"
         "[\n"
-        + NameInfoHelp ("  ").finish (",") +
+        + NameInfoHelp ("  ")
+            .finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -243,13 +361,14 @@ name_scan (const JSONRPCRequest& request)
   if (count <= 0)
     return res;
 
-  LOCK (cs_main);
+  MaybeWalletForRequest wallet(request);
+  LOCK2 (cs_main, wallet.getLock ());
 
   valtype name;
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    res.push_back (getNameInfo (name, data));
+    res.push_back (getNameInfo (name, data, wallet));
 
   return res;
 }
@@ -271,7 +390,8 @@ name_filter (const JSONRPCRequest& request)
         "5. \"stat\"        (string, optional) if set to the string \"stat\", print statistics instead of returning the names\n"
         "\nResult:\n"
         "[\n"
-        + NameInfoHelp ("  ").finish (",") +
+        + NameInfoHelp ("  ")
+            .finish (",") +
         "  ...\n"
         "]\n"
         "\nExamples:\n"
@@ -333,7 +453,8 @@ name_filter (const JSONRPCRequest& request)
   UniValue names(UniValue::VARR);
   unsigned count(0);
 
-  LOCK (cs_main);
+  MaybeWalletForRequest wallet(request);
+  LOCK2 (cs_main, wallet.getLock ());
 
   valtype name;
   CNameData data;
@@ -363,7 +484,7 @@ name_filter (const JSONRPCRequest& request)
       if (stats)
         ++count;
       else
-        names.push_back (getNameInfo (name, data));
+        names.push_back (getNameInfo (name, data, wallet));
 
       if (nb > 0)
         {
@@ -405,8 +526,6 @@ name_pending (const JSONRPCRequest& request)
         + NameInfoHelp ("  ")
             .withField ("\"op\": xxxxx",
                         "(string) the operation being performed")
-            .withField ("\"ismine\": xxxxx",
-                        "(boolean) whether the name is owned by the wallet")
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -417,13 +536,8 @@ name_pending (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
-#ifdef ENABLE_WALLET
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-  LOCK2 (pwallet ? &pwallet->cs_wallet : nullptr, mempool.cs);
-#else
-  LOCK (mempool.cs);
-#endif
+  MaybeWalletForRequest wallet(request);
+  LOCK2 (wallet.getLock (), mempool.cs);
 
   std::vector<uint256> txHashes;
   if (request.params.size () == 0)
@@ -454,6 +568,7 @@ name_pending (const JSONRPCRequest& request)
           UniValue obj = getNameInfo (op.getOpName (), op.getOpValue (),
                                       COutPoint (tx->GetHash (), n),
                                       op.getAddress ());
+          addOwnershipInfo (op.getAddress (), wallet, obj);
           switch (op.getNameOp ())
             {
             case OP_NAME_REGISTER:
@@ -465,14 +580,6 @@ name_pending (const JSONRPCRequest& request)
             default:
               assert (false);
             }
-
-#ifdef ENABLE_WALLET
-          isminetype mine = ISMINE_NO;
-          if (pwallet)
-            mine = IsMine (*pwallet, op.getAddress ());
-          const bool isMine = (mine & ISMINE_SPENDABLE);
-          obj.push_back (Pair ("ismine", isMine));
-#endif
 
           arr.push_back (obj);
         }

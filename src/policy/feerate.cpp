@@ -14,9 +14,21 @@ CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
     assert(nBytes_ <= uint64_t(std::numeric_limits<int64_t>::max()));
     int64_t nSize = int64_t(nBytes_);
 
-    if (nSize > 0)
-        nSatoshisPerK = nFeePaid * 1000 / nSize;
-    else
+    if (nSize > 0) {
+        /* Xyon's MAX_MONEY is so large that 1000 * MAX_MONEY overflows
+           int64_t (CAmount).  Thus we need special-casing here for the
+           very unlikely (except in the unit test) case of an insanely high
+           fee paid.  */
+        if (nFeePaid > 1000000 * COIN) {
+            if (nFeePaid / nSize > MAX_MONEY / 1000) {
+                nSatoshisPerK = MAX_MONEY;
+            } else {
+                nSatoshisPerK = (nFeePaid / nSize) * 1000;
+            }
+        } else {
+            nSatoshisPerK = nFeePaid * 1000 / nSize;
+        }
+    } else
         nSatoshisPerK = 0;
 }
 

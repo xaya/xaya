@@ -79,6 +79,13 @@ BOOST_AUTO_TEST_CASE(GetFeeTest)
     BOOST_CHECK(CFeeRate(CAmount(27), 789) == CFeeRate(34));
     // Maximum size in bytes, should not crash
     CFeeRate(MAX_MONEY, std::numeric_limits<size_t>::max() >> 1).GetFeePerK();
+
+    /* Test for the special handling of overflows in Xyon.  */
+    BOOST_CHECK(CFeeRate(MAX_MONEY, 1) == CFeeRate(MAX_MONEY));
+    BOOST_CHECK(CFeeRate(MAX_MONEY, 1000) == CFeeRate(MAX_MONEY));
+    BOOST_CHECK(CFeeRate(MAX_MONEY, 2000) == CFeeRate(MAX_MONEY / 2));
+    BOOST_CHECK(CFeeRate(MAX_MONEY / 1000, 1) == CFeeRate(MAX_MONEY));
+    BOOST_CHECK(CFeeRate(MAX_MONEY / 2000, 1) == CFeeRate(MAX_MONEY / 2));
 }
 
 BOOST_AUTO_TEST_CASE(BinaryOperatorTest)

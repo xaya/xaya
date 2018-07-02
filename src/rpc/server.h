@@ -207,6 +207,13 @@ extern std::string HelpExampleRpc(const std::string& methodname, const std::stri
 extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
 extern UniValue getNameInfo(const valtype& name, const CNameData& data);
 
+#ifdef ENABLE_WALLET
+class CWallet;
+extern void addOwnershipInfo(const CScript& addr,
+                             const CWallet* pwallet,
+                             UniValue& data);
+#endif
+
 /**
  * Builder class for the help text of RPCs that return information about
  * names (like name_show, name_scan, name_pending or name_list).  Since the
