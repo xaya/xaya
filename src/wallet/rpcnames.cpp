@@ -13,6 +13,7 @@
 #include <primitives/transaction.h>
 #include <random.h>
 #include <rpc/mining.h>
+#include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/names.h>
 #include <txmempool.h>

@@ -10,6 +10,7 @@
 #include <names/common.h>
 #include <names/main.h>
 #include <primitives/transaction.h>
+#include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/names.h>
 #include <txmempool.h>
