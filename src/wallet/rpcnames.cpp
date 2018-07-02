@@ -357,6 +357,9 @@ name_new (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withField ("\"allowExisting\"",
+                        "(boolean, optional, default=false) If set, then the"
+                        " name_new is sent even if the name exists already")
             .finish ("") +
         "\nResult:\n"
         "[\n"
@@ -378,6 +381,19 @@ name_new (const JSONRPCRequest& request)
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
+  RPCTypeCheckObj (options,
+    {
+      {"allowExisting", UniValueType (UniValue::VBOOL)},
+    },
+    true, false);
+
+  if (!options["allowExisting"].isTrue ())
+    {
+      LOCK (cs_main);
+      CNameData oldData;
+      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+        throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name exists already");
+    }
 
   valtype rand(20);
   GetRandBytes (&rand[0], rand.size ());

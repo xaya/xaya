@@ -34,3 +34,10 @@
   name RPCs like `name_show` or `name_scan`.
   See the [proposal](https://github.com/namecoin/namecoin-core/issues/219) and
   the [implementation](https://github.com/namecoin/namecoin-core/pull/236).
+
+- `name_new` now checks whether a name exists already and by default rejects
+  to register an already existing name.  To override this check and get back
+  the old behaviour (where a `NAME_NEW` transaction can be sent for existing
+  names), set the new `allowExisting` option to true.
+  For more context, see the
+  [corresponding issue](https://github.com/namecoin/namecoin-core/issues/54).
