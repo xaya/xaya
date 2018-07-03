@@ -24,8 +24,9 @@
 namespace
 {
 
+constexpr const char pszTimestampTestnet[] = "Decentralised Autonomous Worlds";
 // FIXME: Update this in time before launch.
-constexpr const char pszTimestamp[] = "Decentralised Virtual Worlds - Chimaera";
+constexpr const char pszTimestampMainnet[] = "Mainnet Timestamp";
 
 /* Premined amount is 222,222,222 CHI.  This is the maximum possible number of
    coins needed in case everything is sold in the ICO.  If this is not the case
@@ -34,7 +35,7 @@ constexpr const char pszTimestamp[] = "Decentralised Virtual Worlds - Chimaera";
 constexpr CAmount premineAmount = 222222222 * COIN;
 
 /*
-The premine on testnet and regtest is sent to a 1-of-2 multisig address.
+The premine on regtest is sent to a 1-of-2 multisig address.
 
 The two addresses and corresponding privkeys are:
   cRH94YMZVk4MnRwPqRVebkLWerCPJDrXGN:
@@ -51,12 +52,22 @@ The constant below is the HASH160 of the dedeem script.  In other words, the
 final premine script will be:
   OP_HASH160 hexPremineAddress OP_EQUAL
 */
-constexpr const char hexPremineAddressTestnet[]
-  = "2b6defe41aa3aa47795b702c893c73e716d485ab";
+constexpr const char hexPremineAddressRegtest[]
+    = "2b6defe41aa3aa47795b702c893c73e716d485ab";
 
-// FIXME: Update this in time before launch.
+/*
+The premine on testnet and mainnet is sent to a 2-of-4 multisig address.  The
+keys are held by the founding members of the Xyon team.
+
+The address is:
+  DHy2615XKevE23LVRVZVxGeqxadRGyiFW4
+
+The hash of the redeem script is the constant below.  With it, the final
+premine script is:
+  OP_HASH160 hexPremineAddress OP_EQUAL
+*/
 constexpr const char hexPremineAddressMainnet[]
-  = "2b6defe41aa3aa47795b702c893c73e716d485ab";
+    = "8cb1c236d34c74221fe4163bbba739b52e95f484";
 
 CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -95,10 +106,11 @@ CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& gene
 CBlock
 CreateGenesisBlock (const uint32_t nTime, const uint32_t nNonce,
                     const uint32_t nBits,
+                    const std::string& timestamp,
                     const uint160& premineP2sh)
 {
-  const std::vector<unsigned char>
-    timestampData(pszTimestamp, pszTimestamp + strlen (pszTimestamp));
+  const std::vector<unsigned char> timestampData(timestamp.begin (),
+                                                 timestamp.end ());
   const CScript genesisInput = CScript () << timestampData;
 
   std::vector<unsigned char>
@@ -208,11 +220,12 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock (1529499726, 1642079, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1530623166, 83698, 0x1e0ffff0,
+                                      pszTimestampMainnet,
                                       uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("4e81865a0b7eec37cc6eebbb59152bf0ecc8fd35e6ec28f117f674d0c406f5e4"));
-        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
+        assert(consensus.hashGenesisBlock == uint256S("b3e1186f431670265ee7f8e41ae0c10f674eebefe9bc547079c260294ca2ce1b"));
+        assert(genesis.hashMerkleRoot == uint256S("ff79fdb5e6c3e842072de6862bb8026e4187cab3d71462996631574158ea0fdd"));
 
         // FIXME: Add seeds for Xyon (#8).
         //vSeeds.emplace_back("nmc.seed.quisquis.de");
@@ -296,11 +309,12 @@ public:
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1529500921, 381413, 0x1e0ffff0,
-                                      uint160S (hexPremineAddressTestnet));
+        genesis = CreateGenesisBlock (1530623291, 343829, 0x1e0ffff0,
+                                      pszTimestampTestnet,
+                                      uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("6364cbdf891d2bc766aeef5a2270bdb9edd659e8c479230cb9fe2d426441f5ab"));
-        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
+        assert(consensus.hashGenesisBlock == uint256S("5195fc01d0e23d70d1f929f21ec55f47e1c6ea1e66fae98ee44cbbc994509bba"));
+        assert(genesis.hashMerkleRoot == uint256S("59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"));
 
         // FIXME: Add seeds for Xyon (#8).
         vFixedSeeds.clear();
@@ -386,11 +400,12 @@ public:
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock (1300000000, 1, 0x207fffff,
-                                      uint160S (hexPremineAddressTestnet));
+        genesis = CreateGenesisBlock (1300000000, 0, 0x207fffff,
+                                      pszTimestampTestnet,
+                                      uint160S (hexPremineAddressRegtest));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("675b53c6be64119001318a2362015ca2d4d704cdb732cc2de4e54f0bed27a21b"));
-        assert(genesis.hashMerkleRoot == uint256S("bf0db19b65e18904f413d0aa42cf7b9e08daa468c320b08a754911f6696c7f25"));
+        assert(consensus.hashGenesisBlock == uint256S("6f750b36d22f1dc3d0a6e483af45301022646dfc3b3ba2187865f5a7d6d83ab1"));
+        assert(genesis.hashMerkleRoot == uint256S("9f96a4c275320aaf6386652444be5baade11e2f9f40221a98b968ae5c32dd55a"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
