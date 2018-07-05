@@ -41,3 +41,8 @@
   names), set the new `allowExisting` option to true.
   For more context, see the
   [corresponding issue](https://github.com/namecoin/namecoin-core/issues/54).
+
+- The `namecoin-tx` utility has now support for creating name operations based
+  on the new commands `namenew`, ` namefirstupdate` and `nameupdate`.  For the
+  exact usage, see the
+  [proposal](https://github.com/namecoin/namecoin-core/issues/147#issuecomment-402429258).
