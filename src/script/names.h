@@ -196,12 +196,12 @@ public:
   }
 
   /**
-   * Build a NAME_NEW transaction.
-   * @param addr The address script to append.
-   * @param hash The hash to use.
-   * @return The full NAME_NEW script.
+   * Builds a NAME_NEW operation for the given address, name and rand value.
+   * This includes the hashing step required to go from (name, rand) to the
+   * hash that is actually part of the script.
    */
-  static CScript buildNameNew (const CScript& addr, const uint160& hash);
+  static CScript buildNameNew (const CScript& addr, const valtype& name,
+                               const valtype& rand);
 
   /**
    * Build a NAME_FIRSTUPDATE transaction.  Note that the arguments to this

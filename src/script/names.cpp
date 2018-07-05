@@ -4,6 +4,7 @@
 
 #include <script/names.h>
 
+#include <hash.h>
 #include <uint256.h>
 
 CNameScript::CNameScript (const CScript& script)
@@ -64,8 +65,13 @@ CNameScript::CNameScript (const CScript& script)
 }
 
 CScript
-CNameScript::buildNameNew (const CScript& addr, const uint160& hash)
+CNameScript::buildNameNew (const CScript& addr, const valtype& name,
+                           const valtype& rand)
 {
+  valtype toHash(rand);
+  toHash.insert (toHash.end (), name.begin (), name.end ());
+  const uint160 hash = Hash160 (toHash);
+
   CScript prefix;
   prefix << OP_NAME_NEW << ToByteVector (hash) << OP_2DROP;
 

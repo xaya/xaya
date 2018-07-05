@@ -398,10 +398,6 @@ name_new (const JSONRPCRequest& request)
   valtype rand(20);
   GetRandBytes (&rand[0], rand.size ());
 
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  const uint160 hash = Hash160 (toHash);
-
   /* No explicit locking should be necessary.  CReserveKey takes care
      of locking the wallet, and CommitTransaction (called when sending
      the tx) locks cs_main as necessary.  */
@@ -412,7 +408,7 @@ name_new (const JSONRPCRequest& request)
   destHelper.setOptions (options);
 
   const CScript newScript
-      = CNameScript::buildNameNew (destHelper.getScript (), hash);
+      = CNameScript::buildNameNew (destHelper.getScript (), name, rand);
 
   CCoinControl coinControl;
   CTransactionRef tx = SendNameOutput (*pwallet, newScript, nullptr, options);
