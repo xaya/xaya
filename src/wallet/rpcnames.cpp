@@ -115,20 +115,30 @@ void DestinationAddressHelper::finalise ()
 }
 
 /**
- * Returns the help text for the options argument for name operations.
+ * Builder for the help text of the "options" argument.
  */
-std::string getNameOpOptionsHelp ()
+class NameOpOptionsHelpBuilder : public HelpTextBuilder
 {
-  return "  {\n"
-         "    \"destAddress\"  (string, optional) The address to send the name output to\n"
-         "    \"sendCoins\"    (object, optional) Addresses to which coins should be sent additionally\n"
-         "      {\n"
-         "        \"addr1\": x,\n"
-         "        \"addr2\": y,\n"
-         "        ...\n"
-         "      }\n"
-         "  }\n";
-}
+
+public:
+
+  explicit NameOpOptionsHelpBuilder ()
+    : HelpTextBuilder("  ", 25)
+  {
+    withField ("\"destAddress\"",
+               "(string, optional) The address to send the name output to");
+
+    withField ("\"sendCoins\"", ":",
+               "(object, optional) Addresses to which coins should be"
+               " sent additionally");
+    withLine ("{");
+    withField ("  \"addr1\": x", "");
+    withField ("  \"addr2\": y", "");
+    withLine ("  ...");
+    withLine ("}");
+  }
+
+};
 
 /**
  * Sends a name output to the given name script.  This is the "final" step that
@@ -346,7 +356,11 @@ name_new (const JSONRPCRequest& request)
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"options\"       (object, optional)\n"
-        + getNameOpOptionsHelp () +
+        + NameOpOptionsHelpBuilder ()
+            .withField ("\"allowExisting\"",
+                        "(boolean, optional, default=false) If set, then the"
+                        " name_new is sent even if the name exists already")
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         "  xxxxx,   (string) the txid, required for name_firstupdate\n"
@@ -367,6 +381,19 @@ name_new (const JSONRPCRequest& request)
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
+  RPCTypeCheckObj (options,
+    {
+      {"allowExisting", UniValueType (UniValue::VBOOL)},
+    },
+    true, false);
+
+  if (!options["allowExisting"].isTrue ())
+    {
+      LOCK (cs_main);
+      CNameData oldData;
+      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+        throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name exists already");
+    }
 
   valtype rand(20);
   GetRandBytes (&rand[0], rand.size ());
@@ -479,7 +506,8 @@ name_firstupdate (const JSONRPCRequest& request)
         "3. \"tx\"            (string, required) the name_new txid\n"
         "4. \"value\"         (string, required) value for the name\n"
         "5. \"options\"       (object, optional)\n"
-        + getNameOpOptionsHelp () +
+        + NameOpOptionsHelpBuilder ()
+            .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_firstupdate's txid\n"
         "\nExamples:\n"
@@ -583,7 +611,8 @@ name_update (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to update\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + getNameOpOptionsHelp () +
+        + NameOpOptionsHelpBuilder ()
+            .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
         "\nExamples:\n"
