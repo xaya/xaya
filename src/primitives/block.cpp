@@ -10,6 +10,27 @@
 #include <utilstrencodings.h>
 #include <crypto/common.h>
 
+uint256
+CBlockHeader::GetRngSeed () const
+{
+  /* Random numbers in games must not be based off the block hash itself, as
+     this can be trivially brute-forced by miners *before* they even attempt
+     the PoW attached to it.  Because of that, the seed for random numbers
+     should be derived from the PoW itself, i.e. the "fake header" or the
+     auxpow parent block.  Furthermore, to avoid the bias towards smaller
+     numbers that exists with SHA256D-mined auxpow headers, we hash the
+     PoW hash again to get a uniform distribution.  */
+
+  uint256 powHash;
+  if (pow.isMergeMined ())
+    powHash = pow.getAuxpow ().getParentBlockHash ();
+  else
+    powHash = pow.getFakeHeader ().GetHash ();
+  assert (!powHash.IsNull ());
+
+  return Hash (powHash.begin (), powHash.end ());
+}
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;

@@ -80,5 +80,20 @@ class DualAlgoTest (BitcoinTestFramework):
     assert_greater_than (neoscryptData['chainwork'], shaData['chainwork'])
     assert_greater_than (shaData['height'], neoscryptData['height'])
 
+    # Check that getblock returns the rngseed and that it is not (in a trivial
+    # way) biased towards smaller numbers like the PoW hash itself would be.
+    # For this, we verify that at least some seeds are large.
+    for algo in ['sha256d', 'neoscrypt']:
+      found = False
+      for trial in range (100):
+        blk = self.node.generate (1, None, algo)[0]
+        data = self.node.getblock (blk)
+        assert 'rngseed' in data
+        if data['rngseed'][0] == 'f':
+          found = True
+          break
+      if not found:
+        raise AssertionError ("rng seed was never high for algo %s" % algo)
+
 if __name__ == '__main__':
   DualAlgoTest ().main ()

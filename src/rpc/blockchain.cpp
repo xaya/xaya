@@ -194,6 +194,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     result.pushKV("powdata", PowDataToJSON(block.pow));
+    result.pushKV("rngseed", block.GetRngSeed().GetHex());
 
     if (blockindex->pprev)
         result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
@@ -845,6 +846,8 @@ static UniValue getblock(const JSONRPCRequest& request)
             "  \"mediantime\" : ttt,    (numeric) The median block time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"chainwork\" : \"xxxx\",  (string) Expected number of hashes required to produce the chain up to this block (in hex)\n"
             "  \"nTx\" : n,             (numeric) The number of transactions in the block.\n"
+            "  \"powdata\" : {...},     (json object) The block's attached PoW data\n"
+            "  \"rngseed\" : \"xxx\",     (string) Hex-encoded seed that may be used for (not fully secure) random numbers in games\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "}\n"
