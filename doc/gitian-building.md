@@ -316,8 +316,8 @@ Clone the git repositories for xaya and Gitian.
 
 ```bash
 git clone https://github.com/devrandom/gitian-builder.git
-git clone https://github.com/xayaplatform/xaya
-git clone https://github.com/xayaplatform/gitian.sigs.git
+git clone https://github.com/xaya/xaya
+git clone https://github.com/xaya/gitian.sigs.git
 ```
 
 Setting up the Gitian image
@@ -374,7 +374,7 @@ Output from `gbuild` will look something like
     remote: Total 57959 (delta 0), reused 0 (delta 0), pack-reused 57958
     Receiving objects: 100% (57959/57959), 53.76 MiB | 484.00 KiB/s, done.
     Resolving deltas: 100% (41590/41590), done.
-    From https://github.com/xayaplatform/xaya
+    From https://github.com/xaya/xaya
     ... (new tags, new branch etc)
     --- Building for trusty amd64 ---
     Stopping target if it is up

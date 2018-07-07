@@ -42,7 +42,7 @@ The following are developer notes on how to build Bitcoin on your native platfor
 
 Development
 ---------------------
-The Xaya repo's [root README](https://github.com/xayaplatform/xaya/blob/master/README.md) contains relevant information on the development process and automated testing.
+The Xaya repo's [root README](https://github.com/xaya/xaya/blob/master/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Release Notes](release-notes.md)

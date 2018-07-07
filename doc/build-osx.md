@@ -43,7 +43,7 @@ Build Xaya
 
 1. Clone the Xaya source code and cd into `xaya`
 
-        git clone https://github.com/xayaplatform/xaya.git
+        git clone https://github.com/xaya/xaya.git
         cd xaya
 
 2.  Build xaya:
