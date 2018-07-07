@@ -70,7 +70,7 @@ class PremineTest(BitcoinTestFramework):
     redeemScript = data['hex']
     # Prepend script size, so that it will correctly push the script hash
     # to the stack.
-    redeemScript = ("%02x" % (len (redeemScript) / 2)) + redeemScript
+    redeemScript = ("%02x" % (len (redeemScript) // 2)) + redeemScript
     forgedTx = CTransaction ()
     FromHex (forgedTx, rawTx)
     forgedTx.vin[0].scriptSig = codecs.decode (redeemScript, 'hex_codec')
