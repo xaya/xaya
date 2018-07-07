@@ -1,32 +1,32 @@
-XYON
+XAYA
 ====
 
 Setup
 ---------------------
-[Xyon](https://xyon.io/) provides the official Xyon client and it builds the backbone of the network. However, it downloads and stores the entire history of Xyon transactions; depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
+[Xaya](https://xaya.io/) provides the official Xaya client and it builds the backbone of the network. However, it downloads and stores the entire history of Xaya transactions; depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
 
 Running
 ---------------------
-The following are some helpful notes on how to run Xyon on your native platform.
+The following are some helpful notes on how to run Xaya on your native platform.
 
 ### Unix
 
 Unpack the files into a directory and run:
 
-- `bin/xyon-qt` (GUI) or
-- `bin/xyond` (headless)
+- `bin/xaya-qt` (GUI) or
+- `bin/xayad` (headless)
 
 ### Windows
 
-Unpack the files into a directory, and then run xyon-qt.exe.
+Unpack the files into a directory, and then run xaya-qt.exe.
 
 ### macOS
 
-Drag Xyon-Qt to your applications folder, and then run Xyon-Qt.
+Drag Xaya-Qt to your applications folder, and then run Xaya-Qt.
 
 ### Need Help?
 
-* See the documentation at the [Xyon Site](https://xyon.io) for help and more information.
+* See the documentation at the [Xaya Site](https://xaya.io) for help and more information.
 
 Building
 ---------------------
@@ -42,7 +42,7 @@ The following are developer notes on how to build Bitcoin on your native platfor
 
 Development
 ---------------------
-The Xyon repo's [root README](https://github.com/xyonplatform/xyon/blob/master/README.md) contains relevant information on the development process and automated testing.
+The Xaya repo's [root README](https://github.com/xayaplatform/xaya/blob/master/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Release Notes](release-notes.md)

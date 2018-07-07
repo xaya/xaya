@@ -1,4 +1,4 @@
-# See https://github.com/xyonplatform/xyon/issues/8#issuecomment-375992872.
+# See https://github.com/xayaplatform/xaya/issues/8#issuecomment-375992872.
 
 46.101.15.140
 178.62.99.51

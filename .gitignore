@@ -7,13 +7,13 @@ src/bitcoin-tx
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
-src/xyond
-src/xyon-cli
-src/xyon-tx
-src/xyon-hash
-src/test/test_xyon
-src/test/test_xyon_fuzzy
-src/qt/test/test_xyon-qt
+src/xayad
+src/xaya-cli
+src/xaya-tx
+src/xaya-hash
+src/test/test_xaya
+src/test/test_xaya_fuzzy
+src/qt/test/test_xaya-qt
 
 # autoreconf
 Makefile.in
@@ -106,9 +106,9 @@ ipch/
 *.qm
 Makefile
 bitcoin-qt
-xyon-qt
+xaya-qt
 Bitcoin-Qt.app
-Xyon-Qt.app
+Xaya-Qt.app
 background.tiff*
 
 # Unit-tests

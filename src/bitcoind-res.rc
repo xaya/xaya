@@ -16,14 +16,14 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
-            VALUE "CompanyName",        "Xyon"
-            VALUE "FileDescription",    "xyon (Xyon node with a JSON-RPC server)"
+            VALUE "CompanyName",        "Xaya"
+            VALUE "FileDescription",    "xaya (Xaya node with a JSON-RPC server)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
-            VALUE "InternalName",       "xyond"
+            VALUE "InternalName",       "xayad"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
-            VALUE "OriginalFilename",   "xyond.exe"
-            VALUE "ProductName",        "Xyon"
+            VALUE "OriginalFilename",   "xayad.exe"
+            VALUE "ProductName",        "Xaya"
             VALUE "ProductVersion",     VER_PRODUCTVERSION_STR
         END
     END

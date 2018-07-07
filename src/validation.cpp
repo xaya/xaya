@@ -1880,7 +1880,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     uint256 hashPrevBlock = pindex->pprev == nullptr ? uint256() : pindex->pprev->GetBlockHash();
     assert(hashPrevBlock == view.GetBestBlock());
 
-    /* In Xyon, the genesis block tx is spendable (premine).  Thus no
+    /* In Xaya, the genesis block tx is spendable (premine).  Thus no
        special rule is needed here (as in Bitcoin and Namecoin).  */
 
     nBlocksTotal++;
@@ -1914,7 +1914,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     int64_t nTime1 = GetTimeMicros(); nTimeCheck += nTime1 - nTimeStart;
     LogPrint(BCLog::BENCH, "    - Sanity checks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime1 - nTimeStart), nTimeCheck * MICRO, nTimeCheck * MILLI / nBlocksTotal);
 
-    // Xyon has BIP34 activated from the start, so there's no need for the
+    // Xaya has BIP34 activated from the start, so there's no need for the
     // BIP30 checks.
 
 
@@ -3194,7 +3194,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     assert(pindexPrev != nullptr);
     const int nHeight = pindexPrev->nHeight + 1;
 
-    /* Verify Xyon's requirement that the main block header must have zero bits
+    /* Verify Xaya's requirement that the main block header must have zero bits
        and nonce.  */
     if (block.nBits != 0 || block.nNonce != 0)
         return state.Invalid(false, REJECT_INVALID, "nonzero-bits-nonce",

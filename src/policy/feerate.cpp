@@ -15,7 +15,7 @@ CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
     int64_t nSize = int64_t(nBytes_);
 
     if (nSize > 0) {
-        /* Xyon's MAX_MONEY is so large that 1000 * MAX_MONEY overflows
+        /* Xaya's MAX_MONEY is so large that 1000 * MAX_MONEY overflows
            int64_t (CAmount).  Thus we need special-casing here for the
            very unlikely (except in the unit test) case of an insanely high
            fee paid.  */

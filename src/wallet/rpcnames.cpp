@@ -540,7 +540,7 @@ sendtoname (const JSONRPCRequest& request)
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Xyon is downloading blocks...");
+                       "Xaya is downloading blocks...");
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 

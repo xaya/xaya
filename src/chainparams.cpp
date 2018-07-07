@@ -57,7 +57,7 @@ constexpr const char hexPremineAddressRegtest[]
 
 /*
 The premine on testnet and mainnet is sent to a 2-of-4 multisig address.  The
-keys are held by the founding members of the Xyon team.
+keys are held by the founding members of the Xaya team.
 
 The address is:
   DHy2615XKevE23LVRVZVxGeqxadRGyiFW4
@@ -227,7 +227,7 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("b3e1186f431670265ee7f8e41ae0c10f674eebefe9bc547079c260294ca2ce1b"));
         assert(genesis.hashMerkleRoot == uint256S("ff79fdb5e6c3e842072de6862bb8026e4187cab3d71462996631574158ea0fdd"));
 
-        // FIXME: Add seeds for Xyon (#8).
+        // FIXME: Add seeds for Xaya (#8).
         //vSeeds.emplace_back("nmc.seed.quisquis.de");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,28);
@@ -316,7 +316,7 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("5195fc01d0e23d70d1f929f21ec55f47e1c6ea1e66fae98ee44cbbc994509bba"));
         assert(genesis.hashMerkleRoot == uint256S("59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"));
 
-        // FIXME: Add seeds for Xyon (#8).
+        // FIXME: Add seeds for Xaya (#8).
         vFixedSeeds.clear();
         vSeeds.clear();
         //vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com");

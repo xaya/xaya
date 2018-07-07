@@ -192,7 +192,7 @@ void PaymentServerTests::paymentServerTests()
     QCOMPARE(PaymentServer::verifySize(tempFile.size()), false);
 
     #if 0
-    FIXME: Disabled, since the amount is valid for Xyon.
+    FIXME: Disabled, since the amount is valid for Xaya.
     When we have time to recreate the request data, we could reenable this.
 
     // Payment request with amount overflow (amount is set to 21000001 BTC):

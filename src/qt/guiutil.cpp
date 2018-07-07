@@ -72,7 +72,7 @@ extern double NSAppKitVersionNumber;
 #endif
 #endif
 
-#define URI_SCHEME "xyon"
+#define URI_SCHEME "xaya"
 
 namespace GUIUtil {
 
@@ -122,7 +122,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
     widget->setFont(fixedPitchFont());
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
-    widget->setPlaceholderText(QObject::tr("Enter a Xyon address (e.g. %1)").arg(
+    widget->setPlaceholderText(QObject::tr("Enter a Xaya address (e.g. %1)").arg(
         QString::fromStdString(DummyAddress(Params()))));
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
     widget->setCheckValidator(new BitcoinAddressCheckValidator(parent));
@@ -572,10 +572,10 @@ fs::path static StartupShortcutPath()
 {
     std::string chain = gArgs.GetChainName();
     if (chain == CBaseChainParams::MAIN)
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Xyon.lnk";
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "Xaya.lnk";
     if (chain == CBaseChainParams::TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
-        return GetSpecialFolderPath(CSIDL_STARTUP) / "Xyon (testnet).lnk";
-    return GetSpecialFolderPath(CSIDL_STARTUP) / strprintf("Xyon (%s).lnk", chain);
+        return GetSpecialFolderPath(CSIDL_STARTUP) / "Xaya (testnet).lnk";
+    return GetSpecialFolderPath(CSIDL_STARTUP) / strprintf("Xaya (%s).lnk", chain);
 }
 
 bool GetStartOnSystemStartup()
@@ -670,8 +670,8 @@ fs::path static GetAutostartFilePath()
 {
     std::string chain = gArgs.GetChainName();
     if (chain == CBaseChainParams::MAIN)
-        return GetAutostartDir() / "xyon.desktop";
-    return GetAutostartDir() / strprintf("xyon-%s.lnk", chain);
+        return GetAutostartDir() / "xaya.desktop";
+    return GetAutostartDir() / strprintf("xaya-%s.lnk", chain);
 }
 
 bool GetStartOnSystemStartup()
@@ -715,9 +715,9 @@ bool SetStartOnSystemStartup(bool fAutoStart)
         optionFile << "[Desktop Entry]\n";
         optionFile << "Type=Application\n";
         if (chain == CBaseChainParams::MAIN)
-            optionFile << "Name=Xyon\n";
+            optionFile << "Name=Xaya\n";
         else
-            optionFile << strprintf("Name=Xyon (%s)\n", chain);
+            optionFile << strprintf("Name=Xaya (%s)\n", chain);
         optionFile << "Exec=" << pszExePath << strprintf(" -min -testnet=%d -regtest=%d\n", gArgs.GetBoolArg("-testnet", false), gArgs.GetBoolArg("-regtest", false));
         optionFile << "Terminal=false\n";
         optionFile << "Hidden=false\n";

@@ -1,13 +1,13 @@
-Xyon Core
+Xaya Core
 =========
 
-https://xyon.io
+https://xaya.io
 
-What is Xyon?
+What is Xaya?
 -------------
 
-Xyon Core is a decentralized open source information registration and transfer system based on the Namecoin cryptocurrency. It is primarily aimed at decentralised blockchain gaming.
-This is the first layer of the Xyon Platform.
+Xaya Core is a decentralized open source information registration and transfer system based on the Namecoin cryptocurrency. It is primarily aimed at decentralised blockchain gaming.
+This is the first layer of the Xaya Platform.
 
 What does it do?
 ----------------
@@ -15,9 +15,9 @@ What does it do?
 * Securely record and transfer arbitrary names (keys).
 * Transact CHI Coins, the digital currency (CHI).
 * Store Data.
-* This is Xyon's first layer and data storage.
+* This is Xaya's first layer and data storage.
 
-What can Xyon be used for?
+What can Xaya be used for?
 --------------------------
 
 * Along with some of Namecoin's uses cases, it is designed especially with gaming in mind.

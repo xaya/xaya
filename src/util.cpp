@@ -82,8 +82,8 @@
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
-const char * const BITCOIN_CONF_FILENAME = "xyon.conf";
-const char * const BITCOIN_PID_FILENAME = "xyon.pid";
+const char * const BITCOIN_CONF_FILENAME = "xaya.conf";
+const char * const BITCOIN_PID_FILENAME = "xaya.pid";
 
 ArgsManager gArgs;
 
@@ -686,7 +686,7 @@ static std::string FormatException(const std::exception* pex, const char* pszThr
     char pszModule[MAX_PATH] = "";
     GetModuleFileNameA(nullptr, pszModule, sizeof(pszModule));
 #else
-    const char* pszModule = "xyon";
+    const char* pszModule = "xaya";
 #endif
     if (pex)
         return strprintf(
@@ -705,13 +705,13 @@ void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
 
 fs::path GetDefaultDataDir()
 {
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Xyon
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Xyon
-    // Mac: ~/Library/Application Support/Xyon
-    // Unix: ~/.xyon
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Xaya
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Xaya
+    // Mac: ~/Library/Application Support/Xaya
+    // Unix: ~/.xaya
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Xyon";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "Xaya";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -721,10 +721,10 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/Xyon";
+    return pathRet / "Library/Application Support/Xaya";
 #else
     // Unix
-    return pathRet / ".xyon";
+    return pathRet / ".xaya";
 #endif
 #endif
 }

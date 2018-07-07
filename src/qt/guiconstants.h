@@ -48,9 +48,9 @@ static const int MAX_URI_LENGTH = 255;
 /* Number of frames in spinner animation */
 #define SPINNER_FRAMES 36
 
-#define QAPP_ORG_NAME "Xyon"
-#define QAPP_ORG_DOMAIN "xyon.io"
-#define QAPP_APP_NAME_DEFAULT "Xyon-Qt"
-#define QAPP_APP_NAME_TESTNET "Xyon-Qt-testnet"
+#define QAPP_ORG_NAME "Xaya"
+#define QAPP_ORG_DOMAIN "xaya.io"
+#define QAPP_APP_NAME_DEFAULT "Xaya-Qt"
+#define QAPP_APP_NAME_TESTNET "Xaya-Qt-testnet"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H

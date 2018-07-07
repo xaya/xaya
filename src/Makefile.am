@@ -71,16 +71,16 @@ EXTRA_LIBRARIES += \
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
 bin_PROGRAMS =
-noinst_PROGRAMS = xyon-hash
+noinst_PROGRAMS = xaya-hash
 TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += xyond
+  bin_PROGRAMS += xayad
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += xyon-cli xyon-tx
+  bin_PROGRAMS += xaya-cli xaya-tx
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -438,16 +438,16 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
-xyond_SOURCES = bitcoind.cpp
-xyond_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xyond_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xyond_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xayad_SOURCES = bitcoind.cpp
+xayad_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xayad_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xayad_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-xyond_SOURCES += bitcoind-res.rc
+xayad_SOURCES += bitcoind-res.rc
 endif
 
-xyond_LDADD = \
+xayad_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_COMMON) \
@@ -461,38 +461,38 @@ xyond_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-xyond_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+xayad_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 # bitcoin-cli binary #
-xyon_cli_SOURCES = bitcoin-cli.cpp
-xyon_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-xyon_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xyon_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xaya_cli_SOURCES = bitcoin-cli.cpp
+xaya_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+xaya_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xaya_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-xyon_cli_SOURCES += bitcoin-cli-res.rc
+xaya_cli_SOURCES += bitcoin-cli-res.rc
 endif
 
-xyon_cli_LDADD = \
+xaya_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-xyon_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+xaya_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoin-tx binary #
-xyon_tx_SOURCES = bitcoin-tx.cpp
-xyon_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xyon_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xyon_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xaya_tx_SOURCES = bitcoin-tx.cpp
+xaya_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xaya_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xaya_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-xyon_tx_SOURCES += bitcoin-tx-res.rc
+xaya_tx_SOURCES += bitcoin-tx-res.rc
 endif
 
-xyon_tx_LDADD = \
+xaya_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
@@ -500,23 +500,23 @@ xyon_tx_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-xyon_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+xaya_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
-# xyon-hash binary #
-xyon_hash_SOURCES = xyon-hash.cpp
-xyon_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xyon_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xyon_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# xaya-hash binary #
+xaya_hash_SOURCES = xaya-hash.cpp
+xaya_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xaya_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xaya_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
-xyon_hash_LDADD = \
+xaya_hash_LDADD = \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBBITCOIN_CRYPTO_SSE41) \
   $(LIBBITCOIN_CRYPTO_AVX2)
-xyon_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+xaya_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
 # namecoinconsensus library #

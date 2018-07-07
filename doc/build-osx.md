@@ -38,17 +38,17 @@ from the root of the repository.
 
 **Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
 
-Build Xyon
+Build Xaya
 ----------
 
-1. Clone the Xyon source code and cd into `xyon`
+1. Clone the Xaya source code and cd into `xaya`
 
-        git clone https://github.com/xyonplatform/xyon.git
-        cd xyon
+        git clone https://github.com/xayaplatform/xaya.git
+        cd xaya
 
-2.  Build xyon:
+2.  Build xaya:
 
-    Configure and build the headless xyon binaries as well as the GUI (if Qt is found).
+    Configure and build the headless xaya binaries as well as the GUI (if Qt is found).
 
     You can disable the GUI build by passing `--without-gui` to configure.
 
@@ -67,26 +67,26 @@ Build Xyon
 Running
 -------
 
-Xyon is now available at `./src/xyond`
+Xaya is now available at `./src/xayad`
 
 Before running, it's recommended you create an RPC configuration file.
 
-    echo -e "rpcuser=xyonrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Xyon/xyon.conf"
+    echo -e "rpcuser=xayarpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
 
-    chmod 600 "/Users/${USER}/Library/Application Support/Xyon/xyon.conf"
+    chmod 600 "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
 
-The first time you run xyond, it will start downloading the blockchain. This process could take several hours.
+The first time you run xayad, it will start downloading the blockchain. This process could take several hours.
 
 You can monitor the download process by looking at the debug.log file:
 
-    tail -f $HOME/Library/Application\ Support/Xyon/debug.log
+    tail -f $HOME/Library/Application\ Support/Xaya/debug.log
 
 Other commands:
 ---------------
 
-    ./src/xyond -daemon # Starts the xyon daemon.
-    ./src/xyon-cli --help # Outputs a list of command-line options.
-    ./src/xyon-cli help # Outputs a list of RPC commands when the daemon is running.
+    ./src/xayad -daemon # Starts the xaya daemon.
+    ./src/xaya-cli --help # Outputs a list of command-line options.
+    ./src/xaya-cli help # Outputs a list of RPC commands when the daemon is running.
 
 Notes
 -----

@@ -308,7 +308,7 @@ const UniValue& find_value( const UniValue& obj, const std::string& name);
  * Verifies whether a given string consists only of valid UTF-8 code points
  * as per the JSONUTF8StringFilter.
  *
- * This method is exposed for Xyon to validate names.
+ * This method is exposed for Xaya to validate names.
  */
 bool IsValidUtf8String(const std::string& str);
 

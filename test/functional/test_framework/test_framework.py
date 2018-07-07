@@ -99,9 +99,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
         parser = optparse.OptionParser(usage="%prog [options]")
         parser.add_option("--nocleanup", dest="nocleanup", default=False, action="store_true",
-                          help="Leave xyonds and test.* datadir on exit or error")
+                          help="Leave xayads and test.* datadir on exit or error")
         parser.add_option("--noshutdown", dest="noshutdown", default=False, action="store_true",
-                          help="Don't stop xyonds after the test execution")
+                          help="Don't stop xayads after the test execution")
         parser.add_option("--cachedir", dest="cachedir", default=os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/../../cache"),
                           help="Directory for caching pregenerated datadirs (default: %default)")
         parser.add_option("--tmpdir", dest="tmpdir", help="Root directory for datadirs")
@@ -119,7 +119,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         parser.add_option("--pdbonfailure", dest="pdbonfailure", default=False, action="store_true",
                           help="Attach a python debugger if test fails")
         parser.add_option("--usecli", dest="usecli", default=False, action="store_true",
-                          help="use xyon-cli instead of RPC for all commands")
+                          help="use xaya-cli instead of RPC for all commands")
         self.add_options(parser)
         (self.options, self.args) = parser.parse_args()
 
@@ -131,9 +131,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
         config = configparser.ConfigParser()
         config.read_file(open(self.options.configfile))
-        self.options.bitcoind = os.getenv("BITCOIND", default=config["environment"]["BUILDDIR"] + '/src/xyond' + config["environment"]["EXEEXT"])
-        self.options.bitcoincli = os.getenv("BITCOINCLI", default=config["environment"]["BUILDDIR"] + '/src/xyon-cli' + config["environment"]["EXEEXT"])
-        powhash.xyonhash = os.getenv("XYON-HASH", default=config["environment"]["BUILDDIR"] + '/src/xyon-hash' + config["environment"]["EXEEXT"])
+        self.options.bitcoind = os.getenv("BITCOIND", default=config["environment"]["BUILDDIR"] + '/src/xayad' + config["environment"]["EXEEXT"])
+        self.options.bitcoincli = os.getenv("BITCOINCLI", default=config["environment"]["BUILDDIR"] + '/src/xaya-cli' + config["environment"]["EXEEXT"])
+        powhash.xayahash = os.getenv("XAYA-HASH", default=config["environment"]["BUILDDIR"] + '/src/xaya-hash' + config["environment"]["EXEEXT"])
 
         os.environ['PATH'] = os.pathsep.join([
             os.path.join(config['environment']['BUILDDIR'], 'src'),
