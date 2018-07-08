@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   const uint160 hash = Hash160 (toHash);
 
   CScript script;
-  script = CNameScript::buildNameNew (addr, hash);
+  script = CNameScript::buildNameNew (addr, name, rand);
   const CNameScript opNew(script);
   BOOST_CHECK (opNew.isNameOp ());
   BOOST_CHECK (opNew.getAddress () == addr);
@@ -512,9 +512,6 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   const CScript addr = getTestAddress ();
 
   const valtype rand(20, 'x');
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name1.begin (), name1.end ());
-  const uint160 hash = Hash160 (toHash);
 
   /* We use a basic coin view as standard situation for all the tests.
      Set it up with some basic input coins.  */
@@ -522,7 +519,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   CCoinsView dummyView;
   CCoinsViewCache view(&dummyView);
 
-  const CScript scrNew = CNameScript::buildNameNew (addr, hash);
+  const CScript scrNew = CNameScript::buildNameNew (addr, name1, rand);
   const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name1,
                                                               value, rand);
   const CScript scrUpdate = CNameScript::buildNameUpdate (addr, name1, value);
@@ -712,11 +709,8 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   CNameHistory history;
 
   const valtype rand(20, 'x');
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  const uint160 hash = Hash160 (toHash);
 
-  const CScript scrNew = CNameScript::buildNameNew (addr, hash);
+  const CScript scrNew = CNameScript::buildNameNew (addr, name, rand);
   const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name,
                                                               value1, rand);
   const CScript scrUpdate = CNameScript::buildNameUpdate (addr, name, value2);
@@ -872,22 +866,26 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   const valtype valueA = ValtypeFromString ("value-a");
   const valtype valueB = ValtypeFromString ("value-b");
   const CScript addr = getTestAddress ();
+  const CScript addr2 = (CScript (addr) << OP_RETURN);
 
   const valtype rand1(20, 'a');
   const valtype rand2(20, 'b');
 
-  const uint160 hash1 = Hash160 (rand1);
-  const uint160 hash2 = Hash160 (rand2);
-  const valtype vchHash1(hash1.begin (), hash1.end ());
-  const valtype vchHash2(hash2.begin (), hash2.end ());
-  const CScript addr2 = (CScript (addr) << OP_RETURN);
+  valtype toHash(rand1);
+  toHash.insert (toHash.end (), nameReg.begin (), nameReg.end ());
+  uint160 hash = Hash160 (toHash);
+  const valtype vchHash1(hash.begin (), hash.end ());
+  toHash = rand2;
+  toHash.insert (toHash.end (), nameReg.begin (), nameReg.end ());
+  hash = Hash160 (toHash);
+  const valtype vchHash2(hash.begin (), hash.end ());
 
   const CScript new1
-    = CNameScript::buildNameNew (addr, hash1);
+    = CNameScript::buildNameNew (addr, nameReg, rand1);
   const CScript new1p
-    = CNameScript::buildNameNew (addr2, hash1);
+    = CNameScript::buildNameNew (addr2, nameReg, rand1);
   const CScript new2
-    = CNameScript::buildNameNew (addr, hash2);
+    = CNameScript::buildNameNew (addr, nameReg, rand2);
   const CScript first1
     = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand1);
   const CScript first2

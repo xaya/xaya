@@ -390,5 +390,74 @@
     "return_code": 1,
     "error_txt": "error: Uncompressed pubkeys are not useable for SegWit outputs",
     "description": "Ensure adding witness outputs with uncompressed pubkeys fails"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "namenew=0:642f666f6f626172:1234"],
+    "output_cmp": "name_new.hex",
+    "description": "Creates a new transaction with a NAME_NEW output"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "namefirstupdate=0:642f666f6f626172:76616c7565:1234"],
+    "output_cmp": "name_firstupdate.hex",
+    "description": "Creates a new transaction with a NAME_FIRSTUPDATE output"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "nameupdate=0:642f666f6f626172:76616c7565"],
+    "output_cmp": "name_update.hex",
+    "description": "Creates a new transaction with a NAME_UPDATE output"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "nameupdate=1:642f666f6f626172:76616c7565"],
+    "return_code": 1,
+    "error_txt": "error: invalid tx output index '1' for name operation",
+    "description": "Verify bounds check for name op output index"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "nameupdate=0:nohex:"],
+    "return_code": 1,
+    "error_txt": "error: invalid hex argument 'nohex' for name operation",
+    "description": "Verify the check for valid hex arguments to name ops"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "namenew=0:ff"],
+    "return_code": 1,
+    "error_txt": "error: namenew expects N:NAME:RAND",
+    "description": "Verify the number of arguments check for namenew"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "namefirstupdate=0:ff"],
+    "return_code": 1,
+    "error_txt": "error: namefirstupdate expects N:NAME:VALUE:RAND",
+    "description": "Verify the number of arguments check for namefirstupdate"
+  },
+  { "exec": "./namecoin-tx",
+    "args":
+    ["-create",
+     "outaddr=0.01:MyUGVwiPwomjPJwBBud1pxnmNp73dKB9s1",
+     "nameupdate=0:ff"],
+    "return_code": 1,
+    "error_txt": "error: nameupdate expects N:NAME:VALUE",
+    "description": "Verify the number of arguments check for nameupdate"
   }
 ]

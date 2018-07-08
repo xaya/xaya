@@ -732,12 +732,8 @@ namerawtransaction (const JSONRPCRequest& request)
       const valtype name
         = ValtypeFromString (find_value (nameOp, "name").get_str ());
 
-      valtype toHash(rand);
-      toHash.insert (toHash.end (), name.begin (), name.end ());
-      const uint160 hash = Hash160 (toHash);
-
       mtx.vout[nOut].scriptPubKey
-        = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, hash);
+        = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, name, rand);
       result.pushKV ("rand", HexStr (rand.begin (), rand.end ()));
     }
   else if (op == "name_firstupdate")

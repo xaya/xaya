@@ -215,7 +215,9 @@ BOOST_AUTO_TEST_CASE(is)
     BOOST_CHECK(p2sh.IsPayToScriptHash(false));
 
     // Test stripping of name prefixes.
-    const CScript withName = CNameScript::buildNameNew(p2sh, dummy);
+    valtype dummyName, dummyValue;
+    const CScript withName
+        = CNameScript::buildNameUpdate(p2sh, dummyName, dummyValue);
     BOOST_CHECK(withName.IsPayToScriptHash(true));
     BOOST_CHECK(!withName.IsPayToScriptHash(false));
 
