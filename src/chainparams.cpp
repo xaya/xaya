@@ -227,8 +227,8 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("b3e1186f431670265ee7f8e41ae0c10f674eebefe9bc547079c260294ca2ce1b"));
         assert(genesis.hashMerkleRoot == uint256S("ff79fdb5e6c3e842072de6862bb8026e4187cab3d71462996631574158ea0fdd"));
 
-        // FIXME: Add seeds for Xaya (#8).
-        //vSeeds.emplace_back("nmc.seed.quisquis.de");
+        vSeeds.emplace_back("seed.xaya.io");
+        vSeeds.emplace_back("seed.xaya.domob.eu");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,28);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,30);
@@ -316,10 +316,10 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("5195fc01d0e23d70d1f929f21ec55f47e1c6ea1e66fae98ee44cbbc994509bba"));
         assert(genesis.hashMerkleRoot == uint256S("59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"));
 
-        // FIXME: Add seeds for Xaya (#8).
         vFixedSeeds.clear();
         vSeeds.clear();
-        //vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com");
+        vSeeds.emplace_back("seed.testnet.xaya.io");
+        vSeeds.emplace_back("seed.testnet.xaya.domob.eu");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,88);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,90);
