@@ -10,6 +10,7 @@
 #include <names/common.h>
 #include <names/main.h>
 #include <primitives/transaction.h>
+#include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/names.h>
 #include <txmempool.h>
@@ -173,10 +174,49 @@ getNameInfo (const valtype& name, const CNameData& data,
 
 } // anonymous namespace
 
-NameInfoHelp::NameInfoHelp (const std::string& ind)
-  : indent(ind)
+/* ************************************************************************** */
+
+HelpTextBuilder::HelpTextBuilder (const std::string& ind, const size_t col)
+  : indent(ind), docColumn(col)
 {
   result << indent << "{" << std::endl;
+}
+
+std::string
+HelpTextBuilder::finish (const std::string& trailing)
+{
+  result << indent << "}" << trailing << std::endl;
+  return result.str ();
+}
+
+HelpTextBuilder&
+HelpTextBuilder::withLine (const std::string& line)
+{
+  result << indent << "  " << line << std::endl;
+  return *this;
+}
+
+HelpTextBuilder&
+HelpTextBuilder::withField (const std::string& field, const std::string& doc)
+{
+  return withField (field, ",", doc);
+}
+
+HelpTextBuilder&
+HelpTextBuilder::withField (const std::string& field,
+                            const std::string& delim, const std::string& doc)
+{
+  assert (field.size () < docColumn);
+
+  result << indent << "  " << field << delim;
+  result << std::string (docColumn - field.size (), ' ') << doc << std::endl;
+
+  return *this;
+}
+
+NameInfoHelp::NameInfoHelp (const std::string& ind)
+  : HelpTextBuilder(ind, 25)
+{
   withField ("\"name\": xxxxx", "(string) the requested name");
   withField ("\"value\": xxxxx", "(string) the name's current value");
   withField ("\"txid\": xxxxx", "(string) the name's last update tx");
@@ -187,25 +227,6 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
   withField ("\"ismine\": xxxxx",
              "(boolean) whether the name is owned by the wallet");
 #endif
-}
-
-NameInfoHelp&
-NameInfoHelp::withField (const std::string& field, const std::string& doc)
-{
-  constexpr size_t len = 25;
-  assert (field.size () < len);
-
-  result << indent << "  " << field << ",";
-  result << std::string (len - field.size (), ' ') << doc << std::endl;
-
-  return *this;
-}
-
-std::string
-NameInfoHelp::finish (const std::string& trailing)
-{
-  result << indent << "}" << trailing << std::endl;
-  return result.str ();
 }
 
 /* ************************************************************************** */

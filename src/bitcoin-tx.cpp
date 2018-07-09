@@ -15,6 +15,7 @@
 #include <policy/policy.h>
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
+#include <script/names.h>
 #include <script/script.h>
 #include <script/sign.h>
 #include <univalue.h>
@@ -64,6 +65,15 @@ static void SetupBitcoinTxArgs()
 
     gArgs.AddArg("load=NAME:FILENAME", "Load JSON file FILENAME into register NAME", false, OptionsCategory::REGISTER_COMMANDS);
     gArgs.AddArg("set=NAME:JSON-STRING", "Set register NAME to given JSON-STRING", false, OptionsCategory::REGISTER_COMMANDS);
+
+    gArgs.AddArg("nameregister=N:NAME:VALUE",
+                 "Turns the existing output N into a NAME_REGISTER operation"
+                 " with the given hex-encoded NAME and VALUE.",
+                 false, OptionsCategory::COMMANDS);
+    gArgs.AddArg("nameupdate=N:NAME:VALUE",
+                 "Turns the existing output N into a NAME_UPDATE operation"
+                 " with the given hex-encoded NAME and VALUE.",
+                 false, OptionsCategory::COMMANDS);
 
     // Hidden
     gArgs.AddArg("-h", "", false, OptionsCategory::HIDDEN);
@@ -478,6 +488,75 @@ static void MutateTxAddOutScript(CMutableTransaction& tx, const std::string& str
     tx.vout.push_back(txout);
 }
 
+namespace
+{
+
+/**
+ * Mutates a transaction by turning an output indicated by the value string
+ * into a name operation.  This is a common function, since the different
+ * possible name operations share a lot of logic (like most argument parding).
+ */
+void
+MutateTxNameOutput (CMutableTransaction& tx, const std::string& command,
+                    const std::string& value)
+{
+  /* First, we parse the value string.  For all commands, it is supposed to
+     start with the output index and then have some hex-encoded data
+     arguments.  */
+
+  std::vector<std::string> valueParts;
+  boost::split (valueParts, value, boost::is_any_of (":"));
+  if (valueParts.size () < 1)
+    throw std::runtime_error ("name operation missing output index");
+
+  const int index = atoi (valueParts[0]);
+  if (index < 0 || index >= static_cast<int> (tx.vout.size ()))
+    {
+      std::ostringstream msg;
+      msg << "invalid tx output index '" << valueParts[0] << "'"
+          << " for name operation";
+      throw std::runtime_error (msg.str ());
+    }
+
+  std::vector<valtype> data;
+  for (size_t i = 1; i < valueParts.size (); ++i)
+    {
+      if (!IsHex (valueParts[i]))
+        {
+          std::ostringstream msg;
+          msg << "invalid hex argument '" << valueParts[i] << "'"
+              << " for name operation";
+          throw std::runtime_error (msg.str ());
+        }
+      data.push_back (ParseHex (valueParts[i]));
+    }
+
+  /* Next, fetch the output script we want to modify.  */
+  const CScript& addr = tx.vout[index].scriptPubKey;
+
+  /* Build the name script according to the command.  */
+  CScript nameOp;
+  if (command == "nameregister")
+    {
+      if (data.size () != 2)
+        throw std::runtime_error ("nameregister expects N:NAME:VALUE");
+      nameOp = CNameScript::buildNameRegister (addr, data[0], data[1]);
+    }
+  else if (command == "nameupdate")
+    {
+      if (data.size () != 2)
+        throw std::runtime_error ("nameupdate expects N:NAME:VALUE");
+      nameOp = CNameScript::buildNameUpdate (addr, data[0], data[1]);
+    }
+  else
+    assert (false);
+
+  /* Update the transaction.  */
+  tx.vout[index].scriptPubKey = nameOp;
+}
+
+} // anonymous namespace
+
 static void MutateTxDelInput(CMutableTransaction& tx, const std::string& strInIdx)
 {
     // parse requested deletion index
@@ -703,6 +782,9 @@ static void MutateTx(CMutableTransaction& tx, const std::string& command,
         MutateTxAddOutScript(tx, commandVal);
     else if (command == "outdata")
         MutateTxAddOutData(tx, commandVal);
+
+    else if (command == "nameregister" || command == "nameupdate")
+        MutateTxNameOutput(tx, command, commandVal);
 
     else if (command == "sign") {
         ecc.reset(new Secp256k1Init());

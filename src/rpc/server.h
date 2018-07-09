@@ -8,12 +8,10 @@
 
 #include <amount.h>
 #include <rpc/protocol.h>
-#include <script/script.h>
 #include <uint256.h>
 
 #include <list>
 #include <map>
-#include <sstream>
 #include <stdint.h>
 #include <string>
 
@@ -21,8 +19,6 @@
 
 static const unsigned int DEFAULT_RPC_SERIALIZE_VERSION = 1;
 
-class CMutableTransaction;
-class COutPoint;
 class CRPCCommand;
 
 namespace RPCServer
@@ -30,8 +26,6 @@ namespace RPCServer
     void OnStarted(std::function<void ()> slot);
     void OnStopped(std::function<void ()> slot);
 }
-
-class CNameData;
 
 /** Wrapper for UniValue::VType, which includes typeAny:
  * Used to denote don't care type. */
@@ -203,38 +197,6 @@ extern std::vector<unsigned char> ParseHexO(const UniValue& o, std::string strKe
 extern CAmount AmountFromValue(const UniValue& value);
 extern std::string HelpExampleCli(const std::string& methodname, const std::string& args);
 extern std::string HelpExampleRpc(const std::string& methodname, const std::string& args);
-
-extern UniValue getNameInfo(const valtype& name, const valtype& value, const COutPoint& outp, const CScript& addr);
-extern UniValue getNameInfo(const valtype& name, const CNameData& data);
-
-#ifdef ENABLE_WALLET
-class CWallet;
-extern void addOwnershipInfo(const CScript& addr,
-                             const CWallet* pwallet,
-                             UniValue& data);
-#endif
-
-/**
- * Builder class for the help text of RPCs that return information about
- * names (like name_show, name_scan, name_pending or name_list).  Since the
- * exact fields contained and formatting to use depend on the case, this class
- * provides a simple and fluent interface to build the right help text for
- * each case.
- */
-class NameInfoHelp
-{
-private:
-  std::ostringstream result;
-  const std::string indent;
-
-
-public:
-  explicit NameInfoHelp (const std::string& ind);
-
-  NameInfoHelp& withField (const std::string& field, const std::string& doc);
-
-  std::string finish (const std::string& trailing);
-};
 
 bool StartRPC();
 void InterruptRPC();

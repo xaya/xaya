@@ -13,6 +13,7 @@
 #include <primitives/transaction.h>
 #include <random.h>
 #include <rpc/mining.h>
+#include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/names.h>
 #include <txmempool.h>
@@ -114,20 +115,30 @@ void DestinationAddressHelper::finalise ()
 }
 
 /**
- * Returns the help text for the options argument for name operations.
+ * Builder for the help text of the "options" argument.
  */
-std::string getNameOpOptionsHelp ()
+class NameOpOptionsHelpBuilder : public HelpTextBuilder
 {
-  return "  {\n"
-         "    \"destAddress\"  (string, optional) The address to send the name output to\n"
-         "    \"sendCoins\"    (object, optional) Addresses to which coins should be sent additionally\n"
-         "      {\n"
-         "        \"addr1\": x,\n"
-         "        \"addr2\": y,\n"
-         "        ...\n"
-         "      }\n"
-         "  }\n";
-}
+
+public:
+
+  explicit NameOpOptionsHelpBuilder ()
+    : HelpTextBuilder("  ", 25)
+  {
+    withField ("\"destAddress\"",
+               "(string, optional) The address to send the name output to");
+
+    withField ("\"sendCoins\"", ":",
+               "(object, optional) Addresses to which coins should be"
+               " sent additionally");
+    withLine ("{");
+    withField ("  \"addr1\": x", "");
+    withField ("  \"addr2\": y", "");
+    withLine ("  ...");
+    withLine ("}");
+  }
+
+};
 
 /**
  * Sends a name output to the given name script.  This is the "final" step that
@@ -342,7 +353,8 @@ name_register (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + getNameOpOptionsHelp () +
+        + NameOpOptionsHelpBuilder ()
+            .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_register's txid\n"
         "\nExamples:\n"
@@ -426,7 +438,8 @@ name_update (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to update\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + getNameOpOptionsHelp () +
+        + NameOpOptionsHelpBuilder ()
+            .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
         "\nExamples:\n"
