@@ -11,7 +11,6 @@
 #include <consensus/consensus.h>
 #include <consensus/validation.h>
 #include <fs.h>
-#include <init.h>
 #include <key.h>
 #include <key_io.h>
 #include <keystore.h>
@@ -23,6 +22,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/script.h>
+#include <shutdown.h>
 #include <timedata.h>
 #include <txmempool.h>
 #include <utilmoneystr.h>
@@ -553,7 +553,7 @@ void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> ran
     for (TxSpends::iterator it = range.first; it != range.second; ++it) {
         const CWalletTx* wtx = &mapWallet.at(it->second);
         if (wtx->nOrderPos < nMinOrderPos) {
-            nMinOrderPos = wtx->nOrderPos;;
+            nMinOrderPos = wtx->nOrderPos;
             copyFrom = wtx;
         }
     }
@@ -3177,7 +3177,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend,
         tx = MakeTransactionRef(std::move(txNew));
 
         // Limit size
-        if (GetTransactionWeight(*tx) >= MAX_STANDARD_TX_WEIGHT)
+        if (GetTransactionWeight(*tx) > MAX_STANDARD_TX_WEIGHT)
         {
             strFailReason = _("Transaction too large");
             return false;
@@ -4639,9 +4639,7 @@ CTxDestination CWallet::AddAndGetDestinationForScript(const CScript& script, Out
         return CScriptID(script);
     case OutputType::P2SH_SEGWIT:
     case OutputType::BECH32: {
-        WitnessV0ScriptHash hash;
-        CSHA256().Write(script.data(), script.size()).Finalize(hash.begin());
-        CTxDestination witdest = hash;
+        CTxDestination witdest = WitnessV0ScriptHash(script);
         CScript witprog = GetScriptForDestination(witdest);
         // Check if the resulting program is solvable (i.e. doesn't use an uncompressed key)
         if (!IsSolvable(*this, witprog)) return CScriptID(script);
