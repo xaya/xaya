@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2017 The Bitcoin Core developers
+// Copyright (c) 2009-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,6 +21,7 @@
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/sign.h>
+#include <shutdown.h>
 #include <timedata.h>
 #include <util.h>
 #include <utilmoneystr.h>
@@ -30,8 +31,6 @@
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
-
-#include <init.h>  // For StartShutdown
 
 #include <stdint.h>
 
@@ -3093,6 +3092,12 @@ static UniValue loadwallet(const JSONRPCRequest& request)
     fs::path wallet_path = fs::absolute(wallet_file, GetWalletDir());
     if (fs::symlink_status(wallet_path).type() == fs::file_not_found) {
         throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + wallet_file + " not found.");
+    } else if (fs::is_directory(wallet_path)) {
+        // The given filename is a directory. Check that there's a wallet.dat file.
+        fs::path wallet_dat_file = wallet_path / "wallet.dat";
+        if (fs::symlink_status(wallet_dat_file).type() == fs::file_not_found) {
+            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + wallet_file + " does not contain a wallet.dat file.");
+        }
     }
 
     std::string warning;
