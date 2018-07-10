@@ -6,7 +6,9 @@
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
-from test_framework import auxpow
+
+from test_framework.auxpow import reverseHex
+from test_framework.auxpow_testing import computeAuxpow
 
 class KeyPoolTest(BitcoinTestFramework):
     def set_test_params(self):
@@ -107,8 +109,8 @@ def test_auxpow(nodes):
     auxblock = nodes[0].getauxblock()
     assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
 
-    target = auxpow.reverseHex(auxblock['_target'])
-    solved = auxpow.computeAuxpow(auxblock['hash'], target, True)
+    target = reverseHex(auxblock['_target'])
+    solved = computeAuxpow(auxblock['hash'], target, True)
     res = nodes[0].getauxblock(auxblock['hash'], solved)
     assert res
     assert_equal(nodes[0].getwalletinfo()['keypoolsize'], 0)

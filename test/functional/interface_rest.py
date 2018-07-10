@@ -15,7 +15,6 @@ from struct import pack, unpack
 import http.client
 import urllib.parse
 
-from test_framework import auxpow
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -23,6 +22,8 @@ from test_framework.util import (
     assert_greater_than_or_equal,
     hex_str_to_bytes,
 )
+
+from test_framework.auxpow_testing import mineAuxpowBlock
 
 class ReqType(Enum):
     JSON = 1
@@ -194,7 +195,7 @@ class RESTTest (BitcoinTestFramework):
         long_uri = '/'.join(['{}-{}'.format(txid, n_) for n_ in range(15)])
         self.test_rest_request("/getutxos/checkmempool/{}".format(long_uri), http_method='POST', status=200)
 
-        auxpow.mineAuxpowBlock(self.nodes[0])  # generate block to not affect upcoming tests
+        mineAuxpowBlock(self.nodes[0])  # generate block to not affect upcoming tests
         self.sync_all()
         bb_hash = self.nodes[0].getbestblockhash()
 
