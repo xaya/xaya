@@ -10,7 +10,12 @@ import codecs
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
-from test_framework import auxpow
+from test_framework.auxpow import getworkByteswap, reverseHex
+from test_framework.auxpow_testing import (
+  getCoinbaseAddr,
+  mineWorkBlockWithMethods,
+  solveData,
+)
 
 class AuxpowGetworkTest (BitcoinTestFramework):
 
@@ -52,13 +57,13 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     assert_raises_rpc_error (-8, None, submit, "", "00")
 
     # Compute invalid work.
-    target = auxpow.reverseHex (work['target'])
-    solved = auxpow.solveData (work['data'], target, False)
+    target = reverseHex (work['target'])
+    solved = solveData (work['data'], target, False)
     res = submit (work['hash'], solved)
     assert not res
 
     # Compute and submit valid work.
-    solved = auxpow.solveData (work['data'], target, True)
+    solved = solveData (work['data'], target, True)
     res = submit (work['hash'], solved)
     assert res
 
@@ -75,7 +80,7 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     assert_equal (data['bits'], '207fffff')
     assert 'difficulty' in data
     fakeHeader = codecs.decode (solved, 'hex_codec')
-    fakeHeader = auxpow.getworkByteswap (fakeHeader)
+    fakeHeader = getworkByteswap (fakeHeader)
     fakeHeader = codecs.encode (fakeHeader, 'hex_codec')
     fakeHeader = codecs.decode (fakeHeader, 'ascii')
     assert_equal (data['fakeheader'], fakeHeader)
@@ -97,8 +102,8 @@ class AuxpowGetworkTest (BitcoinTestFramework):
 
     # Mine a block using the hash-less form of submit.
     work = create ()
-    target = auxpow.reverseHex (work['target'])
-    solved = auxpow.solveData (work['data'], target, True)
+    target = reverseHex (work['target'])
+    solved = solveData (work['data'], target, True)
     res = submit (solved)
     assert res
     assert_equal (self.nodes[0].getbestblockhash (), work['hash'])
@@ -113,10 +118,10 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is changed from one block to the next.
-    hash1 = auxpow.mineWorkBlockWithMethods (self.nodes[0], create, submit)
-    hash2 = auxpow.mineWorkBlockWithMethods (self.nodes[0], create, submit)
-    addr1 = auxpow.getCoinbaseAddr (self.nodes[0], hash1)
-    addr2 = auxpow.getCoinbaseAddr (self.nodes[0], hash2)
+    hash1 = mineWorkBlockWithMethods (self.nodes[0], create, submit)
+    hash2 = mineWorkBlockWithMethods (self.nodes[0], create, submit)
+    addr1 = getCoinbaseAddr (self.nodes[0], hash1)
+    addr2 = getCoinbaseAddr (self.nodes[0], hash2)
     assert addr1 != addr2
     info = self.nodes[0].getaddressinfo (addr1)
     assert info['ismine']
@@ -144,10 +149,10 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is the one which we specify
-    hash1 = auxpow.mineWorkBlockWithMethods (self.nodes[0], create, submit)
-    hash2 = auxpow.mineWorkBlockWithMethods (self.nodes[0], create, submit)
-    addr1 = auxpow.getCoinbaseAddr (self.nodes[0], hash1)
-    addr2 = auxpow.getCoinbaseAddr (self.nodes[0], hash2)
+    hash1 = mineWorkBlockWithMethods (self.nodes[0], create, submit)
+    hash2 = mineWorkBlockWithMethods (self.nodes[0], create, submit)
+    addr1 = getCoinbaseAddr (self.nodes[0], hash1)
+    addr2 = getCoinbaseAddr (self.nodes[0], hash2)
     assert_equal (addr1, coinbaseAddr)
     assert_equal (addr2, coinbaseAddr)
 
