@@ -9,7 +9,12 @@
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
-from test_framework import auxpow
+from test_framework.auxpow import reverseHex
+from test_framework.auxpow_testing import (
+  computeAuxpow,
+  getCoinbaseAddr,
+  mineAuxpowBlockWithMethods,
+)
 
 class AuxpowMiningTest (BitcoinTestFramework):
 
@@ -72,15 +77,15 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.sync_all ()
     assert_equal (self.nodes[1].getrawmempool (), [txid])
     auxblock = create ()
-    target = auxpow.reverseHex (auxblock['_target'])
+    target = reverseHex (auxblock['_target'])
 
     # Compute invalid auxpow.
-    apow = auxpow.computeAuxpow (auxblock['hash'], target, False)
+    apow = computeAuxpow (auxblock['hash'], target, False)
     res = submit (auxblock['hash'], apow)
     assert not res
 
     # Compute and submit valid auxpow.
-    apow = auxpow.computeAuxpow (auxblock['hash'], target, True)
+    apow = computeAuxpow (auxblock['hash'], target, True)
     res = submit (auxblock['hash'], apow)
     assert res
 
@@ -139,11 +144,11 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is changed from one block to the next.
-    hash1 = auxpow.mineAuxpowBlockWithMethods (create, submit)
-    hash2 = auxpow.mineAuxpowBlockWithMethods (create, submit)
+    hash1 = mineAuxpowBlockWithMethods (create, submit)
+    hash2 = mineAuxpowBlockWithMethods (create, submit)
     self.sync_all ()
-    addr1 = auxpow.getCoinbaseAddr (self.nodes[1], hash1)
-    addr2 = auxpow.getCoinbaseAddr (self.nodes[1], hash2)
+    addr1 = getCoinbaseAddr (self.nodes[1], hash1)
+    addr2 = getCoinbaseAddr (self.nodes[1], hash2)
     assert addr1 != addr2
     info = self.nodes[0].getaddressinfo (addr1)
     assert info['ismine']
@@ -171,11 +176,11 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is the one which we specify
-    hash1 = auxpow.mineAuxpowBlockWithMethods (create, submit)
-    hash2 = auxpow.mineAuxpowBlockWithMethods (create, submit)
+    hash1 = mineAuxpowBlockWithMethods (create, submit)
+    hash2 = mineAuxpowBlockWithMethods (create, submit)
     self.sync_all ()
-    addr1 = auxpow.getCoinbaseAddr (self.nodes[1], hash1)
-    addr2 = auxpow.getCoinbaseAddr (self.nodes[1], hash2)
+    addr1 = getCoinbaseAddr (self.nodes[1], hash1)
+    addr2 = getCoinbaseAddr (self.nodes[1], hash2)
     assert_equal (addr1, coinbaseAddr)
     assert_equal (addr2, coinbaseAddr)
 
