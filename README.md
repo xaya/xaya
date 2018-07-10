@@ -15,7 +15,8 @@ What does it do?
 * Securely record and transfer arbitrary names (keys).
 * Transact CHI Coins, the digital currency (CHI).
 * Store Data.
-* This is Xaya's first layer and data storage.
+* Allow creation of Tokens.
+* and more
 
 What can Xaya be used for?
 --------------------------
@@ -30,4 +31,19 @@ What can Xaya be used for?
 * Decentralised Autonomous Universes.
 * and much more.
 
-This Readme will be updated with more information soon.
+More Information
+----------------
+
+XAYA Core includes the base elements required for Experienced users, Miners and Exchanges. xayad, xaya-qt, xaya-cli and the usual.
+
+You may check https://github.com/xaya/Specs for more XAYA specs and additional information.
+
+For compiling you can follow any Bitcoin guide, just replace the repo with XAYA's:
+https://github.com/bitcoin/bitcoin/blob/master/doc/build-windows.md
+https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
+https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
+
+
+Standard Users should use the XAYA Electron Wallet which is a front end to xayad
+
+for issues with XAYA Core you can create an issue in Github or ask on the forum https://forum.xaya.io
