@@ -14,7 +14,7 @@ import binascii
 class NameMultisigTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ()
+    self.setup_name_test ([[]] * 2)
 
   def run_test (self):
     # Construct a 2-of-2 multisig address shared between two nodes.
@@ -27,10 +27,10 @@ class NameMultisigTest (NameTestFramework):
 
     # Register a new name to that address.
     new = self.nodes[0].name_new ("name")
-    self.generate (0, 10)
+    self.nodes[0].generate (10)
     self.firstupdateName (0, "name", new, "value", {"destAddress": p2sh})
-    self.generate (1, 5)
-    data = self.checkName (2, "name", "value", None, False)
+    self.generate (0, 5, syncBefore=False)
+    data = self.checkName (0, "name", "value", None, False)
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
@@ -48,19 +48,19 @@ class NameMultisigTest (NameTestFramework):
     changeAmount = feeInput['amount'] - nameAmount
 
     # Construct the name update as raw transaction.
-    addr = self.nodes[2].getnewaddress ()
+    addr = self.nodes[1].getnewaddress ()
     inputs = [{"txid": data['txid'], "vout": data['vout']}, feeInput]
     outputs = {changeAddr: changeAmount, addr: nameAmount}
-    txRaw = self.nodes[3].createrawtransaction (inputs, outputs)
+    txRaw = self.nodes[0].createrawtransaction (inputs, outputs)
     op = {"op": "name_update", "name": "name", "value": "it worked"}
-    nameInd = self.rawtxOutputIndex (3, txRaw, addr)
-    txRaw = self.nodes[3].namerawtransaction (txRaw, nameInd, op)
+    nameInd = self.rawtxOutputIndex (0, txRaw, addr)
+    txRaw = self.nodes[0].namerawtransaction (txRaw, nameInd, op)
 
     # Sign it partially.
     partial = self.nodes[0].signrawtransactionwithwallet (txRaw['hex'])
     assert not partial['complete']
     assert_raises_rpc_error (-26, None,
-                             self.nodes[2].sendrawtransaction, partial['hex'])
+                             self.nodes[0].sendrawtransaction, partial['hex'])
 
     # Sign it fully and transmit it.
     signed = self.nodes[1].signrawtransactionwithwallet (partial['hex'])
@@ -78,15 +78,15 @@ class NameMultisigTest (NameTestFramework):
     # when strict P2SH checks are enabled, since they are enforced
     # mandatorily in the mempool).
     assert_raises_rpc_error (-26, None,
-                             self.nodes[2].sendrawtransaction, txManipulated)
-    self.nodes[2].sendrawtransaction (tx)
-    self.generate (3, 1)
+                             self.nodes[0].sendrawtransaction, txManipulated)
+    self.nodes[0].sendrawtransaction (tx)
+    self.generate (0, 1, syncBefore=False)
 
     # Check that it was transferred correctly.
-    self.checkName (3, "name", "it worked", None, False)
-    self.nodes[2].name_update ("name", "changed")
-    self.generate (3, 1)
-    self.checkName (3, "name", "changed", None, False)
+    self.checkName (1, "name", "it worked", None, False)
+    self.nodes[1].name_update ("name", "changed")
+    self.nodes[1].generate (1)
+    self.checkName (1, "name", "changed", None, False)
 
   def getNewPubkey (self, ind):
     """
