@@ -407,7 +407,9 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       const COutPoint& prevout = tx.vin[i].prevout;
       Coin coin;
       if (!view.GetCoin (prevout, coin))
-        return error ("%s: failed to fetch input coin for %s", __func__, txid);
+        return state.Invalid (error ("%s: failed to fetch input coin for %s",
+                                     __func__, txid),
+                              REJECT_INVALID, "bad-txns-inputs-missingorspent");
 
       const CNameScript op(coin.out.scriptPubKey);
       if (op.isNameOp ())
