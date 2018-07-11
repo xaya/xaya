@@ -18,6 +18,7 @@ class UniValue;
 UniValue getNameInfo (const valtype& name, const valtype& value,
                       const COutPoint& outp, const CScript& addr);
 UniValue getNameInfo (const valtype& name, const CNameData& data);
+void addHeightInfo (int height, UniValue& data);
 
 #ifdef ENABLE_WALLET
 class CWallet;
@@ -75,6 +76,8 @@ class NameInfoHelp : public HelpTextBuilder
 public:
 
   explicit NameInfoHelp (const std::string& ind);
+
+  NameInfoHelp& withHeight ();
 
 };
 

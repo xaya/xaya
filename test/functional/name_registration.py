@@ -53,6 +53,7 @@ class NameRegistrationTest (NameTestFramework):
     data = self.checkName (1, "x/node-0", val ("value-0"))
     assert_equal (data['address'], addrA)
     assert_equal (data['txid'], txidA)
+    assert_equal (data['height'], 201)
 
     self.checkNameHistory (1, "x/node-0", [val ("value-0")])
     self.checkNameHistory (1, "x/node-1", [valueOfLength (2048)])

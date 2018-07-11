@@ -65,7 +65,14 @@ getNameInfo (const valtype& name, const CNameData& data)
   UniValue result = getNameInfo (name, data.getValue (),
                                  data.getUpdateOutpoint (),
                                  data.getAddress ());
+  addHeightInfo (data.getHeight (), result);
   return result;
+}
+
+void
+addHeightInfo (const int height, UniValue& data)
+{
+  data.pushKV ("height", height);
 }
 
 #ifdef ENABLE_WALLET
@@ -229,6 +236,13 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
 #endif
 }
 
+NameInfoHelp&
+NameInfoHelp::withHeight ()
+{
+  withField ("\"height\": xxxxx", "(numeric) the name's last update height");
+  return *this;
+}
+
 /* ************************************************************************** */
 namespace
 {
@@ -245,6 +259,7 @@ name_show (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to query for\n"
         "\nResult:\n"
         + NameInfoHelp ("")
+            .withHeight ()
             .finish ("") +
         "\nExamples:\n"
         + HelpExampleCli ("name_show", "\"myname\"")
@@ -291,6 +306,7 @@ name_history (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
+            .withHeight ()
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -354,6 +370,7 @@ name_scan (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
+            .withHeight ()
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -412,6 +429,7 @@ name_filter (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
+            .withHeight ()
             .finish (",") +
         "  ...\n"
         "]\n"

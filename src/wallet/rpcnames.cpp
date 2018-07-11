@@ -256,6 +256,7 @@ name_list (const JSONRPCRequest& request)
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
+            .withHeight ()
             .finish (",") +
         "  ...\n"
         "]\n"
@@ -319,6 +320,7 @@ name_list (const JSONRPCRequest& request)
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
+      addHeightInfo (pindex->nHeight, obj);
 
       mapHeights[name] = pindex->nHeight;
       mapObjects[name] = obj;
