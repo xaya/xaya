@@ -46,7 +46,7 @@ from test_framework.script import (
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import assert_equal
 
-MAX_BLOCK_SIGOPS = 20000
+MAX_BLOCK_SIGOPS = 2000
 
 class PreviousSpendableOutput():
     def __init__(self, tx=CTransaction(), n=-1):
@@ -544,7 +544,7 @@ class FullBlockTest(BitcoinTestFramework):
         b44 = CBlock()
         b44.nTime = self.tip.nTime + 1
         b44.hashPrevBlock = self.tip.sha256
-        b44.nBits = 0x207fffff
+        b44.powData.nBits = 0x207fffff
         b44.vtx.append(coinbase)
         b44.hashMerkleRoot = b44.calc_merkle_root()
         b44.solve()
@@ -558,7 +558,7 @@ class FullBlockTest(BitcoinTestFramework):
         b45 = CBlock()
         b45.nTime = self.tip.nTime + 1
         b45.hashPrevBlock = self.tip.sha256
-        b45.nBits = 0x207fffff
+        b45.powData.nBits = 0x207fffff
         b45.vtx.append(non_coinbase)
         b45.hashMerkleRoot = b45.calc_merkle_root()
         b45.calc_sha256()
@@ -573,7 +573,7 @@ class FullBlockTest(BitcoinTestFramework):
         b46 = CBlock()
         b46.nTime = b44.nTime + 1
         b46.hashPrevBlock = b44.sha256
-        b46.nBits = 0x207fffff
+        b46.powData.nBits = 0x207fffff
         b46.vtx = []
         b46.hashMerkleRoot = 0
         b46.solve()
@@ -586,7 +586,7 @@ class FullBlockTest(BitcoinTestFramework):
         self.log.info("Reject a block with invalid work")
         self.move_tip(44)
         b47 = self.next_block(47, solve=False)
-        target = uint256_from_compact(b47.nBits)
+        target = uint256_from_compact(b47.powData.nBits)
         while b47.sha256 < target:
             b47.nNonce += 1
             b47.rehash()
@@ -609,7 +609,7 @@ class FullBlockTest(BitcoinTestFramework):
         self.log.info("Reject a block with incorrect POW limit")
         self.move_tip(44)
         b50 = self.next_block(50)
-        b50.nBits = b50.nBits - 1
+        b50.powData.nBits = b50.powData.nBits - 1
         b50.solve()
         self.sync_blocks([b50], False, request_block=False, reconnect=True)
 
@@ -754,23 +754,8 @@ class FullBlockTest(BitcoinTestFramework):
         self.sync_blocks([b60], True)
         self.save_spendable_output()
 
-        # Test BIP30
-        #
-        # -> b39 (11) -> b42 (12) -> b43 (13) -> b53 (14) -> b55 (15) -> b57 (16) -> b60 (17)
-        #                                                                                    \-> b61 (18)
-        #
-        # Blocks are not allowed to contain a transaction whose id matches that of an earlier,
-        # not-fully-spent transaction in the same chain. To test, make identical coinbases;
-        # the second one should be rejected.
-        #
-        self.log.info("Reject a block with a transaction with a duplicate hash of a previous transaction (BIP30)")
-        self.move_tip(60)
-        b61 = self.next_block(61, spend=out[18])
-        b61.vtx[0].vin[0].scriptSig = b60.vtx[0].vin[0].scriptSig  # Equalize the coinbases
-        b61.vtx[0].rehash()
-        b61 = self.update_block(61, [])
-        assert_equal(b60.vtx[0].serialize(), b61.vtx[0].serialize())
-        self.sync_blocks([b61], False, 16, b'bad-txns-BIP30', reconnect=True)
+        # Xaya has BIP34 from the start and thus no BIP30 checks.  The test for
+        # BIP30 that is here in upstream code is removed.
 
         # Test tx.isFinal is properly rejected (not an exhaustive tx.isFinal test, that should be in data-driven transaction tests)
         #

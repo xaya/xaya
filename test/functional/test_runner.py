@@ -61,8 +61,7 @@ BASE_SCRIPTS = [
     'wallet_hd.py',
     'wallet_backup.py',
     # vv Tests less than 5m vv
-    # Does not satisfy Namecoin's BDB limit.
-    #'feature_block.py',
+    'feature_block.py',
     'rpc_fundrawtransaction.py',
     # FIXME: Reenable when it supports always-segit.
     #'p2p_compactblocks.py',
@@ -204,7 +203,6 @@ EXTENDED_SCRIPTS = [
 
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
-    'feature_block.py',
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
     'p2p_compactblocks.py',
