@@ -209,7 +209,16 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
 bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee)
 {
     if (!CheckNameTransaction (tx, nSpendHeight, inputs, state))
-        return state.Invalid(false, 0, "", "Tx invalid for Xaya");
+      {
+        /* Add a generic "invalid for name op" error to the state if none
+           was added by CheckNameTransaction already.  */
+        if (state.IsValid ()
+              || state.GetRejectCode () == 0
+              || state.GetRejectReason () == "")
+            state.Invalid (false, REJECT_INVALID, "tx-invalid-nameop",
+                           "Tx invalid for Xaya");
+        return false;
+      }
 
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
