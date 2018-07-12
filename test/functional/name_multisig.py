@@ -28,11 +28,18 @@ from decimal import Decimal
 import codecs
 import io
 
+BIP16_ACTIVATION_HEIGHT = 432
+
 
 class NameMultisigTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_name_test ([[]] * 2)
+
+  def add_options (self, parser):
+    parser.add_option ("--bip16-active", dest="activated", default=False,
+                       action="store_true",
+                       help="Test behaviour with BIP16 active")
 
   def getNewPubkey (self, ind):
     """
@@ -286,8 +293,15 @@ class NameMultisigTest (NameTestFramework):
     self.checkNameWithHeight (0, name, "value4", baseHeight + 6)
 
   def run_test (self):
+    if self.options.activated:
+      self.generate (0, BIP16_ACTIVATION_HEIGHT, syncBefore=False)
+
     self.test_2of2_multisig ()
     self.test_namescript_p2sh ()
+
+    if not self.options.activated:
+      assert_greater_than (BIP16_ACTIVATION_HEIGHT,
+                           self.nodes[0].getblockcount ())
 
 
 if __name__ == '__main__':
