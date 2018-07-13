@@ -182,7 +182,7 @@ public:
         consensus.nSubsidyHalvingInterval = 4200000;
         consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
-        consensus.BIP34Height = 0;
+        consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -278,7 +278,7 @@ public:
         consensus.nSubsidyHalvingInterval = 4200000;
         consensus.initialSubsidy = 1 * COIN;
         consensus.BIP16Height = 0;
-        consensus.BIP34Height = 0;
+        consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
