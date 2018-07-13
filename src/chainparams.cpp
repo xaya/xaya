@@ -25,8 +25,9 @@ namespace
 {
 
 constexpr const char pszTimestampTestnet[] = "Decentralised Autonomous Worlds";
-// FIXME: Update this in time before launch.
-constexpr const char pszTimestampMainnet[] = "Mainnet Timestamp";
+constexpr const char pszTimestampMainnet[]
+    = "HUC #2,351,800: "
+      "8730ea650d24cd01692a5adb943e7b8720b0ba8a4c64ffcdf5a95d9b3fb57b7f";
 
 /* Premined amount is 222,222,222 CHI.  This is the maximum possible number of
    coins needed in case everything is sold in the ICO.  If this is not the case
@@ -220,12 +221,12 @@ public:
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock (1530623166, 83698, 0x1e0ffff0,
+        genesis = CreateGenesisBlock (1531470713, 482087, 0x1e0ffff0,
                                       pszTimestampMainnet,
                                       uint160S (hexPremineAddressMainnet));
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("b3e1186f431670265ee7f8e41ae0c10f674eebefe9bc547079c260294ca2ce1b"));
-        assert(genesis.hashMerkleRoot == uint256S("ff79fdb5e6c3e842072de6862bb8026e4187cab3d71462996631574158ea0fdd"));
+        assert(consensus.hashGenesisBlock == uint256S("e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651"));
+        assert(genesis.hashMerkleRoot == uint256S("0827901b75ab43978c3cf20a78baf040faeb0e2eeff3a2c58ab6521a6d46f8fd"));
 
         vSeeds.emplace_back("seed.xaya.io");
         vSeeds.emplace_back("seed.xaya.domob.eu");
