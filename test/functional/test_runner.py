@@ -116,10 +116,12 @@ BASE_SCRIPTS = [
     'mining_prioritisetransaction.py',
     'p2p_invalid_block.py',
     'p2p_invalid_tx.py',
+    'rpc_createmultisig.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'feature_versionbits_warning.py',
     'rpc_preciousblock.py',
     'wallet_importprunedfunds.py',
+    'rpc_zmq.py',
     'rpc_signmessage.py',
     'feature_nulldummy.py',
     'mempool_accept.py',
