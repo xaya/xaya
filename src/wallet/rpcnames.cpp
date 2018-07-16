@@ -277,6 +277,7 @@ name_list (const JSONRPCRequest& request)
 
   {
   LOCK2 (cs_main, pwallet->cs_wallet);
+  const int tipHeight = chainActive.Height ();
   for (const auto& item : pwallet->mapWallet)
     {
       const CWalletTx& tx = item.second;
@@ -306,13 +307,13 @@ name_list (const JSONRPCRequest& request)
       if (!nameFilter.empty () && nameFilter != name)
         continue;
 
-      const CBlockIndex* pindex;
-      const int depth = tx.GetDepthInMainChain (pindex);
+      const int depth = tx.GetDepthInMainChain ();
       if (depth <= 0)
         continue;
+      const int height = tipHeight - depth + 1;
 
       const auto mit = mapHeights.find (name);
-      if (mit != mapHeights.end () && mit->second > pindex->nHeight)
+      if (mit != mapHeights.end () && mit->second > height)
         continue;
 
       UniValue obj
@@ -320,9 +321,9 @@ name_list (const JSONRPCRequest& request)
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
-      addHeightInfo (pindex->nHeight, obj);
+      addHeightInfo (height, obj);
 
-      mapHeights[name] = pindex->nHeight;
+      mapHeights[name] = height;
       mapObjects[name] = obj;
     }
   }
