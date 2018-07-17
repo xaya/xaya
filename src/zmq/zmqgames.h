@@ -1,0 +1,56 @@
+// Copyright (c) 2018 The Xaya developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef BITCOIN_ZMQ_ZMQGAMES_H
+#define BITCOIN_ZMQ_ZMQGAMES_H
+
+#include <zmq/zmqpublishnotifier.h>
+
+#include <set>
+#include <string>
+
+class CBlock;
+class CBlockIndex;
+class UniValue;
+
+/**
+ * ZMQ publisher that handles the attach/detach messages for the Xaya game
+ * interface (https://github.com/xaya/Specs/blob/master/interface.md).
+ */
+class ZMQGameBlocksNotifier : public CZMQAbstractPublishNotifier
+{
+
+private:
+
+  /** The set of games tracked by this notifier.  */
+  std::set<std::string> trackedGames;
+
+  /**
+   * Sends a multipart message where the payload data is JSON.
+   */
+  bool SendMessage (const std::string& command, const UniValue& data);
+
+  /**
+   * Sends the block attach or detach notifications.  They are essentially the
+   * same, except that they have a different command string.
+   */
+  bool SendBlockNotifications (const std::string& commandPrefix,
+                               const CBlock& block, const CBlockIndex* pindex);
+
+public:
+
+  ZMQGameBlocksNotifier () = delete;
+
+  explicit ZMQGameBlocksNotifier (const std::set<std::string>& games)
+    : trackedGames(games)
+  {}
+
+  bool NotifyBlockAttached (const CBlock& block,
+                            const CBlockIndex* pindex) override;
+  bool NotifyBlockDetached (const CBlock& block,
+                            const CBlockIndex* pindex) override;
+
+};
+
+#endif // BITCOIN_ZMQ_ZMQGAMES_H

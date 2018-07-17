@@ -3,6 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <zmq/zmqnotificationinterface.h>
+
+#include <zmq/zmqgames.h>
 #include <zmq/zmqpublishnotifier.h>
 
 #include <version.h>
@@ -48,6 +50,12 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     factories["pubhashtx"] = CZMQAbstractNotifier::Create<CZMQPublishHashTransactionNotifier>;
     factories["pubrawblock"] = CZMQAbstractNotifier::Create<CZMQPublishRawBlockNotifier>;
     factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
+
+    const std::vector<std::string> vTrackedGames = gArgs.GetArgs("-trackgame");
+    const std::set<std::string> trackedGames(vTrackedGames.begin(), vTrackedGames.end());
+    factories["pubgameblocks"] = [&trackedGames]() {
+        return new ZMQGameBlocksNotifier(trackedGames);
+    };
 
     for (const auto& entry : factories)
     {
