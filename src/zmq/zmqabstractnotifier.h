@@ -7,10 +7,12 @@
 
 #include <zmq/zmqconfig.h>
 
+#include <functional>
+
 class CBlockIndex;
 class CZMQAbstractNotifier;
 
-typedef CZMQAbstractNotifier* (*CZMQNotifierFactory)();
+using CZMQNotifierFactory = std::function<CZMQAbstractNotifier*()>;
 
 class CZMQAbstractNotifier
 {
