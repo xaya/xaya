@@ -7,12 +7,16 @@
 
 #include <zmq/zmqabstractnotifier.h>
 
+#include <map>
+#include <string>
+
 class CBlockIndex;
 
 class CZMQAbstractPublishNotifier : public CZMQAbstractNotifier
 {
 private:
-    uint32_t nSequence; //!< upcounting per message sequence number
+    /** Upcounting sequence number of messages, per command string.  */
+    std::map<std::string, uint32_t> sequenceNumbers;
 
 public:
 

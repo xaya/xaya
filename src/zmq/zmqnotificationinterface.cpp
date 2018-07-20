@@ -3,6 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <zmq/zmqnotificationinterface.h>
+
+#include <zmq/zmqgames.h>
 #include <zmq/zmqpublishnotifier.h>
 
 #include <version.h>
@@ -48,6 +50,12 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     factories["pubhashtx"] = CZMQAbstractNotifier::Create<CZMQPublishHashTransactionNotifier>;
     factories["pubrawblock"] = CZMQAbstractNotifier::Create<CZMQPublishRawBlockNotifier>;
     factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
+
+    const std::vector<std::string> vTrackedGames = gArgs.GetArgs("-trackgame");
+    const std::set<std::string> trackedGames(vTrackedGames.begin(), vTrackedGames.end());
+    factories["pubgameblocks"] = [&trackedGames]() {
+        return new ZMQGameBlocksNotifier(trackedGames);
+    };
 
     for (const auto& entry : factories)
     {
@@ -180,10 +188,39 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
         // Do a normal notify for each transaction added in the block
         TransactionAddedToMempool(ptx);
     }
+
+
+    for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
+    {
+        CZMQAbstractNotifier *notifier = *i;
+        if (notifier->NotifyBlockAttached(*pblock, pindexConnected))
+        {
+            i++;
+        }
+        else
+        {
+            notifier->Shutdown();
+            i = notifiers.erase(i);
+        }
+    }
 }
 
 void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDelete, const std::vector<CTransactionRef>& vNameConflicts)
 {
+    for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
+    {
+        CZMQAbstractNotifier *notifier = *i;
+        if (notifier->NotifyBlockDetached(*pblock, pindexDelete))
+        {
+            i++;
+        }
+        else
+        {
+            notifier->Shutdown();
+            i = notifiers.erase(i);
+        }
+    }
+
     for (const CTransactionRef& ptx : pblock->vtx) {
         // Do a normal notify for each transaction removed in block disconnection
         TransactionAddedToMempool(ptx);

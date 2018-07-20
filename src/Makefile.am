@@ -204,6 +204,7 @@ BITCOIN_CORE_H = \
   warnings.h \
   zmq/zmqabstractnotifier.h \
   zmq/zmqconfig.h\
+  zmq/zmqgames.h \
   zmq/zmqnotificationinterface.h \
   zmq/zmqpublishnotifier.h \
   zmq/zmqrpc.h
@@ -270,6 +271,7 @@ libbitcoin_zmq_a_CPPFLAGS = $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
 libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_zmq_a_SOURCES = \
   zmq/zmqabstractnotifier.cpp \
+  zmq/zmqgames.cpp \
   zmq/zmqnotificationinterface.cpp \
   zmq/zmqpublishnotifier.cpp \
   zmq/zmqrpc.cpp

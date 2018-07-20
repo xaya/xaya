@@ -7,10 +7,12 @@
 
 #include <zmq/zmqconfig.h>
 
+#include <functional>
+
 class CBlockIndex;
 class CZMQAbstractNotifier;
 
-typedef CZMQAbstractNotifier* (*CZMQNotifierFactory)();
+using CZMQNotifierFactory = std::function<CZMQAbstractNotifier*()>;
 
 class CZMQAbstractNotifier
 {
@@ -34,6 +36,11 @@ public:
 
     virtual bool NotifyBlock(const CBlockIndex *pindex);
     virtual bool NotifyTransaction(const CTransaction &transaction);
+
+    /* Block attach and detach notifications are used for the game
+       interface in Xaya.  */
+    virtual bool NotifyBlockAttached(const CBlock& block, const CBlockIndex* pindex);
+    virtual bool NotifyBlockDetached(const CBlock& block, const CBlockIndex* pindex);
 
 protected:
     void *psocket;

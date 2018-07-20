@@ -20,3 +20,13 @@ bool CZMQAbstractNotifier::NotifyTransaction(const CTransaction &/*transaction*/
 {
     return true;
 }
+
+bool CZMQAbstractNotifier::NotifyBlockAttached(const CBlock& /*block*/, const CBlockIndex* /*pindex*/)
+{
+    return true;
+}
+
+bool CZMQAbstractNotifier::NotifyBlockDetached(const CBlock& /*block*/, const CBlockIndex* /*pindex*/)
+{
+    return true;
+}
