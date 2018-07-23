@@ -1163,6 +1163,17 @@ void CConnman::ThreadSocketHandler()
         //
         {
             LOCK(cs_vNodes);
+
+            if (!fNetworkActive) {
+                // Disconnect any connected nodes
+                for (CNode* pnode : vNodes) {
+                    if (!pnode->fDisconnect) {
+                        LogPrint(BCLog::NET, "Network not active, dropping peer=%d\n", pnode->GetId());
+                        pnode->fDisconnect = true;
+                    }
+                }
+            }
+
             // Disconnect unused nodes
             std::vector<CNode*> vNodesCopy = vNodes;
             for (CNode* pnode : vNodesCopy)
@@ -2198,14 +2209,6 @@ void CConnman::SetNetworkActive(bool active)
 
     fNetworkActive = active;
 
-    if (!fNetworkActive) {
-        LOCK(cs_vNodes);
-        // Close sockets to all nodes
-        for (CNode* pnode : vNodes) {
-            pnode->CloseSocketDisconnect();
-        }
-    }
-
     uiInterface.NotifyNetworkActiveChanged(fNetworkActive);
 }
 
@@ -2254,7 +2257,8 @@ bool CConnman::InitBinds(const std::vector<CService>& binds, const std::vector<C
     if (binds.empty() && whiteBinds.empty()) {
         struct in_addr inaddr_any;
         inaddr_any.s_addr = INADDR_ANY;
-        fBound |= Bind(CService((in6_addr)IN6ADDR_ANY_INIT, GetListenPort()), BF_NONE);
+        struct in6_addr inaddr6_any = IN6ADDR_ANY_INIT;
+        fBound |= Bind(CService(inaddr6_any, GetListenPort()), BF_NONE);
         fBound |= Bind(CService(inaddr_any, GetListenPort()), !fBound ? BF_REPORT_ERROR : BF_NONE);
     }
     return fBound;
@@ -2864,8 +2868,20 @@ bool CConnman::ForNode(NodeId id, std::function<bool(CNode* pnode)> func)
     return found != nullptr && NodeFullyConnected(found) && func(found);
 }
 
-int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds) {
-    return nNow + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);
+int64_t CConnman::PoissonNextSendInbound(int64_t now, int average_interval_seconds)
+{
+    if (m_next_send_inv_to_incoming < now) {
+        // If this function were called from multiple threads simultaneously
+        // it would possible that both update the next send variable, and return a different result to their caller.
+        // This is not possible in practice as only the net processing thread invokes this function.
+        m_next_send_inv_to_incoming = PoissonNextSend(now, average_interval_seconds);
+    }
+    return m_next_send_inv_to_incoming;
+}
+
+int64_t PoissonNextSend(int64_t now, int average_interval_seconds)
+{
+    return now + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);
 }
 
 CSipHasher CConnman::GetDeterministicRandomizer(uint64_t id) const

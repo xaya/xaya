@@ -179,7 +179,10 @@ class P2PConnection(asyncio.Protocol):
             raise IOError('Not connected')
         self._log_message("send", message)
         tmsg = self._build_message(message)
-        NetworkThread.network_event_loop.call_soon_threadsafe(lambda: self._transport and self._transport.write(tmsg))
+        # FIXME: Upstream Bitcoin doesn't have the hasattr check, which makes
+        # this fail for Python3 <3.4.4 (as in Debian Jessie).  Remove this
+        # perhaps later when compatibility with 3.4.2 is no longer needed.
+        NetworkThread.network_event_loop.call_soon_threadsafe(lambda: self._transport and (not hasattr(self._transport, 'is_closing') or not self._transport.is_closing()) and self._transport.write(tmsg))
 
     # Class utility methods
 
