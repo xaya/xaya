@@ -53,8 +53,11 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
 
     const std::vector<std::string> vTrackedGames = gArgs.GetArgs("-trackgame");
     const std::set<std::string> trackedGames(vTrackedGames.begin(), vTrackedGames.end());
-    factories["pubgameblocks"] = [&trackedGames]() {
-        return new ZMQGameBlocksNotifier(trackedGames);
+    ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
+    factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier]() {
+        assert (gameBlocksNotifier == nullptr);
+        gameBlocksNotifier = new ZMQGameBlocksNotifier(trackedGames);
+        return gameBlocksNotifier;
     };
 
     for (const auto& entry : factories)
@@ -75,6 +78,7 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     {
         notificationInterface = new CZMQNotificationInterface();
         notificationInterface->notifiers = notifiers;
+        notificationInterface->gameBlocksNotifier = gameBlocksNotifier;
 
         if (!notificationInterface->Initialize())
         {
