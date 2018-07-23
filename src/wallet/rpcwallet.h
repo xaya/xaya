@@ -14,6 +14,8 @@ class CWallet;
 class CWalletTx;
 class JSONRPCRequest;
 class UniValue;
+struct PartiallySignedTransaction;
+class CTransaction;
 
 typedef std::map<std::string, std::string> mapValue_t;
 
@@ -38,4 +40,5 @@ CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
+bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, const CTransaction* txConst, int sighash_type = 1, bool sign = true, bool bip32derivs = false);
 #endif //BITCOIN_WALLET_RPCWALLET_H
