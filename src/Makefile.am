@@ -185,6 +185,7 @@ BITCOIN_CORE_H = \
   ui_interface.h \
   undo.h \
   util.h \
+  utilmemory.h \
   utilmoneystr.h \
   utiltime.h \
   validation.h \
@@ -534,8 +535,8 @@ xaya_hash_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
-  $(LIBBITCOIN_CRYPTO_SSE41) \
-  $(LIBBITCOIN_CRYPTO_AVX2)
+  $(LIBUNIVALUE) \
+  $(LIBSECP256K1)
 xaya_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
