@@ -21,6 +21,11 @@ class UniValue;
 class ZMQGameBlocksNotifier : public CZMQAbstractPublishNotifier
 {
 
+public:
+
+  static const char* PREFIX_ATTACH;
+  static const char* PREFIX_DETACH;
+
 private:
 
   /** The set of games tracked by this notifier.  */
@@ -31,13 +36,6 @@ private:
    */
   bool SendMessage (const std::string& command, const UniValue& data);
 
-  /**
-   * Sends the block attach or detach notifications.  They are essentially the
-   * same, except that they have a different command string.
-   */
-  bool SendBlockNotifications (const std::string& commandPrefix,
-                               const CBlock& block, const CBlockIndex* pindex);
-
 public:
 
   ZMQGameBlocksNotifier () = delete;
@@ -45,6 +43,14 @@ public:
   explicit ZMQGameBlocksNotifier (const std::set<std::string>& games)
     : trackedGames(games)
   {}
+
+  /**
+   * Sends the block attach or detach notifications.  They are essentially the
+   * same, except that they have a different command string.
+   */
+  bool SendBlockNotifications (const std::set<std::string>& games,
+                               const std::string& commandPrefix,
+                               const CBlock& block, const CBlockIndex* pindex);
 
   bool NotifyBlockAttached (const CBlock& block,
                             const CBlockIndex* pindex) override;
