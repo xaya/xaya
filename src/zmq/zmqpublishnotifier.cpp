@@ -5,6 +5,7 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <streams.h>
+#include <sync.h>
 #include <zmq/zmqpublishnotifier.h>
 #include <validation.h>
 #include <util.h>
@@ -17,9 +18,20 @@ static const char *MSG_HASHTX    = "hashtx";
 static const char *MSG_RAWBLOCK  = "rawblock";
 static const char *MSG_RAWTX     = "rawtx";
 
+/**
+ * Lock protecting any ZMQ publications.  This is necessary in Xaya, since
+ * game_sendupdates may send notifications from additional threads.  Since
+ * sockets can be reused (if on the same address), we have to lock all
+ * sends (also for non-game-blocks) to be sure that the socket is not
+ * accessed at the same time from multiple threads.
+ */
+static CCriticalSection cs_zmqPublish;
+
 // Internal function to send multipart message
 static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
 {
+    AssertLockHeld(cs_zmqPublish);
+
     va_list args;
     va_start(args, size);
 
@@ -132,6 +144,7 @@ void CZMQAbstractPublishNotifier::Shutdown()
 bool CZMQAbstractPublishNotifier::SendMessage(const char *command, const void* data, size_t size)
 {
     assert(psocket);
+    LOCK(cs_zmqPublish);
 
     /* send three parts, command & data & a LE 4byte sequence number */
     unsigned char msgseq[sizeof(uint32_t)];
