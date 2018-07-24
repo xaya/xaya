@@ -214,7 +214,7 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    bool ValidateNameDB() const;
+    bool ValidateNameDB() const override;
 };
 
 
@@ -253,7 +253,7 @@ public:
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
     bool GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) const override;
     CNameIterator* IterateNames() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor* Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
