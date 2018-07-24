@@ -21,6 +21,8 @@ void RegisterMiningRPCCommands(CRPCTable &tableRPC);
 void RegisterRawTransactionRPCCommands(CRPCTable &tableRPC);
 /** Register Namecoin RPC commands */
 void RegisterNameRPCCommands(CRPCTable &tableRPC);
+/** Register Xaya game RPC commands */
+void RegisterGameRPCCommands(CRPCTable &tableRPC);
 
 static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
 {
@@ -30,6 +32,7 @@ static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
     RegisterMiningRPCCommands(t);
     RegisterRawTransactionRPCCommands(t);
     RegisterNameRPCCommands(t);
+    RegisterGameRPCCommands(t);
 }
 
 #endif // BITCOIN_RPC_REGISTER_H

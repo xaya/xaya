@@ -30,6 +30,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <rpc/auxpow_miner.h>
+#include <rpc/game.h>
 #include <rpc/mining.h>
 #include <rpc/server.h>
 #include <rpc/register.h>
@@ -183,6 +184,9 @@ void Interrupt()
     if (g_txindex) {
         g_txindex->Interrupt();
     }
+    if (g_send_updates_worker != nullptr) {
+        g_send_updates_worker->interrupt();
+    }
 }
 
 void Shutdown()
@@ -206,6 +210,9 @@ void Shutdown()
     StopHTTPServer();
     g_wallet_init_interface.Flush();
     StopMapPort();
+    if (g_send_updates_worker != nullptr) {
+        g_send_updates_worker.reset ();
+    }
 
     // Because these depend on each-other, we make sure that neither can be
     // using the other before destroying them.
@@ -1763,6 +1770,9 @@ bool AppInitMain()
     if (!connman.Start(scheduler, connOptions)) {
         return false;
     }
+
+    assert (g_send_updates_worker == nullptr);
+    g_send_updates_worker.reset(new SendUpdatesWorker ());
 
     // ********************************************************* Step 13: finished
 
