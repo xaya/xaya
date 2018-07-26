@@ -2,6 +2,7 @@ Xaya Core
 =========
 
 https://xaya.io
+(Formerly Chimaera)
 
 What is Xaya?
 -------------
