@@ -19,6 +19,7 @@ from test_framework.messages import (
 )
 from test_framework.util import (
   assert_equal,
+  assert_raises_rpc_error,
   bytes_to_hex_str,
   hex_str_to_bytes,
 )
@@ -121,10 +122,12 @@ class GameBlocksTest (BitcoinTestFramework):
       self._test_multipleUpdates ()
       self._test_moveWithCurrency ()
       self._test_reorg ()
+      self._test_sendUpdates ()
 
       # After all the real tests, verify no more notifications are there.
       # This especially verifies that the "ignored" game we are subscribed to
       # has no notifications (because it is not tracked by the daemon).
+      self.log.info ("Verifying that there are no unexpected messages...")
       for _, sub in self.games.items ():
         sub.assertNoMessage ()
     finally:
@@ -274,6 +277,93 @@ class GameBlocksTest (BitcoinTestFramework):
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
 
+  def buildChain (self, n):
+    """
+    Builds a chain of length n and records the attach sequence we get
+    for games a and b.
+    """
+
+    blks = []
+    attachA = []
+    attachB = []
+    for i in range (n):
+      blks.extend (self.node.generate (1))
+      topic, data = self.games["a"].receive ()
+      assert_equal (topic, "game-block-attach json a")
+      attachA.append (data)
+      topic, data = self.games["b"].receive ()
+      assert_equal (topic, "game-block-attach json b")
+      attachB.append (data)
+
+    return blks, attachA, attachB
+
+  def verifyDetach (self, game, attach):
+    """
+    Verify that we receive the correct detach sequence for the given game,
+    corresponding to the previously recorded attachments.
+    """
+
+    for d in reversed (attach):
+      topic, data = self.games[game].receive ()
+      assert_equal (topic, "game-block-detach json %s" % game)
+      assert_equal (data, d)
+
+  def verifyAttach (self, game, attach):
+    """
+    Verify that we receive again the recorded attach sequence for the game.
+    """
+
+    for a in attach:
+      topic, data = self.games[game].receive ()
+      assert_equal (topic, "game-block-attach json %s" % game)
+      assert_equal (data, a)
+
+  def buildAndVerifyReorg (self):
+    """
+    Constructs a short and long chain, triggering a reorg.  Verifies the
+    expected notifications and returns them.
+
+    This is basically the reorg test, but also used for testing
+    game_sendupdates.
+    """
+
+    # Start by building a long chain that we will later reorg to.  Include a
+    # move (just because, not really important) and record the attach
+    # notifications we get.
+    self.node.name_update ("p/x", json.dumps ({"g":{"a": True}}))
+    longBlks, longAttachA, longAttachB = self.buildChain (10)
+
+    # Invalidate the first block, which should trigger detaches.
+    self.node.invalidateblock (longBlks[0])
+    self.verifyDetach ("a", longAttachA)
+    self.verifyDetach ("b", longAttachB)
+
+    # Build a shorter chain.
+    shortBlks, shortAttachA, shortAttachB = self.buildChain (5)
+
+    # Trigger the reorg and verify the notifications.
+    self.node.reconsiderblock (longBlks[0])
+    self.verifyDetach ("a", shortAttachA)
+    self.verifyDetach ("b", shortAttachB)
+    self.verifyAttach ("a", longAttachA)
+    self.verifyAttach ("b", longAttachB)
+
+    res = {
+      "long":
+        {
+          "blocks": longBlks,
+          "attachA": longAttachA,
+          "attachB": longAttachB,
+        },
+      "short":
+        {
+          "blocks": shortBlks,
+          "attachA": shortAttachA,
+          "attachB": shortAttachB,
+        },
+    }
+    return res
+
   def _test_reorg (self):
     """
     Produces a reorg and checks the resulting sequence of notifications
@@ -281,55 +371,84 @@ class GameBlocksTest (BitcoinTestFramework):
     """
 
     self.log.info ("Testing reorg...")
+    self.buildAndVerifyReorg ()
 
-    def buildChain (n):
-      blks = []
-      attachA = []
-      attachB = []
-      for i in range (n):
-        blks.extend (self.node.generate (1))
-        topic, data = self.games["a"].receive ()
-        assert_equal (topic, "game-block-attach json a")
-        attachA.append (data)
-        topic, data = self.games["b"].receive ()
-        assert_equal (topic, "game-block-attach json b")
-        attachB.append (data)
-      return blks, attachA, attachB
+  def _test_sendUpdates (self):
+    """
+    Tests on-demand notifications using game_sendupdates.
+    """
 
-    def verifyDetach (attachA, attachB):
-      n = len (attachA)
-      assert_equal (len (attachB), n)
-      for i in range (n):
-        topic, data = self.games["a"].receive ()
-        assert_equal (topic, "game-block-detach json a")
-        assert_equal (data, attachA[-i - 1])
-        topic, data = self.games["b"].receive ()
-        assert_equal (topic, "game-block-detach json b")
-        assert_equal (data, attachB[-i - 1])
+    self.log.info ("Testing game_sendupdates...")
 
-    # Start by building a long chain that we will later reorg to.  Include a
-    # move (just because, not really important) and record the attach
-    # notifications we get.
-    self.node.name_update ("p/x", json.dumps ({"g":{"a": True}}))
-    longBlks, longAttachA, longAttachB = buildChain (10)
+    # Build up a fork for testing.
+    ancestor = self.node.getbestblockhash ()
+    res = self.buildAndVerifyReorg ()
+    assert_equal (self.node.getbestblockhash (), res["long"]["blocks"][-1])
 
-    # Invalidate the first block, which should trigger detaches.
-    self.node.invalidateblock (longBlks[0])
-    verifyDetach (longAttachA, longAttachB)
+    # Trigger on-demand updates in both directions for the fork.
+    resA = self.node.game_sendupdates ("a", res["short"]["blocks"][-1])
+    resB = self.node.game_sendupdates ("b", res["long"]["blocks"][-1],
+                                       res["short"]["blocks"][-1])
 
-    # Build a shorter chain.
-    _, shortAttachA, shortAttachB = buildChain (5)
+    # Check the return values.
+    assert_equal (resA, {
+      "toblock": res["long"]["blocks"][-1],
+      "ancestor": ancestor,
+      "steps":
+        {
+          "attach": 10,
+          "detach": 5,
+        },
+    })
+    assert_equal (resB, {
+      "toblock": res["short"]["blocks"][-1],
+      "ancestor": ancestor,
+      "steps":
+        {
+          "attach": 5,
+          "detach": 10,
+        },
+    })
 
-    # Trigger the reorg and verify the notifications.
-    self.node.reconsiderblock (longBlks[0])
-    verifyDetach (shortAttachA, shortAttachB)
-    for i in range (len (longBlks)):
-      topic, data = self.games["a"].receive ()
-      assert_equal (topic, "game-block-attach json a")
-      assert_equal (data, longAttachA[i])
-      topic, data = self.games["b"].receive ()
-      assert_equal (topic, "game-block-attach json b")
-      assert_equal (data, longAttachB[i])
+    # Check the updates for the games themselves.
+    self.verifyDetach ("a", res["short"]["attachA"])
+    self.verifyAttach ("a", res["long"]["attachA"])
+    self.verifyDetach ("b", res["long"]["attachB"])
+    self.verifyAttach ("b", res["short"]["attachB"])
+
+    # Trigger updates for a game without subscribers.
+    genesis = self.node.getblockhash (0)
+    self.node.game_sendupdates ("other", genesis)
+
+    # Updates for a game that is not normally tracked should still work.
+    res = self.node.game_sendupdates ("ignored", genesis)
+    assert_equal (res["steps"]["detach"], 0)
+    for i in range (res["steps"]["attach"]):
+      topic, data = self.games["ignored"].receive ()
+      assert_equal (topic, "game-block-attach json ignored")
+      assert_equal (data["parent"], self.node.getblockhash (i))
+      assert_equal (data["child"], self.node.getblockhash (i + 1))
+
+    # Check the case of there being no update.
+    tip = self.node.getbestblockhash ()
+    res = self.node.game_sendupdates ("a", tip)
+    assert_equal (res, {
+      "toblock": tip,
+      "ancestor": tip,
+      "steps":
+        {
+          "attach": 0,
+          "detach": 0,
+        },
+    })
+
+    # Verify error for invalid block hashes.
+    invalidBlock = "00" * 32
+    assert_raises_rpc_error (-5, "fromblock not found",
+                             self.node.game_sendupdates, "a", invalidBlock)
+    assert_raises_rpc_error (-5, "toblock not found",
+                             self.node.game_sendupdates,
+                             "a", genesis, invalidBlock)
 
 
 if __name__ == '__main__':

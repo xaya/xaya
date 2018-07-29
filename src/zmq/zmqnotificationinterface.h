@@ -12,6 +12,7 @@
 
 class CBlockIndex;
 class CZMQAbstractNotifier;
+class ZMQGameBlocksNotifier;
 
 class CZMQNotificationInterface final : public CValidationInterface
 {
@@ -21,6 +22,10 @@ public:
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
     static CZMQNotificationInterface* Create();
+
+    inline ZMQGameBlocksNotifier* GetGameBlocksNotifier() {
+        return gameBlocksNotifier;
+    }
 
 protected:
     bool Initialize();
@@ -37,6 +42,12 @@ private:
 
     void *pcontext;
     std::list<CZMQAbstractNotifier*> notifiers;
+
+    /**
+     * The game blocks notifier, if any.  This is used to send on-demand
+     * notifications for game_sendupdates.
+     */
+    ZMQGameBlocksNotifier* gameBlocksNotifier;
 };
 
 extern CZMQNotificationInterface* g_zmq_notification_interface;

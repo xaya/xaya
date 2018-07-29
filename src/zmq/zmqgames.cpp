@@ -19,6 +19,9 @@
 
 #include <map>
 
+const char* ZMQGameBlocksNotifier::PREFIX_ATTACH = "game-block-attach";
+const char* ZMQGameBlocksNotifier::PREFIX_DETACH = "game-block-detach";
+
 bool
 ZMQGameBlocksNotifier::SendMessage (const std::string& command,
                                     const UniValue& data)
@@ -114,13 +117,13 @@ JsonDataForMove (const CTransaction& tx)
 } // anonymous namespace
 
 bool
-ZMQGameBlocksNotifier::SendBlockNotifications (const std::string& commandPrefix,
-                                               const CBlock& block,
-                                               const CBlockIndex* pindex)
+ZMQGameBlocksNotifier::SendBlockNotifications (
+    const std::set<std::string>& games, const std::string& commandPrefix,
+    const CBlock& block, const CBlockIndex* pindex)
 {
   /* Start with an empty array of moves for each game that we track.  */
   std::map<std::string, UniValue> perGameMoves;
-  for (const auto& game : trackedGames)
+  for (const auto& game : games)
     perGameMoves[game] = UniValue (UniValue::VARR);
 
   /* Add relevant moves for each game from all the transactions.  */
@@ -133,7 +136,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (const std::string& commandPrefix,
           if (mit == perGameMoves.end ())
             continue;
 
-          assert (trackedGames.count (entry.first) > 0);
+          assert (games.count (entry.first) > 0);
           assert (mit->second.isArray ());
           mit->second.push_back (entry.second);
         }
@@ -150,7 +153,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (const std::string& commandPrefix,
 
   /* Send notifications for all games with the moves merged into the
      template object.  */
-  for (const auto& game : trackedGames)
+  for (const auto& game : games)
     {
       auto mit = perGameMoves.find (game);
       assert (mit != perGameMoves.end ());
@@ -169,12 +172,12 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  return SendBlockNotifications ("game-block-attach", block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, block, pindex);
 }
 
 bool
 ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  return SendBlockNotifications ("game-block-detach", block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_DETACH, block, pindex);
 }
