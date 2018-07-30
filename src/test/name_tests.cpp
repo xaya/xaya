@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,6 +6,7 @@
 #include <coins.h>
 #include <consensus/validation.h>
 #include <key_io.h>
+#include <names/encoding.h>
 #include <names/main.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
@@ -21,6 +22,7 @@
 
 #include <list>
 #include <memory>
+#include <stdexcept>
 
 #include <stdint.h>
 
@@ -1061,6 +1063,97 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   }
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.mapTx.empty ());
+}
+
+/* ************************************************************************** */
+
+BOOST_AUTO_TEST_CASE (encoding_to_from_string)
+{
+  for (const std::string& encStr : {"ascii", "utf8", "hex"})
+    BOOST_CHECK_EQUAL (EncodingToString (EncodingFromString (encStr)), encStr);
+
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::ASCII), "ascii");
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::UTF8), "utf8");
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::HEX), "hex");
+
+  BOOST_CHECK_THROW (EncodingFromString ("invalid"), std::invalid_argument);
+}
+
+namespace
+{
+
+class EncodingTestSetup : public TestingSetup
+{
+public:
+
+  NameEncoding encoding;
+
+  void
+  ValidRoundtrip (const std::string& str, const valtype& data) const
+  {
+    BOOST_CHECK_EQUAL (EncodeName (data, encoding), str);
+    BOOST_CHECK (DecodeName (str, encoding) == data);
+  }
+
+  void
+  InvalidString (const std::string& str) const
+  {
+    BOOST_CHECK_THROW (DecodeName (str, encoding), InvalidNameString);
+  }
+
+  void
+  InvalidData (const valtype& data) const
+  {
+    BOOST_CHECK_THROW (EncodeName (data, encoding), InvalidNameString);
+  }
+
+};
+
+} // anonymous namespace
+
+BOOST_FIXTURE_TEST_CASE (encoding_ascii, EncodingTestSetup)
+{
+  encoding = NameEncoding::ASCII;
+
+  ValidRoundtrip (" abc42\x7f", {0x20, 'a', 'b', 'c', '4', '2', 0x7f});
+  ValidRoundtrip ("", {});
+
+  InvalidString ("a\tx");
+  InvalidString ("a\x80x");
+  InvalidString (std::string ({'a', 0, 'x'}));
+  InvalidString (u8"ä");
+
+  InvalidData ({'a', 0, 'x'});
+  InvalidData ({'a', 0x19, 'x'});
+  InvalidData ({'a', 0x80, 'x'});
+}
+
+BOOST_FIXTURE_TEST_CASE (encoding_utf8, EncodingTestSetup)
+{
+  encoding = NameEncoding::UTF8;
+
+  valtype expected({0x20, 'a', 'b', 'c', '\t', '4', '2', 0x00, 0x7f});
+  const std::string utf8Str = u8"äöü";
+  BOOST_CHECK_EQUAL (utf8Str.size (), 6);
+  expected.insert (expected.end (), utf8Str.begin (), utf8Str.end ());
+  ValidRoundtrip (" abc\t42" + std::string ({0}) + u8"\x7fäöü", expected);
+  ValidRoundtrip ("", {});
+
+  InvalidString ("a\x80x");
+  InvalidData ({'a', 0x80, 'x'});
+}
+
+BOOST_FIXTURE_TEST_CASE (encoding_hex, EncodingTestSetup)
+{
+  encoding = NameEncoding::HEX;
+
+  ValidRoundtrip ("0065ff", {0x00, 0x65, 0xff});
+  BOOST_CHECK (DecodeName ("aaBBcCDd", encoding)
+                == valtype ({0xaa, 0xbb, 0xcc, 0xdd}));
+
+  InvalidString ("");
+  InvalidString ("aaa");
+  InvalidString ("zz");
 }
 
 /* ************************************************************************** */

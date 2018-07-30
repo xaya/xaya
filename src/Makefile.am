@@ -135,6 +135,7 @@ BITCOIN_CORE_H = \
   merkleblock.h \
   miner.h \
   names/common.h \
+  names/encoding.h \
   names/main.h \
   net.h \
   net_processing.h \
@@ -235,6 +236,7 @@ libbitcoin_server_a_SOURCES = \
   dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
+  names/encoding.cpp \
   names/main.cpp \
   net.cpp \
   net_processing.cpp \
