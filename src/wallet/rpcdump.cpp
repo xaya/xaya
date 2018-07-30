@@ -86,6 +86,17 @@ static bool GetWalletAddressesForKey(CWallet * const pwallet, const CKeyID &keyi
     return fLabelFound;
 }
 
+static const int64_t TIMESTAMP_MIN = 0;
+
+static void RescanWallet(CWallet& wallet, const WalletRescanReserver& reserver, int64_t time_begin = TIMESTAMP_MIN, bool update = true)
+{
+    int64_t scanned_time = wallet.RescanFromTime(time_begin, reserver, update);
+    if (wallet.IsAbortingRescan()) {
+        throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
+    } else if (scanned_time > time_begin) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Rescan was unable to fully rescan the blockchain. Some transactions may be missing.");
+    }
+}
 
 UniValue importprivkey(const JSONRPCRequest& request)
 {
@@ -172,13 +183,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
         }
     }
     if (fRescan) {
-        int64_t scanned_time = pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
-        if (pwallet->IsAbortingRescan()) {
-            throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
-        }
-        if (scanned_time > TIMESTAMP_MIN) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Rescan was unable to fully rescan the blockchain. Some transactions may be missing.");
-        }
+        RescanWallet(*pwallet, reserver);
     }
 
     return NullUniValue;
@@ -318,13 +323,7 @@ UniValue importaddress(const JSONRPCRequest& request)
     }
     if (fRescan)
     {
-        int64_t scanned_time = pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
-        if (pwallet->IsAbortingRescan()) {
-            throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
-        }
-        if (scanned_time > TIMESTAMP_MIN) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Rescan was unable to fully rescan the blockchain. Some transactions may be missing.");
-        }
+        RescanWallet(*pwallet, reserver);
         pwallet->ReacceptWalletTransactions();
     }
 
@@ -496,13 +495,7 @@ UniValue importpubkey(const JSONRPCRequest& request)
     }
     if (fRescan)
     {
-        int64_t scanned_time = pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
-        if (pwallet->IsAbortingRescan()) {
-            throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
-        }
-        if (scanned_time > TIMESTAMP_MIN) {
-            throw JSONRPCError(RPC_WALLET_ERROR, "Rescan was unable to fully rescan the blockchain. Some transactions may be missing.");
-        }
+        RescanWallet(*pwallet, reserver);
         pwallet->ReacceptWalletTransactions();
     }
 
@@ -585,13 +578,13 @@ UniValue importwallet(const JSONRPCRequest& request)
                 std::string strLabel;
                 bool fLabel = true;
                 for (unsigned int nStr = 2; nStr < vstr.size(); nStr++) {
-                    if (boost::algorithm::starts_with(vstr[nStr], "#"))
+                    if (vstr[nStr].front() == '#')
                         break;
                     if (vstr[nStr] == "change=1")
                         fLabel = false;
                     if (vstr[nStr] == "reserve=1")
                         fLabel = false;
-                    if (boost::algorithm::starts_with(vstr[nStr], "label=")) {
+                    if (vstr[nStr].substr(0,6) == "label=") {
                         strLabel = DecodeDumpString(vstr[nStr].substr(6));
                         fLabel = true;
                     }
@@ -630,13 +623,7 @@ UniValue importwallet(const JSONRPCRequest& request)
         pwallet->UpdateTimeFirstKey(nTimeBegin);
     }
     uiInterface.ShowProgress("", 100, false); // hide progress dialog in GUI
-    int64_t scanned_time = pwallet->RescanFromTime(nTimeBegin, reserver, false /* update */);
-    if (pwallet->IsAbortingRescan()) {
-        throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
-    }
-    if (scanned_time > nTimeBegin) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Rescan was unable to fully rescan the blockchain. Some transactions may be missing.");
-    }
+    RescanWallet(*pwallet, reserver, nTimeBegin, false /* update */);
     pwallet->MarkDirty();
 
     if (!fGood)
