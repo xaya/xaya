@@ -5,6 +5,7 @@
 #ifndef BITCOIN_ZMQ_ZMQGAMES_H
 #define BITCOIN_ZMQ_ZMQGAMES_H
 
+#include <sync.h>
 #include <zmq/zmqpublishnotifier.h>
 
 #include <set>
@@ -28,8 +29,10 @@ public:
 
 private:
 
+  /** Lock for trackedGames.  */
+  mutable CCriticalSection csTrackedGames;
   /** The set of games tracked by this notifier.  */
-  std::set<std::string> trackedGames;
+  std::set<std::string> trackedGames GUARDED_BY (csTrackedGames);
 
   /**
    * Sends a multipart message where the payload data is JSON.
@@ -56,6 +59,11 @@ public:
                             const CBlockIndex* pindex) override;
   bool NotifyBlockDetached (const CBlock& block,
                             const CBlockIndex* pindex) override;
+
+  /* Methods for the trackedgames RPC.  */
+  UniValue GetTrackedGames () const;
+  void AddTrackedGame (const std::string& game);
+  void RemoveTrackedGame (const std::string& game);
 
 };
 

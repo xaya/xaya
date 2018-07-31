@@ -123,6 +123,7 @@ class GameBlocksTest (BitcoinTestFramework):
       self._test_moveWithCurrency ()
       self._test_reorg ()
       self._test_sendUpdates ()
+      self._test_trackedgamesRPC ()
 
       # After all the real tests, verify no more notifications are there.
       # This especially verifies that the "ignored" game we are subscribed to
@@ -449,6 +450,40 @@ class GameBlocksTest (BitcoinTestFramework):
     assert_raises_rpc_error (-5, "toblock not found",
                              self.node.game_sendupdates,
                              "a", genesis, invalidBlock)
+
+  def _test_trackedgamesRPC (self):
+    """
+    Tests the trackedgames RPC, which can be used to read and modify
+    the list of tracked games dynamically.
+    """
+
+    self.log.info ("Testing the trackedgames RPC...")
+
+    # Test initial set as configured by the startup options.
+    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
+
+    # Remove some tracked (and non-tracked) games.
+    self.node.trackedgames ("remove", "b")
+    self.node.trackedgames ("remove", "not-there")
+    assert_equal (set (self.node.trackedgames ()), set (["a", "other"]))
+
+    # Add a game that was previously not tracked.
+    self.node.trackedgames ("add", "ignored")
+    self.node.trackedgames ("add", "a")
+    assert_equal (set (self.node.trackedgames ()),
+                  set (["a", "ignored", "other"]))
+
+    # Trigger an update to make sure the modified list is taken into account.
+    self.node.generate (1)
+    topic, _ = self.games["a"].receive ()
+    assert_equal (topic, "game-block-attach json a")
+    topic, _ = self.games["ignored"].receive ()
+    assert_equal (topic, "game-block-attach json ignored")
+
+    # Restore original setting.
+    self.node.trackedgames ("add", "b")
+    self.node.trackedgames ("remove", "ignored")
+    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
 
 
 if __name__ == '__main__':

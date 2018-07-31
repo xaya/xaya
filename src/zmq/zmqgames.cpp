@@ -172,6 +172,7 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
+  LOCK (csTrackedGames);
   return SendBlockNotifications (trackedGames, PREFIX_ATTACH, block, pindex);
 }
 
@@ -179,5 +180,32 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
+  LOCK (csTrackedGames);
   return SendBlockNotifications (trackedGames, PREFIX_DETACH, block, pindex);
+}
+
+UniValue
+ZMQGameBlocksNotifier::GetTrackedGames () const
+{
+  LOCK (csTrackedGames);
+
+  UniValue res(UniValue::VARR);
+  for (const auto& g : trackedGames)
+    res.push_back (g);
+
+  return res;
+}
+
+void
+ZMQGameBlocksNotifier::AddTrackedGame (const std::string& game)
+{
+  LOCK (csTrackedGames);
+  trackedGames.insert (game);
+}
+
+void
+ZMQGameBlocksNotifier::RemoveTrackedGame (const std::string& game)
+{
+  LOCK (csTrackedGames);
+  trackedGames.erase (game);
 }

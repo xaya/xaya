@@ -19,6 +19,24 @@
 
 #include <sstream>
 
+namespace
+{
+
+ZMQGameBlocksNotifier*
+GetGameBlocksNotifier ()
+{
+  if (g_zmq_notification_interface == nullptr)
+    throw JSONRPCError (RPC_MISC_ERROR, "ZMQ notifications are disabled");
+
+  auto* notifier = g_zmq_notification_interface->GetGameBlocksNotifier ();
+  if (notifier == nullptr)
+    throw JSONRPCError (RPC_MISC_ERROR, "-zmqpubgameblocks is not set");
+
+  return notifier;
+}
+
+} // anonymous namespace
+
 /* ************************************************************************** */
 
 std::string
@@ -79,12 +97,7 @@ SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
       return;
     }
 
-  /* These two conditions are checked before enqueueing work.  So if we make
-     it here, we know that there must be a games notifier.  */
-  assert (g_zmq_notification_interface != nullptr);
-  auto* notifier = g_zmq_notification_interface->GetGameBlocksNotifier ();
-  assert (notifier != nullptr);
-
+  auto* notifier = GetGameBlocksNotifier ();
   notifier->SendBlockNotifications (trackedGames, commandPrefix, blk, pindex);
 }
 #endif // ENABLE_ZMQ
@@ -269,15 +282,70 @@ game_sendupdates (const JSONRPCRequest& request)
   steps.pushKV ("attach", w.attach.size ());
   result.pushKV ("steps", steps);
 
-  if (g_zmq_notification_interface == nullptr)
-    throw JSONRPCError (RPC_MISC_ERROR, "ZMQ notifications are disabled");
-  if (g_zmq_notification_interface->GetGameBlocksNotifier () == nullptr)
-    throw JSONRPCError (RPC_MISC_ERROR, "-zmqpubgameblocks is not set");
+  GetGameBlocksNotifier ();
 
   assert (g_send_updates_worker != nullptr);
   g_send_updates_worker->enqueue (std::move (w));
 
   return result;
+#else // ENABLE_ZMQ
+  throw JSONRPCError (RPC_MISC_ERROR, "ZMQ is not built into Xaya");
+#endif // ENABLE_ZMQ
+}
+
+} // anonymous namespace
+/* ************************************************************************** */
+namespace
+{
+
+UniValue
+trackedgames (const JSONRPCRequest& request)
+{
+  if (request.fHelp
+        || (request.params.size () != 0 && request.params.size () != 2))
+    throw std::runtime_error (
+        "trackedgames (\"command\" \"gameid\")\n"
+        "\nReturns or modifies the list of tracked games for the game"
+        " ZMQ interface.\n"
+        "\nIf called without arguments, the list of tracked games is"
+        " returned.\n"
+        "Otherwise, the given game is added or removed from the list.\n"
+        "\nArguments:\n"
+        "1. \"command\"         (string, optional) can be \"add\" or \"remove\"\n"
+        "2. \"gameid\"          (string, optional) the gameid to add or remove\n"
+        "\nResult if called without arguments:\n"
+        "[                    (json array) currently tracked game IDs\n"
+        "  \"game1\",\n"
+        "  \"game2\",\n"
+        "  ...\n"
+        "]\n"
+        "\nExamples:\n"
+        + HelpExampleCli ("trackedgames", "")
+        + HelpExampleCli ("trackedgames", "\"add\" \"huc\"")
+        + HelpExampleCli ("trackedgames", "\"remove\" \"huc\"")
+        + HelpExampleRpc ("trackedgames", "")
+      );
+
+#if ENABLE_ZMQ
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VSTR});
+
+  auto* notifier = GetGameBlocksNotifier ();
+
+  if (request.params.size () == 0)
+    return notifier->GetTrackedGames ();
+
+  const std::string& cmd = request.params[0].get_str ();
+  const std::string& gameid = request.params[1].get_str ();
+
+  if (cmd == "add")
+    notifier->AddTrackedGame (gameid);
+  else if (cmd == "remove")
+    notifier->RemoveTrackedGame (gameid);
+  else
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "invalid command for trackedgames: " + cmd);
+
+  return NullUniValue;
 #else // ENABLE_ZMQ
   throw JSONRPCError (RPC_MISC_ERROR, "ZMQ is not built into Xaya");
 #endif // ENABLE_ZMQ
@@ -293,6 +361,7 @@ const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
     { "game",               "game_sendupdates",       &game_sendupdates,       {"gameid","fromblock","toblock"} },
+    { "game",               "trackedgames",           &trackedgames,           {"command","gameid"} },
 };
 
 } // anonymous namespace
