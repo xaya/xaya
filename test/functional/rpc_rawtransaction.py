@@ -60,9 +60,8 @@ class RawTransactionsTest(BitcoinTestFramework):
         self.nodes[0].generate(5)
         self.sync_all()
 
-        self.log.info('Test getrawtransaction on genesis block coinbase returns an error')
-        block = self.nodes[0].getblock(self.nodes[0].getblockhash(0))
-        assert_raises_rpc_error(-5, "The genesis block coinbase is not considered an ordinary transaction", self.nodes[0].getrawtransaction, block['merkleroot'])
+        # Here, upstream code checks that getrawtransactions throws an error
+        # for the genesis coinbase tx.  This is perfectly fine in Xaya.
 
         self.log.info('Check parameter types and required parameters of createrawtransaction')
         # Test `createrawtransaction` required parameters

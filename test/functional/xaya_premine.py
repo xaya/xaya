@@ -26,6 +26,7 @@ class PremineTest(BitcoinTestFramework):
 
   def run_test(self):
     node = self.nodes[0]
+    node.importaddress (PREMINE_ADDRESS)
 
     # Find basic data about the genesis coinbase tx.
     genesis = node.getblock (node.getblockhash (0), 2)
@@ -36,6 +37,12 @@ class PremineTest(BitcoinTestFramework):
     out = tx['vout'][0]
     assert_equal (out['value'], PREMINE_VALUE)
     assert_equal (out['scriptPubKey']['addresses'], [PREMINE_ADDRESS])
+
+    # Accessing it should work normally (upstream Bitcoin/Namecoin have a
+    # special check that disallows the genesis coinbase with getrawtransaction,
+    # as it is not spendable).
+    node.gettransaction (txid)
+    assert_equal (node.getrawtransaction (txid), tx['hex'])
 
     # The coinbase txout should be in the UTXO set.
     utxo = node.gettxout (txid, 0)
