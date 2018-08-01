@@ -31,6 +31,14 @@ enum class NameEncoding
   HEX,
 };
 
+/* Accessors to the "default" encodings as configured by startup options.  */
+NameEncoding ConfiguredNameEncoding ();
+NameEncoding ConfiguredValueEncoding ();
+
+/* The options defaults for the encodings.  */
+static constexpr NameEncoding DEFAULT_NAME_ENCODING = NameEncoding::ASCII;
+static constexpr NameEncoding DEFAULT_VALUE_ENCODING = NameEncoding::ASCII;
+
 /* Utility functions to convert encodings to/from the enum.  They throw
    std::invalid_argument if the conversion fails.  */
 NameEncoding EncodingFromString (const std::string& str);

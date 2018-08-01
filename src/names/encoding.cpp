@@ -4,13 +4,49 @@
 
 #include <names/encoding.h>
 
+#include <logging.h>
 #include <names/common.h>
+#include <util.h>
 #include <utilstrencodings.h>
 
 #include <univalue.h>
 
 #include <cassert>
 #include <sstream>
+
+namespace
+{
+
+NameEncoding
+EncodingFromOptions (const std::string& option, const NameEncoding defaultVal)
+{
+  const std::string value
+      = gArgs.GetArg (option, EncodingToString (defaultVal));
+  try
+    {
+      return EncodingFromString (value);
+    }
+  catch (const std::invalid_argument& exc)
+    {
+      LogPrintf ("Invalid value for %s:\n  %s\n  falling back to default %s\n",
+                 option, exc.what (), EncodingToString (defaultVal));
+      return defaultVal;
+    }
+}
+
+} // anonymous namespace
+
+NameEncoding
+ConfiguredNameEncoding ()
+{
+  return EncodingFromOptions ("-nameencoding", DEFAULT_NAME_ENCODING);
+}
+
+NameEncoding
+ConfiguredValueEncoding ()
+{
+  return EncodingFromOptions ("-valueencoding", DEFAULT_VALUE_ENCODING);
+}
 
 NameEncoding
 EncodingFromString (const std::string& str)

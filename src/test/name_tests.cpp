@@ -14,6 +14,7 @@
 #include <txdb.h>
 #include <txmempool.h>
 #include <undo.h>
+#include <util.h>
 #include <validation.h>
 
 #include <test/test_bitcoin.h>
@@ -1077,6 +1078,24 @@ BOOST_AUTO_TEST_CASE (encoding_to_from_string)
   BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::HEX), "hex");
 
   BOOST_CHECK_THROW (EncodingFromString ("invalid"), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE (encoding_args)
+{
+  BOOST_CHECK (ConfiguredNameEncoding () == DEFAULT_NAME_ENCODING);
+  BOOST_CHECK (ConfiguredValueEncoding () == DEFAULT_VALUE_ENCODING);
+
+  gArgs.ForceSetArg ("-nameencoding", "utf8");
+  BOOST_CHECK (ConfiguredNameEncoding () == NameEncoding::UTF8);
+  BOOST_CHECK (ConfiguredValueEncoding () == DEFAULT_VALUE_ENCODING);
+
+  gArgs.ForceSetArg ("-valueencoding", "hex");
+  BOOST_CHECK (ConfiguredNameEncoding () == NameEncoding::UTF8);
+  BOOST_CHECK (ConfiguredValueEncoding () == NameEncoding::HEX);
+
+  gArgs.ForceSetArg ("-nameencoding", "invalid");
+  BOOST_CHECK (ConfiguredNameEncoding () == DEFAULT_NAME_ENCODING);
+  BOOST_CHECK (ConfiguredValueEncoding () == NameEncoding::HEX);
 }
 
 namespace
