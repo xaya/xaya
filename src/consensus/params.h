@@ -24,6 +24,9 @@ class ConsensusRules
 {
 public:
 
+    /* Provide a virtual destructor since we have virtual methods.  */
+    virtual ~ConsensusRules() = default;
+
     /* Return the expiration depth for names at the given height.  */
     virtual unsigned NameExpirationDepth(unsigned nHeight) const = 0;
 
