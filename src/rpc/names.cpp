@@ -21,13 +21,14 @@
 # include <wallet/wallet.h>
 #endif
 
+#include <univalue.h>
+
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
 #include <cassert>
 #include <memory>
 #include <sstream>
-
-#include <univalue.h>
+#include <stdexcept>
 
 /**
  * Utility routine to construct a "name info" object to return.  This is used
@@ -107,6 +108,21 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
   data.push_back (Pair ("ismine", isMine));
 }
 #endif
+
+valtype
+DecodeNameFromRPCOrThrow (const UniValue& val, const NameEncoding enc)
+{
+  try
+    {
+      return DecodeName (val.get_str (), enc);
+    }
+  catch (const InvalidNameString& exc)
+    {
+      std::ostringstream msg;
+      msg << "Name/value is invalid for encoding " << EncodingToString (enc);
+      throw JSONRPCError (RPC_NAME_INVALID_ENCODING, msg.str ());
+    }
+}
 
 namespace
 {
@@ -286,8 +302,8 @@ name_show (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
 
   CNameData data;
   {
@@ -295,7 +311,7 @@ name_show (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << nameStr << "'";
+        msg << "name not found: '" << ValtypeToString (name) << "'";
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
   }
@@ -338,8 +354,8 @@ name_history (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
 
   CNameData data;
   CNameHistory history;
@@ -350,7 +366,7 @@ name_history (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << nameStr << "'";
+        msg << "name not found: '" << ValtypeToString (name) << "'";
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
 
@@ -403,7 +419,8 @@ name_scan (const JSONRPCRequest& request)
 
   valtype start;
   if (request.params.size () >= 1)
-    start = ValtypeFromString (request.params[0].get_str ());
+    start = DecodeNameFromRPCOrThrow (request.params[0],
+                                      ConfiguredNameEncoding ());
 
   int count = 500;
   if (request.params.size () >= 2)
@@ -597,9 +614,10 @@ name_pending (const JSONRPCRequest& request)
     mempool.queryHashes (txHashes);
   else
     {
-      const std::string name = request.params[0].get_str ();
-      const valtype vchName = ValtypeFromString (name);
-      const uint256 txid = mempool.getTxForName (vchName);
+      const valtype name
+          = DecodeNameFromRPCOrThrow (request.params[0],
+                                      ConfiguredNameEncoding ());
+      const uint256 txid = mempool.getTxForName (name);
       if (!txid.IsNull ())
         txHashes.push_back (txid);
     }
@@ -730,7 +748,8 @@ namerawtransaction (const JSONRPCRequest& request)
         }
 
       const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
+          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"),
+                                      ConfiguredNameEncoding ());
 
       mtx.vout[nOut].scriptPubKey
         = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, name, rand);
@@ -752,9 +771,11 @@ namerawtransaction (const JSONRPCRequest& request)
       const valtype rand = ParseHex (randStr);
 
       const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
+          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"),
+                                      ConfiguredNameEncoding ());
       const valtype value
-        = ValtypeFromString (find_value (nameOp, "value").get_str ());
+          = DecodeNameFromRPCOrThrow (find_value (nameOp, "value"),
+                                      ConfiguredValueEncoding ());
 
       mtx.vout[nOut].scriptPubKey
         = CNameScript::buildNameFirstupdate (mtx.vout[nOut].scriptPubKey,
@@ -770,9 +791,11 @@ namerawtransaction (const JSONRPCRequest& request)
       );
 
       const valtype name
-        = ValtypeFromString (find_value (nameOp, "name").get_str ());
+          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"),
+                                      ConfiguredNameEncoding ());
       const valtype value
-        = ValtypeFromString (find_value (nameOp, "value").get_str ());
+          = DecodeNameFromRPCOrThrow (find_value (nameOp, "value"),
+                                      ConfiguredValueEncoding ());
 
       mtx.vout[nOut].scriptPubKey
         = CNameScript::buildNameUpdate (mtx.vout[nOut].scriptPubKey,

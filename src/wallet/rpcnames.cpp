@@ -8,6 +8,7 @@
 #include <init.h>
 #include <key_io.h>
 #include <names/common.h>
+#include <names/encoding.h>
 #include <names/main.h>
 #include <net.h>
 #include <primitives/transaction.h>
@@ -269,8 +270,9 @@ name_list (const JSONRPCRequest& request)
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
   valtype nameFilter;
-  if (request.params.size () == 1)
-    nameFilter = ValtypeFromString (request.params[0].get_str ());
+  if (request.params.size () >= 1)
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0],
+                                           ConfiguredNameEncoding ());
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -374,8 +376,8 @@ name_new (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -418,7 +420,7 @@ name_new (const JSONRPCRequest& request)
   const std::string randStr = HexStr (rand);
   const std::string txid = tx->GetHash ().GetHex ();
   LogPrintf ("name_new: name=%s, rand=%s, tx=%s\n",
-             nameStr.c_str (), randStr.c_str (), txid.c_str ());
+             ValtypeToString (name), randStr.c_str (), txid.c_str ());
 
   UniValue res(UniValue::VARR);
   res.push_back (txid);
@@ -516,8 +518,8 @@ name_firstupdate (const JSONRPCRequest& request)
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
                  UniValue::VOBJ});
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -527,8 +529,8 @@ name_firstupdate (const JSONRPCRequest& request)
 
   const uint256 prevTxid = ParseHashV (request.params[2], "txid");
 
-  const std::string valueStr = request.params[3].get_str ();
-  const valtype value = ValtypeFromString (valueStr);
+  const valtype value = DecodeNameFromRPCOrThrow (request.params[3],
+                                                  ConfiguredValueEncoding ());
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
@@ -620,13 +622,13 @@ name_update (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
+                                                 ConfiguredNameEncoding ());
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const std::string valueStr = request.params[1].get_str ();
-  const valtype value = ValtypeFromString (valueStr);
+  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
+                                                  ConfiguredValueEncoding ());
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
@@ -726,14 +728,14 @@ sendtoname (const JSONRPCRequest& request)
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
+                                                 ConfiguredNameEncoding ());
 
   CNameData data;
   if (!pcoinsTip->GetName (name, data))
     {
       std::ostringstream msg;
-      msg << "name not found: '" << nameStr << "'";
+      msg << "name not found: '" << ValtypeToString (name) << "'";
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
   if (data.isExpired ())

@@ -5,7 +5,6 @@
 """Test the REST API."""
 
 import binascii
-from codecs import encode
 from decimal import Decimal
 from enum import Enum
 from io import BytesIO
@@ -20,6 +19,7 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_greater_than_or_equal,
+    bytes_to_hex_str,
     hex_str_to_bytes,
 )
 
@@ -44,7 +44,7 @@ class RESTTest (BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [["-rest"], []]
+        self.extra_args = [["-rest", "-valueencoding=hex"], []]
 
     def test_rest_request(self, uri, http_method='GET', req_type=ReqType.JSON, body='', status=200, ret_type=RetType.JSON):
         rest_uri = '/rest' + uri
@@ -315,9 +315,10 @@ class RESTTest (BitcoinTestFramework):
         name = "d/some weird.name++"
         binData = bytearray ([0, 1]).decode ("ascii")
         value = "correct value\nwith newlines\nand binary: " + binData
+        hexValue = bytes_to_hex_str (value.encode ('ascii'))
         newData = self.nodes[0].name_new(name)
         self.nodes[0].generate(10)
-        self.nodes[0].name_firstupdate(name, newData[1], newData[0], value)
+        self.nodes[0].name_firstupdate(name, newData[1], newData[0], hexValue)
         self.nodes[0].generate(5)
         nameData = self.nodes[0].name_show(name)
         assert_equal(nameData['name'], name)
@@ -345,8 +346,7 @@ class RESTTest (BitcoinTestFramework):
             # Query hex value.
             res = self.test_rest_request (query, req_type=ReqType.HEX,
                                           ret_type=RetType.BYTES)
-            hexValue = binascii.hexlify(bytes(value, "ascii")) + b"\n"
-            assert_equal(res, hexValue)
+            assert_equal(res.decode ('ascii'), hexValue + "\n")
 
         # Check invalid encoded names.
         invalid = ['%', '%2', '%2x', '%x2']

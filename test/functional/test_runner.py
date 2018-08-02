@@ -165,6 +165,7 @@ BASE_SCRIPTS = [
     'auxpow_mining.py --segwit',
 
     # name tests
+    'name_encodings.py',
     'name_expiration.py',
     'name_immature_inputs.py',
     'name_ismine.py',

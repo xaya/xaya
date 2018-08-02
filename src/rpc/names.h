@@ -7,6 +7,8 @@
 
 #include <script/script.h>
 
+#include <names/encoding.h>
+
 #include <sstream>
 #include <string>
 
@@ -26,6 +28,12 @@ void addOwnershipInfo (const CScript& addr,
                        const CWallet* pwallet,
                        UniValue& data);
 #endif
+
+/**
+ * Decodes a name/value given through the RPC interface and throws a
+ * JSONRPCError if it is invalid for the requested encoding.
+ */
+valtype DecodeNameFromRPCOrThrow (const UniValue& val, NameEncoding enc);
 
 /**
  * Builder class for help texts describing JSON objects that share a common
