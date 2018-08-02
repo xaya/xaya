@@ -46,3 +46,9 @@
   on the new commands `namenew`, ` namefirstupdate` and `nameupdate`.  For the
   exact usage, see the
   [proposal](https://github.com/namecoin/namecoin-core/issues/147#issuecomment-402429258).
+
+- The "magic string" used for `signmessage` and `verifymessage` has been updated
+  to be specific to Namecoin (previously, the one from Bitcoin was used).  This
+  means that messages signed previously won't validate anymore.  It is, however,
+  still possible to verify them customly; so old signatures can still be used
+  as proofs in the future if necessary.
