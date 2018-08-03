@@ -5,7 +5,7 @@
 
 #include <chain.h>
 
-#include "validation.h"
+#include <validation.h>
 
 /* Moved here from the header, because we need auxpow and the logic
    becomes more involved.  */
