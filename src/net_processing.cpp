@@ -1363,6 +1363,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
         nSize += GetSerializeSize(header, SER_NETWORK, PROTOCOL_VERSION);
         if (pfrom->nVersion >= SIZE_HEADERS_LIMIT_VERSION
               && nSize > MAX_HEADERS_SIZE) {
+            LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 20);
             return error("headers message size = %u", nSize);
         }
