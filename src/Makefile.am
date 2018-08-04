@@ -236,7 +236,6 @@ libbitcoin_server_a_SOURCES = \
   dbwrapper.cpp \
   merkleblock.cpp \
   miner.cpp \
-  names/encoding.cpp \
   names/main.cpp \
   net.cpp \
   net_processing.cpp \
@@ -400,6 +399,7 @@ libbitcoin_common_a_SOURCES = \
   key_io.cpp \
   keystore.cpp \
   names/common.cpp \
+  names/encoding.cpp \
   netaddress.cpp \
   netbase.cpp \
   policy/feerate.cpp \
