@@ -161,7 +161,7 @@ DecodeName (const std::string& str, const NameEncoding enc)
     {
     case NameEncoding::ASCII:
     case NameEncoding::UTF8:
-      return ValtypeFromString (str);
+      return valtype (str.begin (), str.end ());
 
     case NameEncoding::HEX:
       return ParseHex (str);

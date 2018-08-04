@@ -20,17 +20,6 @@ class CDBBatch;
 extern bool fNameHistory;
 
 /**
- * Construct a valtype (e. g., name) from a string.
- * @param str The string input.
- * @return The corresponding valtype.
- */
-inline valtype
-ValtypeFromString (const std::string& str)
-{
-  return valtype (str.begin (), str.end ());
-}
-
-/**
  * Convert a valtype to a string.
  * @param val The valtype value.
  * @return Corresponding string.

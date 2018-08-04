@@ -31,11 +31,14 @@
    the test-suite name works with grep as done in the Makefile.  */
 BOOST_FIXTURE_TEST_SUITE(name_tests, TestingSetup)
 
+namespace
+{
+
 /**
  * Utility function that returns a sample address script to use in the tests.
  * @return A script that represents a simple address.
  */
-static CScript
+CScript
 getTestAddress ()
 {
   const CTxDestination dest
@@ -44,6 +47,8 @@ getTestAddress ()
 
   return GetScriptForDestination (dest);
 }
+
+} // anonymous namespace
 
 /* ************************************************************************** */
 
@@ -54,8 +59,8 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   BOOST_CHECK (!opNone.isNameOp ());
   BOOST_CHECK (opNone.getAddress () == addr);
 
-  const valtype name = ValtypeFromString ("my-cool-name");
-  const valtype value = ValtypeFromString ("42!");
+  const valtype name = DecodeName ("my-cool-name", NameEncoding::ASCII);
+  const valtype value = DecodeName ("42!", NameEncoding::ASCII);
 
   const valtype rand(20, 'x');
   valtype toHash(rand);
@@ -95,9 +100,9 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 BOOST_AUTO_TEST_CASE (name_database)
 {
-  const valtype name1 = ValtypeFromString ("database-test-name-1");
-  const valtype name2 = ValtypeFromString ("database-test-name-2");
-  const valtype value = ValtypeFromString ("my-value");
+  const valtype name1 = DecodeName ("db-test-name-1", NameEncoding::ASCII);
+  const valtype name2 = DecodeName ("db-test-name-2", NameEncoding::ASCII);
+  const valtype value = DecodeName ("my-value", NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
 
   /* Choose two height values.  To verify that serialisation of the
@@ -317,8 +322,8 @@ CNameData
 NameIterationTester::getNextData ()
 {
   const CScript addr = getTestAddress ();
-  const valtype name = ValtypeFromString ("dummy");
-  const valtype value = ValtypeFromString ("abc");
+  const valtype name = DecodeName ("dummy", NameEncoding::ASCII);
+  const valtype value = DecodeName ("abc", NameEncoding::ASCII);
   const CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
   const CNameScript nameOp(updateScript);
 
@@ -341,7 +346,7 @@ NameIterationTester::verify (const CCoinsView& view) const
   /* Seek the iterator to the end first for "maximum confusion".  This ensures
      that seeking to valtype() works.  */
   std::unique_ptr<CNameIterator> iter(view.IterateNames ());
-  const valtype end = ValtypeFromString ("zzzzzzzzzzzzzzzz");
+  const valtype end = DecodeName ("zzzzzzzzzzzzzzzz", NameEncoding::ASCII);
   {
     valtype name;
     CNameData nameData;
@@ -414,7 +419,7 @@ NameIterationTester::getNamesFromIterator (CNameIterator& iter)
 void
 NameIterationTester::add (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
   const CNameData testData = getNextData ();
 
   assert (data.count (name) == 0);
@@ -427,7 +432,7 @@ NameIterationTester::add (const std::string& n)
 void
 NameIterationTester::update (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
   const CNameData testData = getNextData ();
 
   assert (data.count (name) == 1);
@@ -440,7 +445,7 @@ NameIterationTester::update (const std::string& n)
 void
 NameIterationTester::remove (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
 
   assert (data.count (name) == 1);
   data.erase (name);
@@ -505,9 +510,9 @@ addTestCoin (const CScript& scr, unsigned nHeight, CCoinsViewCache& view)
 
 BOOST_AUTO_TEST_CASE (name_tx_verification)
 {
-  const valtype name1 = ValtypeFromString ("test-name-1");
-  const valtype name2 = ValtypeFromString ("test-name-2");
-  const valtype value = ValtypeFromString ("my-value");
+  const valtype name1 = DecodeName ("test-name-1", NameEncoding::ASCII);
+  const valtype name2 = DecodeName ("test-name-2", NameEncoding::ASCII);
+  const valtype value = DecodeName ("my-value", NameEncoding::ASCII);
 
   const valtype tooLongName(256, 'x');
   const valtype tooLongValue(1024, 'x');
@@ -700,9 +705,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   /* Enable name history to test this on the go.  */
   fNameHistory = true;
 
-  const valtype name = ValtypeFromString ("database-test-name");
-  const valtype value1 = ValtypeFromString ("old-value");
-  const valtype value2 = ValtypeFromString ("new-value");
+  const valtype name = DecodeName ("db-test-name", NameEncoding::ASCII);
+  const valtype value1 = DecodeName ("old-value", NameEncoding::ASCII);
+  const valtype value2 = DecodeName ("new-value", NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
 
   CCoinsView dummyView;
@@ -771,9 +776,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
 
 BOOST_AUTO_TEST_CASE (name_expire_utxo)
 {
-  const valtype name1 = ValtypeFromString ("test-name-1");
-  const valtype name2 = ValtypeFromString ("test-name-2");
-  const valtype value = ValtypeFromString ("value");
+  const valtype name1 = DecodeName ("test-name-1", NameEncoding::ASCII);
+  const valtype name2 = DecodeName ("test-name-2", NameEncoding::ASCII);
+  const valtype value = DecodeName ("value", NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
   
   const CScript upd1 = CNameScript::buildNameUpdate (addr, name1, value);
@@ -863,11 +868,11 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   LOCK(mempool.cs);
   mempool.clear ();
 
-  const valtype nameReg = ValtypeFromString ("name-reg");
-  const valtype nameUpd = ValtypeFromString ("name-upd");
-  const valtype value = ValtypeFromString ("value");
-  const valtype valueA = ValtypeFromString ("value-a");
-  const valtype valueB = ValtypeFromString ("value-b");
+  const valtype nameReg = DecodeName ("name-reg", NameEncoding::ASCII);
+  const valtype nameUpd = DecodeName ("name-upd", NameEncoding::ASCII);
+  const valtype value = DecodeName ("value", NameEncoding::ASCII);
+  const valtype valueA = DecodeName ("value-a", NameEncoding::ASCII);
+  const valtype valueB = DecodeName ("value-b", NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
   const CScript addr2 = (CScript (addr) << OP_RETURN);
 
