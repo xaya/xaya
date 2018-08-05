@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <string>
 
+class UniValue;
+
 /**
  * Enum for the possible encodings of names/values in the RPC interface.
  */
@@ -78,5 +80,14 @@ valtype DecodeName (const std::string& str, NameEncoding enc);
  * the string in hex.
  */
 std::string EncodeNameForMessage (const valtype& data);
+
+/**
+ * Adds an encoded name or value to the UniValue object with the given key.
+ * Also adds "key_encoding" with the chosen encoding's name.  If the data
+ * cannot be represented with the encoding, a "key_error" field is added
+ * instead of "key" itself.
+ */
+void AddEncodedNameToUniv (UniValue& obj, const std::string& key,
+                           const valtype& data, NameEncoding enc);
 
 #endif // H_BITCOIN_NAMES_ENCODING

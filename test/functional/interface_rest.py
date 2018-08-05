@@ -321,8 +321,10 @@ class RESTTest (BitcoinTestFramework):
         self.nodes[0].name_firstupdate(name, newData[1], newData[0], hexValue)
         self.nodes[0].generate(5)
         nameData = self.nodes[0].name_show(name)
+        assert_equal(nameData['name_encoding'], 'ascii')
         assert_equal(nameData['name'], name)
-        assert_equal(nameData['value'], value)
+        assert_equal(nameData['value_encoding'], 'hex')
+        assert_equal(nameData['value'], hexValue)
         # The REST interface explicitly does not include the 'ismine' field
         # that the RPC interface has.  Thus remove the field for the comparison
         # below.

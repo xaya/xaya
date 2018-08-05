@@ -5,7 +5,6 @@
 #include <names/encoding.h>
 
 #include <logging.h>
-#include <names/common.h>
 #include <util.h>
 #include <utilstrencodings.h>
 
@@ -140,7 +139,7 @@ EncodeName (const valtype& data, const NameEncoding enc)
     {
     case NameEncoding::ASCII:
     case NameEncoding::UTF8:
-      res = ValtypeToString (data);
+      res = std::string (data.begin (), data.end ());
       break;
 
     case NameEncoding::HEX:
@@ -181,4 +180,19 @@ EncodeNameForMessage (const valtype& data)
     {
       return "0x" + EncodeName (data, NameEncoding::HEX);
     }
+}
+
+void
+AddEncodedNameToUniv (UniValue& obj, const std::string& key,
+                      const valtype& data, const NameEncoding enc)
+{
+  try
+    {
+      obj.pushKV (key, EncodeName (data, enc));
+    }
+  catch (const InvalidNameString& exc)
+    {
+      obj.pushKV (key + "_error", "invalid data for " + EncodingToString (enc));
+    }
+  obj.pushKV (key + "_encoding", EncodingToString (enc));
 }

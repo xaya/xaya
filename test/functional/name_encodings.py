@@ -100,15 +100,18 @@ class NameEncodingsTest (NameTestFramework):
 
     data = self.node.name_pending (name)
     assert_equal (len (data), 1)
-    # FIXME: Reenable once the output is also in the requested encoding.
-    #assert_equal (data[0]['name'], name)
-    #assert_equal (data[0]['value'], value)
+    assert_equal (data[0]['name_encoding'], self.nameEncoding)
+    assert_equal (data[0]['name'], name)
+    assert_equal (data[0]['value_encoding'], self.valueEncoding)
+    assert_equal (data[0]['value'], value)
     assert_equal (data[0]['txid'], txid)
 
     self.node.generate (1)
     data = self.node.name_show (name)
-    #assert_equal (data['name'], name)
-    #assert_equal (data['value'], value)
+    assert_equal (data['name_encoding'], self.nameEncoding)
+    assert_equal (data['name'], name)
+    assert_equal (data['value_encoding'], self.valueEncoding)
+    assert_equal (data['value'], value)
     assert_equal (data['txid'], txid)
 
     assert_equal (self.node.name_history (name)[-1], data)
@@ -309,21 +312,19 @@ class NameEncodingsTest (NameTestFramework):
     self.log.info ("Testing valid names...")
     self.validName ("d/abc", "ascii")
     self.validName ("d/\x00äöü\n", "utf8")
-    # FIXME: Use some hex that is invalid UTF-8 once the output-side has been
-    # fixed to not write invalid UTF-8 JSON that then fails in the RPC client.
-    self.validName ("00117f", "hex")
+    self.validName ("0011ff", "hex")
 
     self.log.info ("Testing valid values...")
     self.validValue ('{"foo":"bar"}', "ascii")
     self.validValue ('{"foo":"\x00äöü\n"}', "utf8")
-    self.validValue (strToHex ('{"foo":"\x00\x7f"}'), "hex")
+    self.validValue (strToHex ('{"foo":"\x00\xff"}'), "hex")
 
     self.log.info ("Testing invalid names...")
     self.invalidName ("d/\n", "ascii")
     self.invalidName ("d/äöü", "ascii")
     self.invalidName ("d/\xff", "ascii")
-    # We cannot actually test invalid UTF-8, because a string with arbitrary
-    # bytes gets UTF-8 encoded when sending to JSON RPC.
+    # We cannot actually test invalid UTF-8 on the "input side", because a
+    # string with arbitrary bytes gets UTF-8 encoded when sending to JSON RPC.
     self.invalidName ("", "hex")
     self.invalidName ("d", "hex")
     self.invalidName ("xx", "hex")
@@ -336,7 +337,80 @@ class NameEncodingsTest (NameTestFramework):
     self.invalidValue ('d', "hex")
     self.invalidValue ('xx', "hex")
 
+    self.test_outputSide ()
     self.test_walletTx ()
+
+  def test_outputSide (self):
+    """
+    Tests encodings purely on the output-side.  This test registers some
+    names/values using hex encoding, and then verifies how those names look like
+    when queried with another encoding.
+    """
+
+    self.log.info ("Different encodings on the output side...")
+
+    nameAscii = self.uniqueName ("d/test", "ascii")
+    valueAscii = "{}"
+    nameHex = self.uniqueName ("0011ff", "hex")
+    valueHex = strToHex ('{"msg":"\x00\xff"}')
+
+    self.setEncodings (nameEnc="hex", valueEnc="hex")
+    newAscii = self.node.name_new (strToHex (nameAscii))
+    newHex = self.node.name_new (nameHex)
+    self.node.generate (10)
+    txidAscii = self.firstupdateName (1, strToHex (nameAscii), newAscii,
+                                      valueHex)
+    txidHex = self.firstupdateName (1, nameHex, newHex, strToHex (valueAscii))
+    self.node.generate (5)
+
+    # Test name_show with ASCII encoding.
+    self.setEncodings (nameEnc="ascii", valueEnc="ascii")
+    data = self.node.name_show (nameAscii)
+    assert_equal (data['name_encoding'], 'ascii')
+    assert_equal (data['name'], nameAscii)
+    assert 'name_error' not in data
+    assert_equal (data['value_encoding'], 'ascii')
+    assert 'value' not in data
+    assert_equal (data['value_error'], 'invalid data for ascii')
+    assert_equal (data['txid'], txidAscii)
+
+    # Test the non-ASCII name in name_scan output.
+    found = False
+    for data in self.node.name_scan ():
+      if data['txid'] != txidHex:
+        continue
+      assert not found
+      found = True
+      assert_equal (data['name_encoding'], 'ascii')
+      assert 'name' not in data
+      assert_equal (data['name_error'], 'invalid data for ascii')
+      assert_equal (data['value_encoding'], 'ascii')
+      assert_equal (data['value'], valueAscii)
+      assert 'value_error' not in data
+    assert found
+
+    # Test script and transaction decoding.
+    txAscii = self.node.getrawtransaction (txidAscii, 1)
+    found = False
+    for out in txAscii['vout']:
+      if not 'nameOp' in out['scriptPubKey']:
+        continue
+
+      assert not found
+      found = True
+
+      op = out['scriptPubKey']['nameOp']
+      assert_equal (op['op'], 'name_firstupdate')
+      assert_equal (op['name_encoding'], 'ascii')
+      assert_equal (op['name'], nameAscii)
+      assert 'name_error' not in op
+      assert_equal (op['value_encoding'], 'ascii')
+      assert 'value' not in op
+      assert_equal (op['value_error'], 'invalid data for ascii')
+
+      script = self.node.decodescript (out['scriptPubKey']['hex'])
+      assert_equal (script['nameOp'], op)
+    assert found
 
   def testNameForWalletTx (self, baseName, enc, msgFmt):
     """

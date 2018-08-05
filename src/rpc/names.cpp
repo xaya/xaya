@@ -39,8 +39,8 @@ getNameInfo (const valtype& name, const valtype& value,
              const COutPoint& outp, const CScript& addr)
 {
   UniValue obj(UniValue::VOBJ);
-  obj.pushKV ("name", ValtypeToString (name));
-  obj.pushKV ("value", ValtypeToString (value));
+  AddEncodedNameToUniv (obj, "name", name, ConfiguredNameEncoding ());
+  AddEncodedNameToUniv (obj, "value", value, ConfiguredValueEncoding ());
   obj.pushKV ("txid", outp.hash.GetHex ());
   obj.pushKV ("vout", static_cast<int> (outp.n));
 

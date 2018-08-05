@@ -19,17 +19,6 @@ class CDBBatch;
 /** Whether or not name history is enabled.  */
 extern bool fNameHistory;
 
-/**
- * Convert a valtype to a string.
- * @param val The valtype value.
- * @return Corresponding string.
- */
-inline std::string
-ValtypeToString (const valtype& val)
-{
-  return std::string (val.begin (), val.end ());
-}
-
 /* ************************************************************************** */
 /* CNameData.  */
 
