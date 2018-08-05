@@ -306,16 +306,19 @@ class NameEncodingsTest (NameTestFramework):
     # But since we have the utility methods available, we might just as well
     # call them with different values instead of just once or twice.
 
+    self.log.info ("Testing valid names...")
     self.validName ("d/abc", "ascii")
     self.validName ("d/\x00äöü\n", "utf8")
     # FIXME: Use some hex that is invalid UTF-8 once the output-side has been
     # fixed to not write invalid UTF-8 JSON that then fails in the RPC client.
     self.validName ("00117f", "hex")
 
+    self.log.info ("Testing valid values...")
     self.validValue ('{"foo":"bar"}', "ascii")
     self.validValue ('{"foo":"\x00äöü\n"}', "utf8")
     self.validValue (strToHex ('{"foo":"\x00\x7f"}'), "hex")
 
+    self.log.info ("Testing invalid names...")
     self.invalidName ("d/\n", "ascii")
     self.invalidName ("d/äöü", "ascii")
     self.invalidName ("d/\xff", "ascii")
@@ -325,12 +328,57 @@ class NameEncodingsTest (NameTestFramework):
     self.invalidName ("d", "hex")
     self.invalidName ("xx", "hex")
 
+    self.log.info ("Testing invalid values...")
     self.invalidValue ('{"foo":"\n"}', "ascii")
     self.invalidValue ('{"foo":"äöü"}', "ascii")
     self.invalidValue ('{"foo":"\xff"}', "ascii")
     self.invalidValue ('', "hex")
     self.invalidValue ('d', "hex")
     self.invalidValue ('xx', "hex")
+
+    self.test_walletTx ()
+
+  def testNameForWalletTx (self, baseName, enc, msgFmt):
+    """
+    Registers a name and then verifies that the value returned from
+    gettransaction / listtransactions as "name operation" matches
+    what we expect.
+
+    The expected msgFmt is a format string where the actually used name
+    is filled in for %s.
+    """
+
+    self.setEncodings (nameEnc=enc)
+    name = self.uniqueName (baseName, enc)
+    updMsg = msgFmt % name
+
+    new = self.node.name_new (name)
+    self.node.generate (12)
+    txid = self.firstupdateName (1, name, new, self.value)
+    self.node.generate (1)
+
+    data = self.node.gettransaction (txid)
+    assert_equal (len (data['details']), 1)
+    assert_equal (data['details'][0]['name'], "update: %s" % updMsg)
+
+    found = False
+    for tx in self.node.listtransactions ():
+      if tx['txid'] != txid:
+        continue
+      assert not found
+      found = True
+      assert_equal (tx['name'], "update: %s" % updMsg)
+    assert found
+
+  def test_walletTx (self):
+    """
+    Tests the name displayed in listtransactions / gettransaction in the
+    wallet when it is a name update.
+    """
+
+    self.log.info ("Testing name update in wallet...")
+    self.testNameForWalletTx ("d/test", "ascii", "'%s'")
+    self.testNameForWalletTx ("00ff", "hex", "0x%s")
 
 
 if __name__ == '__main__':

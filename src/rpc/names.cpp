@@ -311,7 +311,7 @@ name_show (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << ValtypeToString (name) << "'";
+        msg << "name not found: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
   }
@@ -366,7 +366,7 @@ name_history (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << ValtypeToString (name) << "'";
+        msg << "name not found: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
 

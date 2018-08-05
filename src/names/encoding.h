@@ -71,4 +71,12 @@ std::string EncodeName (const valtype& data, NameEncoding enc);
  */
 valtype DecodeName (const std::string& str, NameEncoding enc);
 
+/**
+ * Encodes a name or value to a string that is meant to be printed to logs
+ * or returned as part of a larger message (e.g. in the "listtransactions"
+ * description).  This converts to ASCII if possible and otherwise returns
+ * the string in hex.
+ */
+std::string EncodeNameForMessage (const valtype& data);
+
 #endif // H_BITCOIN_NAMES_ENCODING

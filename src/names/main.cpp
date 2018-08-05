@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2018 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,8 +7,9 @@
 #include <chainparams.h>
 #include <coins.h>
 #include <consensus/validation.h>
-#include <hash.h>
 #include <dbwrapper.h>
+#include <hash.h>
+#include <names/encoding.h>
 #include <script/interpreter.h>
 #include <script/names.h>
 #include <txmempool.h>
@@ -178,7 +179,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired)
   for (const auto& name : unexpired)
     {
       LogPrint (BCLog::NAMES, "unexpired: %s, mempool: %u\n",
-                ValtypeToString (name).c_str (), mapNameRegs.count (name));
+                EncodeNameForMessage (name), mapNameRegs.count (name));
 
       const NameTxMap::const_iterator mit = mapNameRegs.find (name);
       if (mit != mapNameRegs.end ())
@@ -199,7 +200,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
   for (const auto& name : expired)
     {
       LogPrint (BCLog::NAMES, "expired: %s, mempool: %u\n",
-                ValtypeToString (name).c_str (), mapNameUpdates.count (name));
+                EncodeNameForMessage (name), mapNameUpdates.count (name));
 
       const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
       if (mit != mapNameUpdates.end ())
@@ -611,7 +612,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
         {
           const valtype& name = op.getOpName ();
           LogPrint (BCLog::NAMES, "Updating name at height %d: %s\n",
-                    nHeight, ValtypeToString (name).c_str ());
+                    nHeight, EncodeNameForMessage (name));
 
           CNameTxUndo opUndo;
           opUndo.fromOldState (name, view);
@@ -670,27 +671,28 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
   for (std::set<valtype>::const_iterator i = names.begin ();
        i != names.end (); ++i)
     {
-      const std::string nameStr = ValtypeToString (*i);
+      const std::string nameStr = EncodeNameForMessage (*i);
 
       CNameData data;
       if (!view.GetName (*i, data))
-        return error ("%s : name '%s' not found in the database",
-                      __func__, nameStr.c_str ());
+        return error ("%s : name %s not found in the database",
+                      __func__, nameStr);
       if (!data.isExpired (nHeight))
-        return error ("%s : name '%s' is not actually expired",
-                      __func__, nameStr.c_str ());
+        return error ("%s : name %s is not actually expired",
+                      __func__, nameStr);
 
       /* Special rule:  When d/postmortem expires (the name used by
          libcoin in the name-stealing demonstration), it's coin
          is already spent.  Ignore.  */
-      if (nHeight == 175868 && nameStr == "d/postmortem")
+      if (nHeight == 175868
+            && EncodeName (*i, NameEncoding::ASCII) == "d/postmortem")
         continue;
 
       const COutPoint& out = data.getUpdateOutpoint ();
       Coin coin;
       if (!view.GetCoin(out, coin))
-        return error ("%s : name coin for '%s' is not available",
-                      __func__, nameStr.c_str ());
+        return error ("%s : name coin for %s is not available",
+                      __func__, nameStr);
       const CNameScript nameOp(coin.out.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
           || nameOp.getOpName () != *i)
@@ -723,18 +725,18 @@ UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
 
       const valtype& name = nameOp.getOpName ();
       if (names.count (name) > 0)
-        return error ("%s : name '%s' unexpired twice",
-                      __func__, ValtypeToString (name).c_str ());
+        return error ("%s : name %s unexpired twice",
+                      __func__, EncodeNameForMessage (name));
       names.insert (name);
 
       CNameData data;
       if (!view.GetName (nameOp.getOpName (), data))
         return error ("%s : no data for name '%s' to be unexpired",
-                      __func__, ValtypeToString (name).c_str ());
+                      __func__, EncodeNameForMessage (name));
       if (!data.isExpired (nHeight) || data.isExpired (nHeight - 1))
         return error ("%s : name '%s' to be unexpired is not expired in the DB"
                       " or it was already expired before the current height",
-                      __func__, ValtypeToString (name).c_str ());
+                      __func__, EncodeNameForMessage (name));
 
       if (ApplyTxInUndo (std::move(*i), view,
                          data.getUpdateOutpoint ()) != DISCONNECT_OK)

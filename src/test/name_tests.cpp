@@ -1180,6 +1180,16 @@ BOOST_FIXTURE_TEST_CASE (encoding_hex, EncodingTestSetup)
   InvalidString ("zz");
 }
 
+BOOST_AUTO_TEST_CASE (encode_name_for_message)
+{
+  BOOST_CHECK_EQUAL (
+      EncodeNameForMessage (DecodeName ("d/abc", NameEncoding::ASCII)),
+      "'d/abc'");
+  BOOST_CHECK_EQUAL (
+      EncodeNameForMessage (DecodeName ("00ff", NameEncoding::HEX)),
+      "0x00ff");
+}
+
 /* ************************************************************************** */
 
 BOOST_AUTO_TEST_SUITE_END ()

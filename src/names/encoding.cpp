@@ -169,3 +169,16 @@ DecodeName (const std::string& str, const NameEncoding enc)
 
   assert (false);
 }
+
+std::string
+EncodeNameForMessage (const valtype& data)
+{
+  try
+    {
+      return "'" + EncodeName (data, NameEncoding::ASCII) + "'";
+    }
+  catch (const InvalidNameString& exc)
+    {
+      return "0x" + EncodeName (data, NameEncoding::HEX);
+    }
+}

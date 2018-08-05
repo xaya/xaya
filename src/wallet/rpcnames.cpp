@@ -420,7 +420,7 @@ name_new (const JSONRPCRequest& request)
   const std::string randStr = HexStr (rand);
   const std::string txid = tx->GetHash ().GetHex ();
   LogPrintf ("name_new: name=%s, rand=%s, tx=%s\n",
-             ValtypeToString (name), randStr.c_str (), txid.c_str ());
+             EncodeNameForMessage (name), randStr.c_str (), txid.c_str ());
 
   UniValue res(UniValue::VARR);
   res.push_back (txid);
@@ -735,7 +735,7 @@ sendtoname (const JSONRPCRequest& request)
   if (!pcoinsTip->GetName (name, data))
     {
       std::ostringstream msg;
-      msg << "name not found: '" << ValtypeToString (name) << "'";
+      msg << "name not found: " << EncodeNameForMessage (name);
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
   if (data.isExpired ())
