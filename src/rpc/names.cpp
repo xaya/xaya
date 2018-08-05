@@ -538,10 +538,17 @@ name_filter (const JSONRPCRequest& request)
 
       if (haveRegexp)
         {
-          const std::string nameStr = ValtypeToString (name);
-          boost::xpressive::smatch matches;
-          if (!boost::xpressive::regex_search (nameStr, matches, regexp))
-            continue;
+          try
+            {
+              const std::string nameStr = EncodeName (name, NameEncoding::UTF8);
+              boost::xpressive::smatch matches;
+              if (!boost::xpressive::regex_search (nameStr, matches, regexp))
+                continue;
+            }
+          catch (const InvalidNameString& exc)
+            {
+              continue;
+            }
         }
 
       if (from > 0)
