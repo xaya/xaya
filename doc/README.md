@@ -7,7 +7,7 @@ Setup
 
 Running
 ---------------------
-The following are some helpful notes on how to run Namecoin on your native platform.
+The following are some helpful notes on how to run Namecoin Core on your native platform.
 
 ### Unix
 
@@ -32,7 +32,7 @@ Drag Namecoin-Qt to your applications folder, and then run Namecoin-Qt.
 
 Building
 ---------------------
-The following are developer notes on how to build Bitcoin on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
+The following are developer notes on how to build Bitcoin Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
 
 - [Dependencies](dependencies.md)
 - [macOS Build Notes](build-osx.md)

@@ -127,12 +127,12 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Namecoin mainnet chain at height
-        // 312,290, with best block hash:
-        // c98df864dce972b1948314e98e96c8a86d2c0aaa80b421fe651e203f6bab9010
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000010d441df8a789cb99792b2");
+        // 400,000, with best block hash:
+        // 9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000001462665cec01086cca92814");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a"); //250000
+        consensus.defaultAssumeValid = uint256S("0x9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce"); //400000
 
         consensus.nAuxpowChainId = 0x0001;
         consensus.nAuxpowStartHeight = 19200;
@@ -202,11 +202,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data as of block 00000000000000000166d612d5595e2b1cd88d71d695fc580af64d8da8658c23 (height 446482).
-            1442977054, // * UNIX timestamp of last known number of transactions
-            3000785,    // * total number of transactions between genesis and that timestamp
-                        //   (the tx=... number in the SetBestChain debug.log lines)
-            0.0189      // * estimated number of transactions per second after checkpoint
+            // Data from rpc: getchaintxstats 4096 9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce
+            /* nTime    */ 1527210216,
+            /* nTxCount */ 4787155,
+            /* dTxRate  */ 0.0058,
         };
 
         /* disable fallback fee on mainnet */
@@ -358,6 +357,7 @@ public:
         };
 
         chainTxData = ChainTxData{
+            // TODO: Update using getchaintxstats as for mainnet.
             1464247300,
             173446,
             0.0027

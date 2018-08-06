@@ -44,7 +44,7 @@ This allows for running namecoind without having to do any manual configuration.
 relative to the data directory. `wallet` *only* supports relative paths.
 
 For an example configuration file that describes the configuration settings,
-see `contrib/debian/examples/namecoin.conf`.
+see `share/examples/namecoin.conf`.
 
 Paths
 ---------------------------------

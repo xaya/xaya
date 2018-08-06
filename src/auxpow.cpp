@@ -122,7 +122,7 @@ CAuxPow::getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h)
   rand += nChainId;
   rand = rand * 1103515245 + 12345;
 
-  return rand % (1 << h);
+  return rand % (1u << h);
 }
 
 uint256

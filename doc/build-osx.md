@@ -41,14 +41,14 @@ from the root of the repository.
 Build Namecoin Core
 ------------------------
 
-1. Clone the namecoin source code and cd into `namecoin-core`
+1. Clone the Namecoin Core source code and cd into `namecoin-core`
 
         git clone https://github.com/namecoin/namecoin-core
         cd namecoin-core
 
-2.  Build namecoin-core:
+2.  Build Namecoin Core:
 
-    Configure and build the headless namecoin binaries as well as the GUI (if Qt is found).
+    Configure and build the headless Namecoin Core binaries as well as the GUI (if Qt is found).
 
     You can disable the GUI build by passing `--without-gui` to configure.
 
@@ -69,7 +69,7 @@ Running
 
 Namecoin Core is now available at `./src/namecoind`
 
-Before running, it's recommended you create an RPC configuration file.
+Before running, it's recommended that you create an RPC configuration file.
 
     echo -e "rpcuser=namecoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
 
