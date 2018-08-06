@@ -423,7 +423,10 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
   TestMemPoolEntryHelper entry;
   CMutableTransaction mtx;
   mtx.vout.emplace_back (1234, scriptPubKey);
-  mempool.addUnchecked (mtx.GetHash (), entry.FromTx (mtx));
+  {
+    LOCK (mempool.cs);
+    mempool.addUnchecked (mtx.GetHash (), entry.FromTx (mtx));
+  }
 
   /* We should still get back the cached block, for now.  */
   SetMockTime (baseTime + 160);

@@ -24,6 +24,9 @@ class ConsensusRules
 {
 public:
 
+    /* Provide a virtual destructor since we have virtual methods.  */
+    virtual ~ConsensusRules() = default;
+
     /* Return minimum locked amount in a name.  */
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 

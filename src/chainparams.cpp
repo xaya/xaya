@@ -200,10 +200,13 @@ public:
         // BIP147) are deployed together with P2SH.
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00");
+        // The value is the chain work of the Namecoin mainnet chain at height
+        // 60,000, with best block hash:
+        // de8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000237ea631ca515c459e211");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x00");
+        consensus.defaultAssumeValid = uint256S("0xde8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9"); //60000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -253,9 +256,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            0,
-            0,
-            0
+            // Data from rpc: getchaintxstats 4096 de8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9
+            /* nTime    */ 1533365986,
+            /* nTxCount */ 65597,
+            /* dTxRate  */ 0.035
         };
 
         /* disable fallback fee on mainnet */

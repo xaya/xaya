@@ -9,13 +9,12 @@
 #include <hash.h>
 #include <random.h>
 #include <pow.h>
+#include <script/names.h>
 #include <shutdown.h>
 #include <uint256.h>
 #include <util.h>
 #include <ui_interface.h>
 #include <validation.h>
-
-#include "script/names.h"
 
 #include <stdint.h>
 
