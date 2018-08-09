@@ -84,7 +84,7 @@ addExpirationInfo (const int height, UniValue& data)
   const bool expired = (expiresIn <= 0);
   data.pushKV ("height", height);
   data.pushKV ("expires_in", expiresIn);
-  data.push_back (Pair ("expired", expired));
+  data.pushKV ("expired", expired);
 }
 
 #ifdef ENABLE_WALLET
@@ -97,14 +97,14 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
 {
   if (pwallet == nullptr)
     {
-      data.push_back (Pair ("ismine", false));
+      data.pushKV ("ismine", false);
       return;
     }
 
   AssertLockHeld (pwallet->cs_wallet);
   const isminetype mine = IsMine (*pwallet, addr);
   const bool isMine = (mine & ISMINE_SPENDABLE);
-  data.push_back (Pair ("ismine", isMine));
+  data.pushKV ("ismine", isMine);
 }
 #endif
 

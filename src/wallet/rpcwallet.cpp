@@ -1843,7 +1843,7 @@ static void ListTransactions(CWallet* const pwallet, const CWalletTx& wtx, const
             if (IsDeprecatedRPCEnabled("accounts")) entry.pushKV("account", strSentAccount);
             MaybePushAddress(entry, s.destination);
             if(!s.nameOp.empty())
-                entry.push_back(Pair("name", s.nameOp));
+                entry.pushKV("name", s.nameOp);
             entry.pushKV("category", "send");
             entry.pushKV("amount", ValueFromAmount(-s.amount));
             if (pwallet->mapAddressBook.count(s.destination)) {
@@ -1876,7 +1876,7 @@ static void ListTransactions(CWallet* const pwallet, const CWalletTx& wtx, const
                 if (IsDeprecatedRPCEnabled("accounts")) entry.pushKV("account", account);
                 MaybePushAddress(entry, r.destination);
                 if(!r.nameOp.empty())
-                    entry.push_back(Pair("name", r.nameOp));
+                    entry.pushKV("name", r.nameOp);
                 if (wtx.IsCoinBase())
                 {
                     if (wtx.GetDepthInMainChain() < 1)
