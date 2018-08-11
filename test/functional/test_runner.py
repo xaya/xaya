@@ -179,6 +179,7 @@ BASE_SCRIPTS = [
     'name_reorg.py',
     'name_scanning.py',
     'name_sendcoins.py',
+    'name_utxo.py',
     'name_wallet.py',
 ]
 
