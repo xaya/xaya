@@ -144,10 +144,6 @@ class NameEncodingsTest (NameTestFramework):
     txid = self.node.name_update (name, self.value)
     self.verifyAndMinePendingUpdate (name, self.value, txid)
 
-    # FIXME: Once the output-side has configurable encoding, we should
-    # also cross-check the result of name_show against a different encoding
-    # to make sure the resulting names are indeed correct.
-
     self.node.sendtoname (name, 1)
 
     # Redo the whole life-cycle now also with raw transactions (with a new
