@@ -7,7 +7,7 @@
 #include <consensus/consensus.h>
 #include <consensus/validation.h>
 #include <key_io.h>
-#include <names/common.h>
+#include <names/encoding.h>
 #include <script/names.h>
 #include <script/script.h>
 #include <script/standard.h>
@@ -265,27 +265,21 @@ UniValue NameOpToUniv (const CNameScript& nameOp)
         break;
 
       case OP_NAME_FIRSTUPDATE:
-        {
-          const std::string name = ValtypeToString (nameOp.getOpName ());
-          const std::string value = ValtypeToString (nameOp.getOpValue ());
-
-          result.pushKV ("op", "name_firstupdate");
-          result.pushKV ("name", name);
-          result.pushKV ("value", value);
-          result.pushKV ("rand", HexStr (nameOp.getOpRand ()));
-          break;
-        }
+        result.pushKV ("op", "name_firstupdate");
+        AddEncodedNameToUniv (result, "name", nameOp.getOpName (),
+                              ConfiguredNameEncoding ());
+        AddEncodedNameToUniv (result, "value", nameOp.getOpValue (),
+                              ConfiguredValueEncoding ());
+        result.pushKV ("rand", HexStr (nameOp.getOpRand ()));
+        break;
 
       case OP_NAME_UPDATE:
-        {
-          const std::string name = ValtypeToString (nameOp.getOpName ());
-          const std::string value = ValtypeToString (nameOp.getOpValue ());
-
-          result.pushKV ("op", "name_update");
-          result.pushKV ("name", name);
-          result.pushKV ("value", value);
-          break;
-        }
+        result.pushKV ("op", "name_update");
+        AddEncodedNameToUniv (result, "name", nameOp.getOpName (),
+                              ConfiguredNameEncoding ());
+        AddEncodedNameToUniv (result, "value", nameOp.getOpValue (),
+                              ConfiguredValueEncoding ());
+        break;
 
       default:
         assert (false);

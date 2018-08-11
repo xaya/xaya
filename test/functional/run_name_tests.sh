@@ -1,5 +1,8 @@
 #!/bin/sh
 
+echo "\nName and value encodings..."
+./name_encodings.py
+
 echo "\nName expiration..."
 ./name_expiration.py
 
