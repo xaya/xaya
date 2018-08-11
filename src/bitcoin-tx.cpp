@@ -12,6 +12,7 @@
 #include <core_io.h>
 #include <key_io.h>
 #include <keystore.h>
+#include <names/encoding.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
@@ -38,6 +39,8 @@ static void SetupBitcoinTxArgs()
     gArgs.AddArg("-create", "Create new, empty TX.", false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-json", "Select JSON output", false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-txid", "Output only the hex-encoded transaction id of the resultant transaction.", false, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-nameencoding", strprintf("The encoding to use for names in the JSON output (default: %s)", EncodingToString(DEFAULT_NAME_ENCODING)), false, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-valueencoding", strprintf("The encoding to use for values in the JSON output (default: %s)", EncodingToString(DEFAULT_VALUE_ENCODING)), false, OptionsCategory::OPTIONS);
     SetupChainParamsBaseOptions();
 
     gArgs.AddArg("delin=N", "Delete input N from TX", false, OptionsCategory::COMMANDS);

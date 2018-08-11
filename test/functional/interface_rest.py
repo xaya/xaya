@@ -20,6 +20,7 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_greater_than_or_equal,
+    bytes_to_hex_str,
     hex_str_to_bytes,
 )
 
@@ -42,7 +43,7 @@ class RESTTest (BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [["-rest"], []]
+        self.extra_args = [["-rest", "-valueencoding=hex"], []]
 
     def test_rest_request(self, uri, http_method='GET', req_type=ReqType.JSON, body='', status=200, ret_type=RetType.JSON):
         rest_uri = '/rest' + uri
@@ -311,11 +312,14 @@ class RESTTest (BitcoinTestFramework):
         # Start by registering a test name.
         name = u"d/some weird.name++ä"
         value = names.val (u"correct value\nwith newlines\nand utf-8: äöü")
-        self.nodes[0].name_register(name, value)
+        hexValue = bytes_to_hex_str (value.encode ('ascii'))
+        self.nodes[0].name_register(name, hexValue)
         self.nodes[0].generate(1)
         nameData = self.nodes[0].name_show(name)
+        assert_equal(nameData['name_encoding'], 'utf8')
         assert_equal(nameData['name'], name)
-        assert_equal(nameData['value'], value)
+        assert_equal(nameData['value_encoding'], 'hex')
+        assert_equal(nameData['value'], hexValue)
         # The REST interface explicitly does not include the 'ismine' field
         # that the RPC interface has.  Thus remove the field for the comparison
         # below.
@@ -340,8 +344,7 @@ class RESTTest (BitcoinTestFramework):
             # Query hex value.
             res = self.test_rest_request (query, req_type=ReqType.HEX,
                                           ret_type=RetType.BYTES)
-            hexValue = binascii.hexlify(bytes(value, "ascii")) + b"\n"
-            assert_equal(res, hexValue)
+            assert_equal(res.decode ('ascii'), hexValue + "\n")
 
         # Check invalid encoded names.
         invalid = ['%', '%2', '%2x', '%x2']

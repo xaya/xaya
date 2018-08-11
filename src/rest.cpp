@@ -8,6 +8,7 @@
 #include <core_io.h>
 #include <index/txindex.h>
 #include <names/common.h>
+#include <names/encoding.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <validation.h>
@@ -643,15 +644,15 @@ static bool rest_name(HTTPRequest* req, const std::string& strURIPart)
     CNameData data;
     if (!pcoinsTip->GetName(plainName, data))
         return RESTERR(req, HTTP_NOT_FOUND,
-                       "'" + ValtypeToString(plainName) + "' not found");
+                       EncodeNameForMessage (plainName) + " not found");
 
     switch (rf)
     {
     case RetFormat::BINARY:
     {
-        const std::string binVal = ValtypeToString(data.getValue());
+        const std::string val(data.getValue().begin(), data.getValue().end());
         req->WriteHeader("Content-Type", "application/octet-stream");
-        req->WriteReply(HTTP_OK, binVal);
+        req->WriteReply(HTTP_OK, val);
         return true;
     }
 

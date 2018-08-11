@@ -15,6 +15,7 @@
 #include <key_io.h>
 #include <keystore.h>
 #include <validation.h>
+#include <names/encoding.h>
 #include <net.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
@@ -1680,7 +1681,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         if (nameOp.isNameOp())
         {
             if (nameOp.isAnyUpdate())
-                output.nameOp = "update: " + ValtypeToString(nameOp.getOpName());
+                output.nameOp = "update: " + EncodeNameForMessage(nameOp.getOpName());
             output.amount = 0;
         }
 

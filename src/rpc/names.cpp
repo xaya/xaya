@@ -21,13 +21,14 @@
 # include <wallet/wallet.h>
 #endif
 
+#include <univalue.h>
+
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
 #include <cassert>
 #include <memory>
 #include <sstream>
-
-#include <univalue.h>
+#include <stdexcept>
 
 /**
  * Utility routine to construct a "name info" object to return.  This is used
@@ -38,8 +39,8 @@ getNameInfo (const valtype& name, const valtype& value,
              const COutPoint& outp, const CScript& addr)
 {
   UniValue obj(UniValue::VOBJ);
-  obj.pushKV ("name", ValtypeToString (name));
-  obj.pushKV ("value", ValtypeToString (value));
+  AddEncodedNameToUniv (obj, "name", name, ConfiguredNameEncoding ());
+  AddEncodedNameToUniv (obj, "value", value, ConfiguredValueEncoding ());
   obj.pushKV ("txid", outp.hash.GetHex ());
   obj.pushKV ("vout", static_cast<int> (outp.n));
 
@@ -85,16 +86,31 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
 {
   if (pwallet == nullptr)
     {
-      data.push_back (Pair ("ismine", false));
+      data.pushKV ("ismine", false);
       return;
     }
 
   AssertLockHeld (pwallet->cs_wallet);
   const isminetype mine = IsMine (*pwallet, addr);
   const bool isMine = (mine & ISMINE_SPENDABLE);
-  data.push_back (Pair ("ismine", isMine));
+  data.pushKV ("ismine", isMine);
 }
 #endif
+
+valtype
+DecodeNameFromRPCOrThrow (const UniValue& val, const NameEncoding enc)
+{
+  try
+    {
+      return DecodeName (val.get_str (), enc);
+    }
+  catch (const InvalidNameString& exc)
+    {
+      std::ostringstream msg;
+      msg << "Name/value is invalid for encoding " << EncodingToString (enc);
+      throw JSONRPCError (RPC_NAME_INVALID_ENCODING, msg.str ());
+    }
+}
 
 namespace
 {
@@ -272,8 +288,8 @@ name_show (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
 
   CNameData data;
   {
@@ -281,7 +297,7 @@ name_show (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << nameStr << "'";
+        msg << "name not found: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
   }
@@ -324,8 +340,8 @@ name_history (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
 
   CNameData data;
   CNameHistory history;
@@ -336,7 +352,7 @@ name_history (const JSONRPCRequest& request)
     if (!pcoinsTip->GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: '" << nameStr << "'";
+        msg << "name not found: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
 
@@ -389,7 +405,8 @@ name_scan (const JSONRPCRequest& request)
 
   valtype start;
   if (request.params.size () >= 1)
-    start = ValtypeFromString (request.params[0].get_str ());
+    start = DecodeNameFromRPCOrThrow (request.params[0],
+                                      ConfiguredNameEncoding ());
 
   int count = 500;
   if (request.params.size () >= 2)
@@ -507,10 +524,17 @@ name_filter (const JSONRPCRequest& request)
 
       if (haveRegexp)
         {
-          const std::string nameStr = ValtypeToString (name);
-          boost::xpressive::smatch matches;
-          if (!boost::xpressive::regex_search (nameStr, matches, regexp))
-            continue;
+          try
+            {
+              const std::string nameStr = EncodeName (name, NameEncoding::UTF8);
+              boost::xpressive::smatch matches;
+              if (!boost::xpressive::regex_search (nameStr, matches, regexp))
+                continue;
+            }
+          catch (const InvalidNameString& exc)
+            {
+              continue;
+            }
         }
 
       if (from > 0)
@@ -583,9 +607,10 @@ name_pending (const JSONRPCRequest& request)
     mempool.queryHashes (txHashes);
   else
     {
-      const std::string name = request.params[0].get_str ();
-      const valtype vchName = ValtypeFromString (name);
-      const uint256 txid = mempool.getTxForName (vchName);
+      const valtype name
+          = DecodeNameFromRPCOrThrow (request.params[0],
+                                      ConfiguredNameEncoding ());
+      const uint256 txid = mempool.getTxForName (name);
       if (!txid.IsNull ())
         txHashes.push_back (txid);
     }
@@ -684,9 +709,11 @@ namerawtransaction (const JSONRPCRequest& request)
   );
   const std::string op = find_value (nameOp, "op").get_str ();
   const valtype name
-    = ValtypeFromString (find_value (nameOp, "name").get_str ());
+    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"),
+                                ConfiguredNameEncoding ());
   const valtype value
-    = ValtypeFromString (find_value (nameOp, "value").get_str ());
+    = DecodeNameFromRPCOrThrow (find_value (nameOp, "value"),
+                                ConfiguredValueEncoding ());
 
   UniValue result(UniValue::VOBJ);
 

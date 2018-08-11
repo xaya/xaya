@@ -7,8 +7,9 @@
 #include <chainparams.h>
 #include <coins.h>
 #include <consensus/validation.h>
-#include <hash.h>
 #include <dbwrapper.h>
+#include <hash.h>
+#include <names/encoding.h>
 #include <script/interpreter.h>
 #include <script/names.h>
 #include <script/script.h>
@@ -315,7 +316,7 @@ IsNameValid (const valtype& name, CValidationState& state)
                             " in names");
 
   /* Only valid UTF-8 strings can be names.  */
-  if (!IsValidUtf8String (ValtypeToString (name)))
+  if (!IsValidUtf8String (std::string (name.begin (), name.end ())))
     return state.Invalid (false, REJECT_INVALID, "the name is not valid UTF-8");
 
   return true;
@@ -329,7 +330,7 @@ IsValueValid (const valtype& value, CValidationState& state)
 
   /* The value must parse with Univalue as JSON and be an object.  */
   UniValue jsonValue;
-  if (!jsonValue.read (ValtypeToString (value)))
+  if (!jsonValue.read (std::string (value.begin (), value.end ())))
     return state.Invalid (false, REJECT_INVALID, "the value is not valid JSON");
   if (!jsonValue.isObject ())
     return state.Invalid (false, REJECT_INVALID,
@@ -488,7 +489,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
         {
           const valtype& name = op.getOpName ();
           LogPrint (BCLog::NAMES, "Updating name at height %d: %s\n",
-                    nHeight, ValtypeToString (name).c_str ());
+                    nHeight, EncodeNameForMessage (name));
 
           CNameTxUndo opUndo;
           opUndo.fromOldState (name, view);

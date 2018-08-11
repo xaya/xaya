@@ -1,5 +1,8 @@
 #!/bin/sh
 
+echo "\nName and value encodings..."
+./name_encodings.py
+
 echo "\nName with immature inputs..."
 ./name_immature_inputs.py
 
@@ -32,6 +35,9 @@ echo "\nName scanning..."
 
 echo "\nName operation with sendCoins..."
 ./name_sendcoins.py
+
+echo "\nNames and the UTXO set..."
+./name_utxo.py
 
 echo "\nName wallet..."
 ./name_wallet.py

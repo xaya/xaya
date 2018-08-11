@@ -513,5 +513,16 @@
     "return_code": 1,
     "error_txt": "error: nameupdate expects N:NAME:VALUE",
     "description": "Verify the number of arguments check for nameupdate"
+  },
+  { "exec": "./xaya-tx",
+    "args":
+    ["-create",
+     "-json",
+     "-nameencoding=ascii",
+     "-valueencoding=hex",
+     "outaddr=0.01:CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
+     "nameupdate=0:642f00ff:76616c7565"],
+    "output_cmp": "name_update_encoding.json",
+    "description": "Outputs NAME_UPDATE transaction to JSON with specified encodings"
   }
 ]

@@ -7,7 +7,7 @@
 #include <consensus/consensus.h>
 #include <consensus/validation.h>
 #include <key_io.h>
-#include <names/common.h>
+#include <names/encoding.h>
 #include <script/names.h>
 #include <script/script.h>
 #include <script/standard.h>
@@ -255,11 +255,7 @@ UniValue NameOpToUniv (const CNameScript& nameOp)
 {
   assert (nameOp.isNameOp ());
 
-  const std::string name = ValtypeToString (nameOp.getOpName ());
-  const std::string value = ValtypeToString (nameOp.getOpValue ());
   UniValue result(UniValue::VOBJ);
-  result.pushKV ("name", name);
-  result.pushKV ("value", value);
   switch (nameOp.getNameOp ())
   {
   case OP_NAME_REGISTER:
@@ -271,6 +267,11 @@ UniValue NameOpToUniv (const CNameScript& nameOp)
   default:
       assert (false);
   }
+
+  AddEncodedNameToUniv (result, "name", nameOp.getOpName (),
+                        ConfiguredNameEncoding ());
+  AddEncodedNameToUniv (result, "value", nameOp.getOpValue (),
+                        ConfiguredValueEncoding ());
 
   return result;
 }

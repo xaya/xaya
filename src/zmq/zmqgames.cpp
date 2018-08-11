@@ -10,6 +10,7 @@
 #include <key_io.h>
 #include <logging.h>
 #include <names/common.h>
+#include <names/encoding.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
@@ -56,12 +57,13 @@ JsonDataForMove (const CTransaction& tx)
     return {};
 
   /* Only consider updates to p/ names.  */
-  const std::string name = ValtypeToString (nameOp.getOpName ());
+  const std::string name = EncodeName (nameOp.getOpName (), NameEncoding::UTF8);
   if (name.substr (0, 2) != "p/")
     return {};
 
   /* See if there are actually games mentioned in the update's value.  */
-  const std::string valueStr = ValtypeToString (nameOp.getOpValue ());
+  const std::string valueStr = EncodeName (nameOp.getOpValue (),
+                                           NameEncoding::UTF8);
   UniValue value;
   if (!value.read (valueStr) || !value.isObject ())
     {

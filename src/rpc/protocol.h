@@ -90,6 +90,9 @@ enum RPCErrorCode
 
     //! Unused reserved codes, kept around for backwards compatibility. Do not reuse.
     RPC_FORBIDDEN_BY_SAFE_MODE      = -2,  //!< Server is in safe mode, and command is not allowed in safe mode
+
+    //! Namecoin-specific error codes
+    RPC_NAME_INVALID_ENCODING       = -1000, //!< A name or value is invalid for the specified encoding
 };
 
 UniValue JSONRPCRequestObj(const std::string& strMethod, const UniValue& params, const UniValue& id);

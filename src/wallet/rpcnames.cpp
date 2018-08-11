@@ -8,6 +8,7 @@
 #include <init.h>
 #include <key_io.h>
 #include <names/common.h>
+#include <names/encoding.h>
 #include <names/main.h>
 #include <net.h>
 #include <primitives/transaction.h>
@@ -269,8 +270,9 @@ name_list (const JSONRPCRequest& request)
   RPCTypeCheck (request.params, {UniValue::VSTR});
 
   valtype nameFilter;
-  if (request.params.size () == 1)
-    nameFilter = ValtypeFromString (request.params[0].get_str ());
+  if (request.params.size () >= 1)
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0],
+                                           ConfiguredNameEncoding ());
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -369,15 +371,14 @@ name_register (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
-
+  const valtype name
+      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
   CValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const std::string valueStr = request.params[1].get_str ();
-  const valtype value = ValtypeFromString (valueStr);
+  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
+                                                  ConfiguredValueEncoding ());
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
@@ -453,15 +454,14 @@ name_update (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
-
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
+                                                 ConfiguredNameEncoding ());
   CValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const std::string valueStr = request.params[1].get_str ();
-  const valtype value = ValtypeFromString (valueStr);
+  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
+                                                  ConfiguredValueEncoding ());
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
@@ -560,14 +560,14 @@ sendtoname (const JSONRPCRequest& request)
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 
-  const std::string nameStr = request.params[0].get_str ();
-  const valtype name = ValtypeFromString (nameStr);
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
+                                                 ConfiguredNameEncoding ());
 
   CNameData data;
   if (!pcoinsTip->GetName (name, data))
     {
       std::ostringstream msg;
-      msg << "name not found: '" << nameStr << "'";
+      msg << "name not found: " << EncodeNameForMessage (name);
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
 

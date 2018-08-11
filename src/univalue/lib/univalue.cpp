@@ -247,9 +247,7 @@ bool IsValidUtf8String(const std::string& str)
 {
     std::string valStr;
     JSONUTF8StringFilter writer(valStr);
-
     for (size_t i = 0; i < str.size (); ++i)
         writer.push_back(str[i]);
-
     return writer.finalize();
 }

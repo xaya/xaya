@@ -6,6 +6,7 @@
 #include <coins.h>
 #include <consensus/validation.h>
 #include <key_io.h>
+#include <names/encoding.h>
 #include <names/main.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
@@ -13,6 +14,7 @@
 #include <txdb.h>
 #include <txmempool.h>
 #include <undo.h>
+#include <util.h>
 #include <validation.h>
 
 #include <univalue.h>
@@ -24,6 +26,7 @@
 #include <cassert>
 #include <list>
 #include <memory>
+#include <stdexcept>
 
 #include <stdint.h>
 
@@ -60,9 +63,9 @@ val (const std::string& text)
 }
 
 /**
- * Returns a valid JSON value with the given length in bytes.
+ * Returns a valid JSON value with the given length in bytes (as valtype).
  */
-std::string
+valtype
 ValueOfLength (const size_t len)
 {
   const std::string prefix = "{\"text\": \"";
@@ -75,10 +78,10 @@ ValueOfLength (const size_t len)
   result += suffix;
   assert (result.size () == len);
 
-  return result;
+  return DecodeName (result, NameEncoding::ASCII);
 }
 
-}  // anonymous namespace
+} // anonymous namespace
 
 /* ************************************************************************** */
 
@@ -89,8 +92,8 @@ BOOST_AUTO_TEST_CASE (name_scripts)
   BOOST_CHECK (!opNone.isNameOp ());
   BOOST_CHECK (opNone.getAddress () == addr);
 
-  const valtype name = ValtypeFromString ("x/my-cool-name");
-  const valtype value = ValtypeFromString (val ("42!"));
+  const valtype name = DecodeName ("x/my-cool-name", NameEncoding::ASCII);
+  const valtype value = DecodeName (val ("42!"), NameEncoding::ASCII);
 
   CScript script;
   script = CNameScript::buildNameRegister (addr, name, value);
@@ -116,9 +119,9 @@ BOOST_AUTO_TEST_CASE (name_scripts)
 
 BOOST_AUTO_TEST_CASE (name_database)
 {
-  const valtype name1 = ValtypeFromString ("x/database-test-name-1");
-  const valtype name2 = ValtypeFromString ("x/database-test-name-2");
-  const valtype value = ValtypeFromString (val ("my-value"));
+  const valtype name1 = DecodeName ("x/db-test-name-1", NameEncoding::ASCII);
+  const valtype name2 = DecodeName ("x/db-test-name-2", NameEncoding::ASCII);
+  const valtype value = DecodeName (val ("my-value"), NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
 
   /* Choose two height values.  To verify that serialisation of the
@@ -303,8 +306,8 @@ CNameData
 NameIterationTester::getNextData ()
 {
   const CScript addr = getTestAddress ();
-  const valtype name = ValtypeFromString ("x/dummy");
-  const valtype value = ValtypeFromString (val ("abc"));
+  const valtype name = DecodeName ("x/dummy", NameEncoding::ASCII);
+  const valtype value = DecodeName (val ("abc"), NameEncoding::ASCII);
   const CScript updateScript = CNameScript::buildNameUpdate (addr, name, value);
   const CNameScript nameOp(updateScript);
 
@@ -327,7 +330,7 @@ NameIterationTester::verify (const CCoinsView& view) const
   /* Seek the iterator to the end first for "maximum confusion".  This ensures
      that seeking to valtype() works.  */
   std::unique_ptr<CNameIterator> iter(view.IterateNames ());
-  const valtype end = ValtypeFromString ("zzzzzzzzzzzzzzzz");
+  const valtype end = DecodeName ("zzzzzzzzzzzzzzzz", NameEncoding::ASCII);
   {
     valtype name;
     CNameData nameData;
@@ -400,7 +403,7 @@ NameIterationTester::getNamesFromIterator (CNameIterator& iter)
 void
 NameIterationTester::add (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
   const CNameData testData = getNextData ();
 
   assert (data.count (name) == 0);
@@ -413,7 +416,7 @@ NameIterationTester::add (const std::string& n)
 void
 NameIterationTester::update (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
   const CNameData testData = getNextData ();
 
   assert (data.count (name) == 1);
@@ -426,7 +429,7 @@ NameIterationTester::update (const std::string& n)
 void
 NameIterationTester::remove (const std::string& n)
 {
-  const valtype& name = ValtypeFromString (n);
+  const valtype& name = DecodeName (n, NameEncoding::ASCII);
 
   assert (data.count (name) == 1);
   data.erase (name);
@@ -496,28 +499,31 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
   /* Test the length limit.  */
   std::string name;
   name = "x/" + std::string (254, 'x');
-  BOOST_CHECK (IsNameValid (ValtypeFromString (name), state));
+  BOOST_CHECK (IsNameValid (DecodeName (name, NameEncoding::ASCII), state));
   name += 'x';
-  BOOST_CHECK (!IsNameValid (ValtypeFromString (name), state));
+  BOOST_CHECK (!IsNameValid (DecodeName (name, NameEncoding::ASCII), state));
 
   /* Some valid names, including UTF-8.  */
-  BOOST_CHECK (IsNameValid (ValtypeFromString ("x/"), state));
-  BOOST_CHECK (IsNameValid (ValtypeFromString ("foo/bar"), state));
-  BOOST_CHECK (IsNameValid (ValtypeFromString (u8"foo/äöü+/2 5"), state));
+  BOOST_CHECK (IsNameValid (DecodeName ("x/", NameEncoding::ASCII), state));
+  BOOST_CHECK (IsNameValid (
+      DecodeName ("foo/bar", NameEncoding::ASCII), state));
+  BOOST_CHECK (IsNameValid (
+      DecodeName (u8"foo/äöü+/2 5", NameEncoding::UTF8), state));
 
   /* Invalid due to namespace rule.  */
-  BOOST_CHECK (!IsNameValid (ValtypeFromString (""), state));
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("abc"), state));
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("/"), state));
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("c14/foo"), state));
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("Z/foo"), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("abc", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("/", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsNameValid (
+      DecodeName ("c14/foo", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("Z/foo", NameEncoding::ASCII), state));
 
   /* Unprintable ASCII characters.  */
   BOOST_CHECK (!IsNameValid ({65, 0}, state));
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("\t"), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("\t", NameEncoding::UTF8), state));
 
   /* Invalid due to not being valid UTF-8.  */
-  BOOST_CHECK (!IsNameValid (ValtypeFromString ("x/\xFF"), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("782fff", NameEncoding::HEX), state));
 }
 
 BOOST_AUTO_TEST_CASE (is_value_valid)
@@ -525,38 +531,42 @@ BOOST_AUTO_TEST_CASE (is_value_valid)
   CValidationState state;
 
   /* Test the length limit.  */
-  BOOST_CHECK (IsValueValid (ValtypeFromString (ValueOfLength (2048)), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString (ValueOfLength (2049)), state));
+  BOOST_CHECK (IsValueValid (ValueOfLength (2048), state));
+  BOOST_CHECK (!IsValueValid (ValueOfLength (2049), state));
 
   /* Valid JSON values, including some UTF-8.  */
-  BOOST_CHECK (IsValueValid (ValtypeFromString ("{}"), state));
-  BOOST_CHECK (IsValueValid (ValtypeFromString (u8R"(
+  BOOST_CHECK (IsValueValid (DecodeName ("{}", NameEncoding::ASCII), state));
+  BOOST_CHECK (IsValueValid (DecodeName (u8R"(
     {
       "text": "äöü",
       "array": [1, 2, 3],
       "flag": true,
       "pi": 3.1415927
     }
-  )"), state));
+  )", NameEncoding::UTF8), state));
 
   /* Invalid JSON or not a JSON object.  */
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("abc"), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("{'foo':1}"), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("{\"foo"), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("[]"), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("false"), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("\"abc\""), state));
-  BOOST_CHECK (!IsValueValid (ValtypeFromString ("42"), state));
+  BOOST_CHECK (!IsValueValid (DecodeName ("abc", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (
+      DecodeName ("{'foo':1}", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (
+      DecodeName ("{\"foo", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (DecodeName ("[]", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (DecodeName ("true", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (
+      DecodeName ("\"abc\"", NameEncoding::ASCII), state));
+  BOOST_CHECK (!IsValueValid (DecodeName ("42", NameEncoding::ASCII), state));
 }
 
 BOOST_AUTO_TEST_CASE (name_tx_verification)
 {
-  const valtype name1 = ValtypeFromString ("x/test-name-1");
-  const valtype name2 = ValtypeFromString ("x/test-name-2");
-  const valtype value = ValtypeFromString (val ("my-value"));
+  const valtype name1 = DecodeName ("x/test-name-1", NameEncoding::ASCII);
+  const valtype name2 = DecodeName ("x/test-name-2", NameEncoding::ASCII);
+  const valtype value = DecodeName (val ("my-value"), NameEncoding::ASCII);
 
-  const auto tooLongName = ValtypeFromString ("x/" + std::string (255, 'x'));
-  const auto tooLongValue = ValtypeFromString (ValueOfLength (2049));
+  const auto tooLongName = DecodeName ("x/" + std::string (255, 'x'),
+                                       NameEncoding::ASCII);
+  const auto tooLongValue = ValueOfLength (2049);
 
   const CScript addr = getTestAddress ();
 
@@ -691,9 +701,9 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   /* Enable name history to test this on the go.  */
   fNameHistory = true;
 
-  const valtype name = ValtypeFromString ("x/database-test-name");
-  const valtype value1 = ValtypeFromString (val ("old-value"));
-  const valtype value2 = ValtypeFromString (val ("new-value"));
+  const valtype name = DecodeName ("x/db-test-name", NameEncoding::ASCII);
+  const valtype value1 = DecodeName (val ("old-value"), NameEncoding::ASCII);
+  const valtype value2 = DecodeName (val ("new-value"), NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
 
   CCoinsView dummyView;
@@ -754,11 +764,11 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   LOCK(mempool.cs);
   mempool.clear ();
 
-  const valtype nameReg = ValtypeFromString ("x/name-reg");
-  const valtype nameUpd = ValtypeFromString ("x/name-upd");
-  const valtype value = ValtypeFromString (val ("value"));
-  const valtype valueA = ValtypeFromString (val ("value-a"));
-  const valtype valueB = ValtypeFromString (val ("value-b"));
+  const valtype nameReg = DecodeName ("x/name-reg", NameEncoding::ASCII);
+  const valtype nameUpd = DecodeName ("x/name-upd", NameEncoding::ASCII);
+  const valtype value = DecodeName (val ("value"), NameEncoding::ASCII);
+  const valtype valueA = DecodeName (val ("value-a"), NameEncoding::ASCII);
+  const valtype valueB = DecodeName (val ("value-b"), NameEncoding::ASCII);
   const CScript addr = getTestAddress ();
 
   const CScript reg1 = CNameScript::buildNameRegister (addr, nameReg, value);
@@ -861,6 +871,125 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   }
   BOOST_CHECK (!mempool.registersName (nameReg));
   BOOST_CHECK (mempool.mapTx.empty ());
+}
+
+/* ************************************************************************** */
+
+BOOST_AUTO_TEST_CASE (encoding_to_from_string)
+{
+  for (const std::string& encStr : {"ascii", "utf8", "hex"})
+    BOOST_CHECK_EQUAL (EncodingToString (EncodingFromString (encStr)), encStr);
+
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::ASCII), "ascii");
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::UTF8), "utf8");
+  BOOST_CHECK_EQUAL (EncodingToString (NameEncoding::HEX), "hex");
+
+  BOOST_CHECK_THROW (EncodingFromString ("invalid"), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE (encoding_args)
+{
+  BOOST_CHECK (ConfiguredNameEncoding () == DEFAULT_NAME_ENCODING);
+  BOOST_CHECK (ConfiguredValueEncoding () == DEFAULT_VALUE_ENCODING);
+
+  gArgs.ForceSetArg ("-nameencoding", "utf8");
+  BOOST_CHECK (ConfiguredNameEncoding () == NameEncoding::UTF8);
+  BOOST_CHECK (ConfiguredValueEncoding () == DEFAULT_VALUE_ENCODING);
+
+  gArgs.ForceSetArg ("-valueencoding", "hex");
+  BOOST_CHECK (ConfiguredNameEncoding () == NameEncoding::UTF8);
+  BOOST_CHECK (ConfiguredValueEncoding () == NameEncoding::HEX);
+
+  gArgs.ForceSetArg ("-nameencoding", "invalid");
+  BOOST_CHECK (ConfiguredNameEncoding () == DEFAULT_NAME_ENCODING);
+  BOOST_CHECK (ConfiguredValueEncoding () == NameEncoding::HEX);
+}
+
+namespace
+{
+
+class EncodingTestSetup : public TestingSetup
+{
+public:
+
+  NameEncoding encoding;
+
+  void
+  ValidRoundtrip (const std::string& str, const valtype& data) const
+  {
+    BOOST_CHECK_EQUAL (EncodeName (data, encoding), str);
+    BOOST_CHECK (DecodeName (str, encoding) == data);
+  }
+
+  void
+  InvalidString (const std::string& str) const
+  {
+    BOOST_CHECK_THROW (DecodeName (str, encoding), InvalidNameString);
+  }
+
+  void
+  InvalidData (const valtype& data) const
+  {
+    BOOST_CHECK_THROW (EncodeName (data, encoding), InvalidNameString);
+  }
+
+};
+
+} // anonymous namespace
+
+BOOST_FIXTURE_TEST_CASE (encoding_ascii, EncodingTestSetup)
+{
+  encoding = NameEncoding::ASCII;
+
+  ValidRoundtrip (" abc42\x7f", {0x20, 'a', 'b', 'c', '4', '2', 0x7f});
+  ValidRoundtrip ("", {});
+
+  InvalidString ("a\tx");
+  InvalidString ("a\x80x");
+  InvalidString (std::string ({'a', 0, 'x'}));
+  InvalidString (u8"ä");
+
+  InvalidData ({'a', 0, 'x'});
+  InvalidData ({'a', 0x19, 'x'});
+  InvalidData ({'a', 0x80, 'x'});
+}
+
+BOOST_FIXTURE_TEST_CASE (encoding_utf8, EncodingTestSetup)
+{
+  encoding = NameEncoding::UTF8;
+
+  valtype expected({0x20, 'a', 'b', 'c', '\t', '4', '2', 0x00, 0x7f});
+  const std::string utf8Str = u8"äöü";
+  BOOST_CHECK_EQUAL (utf8Str.size (), 6);
+  expected.insert (expected.end (), utf8Str.begin (), utf8Str.end ());
+  ValidRoundtrip (" abc\t42" + std::string ({0}) + u8"\x7fäöü", expected);
+  ValidRoundtrip ("", {});
+
+  InvalidString ("a\x80x");
+  InvalidData ({'a', 0x80, 'x'});
+}
+
+BOOST_FIXTURE_TEST_CASE (encoding_hex, EncodingTestSetup)
+{
+  encoding = NameEncoding::HEX;
+
+  ValidRoundtrip ("0065ff", {0x00, 0x65, 0xff});
+  BOOST_CHECK (DecodeName ("aaBBcCDd", encoding)
+                == valtype ({0xaa, 0xbb, 0xcc, 0xdd}));
+
+  InvalidString ("");
+  InvalidString ("aaa");
+  InvalidString ("zz");
+}
+
+BOOST_AUTO_TEST_CASE (encode_name_for_message)
+{
+  BOOST_CHECK_EQUAL (
+      EncodeNameForMessage (DecodeName ("d/abc", NameEncoding::ASCII)),
+      "'d/abc'");
+  BOOST_CHECK_EQUAL (
+      EncodeNameForMessage (DecodeName ("00ff", NameEncoding::HEX)),
+      "0x00ff");
 }
 
 /* ************************************************************************** */

@@ -134,9 +134,9 @@ class NameWalletTest (NameTestFramework):
 
     # Check the transactions.
     self.checkTx (2, regA, zero, -regFee,
-                  [['send', 'update: x/name-a', zero, -regFee]])
+                  [['send', "update: 'x/name-a'", zero, -regFee]])
     self.checkTx (2, updA, zero, -updFee,
-                  [['send', 'update: x/name-a', zero, -updFee]])
+                  [['send', "update: 'x/name-a'", zero, -updFee]])
 
     # Send a name from 1 to 2 by firstupdate and update.
     addrB = self.nodes[3].getnewaddress ()
@@ -155,9 +155,9 @@ class NameWalletTest (NameTestFramework):
 
     # Check the receiving transactions on B.
     self.checkTx (3, regB, zero, None,
-                  [['receive', 'update: x/name-b', zero, None]])
+                  [['receive', "update: 'x/name-b'", zero, None]])
     self.checkTx (3, updC, zero, None,
-                  [['receive', 'update: x/name-c', zero, None]])
+                  [['receive', "update: 'x/name-c'", zero, None]])
 
     # Use the rawtx API to build a simultaneous name update and currency send.
     # This is done as an atomic name trade.  Note, though, that the
@@ -174,7 +174,7 @@ class NameWalletTest (NameTestFramework):
                   [['receive', "none", price, None]])
     self.checkTx (3, txid, -price, -fee,
                   [['send', "none", -price, -fee],
-                   ['send', 'update: x/name-a', zero, -fee]])
+                   ['send', "update: 'x/name-a'", zero, -fee]])
 
     # Test sendtoname RPC command.
 

@@ -164,6 +164,7 @@ BASE_SCRIPTS = [
     'auxpow_mining.py --segwit',
 
     # name tests
+    'name_encodings.py',
     'name_immature_inputs.py',
     'name_ismine.py',
     'name_list.py',
@@ -176,6 +177,7 @@ BASE_SCRIPTS = [
     'name_reorg.py',
     'name_scanning.py',
     'name_sendcoins.py',
+    'name_utxo.py',
     'name_wallet.py',
 
     # Xaya-specific tests

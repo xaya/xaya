@@ -24,6 +24,7 @@
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <script/descriptor.h>
+#include <script/names.h>
 #include <streams.h>
 #include <sync.h>
 #include <txdb.h>
@@ -908,9 +909,10 @@ struct CCoinsStats
     uint64_t nBogoSize;
     uint256 hashSerialized;
     uint64_t nDiskSize;
-    CAmount nTotalAmount;
+    CAmount nCoinAmount;
+    CAmount nNameAmount;
 
-    CCoinsStats() : nHeight(0), nTransactions(0), nTransactionOutputs(0), nBogoSize(0), nDiskSize(0), nTotalAmount(0) {}
+    CCoinsStats() : nHeight(0), nTransactions(0), nTransactionOutputs(0), nBogoSize(0), nDiskSize(0), nCoinAmount(0), nNameAmount(0) {}
 };
 
 static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash, const std::map<uint32_t, Coin>& outputs)
@@ -924,7 +926,14 @@ static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash,
         ss << output.second.out.scriptPubKey;
         ss << VARINT(output.second.out.nValue, VarIntMode::NONNEGATIVE_SIGNED);
         stats.nTransactionOutputs++;
-        stats.nTotalAmount += output.second.out.nValue;
+
+        const CNameScript nameOp(output.second.out.scriptPubKey);
+        if (nameOp.isNameOp()) {
+            stats.nNameAmount += output.second.out.nValue;
+        } else {
+            stats.nCoinAmount += output.second.out.nValue;
+        }
+
         stats.nBogoSize += 32 /* txid */ + 4 /* vout index */ + 4 /* height + coinbase */ + 8 /* amount */ +
                            2 /* scriptPubKey len */ + output.second.out.scriptPubKey.size() /* scriptPubKey */;
     }
@@ -1035,7 +1044,11 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
             "  \"bogosize\": n,          (numeric) A meaningless metric for UTXO set size\n"
             "  \"hash_serialized_2\": \"hash\", (string) The serialized hash\n"
             "  \"disk_size\": n,         (numeric) The estimated size of the chainstate on disk\n"
-            "  \"total_amount\": x.xxx          (numeric) The total amount\n"
+            "  \"total_amount\": {       (json object)\n"
+            "    \"coins\": x.xxx,       (numeric) Total amount of coins\n"
+            "    \"names\": x.xxx,       (numeric) Amount locked in active names\n"
+            "    \"total\": x.xxx        (numeric) Total amount in coins and names\n"
+            "  }\n"
             "}\n"
             "\nExamples:\n"
             + HelpExampleCli("gettxoutsetinfo", "")
@@ -1054,7 +1067,12 @@ static UniValue gettxoutsetinfo(const JSONRPCRequest& request)
         ret.pushKV("bogosize", (int64_t)stats.nBogoSize);
         ret.pushKV("hash_serialized_2", stats.hashSerialized.GetHex());
         ret.pushKV("disk_size", stats.nDiskSize);
-        ret.pushKV("total_amount", ValueFromAmount(stats.nTotalAmount));
+
+        UniValue amount(UniValue::VOBJ);
+        amount.pushKV("coins", ValueFromAmount(stats.nCoinAmount));
+        amount.pushKV("names", ValueFromAmount(stats.nNameAmount));
+        amount.pushKV("total", ValueFromAmount(stats.nCoinAmount + stats.nNameAmount));
+        ret.pushKV("amount", amount);
     } else {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
     }

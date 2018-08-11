@@ -7,6 +7,7 @@
 
 #include <chainparams.h>
 #include <hash.h>
+#include <names/encoding.h>
 #include <random.h>
 #include <pow.h>
 #include <script/names.h>
@@ -347,7 +348,7 @@ bool CCoinsViewDB::ValidateNameDB() const
                     const valtype& name = nameOp.getOpName();
                     if (namesInUTXO.count(name) > 0)
                         return error("%s : name %s duplicated in UTXO set",
-                                     __func__, ValtypeToString(name).c_str());
+                                     __func__, EncodeNameForMessage(name));
                     namesInUTXO.insert(nameOp.getOpName());
                 }
             }
@@ -380,7 +381,7 @@ bool CCoinsViewDB::ValidateNameDB() const
 
             if (namesWithHistory.count(name) > 0)
                 return error("%s : name %s has duplicate history",
-                             __func__, ValtypeToString(name).c_str());
+                             __func__, EncodeNameForMessage(name));
             namesWithHistory.insert(name);
             break;
         }
@@ -395,18 +396,18 @@ bool CCoinsViewDB::ValidateNameDB() const
     for (const auto& name : namesInDB)
         if (namesInUTXO.count(name) == 0)
             return error("%s : name '%s' in DB but not UTXO set",
-                         __func__, ValtypeToString(name).c_str());
+                         __func__, EncodeNameForMessage(name));
     for (const auto& name : namesInUTXO)
         if (namesInDB.count(name) == 0)
             return error("%s : name '%s' in UTXO set but not DB",
-                         __func__, ValtypeToString(name).c_str());
+                         __func__, EncodeNameForMessage(name));
 
     if (fNameHistory)
     {
         for (const auto& name : namesWithHistory)
             if (namesInDB.count(name) == 0)
                 return error("%s : history entry for name '%s' not in main DB",
-                             __func__, ValtypeToString(name).c_str());
+                             __func__, EncodeNameForMessage(name));
     } else if (!namesWithHistory.empty ())
         return error("%s : name_history entries in DB, but"
                      " -namehistory not set", __func__);
