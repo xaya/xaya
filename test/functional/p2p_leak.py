@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017 The Bitcoin Core developers
+# Copyright (c) 2017-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test message sending before handshake completion.
@@ -88,11 +88,11 @@ class CNodeNoVerackIdle(CLazyNode):
 class P2PLeakTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
-        self.extra_args = [['-banscore='+str(banscore)]]
+        self.extra_args = [['-banscore=' + str(banscore)]]
 
     def run_test(self):
-        no_version_bannode = self.nodes[0].add_p2p_connection(CNodeNoVersionBan(), send_version=False)
-        no_version_idlenode = self.nodes[0].add_p2p_connection(CNodeNoVersionIdle(), send_version=False)
+        no_version_bannode = self.nodes[0].add_p2p_connection(CNodeNoVersionBan(), send_version=False, wait_for_verack=False)
+        no_version_idlenode = self.nodes[0].add_p2p_connection(CNodeNoVersionIdle(), send_version=False, wait_for_verack=False)
         no_verack_idlenode = self.nodes[0].add_p2p_connection(CNodeNoVerackIdle())
 
         wait_until(lambda: no_version_bannode.ever_connected, timeout=10, lock=mininode_lock)

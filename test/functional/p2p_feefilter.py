@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2017 The Bitcoin Core developers
+# Copyright (c) 2016-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test processing of feefilter messages."""
@@ -47,9 +47,7 @@ class FeeFilterTest(BitcoinTestFramework):
         node1.generate(1)
         sync_blocks(self.nodes)
 
-        # Setup the p2p connections
         self.nodes[0].add_p2p_connection(TestP2PConn())
-        self.nodes[0].p2p.wait_for_verack()
 
         # Test that invs are received for all txs at feerate of 20 sat/byte
         node1.settxfee(Decimal("0.00020000"))

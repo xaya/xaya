@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 The Bitcoin Core developers
+# Copyright (c) 2014-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test running bitcoind with the -rpcbind and -rpcallowip options."""
@@ -20,9 +20,9 @@ class RPCBindTest(BitcoinTestFramework):
         self.add_nodes(self.num_nodes, None)
 
     def add_options(self, parser):
-        parser.add_option("--ipv4", action='store_true', dest="run_ipv4", help="Run ipv4 tests only", default=False)
-        parser.add_option("--ipv6", action='store_true', dest="run_ipv6", help="Run ipv6 tests only", default=False)
-        parser.add_option("--nonloopback", action='store_true', dest="run_nonloopback", help="Run non-loopback tests only", default=False)
+        parser.add_argument("--ipv4", action='store_true', dest="run_ipv4", help="Run ipv4 tests only", default=False)
+        parser.add_argument("--ipv6", action='store_true', dest="run_ipv6", help="Run ipv6 tests only", default=False)
+        parser.add_argument("--nonloopback", action='store_true', dest="run_nonloopback", help="Run non-loopback tests only", default=False)
 
     def run_bind_test(self, allow_ips, connect_to, addresses, expected):
         '''
