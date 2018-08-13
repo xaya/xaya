@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017 The Bitcoin Core developers
+# Copyright (c) 2017-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Tests NODE_NETWORK_LIMITED.
@@ -48,7 +48,6 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
 
     def run_test(self):
         node = self.nodes[0].add_p2p_connection(P2PIgnoreInv())
-        node.wait_for_verack()
 
         expected_services = NODE_BLOOM | NODE_WITNESS | NODE_NETWORK_LIMITED
 
@@ -74,7 +73,6 @@ class NodeNetworkLimitedTest(BitcoinTestFramework):
         self.log.info("Check local address relay, do a fresh connection.")
         self.nodes[0].disconnect_p2ps()
         node1 = self.nodes[0].add_p2p_connection(P2PIgnoreInv())
-        node1.wait_for_verack()
         node1.send_message(msg_verack())
 
         node1.wait_for_addr()

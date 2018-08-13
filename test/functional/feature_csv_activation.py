@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2017 The Bitcoin Core developers
+# Copyright (c) 2015-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test activation of the first version bits soft fork.
@@ -47,7 +47,7 @@ from itertools import product
 from io import BytesIO
 import time
 
-from test_framework.blocktools import create_coinbase, create_block
+from test_framework.blocktools import create_coinbase, create_block, create_transaction
 from test_framework.messages import ToHex, CTransaction
 from test_framework.mininode import P2PDataStore
 from test_framework.script import (
@@ -84,15 +84,6 @@ def relative_locktime(sdf, srhb, stf, srlb):
 
 def all_rlt_txs(txs):
     return [tx['tx'] for tx in txs]
-
-def create_transaction(node, txid, to_address, amount):
-    inputs = [{"txid": txid, "vout": 0}]
-    outputs = {to_address: amount}
-    rawtx = node.createrawtransaction(inputs, outputs)
-    tx = CTransaction()
-    f = BytesIO(hex_str_to_bytes(rawtx))
-    tx.deserialize(f)
-    return tx
 
 def sign_transaction(node, unsignedtx):
     rawtx = ToHex(unsignedtx)
@@ -183,7 +174,6 @@ class BIP68_112_113Test(BitcoinTestFramework):
 
     def run_test(self):
         self.nodes[0].add_p2p_connection(P2PDataStore())
-        self.nodes[0].p2p.wait_for_verack()
 
         self.log.info("Generate blocks in the past for coinbase outputs.")
         long_past_time = int(time.time()) - 600 * 1000  # enough to build up to 1000 blocks 10 minutes apart without worrying about getting into the future

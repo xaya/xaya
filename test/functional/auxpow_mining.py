@@ -22,9 +22,9 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.num_nodes = 2
 
   def add_options (self, parser):
-    parser.add_option ("--segwit", dest="segwit", default=False,
-                       action="store_true",
-                       help="Test behaviour with SegWit active")
+    parser.add_argument ("--segwit", dest="segwit", default=False,
+                         action="store_true",
+                         help="Test behaviour with SegWit active")
 
   def run_test (self):
     # Enable mock time to be out of IBD.

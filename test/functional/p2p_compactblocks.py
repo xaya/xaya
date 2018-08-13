@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2017 The Bitcoin Core developers
+# Copyright (c) 2016-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test compact blocks (BIP 152).
@@ -790,10 +790,8 @@ class CompactBlocksTest(BitcoinTestFramework):
     def run_test(self):
         # Setup the p2p connections
         self.test_node = self.nodes[0].add_p2p_connection(TestP2PConn())
-        self.segwit_node = self.nodes[1].add_p2p_connection(TestP2PConn(), services=NODE_NETWORK|NODE_WITNESS)
+        self.segwit_node = self.nodes[1].add_p2p_connection(TestP2PConn(), services=NODE_NETWORK | NODE_WITNESS)
         self.old_node = self.nodes[1].add_p2p_connection(TestP2PConn(), services=NODE_NETWORK)
-
-        self.test_node.wait_for_verack()
 
         # We will need UTXOs to construct transactions in later tests.
         self.make_utxos()
