@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2010 ArtForz -- public domain half-a-node
 # Copyright (c) 2012 Jeff Garzik
-# Copyright (c) 2010-2017 The Bitcoin Core developers
+# Copyright (c) 2010-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Bitcoin P2P network half-a-node.
@@ -330,6 +330,15 @@ class P2PInterface(P2PConnection):
 
     def wait_for_block(self, blockhash, timeout=60):
         test_function = lambda: self.last_message.get("block") and self.last_message["block"].block.rehash() == blockhash
+        wait_until(test_function, timeout=timeout, lock=mininode_lock)
+
+    def wait_for_header(self, blockhash, timeout=60):
+        def test_function():
+            last_headers = self.last_message.get('headers')
+            if not last_headers:
+                return False
+            return last_headers.headers[0].rehash() == blockhash
+
         wait_until(test_function, timeout=timeout, lock=mininode_lock)
 
     def wait_for_getdata(self, timeout=60):

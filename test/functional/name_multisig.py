@@ -37,9 +37,9 @@ class NameMultisigTest (NameTestFramework):
     self.setup_name_test ([[]] * 2)
 
   def add_options (self, parser):
-    parser.add_option ("--bip16-active", dest="activated", default=False,
-                       action="store_true",
-                       help="Test behaviour with BIP16 active")
+    parser.add_argument ("--bip16-active", dest="activated", default=False,
+                         action="store_true",
+                         help="Test behaviour with BIP16 active")
 
   def getNewPubkey (self, ind):
     """

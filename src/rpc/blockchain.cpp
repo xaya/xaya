@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2017 The Bitcoin Core developers
+// Copyright (c) 2009-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -88,32 +88,32 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
 
     {
         UniValue tx(UniValue::VOBJ);
-        tx.push_back(Pair("hex", EncodeHexTx(*auxpow.coinbaseTx.tx)));
+        tx.pushKV("hex", EncodeHexTx(*auxpow.coinbaseTx.tx));
         TxToJSON(*auxpow.coinbaseTx.tx, auxpow.parentBlock.GetHash(), tx);
-        result.push_back(Pair("tx", tx));
+        result.pushKV("tx", tx);
     }
 
-    result.push_back(Pair("index", auxpow.coinbaseTx.nIndex));
-    result.push_back(Pair("chainindex", auxpow.nChainIndex));
+    result.pushKV("index", auxpow.coinbaseTx.nIndex);
+    result.pushKV("chainindex", auxpow.nChainIndex);
 
     {
         UniValue branch(UniValue::VARR);
         for (const auto& node : auxpow.coinbaseTx.vMerkleBranch)
             branch.push_back(node.GetHex());
-        result.push_back(Pair("merklebranch", branch));
+        result.pushKV("merklebranch", branch);
     }
 
     {
         UniValue branch(UniValue::VARR);
         for (const auto& node : auxpow.vChainMerkleBranch)
             branch.push_back(node.GetHex());
-        result.push_back(Pair("chainmerklebranch", branch));
+        result.pushKV("chainmerklebranch", branch);
     }
 
     CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
     ssParent << auxpow.parentBlock;
     const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
-    result.push_back(Pair("parentblock", strHex));
+    result.pushKV("parentblock", strHex);
 
     return result;
 }
@@ -187,7 +187,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (block.auxpow)
-        result.push_back(Pair("auxpow", AuxpowToJSON(*block.auxpow)));
+        result.pushKV("auxpow", AuxpowToJSON(*block.auxpow));
 
     if (blockindex->pprev)
         result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
