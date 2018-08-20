@@ -4565,10 +4565,11 @@ bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, const C
 
         // If we don't know about this input, skip it and let someone else deal with it
         const uint256& txhash = txin.prevout.hash;
-        const auto& it = pwallet->mapWallet.find(txhash);
+        const auto it = pwallet->mapWallet.find(txhash);
         if (it != pwallet->mapWallet.end()) {
             const CWalletTx& wtx = it->second;
             CTxOut utxo = wtx.tx->vout[txin.prevout.n];
+            // Update both UTXOs from the wallet.
             input.non_witness_utxo = wtx.tx;
             input.witness_utxo = utxo;
         }
@@ -4585,11 +4586,13 @@ bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, const C
             complete &= SignPSBTInput(PublicOnlySigningProvider(pwallet), *psbtx.tx, input, sigdata, i, sighash_type);
         }
 
-        // Drop the unnecessary UTXO
-        if (sigdata.witness) {
-            input.non_witness_utxo = nullptr;
-        } else {
-            input.witness_utxo.SetNull();
+        if (it != pwallet->mapWallet.end()) {
+            // Drop the unnecessary UTXO if we added both from the wallet.
+            if (sigdata.witness) {
+                input.non_witness_utxo = nullptr;
+            } else {
+                input.witness_utxo.SetNull();
+            }
         }
 
         // Get public key paths
@@ -4604,11 +4607,6 @@ bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, const C
     for (unsigned int i = 0; i < txConst->vout.size(); ++i) {
         const CTxOut& out = txConst->vout.at(i);
         PSBTOutput& psbt_out = psbtx.outputs.at(i);
-
-        // Dummy tx so we can use ProduceSignature to get stuff out
-        CMutableTransaction dummy_tx;
-        dummy_tx.vin.push_back(CTxIn());
-        dummy_tx.vout.push_back(CTxOut());
 
         // Fill a SignatureData with output info
         SignatureData sigdata;
@@ -4881,17 +4879,16 @@ UniValue getauxblock(const JSONRPCRequest& request)
     return fAccepted;
 }
 
-extern UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
-extern UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
-extern UniValue importprivkey(const JSONRPCRequest& request);
-extern UniValue importaddress(const JSONRPCRequest& request);
-extern UniValue importpubkey(const JSONRPCRequest& request);
-extern UniValue dumpwallet(const JSONRPCRequest& request);
-extern UniValue importwallet(const JSONRPCRequest& request);
-extern UniValue importprunedfunds(const JSONRPCRequest& request);
-extern UniValue removeprunedfunds(const JSONRPCRequest& request);
-extern UniValue importmulti(const JSONRPCRequest& request);
-extern UniValue rescanblockchain(const JSONRPCRequest& request);
+UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue importprivkey(const JSONRPCRequest& request);
+UniValue importaddress(const JSONRPCRequest& request);
+UniValue importpubkey(const JSONRPCRequest& request);
+UniValue dumpwallet(const JSONRPCRequest& request);
+UniValue importwallet(const JSONRPCRequest& request);
+UniValue importprunedfunds(const JSONRPCRequest& request);
+UniValue removeprunedfunds(const JSONRPCRequest& request);
+UniValue importmulti(const JSONRPCRequest& request);
 
 extern UniValue name_list(const JSONRPCRequest& request); // in rpcnames.cpp
 extern UniValue name_new(const JSONRPCRequest& request);
