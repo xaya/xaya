@@ -4,8 +4,10 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the wallet keypool and interaction with wallet encryption/locking."""
 
+import time
+
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
+from test_framework.util import assert_equal, assert_raises_rpc_error
 
 from test_framework.auxpow import reverseHex
 from test_framework.auxpow_testing import computeAuxpow
@@ -115,11 +117,7 @@ def test_auxpow(nodes):
     assert res
     assert_equal(nodes[0].getwalletinfo()['keypoolsize'], 0)
 
-    try:
-        nodes[0].getauxblock()
-        raise AssertionError('Keypool should be exhausted by getauxblock')
-    except JSONRPCException as e:
-        assert(e.error['code']==-12)
+    assert_raises_rpc_error(-12, 'Keypool ran out', nodes[0].getauxblock)
 
 if __name__ == '__main__':
     KeyPoolTest().main()
