@@ -24,7 +24,7 @@ int main (int argc, char** argv)
   const std::string hex(argv[2]);
 
   CPureBlockHeader header;
-  if (!DecodeHexHeader (header, hex))
+  if (!DecodeHexPureHeader (header, hex))
     {
       std::cerr << "Failed to decode block header." << std::endl;
       return EXIT_FAILURE;

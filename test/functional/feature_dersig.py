@@ -7,11 +7,12 @@
 Test that the DERSIG soft-fork activates at (regtest) height 1251.
 """
 
-from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
-from test_framework.mininode import *
 from test_framework.blocktools import create_coinbase, create_block, create_transaction
+from test_framework.messages import msg_block
+from test_framework.mininode import mininode_lock, P2PInterface
 from test_framework.script import CScript
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import assert_equal, bytes_to_hex_str, wait_until
 
 DERSIG_HEIGHT = 1251
 
@@ -54,7 +55,7 @@ class BIP66Test(BitcoinTestFramework):
         self.log.info("Test that a transaction with non-DER signature can still appear in a block")
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_txids[0],
-                self.nodeaddress, 1.0)
+                self.nodeaddress, amount=1.0)
         unDERify(spendtx)
         spendtx.rehash()
 
@@ -91,7 +92,7 @@ class BIP66Test(BitcoinTestFramework):
         block.nVersion = 3
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_txids[1],
-                self.nodeaddress, 1.0)
+                self.nodeaddress, amount=1.0)
         unDERify(spendtx)
         spendtx.rehash()
 
@@ -127,8 +128,7 @@ class BIP66Test(BitcoinTestFramework):
                 assert b'Non-canonical DER signature' in self.nodes[0].p2p.last_message["reject"].reason
 
         self.log.info("Test that a version 3 block with a DERSIG-compliant transaction is accepted")
-        block.vtx[1] = create_transaction(self.nodes[0],
-                self.coinbase_txids[1], self.nodeaddress, 1.0)
+        block.vtx[1] = create_transaction(self.nodes[0], self.coinbase_txids[1], self.nodeaddress, amount=1.0)
         block.hashMerkleRoot = block.calc_merkle_root()
         block.rehash()
         block.solve()

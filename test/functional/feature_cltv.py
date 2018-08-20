@@ -8,11 +8,13 @@ Test that the CHECKLOCKTIMEVERIFY soft-fork activates at (regtest) block height
 1351.
 """
 
-from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import *
-from test_framework.mininode import *
 from test_framework.blocktools import create_coinbase, create_block, create_transaction
+from test_framework.messages import CTransaction, msg_block, ToHex
+from test_framework.mininode import mininode_lock, P2PInterface
 from test_framework.script import CScript, OP_1NEGATE, OP_CHECKLOCKTIMEVERIFY, OP_DROP, CScriptNum
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import assert_equal, bytes_to_hex_str, hex_str_to_bytes, wait_until
+
 from io import BytesIO
 
 CLTV_HEIGHT = 1351
@@ -65,7 +67,7 @@ class BIP65Test(BitcoinTestFramework):
         self.log.info("Test that an invalid-according-to-CLTV transaction can still appear in a block")
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_txids[0],
-                self.nodeaddress, 1.0)
+                self.nodeaddress, amount=1.0)
         cltv_invalidate(spendtx)
         spendtx.rehash()
 
@@ -100,7 +102,7 @@ class BIP65Test(BitcoinTestFramework):
         block.nVersion = 4
 
         spendtx = create_transaction(self.nodes[0], self.coinbase_txids[1],
-                self.nodeaddress, 1.0)
+                self.nodeaddress, amount=1.0)
         cltv_invalidate(spendtx)
         spendtx.rehash()
 

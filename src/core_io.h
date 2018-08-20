@@ -11,6 +11,7 @@
 #include <vector>
 
 class CBlock;
+class CBlockHeader;
 class CNameScript;
 class CPureBlockHeader;
 class CScript;
@@ -25,7 +26,8 @@ CScript ParseScript(const std::string& s);
 std::string ScriptToAsmStr(const CScript& script, const bool fAttemptSighashDecode = false);
 bool DecodeHexTx(CMutableTransaction& tx, const std::string& hex_tx, bool try_no_witness = false, bool try_witness = true);
 bool DecodeHexBlk(CBlock&, const std::string& strHexBlk);
-bool DecodeHexHeader(CPureBlockHeader&, const std::string& strHex);
+bool DecodeHexBlockHeader(CBlockHeader&, const std::string& hex_header);
+bool DecodeHexPureHeader(CPureBlockHeader&, const std::string& hex_header);
 uint256 ParseHashStr(const std::string&, const std::string& strName);
 std::vector<unsigned char> ParseHexUV(const UniValue& v, const std::string& strName);
 bool DecodePSBT(PartiallySignedTransaction& psbt, const std::string& base64_tx, std::string& error);

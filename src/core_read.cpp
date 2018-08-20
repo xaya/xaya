@@ -146,37 +146,38 @@ bool DecodeHexTx(CMutableTransaction& tx, const std::string& hex_tx, bool try_no
     return false;
 }
 
-namespace
-{
+namespace {
+
 template<typename T>
-bool DecodeHexObject (T& obj, const std::string& strHex)
+bool DecodeHexObject(T& obj, const std::string& strHex)
 {
-  if (!IsHex (strHex))
-    return false;
+    if (!IsHex(strHex)) return false;
 
-  std::vector<unsigned char> data(ParseHex (strHex));
-  CDataStream ssData(data, SER_NETWORK, PROTOCOL_VERSION);
-  try
-    {
-      ssData >> obj;
+    const std::vector<unsigned char> data(ParseHex(strHex));
+    CDataStream stream(data, SER_NETWORK, PROTOCOL_VERSION);
+    try {
+        stream >> obj;
+    } catch (const std::exception&) {
+        return false;
     }
-  catch (const std::exception&)
-    {
-      return false;
-    }
-
-  return true;
+    return true;
 }
+
 } // anonymous namespace
 
-bool DecodeHexHeader (CPureBlockHeader& header, const std::string& strHex)
+bool DecodeHexBlockHeader(CBlockHeader& header, const std::string& hex_header)
 {
-  return DecodeHexObject (header, strHex);
+    return DecodeHexObject(header, hex_header);
 }
 
 bool DecodeHexBlk(CBlock& block, const std::string& strHexBlk)
 {
-  return DecodeHexObject (block, strHexBlk);
+    return DecodeHexObject(block, strHexBlk);
+}
+
+bool DecodeHexPureHeader(CPureBlockHeader& hdr, const std::string& hex_header)
+{
+    return DecodeHexObject(hdr, hex_header);
 }
 
 bool DecodePSBT(PartiallySignedTransaction& psbt, const std::string& base64_tx, std::string& error)

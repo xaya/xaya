@@ -43,7 +43,8 @@ static CTxIn MineBlock(const CScript& coinbase_scriptPubKey)
 
     auto& fakeHeader = block->pow.initFakeHeader (*block);
     while (!block->pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
-        assert(++fakeHeader.nNonce);
+        ++fakeHeader.nNonce;
+        assert(fakeHeader.nNonce);
     }
 
     bool processed{ProcessNewBlock(Params(), block, true, nullptr)};
