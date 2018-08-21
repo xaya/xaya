@@ -154,6 +154,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
   tmpl.pushKV ("child", block.GetHash ().GetHex ());
   if (!reqtoken.empty ())
     tmpl.pushKV ("reqtoken", reqtoken);
+  tmpl.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
 
   /* Send notifications for all games with the moves merged into the
      template object.  */

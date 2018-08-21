@@ -118,7 +118,7 @@ class GameBlocksTest (BitcoinTestFramework):
     try:
       self._test_currencyIgnored ()
       self._test_register ()
-      self._test_blockHashes ()
+      self._test_blockData ()
       self._test_multipleUpdates ()
       self._test_moveWithCurrency ()
       self._test_reorg ()
@@ -170,17 +170,23 @@ class GameBlocksTest (BitcoinTestFramework):
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
 
-  def _test_blockHashes (self):
+  def _test_blockData (self):
     """
-    Verifies the block hashes (parent and child) in the main message that
-    is sent against the blockchain.
+    Verifies the block-related data (parent/child hashes, rngseed) in the main
+    message that is sent against the blockchain.
     """
 
-    self.log.info ("Verifying block hashes...")
+    self.log.info ("Verifying block data...")
 
     parent = self.node.getbestblockhash ()
     child = self.node.generate (1)[0]
-    expected = {"parent": parent, "child": child, "moves": []}
+    data = self.node.getblock (child)
+    expected = {
+        "parent": parent,
+        "child": child,
+        "rngseed": data['rngseed'],
+        "moves": []
+    }
 
     for g in ["a", "b"]:
       _, data = self.games[g].receive ()
