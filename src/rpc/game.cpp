@@ -7,10 +7,12 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <logging.h>
+#include <random.h>
 #include <rpc/server.h>
 #include <script/script.h>
 #include <uint256.h>
 #include <util.h>
+#include <utilstrencodings.h>
 #include <validation.h>
 #include <zmq/zmqgames.h>
 #include <zmq/zmqnotificationinterface.h>
@@ -87,6 +89,7 @@ namespace
 void
 SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
                      const std::string& commandPrefix,
+                     const std::string& reqtoken,
                      const CBlockIndex* pindex)
 {
   CBlock blk;
@@ -98,7 +101,8 @@ SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
     }
 
   auto* notifier = GetGameBlocksNotifier ();
-  notifier->SendBlockNotifications (trackedGames, commandPrefix, blk, pindex);
+  notifier->SendBlockNotifications (trackedGames, commandPrefix, reqtoken,
+                                    blk, pindex);
 }
 #endif // ENABLE_ZMQ
 
@@ -139,10 +143,12 @@ SendUpdatesWorker::run (SendUpdatesWorker& self)
 
       for (const auto* pindex : w.detach)
         SendUpdatesOneBlock (w.trackedGames,
-                             ZMQGameBlocksNotifier::PREFIX_DETACH, pindex);
+                             ZMQGameBlocksNotifier::PREFIX_DETACH,
+                             w.reqtoken, pindex);
       for (const auto* pindex : w.attach)
         SendUpdatesOneBlock (w.trackedGames,
-                             ZMQGameBlocksNotifier::PREFIX_ATTACH, pindex);
+                             ZMQGameBlocksNotifier::PREFIX_ATTACH,
+                             w.reqtoken, pindex);
       LogPrint (BCLog::GAME, "Finished processing sendupdates: %s\n",
                 w.str ().c_str ());
     }
@@ -217,6 +223,7 @@ game_sendupdates (const JSONRPCRequest& request)
         "{\n"
         "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
         "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
+        "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
         "  \"steps\":\n"
         "   {\n"
         "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
@@ -238,6 +245,11 @@ game_sendupdates (const JSONRPCRequest& request)
   w.trackedGames = {request.params[0].get_str ()};
   const uint256 fromBlock = ParseHashV (request.params[1].get_str (),
                                         "fromblock");
+
+  std::vector<unsigned char> tokenBin(16);
+  GetRandBytes (tokenBin.data (), tokenBin.size ());
+  const std::string reqtoken = HexStr (tokenBin.begin (), tokenBin.end ());
+  w.reqtoken = reqtoken;
 
   uint256 toBlock;
   if (request.params.size () >= 3)
@@ -277,6 +289,7 @@ game_sendupdates (const JSONRPCRequest& request)
   UniValue result(UniValue::VOBJ);
   result.pushKV ("toblock", toBlock.GetHex ());
   result.pushKV ("ancestor", ancestor->GetBlockHash ().GetHex ());
+  result.pushKV ("reqtoken", reqtoken);
   UniValue steps(UniValue::VOBJ);
   steps.pushKV ("detach", w.detach.size ());
   steps.pushKV ("attach", w.attach.size ());

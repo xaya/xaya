@@ -53,6 +53,7 @@ public:
    */
   bool SendBlockNotifications (const std::set<std::string>& games,
                                const std::string& commandPrefix,
+                               const std::string& reqtoken,
                                const CBlock& block, const CBlockIndex* pindex);
 
   bool NotifyBlockAttached (const CBlock& block,
