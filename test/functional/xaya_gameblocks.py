@@ -297,9 +297,14 @@ class GameBlocksTest (BitcoinTestFramework):
       blks.extend (self.node.generate (1))
       topic, data = self.games["a"].receive ()
       assert_equal (topic, "game-block-attach json a")
+      if len (attachA) > 0:
+        assert_equal (attachA[-1]['child'], data['parent'])
       attachA.append (data)
+
       topic, data = self.games["b"].receive ()
       assert_equal (topic, "game-block-attach json b")
+      if len (attachB) > 0:
+        assert_equal (attachB[-1]['child'], data['parent'])
       attachB.append (data)
 
     return blks, attachA, attachB
