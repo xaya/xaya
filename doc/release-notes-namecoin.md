@@ -1,5 +1,9 @@
 # Release Notes for Namecoin
 
+## Version 0.18
+
+## Version 0.17
+
 - Previously, `createrawtransaction` supported a separate argument for creating
   name operations.  This has been removed, so that `createrawtransaction` now
   has the same interface as the upstream version in Bitcoin.  Instead, a new
