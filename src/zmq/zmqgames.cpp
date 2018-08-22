@@ -121,7 +121,7 @@ JsonDataForMove (const CTransaction& tx)
 bool
 ZMQGameBlocksNotifier::SendBlockNotifications (
     const std::set<std::string>& games, const std::string& commandPrefix,
-    const CBlock& block, const CBlockIndex* pindex)
+    const std::string& reqtoken, const CBlock& block, const CBlockIndex* pindex)
 {
   /* Start with an empty array of moves for each game that we track.  */
   std::map<std::string, UniValue> perGameMoves;
@@ -152,6 +152,9 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
       tmpl.pushKV ("parent", pindex->pprev->GetBlockHash ().GetHex ());
     }
   tmpl.pushKV ("child", block.GetHash ().GetHex ());
+  if (!reqtoken.empty ())
+    tmpl.pushKV ("reqtoken", reqtoken);
+  tmpl.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
 
   /* Send notifications for all games with the moves merged into the
      template object.  */
@@ -175,7 +178,8 @@ ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
   LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, "",
+                                 block, pindex);
 }
 
 bool
@@ -183,7 +187,8 @@ ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
   LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_DETACH, block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_DETACH, "",
+                                 block, pindex);
 }
 
 UniValue

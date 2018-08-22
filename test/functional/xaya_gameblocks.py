@@ -118,7 +118,7 @@ class GameBlocksTest (BitcoinTestFramework):
     try:
       self._test_currencyIgnored ()
       self._test_register ()
-      self._test_blockHashes ()
+      self._test_blockData ()
       self._test_multipleUpdates ()
       self._test_moveWithCurrency ()
       self._test_reorg ()
@@ -170,17 +170,23 @@ class GameBlocksTest (BitcoinTestFramework):
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
 
-  def _test_blockHashes (self):
+  def _test_blockData (self):
     """
-    Verifies the block hashes (parent and child) in the main message that
-    is sent against the blockchain.
+    Verifies the block-related data (parent/child hashes, rngseed) in the main
+    message that is sent against the blockchain.
     """
 
-    self.log.info ("Verifying block hashes...")
+    self.log.info ("Verifying block data...")
 
     parent = self.node.getbestblockhash ()
     child = self.node.generate (1)[0]
-    expected = {"parent": parent, "child": child, "moves": []}
+    data = self.node.getblock (child)
+    expected = {
+        "parent": parent,
+        "child": child,
+        "rngseed": data['rngseed'],
+        "moves": []
+    }
 
     for g in ["a", "b"]:
       _, data = self.games[g].receive ()
@@ -291,9 +297,14 @@ class GameBlocksTest (BitcoinTestFramework):
       blks.extend (self.node.generate (1))
       topic, data = self.games["a"].receive ()
       assert_equal (topic, "game-block-attach json a")
+      if len (attachA) > 0:
+        assert_equal (attachA[-1]['child'], data['parent'])
       attachA.append (data)
+
       topic, data = self.games["b"].receive ()
       assert_equal (topic, "game-block-attach json b")
+      if len (attachB) > 0:
+        assert_equal (attachB[-1]['child'], data['parent'])
       attachB.append (data)
 
     return blks, attachA, attachB
@@ -390,11 +401,15 @@ class GameBlocksTest (BitcoinTestFramework):
     resA = self.node.game_sendupdates ("a", res["short"]["blocks"][-1])
     resB = self.node.game_sendupdates ("b", res["long"]["blocks"][-1],
                                        res["short"]["blocks"][-1])
+    tokenA = resA['reqtoken']
+    tokenB = resB['reqtoken']
+    assert tokenA != tokenB
 
     # Check the return values.
     assert_equal (resA, {
       "toblock": res["long"]["blocks"][-1],
       "ancestor": ancestor,
+      "reqtoken": tokenA,
       "steps":
         {
           "attach": 10,
@@ -404,12 +419,23 @@ class GameBlocksTest (BitcoinTestFramework):
     assert_equal (resB, {
       "toblock": res["short"]["blocks"][-1],
       "ancestor": ancestor,
+      "reqtoken": tokenB,
       "steps":
         {
           "attach": 5,
           "detach": 10,
         },
     })
+
+    # Add the tokens in to the expected chains.
+    def addToken (token, chain):
+      for blk in chain:
+        assert 'reqtoken' not in blk
+        blk['reqtoken'] = token
+    addToken (tokenA, res["short"]["attachA"])
+    addToken (tokenA, res["long"]["attachA"])
+    addToken (tokenB, res["short"]["attachB"])
+    addToken (tokenB, res["long"]["attachB"])
 
     # Check the updates for the games themselves.
     self.verifyDetach ("a", res["short"]["attachA"])
@@ -433,6 +459,7 @@ class GameBlocksTest (BitcoinTestFramework):
     # Check the case of there being no update.
     tip = self.node.getbestblockhash ()
     res = self.node.game_sendupdates ("a", tip)
+    del res['reqtoken']
     assert_equal (res, {
       "toblock": tip,
       "ancestor": tip,

@@ -29,6 +29,7 @@ public:
   struct Work
   {
 
+    std::string reqtoken;
     std::vector<const CBlockIndex*> detach;
     std::vector<const CBlockIndex*> attach;
     std::set<std::string> trackedGames;
