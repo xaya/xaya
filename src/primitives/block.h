@@ -37,7 +37,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CPureBlockHeader*)this);
+        READWRITEAS(CPureBlockHeader, *this);
 
         if (this->IsAuxpow())
         {
