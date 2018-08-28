@@ -71,6 +71,7 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [Tor Support](tor.md)
 - [Init Scripts (systemd/upstart/openrc)](init.md)
 - [ZMQ](zmq.md)
+- [PSBT support](psbt.md)
 
 License
 ---------------------
