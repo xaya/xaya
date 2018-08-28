@@ -66,6 +66,7 @@ The Xaya repo's [root README](https://github.com/xaya/xaya/blob/master/README.md
 - [Tor Support](tor.md)
 - [Init Scripts (systemd/upstart/openrc)](init.md)
 - [ZMQ](zmq.md)
+- [PSBT support](psbt.md)
 
 License
 ---------------------

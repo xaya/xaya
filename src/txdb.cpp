@@ -100,12 +100,10 @@ class CDbNameIterator : public CNameIterator
 
 private:
 
-    /* The backing LevelDB iterator.  */
-    CDBIterator* iter;
+    /** The backing LevelDB iterator.  */
+    std::unique_ptr<CDBIterator> iter;
 
 public:
-
-    ~CDbNameIterator();
 
     /**
      * Construct a new name iterator for the database.
@@ -118,10 +116,6 @@ public:
     bool next (valtype& name, CNameData& data);
 
 };
-
-CDbNameIterator::~CDbNameIterator() {
-    delete iter;
-}
 
 CDbNameIterator::CDbNameIterator(const CDBWrapper& db)
     : iter(const_cast<CDBWrapper*>(&db)->NewIterator())
@@ -314,7 +308,7 @@ bool CCoinsViewDB::ValidateNameDB() const
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
        that restriction.  */
-    boost::scoped_ptr<CDBIterator> pcursor(const_cast<CDBWrapper*>(&db)->NewIterator());
+    std::unique_ptr<CDBIterator> pcursor(const_cast<CDBWrapper*>(&db)->NewIterator());
     pcursor->SeekToFirst();
 
     /* Loop over the total database and read interesting

@@ -34,7 +34,7 @@ public:
     inline void
     SerializationOp (Stream& s, Operation ser_action)
   {
-    READWRITE (*static_cast<CPureBlockHeader*> (this));
+    READWRITEAS (CPureBlockHeader, *this);
     READWRITE (pow);
   }
 

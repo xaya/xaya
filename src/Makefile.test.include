@@ -9,6 +9,7 @@ TEST_BINARY=test/test_xaya$(EXEEXT)
 
 JSON_TEST_FILES = \
   test/data/base58_encode_decode.json \
+  test/data/blockfilters.json \
   test/data/key_io_valid.json \
   test/data/key_io_invalid.json \
   test/data/script_tests.json \
@@ -93,6 +94,7 @@ BITCOIN_TESTS =\
   test/versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
 #   base58_tests
+#   blockfilter_tetss: update data/blockfilters.json for Xaya block format
 #   key_io_tests: update the version in data/key_io_valid.json
 #   key_tests
 #   miner_tests
