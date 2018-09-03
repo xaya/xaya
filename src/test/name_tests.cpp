@@ -813,7 +813,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
                                  false, 1, lp);
   BOOST_CHECK (entryReg.isNameRegistration () && !entryReg.isNameUpdate ());
   BOOST_CHECK (entryReg.getName () == nameReg);
-  mempool.addUnchecked (entryReg.GetTx ().GetHash (), entryReg);
+  mempool.addUnchecked (entryReg);
   BOOST_CHECK (mempool.registersName (nameReg));
   BOOST_CHECK (!mempool.updatesName (nameReg));
   BOOST_CHECK (!mempool.checkNameOps (txReg2) && mempool.checkNameOps (txUpd1));
@@ -823,7 +823,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
                                  false, 1, lp);
   BOOST_CHECK (!entryUpd.isNameRegistration () && entryUpd.isNameUpdate ());
   BOOST_CHECK (entryUpd.getName () == nameUpd);
-  mempool.addUnchecked (entryUpd.GetTx ().GetHash (), entryUpd);
+  mempool.addUnchecked (entryUpd);
   BOOST_CHECK (!mempool.registersName (nameUpd));
   BOOST_CHECK (mempool.updatesName (nameUpd));
   BOOST_CHECK (!mempool.checkNameOps (txUpd2));
@@ -858,7 +858,7 @@ BOOST_AUTO_TEST_CASE (name_mempool)
 
   /* Check removing of conflicted name registrations.  */
 
-  mempool.addUnchecked (entryReg.GetTx ().GetHash (), entryReg);
+  mempool.addUnchecked (entryReg);
   BOOST_CHECK (mempool.registersName (nameReg));
   BOOST_CHECK (!mempool.checkNameOps (txReg2));
 

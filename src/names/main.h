@@ -163,10 +163,8 @@ public:
   /**
    * Add an entry without checking it.  It should have been checked
    * already.  If this conflicts with the mempool, it may throw.
-   * @param hash The tx hash.
-   * @param entry The new mempool entry.
    */
-  void addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry);
+  void addUnchecked (const CTxMemPoolEntry& entry);
 
   /**
    * Remove the given mempool entry.  It is assumed that it is present.

@@ -36,7 +36,7 @@ CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,
                                   bool fSubtractFeeFromAmount,
                                   const CCoinControl& coin_control,
-                                  mapValue_t mapValue, std::string fromAccount);
+                                  mapValue_t mapValue);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);

@@ -117,7 +117,7 @@ SendUpdatesWorker::run (SendUpdatesWorker& self)
       Work w;
 
       {
-        WaitableLock lock(self.csWork);
+        WAIT_LOCK (self.csWork, lock);
 
         if (self.work.empty ())
           {
@@ -158,7 +158,7 @@ SendUpdatesWorker::run (SendUpdatesWorker& self)
 void
 SendUpdatesWorker::interrupt ()
 {
-  WaitableLock lock(csWork);
+  WAIT_LOCK (csWork, lock);
   interrupted = true;
   cvWork.notify_all ();
 }
@@ -166,7 +166,7 @@ SendUpdatesWorker::interrupt ()
 void
 SendUpdatesWorker::enqueue (Work&& w)
 {
-  WaitableLock lock(csWork);
+  WAIT_LOCK (csWork, lock);
 
   if (interrupted)
     {

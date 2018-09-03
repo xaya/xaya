@@ -7,6 +7,7 @@
 
 #include <sync.h>
 
+#include <condition_variable>
 #include <memory>
 #include <queue>
 #include <set>
@@ -50,8 +51,8 @@ private:
   std::queue<Work> work;
   bool interrupted;
 
-  CWaitableCriticalSection csWork;
-  CConditionVariable cvWork;
+  Mutex csWork;
+  std::condition_variable cvWork;
 
   std::unique_ptr<std::thread> runner;
 

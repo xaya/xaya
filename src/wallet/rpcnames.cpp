@@ -225,8 +225,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
     }
 
   CValidationState state;
-  if (!wallet.CommitTransaction (tx, {}, {}, {}, keyChange, g_connman.get (),
-                                 state))
+  if (!wallet.CommitTransaction (tx, {}, {}, keyChange,
+                                 g_connman.get (), state))
     {
       strError = strprintf ("Error: The transaction was rejected!"
                             "  Reason given: %s", FormatStateMessage (state));
@@ -613,7 +613,6 @@ sendtoname (const JSONRPCRequest& request)
 
   CTransactionRef tx = SendMoneyToScript (pwallet, data.getAddress (), nullptr,
                                           nAmount, fSubtractFeeFromAmount,
-                                          coin_control, std::move(mapValue),
-                                          {} /* fromAccount */);
+                                          coin_control, std::move(mapValue));
   return tx->GetHash ().GetHex ();
 }
