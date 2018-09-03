@@ -71,7 +71,6 @@
 #include <malloc.h>
 #endif
 
-#include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/thread.hpp>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
@@ -139,7 +138,7 @@ instance_of_cinit;
  * cleans them up and thus automatically unlocks them, or ReleaseDirectoryLocks
  * is called.
  */
-static std::map<std::string, std::unique_ptr<boost::interprocess::file_lock>> dir_locks;
+static std::map<std::string, std::unique_ptr<fsbridge::FileLock>> dir_locks;
 /** Mutex to protect dir_locks. */
 static std::mutex cs_dir_locks;
 
@@ -156,18 +155,13 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
     // Create empty lock file if it doesn't exist.
     FILE* file = fsbridge::fopen(pathLockFile, "a");
     if (file) fclose(file);
-
-    try {
-        auto lock = MakeUnique<boost::interprocess::file_lock>(pathLockFile.string().c_str());
-        if (!lock->try_lock()) {
-            return false;
-        }
-        if (!probe_only) {
-            // Lock successful and we're not just probing, put it into the map
-            dir_locks.emplace(pathLockFile.string(), std::move(lock));
-        }
-    } catch (const boost::interprocess::interprocess_exception& e) {
-        return error("Error while attempting to lock directory %s: %s", directory.string(), e.what());
+    auto lock = MakeUnique<fsbridge::FileLock>(pathLockFile);
+    if (!lock->TryLock()) {
+        return error("Error while attempting to lock directory %s: %s", directory.string(), lock->GetReason());
+    }
+    if (!probe_only) {
+        // Lock successful and we're not just probing, put it into the map
+        dir_locks.emplace(pathLockFile.string(), std::move(lock));
     }
     return true;
 }
@@ -222,7 +216,7 @@ public:
 
     /** Determine whether to use config settings in the default section,
      *  See also comments around ArgsManager::ArgsManager() below. */
-    static inline bool UseDefaultSection(const ArgsManager& am, const std::string& arg)
+    static inline bool UseDefaultSection(const ArgsManager& am, const std::string& arg) EXCLUSIVE_LOCKS_REQUIRED(am.cs_args)
     {
         return (am.m_network == CBaseChainParams::MAIN || am.m_network_only_args.count(arg) == 0);
     }
@@ -301,7 +295,7 @@ public:
     /* Special test for -testnet and -regtest args, because we
      * don't want to be confused by craziness like "[regtest] testnet=1"
      */
-    static inline bool GetNetBoolArg(const ArgsManager &am, const std::string& net_arg)
+    static inline bool GetNetBoolArg(const ArgsManager &am, const std::string& net_arg) EXCLUSIVE_LOCKS_REQUIRED(am.cs_args)
     {
         std::pair<bool,std::string> found_result(false,std::string());
         found_result = GetArgHelper(am.m_override_args, net_arg, true);
@@ -378,6 +372,8 @@ ArgsManager::ArgsManager() :
 
 void ArgsManager::WarnForSectionOnlyArgs()
 {
+    LOCK(cs_args);
+
     // if there's no section selected, don't worry
     if (m_network.empty()) return;
 
@@ -406,6 +402,7 @@ void ArgsManager::WarnForSectionOnlyArgs()
 
 void ArgsManager::SelectConfigNetwork(const std::string& network)
 {
+    LOCK(cs_args);
     m_network = network;
 }
 
@@ -474,6 +471,7 @@ bool ArgsManager::IsArgKnown(const std::string& key) const
         arg_no_net = std::string("-") + key.substr(option_index + 1, std::string::npos);
     }
 
+    LOCK(cs_args);
     for (const auto& arg_map : m_available_args) {
         if (arg_map.second.count(arg_no_net)) return true;
     }
@@ -577,6 +575,7 @@ void ArgsManager::AddArg(const std::string& name, const std::string& help, const
         eq_index = name.size();
     }
 
+    LOCK(cs_args);
     std::map<std::string, Arg>& arg_map = m_available_args[cat];
     auto ret = arg_map.emplace(name.substr(0, eq_index), Arg(name.substr(eq_index, name.size() - eq_index), help, debug_only));
     assert(ret.second); // Make sure an insertion actually happened
@@ -594,6 +593,7 @@ std::string ArgsManager::GetHelpMessage() const
     const bool show_debug = gArgs.GetBoolArg("-help-debug", false);
 
     std::string usage = "";
+    LOCK(cs_args);
     for (const auto& arg_map : m_available_args) {
         switch(arg_map.first) {
             case OptionsCategory::OPTIONS:
@@ -886,7 +886,12 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
         }
         // if there is an -includeconf in the override args, but it is empty, that means the user
         // passed '-noincludeconf' on the command line, in which case we should not include anything
-        if (m_override_args.count("-includeconf") == 0) {
+        bool emptyIncludeConf;
+        {
+            LOCK(cs_args);
+            emptyIncludeConf = m_override_args.count("-includeconf") == 0;
+        }
+        if (emptyIncludeConf) {
             std::string chain_id = GetChainName();
             std::vector<std::string> includeconf(GetArgs("-includeconf"));
             {
@@ -946,6 +951,7 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
 
 std::string ArgsManager::GetChainName() const
 {
+    LOCK(cs_args);
     bool fRegTest = ArgsManagerHelper::GetNetBoolArg(*this, "-regtest");
     bool fTestNet = ArgsManagerHelper::GetNetBoolArg(*this, "-testnet");
 

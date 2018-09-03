@@ -97,32 +97,33 @@ CNameMemPool::getTxForName (const valtype& name) const
 }
 
 void
-CNameMemPool::addUnchecked (const uint256& hash, const CTxMemPoolEntry& entry)
+CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
 {
   AssertLockHeld (pool.cs);
 
+  const uint256& txHash = entry.GetTx ().GetHash ();
   if (entry.isNameNew ())
     {
       const valtype& newHash = entry.getNameNewHash ();
       const NameTxMap::const_iterator mit = mapNameNews.find (newHash);
       if (mit != mapNameNews.end ())
-        assert (mit->second == hash);
+        assert (mit->second == txHash);
       else
-        mapNameNews.insert (std::make_pair (newHash, hash));
+        mapNameNews.insert (std::make_pair (newHash, txHash));
     }
 
   if (entry.isNameRegistration ())
     {
       const valtype& name = entry.getName ();
       assert (mapNameRegs.count (name) == 0);
-      mapNameRegs.insert (std::make_pair (name, hash));
+      mapNameRegs.insert (std::make_pair (name, txHash));
     }
 
   if (entry.isNameUpdate ())
     {
       const valtype& name = entry.getName ();
       assert (mapNameUpdates.count (name) == 0);
-      mapNameUpdates.insert (std::make_pair (name, hash));
+      mapNameUpdates.insert (std::make_pair (name, txHash));
     }
 }
 
