@@ -4197,7 +4197,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
 
     /** Auxpow wallet functions */
-    { "mining",             "getauxblock",                      &getauxblock,                   {"hash", "auxpow"} },
+    { "mining",             "getauxblock",                      &getauxblock,                   {"hash","auxpow"} },
 };
 
 void RegisterWalletRPCCommands(CRPCTable &t)
