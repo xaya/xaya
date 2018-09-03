@@ -13,15 +13,6 @@ static bool DoubleEquals(double a, double b, double epsilon)
     return std::abs(a - b) < epsilon;
 }
 
-static CBlockIndex* CreateBlockIndexWithNbits(uint32_t nbits)
-{
-    CBlockIndex* block_index = new CBlockIndex();
-    block_index->nHeight = 46367;
-    block_index->nTime = 1269211443;
-    block_index->nBits = nbits;
-    return block_index;
-}
-
 static void RejectDifficultyMismatch(double difficulty, double expected_difficulty) {
      BOOST_CHECK_MESSAGE(
         DoubleEquals(difficulty, expected_difficulty, 0.00001),
