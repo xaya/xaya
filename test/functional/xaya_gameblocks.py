@@ -179,13 +179,18 @@ class GameBlocksTest (BitcoinTestFramework):
     self.log.info ("Verifying block data...")
 
     parent = self.node.getbestblockhash ()
-    child = self.node.generate (1)[0]
-    data = self.node.getblock (child)
+    blkHash = self.node.generate (1)[0]
+    data = self.node.getblock (blkHash)
     expected = {
-        "parent": parent,
-        "child": child,
-        "rngseed": data['rngseed'],
-        "moves": []
+      "block":
+        {
+          "hash": blkHash,
+          "parent": parent,
+          "height": self.node.getblockcount (),
+          "timestamp": data['time'],
+          "rngseed": data['rngseed'],
+        },
+      "moves": []
     }
 
     for g in ["a", "b"]:
@@ -298,13 +303,13 @@ class GameBlocksTest (BitcoinTestFramework):
       topic, data = self.games["a"].receive ()
       assert_equal (topic, "game-block-attach json a")
       if len (attachA) > 0:
-        assert_equal (attachA[-1]['child'], data['parent'])
+        assert_equal (attachA[-1]['block']['hash'], data['block']['parent'])
       attachA.append (data)
 
       topic, data = self.games["b"].receive ()
       assert_equal (topic, "game-block-attach json b")
       if len (attachB) > 0:
-        assert_equal (attachB[-1]['child'], data['parent'])
+        assert_equal (attachB[-1]['block']['hash'], data['block']['parent'])
       attachB.append (data)
 
     return blks, attachA, attachB
@@ -453,8 +458,8 @@ class GameBlocksTest (BitcoinTestFramework):
     for i in range (res["steps"]["attach"]):
       topic, data = self.games["ignored"].receive ()
       assert_equal (topic, "game-block-attach json ignored")
-      assert_equal (data["parent"], self.node.getblockhash (i))
-      assert_equal (data["child"], self.node.getblockhash (i + 1))
+      assert_equal (data["block"]["parent"], self.node.getblockhash (i))
+      assert_equal (data["block"]["hash"], self.node.getblockhash (i + 1))
 
     # Check the case of there being no update.
     tip = self.node.getbestblockhash ()

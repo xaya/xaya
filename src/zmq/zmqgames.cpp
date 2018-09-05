@@ -145,16 +145,22 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
     }
 
   /* Prepare the template object that is the same for each game.  */
-  UniValue tmpl(UniValue::VOBJ);
+
+  UniValue blockData(UniValue::VOBJ);
+  blockData.pushKV ("hash", block.GetHash ().GetHex ());
   if (pindex->nHeight > 0)
     {
       assert (pindex->pprev != nullptr);
-      tmpl.pushKV ("parent", pindex->pprev->GetBlockHash ().GetHex ());
+      blockData.pushKV ("parent", pindex->pprev->GetBlockHash ().GetHex ());
     }
-  tmpl.pushKV ("child", block.GetHash ().GetHex ());
+  blockData.pushKV ("height", pindex->nHeight);
+  blockData.pushKV ("timestamp", block.GetBlockTime ());
+  blockData.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
+
+  UniValue tmpl(UniValue::VOBJ);
+  tmpl.pushKV ("block", blockData);
   if (!reqtoken.empty ())
     tmpl.pushKV ("reqtoken", reqtoken);
-  tmpl.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
 
   /* Send notifications for all games with the moves merged into the
      template object.  */
