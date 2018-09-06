@@ -2,6 +2,10 @@
 
 ## Version 0.18
 
+- The `options` argument for `name_new`, `name_firstupdate` and `name_update`
+  can now be used to specify per-RPC encodings for names and values by setting
+  the `nameEncoding` and `valueEncoding` fields, respectively.
+
 ## Version 0.17
 
 - Previously, `createrawtransaction` supported a separate argument for creating

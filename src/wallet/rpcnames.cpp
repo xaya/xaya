@@ -127,16 +127,34 @@ public:
     : HelpTextBuilder("  ", 25)
   {
     withField ("\"destAddress\"",
-               "(string, optional) The address to send the name output to");
+               "(string) The address to send the name output to");
 
     withField ("\"sendCoins\"", ":",
-               "(object, optional) Addresses to which coins should be"
+               "(object) Addresses to which coins should be"
                " sent additionally");
     withLine ("{");
     withField ("  \"addr1\": x", "");
     withField ("  \"addr2\": y", "");
     withLine ("  ...");
     withLine ("}");
+  }
+
+  NameOpOptionsHelpBuilder&
+  withNameEncoding ()
+  {
+    withField ("\"nameEncoding\"",
+               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+               " name argument");
+    return *this;
+  }
+
+  NameOpOptionsHelpBuilder&
+  withValueEncoding ()
+  {
+    withField ("\"valueEncoding\"",
+               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+               " value argument");
+    return *this;
   }
 
 };
@@ -361,6 +379,7 @@ name_new (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withNameEncoding ()
             .withField ("\"allowExisting\"",
                         "(boolean, optional, default=false) If set, then the"
                         " name_new is sent even if the name exists already")
@@ -377,11 +396,6 @@ name_new (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
-  const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
-  if (name.size () > MAX_NAME_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
-
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
@@ -390,6 +404,10 @@ name_new (const JSONRPCRequest& request)
       {"allowExisting", UniValueType (UniValue::VBOOL)},
     },
     true, false);
+
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
+  if (name.size () > MAX_NAME_LENGTH)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
   if (!options["allowExisting"].isTrue ())
     {
@@ -507,6 +525,8 @@ name_firstupdate (const JSONRPCRequest& request)
         "4. \"value\"         (string, required) value for the name\n"
         "5. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withNameEncoding ()
+            .withValueEncoding ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_firstupdate's txid\n"
@@ -519,8 +539,11 @@ name_firstupdate (const JSONRPCRequest& request)
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
                  UniValue::VOBJ});
 
-  const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 5)
+    options = request.params[4].get_obj ();
+
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -530,14 +553,9 @@ name_firstupdate (const JSONRPCRequest& request)
 
   const uint256 prevTxid = ParseHashV (request.params[2], "txid");
 
-  const valtype value
-      = DecodeValueFromRPCOrThrow (request.params[3], NO_OPTIONS);
+  const valtype value = DecodeValueFromRPCOrThrow (request.params[3], options);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
-
-  UniValue options(UniValue::VOBJ);
-  if (request.params.size () >= 5)
-    options = request.params[4].get_obj ();
 
   {
     LOCK (mempool.cs);
@@ -612,6 +630,8 @@ name_update (const JSONRPCRequest& request)
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withNameEncoding ()
+            .withValueEncoding ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
@@ -623,18 +643,17 @@ name_update (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
-  if (name.size () > MAX_NAME_LENGTH)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
-
-  const valtype value
-      = DecodeValueFromRPCOrThrow (request.params[1], NO_OPTIONS);
-  if (value.size () > MAX_VALUE_LENGTH_UI)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
-
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
     options = request.params[2].get_obj ();
+
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
+  if (name.size () > MAX_NAME_LENGTH)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
+
+  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
+  if (value.size () > MAX_VALUE_LENGTH_UI)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
   /* Reject updates to a name for which the mempool already has
      a pending update.  This is not a hard rule enforced by network
