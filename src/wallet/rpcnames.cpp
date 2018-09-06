@@ -236,6 +236,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
   return tx;
 }
 
+const UniValue NO_OPTIONS(UniValue::VOBJ);
+
 } // anonymous namespace
 /* ************************************************************************** */
 
@@ -271,8 +273,7 @@ name_list (const JSONRPCRequest& request)
 
   valtype nameFilter;
   if (request.params.size () >= 1)
-    nameFilter = DecodeNameFromRPCOrThrow (request.params[0],
-                                           ConfiguredNameEncoding ());
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -377,7 +378,7 @@ name_new (const JSONRPCRequest& request)
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
+      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -519,7 +520,7 @@ name_firstupdate (const JSONRPCRequest& request)
                  UniValue::VOBJ});
 
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
+      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
@@ -529,8 +530,8 @@ name_firstupdate (const JSONRPCRequest& request)
 
   const uint256 prevTxid = ParseHashV (request.params[2], "txid");
 
-  const valtype value = DecodeNameFromRPCOrThrow (request.params[3],
-                                                  ConfiguredValueEncoding ());
+  const valtype value
+      = DecodeValueFromRPCOrThrow (request.params[3], NO_OPTIONS);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
@@ -622,13 +623,12 @@ name_update (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
-                                                 ConfiguredNameEncoding ());
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
-                                                  ConfiguredValueEncoding ());
+  const valtype value
+      = DecodeValueFromRPCOrThrow (request.params[1], NO_OPTIONS);
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
@@ -728,8 +728,7 @@ sendtoname (const JSONRPCRequest& request)
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 
-  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
-                                                 ConfiguredNameEncoding ());
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
   if (!pcoinsTip->GetName (name, data))
