@@ -279,7 +279,6 @@ static UniValue setlabel(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
     }
 
-    std::string old_label = pwallet->mapAddressBook[dest].name;
     std::string label = LabelFromValue(request.params[1]);
 
     if (IsMine(*pwallet, dest)) {
@@ -2367,7 +2366,7 @@ static UniValue listlockunspent(const JSONRPCRequest& request)
 
     UniValue ret(UniValue::VARR);
 
-    for (COutPoint &outpt : vOutpts) {
+    for (const COutPoint& outpt : vOutpts) {
         UniValue o(UniValue::VOBJ);
 
         o.pushKV("txid", outpt.hash.GetHex());
@@ -4262,7 +4261,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
 
     /** Auxpow wallet functions */
-    { "mining",             "getauxblock",                      &getauxblock,                   {"hash", "auxpow"} },
+    { "mining",             "getauxblock",                      &getauxblock,                   {"hash","auxpow"} },
 
     // Name-related wallet calls.
     { "names",              "name_list",                        &name_list,                     {"name"} },
