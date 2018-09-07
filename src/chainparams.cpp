@@ -4,8 +4,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
-#include <consensus/merkle.h>
 
+#include <chainparamsseeds.h>
+#include <consensus/merkle.h>
 #include <pow.h>
 #include <powdata.h>
 #include <tinyformat.h>
@@ -13,8 +14,6 @@
 #include <utilstrencodings.h>
 
 #include <assert.h>
-
-#include <chainparamsseeds.h>
 
 #include <algorithm>
 #include <cassert>
@@ -167,14 +166,6 @@ void CChainParams::TurnOffSegwitForUnitTests ()
 /**
  * Main network
  */
-/**
- * What makes a good checkpoint block?
- * + Is surrounded by blocks with reasonable timestamps
- *   (no blocks before with a timestamp after, none after with
- *    timestamp before)
- * + Contains no strange transactions
- */
-
 class CMainParams : public CChainParams {
 public:
     CMainParams() {

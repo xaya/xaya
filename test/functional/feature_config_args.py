@@ -7,6 +7,7 @@
 import os
 
 from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import config_file
 
 
 class ConfArgsTest(BitcoinTestFramework):
@@ -14,8 +15,29 @@ class ConfArgsTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 1
 
+    def test_config_file_parser(self):
+        # Assume node is stopped
+
+        inc_conf_file_path = os.path.join(self.nodes[0].datadir, 'include.conf')
+        with open(os.path.join(self.nodes[0].datadir, config_file), 'a', encoding='utf-8') as conf:
+            conf.write('includeconf={}\n'.format(inc_conf_file_path))
+
+        with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+            conf.write('-dash=1\n')
+        self.nodes[0].assert_start_raises_init_error(expected_msg='Error reading configuration file: parse error on line 1: -dash=1, options in configuration file must be specified without leading -')
+
+        with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+            conf.write('nono\n')
+        self.nodes[0].assert_start_raises_init_error(expected_msg='Error reading configuration file: parse error on line 1: nono, if you intended to specify a negated option, use nono=1 instead')
+
+        with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+            conf.write('')  # clear
+
     def run_test(self):
         self.stop_node(0)
+
+        self.test_config_file_parser()
+
         # Remove the -datadir argument so it doesn't override the config file
         self.nodes[0].args = [arg for arg in self.nodes[0].args if not arg.startswith("-datadir")]
 
@@ -28,7 +50,7 @@ class ConfArgsTest(BitcoinTestFramework):
         self.nodes[0].assert_start_raises_init_error(['-datadir=' + new_data_dir], 'Error: Specified data directory "' + new_data_dir + '" does not exist.')
 
         # Check that using non-existent datadir in conf file fails
-        conf_file = os.path.join(default_data_dir, "xaya.conf")
+        conf_file = os.path.join(default_data_dir, config_file)
 
         # datadir needs to be set before [regtest] section
         conf_file_contents = open(conf_file, encoding='utf8').read()
