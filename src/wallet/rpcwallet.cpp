@@ -4135,6 +4135,7 @@ UniValue importprunedfunds(const JSONRPCRequest& request);
 UniValue removeprunedfunds(const JSONRPCRequest& request);
 UniValue importmulti(const JSONRPCRequest& request);
 
+// clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                                actor (function)                argNames
     //  --------------------- ------------------------          -----------------------         ----------
@@ -4198,6 +4199,7 @@ static const CRPCCommand commands[] =
     /** Auxpow wallet functions */
     { "mining",             "getauxblock",                      &getauxblock,                   {"hash","auxpow"} },
 };
+// clang-format on
 
 void RegisterWalletRPCCommands(CRPCTable &t)
 {
