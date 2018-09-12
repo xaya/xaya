@@ -1360,7 +1360,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
 
     size_t nSize = 0;
     for (const auto& header : headers) {
-        nSize += GetSerializeSize(header, SER_NETWORK, PROTOCOL_VERSION);
+        nSize += GetSerializeSize(header, PROTOCOL_VERSION);
         if (pfrom->nVersion >= SIZE_HEADERS_LIMIT_VERSION
               && nSize > MAX_HEADERS_SIZE) {
             LOCK(cs_main);
@@ -2187,7 +2187,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         {
             const CBlockHeader header = pindex->GetBlockHeader(chainparams.GetConsensus());
             ++nCount;
-            nSize += GetSerializeSize(header, SER_NETWORK, PROTOCOL_VERSION);
+            nSize += GetSerializeSize(header, PROTOCOL_VERSION);
             vHeaders.push_back(header);
             if (nCount >= MAX_HEADERS_RESULTS
                   || pindex->GetBlockHash() == hashStop)
