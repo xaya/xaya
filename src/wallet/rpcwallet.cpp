@@ -4265,6 +4265,7 @@ extern UniValue name_register(const JSONRPCRequest& request);
 extern UniValue name_update(const JSONRPCRequest& request);
 extern UniValue sendtoname(const JSONRPCRequest& request);
 
+// clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                                actor (function)                argNames
     //  --------------------- ------------------------          -----------------------         ----------
@@ -4335,6 +4336,7 @@ static const CRPCCommand commands[] =
     { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
     { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },
 };
+// clang-format on
 
 void RegisterWalletRPCCommands(CRPCTable &t)
 {
