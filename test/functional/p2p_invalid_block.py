@@ -45,7 +45,7 @@ class InvalidBlockRequestTest(BitcoinTestFramework):
         node.p2p.send_blocks_and_test([block1], node, success=True)
 
         self.log.info("Mature the block.")
-        node.generate(100)
+        node.generatetoaddress(100, node.get_deterministic_priv_key().address)
 
         best_block = node.getblock(node.getbestblockhash())
         tip = int(node.getbestblockhash(), 16)

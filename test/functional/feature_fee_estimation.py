@@ -126,15 +126,18 @@ class EstimateFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 3
 
+    def skip_test_if_missing_module(self):
+        self.skip_if_no_wallet()
+
     def setup_network(self):
         """
         We'll setup the network to have 3 nodes that all mine with different parameters.
         But first we need to use one node to create a lot of outputs
         which we will use to generate our transactions.
         """
-        self.add_nodes(3, extra_args=[["-maxorphantx=1000", "-whitelist=127.0.0.1"],
-                                      ["-blockmaxweight=68000", "-maxorphantx=1000"],
-                                      ["-blockmaxweight=32000", "-maxorphantx=1000"]])
+        self.add_nodes(3, extra_args=[["-maxorphantx=1000", "-whitelist=127.0.0.1", "-minrelaytxfee=0.00001"],
+                                      ["-blockmaxweight=68000", "-maxorphantx=1000", "-minrelaytxfee=0.00001"],
+                                      ["-blockmaxweight=32000", "-maxorphantx=1000", "-minrelaytxfee=0.00001"]])
         # Use node0 to mine blocks for input splitting
         # Node1 mines small blocks but that are bigger than the expected transaction rate.
         # NOTE: the CreateNewBlock code starts counting block weight at 4,000 weight,
@@ -167,6 +170,11 @@ class EstimateFeeTest(BitcoinTestFramework):
                 else:
                     newmem.append(utx)
             self.memutxo = newmem
+
+    def import_deterministic_coinbase_privkeys(self):
+        self.start_nodes()
+        super().import_deterministic_coinbase_privkeys()
+        self.stop_nodes()
 
     def run_test(self):
         self.log.info("This test is time consuming, please be patient")

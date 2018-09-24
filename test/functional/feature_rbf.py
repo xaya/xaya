@@ -61,17 +61,28 @@ def make_utxo(node, amount, confirmed=True, scriptPubKey=CScript([1])):
 
     return COutPoint(int(txid, 16), 0)
 
-class ReplaceByFeeTest(BitcoinTestFramework):
 
+class ReplaceByFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
-        self.extra_args= [["-maxorphantx=1000",
-                           "-whitelist=127.0.0.1",
-                           "-limitancestorcount=50",
-                           "-limitancestorsize=101",
-                           "-limitdescendantcount=200",
-                           "-limitdescendantsize=101"],
-                           ["-mempoolreplacement=0"]]
+        self.extra_args = [
+            [
+                "-maxorphantx=1000",
+                "-whitelist=127.0.0.1",
+                "-limitancestorcount=50",
+                "-limitancestorsize=101",
+                "-limitdescendantcount=200",
+                "-limitdescendantsize=101",
+                "-minrelaytxfee=0.00001",
+            ],
+            [
+                "-mempoolreplacement=0",
+                "-minrelaytxfee=0.00001",
+            ],
+        ]
+
+    def skip_test_if_missing_module(self):
+        self.skip_if_no_wallet()
 
     def run_test(self):
         # Leave IBD
@@ -371,7 +382,7 @@ class ReplaceByFeeTest(BitcoinTestFramework):
         # transactions
 
         # Start by creating a single transaction with many outputs
-        initial_nValue = 10*COIN
+        initial_nValue = 50*COIN
         utxo = make_utxo(self.nodes[0], initial_nValue)
         fee = int(0.0001*COIN)
         split_value = int((initial_nValue-fee)/(MAX_REPLACEMENT_LIMIT+1))
