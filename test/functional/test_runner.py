@@ -127,8 +127,7 @@ BASE_SCRIPTS = [
     'p2p_invalid_locator.py',
     'p2p_invalid_block.py',
     'p2p_invalid_tx.py',
-    # TODO: This is currently broken on Xaya, debug and fix.
-    #'feature_assumevalid.py',
+    'feature_assumevalid.py',
     'example_test.py',
     'wallet_txn_doublespend.py',
     'wallet_txn_clone.py --mineblock',
@@ -212,7 +211,6 @@ EXTENDED_SCRIPTS = [
 
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
-    'feature_assumevalid.py',
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
     'p2p_compactblocks.py',
