@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 import time
 import urllib.parse
+import collections
 
 from .authproxy import JSONRPCException
 from .util import (
@@ -97,6 +98,23 @@ class TestNode():
         self.cleanup_on_exit = True # Whether to kill the node when this object goes away
 
         self.p2ps = []
+
+    def get_deterministic_priv_key(self):
+        """Return a deterministic priv key in base58, that only depends on the node's index"""
+        AddressKeyPair = collections.namedtuple('AddressKeyPair', ['address', 'key'])
+        PRIV_KEYS = [
+            # address , privkey
+            AddressKeyPair('cUgsrYN7MpuTw67c9nFYQzaNCycmdGDU6Q', 'bAbZzZp9JS8TMfcdtz9eNaFPY47aaTF63jrNKoEtV3KfAKqHoGVr'),
+            AddressKeyPair('cckE5ugJdZiZ95C6TjfKBWbcPEdiJUSfL8', 'b9kCNX5sym6vdoTFinrU9CLDD1UVRgLNT6Y9esHdhVmzw4ai9eA5'),
+            AddressKeyPair('cY2uYs7epK724UX3nRUtii22oV7mnwX9Gr', 'b8e1yBW8bG4PKvvSSqbZPkHGBrZxyRujaMqJi8vn1wSaTkcrDfRT'),
+            AddressKeyPair('caY3B61VtjNkqugQfGphDPnKzXysLAteUB', 'bAgeB7sb2GSzeGNv8KZfP3jquK2uKLsgiMELeRjgmGEnnM3QFaue'),
+            AddressKeyPair('ccmhxcaJHwKnx8cFD75eopL6jiupZaprrG', 'b4zX3T5XACYakZhHru4LHAhHijbrcVeehufqBndCCECRoPLs1Rwo'),
+            AddressKeyPair('cn5vFywK1XsgrBYkU75bLssKbadchSL4Jr', 'b5N5dD9Lm4b5XKELJFco9iq8EoznnS992J6Y8yCMAR1B7Dh8wxNv'),
+            AddressKeyPair('cjE2kTaKYWPn7JnFMLjLAG7ZYpkFARoRqK', 'b5994t4qajxwsVFhRv5mH29oTrT5yy4fchpopFSMUX7qcawCBUno'),
+            AddressKeyPair('cf14p5WGGoaEfujmmXX2u364KfWBwoofkk', 'b7K6GsHQ3RZfviFaqvpH677VDxew2KPNiAcKqAe1phSyNoghTSPP'),
+            AddressKeyPair('cZiEvmb52be3kiPWYbSPQobqRnN3ELixVr', 'b7arjeefUSbjHPMSbuz4UucPB8qZxmpLi47CN89qAji5FTB8JNw3'),
+        ]
+        return PRIV_KEYS[self.index]
 
     def _node_msg(self, msg: str) -> str:
         """Return a modified msg that identifies this node by its index as a debugging aid."""
@@ -290,14 +308,6 @@ class TestNode():
                 else:
                     assert_msg = "xayad should have exited with expected error " + expected_msg
                 self._raise_assertion_error(assert_msg)
-
-    def node_encrypt_wallet(self, passphrase):
-        """"Encrypts the wallet.
-
-        This causes namecoind to shutdown, so this method takes
-        care of cleaning up resources."""
-        self.encryptwallet(passphrase)
-        self.wait_until_stopped()
 
     def add_p2p_connection(self, p2p_conn, *, wait_for_verack=True, **kwargs):
         """Add a p2p connection to the node.

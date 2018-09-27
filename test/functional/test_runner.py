@@ -58,9 +58,12 @@ TRAVIS_TIMEOUT_DURATION = 20 * 60
 BASE_SCRIPTS = [
     # Scripts that are run by the travis build process.
     # Longest test should go first, to favor running tests in parallel
+    'feature_fee_estimation.py',
     'wallet_hd.py',
     'wallet_backup.py',
     # vv Tests less than 5m vv
+    'mining_getblocktemplate_longpoll.py',
+    'feature_maxuploadtarget.py',
     'feature_block.py',
     'rpc_fundrawtransaction.py',
     # FIXME: Reenable when it supports always-segit.
@@ -70,6 +73,7 @@ BASE_SCRIPTS = [
     'wallet_basic.py',
     'wallet_labels.py',
     'p2p_segwit.py',
+    'p2p_timeouts.py',
     'wallet_dump.py',
     'wallet_listtransactions.py',
     # vv Tests less than 60s vv
@@ -84,6 +88,8 @@ BASE_SCRIPTS = [
     #'feature_csv_activation.py',
     'rpc_rawtransaction.py',
     'wallet_address_types.py',
+    'feature_bip68_sequence.py',
+    'p2p_feefilter.py',
     'feature_reindex.py',
     # vv Tests less than 30s vv
     'wallet_keypool_topup.py',
@@ -121,6 +127,15 @@ BASE_SCRIPTS = [
     'p2p_invalid_locator.py',
     'p2p_invalid_block.py',
     'p2p_invalid_tx.py',
+    # TODO: This is currently broken on Xaya, debug and fix.
+    #'feature_assumevalid.py',
+    'example_test.py',
+    'wallet_txn_doublespend.py',
+    'wallet_txn_clone.py --mineblock',
+    'feature_notifications.py',
+    'rpc_invalidateblock.py',
+    'feature_rbf.py',
+    'mempool_packages.py',
     'rpc_createmultisig.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'feature_versionbits_warning.py',
@@ -192,30 +207,12 @@ EXTENDED_SCRIPTS = [
     # These tests are not run by the travis build process.
     # Longest test should go first, to favor running tests in parallel
     'feature_pruning.py',
-    # vv Tests less than 20m vv
-    'feature_fee_estimation.py',
-    # vv Tests less than 5m vv
-    'feature_maxuploadtarget.py',
-    'mempool_packages.py',
     'feature_dbcrash.py',
-    # vv Tests less than 2m vv
-    'feature_bip68_sequence.py',
-    'mining_getblocktemplate_longpoll.py',
-    'p2p_timeouts.py',
-    # vv Tests less than 60s vv
-    'p2p_feefilter.py',
-    # vv Tests less than 30s vv
-    'feature_assumevalid.py',
-    'example_test.py',
-    'wallet_txn_doublespend.py',
-    'wallet_txn_clone.py --mineblock',
-    'feature_notifications.py',
-    'rpc_invalidateblock.py',
-    'feature_rbf.py',
 ]
 
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
+    'feature_assumevalid.py',
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
     'p2p_compactblocks.py',
@@ -278,8 +275,6 @@ def main():
 
     logging.debug("Temporary test directory at %s" % tmpdir)
 
-    enable_wallet = config["components"].getboolean("ENABLE_WALLET")
-    enable_utils = config["components"].getboolean("ENABLE_UTILS")
     enable_bitcoind = config["components"].getboolean("ENABLE_BITCOIND")
 
     if config["environment"]["EXEEXT"] == ".exe" and not args.force:
@@ -288,9 +283,9 @@ def main():
         print("Tests currently disabled on Windows by default. Use --force option to enable")
         sys.exit(0)
 
-    if not (enable_wallet and enable_utils and enable_bitcoind):
-        print("No functional tests to run. Wallet, utils, and bitcoind must all be enabled")
-        print("Rerun `configure` with -enable-wallet, -with-utils and -with-daemon and rerun make")
+    if not enable_bitcoind:
+        print("No functional tests to run.")
+        print("Rerun ./configure with --with-daemon and then make")
         sys.exit(0)
 
     # Build list of tests

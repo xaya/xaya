@@ -16,6 +16,9 @@ class MempoolLimitTest(BitcoinTestFramework):
         self.extra_args = [["-maxmempool=1", "-limitdescendantsize=1",
                             "-spendzeroconfchange=0"]]
 
+    def skip_test_if_missing_module(self):
+        self.skip_if_no_wallet()
+
     def run_test(self):
         txouts = gen_return_txouts()
         relayfee = self.nodes[0].getnetworkinfo()['relayfee']

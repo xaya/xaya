@@ -7,8 +7,6 @@
 
 from test_framework.test_framework import (
   BitcoinTestFramework,
-  skip_if_no_bitcoind_zmq,
-  skip_if_no_py3_zmq,
 )
 from test_framework.messages import (
   COIN,
@@ -96,8 +94,8 @@ class GameBlocksTest (BitcoinTestFramework):
     self.num_nodes = 1
 
   def setup_nodes (self):
-    skip_if_no_py3_zmq ()
-    skip_if_no_bitcoind_zmq (self)
+    self.skip_if_no_py3_zmq ()
+    self.skip_if_no_bitcoind_zmq ()
 
     import zmq
     self.zmq_context = zmq.Context ()
