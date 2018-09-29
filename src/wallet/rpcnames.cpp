@@ -127,16 +127,34 @@ public:
     : HelpTextBuilder("  ", 25)
   {
     withField ("\"destAddress\"",
-               "(string, optional) The address to send the name output to");
+               "(string) The address to send the name output to");
 
     withField ("\"sendCoins\"", ":",
-               "(object, optional) Addresses to which coins should be"
+               "(object) Addresses to which coins should be"
                " sent additionally");
     withLine ("{");
     withField ("  \"addr1\": x", "");
     withField ("  \"addr2\": y", "");
     withLine ("  ...");
     withLine ("}");
+  }
+
+  NameOpOptionsHelpBuilder&
+  withNameEncoding ()
+  {
+    withField ("\"nameEncoding\"",
+               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+               " name argument");
+    return *this;
+  }
+
+  NameOpOptionsHelpBuilder&
+  withValueEncoding ()
+  {
+    withField ("\"valueEncoding\"",
+               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+               " value argument");
+    return *this;
   }
 
 };
@@ -236,6 +254,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
   return tx;
 }
 
+const UniValue NO_OPTIONS(UniValue::VOBJ);
+
 } // anonymous namespace
 /* ************************************************************************** */
 
@@ -271,8 +291,7 @@ name_list (const JSONRPCRequest& request)
 
   valtype nameFilter;
   if (request.params.size () >= 1)
-    nameFilter = DecodeNameFromRPCOrThrow (request.params[0],
-                                           ConfiguredNameEncoding ());
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -359,6 +378,8 @@ name_register (const JSONRPCRequest& request)
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withNameEncoding ()
+            .withValueEncoding ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_register's txid\n"
@@ -371,20 +392,18 @@ name_register (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
+
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
   CValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
-                                                  ConfiguredValueEncoding ());
+  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
-
-  UniValue options(UniValue::VOBJ);
-  if (request.params.size () >= 3)
-    options = request.params[2].get_obj ();
 
   /* Reject updates to a name for which the mempool already has
      a pending registration.  This is not a hard rule enforced by network
@@ -443,6 +462,8 @@ name_update (const JSONRPCRequest& request)
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
         + NameOpOptionsHelpBuilder ()
+            .withNameEncoding ()
+            .withValueEncoding ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
@@ -454,20 +475,18 @@ name_update (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
 
-  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
-                                                 ConfiguredNameEncoding ());
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
+
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
   CValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const valtype value = DecodeNameFromRPCOrThrow (request.params[1],
-                                                  ConfiguredValueEncoding ());
+  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
-
-  UniValue options(UniValue::VOBJ);
-  if (request.params.size () >= 3)
-    options = request.params[2].get_obj ();
 
   /* Reject updates to a name for which the mempool already has
      a pending update.  This is not a hard rule enforced by network
@@ -560,8 +579,7 @@ sendtoname (const JSONRPCRequest& request)
 
   LOCK2 (cs_main, pwallet->cs_wallet);
 
-  const valtype name = DecodeNameFromRPCOrThrow (request.params[0],
-                                                 ConfiguredNameEncoding ());
+  const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
   if (!pcoinsTip->GetName (name, data))

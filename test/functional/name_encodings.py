@@ -303,6 +303,7 @@ class NameEncodingsTest (NameTestFramework):
 
     self.test_outputSide ()
     self.test_walletTx ()
+    self.test_writeRpcOption ()
 
   def test_outputSide (self):
     """
@@ -411,6 +412,49 @@ class NameEncodingsTest (NameTestFramework):
     self.log.info ("Testing name update in wallet...")
     self.testNameForWalletTx ("d/test", "ascii", "'%s'")
     self.testNameForWalletTx (strToHex ("p/äöü"), "hex", "0x%s")
+
+  def test_writeRpcOption (self):
+    """
+    Tests overriding the name/value encoding through the "options" RPC
+    argument for "write" methods.
+    """
+
+    self.log.info ("Testing options-override for write RPCs...")
+
+    # We set the default encodings to ASCII and then use a name/value
+    # that is not valid in ASCII with overrides to utf8 for the test.
+    self.setEncodings ()
+    nameAscii = self.uniqueName ("d/abc", "ascii")
+    nameUtf8 = self.uniqueName ("d/äöü", "utf8")
+    valueAscii = "{}"
+    valueUtf8 = '{"foo":"äöü"}'
+
+    # Register the names and verify expected behaviour.
+    assert_raises_rpc_error (-1000, "Name/value is invalid",
+                             self.node.name_register, nameAscii, valueUtf8)
+    self.node.name_register (nameAscii, valueUtf8, {"valueEncoding": "utf8"})
+    assert_raises_rpc_error (-1000, "Name/value is invalid",
+                             self.node.name_register, nameUtf8, valueAscii)
+    self.node.name_register (nameUtf8, valueAscii, {"nameEncoding": "utf8"})
+    self.node.generate (1)
+
+    # update the names and verify also that.
+    assert_raises_rpc_error (-1000, "Name/value is invalid",
+                             self.node.name_update, nameAscii, valueUtf8)
+    self.node.name_update (nameAscii, valueUtf8, {"valueEncoding": "utf8"})
+    assert_raises_rpc_error (-1000, "Name/value is invalid",
+                             self.node.name_update, nameUtf8, valueAscii)
+    self.node.name_update (nameUtf8, valueAscii, {"nameEncoding": "utf8"})
+    self.node.generate (1)
+
+    # Verify using name_show just to make sure all worked as expected and did
+    # not silently just do something wrong.  For this, we change the configured
+    # encodings so that we can retrieve utf8 names and values.
+    self.setEncodings (nameEnc="utf8", valueEnc="utf8")
+    data = self.node.name_show (nameAscii)
+    assert_equal (data["value"], valueUtf8)
+    data = self.node.name_show (nameUtf8)
+    assert_equal (data["value"], valueAscii)
 
 
 if __name__ == '__main__':

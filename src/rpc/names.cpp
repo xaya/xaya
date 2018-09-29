@@ -27,7 +27,6 @@
 
 #include <cassert>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 
 /**
@@ -97,9 +96,33 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
 }
 #endif
 
-valtype
-DecodeNameFromRPCOrThrow (const UniValue& val, const NameEncoding enc)
+namespace
 {
+
+const UniValue NO_OPTIONS(UniValue::VOBJ);
+
+valtype
+DecodeNameValueFromRPCOrThrow (const UniValue& val, const UniValue& opt,
+                               const std::string& optKey,
+                               const NameEncoding defaultEnc)
+{
+  NameEncoding enc = defaultEnc;
+  RPCTypeCheckObj (opt,
+    {
+      {optKey, UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+  if (opt.exists (optKey))
+    try
+      {
+        enc = EncodingFromString (opt[optKey].get_str ());
+      }
+    catch (const std::invalid_argument& exc)
+      {
+        LogPrintf ("Invalid value for %s in options: %s\n  using default %s\n",
+                   optKey, exc.what (), EncodingToString (defaultEnc));
+      }
+
   try
     {
       return DecodeName (val.get_str (), enc);
@@ -110,6 +133,22 @@ DecodeNameFromRPCOrThrow (const UniValue& val, const NameEncoding enc)
       msg << "Name/value is invalid for encoding " << EncodingToString (enc);
       throw JSONRPCError (RPC_NAME_INVALID_ENCODING, msg.str ());
     }
+}
+
+} // anonymous namespace
+
+valtype
+DecodeNameFromRPCOrThrow (const UniValue& val, const UniValue& opt)
+{
+  return DecodeNameValueFromRPCOrThrow (val, opt, "nameEncoding",
+                                        ConfiguredNameEncoding ());
+}
+
+valtype
+DecodeValueFromRPCOrThrow (const UniValue& val, const UniValue& opt)
+{
+  return DecodeNameValueFromRPCOrThrow (val, opt, "valueEncoding",
+                                        ConfiguredValueEncoding ());
 }
 
 namespace
@@ -289,7 +328,7 @@ name_show (const JSONRPCRequest& request)
                        "Xaya is downloading blocks...");
 
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
+      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
   {
@@ -341,7 +380,7 @@ name_history (const JSONRPCRequest& request)
                        "Xaya is downloading blocks...");
 
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], ConfiguredNameEncoding ());
+      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
   CNameHistory history;
@@ -405,8 +444,7 @@ name_scan (const JSONRPCRequest& request)
 
   valtype start;
   if (request.params.size () >= 1)
-    start = DecodeNameFromRPCOrThrow (request.params[0],
-                                      ConfiguredNameEncoding ());
+    start = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   int count = 500;
   if (request.params.size () >= 2)
@@ -608,8 +646,7 @@ name_pending (const JSONRPCRequest& request)
   else
     {
       const valtype name
-          = DecodeNameFromRPCOrThrow (request.params[0],
-                                      ConfiguredNameEncoding ());
+          = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
       const uint256 txid = mempool.getTxForName (name);
       if (!txid.IsNull ())
         txHashes.push_back (txid);
@@ -709,11 +746,9 @@ namerawtransaction (const JSONRPCRequest& request)
   );
   const std::string op = find_value (nameOp, "op").get_str ();
   const valtype name
-    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"),
-                                ConfiguredNameEncoding ());
+    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
   const valtype value
-    = DecodeNameFromRPCOrThrow (find_value (nameOp, "value"),
-                                ConfiguredValueEncoding ());
+    = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"), NO_OPTIONS);
 
   UniValue result(UniValue::VOBJ);
 
