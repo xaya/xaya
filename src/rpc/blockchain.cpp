@@ -32,6 +32,7 @@
 #include <utilstrencodings.h>
 #include <hash.h>
 #include <validationinterface.h>
+#include <versionbitsinfo.h>
 #include <warnings.h>
 
 #include <assert.h>
@@ -301,7 +302,7 @@ static UniValue waitforblock(const JSONRPCRequest& request)
         );
     int timeout = 0;
 
-    uint256 hash = uint256S(request.params[0].get_str());
+    uint256 hash(ParseHashV(request.params[0], "blockhash"));
 
     if (!request.params[1].isNull())
         timeout = request.params[1].get_int();
@@ -768,8 +769,7 @@ static UniValue getblockheader(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "hash"));
 
     bool fVerbose = true;
     if (!request.params[1].isNull())
@@ -863,8 +863,7 @@ static UniValue getblock(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "blockhash"));
 
     int verbosity = 1;
     if (!request.params[1].isNull()) {
@@ -1113,8 +1112,7 @@ UniValue gettxout(const JSONRPCRequest& request)
 
     UniValue ret(UniValue::VOBJ);
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "txid"));
     int n = request.params[1].get_int();
     COutPoint out(hash, n);
     bool fMempool = true;
@@ -1522,8 +1520,7 @@ static UniValue preciousblock(const JSONRPCRequest& request)
             + HelpExampleRpc("preciousblock", "\"blockhash\"")
         );
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "blockhash"));
     CBlockIndex* pblockindex;
 
     {
@@ -1558,8 +1555,7 @@ static UniValue invalidateblock(const JSONRPCRequest& request)
             + HelpExampleRpc("invalidateblock", "\"blockhash\"")
         );
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "blockhash"));
     CValidationState state;
 
     {
@@ -1598,8 +1594,7 @@ static UniValue reconsiderblock(const JSONRPCRequest& request)
             + HelpExampleRpc("reconsiderblock", "\"blockhash\"")
         );
 
-    std::string strHash = request.params[0].get_str();
-    uint256 hash(uint256S(strHash));
+    uint256 hash(ParseHashV(request.params[0], "blockhash"));
 
     {
         LOCK(cs_main);
@@ -1652,7 +1647,7 @@ static UniValue getchaintxstats(const JSONRPCRequest& request)
         LOCK(cs_main);
         pindex = chainActive.Tip();
     } else {
-        uint256 hash = uint256S(request.params[1].get_str());
+        uint256 hash(ParseHashV(request.params[1], "blockhash"));
         LOCK(cs_main);
         pindex = LookupBlockIndex(hash);
         if (!pindex) {
@@ -1826,8 +1821,7 @@ static UniValue getblockstats(const JSONRPCRequest& request)
 
         pindex = chainActive[height];
     } else {
-        const std::string strHash = request.params[0].get_str();
-        const uint256 hash(uint256S(strHash));
+        const uint256 hash(ParseHashV(request.params[0], "hash_or_height"));
         pindex = LookupBlockIndex(hash);
         if (!pindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
