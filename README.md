@@ -39,7 +39,11 @@ XAYA Core includes the base elements required for Experienced users, Miners and 
 
 You may check https://github.com/xaya/Specs for more XAYA specs and additional information.
 
-For compiling you can follow any Bitcoin guide, just replace the repo with XAYA's:
+For compiling on Ubuntu you can use this guide:
+https://forum.xaya.io/topic/59-guide-building-xaya-on-ubuntu/
+
+
+you can also follow any Bitcoin guide, just replace the repo with XAYA's:
 https://github.com/bitcoin/bitcoin/blob/master/doc/build-windows.md
 https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
 https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
