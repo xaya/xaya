@@ -18,6 +18,12 @@
 class CBlockIndex;
 
 /**
+ * Default value for the -maxgameblockattaches option, which determines how
+ * many attach steps are sent at most for a single game_sendupdates request.
+ */
+static constexpr unsigned DEFAULT_MAX_GAME_BLOCK_ATTACHES = 1000;
+
+/**
  * The worker for game_sendupdates.  It maintains a queue of work items to
  * process and has a thread that reads the items and performs the work.  It is
  * exposed publicly so that init.cpp can start/interrupt/stop as necessary.
