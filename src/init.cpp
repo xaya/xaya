@@ -518,6 +518,8 @@ void SetupServerArgs()
     gArgs.AddArg("-nameencoding=<enc>", strprintf("Sets the default encoding used for names in the RPC interface (default: %s)", EncodingToString(DEFAULT_NAME_ENCODING)), false, OptionsCategory::RPC);
     gArgs.AddArg("-valueencoding=<enc>", strprintf("Sets the default encoding used for values in the RPC interface (default: %s)", EncodingToString(DEFAULT_VALUE_ENCODING)), false, OptionsCategory::RPC);
 
+    gArgs.AddArg("-maxgameblockattaches=<n>", strprintf("Sets the maximum number of attach steps sent for a single game_sendupdates request (default: %d)", DEFAULT_MAX_GAME_BLOCK_ATTACHES), false, OptionsCategory::RPC);
+
 #if HAVE_DECL_DAEMON
     gArgs.AddArg("-daemon", "Run in the background as a daemon and accept commands", false, OptionsCategory::OPTIONS);
 #else

@@ -105,6 +105,7 @@ class GameBlocksTest (BitcoinTestFramework):
 
     args = []
     args.append ("-zmqpubgameblocks=%s" % self._address)
+    args.append ("-maxgameblockattaches=10")
     args.extend (["-trackgame=%s" % g for g in ["a", "b", "other"]])
     self.extra_args = [args]
     self.add_nodes (self.num_nodes, self.extra_args)
@@ -121,6 +122,7 @@ class GameBlocksTest (BitcoinTestFramework):
       self._test_moveWithCurrency ()
       self._test_reorg ()
       self._test_sendUpdates ()
+      self._test_maxGameBlockAttaches ()
       self._test_trackedgamesRPC ()
 
       # After all the real tests, verify no more notifications are there.
@@ -333,6 +335,15 @@ class GameBlocksTest (BitcoinTestFramework):
       assert_equal (topic, "game-block-attach json %s" % game)
       assert_equal (data, a)
 
+  def addReqtoken (self, token, chain):
+    """
+    Adds (or changes) the given reqtoken field to the chain of attach/detach
+    data blocks.
+    """
+
+    for blk in chain:
+      blk['reqtoken'] = token
+
   def buildAndVerifyReorg (self):
     """
     Constructs a short and long chain, triggering a reorg.  Verifies the
@@ -397,20 +408,20 @@ class GameBlocksTest (BitcoinTestFramework):
 
     # Build up a fork for testing.
     ancestor = self.node.getbestblockhash ()
-    res = self.buildAndVerifyReorg ()
-    assert_equal (self.node.getbestblockhash (), res["long"]["blocks"][-1])
+    reorg = self.buildAndVerifyReorg ()
+    assert_equal (self.node.getbestblockhash (), reorg["long"]["blocks"][-1])
 
     # Trigger on-demand updates in both directions for the fork.
-    resA = self.node.game_sendupdates ("a", res["short"]["blocks"][-1])
-    resB = self.node.game_sendupdates ("b", res["long"]["blocks"][-1],
-                                       res["short"]["blocks"][-1])
+    resA = self.node.game_sendupdates ("a", reorg["short"]["blocks"][-1])
+    resB = self.node.game_sendupdates ("b", reorg["long"]["blocks"][-1],
+                                       reorg["short"]["blocks"][-1])
     tokenA = resA['reqtoken']
     tokenB = resB['reqtoken']
     assert tokenA != tokenB
 
     # Check the return values.
     assert_equal (resA, {
-      "toblock": res["long"]["blocks"][-1],
+      "toblock": reorg["long"]["blocks"][-1],
       "ancestor": ancestor,
       "reqtoken": tokenA,
       "steps":
@@ -420,7 +431,7 @@ class GameBlocksTest (BitcoinTestFramework):
         },
     })
     assert_equal (resB, {
-      "toblock": res["short"]["blocks"][-1],
+      "toblock": reorg["short"]["blocks"][-1],
       "ancestor": ancestor,
       "reqtoken": tokenB,
       "steps":
@@ -431,20 +442,16 @@ class GameBlocksTest (BitcoinTestFramework):
     })
 
     # Add the tokens in to the expected chains.
-    def addToken (token, chain):
-      for blk in chain:
-        assert 'reqtoken' not in blk
-        blk['reqtoken'] = token
-    addToken (tokenA, res["short"]["attachA"])
-    addToken (tokenA, res["long"]["attachA"])
-    addToken (tokenB, res["short"]["attachB"])
-    addToken (tokenB, res["long"]["attachB"])
+    self.addReqtoken (tokenA, reorg["short"]["attachA"])
+    self.addReqtoken (tokenA, reorg["long"]["attachA"])
+    self.addReqtoken (tokenB, reorg["short"]["attachB"])
+    self.addReqtoken (tokenB, reorg["long"]["attachB"])
 
     # Check the updates for the games themselves.
-    self.verifyDetach ("a", res["short"]["attachA"])
-    self.verifyAttach ("a", res["long"]["attachA"])
-    self.verifyDetach ("b", res["long"]["attachB"])
-    self.verifyAttach ("b", res["short"]["attachB"])
+    self.verifyDetach ("a", reorg["short"]["attachA"])
+    self.verifyAttach ("a", reorg["long"]["attachA"])
+    self.verifyDetach ("b", reorg["long"]["attachB"])
+    self.verifyAttach ("b", reorg["short"]["attachB"])
 
     # Trigger updates for a game without subscribers.
     genesis = self.node.getblockhash (0)
@@ -459,11 +466,26 @@ class GameBlocksTest (BitcoinTestFramework):
       assert_equal (data["block"]["parent"], self.node.getblockhash (i))
       assert_equal (data["block"]["hash"], self.node.getblockhash (i + 1))
 
-    # Check the case of there being no update.
+    # Verify that only detaches work fine.
     tip = self.node.getbestblockhash ()
-    res = self.node.game_sendupdates ("a", tip)
-    del res['reqtoken']
+    res = self.node.game_sendupdates ("a", tip, ancestor)
+    self.addReqtoken (res['reqtoken'], reorg["long"]["attachA"])
     assert_equal (res, {
+      "reqtoken": res['reqtoken'],
+      "toblock": ancestor,
+      "ancestor": ancestor,
+      "steps":
+        {
+          "attach": 0,
+          "detach": 10,
+        },
+    })
+    self.verifyDetach ("a", reorg["long"]["attachA"])
+
+    # Check the case of there being no update.
+    res = self.node.game_sendupdates ("a", tip)
+    assert_equal (res, {
+      "reqtoken": res['reqtoken'],
       "toblock": tip,
       "ancestor": tip,
       "steps":
@@ -480,6 +502,57 @@ class GameBlocksTest (BitcoinTestFramework):
     assert_raises_rpc_error (-5, "toblock not found",
                              self.node.game_sendupdates,
                              "a", genesis, invalidBlock)
+
+  def _test_maxGameBlockAttaches (self):
+    """
+    Tests the -maxgameblockattaches option with game_sendupdates.
+    """
+
+    self.log.info ("Testing the -maxgameblockattaches limit...")
+
+    # Build a short and a long chain, where the long chain is beyond
+    # the -maxgameblockattaches limit of 10 in the test.
+    ancestor = self.node.getbestblockhash ()
+    shortBlks, shortAttachA, shortAttachB = self.buildChain (5)
+    self.node.invalidateblock (shortBlks[0])
+    self.verifyDetach ("a", shortAttachA)
+    self.verifyDetach ("b", shortAttachB)
+    longBlks, longAttachA, longAttachB = self.buildChain (15)
+
+    # Request updates that go beyond the limit.
+    res = self.node.game_sendupdates ("a", shortBlks[-1])
+    self.addReqtoken (res['reqtoken'], shortAttachA)
+    self.addReqtoken (res['reqtoken'], longAttachA)
+    assert_equal (res, {
+      "reqtoken": res['reqtoken'],
+      "toblock": longBlks[9],
+      "ancestor": ancestor,
+      "steps":
+        {
+          "attach": 10,
+          "detach": 5,
+        },
+    })
+    self.verifyDetach ("a", shortAttachA)
+    self.verifyAttach ("a", longAttachA[:10])
+
+    # Detaches beyond the limit are fine (i.e. it only limits attaches, as
+    # those are the only ones expected to be potentially very long).
+    res = self.node.game_sendupdates ("a", longBlks[-1], shortBlks[-1])
+    self.addReqtoken (res['reqtoken'], longAttachA)
+    self.addReqtoken (res['reqtoken'], shortAttachA)
+    assert_equal (res, {
+      "reqtoken": res['reqtoken'],
+      "toblock": shortBlks[-1],
+      "ancestor": ancestor,
+      "steps":
+        {
+          "attach": 5,
+          "detach": 15,
+        },
+    })
+    self.verifyDetach ("a", longAttachA)
+    self.verifyAttach ("a", shortAttachA)
 
   def _test_trackedgamesRPC (self):
     """

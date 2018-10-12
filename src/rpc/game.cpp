@@ -286,6 +286,27 @@ game_sendupdates (const JSONRPCRequest& request)
   w.attach = GetDetachSequence (toIndex, ancestor);
   std::reverse (w.attach.begin (), w.attach.end ());
 
+  const int maxAttaches = gArgs.GetArg ("-maxgameblockattaches",
+                                        DEFAULT_MAX_GAME_BLOCK_ATTACHES);
+  if (maxAttaches <= 0)
+    {
+      /* If the limit is set to a non-positive number, we do not enforce any
+         to make sure things cannot be completely broken.  */
+      LogPrint (BCLog::GAME,
+                "-maxgameblockattaches set to %d, disabling limit\n",
+                maxAttaches);
+    }
+  else if (w.attach.size () > static_cast<unsigned> (maxAttaches))
+    {
+      LogPrint (BCLog::GAME, "%d attach steps requested, limiting to %d\n",
+                w.attach.size (), maxAttaches);
+      w.attach.resize (maxAttaches);
+      toBlock = w.attach.back ()->GetBlockHash ();
+    }
+  /* Note that we do not limit detaches.  That is because detaches are
+     (in normal operation) expected to be only a few blocks long anyway,
+     and attaches are what can be very long.  */
+
   UniValue result(UniValue::VOBJ);
   result.pushKV ("toblock", toBlock.GetHex ());
   result.pushKV ("ancestor", ancestor->GetBlockHash ().GetHex ());
