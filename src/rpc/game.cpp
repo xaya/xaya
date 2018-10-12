@@ -291,8 +291,8 @@ game_sendupdates (const JSONRPCRequest& request)
   result.pushKV ("ancestor", ancestor->GetBlockHash ().GetHex ());
   result.pushKV ("reqtoken", reqtoken);
   UniValue steps(UniValue::VOBJ);
-  steps.pushKV ("detach", w.detach.size ());
-  steps.pushKV ("attach", w.attach.size ());
+  steps.pushKV ("detach", static_cast<int64_t> (w.detach.size ()));
+  steps.pushKV ("attach", static_cast<int64_t> (w.attach.size ()));
   result.pushKV ("steps", steps);
 
   GetGameBlocksNotifier ();
