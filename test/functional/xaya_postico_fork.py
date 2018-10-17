@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+# Copyright (c) 2018 The Xaya developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+"""Tests the POST_ICO hard fork in Xaya."""
+
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.blocktools import (
+  create_block,
+  create_coinbase,
+)
+from test_framework.util import (
+  assert_equal,
+  assert_greater_than,
+  bytes_to_hex_str,
+)
+
+FORK_HEIGHT = 500
+
+class PostIcoForkTest (BitcoinTestFramework):
+  def set_test_params (self):
+    self.setup_clean_chain = True
+    self.num_nodes = 1
+
+  def run_test (self):
+    self.node = self.nodes[0]
+
+    # Test that non-zero nonce values are disallowed before the fork height.
+    height = self.node.getblockcount ()
+    assert_greater_than (FORK_HEIGHT - 2, height)
+    self.node.generate (FORK_HEIGHT - 2 - height)
+    assert_equal (FORK_HEIGHT - 2, self.node.getblockcount ())
+    assert_equal (self.tryNonzeroNonceBlock (), 'nonzero-nonce')
+
+    # Test that non-zero nonce values are fine at the fork.
+    self.node.generate (1)
+    assert_equal (FORK_HEIGHT - 1, self.node.getblockcount ())
+    assert_equal (self.tryNonzeroNonceBlock (), None)
+    assert_equal (FORK_HEIGHT, self.node.getblockcount ())
+
+    # The fork also changes the block reward as well as the block intervals
+    # (depending on the algorithm), but that is nothing that can be easily
+    # tested in regtest mode.  Thus we rely on unit tests and testnet for
+    # verifying those changes.
+
+  def tryNonzeroNonceBlock (self):
+    """
+    Creates and mines a block with nonzero nonce and tries to submit it
+    to self.node.
+    """
+
+    tip = self.node.getbestblockhash ()
+    height = self.node.getblockcount () + 1
+    time = self.node.getblockheader (tip)["mediantime"] + 1
+    block = create_block (int (tip, 16), create_coinbase (height), time)
+    block.nNonce = 42
+
+    block.solve ()
+    return self.node.submitblock (bytes_to_hex_str (block.serialize (True)))
+
+if __name__ == '__main__':
+  PostIcoForkTest ().main ()

@@ -17,6 +17,25 @@
 namespace Consensus {
 
 /**
+ * Identifiers for forks done on the network, so that validation code can
+ * easily just query whether or not a particular fork should be active and
+ * does not have to bother with the particular heights or other aspects.
+ */
+enum class Fork
+{
+
+  /**
+   * Fork done after the token sale.  This removed the requirement that the
+   * main (non-fakeheader) nonce must be zero in order to resolve
+   * https://github.com/xaya/xaya/issues/50.
+   *
+   * TODO: Also adjust block rewards to give the final coin supply.
+   */
+  POST_ICO,
+
+};
+
+/**
  * Interface for classes that define consensus behaviour in more
  * complex ways than just by a set of constants.
  */
@@ -30,24 +49,69 @@ public:
     /* Return minimum locked amount in a name.  */
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
+    /**
+     * Checks whether a given fork is in effect at the given block height.
+     */
+    virtual bool ForkInEffect(Fork type, unsigned height) const = 0;
+
 };
 
 class MainNetConsensus : public ConsensusRules
 {
 public:
 
-    CAmount MinNameCoinAmount(unsigned nHeight) const
+    CAmount MinNameCoinAmount(unsigned nHeight) const override
     {
         return COIN / 100;
+    }
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                /* FIXME: Set correct height once determined.  */
+                return height >= 1000000;
+            default:
+                assert (false);
+        }
     }
 
 };
 
 class TestNetConsensus : public MainNetConsensus
-{};
+{
+public:
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                /* FIXME: Set correct height once determined.  */
+                return height >= 1000000;
+            default:
+                assert (false);
+        }
+    }
+
+};
 
 class RegTestConsensus : public TestNetConsensus
-{};
+{
+public:
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                return height >= 500;
+            default:
+                assert (false);
+        }
+    }
+};
 
 enum DeploymentPos
 {
