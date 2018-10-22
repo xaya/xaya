@@ -7,6 +7,7 @@
 #define BITCOIN_CONSENSUS_PARAMS_H
 
 #include <amount.h>
+#include <powdata.h>
 #include <uint256.h>
 #include <limits>
 #include <map>
@@ -50,6 +51,12 @@ public:
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
     /**
+     * Returns the target spacing (time in seconds between blocks) for blocks
+     * of the given algorithm at the given height.
+     */
+    virtual int64_t GetTargetSpacing(PowAlgo algo, unsigned height) const = 0;
+
+    /**
      * Checks whether a given fork is in effect at the given block height.
      */
     virtual bool ForkInEffect(Fork type, unsigned height) const = 0;
@@ -63,6 +70,32 @@ public:
     CAmount MinNameCoinAmount(unsigned nHeight) const override
     {
         return COIN / 100;
+    }
+
+    int64_t GetTargetSpacing(const PowAlgo algo,
+                             const unsigned height) const override
+    {
+        if (!ForkInEffect (Fork::POST_ICO, height))
+        {
+            /* The target spacing is independent for each mining algorithm,
+               so that the effective block frequency is half the value (with
+               two algos).  */
+            return 2 * 30;
+        }
+
+        /* After the POST_ICO fork, the target spacing is changed to have
+           still four blocks every two minutes (for an average of 30 seconds
+           per block), but three of them standalone and only one merge-mined.
+           This yields the desired 75%/25% split of block rewards.  */
+        switch (algo)
+        {
+            case PowAlgo::SHA256D:
+                return 120;
+            case PowAlgo::NEOSCRYPT:
+                return 40;
+            default:
+                assert(false);
+        }
     }
 
     bool ForkInEffect(const Fork type, const unsigned height) const override
@@ -168,7 +201,6 @@ struct Params {
     /** Proof of work parameters */
     uint256 powLimitNeoscrypt;
     bool fPowNoRetargeting;
-    int64_t nPowTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 

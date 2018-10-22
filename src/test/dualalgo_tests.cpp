@@ -57,9 +57,11 @@ OriginalDGW(const PowAlgo algo, const CBlockIndex* pindexLast, const Consensus::
 
     arith_uint256 bnNew(bnPastTargetAvg);
 
+    const int nextHeight = pindexLast->nHeight + 1;
     int64_t nActualTimespan = pindexLast->GetBlockTime() - pindex->GetBlockTime();
     // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
-    int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
+    int64_t nTargetTimespan
+        = nPastBlocks * params.rules->GetTargetSpacing(algo, nextHeight);
 
     if (nActualTimespan < nTargetTimespan/3)
         nActualTimespan = nTargetTimespan/3;
@@ -92,6 +94,13 @@ public:
     if (blocks.empty ())
       return nullptr;
     return blocks.back ().get ();
+  }
+
+  unsigned
+  height () const
+  {
+    const CBlockIndex* pindex = tip ();
+    return pindex == nullptr ? 0 : pindex->nHeight;
   }
 
   void
@@ -147,13 +156,15 @@ BOOST_AUTO_TEST_CASE (difficulty_retargeting)
                                                 mixedChain.tip (), params);
 
           /* Increment the time typically, but allow also decrements.  Average
-             time increase should be nPowTargetSpacing/2 since we have two
-             algos, so choosing randomly in [-10, target spacing - 10] seems
+             time increase should be AvgTargetSpacing,
+             so choosing randomly in [-10, target spacing - 10] seems
              like a good enough approximation.  Since these values are actually
              then a bit faster than expected, we increase the difficulty away
              from the minimum, which is also good for the test.  */
+          const int64_t targetSpacing
+              = AvgTargetSpacing (params, mixedChain.height () + 1);
           indexNew.nTime = lastTime
-                            + InsecureRandRange (params.nPowTargetSpacing)
+                            + InsecureRandRange (targetSpacing)
                             - 10;
           lastTime = indexNew.nTime;
 
@@ -167,6 +178,119 @@ BOOST_AUTO_TEST_CASE (difficulty_retargeting)
         BOOST_CHECK (entry.second.tip ()->nBits
                       != GetNextWorkRequired (entry.first, nullptr, params));
     }
+}
+
+/* ************************************************************************** */
+
+namespace
+{
+
+constexpr unsigned BEFORE_FORK = 200;
+constexpr unsigned AFTER_FORK = 800;
+
+class PostIcoForkSetup : public TestingSetup
+{
+public:
+
+  const Consensus::Params* params = nullptr;
+
+  PostIcoForkSetup ()
+  {
+    SelectParams (CBaseChainParams::REGTEST);
+    params = &Params ().GetConsensus ();
+
+    BOOST_CHECK (!params->rules->ForkInEffect (Consensus::Fork::POST_ICO,
+                                               BEFORE_FORK));
+    BOOST_CHECK (params->rules->ForkInEffect (Consensus::Fork::POST_ICO,
+                                              AFTER_FORK));
+  }
+
+};
+
+} // anonymous namespace
+
+BOOST_FIXTURE_TEST_CASE (avg_target_spacing, PostIcoForkSetup)
+{
+  BOOST_CHECK_EQUAL (AvgTargetSpacing (*params, BEFORE_FORK), 30);
+  BOOST_CHECK_EQUAL (AvgTargetSpacing (*params, AFTER_FORK), 30);
+}
+
+namespace
+{
+
+class BlockProofEquivalentTimeSetup : public PostIcoForkSetup
+{
+public:
+
+  TestChain chain;
+
+  BlockProofEquivalentTimeSetup ()
+  {
+    /* Turn off "no retargeting" rule.  We won't need to mine valid blocks
+       anyway, and this messes with the "relative difficulty" between
+       the algorithms as it disables rescaling of the minimum difficulty.  */
+    const_cast<Consensus::Params*> (params)->fPowNoRetargeting = false;
+  }
+
+  /**
+   * Attaches a block with minimum difficulty and the given algorithm
+   * to the test chain.
+   */
+  void
+  AttachBlock (const PowAlgo algo)
+  {
+    CBlockIndex indexNew;
+    indexNew.algo = algo;
+
+    const uint256 bnPowLimit = powLimitForAlgo (indexNew.algo, *params);
+    indexNew.nBits = UintToArith256 (bnPowLimit).GetCompact ();
+
+    arith_uint256 previousWork;
+    if (chain.tip () != nullptr)
+      previousWork = chain.tip ()->nChainWork;
+    indexNew.nChainWork = previousWork + GetBlockProof (indexNew);
+
+    chain.attach (indexNew);
+  }
+
+  /**
+   * Computes the proof-equivalent-time from tip-n to tip.
+   */
+  int64_t
+  GetEquivalentTime (const unsigned n) const
+  {
+    const CBlockIndex* beforeTip = chain.tip ();
+    for (unsigned i = 0; i < n; ++i)
+      beforeTip = beforeTip->pprev;
+
+    return GetBlockProofEquivalentTime (*chain.tip (), *beforeTip,
+                                        *chain.tip (), *params);
+  }
+
+};
+
+} // anonymous namespace
+
+BOOST_FIXTURE_TEST_CASE (eqv_time_before_fork, BlockProofEquivalentTimeSetup)
+{
+  for (unsigned i = 0; i <= BEFORE_FORK; ++i)
+    AttachBlock (i % 2 == 0 ? PowAlgo::SHA256D : PowAlgo::NEOSCRYPT);
+  BOOST_CHECK_EQUAL (chain.height (), BEFORE_FORK);
+
+  BOOST_CHECK_EQUAL (GetEquivalentTime (2), 60);
+}
+
+BOOST_FIXTURE_TEST_CASE (eqv_time_after_fork, BlockProofEquivalentTimeSetup)
+{
+  /* After the fork, attach one SHA-256d block for every three Neoscrypt
+     blocks, as that corresponds to the ratio afterwards.  We expect four
+     of those blocks to be equivalent to two minutes' time.  */
+
+  for (unsigned i = 0; i <= AFTER_FORK; ++i)
+    AttachBlock (i % 4 == 0 ? PowAlgo::SHA256D : PowAlgo::NEOSCRYPT);
+  BOOST_CHECK_EQUAL (chain.height (), AFTER_FORK);
+
+  BOOST_CHECK_EQUAL (GetEquivalentTime (4), 120);
 }
 
 /* ************************************************************************** */

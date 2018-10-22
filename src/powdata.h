@@ -6,7 +6,6 @@
 #define BITCOIN_POWDATA_H
 
 #include <auxpow.h>
-#include <consensus/params.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
 #include <uint256.h>
@@ -15,6 +14,11 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+
+namespace Consensus
+{
+class Params;
+}
 
 namespace powdata_tests
 {

@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
         BOOST_CHECK(node->fDisconnect == false);
     }
 
-    SetMockTime(GetTime() + 30*consensusParams.nPowTargetSpacing + 1);
+    SetMockTime(GetTime() + 30*AvgTargetSpacing(consensusParams, chainActive.Height()) + 1);
 
     // Now tip should definitely be stale, and we should look for an extra
     // outbound peer

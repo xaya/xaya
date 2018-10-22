@@ -74,10 +74,7 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
     for (int i = 0; i < 10000; i++) {
         blocks[i].pprev = i ? &blocks[i - 1] : nullptr;
         blocks[i].nHeight = i;
-        /* During one nPowTargetSpacing, we get blocks *from each* algorithm.
-           Because of that, the actual spacing between two blocks (no matter
-           what the algo) is half of the target spacing.  */
-        blocks[i].nTime = 1269211443 + i * chainParams->GetConsensus().nPowTargetSpacing / 2;
+        blocks[i].nTime = 1269211443 + i * AvgTargetSpacing(chainParams->GetConsensus(), i);
         blocks[i].nBits = 0x207fffff; /* target 0x7fffff000... */
         if (i % 2 == 0)
           blocks[i].algo = PowAlgo::SHA256D;
@@ -96,7 +93,7 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
         /* Depending on which blocks exactly are chosen, there might be
            "off-by-one" type differences in the number of blocks of each algo.
            Thus we allow for a little mismatch.  */
-        BOOST_CHECK(std::abs(wdiff - tdiff) < chainParams->GetConsensus().nPowTargetSpacing);
+        BOOST_CHECK(std::abs(wdiff - tdiff) < 60);
     }
 }
 

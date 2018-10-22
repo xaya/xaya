@@ -131,4 +131,11 @@ void SelectParams(const std::string& chain);
  */
 void TurnOffSegwitForUnitTests();
 
+/**
+ * Returns the average target spacing of blocks (including all algorithms)
+ * at the given block height.  This is used for situations where we simply
+ * want to know the expected number of blocks in a given time frame.
+ */
+int64_t AvgTargetSpacing(const Consensus::Params& params, unsigned height);
+
 #endif // BITCOIN_CHAINPARAMS_H
