@@ -17,9 +17,11 @@ class COutPoint;
 class CScript;
 class UniValue;
 
-UniValue getNameInfo (const valtype& name, const valtype& value,
+UniValue getNameInfo (const UniValue& options,
+                      const valtype& name, const valtype& value,
                       const COutPoint& outp, const CScript& addr);
-UniValue getNameInfo (const valtype& name, const CNameData& data);
+UniValue getNameInfo (const UniValue& options,
+                      const valtype& name, const CNameData& data);
 void addExpirationInfo (int height, UniValue& data);
 
 #ifdef ENABLE_WALLET

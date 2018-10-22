@@ -340,7 +340,8 @@ name_list (const JSONRPCRequest& request)
         continue;
 
       UniValue obj
-        = getNameInfo (name, nameOp.getOpValue (),
+        = getNameInfo (NO_OPTIONS,
+                       name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);

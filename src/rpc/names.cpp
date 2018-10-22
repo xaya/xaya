@@ -29,17 +29,51 @@
 #include <memory>
 #include <stdexcept>
 
+namespace
+{
+
+NameEncoding
+EncodingFromOptionsJson (const UniValue& options, const std::string& field,
+                         const NameEncoding defaultValue)
+{
+  NameEncoding res = defaultValue;
+  RPCTypeCheckObj (options,
+    {
+      {field, UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+  if (options.exists (field))
+    try
+      {
+        res = EncodingFromString (options[field].get_str ());
+      }
+    catch (const std::invalid_argument& exc)
+      {
+        LogPrintf ("Invalid value for %s in options: %s\n  using default %s\n",
+                   field, exc.what (), EncodingToString (defaultValue));
+      }
+
+  return res;
+}
+
+} // anonymous namespace
+
 /**
  * Utility routine to construct a "name info" object to return.  This is used
  * for name_show and also name_list.
  */
 UniValue
-getNameInfo (const valtype& name, const valtype& value,
+getNameInfo (const UniValue& options,
+             const valtype& name, const valtype& value,
              const COutPoint& outp, const CScript& addr)
 {
   UniValue obj(UniValue::VOBJ);
-  AddEncodedNameToUniv (obj, "name", name, ConfiguredNameEncoding ());
-  AddEncodedNameToUniv (obj, "value", value, ConfiguredValueEncoding ());
+  AddEncodedNameToUniv (obj, "name", name,
+                        EncodingFromOptionsJson (options, "nameEncoding",
+                                                 ConfiguredNameEncoding ()));
+  AddEncodedNameToUniv (obj, "value", value,
+                        EncodingFromOptionsJson (options, "valueEncoding",
+                                                 ConfiguredValueEncoding ()));
   obj.pushKV ("txid", outp.hash.GetHex ());
   obj.pushKV ("vout", static_cast<int> (outp.n));
 
@@ -60,9 +94,11 @@ getNameInfo (const valtype& name, const valtype& value,
  * Return name info object for a CNameData object.
  */
 UniValue
-getNameInfo (const valtype& name, const CNameData& data)
+getNameInfo (const UniValue& options,
+             const valtype& name, const CNameData& data)
 {
-  UniValue result = getNameInfo (name, data.getValue (),
+  UniValue result = getNameInfo (options,
+                                 name, data.getValue (),
                                  data.getUpdateOutpoint (),
                                  data.getAddress ());
   addExpirationInfo (data.getHeight (), result);
@@ -118,23 +154,7 @@ DecodeNameValueFromRPCOrThrow (const UniValue& val, const UniValue& opt,
                                const std::string& optKey,
                                const NameEncoding defaultEnc)
 {
-  NameEncoding enc = defaultEnc;
-  RPCTypeCheckObj (opt,
-    {
-      {optKey, UniValueType (UniValue::VSTR)},
-    },
-    true, false);
-  if (opt.exists (optKey))
-    try
-      {
-        enc = EncodingFromString (opt[optKey].get_str ());
-      }
-    catch (const std::invalid_argument& exc)
-      {
-        LogPrintf ("Invalid value for %s in options: %s\n  using default %s\n",
-                   optKey, exc.what (), EncodingToString (defaultEnc));
-      }
-
+  const NameEncoding enc = EncodingFromOptionsJson (opt, optKey, defaultEnc);
   try
     {
       return DecodeName (val.get_str (), enc);
@@ -238,10 +258,11 @@ addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
  * This is the most common call for methods in this file.
  */
 UniValue
-getNameInfo (const valtype& name, const CNameData& data,
+getNameInfo (const UniValue& options,
+             const valtype& name, const CNameData& data,
              const MaybeWalletForRequest& wallet)
 {
-  UniValue res = getNameInfo (name, data);
+  UniValue res = getNameInfo (options, name, data);
   addOwnershipInfo (data.getAddress (), wallet, res);
   return res;
 }
@@ -357,7 +378,7 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK (wallet.getLock ());
-  return getNameInfo (name, data, wallet);
+  return getNameInfo (NO_OPTIONS, name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -418,8 +439,8 @@ name_history (const JSONRPCRequest& request)
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (name, entry, wallet));
-  res.push_back (getNameInfo (name, data, wallet));
+    res.push_back (getNameInfo (NO_OPTIONS, name, entry, wallet));
+  res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
 
   return res;
 }
@@ -475,7 +496,7 @@ name_scan (const JSONRPCRequest& request)
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    res.push_back (getNameInfo (name, data, wallet));
+    res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
 
   return res;
 }
@@ -599,7 +620,7 @@ name_filter (const JSONRPCRequest& request)
       if (stats)
         ++count;
       else
-        names.push_back (getNameInfo (name, data, wallet));
+        names.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
 
       if (nb > 0)
         {
@@ -680,7 +701,8 @@ name_pending (const JSONRPCRequest& request)
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
 
-          UniValue obj = getNameInfo (op.getOpName (), op.getOpValue (),
+          UniValue obj = getNameInfo (NO_OPTIONS,
+                                      op.getOpName (), op.getOpValue (),
                                       COutPoint (tx->GetHash (), n),
                                       op.getAddress ());
           addOwnershipInfo (op.getAddress (), wallet, obj);
