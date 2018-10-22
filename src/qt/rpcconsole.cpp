@@ -459,6 +459,9 @@ RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformSty
         move(QApplication::desktop()->availableGeometry().center() - frameGeometry().center());
     }
 
+    QChar nonbreaking_hyphen(8209);
+    ui->dataDir->setToolTip(ui->dataDir->toolTip().arg(QString(nonbreaking_hyphen) + "datadir"));
+    ui->blocksDir->setToolTip(ui->blocksDir->toolTip().arg(QString(nonbreaking_hyphen) + "blocksdir"));
     ui->openDebugLogfileButton->setToolTip(ui->openDebugLogfileButton->toolTip().arg(tr(PACKAGE_NAME)));
 
     if (platformStyle->getImagesOnButtons()) {
@@ -536,6 +539,7 @@ bool RPCConsole::eventFilter(QObject* obj, QEvent *event)
             // forward these events to lineEdit
             if(obj == autoCompleter->popup()) {
                 QApplication::postEvent(ui->lineEdit, new QKeyEvent(*keyevt));
+                autoCompleter->popup()->hide();
                 return true;
             }
             break;
@@ -661,6 +665,7 @@ void RPCConsole::setClientModel(ClientModel *model)
         ui->clientVersion->setText(model->formatFullVersion());
         ui->clientUserAgent->setText(model->formatSubVersion());
         ui->dataDir->setText(model->dataDir());
+        ui->blocksDir->setText(model->blocksDir());
         ui->startupTime->setText(model->formatClientStartupTime());
         ui->networkName->setText(QString::fromStdString(Params().NetworkIDString()));
 
