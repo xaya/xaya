@@ -309,11 +309,13 @@ class NameEncodingsTest (NameTestFramework):
     self.validName ("d/abc", "ascii")
     self.validName ("d/\x00äöü\n", "utf8")
     self.validName ("0011ff", "hex")
+    self.validName ("", "hex")
 
     self.log.info ("Testing valid values...")
     self.validValue ('{"foo":"bar"}', "ascii")
     self.validValue ('{"foo":"\x00äöü\n"}', "utf8")
     self.validValue (strToHex ('{"foo":"\x00\xff"}'), "hex")
+    self.validValue ('', "hex")
 
     self.log.info ("Testing invalid names...")
     self.invalidName ("d/\n", "ascii")
@@ -321,7 +323,6 @@ class NameEncodingsTest (NameTestFramework):
     self.invalidName ("d/\xff", "ascii")
     # We cannot actually test invalid UTF-8 on the "input side", because a
     # string with arbitrary bytes gets UTF-8 encoded when sending to JSON RPC.
-    self.invalidName ("", "hex")
     self.invalidName ("d", "hex")
     self.invalidName ("xx", "hex")
 
@@ -329,7 +330,6 @@ class NameEncodingsTest (NameTestFramework):
     self.invalidValue ('{"foo":"\n"}', "ascii")
     self.invalidValue ('{"foo":"äöü"}', "ascii")
     self.invalidValue ('{"foo":"\xff"}', "ascii")
-    self.invalidValue ('', "hex")
     self.invalidValue ('d', "hex")
     self.invalidValue ('xx', "hex")
 
