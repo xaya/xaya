@@ -25,6 +25,7 @@
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
@@ -542,6 +543,44 @@ name_scan (const JSONRPCRequest& request)
   if (request.params.size () >= 2)
     count = request.params[1].get_int ();
 
+  /* Parse and interpret the name_scan-specific options.  */
+  RPCTypeCheckObj (options,
+    {
+      {"minConf", UniValueType (UniValue::VNUM)},
+      {"maxConf", UniValueType (UniValue::VNUM)},
+      {"prefix", UniValueType (UniValue::VSTR)},
+      {"regexp", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+
+  int minConf = 1;
+  if (options.exists ("minConf"))
+    minConf = options["minConf"].get_int ();
+  if (minConf < 1)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "minConf must be >= 1");
+
+  int maxConf = -1;
+  if (options.exists ("maxConf"))
+    {
+      maxConf = options["maxConf"].get_int ();
+      if (maxConf < 0)
+        throw JSONRPCError (RPC_INVALID_PARAMETER,
+                            "maxConf must not be negative");
+    }
+
+  valtype prefix;
+  if (options.exists ("prefix"))
+    prefix = DecodeNameFromRPCOrThrow (options["prefix"], options);
+
+  bool haveRegexp = false;
+  boost::xpressive::sregex regexp;
+  if (options.exists ("regexp"))
+    {
+      haveRegexp = true;
+      regexp = boost::xpressive::sregex::compile (options["regexp"].get_str ());
+    }
+
+  /* Iterate over names and produce the result.  */
   UniValue res(UniValue::VARR);
   if (count <= 0)
     return res;
@@ -549,11 +588,45 @@ name_scan (const JSONRPCRequest& request)
   MaybeWalletForRequest wallet(request);
   LOCK2 (cs_main, wallet.getLock ());
 
+  const int maxHeight = chainActive.Height () - minConf + 1;
+  int minHeight = -1;
+  if (maxConf >= 0)
+    minHeight = chainActive.Height () - maxConf + 1;
+
   valtype name;
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
-  for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    res.push_back (getNameInfo (options, name, data, wallet));
+  for (iter->seek (start); count > 0 && iter->next (name, data); )
+    {
+      const int height = data.getHeight ();
+      if (height > maxHeight)
+        continue;
+      if (minHeight >= 0 && height < minHeight)
+        continue;
+
+      if (name.size () < prefix.size ())
+        continue;
+      if (!std::equal (prefix.begin (), prefix.end (), name.begin ()))
+        continue;
+
+      if (haveRegexp)
+        {
+          try
+            {
+              const std::string nameStr = EncodeName (name, NameEncoding::UTF8);
+              boost::xpressive::smatch matches;
+              if (!boost::xpressive::regex_search (nameStr, matches, regexp))
+                continue;
+            }
+          catch (const InvalidNameString& exc)
+            {
+              continue;
+            }
+        }
+
+      res.push_back (getNameInfo (options, name, data, wallet));
+      --count;
+    }
 
   return res;
 }
