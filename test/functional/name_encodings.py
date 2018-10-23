@@ -118,14 +118,6 @@ class NameEncodingsTest (NameTestFramework):
     assert_equal (self.node.name_scan (name, 1)[0], data)
     assert_equal (self.node.name_list (name)[0], data)
 
-    found = False
-    for d in self.node.name_filter ():
-      if d['txid'] == txid:
-        assert_equal (d, data)
-        assert not found
-        found = True
-    assert found
-
   def validName (self, baseName, encoding):
     """
     Runs tests asserting that the given string is valid as name in the

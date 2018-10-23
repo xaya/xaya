@@ -12,6 +12,9 @@
   See [#237](https://github.com/namecoin/namecoin-core/issues/237)
   for more details.
 
+- `name_filter` has been removed.  Instead, `name_scan` with the newly added
+  filtering options can be used.
+
 ## Version 0.17
 
 - Previously, `createrawtransaction` supported a separate argument for creating
