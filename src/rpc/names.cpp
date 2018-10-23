@@ -497,13 +497,18 @@ name_history (const JSONRPCRequest& request)
 UniValue
 name_scan (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () > 2)
+  if (request.fHelp || request.params.size () > 3)
     throw std::runtime_error (
-        "name_scan (\"start\" (\"count\"))\n"
+        "name_scan (\"start\" (\"count\" (\"options\")))\n"
         "\nList names in the database.\n"
         "\nArguments:\n"
         "1. \"start\"       (string, optional) skip initially to this name\n"
         "2. \"count\"       (numeric, optional, default=500) stop after this many names\n"
+        "3. \"options\"     (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -518,15 +523,20 @@ name_scan (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_scan", "\"d/abc\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VNUM});
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
+
   valtype start;
   if (request.params.size () >= 1)
-    start = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+    start = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   int count = 500;
   if (request.params.size () >= 2)
@@ -543,7 +553,7 @@ name_scan (const JSONRPCRequest& request)
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
+    res.push_back (getNameInfo (options, name, data, wallet));
 
   return res;
 }
@@ -950,7 +960,7 @@ static const CRPCCommand commands[] =
   //  --------------------- ------------------------  -----------------------  ----------
     { "names",              "name_show",              &name_show,              {"name"} },
     { "names",              "name_history",           &name_history,           {"name"} },
-    { "names",              "name_scan",              &name_scan,              {"start","count"} },
+    { "names",              "name_scan",              &name_scan,              {"start","count","options"} },
     { "names",              "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
     { "names",              "name_pending",           &name_pending,           {"name"} },
     { "names",              "name_checkdb",           &name_checkdb,           {} },

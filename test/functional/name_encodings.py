@@ -335,7 +335,7 @@ class NameEncodingsTest (NameTestFramework):
 
     self.test_outputSide ()
     self.test_walletTx ()
-    self.test_writeRpcOption ()
+    self.test_rpcOption ()
 
   def test_outputSide (self):
     """
@@ -451,10 +451,62 @@ class NameEncodingsTest (NameTestFramework):
     self.testNameForWalletTx ("d/test", "ascii", "'%s'")
     self.testNameForWalletTx ("00ff", "hex", "0x%s")
 
-  def test_writeRpcOption (self):
+  def readRpcOption (self, nameAscii, nameUtf8, valueAscii, valueUtf8):
+    """
+    Tests overriding the name/value encoding through the "options" RPC
+    argument for "read" methods.
+
+    This is not a "standalone test" but rather called from test_rpcOption.
+    This allows us to reuse the registered names/values from there.
+    """
+
+    self.log.info ("Testing options-override for read RPCs...")
+    self.setEncodings ()
+
+    # Type check for the encoding options.
+    assert_raises_rpc_error (-3, "Expected type string",
+                             self.node.name_scan, nameAscii, 1,
+                             {"nameEncoding": 42})
+    assert_raises_rpc_error (-3, "Expected type string",
+                             self.node.name_scan, nameAscii, 1,
+                             {"valueEncoding": 42})
+
+    # name_scan
+    assert_raises_rpc_error (-1000, "Name/value is invalid",
+                             self.node.name_scan, nameUtf8, 1)
+
+    res = self.node.name_scan (nameUtf8, 1, {"nameEncoding": "utf8"})
+    assert_equal (len (res), 1)
+    res = res[0]
+    assert_equal (res['name_encoding'], 'utf8')
+    assert_equal (res['name'], nameUtf8)
+    assert_equal (res['value_encoding'], 'ascii')
+    assert_equal (res['value'], valueAscii)
+
+    res = self.node.name_scan (nameAscii, 1)
+    assert_equal (len (res), 1)
+    res = res[0]
+    assert_equal (res['name_encoding'], 'ascii')
+    assert_equal (res['name'], nameAscii)
+    assert_equal (res['value_encoding'], 'ascii')
+    assert 'value' not in res
+    assert_equal (res['value_error'], 'invalid data for ascii')
+
+    res = self.node.name_scan (nameAscii, 1, {"valueEncoding": "utf8"})
+    assert_equal (len (res), 1)
+    res = res[0]
+    assert_equal (res['name_encoding'], 'ascii')
+    assert_equal (res['name'], nameAscii)
+    assert_equal (res['value_encoding'], 'utf8')
+    assert_equal (res['value'], valueUtf8)
+
+  def test_rpcOption (self):
     """
     Tests overriding the name/value encoding through the "options" RPC
     argument for "write" methods.
+
+    The end of the function also calls a separate routine that verifies
+    options overrides for "read" RPCs.
     """
 
     self.log.info ("Testing options-override for write RPCs...")
@@ -466,6 +518,14 @@ class NameEncodingsTest (NameTestFramework):
     nameUtf8 = self.uniqueName ("d/äöü", "utf8")
     valueAscii = "{}"
     valueUtf8 = '{"foo":"äöü"}'
+
+    # Type check for the encoding options.
+    assert_raises_rpc_error (-3, "Expected type string",
+                             self.node.name_update, nameAscii, valueAscii,
+                             {"nameEncoding": 42})
+    assert_raises_rpc_error (-3, "Expected type string",
+                             self.node.name_update, nameAscii, valueAscii,
+                             {"valueEncoding": 42})
 
     # name_new both names, verify expected behaviour.
     newAscii = self.node.name_new (nameAscii)
@@ -504,6 +564,9 @@ class NameEncodingsTest (NameTestFramework):
     assert_equal (data["value"], valueUtf8)
     data = self.node.name_show (nameUtf8)
     assert_equal (data["value"], valueAscii)
+
+    # Call tests for read-only RPCs.
+    self.readRpcOption (nameAscii, nameUtf8, valueAscii, valueUtf8)
 
 
 if __name__ == '__main__':
