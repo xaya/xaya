@@ -313,7 +313,14 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
   : HelpTextBuilder(ind, 25)
 {
   withField ("\"name\": xxxxx", "(string) the requested name");
+  withField ("\"name_encoding\": xxxxx", "(string) the encoding of \"name\"");
+  withField ("\"name_error\": xxxxx",
+             "(string) replaces \"name\" in case there is an error");
   withField ("\"value\": xxxxx", "(string) the name's current value");
+  withField ("\"value_encoding\": xxxxx", "(string) the encoding of \"value\"");
+  withField ("\"value_error\": xxxxx",
+             "(string) replaces \"value\" in case there is an error");
+
   withField ("\"txid\": xxxxx", "(string) the name's last update tx");
   withField ("\"vout\": xxxxx",
            "(numeric) the index of the name output in the last update");
