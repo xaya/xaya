@@ -101,4 +101,24 @@ public:
 
 };
 
+/**
+ * Builder class for the help text of the "options" argument for name RPCs.
+ */
+class NameOptionsHelp : public HelpTextBuilder
+{
+
+public:
+
+  NameOptionsHelp ();
+
+  /**
+   * Adds the options for write-type RPCs (e.g. name_update).
+   */
+  NameOptionsHelp& withWriteOptions ();
+
+  NameOptionsHelp& withNameEncoding ();
+  NameOptionsHelp& withValueEncoding ();
+
+};
+
 #endif // BITCOIN_RPC_NAMES_H

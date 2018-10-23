@@ -333,6 +333,46 @@ NameInfoHelp::withExpiration ()
   return *this;
 }
 
+NameOptionsHelp::NameOptionsHelp ()
+  : HelpTextBuilder("  ", 25)
+{}
+
+NameOptionsHelp&
+NameOptionsHelp::withWriteOptions ()
+{
+  withField ("\"destAddress\"",
+             "(string) The address to send the name output to");
+
+  withField ("\"sendCoins\"", ":",
+             "(object) Addresses to which coins should be"
+             " sent additionally");
+  withLine ("{");
+  withField ("  \"addr1\": x", "");
+  withField ("  \"addr2\": y", "");
+  withLine ("  ...");
+  withLine ("}");
+
+  return *this;
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withNameEncoding ()
+{
+  withField ("\"nameEncoding\"",
+             "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+             " name argument");
+  return *this;
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withValueEncoding ()
+{
+  withField ("\"valueEncoding\"",
+             "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+             " value argument");
+  return *this;
+}
+
 /* ************************************************************************** */
 namespace
 {
