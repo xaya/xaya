@@ -1,0 +1,4996 @@
+[
+  {
+    "address": {
+      "chi": "CddnxmrdzkrjhsAYRs1PiJXaK37wsgnXbc",
+      "huc": "HTh2n5S6WvRFX4qaiu1DXoo1s6DGNp14TG"
+    },
+    "amount": {
+      "chi": 2321.89762,
+      "huc": 9949.9,
+      "full_huc": 9949
+    }
+  },
+  {
+    "address": {
+      "chi": "CH8FnztTUz2RfkvFxFBpLhLxYWqqvEiZ4U",
+      "huc": "H7BVcJTv19awUxbJFHBeACcQ6ZwASXFvFy"
+    },
+    "amount": {
+      "chi": 274.92164,
+      "huc": 1178.27714458,
+      "full_huc": 1178
+    }
+  },
+  {
+    "address": {
+      "chi": "CYygk5XPEbRdAR6JqJiTdZLyMJP9ijeniQ",
+      "huc": "HP2vZP6qkkz8ycmM8LiHT4cQuMUUGG2Usn"
+    },
+    "amount": {
+      "chi": 722.54448,
+      "huc": 3096.009023,
+      "full_huc": 3096
+    }
+  },
+  {
+    "address": {
+      "chi": "CHmx9rYFADFZFtATSGQkG3RqBu2BaRFZ94",
+      "huc": "H7qByA7hgNp555qVjJQa5YhGjx7WA8Qojg"
+    },
+    "amount": {
+      "chi": 303.16062,
+      "huc": 1299.0,
+      "full_huc": 1299
+    }
+  },
+  {
+    "address": {
+      "chi": "CNCmvX3mGMWq1fYhiiWWT8rpPBRzxnRojt",
+      "huc": "HCG1jpdDnX5LpsDk1kWLGe8FwEXKYehq5b"
+    },
+    "amount": {
+      "chi": 452.99058,
+      "huc": 1941.64174243,
+      "full_huc": 1941
+    }
+  },
+  {
+    "address": {
+      "chi": "CRm527NUeEhPh5BzdLFn11G2XQNKVLmUfv",
+      "huc": "HFpJqQwwAQFuWGs2vNFbpWXU5TTe3Mew4i"
+    },
+    "amount": {
+      "chi": 2541.27482,
+      "huc": 10889.03980208,
+      "full_huc": 10889
+    }
+  },
+  {
+    "address": {
+      "chi": "CUeAb8araXEw53RfvRyfPtVwqghS4otv6p",
+      "huc": "HJhQQSAK6goStF6iDTyVDPmPPjnkWc2ijp"
+    },
+    "amount": {
+      "chi": 2321.89762,
+      "huc": 9949.9,
+      "full_huc": 9949
+    }
+  },
+  {
+    "address": {
+      "chi": "CZ1QGDF48hspKqn62VLxPe71YpJ32gjZUN",
+      "huc": "HP4e5WpWesSL93T8KXLnD9NT6sPMYS74Yu"
+    },
+    "amount": {
+      "chi": 383.44334,
+      "huc": 1643.87240562,
+      "full_huc": 1643
+    }
+  },
+  {
+    "address": {
+      "chi": "CLufQrwzRaXovdCJGT9zwff3V2TsKCB87H",
+      "huc": "HAxuEAXSwk6KjpsLZV9pmAvV35ZBrYhHa4"
+    },
+    "amount": {
+      "chi": 754.75092,
+      "huc": 3234.89231866,
+      "full_huc": 3234
+    }
+  },
+  {
+    "address": {
+      "chi": "CSnxnkuDEbpEfmGYxbs3ezigSBbWc9YGnV",
+      "huc": "HGrCc4UfkmNkUxwbFdrsUVz7zEgq83fZA8"
+    },
+    "amount": {
+      "chi": 1184.4035,
+      "huc": 5075.0,
+      "full_huc": 5075
+    }
+  },
+  {
+    "address": {
+      "chi": "CYoAw8pNPyDmpjFZBV1DVSpwdhDPVbTGNs",
+      "huc": "HNrQkSPpv8nHdvvbUX13Jx6PBkJi2hXKbL"
+    },
+    "amount": {
+      "chi": 17615.05564,
+      "huc": 75478.72705152,
+      "full_huc": 75478
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ3Hwzma3Pk3PB7qivQAUfx62YS1hsfWJ7",
+      "huc": "HE6XmJM2ZZJZCNnt1xPzJBDXabXLHEpjsU"
+    },
+    "amount": {
+      "chi": 272.82122,
+      "huc": 1169.9,
+      "full_huc": 1169
+    }
+  },
+  {
+    "address": {
+      "chi": "CJcsXWQf7d9LQgSGeMjyEoPibXEB6Pyz7T",
+      "huc": "H8g7Loz7dnhrDt7JwPjo4JfA9aKVeBViAR"
+    },
+    "amount": {
+      "chi": 583.21662,
+      "huc": 2499.9,
+      "full_huc": 2499
+    }
+  },
+  {
+    "address": {
+      "chi": "CRAphgfA8z5JBxyc2faZjC77cziZKxaEjm",
+      "huc": "HFE4WzEcf9dp1AeeKhaPYhNZB3osrDJUzu"
+    },
+    "amount": {
+      "chi": 9555.51072,
+      "huc": 40944.0,
+      "full_huc": 40944
+    }
+  },
+  {
+    "address": {
+      "chi": "CaZ5QAqXAVxMjqPmD1v8CnaZjNjB2wKmmv",
+      "huc": "HQcKDUQygfWsZ34oW3ux2Hr1HRpVZYs3ds"
+    },
+    "amount": {
+      "chi": 463.49268,
+      "huc": 1986.356784,
+      "full_huc": 1986
+    }
+  },
+  {
+    "address": {
+      "chi": "CLAZiDNQRw2yhJyWX7doUH9iJU4M8hR3SJ",
+      "huc": "HADoXWwrx6bVWWeYp9ddHnR9rX9fiooLUw"
+    },
+    "amount": {
+      "chi": 746.816,
+      "huc": 3200.10000001,
+      "full_huc": 3200
+    }
+  },
+  {
+    "address": {
+      "chi": "CTKcMe8nJ3wJyTfLBVjFP7jevoyEXRQ9r5",
+      "huc": "HHNrAwiEpDVpnfLNUXj5Cd16Us4Z4a2qZ9"
+    },
+    "amount": {
+      "chi": 2597.75278,
+      "huc": 11131.08958387,
+      "full_huc": 11131
+    }
+  },
+  {
+    "address": {
+      "chi": "CaKCKh6RBFkuLNCQUh89JR4PP3M38McraU",
+      "huc": "HQNS8zfshRKR9ZsSmj7y7vKpw6SMfXAWWf"
+    },
+    "amount": {
+      "chi": 53641.2261,
+      "huc": 229845.75296815,
+      "full_huc": 229845
+    }
+  },
+  {
+    "address": {
+      "chi": "CHPs81ToS49YpJy3QhxfvnJhA3Rv5o39Qp",
+      "huc": "H7T6wK3FxDi4dWe5hjxVkHa8i6XEX6iCvH"
+    },
+    "amount": {
+      "chi": 375.04166,
+      "huc": 1607.455,
+      "full_huc": 1607
+    }
+  },
+  {
+    "address": {
+      "chi": "CK7qfTy8s5NB2jUBpSTYjKSAoJmzeW5YvK",
+      "huc": "H9B5UmYbPEvgqw9E7UTNYphcMMsKAeRFvQ"
+    },
+    "amount": {
+      "chi": 247.3828,
+      "huc": 1060.0,
+      "full_huc": 1060
+    }
+  },
+  {
+    "address": {
+      "chi": "CUfr48WJBy4bgHxJFD8wUkoqmTTW8X3NaG",
+      "huc": "HJj5sS5ki8d7VVdLYF8mJG5HKWYpjUBR3G"
+    },
+    "amount": {
+      "chi": 377.84222,
+      "huc": 1619.8655,
+      "full_huc": 1619
+    }
+  },
+  {
+    "address": {
+      "chi": "CT9Cx9UEWa9hf6oct8n9AtsDnDCLjNBmE8",
+      "huc": "HHCSmT3h2jiDUJUfBAmxzQ8fLGHfEcvk2y"
+    },
+    "amount": {
+      "chi": 421.71766,
+      "huc": 1807.960379,
+      "full_huc": 1807
+    }
+  },
+  {
+    "address": {
+      "chi": "CJNUtTJRfvJsENQTyvqLsFY6xpFyfHeu9D",
+      "huc": "H8RihkstC5sP3a5WGxqAgkoYWsMJ7jYSs8"
+    },
+    "amount": {
+      "chi": 2637.194,
+      "huc": 11300.0,
+      "full_huc": 11300
+    }
+  },
+  {
+    "address": {
+      "chi": "CN6kUqzCay4WXdo8psdEXpb34Ks4HaTUqr",
+      "huc": "HC9zJ9Zf78d2LqUB7ud4MKrUcNxNtTYv2j"
+    },
+    "amount": {
+      "chi": 554.04412,
+      "huc": 2374.95869895,
+      "full_huc": 2374
+    }
+  },
+  {
+    "address": {
+      "chi": "CHm6kbaeH8WQudiWYDttPGNz4CcZGgHDby",
+      "huc": "H7pLZuA6oJ4viqPYqFtiCmeRcFhsqZ81w9"
+    },
+    "amount": {
+      "chi": 1416.38322,
+      "huc": 6069.1079303,
+      "full_huc": 6069
+    }
+  },
+  {
+    "address": {
+      "chi": "CJWYk2tAwWtkTST2TVTpKASe93XqDtw6pA",
+      "huc": "H8ZnZLTdTgTGGe84kXTe8fi5h6d9jr1wji"
+    },
+    "amount": {
+      "chi": 23338.0,
+      "huc": 100000.0,
+      "full_huc": 100000
+    }
+  },
+  {
+    "address": {
+      "chi": "CbCKKE2wGHQt7tQNzb8VAqZoXPg29PG9T5",
+      "huc": "HRFZ8XcPnSyPw65RHd8JzLqF5SmLfnLTm7"
+    },
+    "amount": {
+      "chi": 9866.60626,
+      "huc": 42277.0,
+      "full_huc": 42277
+    }
+  },
+  {
+    "address": {
+      "chi": "CMqoJ95e8c5UdBXrDjmL2ezq8p2HbB79bC",
+      "huc": "HBu37Sf6emdzSPCtWmm9rAGGgs7c4huTaG"
+    },
+    "amount": {
+      "chi": 1889.91124,
+      "huc": 8098.27933018,
+      "full_huc": 8098
+    }
+  },
+  {
+    "address": {
+      "chi": "CPbSwxm3ERBtTsoA28dSNPFX92LYHbCZEd",
+      "huc": "HDegmGLVkakQH5UCKAdGBtWxh5RrtkvPVU"
+    },
+    "amount": {
+      "chi": 704.8076,
+      "huc": 3020.0,
+      "full_huc": 3020
+    }
+  },
+  {
+    "address": {
+      "chi": "CJa6PhmkYFsTKTyKabiDLbKBr6b1HXjh8d",
+      "huc": "H8dLD1MD4RRy8feMsdi3A6adQ9gKsRLw6m"
+    },
+    "amount": {
+      "chi": 49750.7815,
+      "huc": 213175.6810236,
+      "full_huc": 213175
+    }
+  },
+  {
+    "address": {
+      "chi": "CVKJwTHnpGA462DkH4AfxSyAqJSmYFCsJe",
+      "huc": "HKNYkksFLRiZuDtna6AVmxEcPMY66ThbFy"
+    },
+    "amount": {
+      "chi": 196739.34,
+      "huc": 843000.0,
+      "full_huc": 843000
+    }
+  },
+  {
+    "address": {
+      "chi": "CeN7TEdzpoecKQA6t1eAQupmmcVb89xwWL",
+      "huc": "HURMGYDTLyD88bq9B3dzER6DKfaud4kXG5"
+    },
+    "amount": {
+      "chi": 11847.30232,
+      "huc": 50764.08118303,
+      "full_huc": 50764
+    }
+  },
+  {
+    "address": {
+      "chi": "CJLDDpuj3kLHaZeczseTDnGA6aMn6xUkRg",
+      "huc": "H8PT38VBZutoPmKfHueH3HXbedT6cWhPjo"
+    },
+    "amount": {
+      "chi": 279.58924,
+      "huc": 1198.35500771,
+      "full_huc": 1198
+    }
+  },
+  {
+    "address": {
+      "chi": "CQSN7Kr89PGFpY5rKit6CnQ4Y9WSCN7wWM",
+      "huc": "HEVbvdRafYpmdjktcksv2HfW6CbkkwjSsg"
+    },
+    "amount": {
+      "chi": 622.89122,
+      "huc": 2669.0390855,
+      "full_huc": 2669
+    }
+  },
+  {
+    "address": {
+      "chi": "CHYhTP19EtzwAWvgQE8A4uA7e9cCFEFqAy",
+      "huc": "H7bwGgabm4ZSyibihG7ytQRZCChWrKWGs1"
+    },
+    "amount": {
+      "chi": 12049.17602,
+      "huc": 51629.8,
+      "full_huc": 51629
+    }
+  },
+  {
+    "address": {
+      "chi": "CYiivvVvznN8bQnmQ87V3c7PPMVTC7UZFr",
+      "huc": "HNmxkE5PWwveQcTohA7Js7NpwQamkgBBGo"
+    },
+    "amount": {
+      "chi": 638.99444,
+      "huc": 2738.2200707,
+      "full_huc": 2738
+    }
+  },
+  {
+    "address": {
+      "chi": "CPfczEVRnqcoBau2kCM7fMaJs5mrq4FWBP",
+      "huc": "HDiroY4tK1BJzna53ELwUrqkR8sBPgoBRb"
+    },
+    "amount": {
+      "chi": 7866.0729,
+      "huc": 33705.62964034,
+      "full_huc": 33705
+    }
+  },
+  {
+    "address": {
+      "chi": "CWAHhi55YvUUGz6KPekh3TfRUyhu6gc8Gd",
+      "huc": "HLDXX1eY562z6BmMggkWrxvs32oDbtqJYQ"
+    },
+    "amount": {
+      "chi": 1075.41504,
+      "huc": 4608.02908082,
+      "full_huc": 4608
+    }
+  },
+  {
+    "address": {
+      "chi": "CSKCJUVqxg4tejvvTZfyLBxuEMJr3UXPtY",
+      "huc": "HGNS7n5JUqdQTwbxkbfo9hELnQQAcbnTJ5"
+    },
+    "amount": {
+      "chi": 644.36218,
+      "huc": 2761.9,
+      "full_huc": 2761
+    }
+  },
+  {
+    "address": {
+      "chi": "Cbd6aQMcY92eYYNe72cahzMnydvPMRE2jo",
+      "huc": "HRgLPhw54JbAMk3gQ4cQXVdEXh1htNxBxH"
+    },
+    "amount": {
+      "chi": 439.68792,
+      "huc": 1884.94121998,
+      "full_huc": 1884
+    }
+  },
+  {
+    "address": {
+      "chi": "CdvfA3YJYEyDzWiL8C6432q5mcEnVGaYB5",
+      "huc": "HTytyM7m4QXjoiPNRE5srY6XKfL71inmfM"
+    },
+    "amount": {
+      "chi": 1252.78384,
+      "huc": 5368.153,
+      "full_huc": 5368
+    }
+  },
+  {
+    "address": {
+      "chi": "Cap48aSrtCNxT9znaKtkADJr3td8Y4AKqc",
+      "huc": "HQsHwt2KQMwUGMfpsMtZyiaHbwiT3cnhV2"
+    },
+    "amount": {
+      "chi": 4444.7221,
+      "huc": 19045.98994824,
+      "full_huc": 19045
+    }
+  },
+  {
+    "address": {
+      "chi": "CNmYxErSb1xRC5ztpwBaj9fg6wuzxUySD7",
+      "huc": "HCpnmYRu7BWw1Hfw7yBQYew7f11KSY75uf"
+    },
+    "amount": {
+      "chi": 717.6435,
+      "huc": 3075.00331334,
+      "full_huc": 3075
+    }
+  },
+  {
+    "address": {
+      "chi": "CVxpBvS75opKjkiYv5xyZwfRJnrLUBvdBG",
+      "huc": "HL241E1ZbyNqYxPbD7xoPSvrrqwf4gUCiL"
+    },
+    "amount": {
+      "chi": 21930.7186,
+      "huc": 93970.37401369,
+      "full_huc": 93970
+    }
+  },
+  {
+    "address": {
+      "chi": "CLDPHVJeWWruABXn1mG88kBnhvG9uXqxTY",
+      "huc": "HAGd6nt72gRQyPCpJoFwxFTEFyMULertgT"
+    },
+    "amount": {
+      "chi": 1633.42662,
+      "huc": 6999.99,
+      "full_huc": 6999
+    }
+  },
+  {
+    "address": {
+      "chi": "CNG9JciqVSpnJiPyrxk9QfVXWpGE9Lpiso",
+      "huc": "HCKP7vJJ1cPJ7v529zjyEAky4sMYecpqrx"
+    },
+    "amount": {
+      "chi": 404.9143,
+      "huc": 1735.0,
+      "full_huc": 1735
+    }
+  },
+  {
+    "address": {
+      "chi": "CKkcMprtcwgvqbmx8e3gPUu8ga5LdqhoMQ",
+      "huc": "H9orB8SM97FSeoSzRg3WCzAaEdAfBRLgsR"
+    },
+    "amount": {
+      "chi": 388.81108,
+      "huc": 1666.476817,
+      "full_huc": 1666
+    }
+  },
+  {
+    "address": {
+      "chi": "CduyGyvgRyPz5EiZCZHHMxixptkjWSo3WQ",
+      "huc": "HTyD6HW8x8xVtSPbVbH7BTzQNwr44o4tcB"
+    },
+    "amount": {
+      "chi": 260.2187,
+      "huc": 1115.0,
+      "full_huc": 1115
+    }
+  },
+  {
+    "address": {
+      "chi": "CQZhm8TntTr5mDUQhMTYs8RBKFrWArWdWC",
+      "huc": "HEcwaS3FQdQbaR9SzPTNgdgcsJwpieG8RT"
+    },
+    "amount": {
+      "chi": 239.44788,
+      "huc": 1026.903508,
+      "full_huc": 1026
+    }
+  },
+  {
+    "address": {
+      "chi": "CRrwzgRgAquEooh7VgjEuMk1nDbNrH7j2W",
+      "huc": "HFvBoz18h1Tkd1N9nij4is1TLGghNJxTFf"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.0,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CWATtakzR1DhLofGXJg2C6JfwDU4hE57zE",
+      "huc": "HLDhhtLSwAnDA1LJpLfr1ba7VGZPJ1uU4U"
+    },
+    "amount": {
+      "chi": 4824.43136,
+      "huc": 20672.0,
+      "full_huc": 20672
+    }
+  },
+  {
+    "address": {
+      "chi": "CcmUfvfFhT2RszPoczW4E9reD9EiaFo3zG",
+      "huc": "HSpiVEEiDcawhC4qv2Vt3f85mCL36tS6ts"
+    },
+    "amount": {
+      "chi": 568798.63698,
+      "huc": 2437221.56783117,
+      "full_huc": 2437221
+    }
+  },
+  {
+    "address": {
+      "chi": "CNCLfnYfLmdZZ6qEHeKrw9cFrCdtLYULfB",
+      "huc": "HCFaV687rwC5NJWGagKgkeshQFjCwW9j9M"
+    },
+    "amount": {
+      "chi": 298.49302,
+      "huc": 1279.19537843,
+      "full_huc": 1279
+    }
+  },
+  {
+    "address": {
+      "chi": "CYTfYSZNAtYHiTfP6FQp1JP8CQkFDjATj5",
+      "huc": "HNWuMk8ph46oXfLRPHQdpoeZkTqZmXFFkD"
+    },
+    "amount": {
+      "chi": 12931.81918,
+      "huc": 55411.51669005,
+      "full_huc": 55411
+    }
+  },
+  {
+    "address": {
+      "chi": "CeKfm5E3NrDGWzTjJ2i7TkQow73TFqkfQW",
+      "huc": "HUNuaNoVu1mnLC8mb4hwHFgFVA8mmCLNrb"
+    },
+    "amount": {
+      "chi": 937.48746,
+      "huc": 4017.7130283,
+      "full_huc": 4017
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ62SdoqQaJbaaT3B76qCxm1fWURnfkpuN",
+      "huc": "HE9GFwPHvjs7Pn85U96f2U2TDZZkLvSnuB"
+    },
+    "amount": {
+      "chi": 299.19316,
+      "huc": 1282.0,
+      "full_huc": 1282
+    }
+  },
+  {
+    "address": {
+      "chi": "CMW1HMyF5Fr2De7RBdnBvzbEGTRHMKZCcS",
+      "huc": "HBZF6fYhbRQY2qnTUfn1kVrfpWWbw6Ct7g"
+    },
+    "amount": {
+      "chi": 816.83,
+      "huc": 3500.0,
+      "full_huc": 3500
+    }
+  },
+  {
+    "address": {
+      "chi": "CdXVrvVSZUwA8qxrNgzmNKnxydCszsrTWu",
+      "huc": "HTajgE4u5eVfx3dtfizbBq4QXgJCXV5nfh"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.06,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CMreSkbktsmQRbwajrojHNbqm1ohYjXmhc",
+      "huc": "HButG4BDR3KvEocd2toZ6ssHK4u25P7uiU"
+    },
+    "amount": {
+      "chi": 392.54516,
+      "huc": 1682.44715551,
+      "full_huc": 1682
+    }
+  },
+  {
+    "address": {
+      "chi": "CcTNrSqBi5G6Bn5Z2tUV6AUomi2J8Ex6e4",
+      "huc": "HSWcfkQeEEpbzykbKvUJufkFKm7cjaaat5"
+    },
+    "amount": {
+      "chi": 995.83246,
+      "huc": 4267.45865312,
+      "full_huc": 4267
+    }
+  },
+  {
+    "address": {
+      "chi": "CMcNNpgCB2C4PwkPJat28X6tY1ZyafgmY5",
+      "huc": "HBfcC8FehBkaD9RRbcsqx2NL64fJ6v6jwz"
+    },
+    "amount": {
+      "chi": 10619.49014,
+      "huc": 45503.0,
+      "full_huc": 45503
+    }
+  },
+  {
+    "address": {
+      "chi": "CKFHUCN3wpA7csuC1Cw4N18Piv2BTnffdF",
+      "huc": "H9JXHVwWTyidS5aEJEvtBWPqGy7VzF8ngd"
+    },
+    "amount": {
+      "chi": 2721.2108,
+      "huc": 11660.59080001,
+      "full_huc": 11660
+    }
+  },
+  {
+    "address": {
+      "chi": "CN21mY5jkhU1FWLU8su5U1QyigqXXuJDM1",
+      "huc": "HC5FaqfCGs2X4i1WRutuHWgRGjvr4eCJRX"
+    },
+    "amount": {
+      "chi": 7350.3031,
+      "huc": 31495.92525046,
+      "full_huc": 31495
+    }
+  },
+  {
+    "address": {
+      "chi": "CKT8fHhjNrRTm4RY2jLpnZdNpkitR7oVb2",
+      "huc": "H9WNUbHBu1yyaG6aKmLec4tpNopCvZPjvz"
+    },
+    "amount": {
+      "chi": 303.16062,
+      "huc": 1299.58,
+      "full_huc": 1299
+    }
+  },
+  {
+    "address": {
+      "chi": "CcwoZaeZFf8ExPg3NE9HUygHCGFKEeMaoa",
+      "huc": "HT13NtE1mpgkmbM5fG97JUwikKLdhn4TbY"
+    },
+    "amount": {
+      "chi": 1206.80798,
+      "huc": 5171.7289267,
+      "full_huc": 5171
+    }
+  },
+  {
+    "address": {
+      "chi": "CVGbP5gPwtb7CkBuJrh8EmRUuWfXkLyLa3",
+      "huc": "HKKqCPFrU49d1wrwbtgx4GgvTZkrKFFd38"
+    },
+    "amount": {
+      "chi": 2397.51274,
+      "huc": 10273.67459012,
+      "full_huc": 10273
+    }
+  },
+  {
+    "address": {
+      "chi": "CGdqVVq2HWdBPEHTsuBd12rVGDfpmvweR7",
+      "huc": "H6h5JoQUogBhCRxWAwBSpY7vpGm9Jw5m6v"
+    },
+    "amount": {
+      "chi": 395.11234,
+      "huc": 1693.85095846,
+      "full_huc": 1693
+    }
+  },
+  {
+    "address": {
+      "chi": "CMmKcedP6qVVNxBTKr43F3XC2CeKEy2Byh",
+      "huc": "HBpZRxCqd141C9rVct3s4YndaFjdt8jGcG"
+    },
+    "amount": {
+      "chi": 466.76,
+      "huc": 2000.0,
+      "full_huc": 2000
+    }
+  },
+  {
+    "address": {
+      "chi": "CPnVSmtUZK4kv7J6BcWTHia4ngD3KwPbrU",
+      "huc": "HDqjG5Tw5UdGjJy8UeWH7DqWLjJMseuCwf"
+    },
+    "amount": {
+      "chi": 662.7992,
+      "huc": 2840.395488,
+      "full_huc": 2840
+    }
+  },
+  {
+    "address": {
+      "chi": "Cd5mKhSXKHL96M1tA6YMCP14c2y7zHZQtk",
+      "huc": "HT91911yqSteuYgvT8YB1tGWA64STpmL6G"
+    },
+    "amount": {
+      "chi": 1516.73662,
+      "huc": 6499.88,
+      "full_huc": 6499
+    }
+  },
+  {
+    "address": {
+      "chi": "CRc38TRnbMiTV3tW2arFiow1BnTxNRWhT3",
+      "huc": "HFfGwm1F7XGyJFZYKcr5YKCSjqZGxmwPHn"
+    },
+    "amount": {
+      "chi": 150182.59718,
+      "huc": 643511.0,
+      "full_huc": 643511
+    }
+  },
+  {
+    "address": {
+      "chi": "CJCqBbUxHwLF7hchBHh6xCSjiNQmvDHKin",
+      "huc": "H8G4zu4Qp6tkvuHjUKgvmhiBGRW6Pu6Nim"
+    },
+    "amount": {
+      "chi": 669.33384,
+      "huc": 2868.13474309,
+      "full_huc": 2868
+    }
+  },
+  {
+    "address": {
+      "chi": "CS2BRhzBkF2CwjBhhhZp9nc3hasqTKcMWD",
+      "huc": "HG5RF1ZeGQaikvrjzjZdyHsVFdy9vDKMwx"
+    },
+    "amount": {
+      "chi": 455.091,
+      "huc": 1950.0,
+      "full_huc": 1950
+    }
+  },
+  {
+    "address": {
+      "chi": "CLsHSpCMawh1CPVizfXF6gGWqmXd7ZPSFo",
+      "huc": "HAvXG7mp77FX1bAmHhX4vBXxPpcwdPeXDW"
+    },
+    "amount": {
+      "chi": 973.42798,
+      "huc": 4171.10250572,
+      "full_huc": 4171
+    }
+  },
+  {
+    "address": {
+      "chi": "CdbnHKbSaXPBcVt94VHsRPzbL2b57ucEWJ",
+      "huc": "HTf26dAu6gwhRhZBMXHhEuG2t5gPd83LDD"
+    },
+    "amount": {
+      "chi": 1085.68376,
+      "huc": 4652.99531998,
+      "full_huc": 4652
+    }
+  },
+  {
+    "address": {
+      "chi": "CKZmtHga7hic3u8Vvx4UsvsPjxXYh2CR4R",
+      "huc": "H9d1hbG2dsH7s6oYDz4JhS8qJ1csDpPpPJ"
+    },
+    "amount": {
+      "chi": 266.98672,
+      "huc": 1144.82183074,
+      "full_huc": 1144
+    }
+  },
+  {
+    "address": {
+      "chi": "CTxtpCNdmEGYPobrqPUsxAcFLKfGink6Xt",
+      "huc": "HJ28dVx6HPq4D1Gu8RUhmfsgtNkbFXemZw"
+    },
+    "amount": {
+      "chi": 1242.51512,
+      "huc": 5324.99,
+      "full_huc": 5324
+    }
+  },
+  {
+    "address": {
+      "chi": "CfZN9a3UEJMfpUrXNWfrHty9ktSWph4nHc",
+      "huc": "HVcbxscvkTvBdgXZfYfg7QEbJwXqSJZ8CB"
+    },
+    "amount": {
+      "chi": 332.5665,
+      "huc": 1425.0,
+      "full_huc": 1425
+    }
+  },
+  {
+    "address": {
+      "chi": "CZzQD9mbhQMPFmYQV2yUBK5H4gi21x4ddu",
+      "huc": "HQ3e2TM4DZuu4yDSn4yHzpLicjoLeGze43"
+    },
+    "amount": {
+      "chi": 1007.50146,
+      "huc": 4317.0,
+      "full_huc": 4317
+    }
+  },
+  {
+    "address": {
+      "chi": "CXbAn7mDWMUhBXsE43rGDH4JTYd5EHdNUk",
+      "huc": "HMeQbRLg2X3CzjYGM5r62nKk1biPgdAaEo"
+    },
+    "amount": {
+      "chi": 42251.34858,
+      "huc": 181041.10686917,
+      "full_huc": 181041
+    }
+  },
+  {
+    "address": {
+      "chi": "CH3BCAGWsNhryzbDqjgUKAzxr5VMtZebkH",
+      "huc": "H76R1TqyPYGNoCGG8mgJ8gGQQ8agRsxARC"
+    },
+    "amount": {
+      "chi": 2547.10932,
+      "huc": 10914.11800002,
+      "full_huc": 10914
+    }
+  },
+  {
+    "address": {
+      "chi": "CeW4vRFuSCmxSfqpf3Q6rHaJ6JzqLp73d7",
+      "huc": "HUZJjiqMxNLUFsWrx5PvfnqjeN69qmDFEr"
+    },
+    "amount": {
+      "chi": 17737.58014,
+      "huc": 76003.0,
+      "full_huc": 76003
+    }
+  },
+  {
+    "address": {
+      "chi": "CHzkAMAQjc54PhKGhkWYMXDdCTZrYxTYJQ",
+      "huc": "H83yyejsFmdaCtzJznWNB2V4kWfB6fb8eJ"
+    },
+    "amount": {
+      "chi": 248.08294,
+      "huc": 1063.539072,
+      "full_huc": 1063
+    }
+  },
+  {
+    "address": {
+      "chi": "CZXxJ97ddi5b6LA8qYQfChHYgWWDMK5TRk",
+      "huc": "HPbC7Sh69se6uXqB8aQV2CYzEZbXtfCUkt"
+    },
+    "amount": {
+      "chi": 806.79466,
+      "huc": 3457.85467124,
+      "full_huc": 3457
+    }
+  },
+  {
+    "address": {
+      "chi": "CQJHtz1E142rx9vsg8jBSWV6rmvbRZFJfd",
+      "huc": "HEMXiHagXDbNmMbuyAj1G1kYQq1uw8emyH"
+    },
+    "amount": {
+      "chi": 3212.4757,
+      "huc": 13765.33958104,
+      "full_huc": 13765
+    }
+  },
+  {
+    "address": {
+      "chi": "CKV7BuwwHqdn6DJUJtQsat7SrwtGnbBjZy",
+      "huc": "H9YM1DXPp1CHuQyWbvQhQPNtQzybJMX3tx"
+    },
+    "amount": {
+      "chi": 485.19702,
+      "huc": 2079.63,
+      "full_huc": 2079
+    }
+  },
+  {
+    "address": {
+      "chi": "CKHN9QpuV7fqpzgjBkxx2QYw4PyQdmocua",
+      "huc": "H9LbxiQN1HEMeCMmUnxmqupNcT4jA8AsJ2"
+    },
+    "amount": {
+      "chi": 7171.06726,
+      "huc": 30727.72,
+      "full_huc": 30727
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ9FuGrfnR2iHyxJBTXMVGUg5Z1uZcW6Ls",
+      "huc": "HECViaS8JabE7BdLUVXBJmk7dc7E6aJ4Wx"
+    },
+    "amount": {
+      "chi": 500.13334,
+      "huc": 2143.2145803,
+      "full_huc": 2143
+    }
+  },
+  {
+    "address": {
+      "chi": "CKyi5LGWijnDZqQd7JYvCmPnKvLU54LAqx",
+      "huc": "HA2wtdqyEuLjP35fQLYk2GfDsyRncvcWGD"
+    },
+    "amount": {
+      "chi": 1331.4329,
+      "huc": 5705.08740353,
+      "full_huc": 5705
+    }
+  },
+  {
+    "address": {
+      "chi": "CXRvpYMVyiGY34vjB9xq8fvmXq8d4xKNAA",
+      "huc": "HMVAdqvxVsq3rGbmUBxexBCD5tDwa36tQr"
+    },
+    "amount": {
+      "chi": 549.84328,
+      "huc": 2356.86002612,
+      "full_huc": 2356
+    }
+  },
+  {
+    "address": {
+      "chi": "CVPGb8J3N1nvpXM7wGPHoCSDt2PYy361qF",
+      "huc": "HKSWQRsVtBMSdj2AEJP7chhfS5UsXEGBfm"
+    },
+    "amount": {
+      "chi": 396.746,
+      "huc": 1700.0,
+      "full_huc": 1700
+    }
+  },
+  {
+    "address": {
+      "chi": "CSBePjmK3j9pEYtS4m1ErQgHTdPSQgTirJ",
+      "huc": "HGEtD3LmZtiL3kZUMo14fuwj1gUksymxYp"
+    },
+    "amount": {
+      "chi": 978.09558,
+      "huc": 4191.19807571,
+      "full_huc": 4191
+    }
+  },
+  {
+    "address": {
+      "chi": "CPXQPp2wCfHpcH5xLnKKuYia4b4KRJFZTS",
+      "huc": "HDaeD7cPiprLRUkzdpK9j3z1ce9dtgH7zW"
+    },
+    "amount": {
+      "chi": 2492.4984,
+      "huc": 10680.01052438,
+      "full_huc": 10680
+    }
+  },
+  {
+    "address": {
+      "chi": "CGxzMtAjYqPmPA7PgpZ3RrPxPwrnhue7xe",
+      "huc": "H72EBBkC4zxHCMnRyrYsFMfPwzx7DE8vQe"
+    },
+    "amount": {
+      "chi": 2391.91162,
+      "huc": 10249.89,
+      "full_huc": 10249
+    }
+  },
+  {
+    "address": {
+      "chi": "CaVZ2MFkLARZVLpiZvU1ec7EHKrUDL6RF5",
+      "huc": "HQYnqeqCrKz5JYVkrxTqU7NfqNwnjdD1Kx"
+    },
+    "amount": {
+      "chi": 248.78308,
+      "huc": 1066.81,
+      "full_huc": 1066
+    }
+  },
+  {
+    "address": {
+      "chi": "CSRanKKWdaYYmk5LoPDrQCJ82ANsHhNE4u",
+      "huc": "HGUpbcty9k74awkP6RDgDhZZaDUBq5pTS6"
+    },
+    "amount": {
+      "chi": 565.71312,
+      "huc": 2424.81278772,
+      "full_huc": 2424
+    }
+  },
+  {
+    "address": {
+      "chi": "CHzeYEwZPFo9Pbcqr3mgWAwCyZWGDkDxRa",
+      "huc": "H83tMYX1uRMfCoHt95mWKgCeXcbaqU7CCp"
+    },
+    "amount": {
+      "chi": 211639.01934,
+      "huc": 906843.998,
+      "full_huc": 906843
+    }
+  },
+  {
+    "address": {
+      "chi": "CPwX4FzzkYs91ET1UhSbD37XTBvpnQKMrz",
+      "huc": "HDzksZaTGiRepS83mjSR2YNy1F29GPmi1v"
+    },
+    "amount": {
+      "chi": 3359.03834,
+      "huc": 14393.55306816,
+      "full_huc": 14393
+    }
+  },
+  {
+    "address": {
+      "chi": "CQSn2ebFXgQn4r5WRXoyoRVrXmgWRSoQrq",
+      "huc": "HEW1qxAi3qyHt3kYiZoocvmJ5pmpwDLyrA"
+    },
+    "amount": {
+      "chi": 826.1652,
+      "huc": 3540.0,
+      "full_huc": 3540
+    }
+  },
+  {
+    "address": {
+      "chi": "CbugATRC3xA9qnHdqt4Lr7R4vyGQVqwspe",
+      "huc": "HRxuykzea7ifeyxg8v4AfcgWV2Miz6WVq8"
+    },
+    "amount": {
+      "chi": 238.0476,
+      "huc": 1020.0,
+      "full_huc": 1020
+    }
+  },
+  {
+    "address": {
+      "chi": "CTgN8uTbKcw1VXqxL5thd8hJJJNwYbZQWS",
+      "huc": "HHjbxD33qnVXJjWzd7tXSdxjrMUFyMZRvH"
+    },
+    "amount": {
+      "chi": 21119.95648,
+      "huc": 90496.185244,
+      "full_huc": 90496
+    }
+  },
+  {
+    "address": {
+      "chi": "CPmHfqDwHrkfLjoFngTjRgKWrXVmVfsqtj",
+      "huc": "HDpXV8oPp2KB9wUJ5iTZFBaxQab68da17t"
+    },
+    "amount": {
+      "chi": 783.92342,
+      "huc": 3359.1,
+      "full_huc": 3359
+    }
+  },
+  {
+    "address": {
+      "chi": "CLn73bog8PNjnqBHXAY7zxcejiM15JQNon",
+      "huc": "HAqLruP8eYwFc2rKpCXwpTt6HmSKhVQ2QC"
+    },
+    "amount": {
+      "chi": 1501.56692,
+      "huc": 6434.96386663,
+      "full_huc": 6434
+    }
+  },
+  {
+    "address": {
+      "chi": "CNzFE6xtGuEnUHFMyM643hC9PRBzU79yh1",
+      "huc": "HD3V3QYLo4oJHUvQGP5ssCTawUHJvDxagd"
+    },
+    "amount": {
+      "chi": 233.61338,
+      "huc": 1001.995,
+      "full_huc": 1001
+    }
+  },
+  {
+    "address": {
+      "chi": "CXGqCAdWhGCcFwoSvUpvsua3DafYTAwmso",
+      "huc": "HML51UCyDRm859UVDWpkhQqUmdks1UZ8nR"
+    },
+    "amount": {
+      "chi": 4752.55032,
+      "huc": 20364.79244518,
+      "full_huc": 20364
+    }
+  },
+  {
+    "address": {
+      "chi": "CaLoT3V8MKcfNpmEq6dS8R6qYiCcJ6e1Sn",
+      "huc": "HQQ3GM4asVBBC2SH88dFwvNH6mHvpFF6HW"
+    },
+    "amount": {
+      "chi": 7383.44306,
+      "huc": 31637.43743966,
+      "full_huc": 31637
+    }
+  },
+  {
+    "address": {
+      "chi": "CQAcNTUUoBcoXzzYbAgBWV6YY8neiDXNVQ",
+      "huc": "HEDrBm3wKMBKMCfatCg1KzMz6BsyJS92b5"
+    },
+    "amount": {
+      "chi": 14027.3049,
+      "huc": 60105.54421268,
+      "full_huc": 60105
+    }
+  },
+  {
+    "address": {
+      "chi": "Cd6SdDJVoUnmVhQKw6qzJEU5hvPzGPbRWo",
+      "huc": "HT9gSWsxKeMHJu5NE8qp7jjXFyVJn2yRmV"
+    },
+    "amount": {
+      "chi": 32076.21396,
+      "huc": 137442.17,
+      "full_huc": 137442
+    }
+  },
+  {
+    "address": {
+      "chi": "CMRdzzDRUPkEoACU8kqfGHAb4T8QPunhdv",
+      "huc": "HBUspHnszZJkcMsWRnqV5nS2cWDisqGoND"
+    },
+    "amount": {
+      "chi": 604.4542,
+      "huc": 2590.0,
+      "full_huc": 2590
+    }
+  },
+  {
+    "address": {
+      "chi": "CNMqWM3U7H9uXpyVAQUVEE3oZ7eSjTX81s",
+      "huc": "HCR5KecvdSiRM2eXTSUK3jKF7AjmFKgLaP"
+    },
+    "amount": {
+      "chi": 242.94858,
+      "huc": 1041.97990939,
+      "full_huc": 1041
+    }
+  },
+  {
+    "address": {
+      "chi": "CRUdycXN2MsnY9PfyUbKzsk8LqrEgJtbah",
+      "huc": "HFXsnv6pYXSJMM4iGWb9pP1ZttwZDQbFc8"
+    },
+    "amount": {
+      "chi": 7001.4,
+      "huc": 30000.0,
+      "full_huc": 30000
+    }
+  },
+  {
+    "address": {
+      "chi": "CKC5pBhTvB8T6CVb1KdRn5V8fzDkiL1FNh",
+      "huc": "H9FKdVGvSLgxuQAdJMdFbakaE3K5EHja4u"
+    },
+    "amount": {
+      "chi": 349.83662,
+      "huc": 1499.99,
+      "full_huc": 1499
+    }
+  },
+  {
+    "address": {
+      "chi": "CHYEy8kvLWS5JSVKvzhXLeB7DQXpdqk2dn",
+      "huc": "H7bUnSLNrfzb7eANE2hMA9SYmTd9BugHG4"
+    },
+    "amount": {
+      "chi": 1555.4777,
+      "huc": 6665.81522987,
+      "full_huc": 6665
+    }
+  },
+  {
+    "address": {
+      "chi": "CGfPeKXRwhrnRVJpbY5n3Vt6D4L22bizVG",
+      "huc": "H6idTd6tTsRJEgyrta5bs19Xm7RLZGSHp9"
+    },
+    "amount": {
+      "chi": 1652.56378,
+      "huc": 7081.51328261,
+      "full_huc": 7081
+    }
+  },
+  {
+    "address": {
+      "chi": "CZWWgKvug6YZL8qUzM2h88PYuJUQrJtNNC",
+      "huc": "HPZkVdWNCG759LWXHP2WwdezTMZjNrUQKV"
+    },
+    "amount": {
+      "chi": 10134.5265,
+      "huc": 43425.4220724,
+      "full_huc": 43425
+    }
+  },
+  {
+    "address": {
+      "chi": "CXta6tPk363BANGCB1M2hY86mvrkc2xV5k",
+      "huc": "HMwovByCZFbgyZwEU3LrX3PYKyx57CCYUH"
+    },
+    "amount": {
+      "chi": 564.7796,
+      "huc": 2420.23879528,
+      "full_huc": 2420
+    }
+  },
+  {
+    "address": {
+      "chi": "CaPzCiEBtdD6cDzbwsSUBPxGp15QNRxNmB",
+      "huc": "HQTE21oeQnmcRRfeEuSHzuDiN4AirapRmm"
+    },
+    "amount": {
+      "chi": 1378.57566,
+      "huc": 5907.35243089,
+      "full_huc": 5907
+    }
+  },
+  {
+    "address": {
+      "chi": "CTryx3FtFn8P8VZ7E5wrUPJWP2Ha71K3Bj",
+      "huc": "HHvDmLqLmwgtwhE9X7wgHtZww5NteJgi3Q"
+    },
+    "amount": {
+      "chi": 6467.42656,
+      "huc": 27712.99,
+      "full_huc": 27712
+    }
+  },
+  {
+    "address": {
+      "chi": "Cci7DS7bjiyRRV8wnPaeXT2mz5Y2hxk774",
+      "huc": "HSmM2jh4FtXwEgoz5RaULxJDY8dMJZFYoJ"
+    },
+    "amount": {
+      "chi": 332.5665,
+      "huc": 1425.17357087,
+      "full_huc": 1425
+    }
+  },
+  {
+    "address": {
+      "chi": "CHzHHtxzgZFrCKVDLJcgNvvYUcNYULpghW",
+      "huc": "H83X7CYTCipN1XAFdLcWCSBz2fTs4DMtu6"
+    },
+    "amount": {
+      "chi": 3532.90644,
+      "huc": 15138.15499467,
+      "full_huc": 15138
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ1or1h9C6dsEkpwjU7GQDT2zRDGR9QNx1",
+      "huc": "HE53fKGbiGCP3xVz2W76DiiUYUJawgjxX5"
+    },
+    "amount": {
+      "chi": 1262.35242,
+      "huc": 5409.7,
+      "full_huc": 5409
+    }
+  },
+  {
+    "address": {
+      "chi": "CdxpjdyDf6TrdskAE7vU2iSGtQ4wvnq2Vh",
+      "huc": "HU24YwYgBG2NT5RCX9vHrDhiSTAGUf3cH6"
+    },
+    "amount": {
+      "chi": 831.76632,
+      "huc": 3564.13967,
+      "full_huc": 3564
+    }
+  },
+  {
+    "address": {
+      "chi": "CbsJoPwRaDjXMmzRWTFZGdnP2ViHyibywp",
+      "huc": "HRvYchWt6PJ3AyfToVFP693paYocZAPFeW"
+    },
+    "amount": {
+      "chi": 456.49128,
+      "huc": 1956.91717091,
+      "full_huc": 1956
+    }
+  },
+  {
+    "address": {
+      "chi": "CKsdfneFB5XVUqqSDZpVHS8JG8BSLkyZmA",
+      "huc": "H9vsV6DhhF61J3WUWbpK6wPjpBGkptjGaq"
+    },
+    "amount": {
+      "chi": 393.2453,
+      "huc": 1685.34730319,
+      "full_huc": 1685
+    }
+  },
+  {
+    "address": {
+      "chi": "CVfgJXtvFCqG51CP8a5aFzwpw3P77aQyxB",
+      "huc": "HKiv7qUNmNPmtCsRRc5Q5WDGV6URcMTcDE"
+    },
+    "amount": {
+      "chi": 1272.62114,
+      "huc": 5453.24045393,
+      "full_huc": 5453
+    }
+  },
+  {
+    "address": {
+      "chi": "Cd1L2HKyZp7Y8X1ck8WTotHp3dUipUeeyS",
+      "huc": "HT4ZqauS5yg3wigf3AWHdPZFbga3RXuKAj"
+    },
+    "amount": {
+      "chi": 1409.84858,
+      "huc": 6041.96530908,
+      "full_huc": 6041
+    }
+  },
+  {
+    "address": {
+      "chi": "CGkVyjCVHzn8TBrE2qiiWgcmQ4unetSEv2",
+      "huc": "H6ojo2mwpALeGPXGKsiYLBtCx817BgdiXJ"
+    },
+    "amount": {
+      "chi": 296.3926,
+      "huc": 1270.9008,
+      "full_huc": 1270
+    }
+  },
+  {
+    "address": {
+      "chi": "CXBXasuqAMizkDwoUB4xfv3Qsr9dqHuW21",
+      "huc": "HMEmQBVHgXHWZRcqmD4nVRJrRuExRJLRva"
+    },
+    "amount": {
+      "chi": 2346.6359,
+      "huc": 10055.6264801,
+      "full_huc": 10055
+    }
+  },
+  {
+    "address": {
+      "chi": "CcatyP4fiRd9HKKL7sKrJRsF7BHtTVgze5",
+      "huc": "HSe8nge8EbBf6WzNQuKg7w8gfEPD2jbv3q"
+    },
+    "amount": {
+      "chi": 7184.36992,
+      "huc": 30784.5488547,
+      "full_huc": 30784
+    }
+  },
+  {
+    "address": {
+      "chi": "CKNGGqibiwY7iCehadqN4BMqaHS1cfP3xU",
+      "huc": "H9RW69J4F76dXQKjsfqBsgdH8LXLAtquzK"
+    },
+    "amount": {
+      "chi": 2764.85286,
+      "huc": 11847.23452602,
+      "full_huc": 11847
+    }
+  },
+  {
+    "address": {
+      "chi": "CTjmB2RdBiKBtXUjoBUfSgegNFcJvnDPt1",
+      "huc": "HHnzzL15hsshhj9n6DUVGBv7vJhdXjznCK"
+    },
+    "amount": {
+      "chi": 470.49408,
+      "huc": 2016.0,
+      "full_huc": 2016
+    }
+  },
+  {
+    "address": {
+      "chi": "CLkdjV4263EmKknmJ2siryXFiV6SXd15ZW",
+      "huc": "HAosYndUcCoH8xTob4sYgUnhGYBkyBeoGB"
+    },
+    "amount": {
+      "chi": 2333.8,
+      "huc": 10000.575,
+      "full_huc": 10000
+    }
+  },
+  {
+    "address": {
+      "chi": "CRYEoeTZQhGHAS5wgYT3uaQqcqQrfScuJv",
+      "huc": "HFbUcx31vrpnydkyyaSsj5gHAtWBDXwVBn"
+    },
+    "amount": {
+      "chi": 360.80548,
+      "huc": 1546.3,
+      "full_huc": 1546
+    }
+  },
+  {
+    "address": {
+      "chi": "Cducnr33cZKT2tDghqkxYLY8o8anUVNks8",
+      "huc": "HTxrc9cW8isxr5tizsknMqoaMBg71325uJ"
+    },
+    "amount": {
+      "chi": 10305.82742,
+      "huc": 44159.1,
+      "full_huc": 44159
+    }
+  },
+  {
+    "address": {
+      "chi": "CN77PdiHdfDAdp2WVrTurNDWcq3RjBHb1i",
+      "huc": "HCAMCwHk9pmgT1hYntTjfsUxAt8kGefuE6"
+    },
+    "amount": {
+      "chi": 1738.44762,
+      "huc": 7449.45449242,
+      "full_huc": 7449
+    }
+  },
+  {
+    "address": {
+      "chi": "CZNp3eEkdjNVZw4xGSmVjGBtuLcwHMR5Bb",
+      "huc": "HPS3rwpD9tw1P8jzZUmKYmTLTPiFqsnz4Y"
+    },
+    "amount": {
+      "chi": 118185.9658,
+      "huc": 506410.83960242,
+      "full_huc": 506410
+    }
+  },
+  {
+    "address": {
+      "chi": "CVdgxP75otuUSDH3PvxEbAWNspyrfswQBc",
+      "huc": "HKgvmggYL4TzFQx5gxx4QfmpRt5BGWDxuo"
+    },
+    "amount": {
+      "chi": 325.09834,
+      "huc": 1393.0,
+      "full_huc": 1393
+    }
+  },
+  {
+    "address": {
+      "chi": "CW92ksCZPtPYruK84bsR3vJQCufGwDKcnw",
+      "huc": "HLCGaAn1v3x4g6zAMdsEsRZqkxkbRZZQpv"
+    },
+    "amount": {
+      "chi": 3801.99358,
+      "huc": 16291.29117024,
+      "full_huc": 16291
+    }
+  },
+  {
+    "address": {
+      "chi": "CHo8hsFCa8b4AiXbNwRQma3ZXFn4Np8pvN",
+      "huc": "H7rNXApf6J9ZyvCdfyREb5K15JsNuP238Z"
+    },
+    "amount": {
+      "chi": 1083.11658,
+      "huc": 4641.45581835,
+      "full_huc": 4641
+    }
+  },
+  {
+    "address": {
+      "chi": "CJFasvSKqVQpFyFf8DfNK2h8Lg1eY6kRma",
+      "huc": "H8JphE1nMeyL5AvhRFfC8XxZtj6y7XuVtg"
+    },
+    "amount": {
+      "chi": 12662.0319,
+      "huc": 54255.33446727,
+      "full_huc": 54255
+    }
+  },
+  {
+    "address": {
+      "chi": "CMRq7rFwpXyAihQft7CuB6NbCYLawon1Ng",
+      "huc": "HBV4w9qQLhXgXu5iB9Cizbe2kbRuS5QgSq"
+    },
+    "amount": {
+      "chi": 480.99618,
+      "huc": 2061.0,
+      "full_huc": 2061
+    }
+  },
+  {
+    "address": {
+      "chi": "Cd5WtkvkCr8pwg2eVeC7V1Cra4gCSkF4j4",
+      "huc": "HT8ki4WCj1hLkshgngBwJWUJ87mWzbpymm"
+    },
+    "amount": {
+      "chi": 7566.87974,
+      "huc": 32423.13759405,
+      "full_huc": 32423
+    }
+  },
+  {
+    "address": {
+      "chi": "CL9cxE4AEPDRWaXxGF4U5rNeUbuHgakcBK",
+      "huc": "HACrmXdckYmwKnCzZH4HuMe62ezcJgmPJb"
+    },
+    "amount": {
+      "chi": 683.8034,
+      "huc": 2930.0,
+      "full_huc": 2930
+    }
+  },
+  {
+    "address": {
+      "chi": "CRb3JZ7FNM9o1U57EVFwrp6CJpMzNvgGcN",
+      "huc": "HFeH7rghtWiJpfk9XXFmgKMdrsTJvkK6WL"
+    },
+    "amount": {
+      "chi": 600.01998,
+      "huc": 2571.384088,
+      "full_huc": 2571
+    }
+  },
+  {
+    "address": {
+      "chi": "CHvudY1t5V2g6rW51NdD4RDrVJ7RZJaYgZ",
+      "huc": "H7z9SqbLbebBv4B7JQd2svVJ3MCk7Qoiy4"
+    },
+    "amount": {
+      "chi": 11669.0,
+      "huc": 50000.0,
+      "full_huc": 50000
+    }
+  },
+  {
+    "address": {
+      "chi": "Cem4cEu5kEef4nWqu4ScLk5XMEjc4fTN9M",
+      "huc": "HUpJRYUYGQDAszBtC6SSAFLxuHpvfXyrEQ"
+    },
+    "amount": {
+      "chi": 384.14348,
+      "huc": 1646.28,
+      "full_huc": 1646
+    }
+  },
+  {
+    "address": {
+      "chi": "CXov7EZ7Ys9BfHEYf3xkiTVzEHeJAvg2R3",
+      "huc": "HMs9vY8a52hhUUuax5xaXxmRnLjcfQC39E"
+    },
+    "amount": {
+      "chi": 2333.8,
+      "huc": 10000.0,
+      "full_huc": 10000
+    }
+  },
+  {
+    "address": {
+      "chi": "CHvAJ484sHQNCN1drVtQcSGfsbU3DVmba1",
+      "huc": "H7yQ7MhXPSxt1Zgg9XtERwY7ReZMoMqhiT"
+    },
+    "amount": {
+      "chi": 415.18302,
+      "huc": 1779.088,
+      "full_huc": 1779
+    }
+  },
+  {
+    "address": {
+      "chi": "CJ523Vvp53gKpxBf2yTYN3BydDpTpNxyNZ",
+      "huc": "H88FroWGbDEqe9rhL1TNBYTRBGunQdPnDA"
+    },
+    "amount": {
+      "chi": 427.55216,
+      "huc": 1832.0,
+      "full_huc": 1832
+    }
+  },
+  {
+    "address": {
+      "chi": "Cc6cHcrU4DHWSXQeNgS86SMMFLEupa7aWp",
+      "huc": "HS9r6vRvaNr2Fj5gfiRwuwcnoPLERgPgFu"
+    },
+    "amount": {
+      "chi": 678.90242,
+      "huc": 2909.59110872,
+      "full_huc": 2909
+    }
+  },
+  {
+    "address": {
+      "chi": "CL2MnhNpG3PKUuKkQno1LHMBFAedCv1KsQ",
+      "huc": "HA5bbzxGnCwqJ6znhpnq9nccoDjwkJkZzU"
+    },
+    "amount": {
+      "chi": 2380.24262,
+      "huc": 10199.979661,
+      "full_huc": 10199
+    }
+  },
+  {
+    "address": {
+      "chi": "CYt5oaHnJAMjqxUPTgZQusJSpou6GQEN2G",
+      "huc": "HNwKcssEpKvFfA9RkiZEjNZtNrzQm7C2VF"
+    },
+    "amount": {
+      "chi": 358.2383,
+      "huc": 1535.0,
+      "full_huc": 1535
+    }
+  },
+  {
+    "address": {
+      "chi": "CZozCfXfd7hNcRNxWB7Pcxn8WfDHwEVfnH",
+      "huc": "HPsE1y789HFtRd3zoD7DSU3a4iJcTyoEY4"
+    },
+    "amount": {
+      "chi": 5964.25928,
+      "huc": 25556.0,
+      "full_huc": 25556
+    }
+  },
+  {
+    "address": {
+      "chi": "CaG7rb6LdiiSxuoQg9osuJDRxH7NPGzY9B",
+      "huc": "HQKMftfo9tGxn7USyBohioUsWLCgvhTzqg"
+    },
+    "amount": {
+      "chi": 5195.50556,
+      "huc": 22262.22984474,
+      "full_huc": 22262
+    }
+  },
+  {
+    "address": {
+      "chi": "CY2ciptz6nphcEURMkU3T1WHUGaiBxjUiu",
+      "huc": "HN5rY8UScxPDRS9TenTsGWmj2Kg2hb7vL5"
+    },
+    "amount": {
+      "chi": 1936.12048,
+      "huc": 8296.28094782,
+      "full_huc": 8296
+    }
+  },
+  {
+    "address": {
+      "chi": "CdNZBwA8h9c7rHLzkJe6QYCRSAJTt3jakt",
+      "huc": "HTRo1EjbDKAdfV233LdvE3TrzDPnQKXTNd"
+    },
+    "amount": {
+      "chi": 533.74006,
+      "huc": 2287.868,
+      "full_huc": 2287
+    }
+  },
+  {
+    "address": {
+      "chi": "CXeq2JNipoyTrghKidtFougAFKQpqkynVN",
+      "huc": "HMi4qbxBLyXyftNN1ft5dQwboNW9RojpnL"
+    },
+    "amount": {
+      "chi": 1285.9238,
+      "huc": 5510.91913588,
+      "full_huc": 5510
+    }
+  },
+  {
+    "address": {
+      "chi": "CQUGnim56cPXxSGHkYvJrDqhuxvvmWNN1W",
+      "huc": "HEXWc2LXcmx3mdwL3av8fj79U22FNBRvbe"
+    },
+    "amount": {
+      "chi": 597.21942,
+      "huc": 2559.99,
+      "full_huc": 2559
+    }
+  },
+  {
+    "address": {
+      "chi": "CMTHeCRYJf6KYZJKYRA7jhqDrenQqczqhn",
+      "huc": "HBWXTVzzppeqMkyMqT9wZD6fQhsjMykXxR"
+    },
+    "amount": {
+      "chi": 279.82262,
+      "huc": 1199.99,
+      "full_huc": 1199
+    }
+  },
+  {
+    "address": {
+      "chi": "CLsfdzwnNggjs4q8VP5RSxRm9wDXxwK8eG",
+      "huc": "HAvuTJXEtrFFgGWAnR5FGThChzJrSPxh9x"
+    },
+    "amount": {
+      "chi": 333.96678,
+      "huc": 1431.65136161,
+      "full_huc": 1431
+    }
+  },
+  {
+    "address": {
+      "chi": "CUcd4wCcaqXBQ8nZGDp1QEMcgowjZTfkMv",
+      "huc": "HJfrtEn5715hDLTbZFoqDjd4Es34ACPR4S"
+    },
+    "amount": {
+      "chi": 334.20016,
+      "huc": 1432.79383314,
+      "full_huc": 1432
+    }
+  },
+  {
+    "address": {
+      "chi": "CJ9eNCYd255zvxNnzkHuVNfXuGGP1yqVEj",
+      "huc": "H8CtBW85YEeWkA3qHnHjJsvyTKMhZr9uLT"
+    },
+    "amount": {
+      "chi": 237.81422,
+      "huc": 1019.75,
+      "full_huc": 1019
+    }
+  },
+  {
+    "address": {
+      "chi": "CSh1AHPNi9ssTwxTBxZLu3F8bAfMDAHLHw",
+      "huc": "HGkEyaxqEKSPH9dVUzZAiYWa9DkfhWHcsk"
+    },
+    "amount": {
+      "chi": 252.0504,
+      "huc": 1080.48492783,
+      "full_huc": 1080
+    }
+  },
+  {
+    "address": {
+      "chi": "CXS1AYGiuoPzLizKSiYf8fTSB7ShSMjmuw",
+      "huc": "HMVEyqrBRxxW9vfMjkYUxAisjAY22tLzqo"
+    },
+    "amount": {
+      "chi": 413.0826,
+      "huc": 1770.37125564,
+      "full_huc": 1770
+    }
+  },
+  {
+    "address": {
+      "chi": "CJBxNWW1AFW3hzwmKZxvefgx7j9u6sNmL4",
+      "huc": "H8FCBp5TgR4ZXCcocbxkUAxPfnFDXay8rW"
+    },
+    "amount": {
+      "chi": 264.18616,
+      "huc": 1132.19916367,
+      "full_huc": 1132
+    }
+  },
+  {
+    "address": {
+      "chi": "CSGp4WcVxi8BoRhHXerWejKKFqVGso96f9",
+      "huc": "HGL3spBxUsghcdNKpgrLUEakotabRrxFmA"
+    },
+    "amount": {
+      "chi": 14346.33536,
+      "huc": 61472.91738191,
+      "full_huc": 61472
+    }
+  },
+  {
+    "address": {
+      "chi": "CNhPV5o5JxNrnik3vbdy66WkNc6VKoLXdX",
+      "huc": "HCkdJPNXq7wNbvR6DddnubnBvfBokyfWZt"
+    },
+    "amount": {
+      "chi": 3124.72482,
+      "huc": 13389.35775655,
+      "full_huc": 13389
+    }
+  },
+  {
+    "address": {
+      "chi": "CLMKt7GXgMMJsuTxHoPjn7d6oeQuyfKtEK",
+      "huc": "HAQZhQqzCWuph78zaqPZbctYMhWEWKcQgh"
+    },
+    "amount": {
+      "chi": 241.08154,
+      "huc": 1033.36561057,
+      "full_huc": 1033
+    }
+  },
+  {
+    "address": {
+      "chi": "Cf9Qr74Kc4b7uQ7ZjMKMGNcV4ZMhWUirHW",
+      "huc": "HVCefQdn8E9dibnc2PKB5ssvccT22gH2ZC"
+    },
+    "amount": {
+      "chi": 255.31772,
+      "huc": 1094.238396,
+      "full_huc": 1094
+    }
+  },
+  {
+    "address": {
+      "chi": "CWGiHpow6KCEDGEoYvytnkTcrs1BRgjQdr",
+      "huc": "HLKx78PPcUkk2TuqqxyicFj4Qv6VvQF6rh"
+    },
+    "amount": {
+      "chi": 1986.99732,
+      "huc": 8514.71362203,
+      "full_huc": 8514
+    }
+  },
+  {
+    "address": {
+      "chi": "CRs8vK42QPbxRjTAc8cc8BfYvHf6HyGPkk",
+      "huc": "HFvNjcdUvZAUEw8CuAcRwgvzULkQrWdcy7"
+    },
+    "amount": {
+      "chi": 8501.80002,
+      "huc": 36429.19911329,
+      "full_huc": 36429
+    }
+  },
+  {
+    "address": {
+      "chi": "CMyE6nnxu3TcVr58vdCyLtaLv7Sm9f9uL2",
+      "huc": "HC2Tv6NRRD28K3kBDfCoAPqnUAY5dC1DqZ"
+    },
+    "amount": {
+      "chi": 35240.14662,
+      "huc": 150999.5,
+      "full_huc": 150999
+    }
+  },
+  {
+    "address": {
+      "chi": "CN6k9g4bM6NzhfLqpCs6oYunon6zfkDSdA",
+      "huc": "HC9yxye3sFwWWs1t7Ervd4BEMqCK89vrnq"
+    },
+    "amount": {
+      "chi": 689.6379,
+      "huc": 2955.62805387,
+      "full_huc": 2955
+    }
+  },
+  {
+    "address": {
+      "chi": "CGtKkvjBwnWac1vT5iehdsgLgt1DeAgzom",
+      "huc": "H6wZaEJeTx56RDbVNkeXTNwnEw6YC7xPov"
+    },
+    "amount": {
+      "chi": 402.81388,
+      "huc": 1726.85,
+      "full_huc": 1726
+    }
+  },
+  {
+    "address": {
+      "chi": "CfGpLzQNwaPntTwMsS9XjSppnhNRHWkGb9",
+      "huc": "HVL4AHyqTjxJhfcQAU9MYx6GLkTjiqfddq"
+    },
+    "amount": {
+      "chi": 287.0574,
+      "huc": 1230.35805167,
+      "full_huc": 1230
+    }
+  },
+  {
+    "address": {
+      "chi": "CQW2YHbhM3w7k1NuJm5zVz32BM2GieEmud",
+      "huc": "HEZGMbB9sDVdZD3wbo5pKVJTjQ7bLtNHTe"
+    },
+    "amount": {
+      "chi": 5425.85162,
+      "huc": 23249.57980397,
+      "full_huc": 23249
+    }
+  },
+  {
+    "address": {
+      "chi": "CVFKo6oJtmLvPzodNfhtjgJVb9ytwrJyRK",
+      "huc": "HKJZcQNmQvuSDCUffhhiZBZw9D5DQ2aYbE"
+    },
+    "amount": {
+      "chi": 1037.84086,
+      "huc": 4447.826321,
+      "full_huc": 4447
+    }
+  },
+  {
+    "address": {
+      "chi": "CYTwEma2eFPh4E15H4g7Pkg5hYikCzUHdT",
+      "huc": "HNXB459VAQxCsRg7a6fwDFwXFbp4pu1isF"
+    },
+    "amount": {
+      "chi": 5465.29284,
+      "huc": 23418.7,
+      "full_huc": 23418
+    }
+  },
+  {
+    "address": {
+      "chi": "CPmPSrtXmywCdoMHtWGTGSFL5K6QsX1Z16",
+      "huc": "HDpdGATzJ9ViT12LBYGH5wWmdNBjPbPaXM"
+    },
+    "amount": {
+      "chi": 866.30656,
+      "huc": 3712.2485122,
+      "full_huc": 3712
+    }
+  },
+  {
+    "address": {
+      "chi": "CWUDB8FPJ3UsbyvPhY98s7ApWmTHbQRvTR",
+      "huc": "HLXSzRpqpD3PRBbRza8xgcSG4pYc2xhXq5"
+    },
+    "amount": {
+      "chi": 2333.8,
+      "huc": 10000.0,
+      "full_huc": 10000
+    }
+  },
+  {
+    "address": {
+      "chi": "CNuPsofgkW97EWgXNb4Lu7RRCHCtd7rmMj",
+      "huc": "HCxdh7F9Gfhd3iMZfd4AicgrkLJDBLQ3zj"
+    },
+    "amount": {
+      "chi": 233.38,
+      "huc": 1000.0,
+      "full_huc": 1000
+    }
+  },
+  {
+    "address": {
+      "chi": "CbpnaFnuk8yrBCcQ6GmXsYYaTbd4Z6Gggh",
+      "huc": "HRt2PZNNGJYMzQHSPJmMh3p21eiP65RiJC"
+    },
+    "amount": {
+      "chi": 589.75126,
+      "huc": 2527.325826,
+      "full_huc": 2527
+    }
+  },
+  {
+    "address": {
+      "chi": "CayNBTVNQKVCVFgEVuCU3MNU2oZwz1kamF",
+      "huc": "HR2bzm4pvV3iJTMGnwCHrrduarfGct7tFz"
+    },
+    "amount": {
+      "chi": 2091.0848,
+      "huc": 8960.0,
+      "full_huc": 8960
+    }
+  },
+  {
+    "address": {
+      "chi": "CaHUVjji3k1cbaTKRSxF5Pdrch5zN7ifES",
+      "huc": "HQLiK3KAZua8Qn8MiUx4ttuJAkBJu6LHnR"
+    },
+    "amount": {
+      "chi": 1964.82622,
+      "huc": 8419.17034511,
+      "full_huc": 8419
+    }
+  },
+  {
+    "address": {
+      "chi": "CaLkyiNkkBZDLF6hbSFNqc8MmqNx1F7ZjK",
+      "huc": "HQPzo1xDGM7j9SmjtUFCf7PoKtUGWbjz9F"
+    },
+    "amount": {
+      "chi": 236.64732,
+      "huc": 1014.0,
+      "full_huc": 1014
+    }
+  },
+  {
+    "address": {
+      "chi": "CQQcjSG73ksCzLgDAqsWGetuGj1uTBmhqT",
+      "huc": "HETrYjqZZvRioYMFTssL6AALpn7Dug7KzM"
+    },
+    "amount": {
+      "chi": 536.774,
+      "huc": 2300.0,
+      "full_huc": 2300
+    }
+  },
+  {
+    "address": {
+      "chi": "CVEm2fcpGWkpvyv2zASjTKanYRf5Vr6NbU",
+      "huc": "HKHzqyCGngKLkBb5HCSZGprE6UkQ7mj72Z"
+    },
+    "amount": {
+      "chi": 242.24844,
+      "huc": 1038.57702001,
+      "full_huc": 1038
+    }
+  },
+  {
+    "address": {
+      "chi": "CYf9D2zQVLaMoX4QQ3JLJifpHMqrK3tQp4",
+      "huc": "HNiP2LZs1W8scijSh5JA8DwFqQwAq9aRsX"
+    },
+    "amount": {
+      "chi": 236.41394,
+      "huc": 1013.820932,
+      "full_huc": 1013
+    }
+  },
+  {
+    "address": {
+      "chi": "CdxymPRKnNk4bYJJX17H963ZJM6nAujJCZ",
+      "huc": "HU2DagznJYJaQjyLp376xbJzrQC6cqu43Y"
+    },
+    "amount": {
+      "chi": 1773.45462,
+      "huc": 7599.62318786,
+      "full_huc": 7599
+    }
+  },
+  {
+    "address": {
+      "chi": "CMN6Ni6SRJqHaBhRf8vEJPeME6bEKiGoYh",
+      "huc": "HBRLC1ftwUPoPPNTxAv47tunn9gYraZbGn"
+    },
+    "amount": {
+      "chi": 465.12634,
+      "huc": 1993.0764922,
+      "full_huc": 1993
+    }
+  },
+  {
+    "address": {
+      "chi": "CPpxY55dGgDAPmK9dL7xJUMk3F2hz3R2en",
+      "huc": "HDtCMNf5nqmgCxzBvN7n7ydBbJ82W91shM"
+    },
+    "amount": {
+      "chi": 263.7194,
+      "huc": 1130.72799999,
+      "full_huc": 1130
+    }
+  },
+  {
+    "address": {
+      "chi": "CU7syxErFFDMk1XKKZbNFsFkweHjzPpfM7",
+      "huc": "HJB7oFpJmQmsZDCMcbbC5NXCVhP4WMd6hh"
+    },
+    "amount": {
+      "chi": 237.81422,
+      "huc": 1019.43020424,
+      "full_huc": 1019
+    }
+  },
+  {
+    "address": {
+      "chi": "CGi4uYCDBAXgfKrXjHwnbmuyqQKGmedcha",
+      "huc": "H6mJiqmfhL6CUXXa2KwcRHBRPTQbHcQUjv"
+    },
+    "amount": {
+      "chi": 621.02418,
+      "huc": 2661.705,
+      "full_huc": 2661
+    }
+  },
+  {
+    "address": {
+      "chi": "Cf3ZH1rMuZBpJEvSgy3cqAEozs3kRhewhJ",
+      "huc": "HV6o6KRpRikL7SbUz13SefWFYv94tYuRVJ"
+    },
+    "amount": {
+      "chi": 931.65296,
+      "huc": 3992.68622235,
+      "full_huc": 3992
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ7LTQ8Zt2bxREvJCkubs4367BfG3d6Sp6",
+      "huc": "HEAaGhi2QCAUESbLVnuRgZJXfEkaa9SDux"
+    },
+    "amount": {
+      "chi": 489.63124,
+      "huc": 2098.59682702,
+      "full_huc": 2098
+    }
+  },
+  {
+    "address": {
+      "chi": "CNpLwYqmRhkEHCUHaEBs7oUvP9Lhq2PSwe",
+      "huc": "HCsakrRDwsJk6Q9KsGBgwJkMwCS2Lhuuni"
+    },
+    "amount": {
+      "chi": 280.056,
+      "huc": 1200.0,
+      "full_huc": 1200
+    }
+  },
+  {
+    "address": {
+      "chi": "CXu6SSXxi16vT1ZL4jTvDh6ZHa2CagFtSU",
+      "huc": "HMxLFk7REAfSGDENMmTk3CMzqd7X74fCF6"
+    },
+    "amount": {
+      "chi": 8690.60444,
+      "huc": 37238.15366893,
+      "full_huc": 37238
+    }
+  },
+  {
+    "address": {
+      "chi": "CPMEJAwfkkeEWiYq9jzef7i2p3bVRHuxpf",
+      "huc": "HDQU7UX8GvCkKvDsSmzUUcyUN6gotCFqJQ"
+    },
+    "amount": {
+      "chi": 68102.38442,
+      "huc": 291809.39272295,
+      "full_huc": 291809
+    }
+  },
+  {
+    "address": {
+      "chi": "CdNTjDr1KzCYzuY7bi3mu1avkQFtVvbuuz",
+      "huc": "HTRhYXRTr9m4p7D9tk3biWrNJTMD828NKL"
+    },
+    "amount": {
+      "chi": 606.55462,
+      "huc": 2599.1401655,
+      "full_huc": 2599
+    }
+  },
+  {
+    "address": {
+      "chi": "CfDPtKi48UZRgQfp9TRaQA2n1obAjfvqCP",
+      "huc": "HVGdhdHWee7wVcLrSVRQDfJDZrgVJLK8BU"
+    },
+    "amount": {
+      "chi": 656.03118,
+      "huc": 2811.12266853,
+      "full_huc": 2811
+    }
+  },
+  {
+    "address": {
+      "chi": "Cb7yL6Bj9C34za52trhvTBv7jJ1uG2oA1e",
+      "huc": "HRBD9PmBfMbaomk5BthkGhBZHM7DprxVoy"
+    },
+    "amount": {
+      "chi": 863.506,
+      "huc": 3700.8,
+      "full_huc": 3700
+    }
+  },
+  {
+    "address": {
+      "chi": "CKPCP6S7VmoWKcY6hYLFkj8GyLWm8qA7vB",
+      "huc": "H9SSCQ1a1wN28pD8zaL5aEPiXPc5fNJtoQ"
+    },
+    "amount": {
+      "chi": 240.14802,
+      "huc": 1029.96,
+      "full_huc": 1029
+    }
+  },
+  {
+    "address": {
+      "chi": "CTRhH3wj1fZSLCZk44seGH3HNTFRV1aFh8",
+      "huc": "HHUw6MXBXq7x9QEnM6sU5nJivWLjxEQ78c"
+    },
+    "amount": {
+      "chi": 70307.12528,
+      "huc": 301256.0,
+      "full_huc": 301256
+    }
+  },
+  {
+    "address": {
+      "chi": "CLusDSrQw6pgo9tVYZoQ9VrkmomWCBEJNc",
+      "huc": "HAy72kRsTGPCcMZXqboDy18CKrrpi8zPfF"
+    },
+    "amount": {
+      "chi": 308.52836,
+      "huc": 1322.66826995,
+      "full_huc": 1322
+    }
+  },
+  {
+    "address": {
+      "chi": "CTsrUXcjFXbKUbq8L5xVaR9Y1cqXwFtx1a",
+      "huc": "HHw6HqCBmh9qHoWAd7xKPvQyZfvrUdrfv3"
+    },
+    "amount": {
+      "chi": 3293.45856,
+      "huc": 14112.87604812,
+      "full_huc": 14112
+    }
+  },
+  {
+    "address": {
+      "chi": "CKPfgRLkAerfTwRRFoPKQTvBvSADS4xnZp",
+      "huc": "H9SuVivCgpRBH96TYqP9DyBdUVFXuM9M7H"
+    },
+    "amount": {
+      "chi": 294.29218,
+      "huc": 1261.65,
+      "full_huc": 1261
+    }
+  },
+  {
+    "address": {
+      "chi": "CQy2vjnQoqrM53b6KBfnWheym4cxUNpVg4",
+      "huc": "HF2Gk3MsL1QrtFG8cDfcLCvRK7iGwLqPiF"
+    },
+    "amount": {
+      "chi": 263.01926,
+      "huc": 1127.12444888,
+      "full_huc": 1127
+    }
+  },
+  {
+    "address": {
+      "chi": "CJaLqm4RoYVbCYs8UR9cCFTDSuyAaiFaSL",
+      "huc": "H8daf4dtKi471kYAmT9S1kiezy4VAQ2mHC"
+    },
+    "amount": {
+      "chi": 434.0868,
+      "huc": 1860.0,
+      "full_huc": 1860
+    }
+  },
+  {
+    "address": {
+      "chi": "CNYWxurwtwdbin1bBmDTS7tgBiq7tmcwDN",
+      "huc": "HCbknDSQR7C7XygdUoDHFdA7jmvSQX2kgw"
+    },
+    "amount": {
+      "chi": 1114.85626,
+      "huc": 4777.572571,
+      "full_huc": 4777
+    }
+  },
+  {
+    "address": {
+      "chi": "CTEuVQ9q2m9LZSJUn2i6vh1W4eBL6EE3ft",
+      "huc": "HHJ9JhjHYvhrNdyX54hvkCGwchGecy8x6U"
+    },
+    "amount": {
+      "chi": 306.8947,
+      "huc": 1315.21950964,
+      "full_huc": 1315
+    }
+  },
+  {
+    "address": {
+      "chi": "CXryQDHfhpcYbcTHBxSe4gzL62LxW8smHC",
+      "huc": "HMvDDWs8DzB4Qp8KUzSTtCFme5SH48fHcY"
+    },
+    "amount": {
+      "chi": 6877.47522,
+      "huc": 29469.5,
+      "full_huc": 29469
+    }
+  },
+  {
+    "address": {
+      "chi": "CUVdVEMBCgMU8ds4VkL1iERBdArHbBjB8F",
+      "huc": "HJYsJXvdiquywqY6nnKqXjgdBDwcA5Bw3X"
+    },
+    "amount": {
+      "chi": 328.36566,
+      "huc": 1407.38836897,
+      "full_huc": 1407
+    }
+  },
+  {
+    "address": {
+      "chi": "CYMAhnFBePWe7TJ9XH7FvdsM3NscifoWei",
+      "huc": "HNQQX5peAZ59veyBpK75k98nbRxwGg44oA"
+    },
+    "amount": {
+      "chi": 508.06826,
+      "huc": 2177.0,
+      "full_huc": 2177
+    }
+  },
+  {
+    "address": {
+      "chi": "CVT9bW9TMKQknndu436Je7hjZPZHDkhFS1",
+      "huc": "HKWPQoiusUyGbzJwM568TcyB7SebhVRobb"
+    },
+    "amount": {
+      "chi": 400.94684,
+      "huc": 1718.0,
+      "full_huc": 1718
+    }
+  },
+  {
+    "address": {
+      "chi": "CaPr85SgKH1T4gTjmJP8B2VMzoSNrtJYf1",
+      "huc": "HQT5wP28qSZxst8n4LNwzXkoYrXhMy3p7J"
+    },
+    "amount": {
+      "chi": 3712.84242,
+      "huc": 15909.99,
+      "full_huc": 15909
+    }
+  },
+  {
+    "address": {
+      "chi": "CLVpH6HsatD6WRcSJw5kPRWGygaSdqAGdd",
+      "huc": "HAZ46PsL73mcKdHUby5aCvmiXjfmFCR6zh"
+    },
+    "amount": {
+      "chi": 565.24636,
+      "huc": 2422.00939863,
+      "full_huc": 2422
+    }
+  },
+  {
+    "address": {
+      "chi": "CT77FppXTtoTBAVrjWorKjg289myBzRyfA",
+      "huc": "HHAM58Pyz4MxzNAu2Yog9EwTgCsHhPgPDP"
+    },
+    "amount": {
+      "chi": 233.38,
+      "huc": 1000.99,
+      "full_huc": 1000
+    }
+  },
+  {
+    "address": {
+      "chi": "CSxLtCkumEBkqaoxJ6u8c4dyPeMbrX9V4d",
+      "huc": "HH1ahWLNHPkGenUzb8txRZuQwhSvKNkEqU"
+    },
+    "amount": {
+      "chi": 11074.11438,
+      "huc": 47451.10383656,
+      "full_huc": 47451
+    }
+  },
+  {
+    "address": {
+      "chi": "CQ3z4sR25sfPWCad6fZAg8P2kgWg38rmXw",
+      "huc": "HE7DtAzUc3DuKQFfPhYzVdeUJjbzaXaJRb"
+    },
+    "amount": {
+      "chi": 297.5595,
+      "huc": 1275.53,
+      "full_huc": 1275
+    }
+  },
+  {
+    "address": {
+      "chi": "CMKnkhfkocWCH7aeweytqMFsQiWD7fxxWG",
+      "huc": "HBP2a1FDKn4i6KFhEgyierXJxmbXf2dWup"
+    },
+    "amount": {
+      "chi": 530.9395,
+      "huc": 2275.00334747,
+      "full_huc": 2275
+    }
+  },
+  {
+    "address": {
+      "chi": "CafTSnNrdNXLA2pW2JYYbd7fb388Qo2PF6",
+      "huc": "HQihG5xK9Y5qyEVYKLYNR8P796DSuQRbco"
+    },
+    "amount": {
+      "chi": 2811.76224,
+      "huc": 12048.65881803,
+      "full_huc": 12048
+    }
+  },
+  {
+    "address": {
+      "chi": "CfieY5q53KSxUcPmkb7hLKXJ9C4BtNfYbF",
+      "huc": "HVmtMPQXZV1UHp4p3d7X9pnjhF9WQMRPCu"
+    },
+    "amount": {
+      "chi": 384.84362,
+      "huc": 1649.22952391,
+      "full_huc": 1649
+    }
+  },
+  {
+    "address": {
+      "chi": "CZA4taxBBV2QAn2GfRiEKE2M5e9rxkEZgc",
+      "huc": "HPDJhtXdheauyyhJxTi48jHndhFBSBKiMN"
+    },
+    "amount": {
+      "chi": 233.38,
+      "huc": 1000.0,
+      "full_huc": 1000
+    }
+  },
+  {
+    "address": {
+      "chi": "CMhPpwdKZcxbDHmRmoqu4aBjcFbnSUW2HB",
+      "huc": "HBkdeFCn5nX72VSU4qqit5TBAJh71QsG5w"
+    },
+    "amount": {
+      "chi": 347.50282,
+      "huc": 1489.95543583,
+      "full_huc": 1489
+    }
+  },
+  {
+    "address": {
+      "chi": "CYrEDytJCPoJZpNmMfm4Xvyc9B7pKfix4e",
+      "huc": "HNuU3HTkiZMpP23oehktMSF3hED8ptiLDY"
+    },
+    "amount": {
+      "chi": 314.36286,
+      "huc": 1347.49187078,
+      "full_huc": 1347
+    }
+  },
+  {
+    "address": {
+      "chi": "Cc22MyqUC76uXE37vwtbPcZC2Uwre4rH15",
+      "huc": "HS5GBHQviGfRLRiADytRD7pdaY3BCBSQ37"
+    },
+    "amount": {
+      "chi": 374.5749,
+      "huc": 1605.74429989,
+      "full_huc": 1605
+    }
+  },
+  {
+    "address": {
+      "chi": "Ccb7DApEbbpe2DgkGJEmGRQ92TDakDLAn1",
+      "huc": "HSeM2UPh7mP9qRMnZLEb5vfaaWJuCztoB3"
+    },
+    "amount": {
+      "chi": 5644.76206,
+      "huc": 24187.04485287,
+      "full_huc": 24187
+    }
+  },
+  {
+    "address": {
+      "chi": "CeLE7waJQubyzs6cf4gHdsh3knazFcBBDX",
+      "huc": "HUPTwF9kw5AVp4mex6g7TNxVJqgJi3EdYi"
+    },
+    "amount": {
+      "chi": 2123.05786,
+      "huc": 9097.084323,
+      "full_huc": 9097
+    }
+  },
+  {
+    "address": {
+      "chi": "CYuCtYwhSgk4xLFoxdZSrgG8wFJv9ye4Au",
+      "huc": "HNxShrX9xrJamXvrFfZGgBXaVJQEn6TKfU"
+    },
+    "amount": {
+      "chi": 5257.81802,
+      "huc": 22529.08199165,
+      "full_huc": 22529
+    }
+  },
+  {
+    "address": {
+      "chi": "CeM8bSqdjaWsKCipMuSL45rrvHcHxqFAMk",
+      "huc": "HUQNQkR6Fk5P8QPrewS9sb8JULhcX5z651"
+    },
+    "amount": {
+      "chi": 933.75338,
+      "huc": 4001.45752233,
+      "full_huc": 4001
+    }
+  },
+  {
+    "address": {
+      "chi": "CQMXtZ71MqV2z8YHYkSEELayDp9fMMbfJn",
+      "huc": "HEQmhrgTt13YoLDKqnS43qrQmsEypXToCy"
+    },
+    "amount": {
+      "chi": 746.58262,
+      "huc": 3199.98315217,
+      "full_huc": 3199
+    }
+  },
+  {
+    "address": {
+      "chi": "CYig979oaoBXnprqcXpFYKa5X774tJrgL2",
+      "huc": "HNmuxQjG6xk3c2XsuZp5MpqX5ACPPdxscN"
+    },
+    "amount": {
+      "chi": 868.1736,
+      "huc": 3720.57,
+      "full_huc": 3720
+    }
+  },
+  {
+    "address": {
+      "chi": "CX8hgqJ688sK8opxA27dAAC4xQiYpuvox5",
+      "huc": "HMBwW8sYeJRpx1VzT47SyfTWWTosJQB1th"
+    },
+    "amount": {
+      "chi": 730.4794,
+      "huc": 3130.0,
+      "full_huc": 3130
+    }
+  },
+  {
+    "address": {
+      "chi": "Cev61AZXPLXCJGEjsVh5eq3ZHXPdMvDw9i",
+      "huc": "HUyKpU8yuW5i7TunAXguULJzqaUwvwgpXd"
+    },
+    "amount": {
+      "chi": 360.33872,
+      "huc": 1544.33867031,
+      "full_huc": 1544
+    }
+  },
+  {
+    "address": {
+      "chi": "CeWc8ZvduDpTcU9UJqnbBMkPtYx8pPSkvm",
+      "huc": "HUZqwsW6RPNyRfpWbsnQzs1qSc3THEczyY"
+    },
+    "amount": {
+      "chi": 525.105,
+      "huc": 2250.0,
+      "full_huc": 2250
+    }
+  },
+  {
+    "address": {
+      "chi": "CNJYNuLaki3MAN8PkLLSA7Um6UJSwSQ8Rs",
+      "huc": "HCMnCCv3GsbryZoS3NLFyckCeXPmUwVPDe"
+    },
+    "amount": {
+      "chi": 2545.47566,
+      "huc": 10907.80102175,
+      "full_huc": 10907
+    }
+  },
+  {
+    "address": {
+      "chi": "CWEvbw4CDaNuR1s8hADbSFqLFXE62nJQKC",
+      "huc": "HLJAREdejjwREDYAzCDRFm6moaKQYtj6cN"
+    },
+    "amount": {
+      "chi": 258.81842,
+      "huc": 1109.98,
+      "full_huc": 1109
+    }
+  },
+  {
+    "address": {
+      "chi": "CabBFBndVtJgmoAiRKdavmu7TX84e6RF66",
+      "huc": "HQeR4VN623sCazqkiMdQkHAZ1aDP9CtXPc"
+    },
+    "amount": {
+      "chi": 466.05986,
+      "huc": 1997.86174473,
+      "full_huc": 1997
+    }
+  },
+  {
+    "address": {
+      "chi": "Cds3eWzvC3SuCZFucDYrafBAYWeyjkEpmn",
+      "huc": "HTvHTpaNiD1R1kvwuFYgQASc6ZkJLvBv7X"
+    },
+    "amount": {
+      "chi": 459.29184,
+      "huc": 1968.915,
+      "full_huc": 1968
+    }
+  },
+  {
+    "address": {
+      "chi": "CK8mSehHUypRfL88fRPhW2b1fSuAujBAtc",
+      "huc": "H9C1FxGk19NwUXoAxTPXKXrTDVzVNf4a9a"
+    },
+    "amount": {
+      "chi": 238.0476,
+      "huc": 1020.01,
+      "full_huc": 1020
+    }
+  },
+  {
+    "address": {
+      "chi": "CKZZBr1CZDHmiigyWb17Jb9ryDfqGn3Pgp",
+      "huc": "H9co19af5NrHXvN1oczw86RJXGm9oCH248"
+    },
+    "amount": {
+      "chi": 1668.20024,
+      "huc": 7148.34259137,
+      "full_huc": 7148
+    }
+  },
+  {
+    "address": {
+      "chi": "CPTB2VsjkprKh7w7a42i35eVyUg7gQ5BPy",
+      "huc": "HDWQqoTCGzQqWKc9s62XrauwXXmS9UEWFA"
+    },
+    "amount": {
+      "chi": 7713.209,
+      "huc": 33050.0,
+      "full_huc": 33050
+    }
+  },
+  {
+    "address": {
+      "chi": "CRLeufbWQ8WJAVvQWUbV93u7wf6FWVE31k",
+      "huc": "HFPtiyAxvJ4oyhbSoWbJxZAZViBa69bVZH"
+    },
+    "amount": {
+      "chi": 422.18442,
+      "huc": 1809.17252472,
+      "full_huc": 1809
+    }
+  },
+  {
+    "address": {
+      "chi": "CcHoBnsFmzqw8K1WYz7S7pWqx7fzxfmMxu",
+      "huc": "HSM316SiJAQSwWgYr27FwKnHWAmKXjHshs"
+    },
+    "amount": {
+      "chi": 1818.96372,
+      "huc": 7794.88,
+      "full_huc": 7794
+    }
+  },
+  {
+    "address": {
+      "chi": "CMtwb8xJqV3u4yXUzBjCNZfCTpr43VUNjn",
+      "huc": "HBxBQSXmMecQtBCXHDj2C4ve1swNbaCGRh"
+    },
+    "amount": {
+      "chi": 250.65012,
+      "huc": 1074.08590384,
+      "full_huc": 1074
+    }
+  },
+  {
+    "address": {
+      "chi": "CdRLeKMSdxEvnJ2by14oiVxXc4nVMw2vMo",
+      "huc": "HTUaTcvuA7oSbVheG34dY1DyA7soskFy4p"
+    },
+    "amount": {
+      "chi": 345.4024,
+      "huc": 1480.0,
+      "full_huc": 1480
+    }
+  },
+  {
+    "address": {
+      "chi": "CSiTwRY71dfxhNqurwkgrX8wo7U4jjuRFx",
+      "huc": "HGmhkj7ZXoEUWaWx9ykWg2QPMAZPJa9UWx"
+    },
+    "amount": {
+      "chi": 980.66276,
+      "huc": 4202.545,
+      "full_huc": 4202
+    }
+  },
+  {
+    "address": {
+      "chi": "CYt7GUXsERbYS8dKwH4ygstyhqHuQWhbCx",
+      "huc": "HNwM5n7KkbA4FLJNEK4oWPARFtPDuUnRag"
+    },
+    "amount": {
+      "chi": 3120.75736,
+      "huc": 13372.76079366,
+      "full_huc": 13372
+    }
+  },
+  {
+    "address": {
+      "chi": "CKVDpuG4mZFDrkRUyH7dwormtsKTQj3gHQ",
+      "huc": "H9YTeCqXHiojfx6XGK7TmK8DSvQmubSM2q"
+    },
+    "amount": {
+      "chi": 478.89576,
+      "huc": 2052.94453072,
+      "full_huc": 2052
+    }
+  },
+  {
+    "address": {
+      "chi": "CMtaEJEwJoNSRvBAVZpfViQnTrNwYCrSj3",
+      "huc": "HBwp3bpPpxvxF7rCnbpVKDgE1uUG4iCg7j"
+    },
+    "amount": {
+      "chi": 376.67532,
+      "huc": 1614.08410192,
+      "full_huc": 1614
+    }
+  },
+  {
+    "address": {
+      "chi": "CdcwPoy9jFbRkqGDXsgX5AWeWYHVtfBSKS",
+      "huc": "HTgBD7YcFR9wa2wFpugLtfn64bNpTRazkL"
+    },
+    "amount": {
+      "chi": 582.74986,
+      "huc": 2497.78517504,
+      "full_huc": 2497
+    }
+  },
+  {
+    "address": {
+      "chi": "CSMekZobr5sDrjBoULrixFWND92Wry4YEN",
+      "huc": "HGQtZsP4NFRjfvrqmNrYmkmomC7qSw299q"
+    },
+    "amount": {
+      "chi": 277.7222,
+      "huc": 1190.0,
+      "full_huc": 1190
+    }
+  },
+  {
+    "address": {
+      "chi": "CS6P2TmNhCQBwp9cJk7ads4Z9eM4GsDGcs",
+      "huc": "HG9cqmLqDMxhm1pebn7QTNKzhhSNno1TeJ"
+    },
+    "amount": {
+      "chi": 882.87654,
+      "huc": 3783.70039836,
+      "full_huc": 3783
+    }
+  },
+  {
+    "address": {
+      "chi": "CTUZm7hAa84y8XrS8aD7Ltg1734gVbpqKi",
+      "huc": "HHXoaRGd6HdUwjXURcCwAPwSf6A123Knvh"
+    },
+    "amount": {
+      "chi": 540.2747,
+      "huc": 2315.24303815,
+      "full_huc": 2315
+    }
+  },
+  {
+    "address": {
+      "chi": "CVVzVvKY7CtK54g2fQ8zFFEkh3ChBzezrU",
+      "huc": "HKZEKDtzdNSptGM4xS8p4kWCF6J1oJU92y"
+    },
+    "amount": {
+      "chi": 828.73238,
+      "huc": 3551.05490736,
+      "full_huc": 3551
+    }
+  },
+  {
+    "address": {
+      "chi": "CM26Y4UcVwWDBaKeDxG6E7YPMz1qXwrZ16",
+      "huc": "HB5LMN45274izmzgWzFv3copv37A3AiWjm"
+    },
+    "amount": {
+      "chi": 555.4444,
+      "huc": 2380.99,
+      "full_huc": 2380
+    }
+  },
+  {
+    "address": {
+      "chi": "CMzSbnW3C5PXtBCqRyewLnT6vSFvjXLjBD",
+      "huc": "HC3gR65ViEx3hNssj1emAHiYUVMFLiKX9L"
+    },
+    "amount": {
+      "chi": 279.82262,
+      "huc": 1199.999742,
+      "full_huc": 1199
+    }
+  },
+  {
+    "address": {
+      "chi": "CT7RJm2hPZqGbrbDw7fnkBv9pxL7S4v5if",
+      "huc": "HHAf84c9ujPnR4GGE9fcZhBbP1RRuuSzf6"
+    },
+    "amount": {
+      "chi": 2704.17406,
+      "huc": 11587.08207,
+      "full_huc": 11587
+    }
+  },
+  {
+    "address": {
+      "chi": "CPJjcVGCWACzMLihdB3bkaPBPAKTHRgT6k",
+      "huc": "HDMyRnqf2KmWAYPjvD3Ra5ecwDQmpXo4Qw"
+    },
+    "amount": {
+      "chi": 3563.01246,
+      "huc": 15267.83262689,
+      "full_huc": 15267
+    }
+  },
+  {
+    "address": {
+      "chi": "CL8g7CLgTeqhZS25i11JzzDf4vU8jnKUbJ",
+      "huc": "HABuvVv8ypQDNdh81318pVV6cyZTCtgK9c"
+    },
+    "amount": {
+      "chi": 700.14,
+      "huc": 3000.0,
+      "full_huc": 3000
+    }
+  },
+  {
+    "address": {
+      "chi": "CWsb8zrafbaHQg2rQnRWW4wwwmHjrbcZ3d",
+      "huc": "HLvpxJS3Bm8oDshthpRLKaDPVpP4UWCDrP"
+    },
+    "amount": {
+      "chi": 482.86322,
+      "huc": 2069.00277672,
+      "full_huc": 2069
+    }
+  },
+  {
+    "address": {
+      "chi": "CZpiUkD5HY69Gh88ioGSjmqx2mdtq7ZhU2",
+      "huc": "HPsxJ3nXohef5toB1qGGZH7PapjDKTw7nL"
+    },
+    "amount": {
+      "chi": 46760.71694,
+      "huc": 200363.98764629,
+      "full_huc": 200363
+    }
+  },
+  {
+    "address": {
+      "chi": "CTqVSsuSSh9hUa8FcmNPoq2WRKRAzkXFzX",
+      "huc": "HHtjGBUtxriDHmoHuoNDdLHwyNWVWkW8oS"
+    },
+    "amount": {
+      "chi": 2100.18662,
+      "huc": 8999.98,
+      "full_huc": 8999
+    }
+  },
+  {
+    "address": {
+      "chi": "CY6iX55xGVWyne7fU6hmjdYfvE7mU4PsFL",
+      "huc": "HN9xLNfQnf5Vbqnhm8hbZ8p7UHD63WHx99"
+    },
+    "amount": {
+      "chi": 11153.2302,
+      "huc": 47790.85837661,
+      "full_huc": 47790
+    }
+  },
+  {
+    "address": {
+      "chi": "CbC5Z2WSn2ojdsT75kjECyYHHUeKBVoT3Y",
+      "huc": "HRFKNL5uJCNFT589Nnj42UoiqXjdjEjsn5"
+    },
+    "amount": {
+      "chi": 373.87476,
+      "huc": 1602.39856846,
+      "full_huc": 1602
+    }
+  },
+  {
+    "address": {
+      "chi": "CWNbRUMWGK6wpDGEpDksdDEiHiFw66kp98",
+      "huc": "HLRqEmvxnUfTdQwH7FkhSiW9qmMFfBvbik"
+    },
+    "amount": {
+      "chi": 23338.0,
+      "huc": 100000.0,
+      "full_huc": 100000
+    }
+  },
+  {
+    "address": {
+      "chi": "CUfxLDPVSbL6aHRyJsw8QyNh45j2zb8nuo",
+      "huc": "HJjC9WxwxktcPV71buvxEUe8c8pMc2KfMa"
+    },
+    "amount": {
+      "chi": 5017.67,
+      "huc": 21500.19245773,
+      "full_huc": 21500
+    }
+  },
+  {
+    "address": {
+      "chi": "CX1FMbRRJMXzKWk1x7aeiDUp591FP59xHc",
+      "huc": "HM4VAtzspX6W8iR4F9aUXikFdC6ZvGgzTd"
+    },
+    "amount": {
+      "chi": 307.82822,
+      "huc": 1319.4463951,
+      "full_huc": 1319
+    }
+  },
+  {
+    "address": {
+      "chi": "CZ9VY7GWa3Gnh8z9qTjaATEcXocvsx5ugY",
+      "huc": "HPCjMQqy6CqJWLfC8VjPyxW45riFSr9McH"
+    },
+    "amount": {
+      "chi": 252.98392,
+      "huc": 1084.802,
+      "full_huc": 1084
+    }
+  },
+  {
+    "address": {
+      "chi": "CTNuTnp2XKixaG8dZM4eCKU8CcVjkd3mBS",
+      "huc": "HHS9H6PV3VHUPTofrP4U1pjZkfb4J7HYQC"
+    },
+    "amount": {
+      "chi": 305.02766,
+      "huc": 1307.87638644,
+      "full_huc": 1307
+    }
+  },
+  {
+    "address": {
+      "chi": "Cb7BjV4B6pkrLSXKqqZivZLxKw9NrSCKxN",
+      "huc": "HRARYnddczKN9eCN8sZYk4cPszEhKaXsrQ"
+    },
+    "amount": {
+      "chi": 2659.59848,
+      "huc": 11396.0,
+      "full_huc": 11396
+    }
+  },
+  {
+    "address": {
+      "chi": "CTnfJbDsnUZfVZT2DrVSoEma3uQ2G8S3pz",
+      "huc": "HHqu7toLJe8BJm84WtVGck31bxVLnteYjh"
+    },
+    "amount": {
+      "chi": 248.31632,
+      "huc": 1064.06947438,
+      "full_huc": 1064
+    }
+  },
+  {
+    "address": {
+      "chi": "CMAqu2XLcpoBVhvAJP6CWMNkdTPFFedzB6",
+      "huc": "HBE5iL6o8zMhJubCbR62KreCBWUZpigMsU"
+    },
+    "amount": {
+      "chi": 450.19002,
+      "huc": 1929.861,
+      "full_huc": 1929
+    }
+  },
+  {
+    "address": {
+      "chi": "CWj3deCtCDYGQPXm2tt9eDZDcvfrdSq5FF",
+      "huc": "HLnHSwnLiP6nDbCoKvsyTipfAymB9bULXQ"
+    },
+    "amount": {
+      "chi": 340.96818,
+      "huc": 1461.9,
+      "full_huc": 1461
+    }
+  },
+  {
+    "address": {
+      "chi": "CYe6oumEXfDuUK4BSX19zm5u7Vvjnbu9yG",
+      "huc": "HNhLdDLh3pnRHWjDjYzypGMLfZ24KGptA3"
+    },
+    "amount": {
+      "chi": 2909.0817,
+      "huc": 12465.36319312,
+      "full_huc": 12465
+    }
+  },
+  {
+    "address": {
+      "chi": "CKYdLxiFYbzuX9uhMaLXp6QZMxTPcPaVpT",
+      "huc": "H9bsAGHi4mZRLMajecLMdbfzv1Yi9HZbJA"
+    },
+    "amount": {
+      "chi": 515.7698,
+      "huc": 2210.985,
+      "full_huc": 2210
+    }
+  },
+  {
+    "address": {
+      "chi": "CJJMbyDBxvXMNcmMEq5nkEAazEVpd5NZRS",
+      "huc": "H8MbRGneV65sBpSPXs5cZjS2YHb98PtGed"
+    },
+    "amount": {
+      "chi": 325.09834,
+      "huc": 1393.95097456,
+      "full_huc": 1393
+    }
+  },
+  {
+    "address": {
+      "chi": "CaapXow1KWXdtuNS94mg7jb2xYk2ezqRhQ",
+      "huc": "HQe4M7WTqg69i73US6mVwErUWbqM9brQEQ"
+    },
+    "amount": {
+      "chi": 393.2453,
+      "huc": 1685.0005163,
+      "full_huc": 1685
+    }
+  },
+  {
+    "address": {
+      "chi": "CY8GPQx6E1ZBtEMSDUZZ54htX9Dp5Qq6Ci",
+      "huc": "HNBWCiXYkB7hhS2UWWZNtZyL5CK8cB2CYj"
+    },
+    "amount": {
+      "chi": 6402.54692,
+      "huc": 27434.70835994,
+      "full_huc": 27434
+    }
+  },
+  {
+    "address": {
+      "chi": "CUnX8eGHaWTTqRnHhhRDUrdhQwkyNTNCwg",
+      "huc": "HJqkwwqk6g1yedTKzjR3JMu8xzrHtNBr7Z"
+    },
+    "amount": {
+      "chi": 11669.0,
+      "huc": 50000.0,
+      "full_huc": 50000
+    }
+  },
+  {
+    "address": {
+      "chi": "CdDtBbMsgrP1ZNvEJD5sNS5wxZEUCuAusV",
+      "huc": "HTH7ztwLD1wXNabGbF5hBwMPWcKnnitS26"
+    },
+    "amount": {
+      "chi": 1185.10364,
+      "huc": 5078.969037,
+      "full_huc": 5078
+    }
+  },
+  {
+    "address": {
+      "chi": "CMKzTjF2MbXghmjmMLzYmZJwTkjReBHRzU",
+      "huc": "HBPEH2pUsm6CWyQoeNzNb4aP1opkCpZo9i"
+    },
+    "amount": {
+      "chi": 373.408,
+      "huc": 1600.01822,
+      "full_huc": 1600
+    }
+  },
+  {
+    "address": {
+      "chi": "CfKCSyeRJYWYCJJ6C8bkZV1kibavGG7L4e",
+      "huc": "HVNSGHDspi541Vy8VAbaNzHCGegEpWsAMo"
+    },
+    "amount": {
+      "chi": 744.4822,
+      "huc": 3190.109,
+      "full_huc": 3190
+    }
+  },
+  {
+    "address": {
+      "chi": "CLLXDTaPJ8R5xhyCur53W9MXcDiiGne41y",
+      "huc": "HAPm2m9qpHybmueFCt4sKecyAGp2ify3Zr"
+    },
+    "amount": {
+      "chi": 10501.86662,
+      "huc": 44999.998888,
+      "full_huc": 44999
+    }
+  },
+  {
+    "address": {
+      "chi": "CYWPeHiEePQuG2q181Qm7N5eC9LYagRZEt",
+      "huc": "HNZdTbHhAYyR5EW3R3QavsM5kCRs7vbour"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.0,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CYq7yLNig8Q1fpYNeDitfp6FBFffzGpDfF",
+      "huc": "HNtMndxBCHxXV2DQwFiiVKMgjJkzWpEKX5"
+    },
+    "amount": {
+      "chi": 909.24848,
+      "huc": 3896.74,
+      "full_huc": 3896
+    }
+  },
+  {
+    "address": {
+      "chi": "CKSMoukCtzQCF3F37bJD94ZLxtRk45brCT",
+      "huc": "H9VbdDKfR9xi4Ev5QdJ2xZpnWwX4cCw5n7"
+    },
+    "amount": {
+      "chi": 3346.20244,
+      "huc": 14338.55449091,
+      "full_huc": 14338
+    }
+  },
+  {
+    "address": {
+      "chi": "Cep68hM9id9YyXN6ahkWmzVYDFDEUp2KRL",
+      "huc": "HUsKwzvcEni4nj38sjkLbVkymJJZ1YZQ2y"
+    },
+    "amount": {
+      "chi": 39145.06078,
+      "huc": 167731.0,
+      "full_huc": 167731
+    }
+  },
+  {
+    "address": {
+      "chi": "CYDXRL7KJ4WEiwsvyw1X9y9A75R1wyxqMQ",
+      "huc": "HNGmEdgmpE4kY9YyGy1LyUQbf8WLYVrYQ2"
+    },
+    "amount": {
+      "chi": 121664.26132,
+      "huc": 521314.77757846,
+      "full_huc": 521314
+    }
+  },
+  {
+    "address": {
+      "chi": "CPfqYyb7QBb79ZwbyhPk7WDJy8ResNhe8s",
+      "huc": "HDj5NHAZvM9cxmceGjPZw1UkXBWyTFERZa"
+    },
+    "amount": {
+      "chi": 422.4178,
+      "huc": 1810.0,
+      "full_huc": 1810
+    }
+  },
+  {
+    "address": {
+      "chi": "CHEQo9wLjsYrRzKgJHqSFj8Z7vT8mGi8MA",
+      "huc": "H7HecTWoG37NFBzibKqG5EPzfyYTH9nADj"
+    },
+    "amount": {
+      "chi": 1271.921,
+      "huc": 5450.0,
+      "full_huc": 5450
+    }
+  },
+  {
+    "address": {
+      "chi": "CaC3CDs5sg25KrhRxZmsvTZuHUpwLfxbeW",
+      "huc": "HQFH1XSYPqab94NUFbmhjxqLqXvFqw8nR9"
+    },
+    "amount": {
+      "chi": 429.4192,
+      "huc": 1840.9,
+      "full_huc": 1840
+    }
+  },
+  {
+    "address": {
+      "chi": "CaPjn4FJGP6MnZjRDz5cgaJsyV5f5bUMgW",
+      "huc": "HQSybMpknYesbmQTX25SW5aKXYAycFVjgX"
+    },
+    "amount": {
+      "chi": 445.05566,
+      "huc": 1907.03957698,
+      "full_huc": 1907
+    }
+  },
+  {
+    "address": {
+      "chi": "CU4pRfy5vDn198HS7ktH6b5DrRBzkA3cbu",
+      "huc": "HJ84EyYYSPLWxKxUQnt6v6LfQUHKJxaZw1"
+    },
+    "amount": {
+      "chi": 60457.55576,
+      "huc": 259052.7,
+      "full_huc": 259052
+    }
+  },
+  {
+    "address": {
+      "chi": "CXDp9xvs2jr9yNcpm35HsMkSzA4B5qKNFc",
+      "huc": "HMH3yGWKYuQfnaHs4557gs1tYD9VeQojHD"
+    },
+    "amount": {
+      "chi": 1236.21386,
+      "huc": 5297.65,
+      "full_huc": 5297
+    }
+  },
+  {
+    "address": {
+      "chi": "CfhXhEjxjf6Ui1ERAWt5XYFuZCv6fjTeF5",
+      "huc": "HVkmWYKRFpezXCuTTYsuM3XM7G1RA9Uau5"
+    },
+    "amount": {
+      "chi": 583.21662,
+      "huc": 2499.99,
+      "full_huc": 2499
+    }
+  },
+  {
+    "address": {
+      "chi": "CM2yLfnMqY6V3x28FXcVwuV9MoaVxkn17x",
+      "huc": "HB6D9yMpMhezs9hAYZcKmQkaurfpVF32LG"
+    },
+    "amount": {
+      "chi": 23338.0,
+      "huc": 100000.0,
+      "full_huc": 100000
+    }
+  },
+  {
+    "address": {
+      "chi": "CKB17u4XW69DJYKpLJKZHgQDg9uKxg7uEq",
+      "huc": "H9EEwCdz2Fhj7jzrdLKP7BffECzeU1HLQG"
+    },
+    "amount": {
+      "chi": 239.2145,
+      "huc": 1025.1036,
+      "full_huc": 1025
+    }
+  },
+  {
+    "address": {
+      "chi": "CNDXvWbG97xXFgb9XvY7pWdsRAbP7oBt1H",
+      "huc": "HCGmjpAifHX34tGBpxXwe1uJyDghho5abY"
+    },
+    "amount": {
+      "chi": 466.76,
+      "huc": 2000.0,
+      "full_huc": 2000
+    }
+  },
+  {
+    "address": {
+      "chi": "CLDJktMBhGpPFhAPfnohaujzdp165ZfXZx",
+      "huc": "HAGYaBveDSNu4tqRxpoXQR1SBs6QYW6f91"
+    },
+    "amount": {
+      "chi": 1907.64812,
+      "huc": 8174.70031127,
+      "full_huc": 8174
+    }
+  },
+  {
+    "address": {
+      "chi": "CPvBG6i9Yk6fasYNjdddHH89yvNxr1CrrN",
+      "huc": "HDyR5QHc4ufBQ5DR2fdT6nPbXyUHPczKLT"
+    },
+    "amount": {
+      "chi": 346.33592,
+      "huc": 1484.84348328,
+      "full_huc": 1484
+    }
+  },
+  {
+    "address": {
+      "chi": "CPFTfV48J1bis354wGK55pFLm6nBKi4KFZ",
+      "huc": "HDJhUndapBAEgEk7EJJtuKWnK9sVpGtFYN"
+    },
+    "amount": {
+      "chi": 250.41674,
+      "huc": 1073.97,
+      "full_huc": 1073
+    }
+  },
+  {
+    "address": {
+      "chi": "CPpvZocfg3oYrbrEerYNA4VRwq7PzX3yNS",
+      "huc": "HDtAP7C8CDN4foXGwtYByZksVtCiZKAhPT"
+    },
+    "amount": {
+      "chi": 1585.8171,
+      "huc": 6795.56466713,
+      "full_huc": 6795
+    }
+  },
+  {
+    "address": {
+      "chi": "CRw3agddw6jAdgKjHb6wHSGCSgmHdb5YXd",
+      "huc": "HFzHPzD6TGHgSszmad6m6wXdzjrcCA9PGy"
+    },
+    "amount": {
+      "chi": 302.92724,
+      "huc": 1298.975,
+      "full_huc": 1298
+    }
+  },
+  {
+    "address": {
+      "chi": "CWrkCgaBdx7HpZCgt2PEhjsWs5qXCFhA6P",
+      "huc": "HLuz1z9eA7fodksjB4P4XF8xR8vqjBtj1Q"
+    },
+    "amount": {
+      "chi": 245.74914,
+      "huc": 1053.62802201,
+      "full_huc": 1053
+    }
+  },
+  {
+    "address": {
+      "chi": "CRAySsWhTnp1SbXSvDHYbcF8PEFnwiy81t",
+      "huc": "HFEDGB69yxNXFoCVDFHNR7WZwHM7Y23tYY"
+    },
+    "amount": {
+      "chi": 2333.56662,
+      "huc": 9999.999776,
+      "full_huc": 9999
+    }
+  },
+  {
+    "address": {
+      "chi": "Cb3s92GckSg9rTcw7sqwrvcznjLTnx5bHg",
+      "huc": "HR76xKr5GcEfffHyQuqmgRtSLnRnFu5D3T"
+    },
+    "amount": {
+      "chi": 337.00072,
+      "huc": 1444.61168528,
+      "full_huc": 1444
+    }
+  },
+  {
+    "address": {
+      "chi": "CTs6FYgpcBCfqsLzbktqsVEomymQZBM539",
+      "huc": "HHvL4rGH8LmBf522tntfgzWFL2rj794hB2"
+    },
+    "amount": {
+      "chi": 346.5693,
+      "huc": 1485.44,
+      "full_huc": 1485
+    }
+  },
+  {
+    "address": {
+      "chi": "CJ6x2FwKVZ1LMuB1HpgEju79VhMBjDwcBJ",
+      "huc": "H8ABqZWn1iZrB6r3arg4ZQNb3kSWGwr8tt"
+    },
+    "amount": {
+      "chi": 291.25824,
+      "huc": 1248.84441986,
+      "full_huc": 1248
+    }
+  },
+  {
+    "address": {
+      "chi": "CSXojF7x7aj4rL5bvseYrPyzQGTqebgJBZ",
+      "huc": "HGb3YYhQdkHafXkeDueNfuFRxKZA9A2ZzH"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.98,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CcTSRGPyeML2rVyTrVWes8NST9YwE19FsS",
+      "huc": "HSWgEZySAWtYfheW9XWUgddt1CeFn4iqRA"
+    },
+    "amount": {
+      "chi": 1796.79262,
+      "huc": 7699.99,
+      "full_huc": 7699
+    }
+  },
+  {
+    "address": {
+      "chi": "CRSBfGgFo1ZxXf6M9SE649xvGxUFhbioUR",
+      "huc": "HFVRUaFiKB8ULrmPSUDusfEMq1ZaFGJut9"
+    },
+    "amount": {
+      "chi": 460.69212,
+      "huc": 1974.45970932,
+      "full_huc": 1974
+    }
+  },
+  {
+    "address": {
+      "chi": "CZdLKciY4LAa38VmgQeQms9UrSAkjBffyu",
+      "huc": "HPga8vHzaVj5rLAoySeEbNQvQVG5BviYhx"
+    },
+    "amount": {
+      "chi": 144370.73504,
+      "huc": 618608.56772884,
+      "full_huc": 618608
+    }
+  },
+  {
+    "address": {
+      "chi": "CXpRGqxZCdwG6CeBh5LHKkMDNsLConyqa6",
+      "huc": "HMsf69Y1ioVmuQKDz7L79FcevvRXLq4Lij"
+    },
+    "amount": {
+      "chi": 1411.949,
+      "huc": 6050.57117365,
+      "full_huc": 6050
+    }
+  },
+  {
+    "address": {
+      "chi": "CNVfd3WgnoukjWWvVEH9VxZ1T7xaynYP7K",
+      "huc": "HCYuSM69JyUGYiBxnGGyKTpT1B3uVtNrEm"
+    },
+    "amount": {
+      "chi": 813.09592,
+      "huc": 3484.26622378,
+      "full_huc": 3484
+    }
+  },
+  {
+    "address": {
+      "chi": "CXqTf767BBpNFckjVKCBni9k1hzXZbfgjH",
+      "huc": "HMthUQfZhMNt4pRmnMC1cDRBZm5r7PQH3P"
+    },
+    "amount": {
+      "chi": 2239.74786,
+      "huc": 9597.47402179,
+      "full_huc": 9597
+    }
+  },
+  {
+    "address": {
+      "chi": "CLDf7C36rLxBjmSK435RMgAjmTU7Hi2jwr",
+      "huc": "HAGtvVcZNWWhYy7MM55FBBSBKWZRkruATS"
+    },
+    "amount": {
+      "chi": 255.08434,
+      "huc": 1093.0,
+      "full_huc": 1093
+    }
+  },
+  {
+    "address": {
+      "chi": "CRFy3jkGiNTXu5eSWpK5byi8Z7iwaoLN9D",
+      "huc": "HFKCs3KjEY23iHKUorJuRUya7ApG4o5BQR"
+    },
+    "amount": {
+      "chi": 4667.36662,
+      "huc": 19999.99,
+      "full_huc": 19999
+    }
+  },
+  {
+    "address": {
+      "chi": "CaZsAezgRSMhayjuvvGxTX6Un4n2y83VZd",
+      "huc": "HQd6yxa8wbvDQBQxDxGnH2MvL7sMZdiV8U"
+    },
+    "amount": {
+      "chi": 245.28238,
+      "huc": 1051.13196495,
+      "full_huc": 1051
+    }
+  },
+  {
+    "address": {
+      "chi": "CWzWcxHfqJAH1YK7PhCfV3zmmVgG8FE5Cq",
+      "huc": "HM3kSFs8MTinpjz9gjCVJZGDKYmab748jk"
+    },
+    "amount": {
+      "chi": 17503.5,
+      "huc": 75000.0,
+      "full_huc": 75000
+    }
+  },
+  {
+    "address": {
+      "chi": "CVFk8ymQa1quHDVGoDZf1SfnJKDS5NkTrd",
+      "huc": "HKJyxHLs6BQR6RAK6FZUpwwDrNJkanLU7X"
+    },
+    "amount": {
+      "chi": 49989.76262,
+      "huc": 214199.991602,
+      "full_huc": 214199
+    }
+  },
+  {
+    "address": {
+      "chi": "CRsKpbU1FQJ6v5tQkfxuT57QiLz8m2vPDe",
+      "huc": "HFvZdu3TmZrcjHZT3hxjGaNrGQ5TEx13NB"
+    },
+    "amount": {
+      "chi": 439.9213,
+      "huc": 1885.79495836,
+      "full_huc": 1885
+    }
+  },
+  {
+    "address": {
+      "chi": "CVzj4zWhdTaTaEFSMESt2kgEcPuP1EBLxZ",
+      "huc": "HL3xtJ6A9d8yPRvUeGShrFwgASzhVSdq3Q"
+    },
+    "amount": {
+      "chi": 5533.4398,
+      "huc": 23710.0,
+      "full_huc": 23710
+    }
+  },
+  {
+    "address": {
+      "chi": "CSynvVrm81MMcyVYvmvMVPNj7hegzNKdgw",
+      "huc": "HH32joSDeAusSBAbDovBJteAfkk1WvzznH"
+    },
+    "amount": {
+      "chi": 256.48462,
+      "huc": 1099.99,
+      "full_huc": 1099
+    }
+  },
+  {
+    "address": {
+      "chi": "CXUhwmsRLpRhx3VBvXykrksnAoYnfhgdxK",
+      "huc": "HMXwm5SsryzDmFAEDZyagG9Dire7FXRBap"
+    },
+    "amount": {
+      "chi": 1763.1859,
+      "huc": 7555.0,
+      "full_huc": 7555
+    }
+  },
+  {
+    "address": {
+      "chi": "CTe51BMA93Rd4nGQxHEbRVeXaChpaV1Nhy",
+      "huc": "HHhJpUvcfCz8sywTFKEREzuy8Fo99EgasY"
+    },
+    "amount": {
+      "chi": 39315.42818,
+      "huc": 168461.12829677,
+      "full_huc": 168461
+    }
+  },
+  {
+    "address": {
+      "chi": "CUybX5KxNAeh7Pi2t9ennpR8uZBwqbWULR",
+      "huc": "HK2qLNuQtLDCvbP5BBeccKgaTcHGJLdy2v"
+    },
+    "amount": {
+      "chi": 509.70192,
+      "huc": 2184.49909063,
+      "full_huc": 2184
+    }
+  },
+  {
+    "address": {
+      "chi": "CRyxjnevunQFu5NrFHAkHiuirtTaPkdKaK",
+      "huc": "HG3CZ6EPRwxmiH3tYKAa7EBAQwYtrEiu6t"
+    },
+    "amount": {
+      "chi": 261.85236,
+      "huc": 1122.32042404,
+      "full_huc": 1122
+    }
+  },
+  {
+    "address": {
+      "chi": "CfkAHUzDLY9a9KVCoavCRaurExvFd4L5VB",
+      "huc": "HVoQ6nZfrhi5xXAF6cv2F6BHo21aC3Kn1D"
+    },
+    "amount": {
+      "chi": 778.55568,
+      "huc": 3336.92,
+      "full_huc": 3336
+    }
+  },
+  {
+    "address": {
+      "chi": "CMx2ghhfaVzrbqH1FzCas3bVNr1qmLvePj",
+      "huc": "HC1GW1H86fZNR2x3Z2CQgYrvvu7ANBW84K"
+    },
+    "amount": {
+      "chi": 282.62318,
+      "huc": 1211.45436535,
+      "full_huc": 1211
+    }
+  },
+  {
+    "address": {
+      "chi": "CPATcdXw7GfFYxghKa6mRaH6Kw53VjMafc",
+      "huc": "HDDhRw7PdSDmNAMjcc6bF5YXszAN7DJzPz"
+    },
+    "amount": {
+      "chi": 67634.6909,
+      "huc": 289805.00493318,
+      "full_huc": 289805
+    }
+  },
+  {
+    "address": {
+      "chi": "CfH6UDLGKXjJMy9bSrVCk4pqBNmagPwi3U",
+      "huc": "HVLLHWuiqhHpBApdjtV2Za6GjRruBzn4ye"
+    },
+    "amount": {
+      "chi": 2823.898,
+      "huc": 12100.15699144,
+      "full_huc": 12100
+    }
+  },
+  {
+    "address": {
+      "chi": "CPp8MpuBYvZHWrHneucJr3W3G18Ew2bVJW",
+      "huc": "HDsNB8Ue567oL3xpwwc8fYmUp4DZWPMByQ"
+    },
+    "amount": {
+      "chi": 750.55008,
+      "huc": 3216.0,
+      "full_huc": 3216
+    }
+  },
+  {
+    "address": {
+      "chi": "CSEhnbqvGA9CnyhF2oEP9UE6xyuW1u4bvF",
+      "huc": "HGHwbuRNnKhicBNHKqECxyVYX2zpcv2Jos"
+    },
+    "amount": {
+      "chi": 382.7432,
+      "huc": 1640.79473047,
+      "full_huc": 1640
+    }
+  },
+  {
+    "address": {
+      "chi": "CQAS5onrzvnGnKEturfrizpDKBsZAju5CV",
+      "huc": "HEDfu7NKX6LnbWuwCtfgYW5esExsfcoUQE"
+    },
+    "amount": {
+      "chi": 2051.4102,
+      "huc": 8790.37167502,
+      "full_huc": 8790
+    }
+  },
+  {
+    "address": {
+      "chi": "Cbnh8vyUGudWsofhThLDvcAujfZqdKXGKs",
+      "huc": "HRqvxEYvo5C2h1LjkjL3k7SMHifA5974pR"
+    },
+    "amount": {
+      "chi": 641.795,
+      "huc": 2750.66291909,
+      "full_huc": 2750
+    }
+  },
+  {
+    "address": {
+      "chi": "CMtxwkxXn3hxZkcneCdGNPjmjWZJLdKMHz",
+      "huc": "HBxCm4XzJDGUNxHpwEd6Bu1DHZecqj7C8o"
+    },
+    "amount": {
+      "chi": 30864.97176,
+      "huc": 132252.6,
+      "full_huc": 132252
+    }
+  },
+  {
+    "address": {
+      "chi": "CKQnRrtfMDpnWZk5TLBgXUTk2sVwUeoZqG",
+      "huc": "H9U2FAU7sPPJKmR7kNBWLyjBavbFwN5eGg"
+    },
+    "amount": {
+      "chi": 283.5567,
+      "huc": 1215.40443955,
+      "full_huc": 1215
+    }
+  },
+  {
+    "address": {
+      "chi": "CTHPYXkMrfatk1SkUg2xZnaWCCZ9wrdUXi",
+      "huc": "HHLdMqKpNq9QZD7nmi2nPHqwkFeUWU2DaJ"
+    },
+    "amount": {
+      "chi": 1866.80662,
+      "huc": 7999.6,
+      "full_huc": 7999
+    }
+  },
+  {
+    "address": {
+      "chi": "CXUxsiMVhmfiKdXZsoP67LAkfbM1aof2bM",
+      "huc": "HMYCh1vxDwEE8qCcAqNuvqSCDeSL4BA9Yp"
+    },
+    "amount": {
+      "chi": 517.87022,
+      "huc": 2219.33220908,
+      "full_huc": 2219
+    }
+  },
+  {
+    "address": {
+      "chi": "CGZ54GLLh8H6xeyT6Wh6Nqtj8TcnUv7RJa",
+      "huc": "H6cJsZuoDHqcmreVPYgvCMAAgWi71dudVu"
+    },
+    "amount": {
+      "chi": 675.40172,
+      "huc": 2894.30776619,
+      "full_huc": 2894
+    }
+  },
+  {
+    "address": {
+      "chi": "CcjCTrLrVCowZuxe3uNmjcqiK7K21MwiRs",
+      "huc": "HSnSH9vK1NNTP7dgLwNbZ879sAQLZNe1FP"
+    },
+    "amount": {
+      "chi": 288.92444,
+      "huc": 1238.17996079,
+      "full_huc": 1238
+    }
+  },
+  {
+    "address": {
+      "chi": "CHZ2FkqVWyDbU7ZC4ufmKnkB7iFXsVUpyf",
+      "huc": "H7cG54Qx38n7HKEEMwfb9J1cfmLrTQUB1z"
+    },
+    "amount": {
+      "chi": 676.802,
+      "huc": 2900.0,
+      "full_huc": 2900
+    }
+  },
+  {
+    "address": {
+      "chi": "CVDzc3FAtHEFAvnGgaTM6sqSFkLNP8CbFy",
+      "huc": "HKHERLpdQSnkz8TJycTAvP6sooRh12uehS"
+    },
+    "amount": {
+      "chi": 258.11828,
+      "huc": 1106.56232727,
+      "full_huc": 1106
+    }
+  },
+  {
+    "address": {
+      "chi": "CV2q8GZBjLYQWuX7DmRBNVEcPGtt9LJxsu",
+      "huc": "HK64wa8eFW6vL7C9WoR1BzW3wKzCf6wyqb"
+    },
+    "amount": {
+      "chi": 895.47906,
+      "huc": 3837.113,
+      "full_huc": 3837
+    }
+  },
+  {
+    "address": {
+      "chi": "CfHa6Mr5BpPj1jt4TE1xZgTrsieK3LMCHn",
+      "huc": "HVLoufRXhyxEpwZ6kG1nPBjJRmjdc5dd43"
+    },
+    "amount": {
+      "chi": 13419.35,
+      "huc": 57500.0,
+      "full_huc": 57500
+    }
+  },
+  {
+    "address": {
+      "chi": "Cdm9qNErwy1Ji4M8931fcF9ZiTt4rQVJpr",
+      "huc": "HTpPefpKU8ZpXG2AS51VRkR1GWyPMhgZip"
+    },
+    "amount": {
+      "chi": 457.19142,
+      "huc": 1959.934,
+      "full_huc": 1959
+    }
+  },
+  {
+    "address": {
+      "chi": "CZRMN7qdgiPJFZJpiStmutFBdVjHjtARjY",
+      "huc": "HPUbBRR6Cswp4kys1UtbjPWdBYpcEE85nU"
+    },
+    "amount": {
+      "chi": 934.92028,
+      "huc": 4006.84308768,
+      "full_huc": 4006
+    }
+  },
+  {
+    "address": {
+      "chi": "CSnPLG9RQDAMpmGJfsnLtsKxyjEosQvRi2",
+      "huc": "HGqd9ZisvNisdxwLxunAiNbQXnL8QLMzaU"
+    },
+    "amount": {
+      "chi": 702.4738,
+      "huc": 3010.0,
+      "full_huc": 3010
+    }
+  },
+  {
+    "address": {
+      "chi": "CVWGiG4sdqUdYA35LT2q8cfi1oXdNd7m9W",
+      "huc": "HKZWXZeLA139MMi7dV2ex7w9ZrcwyZsi2j"
+    },
+    "amount": {
+      "chi": 5697.9727,
+      "huc": 24415.14107228,
+      "full_huc": 24415
+    }
+  },
+  {
+    "address": {
+      "chi": "CJoUR11W5XB4VefJaw22HfAYKJ4G5yxWGD",
+      "huc": "H8riEJaxbgjaJrLLsy1r7ARysM9acAMcsC"
+    },
+    "amount": {
+      "chi": 1096.886,
+      "huc": 4700.0,
+      "full_huc": 4700
+    }
+  },
+  {
+    "address": {
+      "chi": "CQxEyoJgqEY8V5D847542SKk1s5mzFoLRg",
+      "huc": "HF1Uo6t9MQ6eJGtAM94sqwbBZvB6auBTcH"
+    },
+    "amount": {
+      "chi": 1187.9042,
+      "huc": 5090.91499121,
+      "full_huc": 5090
+    }
+  },
+  {
+    "address": {
+      "chi": "CUt9BqK95YcPD23LV1L7Kxet7MB9qem6EL",
+      "huc": "HJwP18tbbiAu2DiNn3Kw9TvKfQGUN6S7GA"
+    },
+    "amount": {
+      "chi": 1090.35136,
+      "huc": 4672.0,
+      "full_huc": 4672
+    }
+  },
+  {
+    "address": {
+      "chi": "CKaqdYRB2tSCZkjZW3KV8iLYxX1PRf3YQJ",
+      "huc": "H9e5SqzdZ3ziNxQbo5KJxDbzWa6i13s43E"
+    },
+    "amount": {
+      "chi": 60370.03826,
+      "huc": 258677.94380754,
+      "full_huc": 258677
+    }
+  },
+  {
+    "address": {
+      "chi": "CNPPpFgVipVUVtDqUAhtx4WH3dJZDsHt6W",
+      "huc": "HCSddZFxEz3zK5tsmChimZmibgPspWkJ6D"
+    },
+    "amount": {
+      "chi": 242.94858,
+      "huc": 1041.0,
+      "full_huc": 1041
+    }
+  },
+  {
+    "address": {
+      "chi": "CSkQUzYR8FD1KdgUwFhG2ehgvSbc9h28Ms",
+      "huc": "HGoeJJ7seQmX8qMXEHh5r9y8UVgvdzd2Lf"
+    },
+    "amount": {
+      "chi": 621.25756,
+      "huc": 2662.46760565,
+      "full_huc": 2662
+    }
+  },
+  {
+    "address": {
+      "chi": "CX9b4izjVfXCQLxHG3NSXSdHr2qQHTporb",
+      "huc": "HMCpt2aC1q5iDYdKZ5NGLwtjQ5vioQjweP"
+    },
+    "amount": {
+      "chi": 487.53082,
+      "huc": 2089.85,
+      "full_huc": 2089
+    }
+  },
+  {
+    "address": {
+      "chi": "CSfynHWAVNwCmdqYqMPYtAwLq6qaLfmrPi",
+      "huc": "HGjDbb5d1YViaqWb8PPNhgCnP9vtrmuEur"
+    },
+    "amount": {
+      "chi": 1070.74744,
+      "huc": 4588.60085466,
+      "full_huc": 4588
+    }
+  },
+  {
+    "address": {
+      "chi": "CUjqkzuxrRBE2WWSWPBczumDbG9mVps5Yi",
+      "huc": "HJo5aJVRNajjqiBUoRBSpR2f9KF5wBngKW"
+    },
+    "amount": {
+      "chi": 275.62178,
+      "huc": 1181.00841064,
+      "full_huc": 1181
+    }
+  },
+  {
+    "address": {
+      "chi": "CetzZPGHwAeCZcuZFPkH7NU1kVvLUCBemv",
+      "huc": "HUxENgqkTLCiNpabYRk6vsjTJZ1ezVLxJt"
+    },
+    "amount": {
+      "chi": 1022.2044,
+      "huc": 4380.0,
+      "full_huc": 4380
+    }
+  },
+  {
+    "address": {
+      "chi": "CH3gLCVBcTF2EyvtbvgBB44DLQMFNBLQx8",
+      "huc": "H76v9W4e8coY4BbvtxfzzZKetTSZqqhnc1"
+    },
+    "amount": {
+      "chi": 4550.67662,
+      "huc": 19499.24031589,
+      "full_huc": 19499
+    }
+  },
+  {
+    "address": {
+      "chi": "Cb2BuuRjhU4VvRQ7vtTudbrsGN4DCdfThd",
+      "huc": "HR5RjD1CDdd1jd5ADvTjT78JpR9XidDRhW"
+    },
+    "amount": {
+      "chi": 700.84014,
+      "huc": 3003.50737586,
+      "full_huc": 3003
+    }
+  },
+  {
+    "address": {
+      "chi": "CTyHsp2pJqQbnCWzpo4cqsDeGQFYkY2KaW",
+      "huc": "HJ2Xh7cGpzy7bQC37q4SfNV5pTLsJLPvfS"
+    },
+    "amount": {
+      "chi": 689.87128,
+      "huc": 2956.69524352,
+      "full_huc": 2956
+    }
+  },
+  {
+    "address": {
+      "chi": "CHZxy5tX3UEytzp2WaF8FsXJdP67yz9biQ",
+      "huc": "H7dCnPTyZdoViCV4ocEx5NnkBSBSTcF1hT"
+    },
+    "amount": {
+      "chi": 664.19948,
+      "huc": 2846.55,
+      "full_huc": 2846
+    }
+  },
+  {
+    "address": {
+      "chi": "CMZALKCWfXLF2pBd5JP29tjW2r2eemN5nv",
+      "huc": "HBcQ9cmyBgtkr1rfNLNqyPzwau7yDQHcBu"
+    },
+    "amount": {
+      "chi": 324.3982,
+      "huc": 1390.47308701,
+      "full_huc": 1390
+    }
+  },
+  {
+    "address": {
+      "chi": "Cf5CYyMAtdnx4Hyvveumzkttc2RUcpzYfD",
+      "huc": "HV8SNGvdQoMTsVeyDgubpGALA5Wo7tdm9L"
+    },
+    "amount": {
+      "chi": 446.68932,
+      "huc": 1914.06209155,
+      "full_huc": 1914
+    }
+  },
+  {
+    "address": {
+      "chi": "CPtzfDgQzKEitFTWPYwGPt6yAnsWfH5SWc",
+      "huc": "HDxEUXFsWUoEhT8Ygaw6DPNQiqxqAEaMgC"
+    },
+    "amount": {
+      "chi": 4982.89638,
+      "huc": 21351.57255954,
+      "full_huc": 21351
+    }
+  },
+  {
+    "address": {
+      "chi": "CHu2pk9Csrvb9CUpwQarWshmucNUhecE3C",
+      "huc": "H7xGe3ifQ2V6xQ9sESagLNyDTfToHP9xDr"
+    },
+    "amount": {
+      "chi": 367.5735,
+      "huc": 1575.838,
+      "full_huc": 1575
+    }
+  },
+  {
+    "address": {
+      "chi": "CNM5ZcfjDrM9yzS1xkLCPaWgMkWArs2sX7",
+      "huc": "HCQKNvFBk1ufoC74FnL2D5n7uobVRhXWjH"
+    },
+    "amount": {
+      "chi": 235.48042,
+      "huc": 1009.8,
+      "full_huc": 1009
+    }
+  },
+  {
+    "address": {
+      "chi": "CKcPKXBV6xXrm1svju7T8b3ENp81KFtbWa",
+      "huc": "H9fd8pkwd86NaDYy2w7Gx6JfvsDKoXrUJS"
+    },
+    "amount": {
+      "chi": 943.78872,
+      "huc": 4044.08479168,
+      "full_huc": 4044
+    }
+  },
+  {
+    "address": {
+      "chi": "CJuHZm4TFKWV8wJmxh1bm69s4JJp8skaG3",
+      "huc": "H8xXP4dumV4zx8ypFj1RabRJcMQ8eE8xhD"
+    },
+    "amount": {
+      "chi": 77988.36122,
+      "huc": 334169.86063488,
+      "full_huc": 334169
+    }
+  },
+  {
+    "address": {
+      "chi": "CSzS4FWbHpGZWioY71cZpspp8euBn46fvS",
+      "huc": "HH3fsZ63oyq5KvUaQ3cPeP6FghzWQA2uS5"
+    },
+    "amount": {
+      "chi": 1137.96088,
+      "huc": 4876.70263025,
+      "full_huc": 4876
+    }
+  },
+  {
+    "address": {
+      "chi": "CJxYiNKQ7Wt8nkxXEkFBsDzVWbm9B4wV7D",
+      "huc": "H91nXftrdgSebxdZXnF1gjFw4erTiXhEeg"
+    },
+    "amount": {
+      "chi": 2423.6513,
+      "huc": 10385.4017,
+      "full_huc": 10385
+    }
+  },
+  {
+    "address": {
+      "chi": "CRcqbmpVoDbPgzUw9JBfosNVMqk4yHd3SA",
+      "huc": "HFg5R5PxKP9uWC9ySLBVdNdvutqPZFcWxL"
+    },
+    "amount": {
+      "chi": 28849.2687,
+      "huc": 123615.962912,
+      "full_huc": 123615
+    }
+  },
+  {
+    "address": {
+      "chi": "CfdfafSRzX3PLQevoWGiQnyrYN7oU1FHYC",
+      "huc": "HVguPy1tWgbu9cKy6YGYEJFJ6RD7z7F7MJ"
+    },
+    "amount": {
+      "chi": 12905.914,
+      "huc": 55300.0,
+      "full_huc": 55300
+    }
+  },
+  {
+    "address": {
+      "chi": "CUEPQQz9Dtc1UGANuARMosgAcaDh5dZyDN",
+      "huc": "HJHdDiZbk4AXHTqRCCRBdNwcAdK1dqa7EY"
+    },
+    "amount": {
+      "chi": 3457.5247,
+      "huc": 14815.66751324,
+      "full_huc": 14815
+    }
+  },
+  {
+    "address": {
+      "chi": "CeViJXDxwpBLpQNmytSng4VJn9LCrzvvPb",
+      "huc": "HUYx7poRTyjrdc3pGvScVZkkLCRXNJzLp7"
+    },
+    "amount": {
+      "chi": 851.13686,
+      "huc": 3647.0,
+      "full_huc": 3647
+    }
+  },
+  {
+    "address": {
+      "chi": "CRsE4EL5eKZtv9EPuq4WRXeobPsHybjEwY",
+      "huc": "HFvTsXuYAV8QjLuSCs4LF2vF9SxcYzrPA7"
+    },
+    "amount": {
+      "chi": 1672.63446,
+      "huc": 7167.31324091,
+      "full_huc": 7167
+    }
+  },
+  {
+    "address": {
+      "chi": "Cef6fkSJVuEZuZafBuFToaHCau74cFwtgV",
+      "huc": "HUiLV41m24o5imFhUwFHd5Ye8xCP654pyD"
+    },
+    "amount": {
+      "chi": 2721.44418,
+      "huc": 11661.32254292,
+      "full_huc": 11661
+    }
+  },
+  {
+    "address": {
+      "chi": "CSBeHgYb3RJcj5kKDaMXMUBVrCoiies1NV",
+      "huc": "HGEt6z83Zas8YHRMWcMMAySwQFu39uPCk9"
+    },
+    "amount": {
+      "chi": 1048.80972,
+      "huc": 4494.17620304,
+      "full_huc": 4494
+    }
+  },
+  {
+    "address": {
+      "chi": "CVGTbKsJ9fbjqCsxh6hjVpkf1iXfYq5Fnd",
+      "huc": "HKKhQdSkfqAFeQYzz8hZKL26Zmcz6JjoVk"
+    },
+    "amount": {
+      "chi": 2510.93542,
+      "huc": 10759.87167132,
+      "full_huc": 10759
+    }
+  },
+  {
+    "address": {
+      "chi": "CHVWJjKozApFquoxu1v3cKSAmg3v6uhMav",
+      "huc": "H7Yk82uGWLNmf7V1C3usRphcKj9EcXewVz"
+    },
+    "amount": {
+      "chi": 307.82822,
+      "huc": 1319.925,
+      "full_huc": 1319
+    }
+  },
+  {
+    "address": {
+      "chi": "CMTzY91HLcUQjKoy1VDK4sSMvwkzKyKCTU",
+      "huc": "HBXEMSajrn2vYXV1JXD8tNhoUzrJriecSL"
+    },
+    "amount": {
+      "chi": 933.52,
+      "huc": 4000.0,
+      "full_huc": 4000
+    }
+  },
+  {
+    "address": {
+      "chi": "CJDzvUmCG9adxXVLXTLqwJ1nqbnuQXAGgH",
+      "huc": "H8HEjnLenK99mjANpVLfkoHEPetDvgySKo"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.0,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "Cc4xvMjVXCFp3mpKjTMxVPbFDz5oQUx5De",
+      "huc": "HS8CjfJx3MpKryVN2VMnJtrgn3B7ykjK1A"
+    },
+    "amount": {
+      "chi": 5478.36212,
+      "huc": 23474.0,
+      "full_huc": 23474
+    }
+  },
+  {
+    "address": {
+      "chi": "CPdUJsVhFgoirxi9pFUhnSV1HGDrXTA5JY",
+      "huc": "HDgi8B59mrNEgAPC7HUXbwkSqKKB6c4J6C"
+    },
+    "amount": {
+      "chi": 518.57036,
+      "huc": 2222.87687071,
+      "full_huc": 2222
+    }
+  },
+  {
+    "address": {
+      "chi": "CW7AUEWpUuepbdjEeiq3Xs21kKWjqCdFTL",
+      "huc": "HLAQHY6H15DLQqQGwkpsMNHTJNc4M181Js"
+    },
+    "amount": {
+      "chi": 550.54342,
+      "huc": 2359.26383442,
+      "full_huc": 2359
+    }
+  },
+  {
+    "address": {
+      "chi": "CTkZy9LkywVkWZeafcNVbJFZRve2UACJNT",
+      "huc": "HHoonSvDW74GKmKcxeNKQoWzyyjLztRM7o"
+    },
+    "amount": {
+      "chi": 743.54868,
+      "huc": 3186.38,
+      "full_huc": 3186
+    }
+  },
+  {
+    "address": {
+      "chi": "CcKd8tadq15N35bxCgDvHHj4fBB4HZ2MSb",
+      "huc": "HSNrxCA6MAdsrHGzViDk6nzWDEGNpozurE"
+    },
+    "amount": {
+      "chi": 630.126,
+      "huc": 2700.0,
+      "full_huc": 2700
+    }
+  },
+  {
+    "address": {
+      "chi": "CJRBgJeUg3burQxDq2Vn42UssM9VH4vrq3",
+      "huc": "H8URVcDwCDARfcdG84VbsXkKRQEoktuAgb"
+    },
+    "amount": {
+      "chi": 247.3828,
+      "huc": 1060.63661022,
+      "full_huc": 1060
+    }
+  },
+  {
+    "address": {
+      "chi": "CZjJYa3DB58mSWLXUsWVg5AWHjaMteWNEw",
+      "huc": "HPnYMscfhEhHFi1ZmuWKVaRwqnfgUefMna"
+    },
+    "amount": {
+      "chi": 1342.16838,
+      "huc": 5751.1111313,
+      "full_huc": 5751
+    }
+  },
+  {
+    "address": {
+      "chi": "CVFBLqzpAyBiiyG6xCNiVhqWhejm2k3wL8",
+      "huc": "HKJRA9aGh8kEYAw9FENYKD6xFhq5bMNVrx"
+    },
+    "amount": {
+      "chi": 7001.16662,
+      "huc": 29999.999742,
+      "full_huc": 29999
+    }
+  },
+  {
+    "address": {
+      "chi": "CctKqNM3N89ixxTh6Pku5nFVPaB8fQVVte",
+      "huc": "HSwZefvVtHiEnA8jPRkiuHWvwdGTAdnKiU"
+    },
+    "amount": {
+      "chi": 821.26422,
+      "huc": 3519.64276979,
+      "full_huc": 3519
+    }
+  },
+  {
+    "address": {
+      "chi": "CM8oP3PAipJeQbtZoTAf8eQVid9RU6dJwF",
+      "huc": "HBC3CLxdEysADoZc6VAUx9fwGgEk21qh7g"
+    },
+    "amount": {
+      "chi": 23338.0,
+      "huc": 100000.0,
+      "full_huc": 100000
+    }
+  },
+  {
+    "address": {
+      "chi": "CMJGoeYthLAZpZUgJRFKamYo3NoRz67Jhi",
+      "huc": "HBMWcx8MDVj5dm9ibTF9QGpEbRtkYbtUrH"
+    },
+    "amount": {
+      "chi": 966.89334,
+      "huc": 4143.99820104,
+      "full_huc": 4143
+    }
+  },
+  {
+    "address": {
+      "chi": "CPuU2Li8kjaFTtLysr5Rju17mGmCC1n2eU",
+      "huc": "HDxhqeHbGu8mH622At5FZQGZKKrWjeaQXf"
+    },
+    "amount": {
+      "chi": 522.7712,
+      "huc": 2240.0,
+      "full_huc": 2240
+    }
+  },
+  {
+    "address": {
+      "chi": "CUX25uEo9o326KwYSMds7q97agHbdQWEvN",
+      "huc": "HJaFuCpFfxbXuXcajPdgwLQZ8jNvBUkpYE"
+    },
+    "amount": {
+      "chi": 282.3898,
+      "huc": 1210.0,
+      "full_huc": 1210
+    }
+  },
+  {
+    "address": {
+      "chi": "CQbEzjm9V4w8xyL8qBxFF66p9C1DXmRgsq",
+      "huc": "HEeUp3Lc1EVenB1B8Dx54bNFhF6Y7QJors"
+    },
+    "amount": {
+      "chi": 804.22748,
+      "huc": 3446.4487439,
+      "full_huc": 3446
+    }
+  },
+  {
+    "address": {
+      "chi": "CMvDbpJUfQp2uu17Tqiz8UeUnuZ98eeWKn",
+      "huc": "HByTR7swBaNYj6g9ksiowyuvLxeTdrTygr"
+    },
+    "amount": {
+      "chi": 1449.98994,
+      "huc": 6213.6903349,
+      "full_huc": 6213
+    }
+  },
+  {
+    "address": {
+      "chi": "CLG9nuc2Kiry3At4TBXW585C19Jy8bMnBu",
+      "huc": "HAKPcDBUqtRUrNZ6kDXKtdLdZCQHcowsZD"
+    },
+    "amount": {
+      "chi": 1746.61592,
+      "huc": 7484.27432048,
+      "full_huc": 7484
+    }
+  },
+  {
+    "address": {
+      "chi": "CXuinYJAAYEk9w1E8ATmsVSAYj7jLdCtV6",
+      "huc": "HMxxbqscghoFy8gGRCTbgzhc6nD3rpBxAr"
+    },
+    "amount": {
+      "chi": 466.76,
+      "huc": 2000.0,
+      "full_huc": 2000
+    }
+  },
+  {
+    "address": {
+      "chi": "CREz3kdpRZwZy7rTPKxvH58PZPRsCTEDj8",
+      "huc": "HFJDs4DGwjW5nKXVgMxk6aPq7SXBgoNciN"
+    },
+    "amount": {
+      "chi": 1022.67116,
+      "huc": 4382.0,
+      "full_huc": 4382
+    }
+  },
+  {
+    "address": {
+      "chi": "CLeSdPrHedMR48BWjs6zE3Y3JFUBiukzGE",
+      "huc": "HAhgShRkAnuvsKrZ2u6p3YoUrJZWBBbMrs"
+    },
+    "amount": {
+      "chi": 455.091,
+      "huc": 1950.0,
+      "full_huc": 1950
+    }
+  },
+  {
+    "address": {
+      "chi": "CXAVbZJFoisuqKeRbqEP3A6RSSgfxwjEHT",
+      "huc": "HMDjQrsiKtSReXKTtsECrfMrzVmzUvpFhM"
+    },
+    "amount": {
+      "chi": 386.94404,
+      "huc": 1658.3072,
+      "full_huc": 1658
+    }
+  },
+  {
+    "address": {
+      "chi": "CVznbRAm67HDAoAqzGKUeFLPTjvrhBimTD",
+      "huc": "HL42QikDcGqiyzqtHJKJTkbq1o2BB2BrKH"
+    },
+    "amount": {
+      "chi": 443.18862,
+      "huc": 1899.0,
+      "full_huc": 1899
+    }
+  },
+  {
+    "address": {
+      "chi": "CSG9hMqaBz82djQFYYz9F2AnCnjy8aPoL5",
+      "huc": "HGKPWfR2i9gYSw5Hqayy4XSDkqqHibGC4L"
+    },
+    "amount": {
+      "chi": 411.9157,
+      "huc": 1765.4,
+      "full_huc": 1765
+    }
+  },
+  {
+    "address": {
+      "chi": "Cd2CWdCBwYn1UWngkJFsMC15qC1KZCHUnz",
+      "huc": "HT5SKvmeTiLXHiTj3LFhAhGXPF6e6AVV6f"
+    },
+    "amount": {
+      "chi": 933.52,
+      "huc": 4000.0,
+      "full_huc": 4000
+    }
+  },
+  {
+    "address": {
+      "chi": "CJkHMBrFDxHW3JMBjenPSbyYCarnSX9dnp",
+      "huc": "H8oXAVRhk7r1rW2E2gnDG7Eykdx6y8Z8gi"
+    },
+    "amount": {
+      "chi": 2403.11386,
+      "huc": 10297.74983186,
+      "full_huc": 10297
+    }
+  },
+  {
+    "address": {
+      "chi": "CehiQZRtLBmomB57v5spBiDk6LbxjQKYem",
+      "huc": "HUkxDs1LrMLKaNkAD7se1DVBePhHDxqiXL"
+    },
+    "amount": {
+      "chi": 265.35306,
+      "huc": 1137.36141391,
+      "full_huc": 1137
+    }
+  },
+  {
+    "address": {
+      "chi": "CRGe7MzEmB32u3Zn3LQa8zKQCVYEWRBTqm",
+      "huc": "HFKsvfZhHLbYiFEpLNQPxVaqkYdYw8h44h"
+    },
+    "amount": {
+      "chi": 3297.42602,
+      "huc": 14129.137,
+      "full_huc": 14129
+    }
+  },
+  {
+    "address": {
+      "chi": "CcFQUFg1KsuQhPWowjtDWQmz1Je6LkckW2",
+      "huc": "HSJeHZFTr3TvWbBrEmt3Kv3RZMjQq2LAuY"
+    },
+    "amount": {
+      "chi": 1348.00288,
+      "huc": 5776.0,
+      "full_huc": 5776
+    }
+  },
+  {
+    "address": {
+      "chi": "CP8CbbwhfhLeS1myZ9S4fSQ7bRNgSF66qA",
+      "huc": "HDBSQuXABruAFDT1rBRtUwfZ9UTzwoQUjW"
+    },
+    "amount": {
+      "chi": 17254.01678,
+      "huc": 73931.5,
+      "full_huc": 73931
+    }
+  },
+  {
+    "address": {
+      "chi": "CQpRdFdV2KPzFnyYFpyZZ3idjGBF3yggzQ",
+      "huc": "HEsfSZCwYUxW4zeaYryPNYz5HKGZakSgvJ"
+    },
+    "amount": {
+      "chi": 464.19282,
+      "huc": 1989.995,
+      "full_huc": 1989
+    }
+  },
+  {
+    "address": {
+      "chi": "CVFYLnKvYZNZEYu5fF7B1BUhLUHUdNJmzd",
+      "huc": "HKJnA5uP4iw53ka7xH6zpgk8tXNoC8sD6q"
+    },
+    "amount": {
+      "chi": 283.08994,
+      "huc": 1213.49364966,
+      "full_huc": 1213
+    }
+  },
+  {
+    "address": {
+      "chi": "CMsxwS7xkZzQwbj6uWJ6b6vkaA1nGstWRg",
+      "huc": "HBwCkjhRGjYvkoQ9CYHvQcCC8D76qGKaLL"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.0,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CM1DAtpehSNNebqzLFRzCXrquu6kQbXGsM",
+      "huc": "HB4SzCQ7DbvtToX2dHRp238HTxC4vBCMhq"
+    },
+    "amount": {
+      "chi": 678.20228,
+      "huc": 2906.3222,
+      "full_huc": 2906
+    }
+  },
+  {
+    "address": {
+      "chi": "CQWxCta2TNuV2SYJqUUXomd8qNaBQjz4hn",
+      "huc": "HEaC2C9UyYTzqeDM8WUMdGtaPRfVwgqSK2"
+    },
+    "amount": {
+      "chi": 2196.57256,
+      "huc": 9412.71793,
+      "full_huc": 9412
+    }
+  },
+  {
+    "address": {
+      "chi": "CL8FxR2VmUzMBT5JjAX68SBRKFqjxnFnQF",
+      "huc": "HABVmibxHeYrzekM2CWuwwSrsJw4RevYev"
+    },
+    "amount": {
+      "chi": 281.2229,
+      "huc": 1205.85807979,
+      "full_huc": 1205
+    }
+  },
+  {
+    "address": {
+      "chi": "CaPYsKhJsmCgvtSDCy1VRyDqUqemgc2yd1",
+      "huc": "HQSngdGmPvmCk67FW11KFUVH2tk6JDm5qm"
+    },
+    "amount": {
+      "chi": 4667.6,
+      "huc": 20000.0,
+      "full_huc": 20000
+    }
+  },
+  {
+    "address": {
+      "chi": "CeRXNMW26jU12twE3W9JRAqSkgrRrUP4AA",
+      "huc": "HUUmBf5Ucu2Wr6cGLY98Eg6tJjwkQLsiDB"
+    },
+    "amount": {
+      "chi": 303.394,
+      "huc": 1300.0,
+      "full_huc": 1300
+    }
+  },
+  {
+    "address": {
+      "chi": "CU6JH2fT9j3XZ9v9Jg3QEi6Qhu6HrXJKCp",
+      "huc": "HJ9Y6LEuftc3NMbBbi3E4DMrFxBcMh5CHA"
+    },
+    "amount": {
+      "chi": 60239.11208,
+      "huc": 258116.86290687,
+      "full_huc": 258116
+    }
+  },
+  {
+    "address": {
+      "chi": "CLdeZ23ggudoGTVJ2SAkEgqmAHz4ebCWHr",
+      "huc": "HAgtNKd9D5CK5fALKUAa4C7CiM5PFQdarJ"
+    },
+    "amount": {
+      "chi": 282.3898,
+      "huc": 1210.0,
+      "full_huc": 1210
+    }
+  },
+  {
+    "address": {
+      "chi": "CR1sXYJZof9hdNrbtk2n9goYxfzcFPeq7W",
+      "huc": "HF57Lqt2KpiDSaXeBn2byC4zWj5vi6TQRg"
+    },
+    "amount": {
+      "chi": 478.429,
+      "huc": 2050.0,
+      "full_huc": 2050
+    }
+  },
+  {
+    "address": {
+      "chi": "CX8oXgFraa2Y5wZH6NKR2dudrJTsPvHxpP",
+      "huc": "HMC3LyqK6jb3u9EKPQKEr9B5QMZC2P8Tta"
+    },
+    "amount": {
+      "chi": 298.49302,
+      "huc": 1279.0,
+      "full_huc": 1279
+    }
+  },
+  {
+    "address": {
+      "chi": "CTuZZ98gpEk8AhHLjRoDSJBmxY5et4Up3w",
+      "huc": "HHxoNSi9LQJdytxP2To3FoTDWbAyTk4uJb"
+    },
+    "amount": {
+      "chi": 7875.87486,
+      "huc": 33747.02712887,
+      "full_huc": 33747
+    }
+  },
+  {
+    "address": {
+      "chi": "CRjKoib3WU8sBk6oY2YgyzFzWfafUZYwvf",
+      "huc": "HFnZd2AW2dhNzwmqq4YWoVXS4ifz15ZJPv"
+    },
+    "amount": {
+      "chi": 308.76174,
+      "huc": 1323.332,
+      "full_huc": 1323
+    }
+  },
+  {
+    "address": {
+      "chi": "CSZdCDXXyombPYjmW53bZaNULX8GJYhqXa",
+      "huc": "HGcs1X6zVyL7CkQoo73RP5dutaDaoHRYgH"
+    },
+    "amount": {
+      "chi": 828.499,
+      "huc": 3550.0,
+      "full_huc": 3550
+    }
+  },
+  {
+    "address": {
+      "chi": "CUfeM1LDPr96j2UFNj1Hz3kohQK5ziv1gu",
+      "huc": "HJitAJufv1hcYE9Hfm17oZ2FFTQQTq6dBM"
+    },
+    "amount": {
+      "chi": 2686.90394,
+      "huc": 11513.92970817,
+      "full_huc": 11513
+    }
+  },
+  {
+    "address": {
+      "chi": "CW16me8ahA1vsb3gXiTTPZQg2b73uaCNEW",
+      "huc": "HL4Lawi3DKaSgniipkTHD4g7aeCNQBsvLt"
+    },
+    "amount": {
+      "chi": 251.58364,
+      "huc": 1078.13308936,
+      "full_huc": 1078
+    }
+  },
+  {
+    "address": {
+      "chi": "CMCShyJPw4ehpUQ7BPNCznGq9TnUc1vTse",
+      "huc": "HBFgXGsrTEDDdg59URN2pHYGhWsoCwUZgz"
+    },
+    "amount": {
+      "chi": 1168.53366,
+      "huc": 5007.31906994,
+      "full_huc": 5007
+    }
+  },
+  {
+    "address": {
+      "chi": "CYBh7g9WJqq9yDkG4rwH6CeUEu8tcgzjMX",
+      "huc": "HNEvvyixq1PfnRRJMtw6uhuunxEDC8A2vB"
+    },
+    "amount": {
+      "chi": 433.38666,
+      "huc": 1857.0,
+      "full_huc": 1857
+    }
+  },
+  {
+    "address": {
+      "chi": "CfVekxDbqfm3xivX9cYSFQXWfjNjpBvVdp",
+      "huc": "HVYtaFo4MqKZmvbZSeYG4unxDnU4P71vdo"
+    },
+    "amount": {
+      "chi": 293.12528,
+      "huc": 1256.76177988,
+      "full_huc": 1256
+    }
+  },
+  {
+    "address": {
+      "chi": "CLSeaF9TnHoTbGim47QKxcyEmJE6Fg1ekM",
+      "huc": "HAVtPYivJTMyQUPoM9Q9n8EgKMKQpqb9ai"
+    },
+    "amount": {
+      "chi": 7001.4,
+      "huc": 30000.0,
+      "full_huc": 30000
+    }
+  },
+  {
+    "address": {
+      "chi": "CMZVc6vYgfEXqicVkKTjR6Rrn2GFHHHdc8",
+      "huc": "HBcjRQW1Cpo3evHY3MTZEbhJL5MZmnYwVp"
+    },
+    "amount": {
+      "chi": 658.36498,
+      "huc": 2821.81,
+      "full_huc": 2821
+    }
+  },
+  {
+    "address": {
+      "chi": "CSU18JBgUfp8AkbjaM7AEyRUJsa6MJCXvk",
+      "huc": "HGXEwbm8zqNdyxGmsP6z4UgurvfQttTt1h"
+    },
+    "amount": {
+      "chi": 699.90662,
+      "huc": 2999.8,
+      "full_huc": 2999
+    }
+  },
+  {
+    "address": {
+      "chi": "CV9CyZsdzaPexBxDkUzHRw4VB8E95S6zGQ",
+      "huc": "HKCSnsT6WjxAmPdG3Wz7FSKvjBKTZqdQsh"
+    },
+    "amount": {
+      "chi": 261.3856,
+      "huc": 1120.0,
+      "full_huc": 1120
+    }
+  },
+  {
+    "address": {
+      "chi": "CKsQ9wmHeK8fi5jkJLetxZttni4JgjazPq",
+      "huc": "H9vdyFLkAUhBXHQnbNein5ALLm9d9YgSTz"
+    },
+    "amount": {
+      "chi": 457.89156,
+      "huc": 1962.15696735,
+      "full_huc": 1962
+    }
+  },
+  {
+    "address": {
+      "chi": "CdKazm8KhrEReAHSrrDLdcWuyRTcR2JzoS",
+      "huc": "HTNpp4hnE1nwTMxV9tDAT7nMXUYvqYXYU7"
+    },
+    "amount": {
+      "chi": 1143.562,
+      "huc": 4900.0,
+      "full_huc": 4900
+    }
+  },
+  {
+    "address": {
+      "chi": "CR9MJMV1MyzgwCjbmh5qciBZZzvhqwqyEg",
+      "huc": "HFCb7f4Tt9ZCkQQe4j5fSDT18422Jwwebn"
+    },
+    "amount": {
+      "chi": 4949.52304,
+      "huc": 21208.7,
+      "full_huc": 21208
+    }
+  },
+  {
+    "address": {
+      "chi": "CQdk3Cx5gywmo8jx8rTPRGM8qDLNZd8AJY",
+      "huc": "HEgyrWXYD9WHcLQzRtTDEmcaPGRhAyTrmN"
+    },
+    "amount": {
+      "chi": 3655.43094,
+      "huc": 15663.97229323,
+      "full_huc": 15663
+    }
+  },
+  {
+    "address": {
+      "chi": "Ce9Xw2sVVUPjhKu39GnhkD6bCkipARmn7Q",
+      "huc": "HUCmkLSx1dxFWXa5SJnXZiN2kop8jF2rMX"
+    },
+    "amount": {
+      "chi": 656.49794,
+      "huc": 2813.49,
+      "full_huc": 2813
+    }
+  },
+  {
+    "address": {
+      "chi": "CLMAhyhrj9Dach3KMzvqvixSqA2ffeDGaF",
+      "huc": "HAQQXHHKFJn6RtiMf2vfkEDtPD7zE5C7DV"
+    },
+    "amount": {
+      "chi": 518.57036,
+      "huc": 2222.54205673,
+      "full_huc": 2222
+    }
+  },
+  {
+    "address": {
+      "chi": "CJYVeaKuTrRFKZxEYRhQrpRgFfU3uPcuiR",
+      "huc": "H8bjTsuMz1ym8mdGqThEgKh7oiZNMnXfTj"
+    },
+    "amount": {
+      "chi": 8699.47288,
+      "huc": 37276.22258897,
+      "full_huc": 37276
+    }
+  },
+  {
+    "address": {
+      "chi": "CHasStCsxVMFTSxDfqjoyspVVMhHLLjrJY",
+      "huc": "H7e7GBnLUeumGedFxsjdoP5w3QnbunvTob"
+    },
+    "amount": {
+      "chi": 2671.50086,
+      "huc": 11447.76996453,
+      "full_huc": 11447
+    }
+  },
+  {
+    "address": {
+      "chi": "CKsaguY84Y7u9cS3mmJUWvM2FtjBxEnVns",
+      "huc": "H9vpWD7aahgQxp764oJJLRcTowpWP6SUGm"
+    },
+    "amount": {
+      "chi": 6147.92934,
+      "huc": 26343.49530965,
+      "full_huc": 26343
+    }
+  },
+  {
+    "address": {
+      "chi": "CfeFJu5ZEgwTT3mnPXJ4qPbmikLFFFSoGZ",
+      "huc": "HVhV8Cf1krVyGFSpgZHtetsDGoRZmvion1"
+    },
+    "amount": {
+      "chi": 1811.0288,
+      "huc": 7760.08845404,
+      "full_huc": 7760
+    }
+  },
+  {
+    "address": {
+      "chi": "CSuMAagAdpUYZdRyYykhP4RBCn1u78NMCu",
+      "huc": "HGxaytFd9z34Nq71r1kXCZgckq7Dd1ECS3"
+    },
+    "amount": {
+      "chi": 936.78732,
+      "huc": 4014.28384274,
+      "full_huc": 4014
+    }
+  },
+  {
+    "address": {
+      "chi": "CZKHxb8tXop7irS2Tkx7LN5DuXxPQgru1c",
+      "huc": "HPNXmtiM3yNdY474knww9sLfTb3hrgLPTZ"
+    },
+    "amount": {
+      "chi": 6786.6904,
+      "huc": 29080.0,
+      "full_huc": 29080
+    }
+  },
+  {
+    "address": {
+      "chi": "CfWkpFxAxFegvZoNoUScyK6AFMkDjsYuZZ",
+      "huc": "HVZzdZXdURDCjmUR6WSSnpMboQqYJn8Sfv"
+    },
+    "amount": {
+      "chi": 319.7306,
+      "huc": 1370.0,
+      "full_huc": 1370
+    }
+  },
+  {
+    "address": {
+      "chi": "Ces9Mk7LWhgmqYuZst9AcnbEmAqK6Re5EM",
+      "huc": "HUvPB3go2sFHekacAv8zSHrgKDvdYVG9mK"
+    },
+    "amount": {
+      "chi": 6359.83838,
+      "huc": 27251.25773326,
+      "full_huc": 27251
+    }
+  },
+  {
+    "address": {
+      "chi": "CJT4nksNgqw2fPRoGa5WFejMGf6mqYLDUt",
+      "huc": "H8WJc4SqD1VYUb6qZc5L59znpiC6NP37QQ"
+    },
+    "amount": {
+      "chi": 411.9157,
+      "huc": 1765.80272071,
+      "full_huc": 1765
+    }
+  },
+  {
+    "address": {
+      "chi": "CKsH36BPGyWDUaDdKK3iYTAtiuFNsCKzYp",
+      "huc": "H9vWrPkqo94jHmtfcM3YMxSLGxLhS4Dyg7"
+    },
+    "amount": {
+      "chi": 3585.18356,
+      "huc": 15362.62831019,
+      "full_huc": 15362
+    }
+  },
+  {
+    "address": {
+      "chi": "CNmVyH4V4KNXUfvzPDoHeiZeZr5VAMcDQf",
+      "huc": "HCpjnadwaUw3Hsc2gFo7UDq67uAofvXFkd"
+    },
+    "amount": {
+      "chi": 9153.63036,
+      "huc": 39222.29287909,
+      "full_huc": 39222
+    }
+  },
+  {
+    "address": {
+      "chi": "CGoMikaMKuchZ7nL8yXADpanurCaNJd7Q2",
+      "huc": "H6rbY49or5BDNKTNS1Wz3KrETuHttFUC6g"
+    },
+    "amount": {
+      "chi": 29172.5,
+      "huc": 125000.0,
+      "full_huc": 125000
+    }
+  }
+]

@@ -1,0 +1,51 @@
+</script>
+
+<style type="text/css">
+
+label
+{
+  font-weight: bold;
+}
+
+form
+{
+  padding-left: 2em;
+  border: thin solid black;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>Private Key Converter for the Xaya Huntercoin Snapshot</h1>
+
+<p>Using this tool, you can convert your Huntercoin (WIF) private key
+to the Xaya format.  This allows you to import it into Xaya Core to
+claim the CHI balance granted in the Huntercoin snapshot.<p>
+
+<form id="conversion-form">
+  <p>
+    <label for="huc-privkey">Huntercoin WIF Private Key:&nbsp;</label>
+    <input type="text" id="huc-privkey" size="60">
+    <button type="submit">Convert</button>
+  </p>
+  <p>
+    <label for="chi-privkey">Xaya Private Key:&nbsp;</label>
+    <input type="text" id="chi-privkey" size="60" readonly="true">
+  </p>
+</form>
+
+<p>This file is self-contained.  If you want, you can download it,
+transfer it to an offline machine, and perform the conversion there.
+This provides maximum protection of your private keys.</p>
+
+<p>This script is free software, released under the MIT license.
+The original source code is available
+<a href="https://github.com/xaya/xaya/blob/master/contrib/xaya/huc-snapshot">on
+Github</a>.
+The base58check processing is based on
+<a href="https://github.com/bitcoinjs/bs58check">bs58check</a>.</p>
+
+</body>
+</html>
