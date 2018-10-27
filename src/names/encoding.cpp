@@ -100,7 +100,7 @@ IsStringValid (const std::string& str, const NameEncoding enc)
       return true;
 
     case NameEncoding::HEX:
-      return IsHex (str);
+      return str == "" || IsHex (str);
     }
 
   assert (false);

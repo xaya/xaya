@@ -6,6 +6,15 @@
   can now be used to specify per-RPC encodings for names and values by setting
   the `nameEncoding` and `valueEncoding` fields, respectively.
 
+- `name_scan` now accepts an optional `options` argument, which can be used
+  to specify filtering conditions (based on number of confirmations, prefix and
+  regexp matches of a name).
+  See [#237](https://github.com/namecoin/namecoin-core/issues/237)
+  for more details.
+
+- `name_filter` has been removed.  Instead, `name_scan` with the newly added
+  filtering options can be used.
+
 ## Version 0.17
 
 - Previously, `createrawtransaction` supported a separate argument for creating

@@ -116,50 +116,6 @@ void DestinationAddressHelper::finalise ()
 }
 
 /**
- * Builder for the help text of the "options" argument.
- */
-class NameOpOptionsHelpBuilder : public HelpTextBuilder
-{
-
-public:
-
-  explicit NameOpOptionsHelpBuilder ()
-    : HelpTextBuilder("  ", 25)
-  {
-    withField ("\"destAddress\"",
-               "(string) The address to send the name output to");
-
-    withField ("\"sendCoins\"", ":",
-               "(object) Addresses to which coins should be"
-               " sent additionally");
-    withLine ("{");
-    withField ("  \"addr1\": x", "");
-    withField ("  \"addr2\": y", "");
-    withLine ("  ...");
-    withLine ("}");
-  }
-
-  NameOpOptionsHelpBuilder&
-  withNameEncoding ()
-  {
-    withField ("\"nameEncoding\"",
-               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
-               " name argument");
-    return *this;
-  }
-
-  NameOpOptionsHelpBuilder&
-  withValueEncoding ()
-  {
-    withField ("\"valueEncoding\"",
-               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
-               " value argument");
-    return *this;
-  }
-
-};
-
-/**
  * Sends a name output to the given name script.  This is the "final" step that
  * is common between name_new, name_firstupdate and name_update.  This method
  * also implements the "sendCoins" option, if included.
@@ -340,7 +296,8 @@ name_list (const JSONRPCRequest& request)
         continue;
 
       UniValue obj
-        = getNameInfo (name, nameOp.getOpValue (),
+        = getNameInfo (NO_OPTIONS,
+                       name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
@@ -378,8 +335,9 @@ name_new (const JSONRPCRequest& request)
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"options\"       (object, optional)\n"
-        + NameOpOptionsHelpBuilder ()
+        + NameOptionsHelp ()
             .withNameEncoding ()
+            .withWriteOptions ()
             .withField ("\"allowExisting\"",
                         "(boolean, optional, default=false) If set, then the"
                         " name_new is sent even if the name exists already")
@@ -524,9 +482,10 @@ name_firstupdate (const JSONRPCRequest& request)
         "3. \"tx\"            (string, required) the name_new txid\n"
         "4. \"value\"         (string, required) value for the name\n"
         "5. \"options\"       (object, optional)\n"
-        + NameOpOptionsHelpBuilder ()
+        + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withWriteOptions ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_firstupdate's txid\n"
@@ -629,9 +588,10 @@ name_update (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to update\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + NameOpOptionsHelpBuilder ()
+        + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withWriteOptions ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"

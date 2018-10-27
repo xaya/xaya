@@ -25,21 +25,56 @@
 
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
+
+namespace
+{
+
+NameEncoding
+EncodingFromOptionsJson (const UniValue& options, const std::string& field,
+                         const NameEncoding defaultValue)
+{
+  NameEncoding res = defaultValue;
+  RPCTypeCheckObj (options,
+    {
+      {field, UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+  if (options.exists (field))
+    try
+      {
+        res = EncodingFromString (options[field].get_str ());
+      }
+    catch (const std::invalid_argument& exc)
+      {
+        LogPrintf ("Invalid value for %s in options: %s\n  using default %s\n",
+                   field, exc.what (), EncodingToString (defaultValue));
+      }
+
+  return res;
+}
+
+} // anonymous namespace
 
 /**
  * Utility routine to construct a "name info" object to return.  This is used
  * for name_show and also name_list.
  */
 UniValue
-getNameInfo (const valtype& name, const valtype& value,
+getNameInfo (const UniValue& options,
+             const valtype& name, const valtype& value,
              const COutPoint& outp, const CScript& addr)
 {
   UniValue obj(UniValue::VOBJ);
-  AddEncodedNameToUniv (obj, "name", name, ConfiguredNameEncoding ());
-  AddEncodedNameToUniv (obj, "value", value, ConfiguredValueEncoding ());
+  AddEncodedNameToUniv (obj, "name", name,
+                        EncodingFromOptionsJson (options, "nameEncoding",
+                                                 ConfiguredNameEncoding ()));
+  AddEncodedNameToUniv (obj, "value", value,
+                        EncodingFromOptionsJson (options, "valueEncoding",
+                                                 ConfiguredValueEncoding ()));
   obj.pushKV ("txid", outp.hash.GetHex ());
   obj.pushKV ("vout", static_cast<int> (outp.n));
 
@@ -60,9 +95,11 @@ getNameInfo (const valtype& name, const valtype& value,
  * Return name info object for a CNameData object.
  */
 UniValue
-getNameInfo (const valtype& name, const CNameData& data)
+getNameInfo (const UniValue& options,
+             const valtype& name, const CNameData& data)
 {
-  UniValue result = getNameInfo (name, data.getValue (),
+  UniValue result = getNameInfo (options,
+                                 name, data.getValue (),
                                  data.getUpdateOutpoint (),
                                  data.getAddress ());
   addExpirationInfo (data.getHeight (), result);
@@ -118,23 +155,7 @@ DecodeNameValueFromRPCOrThrow (const UniValue& val, const UniValue& opt,
                                const std::string& optKey,
                                const NameEncoding defaultEnc)
 {
-  NameEncoding enc = defaultEnc;
-  RPCTypeCheckObj (opt,
-    {
-      {optKey, UniValueType (UniValue::VSTR)},
-    },
-    true, false);
-  if (opt.exists (optKey))
-    try
-      {
-        enc = EncodingFromString (opt[optKey].get_str ());
-      }
-    catch (const std::invalid_argument& exc)
-      {
-        LogPrintf ("Invalid value for %s in options: %s\n  using default %s\n",
-                   optKey, exc.what (), EncodingToString (defaultEnc));
-      }
-
+  const NameEncoding enc = EncodingFromOptionsJson (opt, optKey, defaultEnc);
   try
     {
       return DecodeName (val.get_str (), enc);
@@ -238,10 +259,11 @@ addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
  * This is the most common call for methods in this file.
  */
 UniValue
-getNameInfo (const valtype& name, const CNameData& data,
+getNameInfo (const UniValue& options,
+             const valtype& name, const CNameData& data,
              const MaybeWalletForRequest& wallet)
 {
-  UniValue res = getNameInfo (name, data);
+  UniValue res = getNameInfo (options, name, data);
   addOwnershipInfo (data.getAddress (), wallet, res);
   return res;
 }
@@ -292,7 +314,14 @@ NameInfoHelp::NameInfoHelp (const std::string& ind)
   : HelpTextBuilder(ind, 25)
 {
   withField ("\"name\": xxxxx", "(string) the requested name");
+  withField ("\"name_encoding\": xxxxx", "(string) the encoding of \"name\"");
+  withField ("\"name_error\": xxxxx",
+             "(string) replaces \"name\" in case there is an error");
   withField ("\"value\": xxxxx", "(string) the name's current value");
+  withField ("\"value_encoding\": xxxxx", "(string) the encoding of \"value\"");
+  withField ("\"value_error\": xxxxx",
+             "(string) replaces \"value\" in case there is an error");
+
   withField ("\"txid\": xxxxx", "(string) the name's last update tx");
   withField ("\"vout\": xxxxx",
            "(numeric) the index of the name output in the last update");
@@ -309,6 +338,46 @@ NameInfoHelp::withExpiration ()
   withField ("\"height\": xxxxx", "(numeric) the name's last update height");
   withField ("\"expires_in\": xxxxx", "(numeric) expire counter for the name");
   withField ("\"expired\": xxxxx", "(boolean) whether the name is expired");
+  return *this;
+}
+
+NameOptionsHelp::NameOptionsHelp ()
+  : HelpTextBuilder("  ", 25)
+{}
+
+NameOptionsHelp&
+NameOptionsHelp::withWriteOptions ()
+{
+  withField ("\"destAddress\"",
+             "(string) The address to send the name output to");
+
+  withField ("\"sendCoins\"", ":",
+             "(object) Addresses to which coins should be"
+             " sent additionally");
+  withLine ("{");
+  withField ("  \"addr1\": x", "");
+  withField ("  \"addr2\": y", "");
+  withLine ("  ...");
+  withLine ("}");
+
+  return *this;
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withNameEncoding ()
+{
+  withField ("\"nameEncoding\"",
+             "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+             " name argument");
+  return *this;
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withValueEncoding ()
+{
+  withField ("\"valueEncoding\"",
+             "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
+             " value argument");
   return *this;
 }
 
@@ -357,7 +426,7 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK (wallet.getLock ());
-  return getNameInfo (name, data, wallet);
+  return getNameInfo (NO_OPTIONS, name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -418,8 +487,8 @@ name_history (const JSONRPCRequest& request)
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (name, entry, wallet));
-  res.push_back (getNameInfo (name, data, wallet));
+    res.push_back (getNameInfo (NO_OPTIONS, name, entry, wallet));
+  res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
 
   return res;
 }
@@ -429,13 +498,18 @@ name_history (const JSONRPCRequest& request)
 UniValue
 name_scan (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () > 2)
+  if (request.fHelp || request.params.size () > 3)
     throw std::runtime_error (
-        "name_scan (\"start\" (\"count\"))\n"
+        "name_scan (\"start\" (\"count\" (\"options\")))\n"
         "\nList names in the database.\n"
         "\nArguments:\n"
         "1. \"start\"       (string, optional) skip initially to this name\n"
         "2. \"count\"       (numeric, optional, default=500) stop after this many names\n"
+        "3. \"options\"     (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -450,20 +524,63 @@ name_scan (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_scan", "\"d/abc\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VNUM});
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 3)
+    options = request.params[2].get_obj ();
+
   valtype start;
   if (request.params.size () >= 1)
-    start = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+    start = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   int count = 500;
   if (request.params.size () >= 2)
     count = request.params[1].get_int ();
 
+  /* Parse and interpret the name_scan-specific options.  */
+  RPCTypeCheckObj (options,
+    {
+      {"minConf", UniValueType (UniValue::VNUM)},
+      {"maxConf", UniValueType (UniValue::VNUM)},
+      {"prefix", UniValueType (UniValue::VSTR)},
+      {"regexp", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+
+  int minConf = 1;
+  if (options.exists ("minConf"))
+    minConf = options["minConf"].get_int ();
+  if (minConf < 1)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "minConf must be >= 1");
+
+  int maxConf = -1;
+  if (options.exists ("maxConf"))
+    {
+      maxConf = options["maxConf"].get_int ();
+      if (maxConf < 0)
+        throw JSONRPCError (RPC_INVALID_PARAMETER,
+                            "maxConf must not be negative");
+    }
+
+  valtype prefix;
+  if (options.exists ("prefix"))
+    prefix = DecodeNameFromRPCOrThrow (options["prefix"], options);
+
+  bool haveRegexp = false;
+  boost::xpressive::sregex regexp;
+  if (options.exists ("regexp"))
+    {
+      haveRegexp = true;
+      regexp = boost::xpressive::sregex::compile (options["regexp"].get_str ());
+    }
+
+  /* Iterate over names and produce the result.  */
   UniValue res(UniValue::VARR);
   if (count <= 0)
     return res;
@@ -471,107 +588,25 @@ name_scan (const JSONRPCRequest& request)
   MaybeWalletForRequest wallet(request);
   LOCK2 (cs_main, wallet.getLock ());
 
-  valtype name;
-  CNameData data;
-  std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
-  for (iter->seek (start); count > 0 && iter->next (name, data); --count)
-    res.push_back (getNameInfo (name, data, wallet));
-
-  return res;
-}
-
-/* ************************************************************************** */
-
-UniValue
-name_filter (const JSONRPCRequest& request)
-{
-  if (request.fHelp || request.params.size () > 5)
-    throw std::runtime_error (
-        "name_filter (\"regexp\" (\"maxage\" (\"from\" (\"nb\" (\"stat\")))))\n"
-        "\nScan and list names matching a regular expression.\n"
-        "\nArguments:\n"
-        "1. \"regexp\"      (string, optional) filter names with this regexp\n"
-        "2. \"maxage\"      (numeric, optional, default=36000) only consider names updated in the last \"maxage\" blocks; 0 means all names\n"
-        "3. \"from\"        (numeric, optional, default=0) return from this position onward; index starts at 0\n"
-        "4. \"nb\"          (numeric, optional, default=0) return only \"nb\" entries; 0 means all\n"
-        "5. \"stat\"        (string, optional) if set to the string \"stat\", print statistics instead of returning the names\n"
-        "\nResult:\n"
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withExpiration ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_filter", "\"\" 5")
-        + HelpExampleCli ("name_filter", "\"^id/\"")
-        + HelpExampleCli ("name_filter", "\"^id/\" 36000 0 0 \"stat\"")
-        + HelpExampleRpc ("name_scan", "\"^d/\"")
-      );
-
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VNUM, UniValue::VNUM, UniValue::VNUM,
-                 UniValue::VSTR});
-
-  if (IsInitialBlockDownload ())
-    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
-
-  /* ********************** */
-  /* Interpret parameters.  */
-
-  bool haveRegexp(false);
-  boost::xpressive::sregex regexp;
-
-  int maxage(36000), from(0), nb(0);
-  bool stats(false);
-
-  if (request.params.size () >= 1)
-    {
-      haveRegexp = true;
-      regexp = boost::xpressive::sregex::compile (request.params[0].get_str ());
-    }
-
-  if (request.params.size () >= 2)
-    maxage = request.params[1].get_int ();
-  if (maxage < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER,
-                        "'maxage' should be non-negative");
-  if (request.params.size () >= 3)
-    from = request.params[2].get_int ();
-  if (from < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "'from' should be non-negative");
-
-  if (request.params.size () >= 4)
-    nb = request.params[3].get_int ();
-  if (nb < 0)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "'nb' should be non-negative");
-
-  if (request.params.size () >= 5)
-    {
-      if (request.params[4].get_str () != "stat")
-        throw JSONRPCError (RPC_INVALID_PARAMETER,
-                            "fifth argument must be the literal string 'stat'");
-      stats = true;
-    }
-
-  /* ******************************************* */
-  /* Iterate over names to build up the result.  */
-
-  UniValue names(UniValue::VARR);
-  unsigned count(0);
-
-  MaybeWalletForRequest wallet(request);
-  LOCK2 (cs_main, wallet.getLock ());
+  const int maxHeight = chainActive.Height () - minConf + 1;
+  int minHeight = -1;
+  if (maxConf >= 0)
+    minHeight = chainActive.Height () - maxConf + 1;
 
   valtype name;
   CNameData data;
   std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
-  while (iter->next (name, data))
+  for (iter->seek (start); count > 0 && iter->next (name, data); )
     {
-      const int age = chainActive.Height () - data.getHeight ();
-      assert (age >= 0);
-      if (maxage != 0 && age >= maxage)
+      const int height = data.getHeight ();
+      if (height > maxHeight)
+        continue;
+      if (minHeight >= 0 && height < minHeight)
+        continue;
+
+      if (name.size () < prefix.size ())
+        continue;
+      if (!std::equal (prefix.begin (), prefix.end (), name.begin ()))
         continue;
 
       if (haveRegexp)
@@ -589,39 +624,11 @@ name_filter (const JSONRPCRequest& request)
             }
         }
 
-      if (from > 0)
-        {
-          --from;
-          continue;
-        }
-      assert (from == 0);
-
-      if (stats)
-        ++count;
-      else
-        names.push_back (getNameInfo (name, data, wallet));
-
-      if (nb > 0)
-        {
-          --nb;
-          if (nb == 0)
-            break;
-        }
+      res.push_back (getNameInfo (options, name, data, wallet));
+      --count;
     }
 
-  /* ********************************************************** */
-  /* Return the correct result (take stats mode into account).  */
-
-  if (stats)
-    {
-      UniValue res(UniValue::VOBJ);
-      res.pushKV ("blocks", chainActive.Height ());
-      res.pushKV ("count", static_cast<int> (count));
-
-      return res;
-    }
-
-  return names;
+  return res;
 }
 
 /* ************************************************************************** */
@@ -680,7 +687,8 @@ name_pending (const JSONRPCRequest& request)
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
 
-          UniValue obj = getNameInfo (op.getOpName (), op.getOpValue (),
+          UniValue obj = getNameInfo (NO_OPTIONS,
+                                      op.getOpName (), op.getOpValue (),
                                       COutPoint (tx->GetHash (), n),
                                       op.getAddress ());
           addOwnershipInfo (op.getAddress (), wallet, obj);
@@ -881,8 +889,7 @@ static const CRPCCommand commands[] =
   //  --------------------- ------------------------  -----------------------  ----------
     { "names",              "name_show",              &name_show,              {"name"} },
     { "names",              "name_history",           &name_history,           {"name"} },
-    { "names",              "name_scan",              &name_scan,              {"start","count"} },
-    { "names",              "name_filter",            &name_filter,            {"regexp","maxage","from","nb","stat"} },
+    { "names",              "name_scan",              &name_scan,              {"start","count","options"} },
     { "names",              "name_pending",           &name_pending,           {"name"} },
     { "names",              "name_checkdb",           &name_checkdb,           {} },
     { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
