@@ -974,10 +974,10 @@ BOOST_FIXTURE_TEST_CASE (encoding_hex, EncodingTestSetup)
   encoding = NameEncoding::HEX;
 
   ValidRoundtrip ("0065ff", {0x00, 0x65, 0xff});
+  ValidRoundtrip ("", {});
   BOOST_CHECK (DecodeName ("aaBBcCDd", encoding)
                 == valtype ({0xaa, 0xbb, 0xcc, 0xdd}));
 
-  InvalidString ("");
   InvalidString ("aaa");
   InvalidString ("zz");
 }

@@ -17,9 +17,11 @@ class COutPoint;
 class CScript;
 class UniValue;
 
-UniValue getNameInfo (const valtype& name, const valtype& value,
+UniValue getNameInfo (const UniValue& options,
+                      const valtype& name, const valtype& value,
                       const COutPoint& outp, const CScript& addr);
-UniValue getNameInfo (const valtype& name, const CNameData& data);
+UniValue getNameInfo (const UniValue& options,
+                      const valtype& name, const CNameData& data);
 void addHeightInfo (int height, UniValue& data);
 
 #ifdef ENABLE_WALLET
@@ -96,6 +98,26 @@ public:
   explicit NameInfoHelp (const std::string& ind);
 
   NameInfoHelp& withHeight ();
+
+};
+
+/**
+ * Builder class for the help text of the "options" argument for name RPCs.
+ */
+class NameOptionsHelp : public HelpTextBuilder
+{
+
+public:
+
+  NameOptionsHelp ();
+
+  /**
+   * Adds the options for write-type RPCs (e.g. name_update).
+   */
+  NameOptionsHelp& withWriteOptions ();
+
+  NameOptionsHelp& withNameEncoding ();
+  NameOptionsHelp& withValueEncoding ();
 
 };
 

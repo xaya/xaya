@@ -67,9 +67,8 @@ class NameIsMineTest (NameTestFramework):
     assert_equal (p['name'], "d/a")
     assert_equal (p['ismine'], True)
 
-    # name_scan, name_filter, name_list
+    # name_scan, name_list
     self.verifyExpectedIsMineInList (self.node.name_scan ())
-    self.verifyExpectedIsMineInList (self.node.name_filter ())
     self.verifyExpectedIsMineInList (self.node.name_list ())
 
 if __name__ == '__main__':

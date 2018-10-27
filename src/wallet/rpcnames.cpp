@@ -116,50 +116,6 @@ void DestinationAddressHelper::finalise ()
 }
 
 /**
- * Builder for the help text of the "options" argument.
- */
-class NameOpOptionsHelpBuilder : public HelpTextBuilder
-{
-
-public:
-
-  explicit NameOpOptionsHelpBuilder ()
-    : HelpTextBuilder("  ", 25)
-  {
-    withField ("\"destAddress\"",
-               "(string) The address to send the name output to");
-
-    withField ("\"sendCoins\"", ":",
-               "(object) Addresses to which coins should be"
-               " sent additionally");
-    withLine ("{");
-    withField ("  \"addr1\": x", "");
-    withField ("  \"addr2\": y", "");
-    withLine ("  ...");
-    withLine ("}");
-  }
-
-  NameOpOptionsHelpBuilder&
-  withNameEncoding ()
-  {
-    withField ("\"nameEncoding\"",
-               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
-               " name argument");
-    return *this;
-  }
-
-  NameOpOptionsHelpBuilder&
-  withValueEncoding ()
-  {
-    withField ("\"valueEncoding\"",
-               "(string) Encoding (\"ascii\", \"utf8\" or \"hex\") of the"
-               " value argument");
-    return *this;
-  }
-
-};
-
-/**
  * Sends a name output to the given name script.  This is the "final" step that
  * is common between name_new, name_firstupdate and name_update.  This method
  * also implements the "sendCoins" option, if included.
@@ -338,7 +294,8 @@ name_list (const JSONRPCRequest& request)
         continue;
 
       UniValue obj
-        = getNameInfo (name, nameOp.getOpValue (),
+        = getNameInfo (NO_OPTIONS,
+                       name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
@@ -377,9 +334,10 @@ name_register (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + NameOpOptionsHelpBuilder ()
+        + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withWriteOptions ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_register's txid\n"
@@ -461,9 +419,10 @@ name_update (const JSONRPCRequest& request)
         "1. \"name\"          (string, required) the name to update\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + NameOpOptionsHelpBuilder ()
+        + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withWriteOptions ()
             .finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
