@@ -295,11 +295,15 @@ class GameBlocksTest (BitcoinTestFramework):
     for games a and b.
     """
 
+    # Use a freshly generated address for the coinbases to ensure that
+    # no blocks are equal on two chains.
+    addr = self.node.getnewaddress ()
+
     blks = []
     attachA = []
     attachB = []
     for i in range (n):
-      blks.extend (self.node.generate (1))
+      blks.extend (self.node.generatetoaddress (1, addr))
       topic, data = self.games["a"].receive ()
       assert_equal (topic, "game-block-attach json a")
       if len (attachA) > 0:

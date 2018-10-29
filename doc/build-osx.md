@@ -20,7 +20,7 @@ Dependencies
 
 See [dependencies.md](dependencies.md) for a complete overview.
 
-If you want to build the disk image with `make deploy` (.dmg / optional), you need RSVG
+If you want to build the disk image with `make deploy` (.dmg / optional), you need RSVG:
 
     brew install librsvg
 
@@ -28,7 +28,7 @@ Berkeley DB
 -----------
 It is recommended to use Berkeley DB 4.8. If you have to build it yourself,
 you can use [the installation script included in contrib/](/contrib/install_db4.sh)
-like so
+like so:
 
 ```shell
 ./contrib/install_db4.sh .
@@ -36,12 +36,12 @@ like so
 
 from the root of the repository.
 
-**Note**: You only need Berkeley DB if the wallet is enabled (see the section *Disable-Wallet mode* below).
+**Note**: You only need Berkeley DB if the wallet is enabled (see [*Disable-wallet mode*](/doc/build-osx.md#disable-wallet-mode)).
 
 Build Xaya
 ----------
 
-1. Clone the Xaya source code and cd into `xaya`
+1. Clone the Xaya source code:
 
         git clone https://github.com/xaya/xaya.git
         cd xaya
@@ -80,7 +80,7 @@ Running
 
 Xaya is now available at `./src/xayad`
 
-Before running, it's recommended that you create an RPC configuration file.
+Before running, it's recommended that you create an RPC configuration file:
 
     echo -e "rpcuser=xayarpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
 

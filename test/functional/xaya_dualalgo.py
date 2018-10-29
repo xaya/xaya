@@ -38,25 +38,22 @@ class DualAlgoTest (BitcoinTestFramework):
 
   def run_test (self):
     self.node = self.nodes[0]
-    addr = self.node.getnewaddress ()
+    addr1 = self.node.getnewaddress ()
+    addr2 = self.node.getnewaddress ()
 
     # Error for invalid pow algo.
     assert_raises_rpc_error (-8, 'invalid PowAlgo',
-                             self.node.generate, 1, None, 'foo')
-    assert_raises_rpc_error (-8, 'invalid PowAlgo',
-                             self.node.generatetoaddress, 1, addr, None, 'foo')
+                             self.node.generatetoaddress, 1, addr1, None, 'foo')
 
     # Mine blocks with Neoscrypt and verify that.
-    blks = self.node.generate (1, None, 'neoscrypt')
-    blks.extend (self.node.generatetoaddress (1, addr, None, 'neoscrypt'))
-    blks.extend (self.node.generate (1))
-    assert_equal (len (blks), 3)
+    blks = self.node.generatetoaddress (1, addr1, None, 'neoscrypt')
+    blks.extend (self.node.generatetoaddress (1, addr1))
+    assert_equal (len (blks), 2)
     self.assertBlocksNeoscrypt (blks)
 
     # Mine blocks with SHA256D and verify that.
-    blks = self.node.generate (1, None, 'sha256d')
-    blks.extend (self.node.generatetoaddress (1, addr, None, 'sha256d'))
-    assert_equal (len (blks), 2)
+    blks = self.node.generatetoaddress (1, addr1, None, 'sha256d')
+    assert_equal (len (blks), 1)
     self.assertBlocksSha256d (blks)
 
     # Verify that Neoscrypt blocks have a higher weight than SHA256 blocks:
@@ -65,13 +62,17 @@ class DualAlgoTest (BitcoinTestFramework):
     # reconsider the Neoscrypt chain, it should become the current best
     # (and its work should be larger, while its length is smaller than that
     # of the SHA256 chain).
+    #
+    # Note that we have to create the second chain of blocks to a different
+    # coinbase address.  Otherwise they might actually be identical and thus
+    # also "invalid"!
 
-    neoscryptBlks = self.node.generate (10, None, 'neoscrypt')
+    neoscryptBlks = self.node.generatetoaddress (10, addr1, None, 'neoscrypt')
     neoscryptData = self.node.getblock (neoscryptBlks[-1])
     assert_equal (self.node.getbestblockhash (), neoscryptBlks[-1])
 
     self.node.invalidateblock (neoscryptBlks[0])
-    shaBlks = self.node.generate (20, None, 'sha256d')
+    shaBlks = self.node.generatetoaddress (20, addr2, None, 'sha256d')
     shaData = self.node.getblock (shaBlks[-1])
     assert_equal (self.node.getbestblockhash (), shaBlks[-1])
 
@@ -86,7 +87,7 @@ class DualAlgoTest (BitcoinTestFramework):
     for algo in ['sha256d', 'neoscrypt']:
       found = False
       for trial in range (100):
-        blk = self.node.generate (1, None, algo)[0]
+        blk = self.node.generatetoaddress (1, addr1, None, algo)[0]
         data = self.node.getblock (blk)
         assert 'rngseed' in data
         if data['rngseed'][0] == 'f':
