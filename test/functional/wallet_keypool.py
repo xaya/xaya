@@ -76,11 +76,10 @@ class KeyPoolTest(BitcoinTestFramework):
         time.sleep(1.1)
         assert_equal(nodes[0].getwalletinfo()["unlocked_until"], 0)
 
-        # drain them by mining
-        nodes[0].generate(1)
-        nodes[0].generate(1)
-        nodes[0].generate(1)
-        assert_raises_rpc_error(-12, "Keypool ran out", nodes[0].generate, 1)
+        # drain the keypool
+        for _ in range(3):
+            nodes[0].getnewaddress()
+        assert_raises_rpc_error(-12, "Keypool ran out", nodes[0].getnewaddress)
 
         # test draining with getauxblock
         test_auxpow(nodes)
@@ -101,12 +100,12 @@ def test_auxpow(nodes):
     """
 
     nodes[0].walletpassphrase('test', 12000)
-    nodes[0].keypoolrefill(2)
+    nodes[0].keypoolrefill(1)
     nodes[0].walletlock()
-    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 2)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
 
     nodes[0].getauxblock()
-    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 2)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
     nodes[0].generate(1)
     assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
     auxblock = nodes[0].getauxblock()
