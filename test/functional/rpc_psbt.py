@@ -19,16 +19,13 @@ class PSBTTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = False
         self.num_nodes = 3
+        self.use_bitcoin_relay_fees = True
 
         # Upstream Bitcoin has p2sh-segwit as default address type and this
         # test depends on that.  Since we changed it (for now, pending
         # segwit activation in Namecoin), explicitly specify the address
         # type for this test.
-        args = [
-            "-addresstype=p2sh-segwit",
-            "-minrelaytxfee=0.00001",
-        ]
-        self.extra_args = [args] * self.num_nodes
+        self.extra_args = [["-addresstype=p2sh-segwit"]] * self.num_nodes
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
