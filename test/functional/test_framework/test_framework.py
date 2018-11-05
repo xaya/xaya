@@ -97,7 +97,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.rpc_timewait = 60  # Wait for up to 60 seconds for the RPC server to respond
         self.supports_cli = False
         self.bind_to_localhost_only = True
-        self.use_bitcoin_relay_fees = False
         self.set_test_params()
 
         assert hasattr(self, "num_nodes"), "Test must set self.num_nodes in set_test_params()"
@@ -288,21 +287,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             extra_confs = [[]] * num_nodes
         if extra_args is None:
             extra_args = [[]] * num_nodes
-
-        # Set the value of -minrelaytxfee to the default used in upstream
-        # Bitcoin (rather than the one from Namecoin) unless an explicit value
-        # is given.  This makes sure that tx fees hardcoded in some tests are
-        # adequate and do not need changes for Namecoin.
-        if self.use_bitcoin_relay_fees:
-            for args in extra_args:
-                explicit_relay_fee = False
-                for arg in args:
-                    if arg.startswith ("-minrelaytxfee"):
-                        explicit_relay_fee = True
-                        break
-                if not explicit_relay_fee:
-                    args.append ("-minrelaytxfee=0.00001")
-
         if binary is None:
             binary = [self.options.bitcoind] * num_nodes
         assert_equal(len(extra_confs), num_nodes)

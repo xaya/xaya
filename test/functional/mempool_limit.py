@@ -13,7 +13,6 @@ class MempoolLimitTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
-        self.use_bitcoin_relay_fees = True
         self.extra_args = [["-maxmempool=5", "-spendzeroconfchange=0"]]
 
     def skip_test_if_missing_module(self):

@@ -125,7 +125,6 @@ def check_estimates(node, fees_seen):
 class EstimateFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 3
-        self.use_bitcoin_relay_fees = True
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

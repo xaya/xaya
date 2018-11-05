@@ -183,7 +183,6 @@ class SegWitTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
-        self.use_bitcoin_relay_fees = True
         # This test tests SegWit both pre and post-activation, so use the normal BIP9 activation.
         self.extra_args = [["-whitelist=127.0.0.1"], ["-whitelist=127.0.0.1", "-acceptnonstdtxn=0"], ["-whitelist=127.0.0.1"]]
 

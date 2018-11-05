@@ -20,7 +20,6 @@ class WalletGroupTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 3
-        self.use_bitcoin_relay_fees = True
         self.extra_args = [[], [], ['-avoidpartialspends']]
         self.rpc_timewait = 120
 

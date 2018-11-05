@@ -19,7 +19,6 @@ class PSBTTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = False
         self.num_nodes = 3
-        self.use_bitcoin_relay_fees = True
 
         # Upstream Bitcoin has p2sh-segwit as default address type and this
         # test depends on that.  Since we changed it (for now, pending

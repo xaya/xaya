@@ -65,7 +65,6 @@ def make_utxo(node, amount, confirmed=True, scriptPubKey=CScript([1])):
 class ReplaceByFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
-        self.use_bitcoin_relay_fees = True
         self.extra_args = [
             [
                 "-maxorphantx=1000",

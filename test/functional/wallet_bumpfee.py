@@ -28,7 +28,6 @@ class BumpFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
         self.setup_clean_chain = True
-        self.use_bitcoin_relay_fees = True
         self.extra_args = [[
             "-walletrbf={}".format(i),
             "-mintxfee=0.00002",

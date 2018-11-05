@@ -96,7 +96,6 @@ class CompactBlocksTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         # Node0 = pre-segwit, node1 = segwit-aware
         self.num_nodes = 2
-        self.use_bitcoin_relay_fees = True
         # This test was written assuming SegWit is activated using BIP9 at height 432 (3x confirmation window).
         # TODO: Rewrite this test to support SegWit being always active.
         self.extra_args = [["-vbparams=segwit:0:0"], ["-vbparams=segwit:0:999999999999", "-txindex"]]

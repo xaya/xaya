@@ -34,7 +34,6 @@ from test_framework.util import (
 class MempoolAcceptanceTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
-        self.use_bitcoin_relay_fees = True
         self.extra_args = [[
             '-txindex',
             '-reindex',  # Need reindex for txindex
