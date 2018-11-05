@@ -125,6 +125,7 @@ def check_estimates(node, fees_seen):
 class EstimateFeeTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 3
+        self.use_bitcoin_relay_fees = True
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -135,9 +136,9 @@ class EstimateFeeTest(BitcoinTestFramework):
         But first we need to use one node to create a lot of outputs
         which we will use to generate our transactions.
         """
-        self.add_nodes(3, extra_args=[["-maxorphantx=1000", "-whitelist=127.0.0.1", "-minrelaytxfee=0.00001"],
-                                      ["-blockmaxweight=68000", "-maxorphantx=1000", "-minrelaytxfee=0.00001"],
-                                      ["-blockmaxweight=32000", "-maxorphantx=1000", "-minrelaytxfee=0.00001"]])
+        self.add_nodes(3, extra_args=[["-maxorphantx=1000", "-whitelist=127.0.0.1"],
+                                      ["-blockmaxweight=68000", "-maxorphantx=1000"],
+                                      ["-blockmaxweight=32000", "-maxorphantx=1000"]])
         # Use node0 to mine blocks for input splitting
         # Node1 mines small blocks but that are bigger than the expected transaction rate.
         # NOTE: the CreateNewBlock code starts counting block weight at 4,000 weight,
