@@ -110,6 +110,7 @@ class GameBlocksTest (BitcoinTestFramework):
     self.extra_args = [args]
     self.add_nodes (self.num_nodes, self.extra_args)
     self.start_nodes ()
+    self.import_deterministic_coinbase_privkeys()
 
     self.node = self.nodes[0]
 

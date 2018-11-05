@@ -6,7 +6,7 @@
 """
 
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, assert_raises_rpc_error, find_output
+from test_framework.util import assert_equal, assert_raises_rpc_error, find_output, disconnect_nodes, connect_nodes_bi, sync_blocks
 
 import json
 import os
@@ -24,12 +24,59 @@ class PSBTTest(BitcoinTestFramework):
         # test depends on that.  Since we changed it (for now, pending
         # segwit activation in Namecoin), explicitly specify the address
         # type for this test.
-        self.extra_args = [["-addresstype=p2sh-segwit"]] * self.num_nodes
+        args = [
+            "-addresstype=p2sh-segwit",
+            "-minrelaytxfee=0.00001",
+        ]
+        self.extra_args = [args] * self.num_nodes
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
 
+    def test_utxo_conversion(self):
+        mining_node = self.nodes[2]
+        offline_node = self.nodes[0]
+        online_node = self.nodes[1]
+
+        # Disconnect offline node from others
+        disconnect_nodes(offline_node, 1)
+        disconnect_nodes(online_node, 0)
+        disconnect_nodes(offline_node, 2)
+        disconnect_nodes(mining_node, 0)
+
+        # Mine a transaction that credits the offline address
+        offline_addr = offline_node.getnewaddress(address_type="p2sh-segwit")
+        online_addr = online_node.getnewaddress(address_type="p2sh-segwit")
+        online_node.importaddress(offline_addr, "", False)
+        mining_node.sendtoaddress(address=offline_addr, amount=1.0)
+        mining_node.generate(nblocks=1)
+        sync_blocks([mining_node, online_node])
+
+        # Construct an unsigned PSBT on the online node (who doesn't know the output is Segwit, so will include a non-witness UTXO)
+        utxos = online_node.listunspent(addresses=[offline_addr])
+        raw = online_node.createrawtransaction([{"txid":utxos[0]["txid"], "vout":utxos[0]["vout"]}],[{online_addr:0.9999}])
+        psbt = online_node.walletprocesspsbt(online_node.converttopsbt(raw))["psbt"]
+        assert("non_witness_utxo" in mining_node.decodepsbt(psbt)["inputs"][0])
+
+        # Have the offline node sign the PSBT (which will update the UTXO to segwit)
+        signed_psbt = offline_node.walletprocesspsbt(psbt)["psbt"]
+        assert("witness_utxo" in mining_node.decodepsbt(signed_psbt)["inputs"][0])
+
+        # Make sure we can mine the resulting transaction
+        txid = mining_node.sendrawtransaction(mining_node.finalizepsbt(signed_psbt)["hex"])
+        mining_node.generate(1)
+        sync_blocks([mining_node, online_node])
+        assert_equal(online_node.gettxout(txid,0)["confirmations"], 1)
+
+        # Reconnect
+        connect_nodes_bi(self.nodes, 0, 1)
+        connect_nodes_bi(self.nodes, 0, 2)
+
     def run_test(self):
+        # Activate segwit at height 432.
+        self.nodes[0].generate (500)
+        self.sync_all()
+
         # Create and fund a raw tx for sending 10 BTC
         psbtx1 = self.nodes[0].walletcreatefundedpsbt([], {self.nodes[2].getnewaddress():10})['psbt']
 
@@ -229,6 +276,12 @@ class PSBTTest(BitcoinTestFramework):
         for extractor in extractors:
             extracted = self.nodes[2].finalizepsbt(extractor['extract'], True)['hex']
             assert_equal(extracted, extractor['result'])
+
+        # Unload extra wallets
+        for i, signer in enumerate(signers):
+            self.nodes[2].unloadwallet("wallet{}".format(i))
+
+        self.test_utxo_conversion()
 
 
 if __name__ == '__main__':
