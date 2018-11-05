@@ -18,8 +18,8 @@ from test_framework.util import assert_equal, assert_raises_rpc_error, connect_n
 class AbandonConflictTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 2
-        self.extra_args = [["-minrelaytxfee=0.00001"],
-                           ["-minrelaytxfee=0.0001"]]
+        self.use_bitcoin_relay_fees = True
+        self.extra_args = [["-minrelaytxfee=0.00001"], []]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -149,7 +149,7 @@ class AbandonConflictTest(BitcoinTestFramework):
         inputs =[]
         inputs.append({"txid":txA, "vout":nA})
         outputs = {}
-        outputs[self.nodes[1].getnewaddress()] = Decimal("9.999")
+        outputs[self.nodes[1].getnewaddress()] = Decimal("9.9999")
         tx = self.nodes[0].createrawtransaction(inputs, outputs)
         signed = self.nodes[0].signrawtransactionwithwallet(tx)
         self.nodes[1].sendrawtransaction(signed["hex"])

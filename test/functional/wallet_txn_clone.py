@@ -15,6 +15,7 @@ from test_framework.util import (
 class TxnMallTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 4
+        self.use_bitcoin_relay_fees = True
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -43,7 +44,7 @@ class TxnMallTest(BitcoinTestFramework):
             assert_equal(self.nodes[i].getbalance(), starting_balance)
             self.nodes[i].getnewaddress()  # bug workaround, coins generated assigned to first getnewaddress!
 
-        self.nodes[0].settxfee(.005)
+        self.nodes[0].settxfee(.001)
 
         node0_address1 = self.nodes[0].getnewaddress(address_type=output_type)
         node0_txid1 = self.nodes[0].sendtoaddress(node0_address1, 1219)
