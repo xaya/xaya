@@ -1191,6 +1191,14 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
+    /* Special rule:  Before the post-ICO fork, the block reward is always set
+       to 1 CHI except for regtest net.  (The latter exception is so that
+       we do not have to update many magic values in tests.)  */
+    if (!consensusParams.fPowNoRetargeting
+          && !consensusParams.rules->ForkInEffect (Consensus::Fork::POST_ICO,
+                                                   nHeight))
+        return COIN;
+
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
@@ -1867,7 +1875,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                 //  artificially set the default assumed verified block further back.
                 // The test against nMinimumChainWork prevents the skipping when denied access to any chain at
                 //  least as good as the expected chain.
-                fScriptChecks = (GetBlockProofEquivalentTime(*pindexBestHeader, *pindex, *pindexBestHeader, chainparams.GetConsensus()) <= 60 * 60 * 24);
+                fScriptChecks = (GetBlockProofEquivalentTime(*pindexBestHeader, *pindex, *pindexBestHeader, chainparams.GetConsensus()) <= 60 * 60 * 12);
             }
         }
     }
@@ -3163,10 +3171,19 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     const int nHeight = pindexPrev->nHeight + 1;
 
     /* Verify Xaya's requirement that the main block header must have zero bits
-       and nonce.  */
-    if (block.nBits != 0 || block.nNonce != 0)
-        return state.Invalid(false, REJECT_INVALID, "nonzero-bits-nonce",
-                             "block header has non-zero nonce or bits");
+       (the difficulty is in the powdata instead).  */
+    if (block.nBits != 0)
+        return state.Invalid(false, REJECT_INVALID, "nonzero-bits",
+                             "block header has non-zero nonce");
+    /* Until the POST_ICO fork, also the nonce has to be zero.
+     *
+     * TODO: Remove this requirement after we are past the fork height!
+     */
+    if (!params.GetConsensus().rules->ForkInEffect(Consensus::Fork::POST_ICO,
+                                                   nHeight)
+          && block.nNonce != 0)
+        return state.Invalid(false, REJECT_INVALID, "nonzero-nonce",
+                             "block header has non-zero nonce");
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();

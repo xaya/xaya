@@ -213,6 +213,7 @@ BASE_SCRIPTS = [
     # Xaya-specific tests
     'xaya_dualalgo.py',
     'xaya_gameblocks.py',
+    'xaya_postico_fork.py',
     'xaya_premine.py',
 ]
 

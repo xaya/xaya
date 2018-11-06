@@ -172,19 +172,31 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
     }
 
     /* We have to correct the total chain work for the current difficulty.  This
-       also depends on the PoW algo.  In general, we expect one block of each
-       algo to be mined in each nPowTargetSpacing, as the difficulty retargeting
-       and thus the target spacing is valid for each algo independently.  If one
-       algo has never been used so far, then we simply skip its correction
-       (this is an edge case anyway).  */
-    r *= arith_uint256(params.nPowTargetSpacing);
+       also depends on the PoW algo.  During the timespan given in the
+       numerator (common multiple of the target spacings for all algorithms),
+       we expect a certain number of blocks from each algo and correct for
+       the expected work in those in the denominator.
+
+       If one algo has never been used so far, then we simply skip its
+       correction (this is an edge case anyway).
+
+       This is very similar to the implementation of AvgTargetSpacing in
+       chainparams.cpp.  */
+    arith_uint256 numer = 1;
     arith_uint256 denom;
     for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
       {
+        const arith_uint256 spacing
+            = params.rules->GetTargetSpacing (algo, tip.nHeight);
+        denom *= spacing;
+
         const CBlockIndex* pindexWithAlgo = tip.GetLastAncestorWithAlgo (algo);
         if (pindexWithAlgo != nullptr)
-          denom += GetBlockProof (*pindexWithAlgo);
+          denom += numer * GetBlockProof (*pindexWithAlgo);
+
+        numer *= spacing;
       }
+    r *= numer;
     assert (denom > 0);
     r /= denom;
 

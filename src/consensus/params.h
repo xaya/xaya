@@ -7,6 +7,7 @@
 #define BITCOIN_CONSENSUS_PARAMS_H
 
 #include <amount.h>
+#include <powdata.h>
 #include <uint256.h>
 #include <limits>
 #include <map>
@@ -15,6 +16,25 @@
 #include <memory>
 
 namespace Consensus {
+
+/**
+ * Identifiers for forks done on the network, so that validation code can
+ * easily just query whether or not a particular fork should be active and
+ * does not have to bother with the particular heights or other aspects.
+ */
+enum class Fork
+{
+
+  /**
+   * Fork done after the token sale.  This removed the requirement that the
+   * main (non-fakeheader) nonce must be zero in order to resolve
+   * https://github.com/xaya/xaya/issues/50.
+   *
+   * TODO: Also adjust block rewards to give the final coin supply.
+   */
+  POST_ICO,
+
+};
 
 /**
  * Interface for classes that define consensus behaviour in more
@@ -30,24 +50,100 @@ public:
     /* Return minimum locked amount in a name.  */
     virtual CAmount MinNameCoinAmount(unsigned nHeight) const = 0;
 
+    /**
+     * Returns the target spacing (time in seconds between blocks) for blocks
+     * of the given algorithm at the given height.
+     */
+    virtual int64_t GetTargetSpacing(PowAlgo algo, unsigned height) const = 0;
+
+    /**
+     * Checks whether a given fork is in effect at the given block height.
+     */
+    virtual bool ForkInEffect(Fork type, unsigned height) const = 0;
+
 };
 
 class MainNetConsensus : public ConsensusRules
 {
 public:
 
-    CAmount MinNameCoinAmount(unsigned nHeight) const
+    CAmount MinNameCoinAmount(unsigned nHeight) const override
     {
         return COIN / 100;
+    }
+
+    int64_t GetTargetSpacing(const PowAlgo algo,
+                             const unsigned height) const override
+    {
+        if (!ForkInEffect (Fork::POST_ICO, height))
+        {
+            /* The target spacing is independent for each mining algorithm,
+               so that the effective block frequency is half the value (with
+               two algos).  */
+            return 2 * 30;
+        }
+
+        /* After the POST_ICO fork, the target spacing is changed to have
+           still four blocks every two minutes (for an average of 30 seconds
+           per block), but three of them standalone and only one merge-mined.
+           This yields the desired 75%/25% split of block rewards.  */
+        switch (algo)
+        {
+            case PowAlgo::SHA256D:
+                return 120;
+            case PowAlgo::NEOSCRYPT:
+                return 40;
+            default:
+                assert(false);
+        }
+    }
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                /* FIXME: Set correct height once determined.  */
+                return height >= 1000000;
+            default:
+                assert (false);
+        }
     }
 
 };
 
 class TestNetConsensus : public MainNetConsensus
-{};
+{
+public:
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                return height >= 11000;
+            default:
+                assert (false);
+        }
+    }
+
+};
 
 class RegTestConsensus : public TestNetConsensus
-{};
+{
+public:
+
+    bool ForkInEffect(const Fork type, const unsigned height) const override
+    {
+        switch (type)
+        {
+            case Fork::POST_ICO:
+                return height >= 500;
+            default:
+                assert (false);
+        }
+    }
+};
 
 enum DeploymentPos
 {
@@ -104,7 +200,6 @@ struct Params {
     /** Proof of work parameters */
     uint256 powLimitNeoscrypt;
     bool fPowNoRetargeting;
-    int64_t nPowTargetSpacing;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 

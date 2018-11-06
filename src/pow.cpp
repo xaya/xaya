@@ -60,7 +60,9 @@ GetNextWorkRequired (const PowAlgo algo, const CBlockIndex* pindexLast,
 
   int64_t nActualTimespan = pindexLast->GetBlockTime ()
                               - pindexFirst->GetBlockTime ();
-  int64_t nTargetTimespan = nPastBlocks * params.nPowTargetSpacing;
+  const int nextHeight = pindexLast->nHeight + 1;
+  int64_t nTargetTimespan
+      = nPastBlocks * params.rules->GetTargetSpacing(algo, nextHeight);
 
   if (nActualTimespan < nTargetTimespan / 3)
     nActualTimespan = nTargetTimespan / 3;

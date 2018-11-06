@@ -5,6 +5,7 @@
 #include <powdata.h>
 
 #include <arith_uint256.h>
+#include <consensus/params.h>
 #include <util.h>
 
 #include <sstream>

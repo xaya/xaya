@@ -167,15 +167,14 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 4200000;
-        consensus.initialSubsidy = 1 * COIN;
+        /* FIXME: Set to actual value that yields the right total supply
+           after the post-ICO fork height is fixed.  */
+        consensus.initialSubsidy = 10 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        /* The target spacing is independent for each mining algorithm, so that
-           the effective block frequency is half the value (with two algos).  */
-        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016;
@@ -267,13 +266,12 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 4200000;
-        consensus.initialSubsidy = 1 * COIN;
+        consensus.initialSubsidy = 10 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016;
@@ -367,7 +365,6 @@ public:
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
         consensus.powLimitNeoscrypt = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.nPowTargetSpacing = 2 * 30;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)
@@ -512,4 +509,40 @@ void TurnOffSegwitForUnitTests ()
      we would have to have an explicit argument for BIP16.  */
   auto* params = const_cast<CChainParams*> (globalChainParams.get ());
   params->TurnOffSegwitForUnitTests ();
+}
+
+int64_t
+AvgTargetSpacing (const Consensus::Params& params, const unsigned height)
+{
+  /* The average target spacing for any block (all algorithms combined) is
+     computed by dividing some common multiple timespan of all spacings
+     by the number of blocks expected (all algorithms together) in that
+     time span.
+
+     The numerator is simply the product of all block times, while the
+     denominator is a sum of products that just excludes the current
+     algorithm (i.e. of all (N-1) tuples selected from the N algorithm
+     block times).  */
+  int64_t numer = 1;
+  int64_t denom = 0;
+  for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
+    {
+      const int64_t spacing = params.rules->GetTargetSpacing(algo, height);
+
+      /* Multiply all previous added block counts by this target spacing.  */
+      denom *= spacing;
+
+      /* Add the number of blocks for the current algorithm to the denominator.
+         This starts off with the product of all already-processed algorithms
+         (excluding the current one), and will be multiplied later on by
+         the still-to-be-processed ones (in the line above).  */
+      denom += numer;
+
+      /* The numerator is the product of all spacings.  */
+      numer *= spacing;
+    }
+
+  assert (denom > 0);
+  assert (numer % denom == 0);
+  return numer / denom;
 }
