@@ -1191,6 +1191,14 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
+    /* Special rule:  Before the post-ICO fork, the block reward is always set
+       to 1 CHI except for regtest net.  (The latter exception is so that
+       we do not have to update many magic values in tests.)  */
+    if (!consensusParams.fPowNoRetargeting
+          && !consensusParams.rules->ForkInEffect (Consensus::Fork::POST_ICO,
+                                                   nHeight))
+        return COIN;
+
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)

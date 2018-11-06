@@ -167,7 +167,9 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 4200000;
-        consensus.initialSubsidy = 1 * COIN;
+        /* FIXME: Set to actual value that yields the right total supply
+           after the post-ICO fork height is fixed.  */
+        consensus.initialSubsidy = 10 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
@@ -264,7 +266,7 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 4200000;
-        consensus.initialSubsidy = 1 * COIN;
+        consensus.initialSubsidy = 10 * COIN;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
