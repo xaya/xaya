@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE(subsidy_post_ico_fork_test)
     BOOST_CHECK_EQUAL(GetBlockSubsidy(1000000, main->GetConsensus()), 10 * COIN);
 
     const auto test = CreateChainParams(CBaseChainParams::TESTNET);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(999999, test->GetConsensus()), COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1000000, test->GetConsensus()), 10 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(10999, test->GetConsensus()), COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(11000, test->GetConsensus()), 10 * COIN);
 
     const auto regtest = CreateChainParams(CBaseChainParams::REGTEST);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(1, regtest->GetConsensus()), 50 * COIN);

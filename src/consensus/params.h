@@ -121,8 +121,7 @@ public:
         switch (type)
         {
             case Fork::POST_ICO:
-                /* FIXME: Set correct height once determined.  */
-                return height >= 1000000;
+                return height >= 11000;
             default:
                 assert (false);
         }
