@@ -148,6 +148,18 @@ class TestNode():
         if extra_args is None:
             extra_args = self.extra_args
 
+        # Set the value of -minrelaytxfee to the default used in upstream
+        # Bitcoin (rather than the one from Namecoin) unless an explicit value
+        # is given.  This makes sure that tx fees hardcoded in some tests are
+        # adequate and do not need changes for Namecoin.
+        explicit_relay_fee = False
+        for arg in extra_args:
+            if arg.startswith ("-minrelaytxfee"):
+                explicit_relay_fee = True
+                break
+        if not explicit_relay_fee:
+            extra_args.append ("-minrelaytxfee=0.00001")
+
         # Add a new stdout and stderr file each time bitcoind is started
         if stderr is None:
             stderr = tempfile.NamedTemporaryFile(dir=self.stderr_dir, delete=False)

@@ -328,14 +328,14 @@ class WalletTest(BitcoinTestFramework):
         tx_obj = self.nodes[0].gettransaction(txid)
         assert_equal(tx_obj['amount'], Decimal('-2'))
 
-        txid = self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), "0.001")
+        txid = self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), "0.0001")
         tx_obj = self.nodes[0].gettransaction(txid)
-        assert_equal(tx_obj['amount'], Decimal('-0.001'))
+        assert_equal(tx_obj['amount'], Decimal('-0.0001'))
 
         # check if JSON parser can handle scientific notation in strings
-        txid = self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), "1e-3")
+        txid = self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), "1e-4")
         tx_obj = self.nodes[0].gettransaction(txid)
-        assert_equal(tx_obj['amount'], Decimal('-0.001'))
+        assert_equal(tx_obj['amount'], Decimal('-0.0001'))
 
         # This will raise an exception because the amount type is wrong
         assert_raises_rpc_error(-3, "Invalid amount", self.nodes[0].sendtoaddress, self.nodes[2].getnewaddress(), "1f-4")
@@ -448,13 +448,13 @@ class WalletTest(BitcoinTestFramework):
         sending_addr = self.nodes[1].getnewaddress()
         txid_list = []
         for i in range(chainlimit * 2):
-            txid_list.append(self.nodes[0].sendtoaddress(sending_addr, Decimal('0.001')))
+            txid_list.append(self.nodes[0].sendtoaddress(sending_addr, Decimal('0.0001')))
         assert_equal(self.nodes[0].getmempoolinfo()['size'], chainlimit * 2)
         assert_equal(len(txid_list), chainlimit * 2)
 
         # Without walletrejectlongchains, we will still generate a txid
         # The tx will be stored in the wallet but not accepted to the mempool
-        extra_txid = self.nodes[0].sendtoaddress(sending_addr, Decimal('0.001'))
+        extra_txid = self.nodes[0].sendtoaddress(sending_addr, Decimal('0.0001'))
         assert(extra_txid not in self.nodes[0].getrawmempool())
         assert(extra_txid in [tx["txid"] for tx in self.nodes[0].listtransactions()])
         self.nodes[0].abandontransaction(extra_txid)
