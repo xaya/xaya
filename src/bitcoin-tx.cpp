@@ -20,9 +20,9 @@
 #include <script/script.h>
 #include <script/sign.h>
 #include <univalue.h>
-#include <util.h>
-#include <utilmoneystr.h>
-#include <utilstrencodings.h>
+#include <util/system.h>
+#include <util/moneystr.h>
+#include <util/strencodings.h>
 
 #include <memory>
 #include <stdio.h>
@@ -272,7 +272,7 @@ static void MutateTxAddInput(CMutableTransaction& tx, const std::string& strInpu
         throw std::runtime_error("invalid TX input vout '" + strVout + "'");
 
     // extract the optional sequence number
-    uint32_t nSequenceIn=std::numeric_limits<unsigned int>::max();
+    uint32_t nSequenceIn = CTxIn::SEQUENCE_FINAL;
     if (vStrInputParts.size() > 2)
         nSequenceIn = std::stoul(vStrInputParts[2]);
 

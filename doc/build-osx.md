@@ -80,9 +80,9 @@ Running
 
 Namecoin Core is now available at `./src/namecoind`
 
-Before running, it's recommended that you create an RPC configuration file:
+Before running, you may create an empty configuration file:
 
-    echo -e "rpcuser=namecoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
+    touch "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
 
     chmod 600 "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
 

@@ -9,8 +9,8 @@
 #include <chainparams.h>
 #include <net.h>
 #include <rpc/protocol.h>
-#include <utilstrencodings.h>
-#include <utiltime.h>
+#include <util/strencodings.h>
+#include <util/time.h>
 #include <validation.h>
 
 #include <cassert>

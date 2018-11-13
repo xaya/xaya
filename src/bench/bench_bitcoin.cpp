@@ -7,8 +7,8 @@
 #include <crypto/sha256.h>
 #include <key.h>
 #include <random.h>
-#include <util.h>
-#include <utilstrencodings.h>
+#include <util/system.h>
+#include <util/strencodings.h>
 #include <validation.h>
 
 #include <memory>
@@ -50,6 +50,11 @@ static fs::path SetDataDir()
 
 int main(int argc, char** argv)
 {
+    /* FIXME: Re-enable benchmarking after it has been fixed for auxpow.
+       See https://github.com/namecoin/namecoin-core/issues/273.  */
+    fprintf(stderr, "bench_bitcoin is disabled in Namecoin/Auxpow\n");
+    return EXIT_SUCCESS;
+
     SetupBenchArgs();
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {

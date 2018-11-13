@@ -14,8 +14,8 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <undo.h>
-#include <util.h>
-#include <utilstrencodings.h>
+#include <util/system.h>
+#include <util/strencodings.h>
 #include <validation.h>
 
 /**

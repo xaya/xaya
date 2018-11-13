@@ -13,7 +13,7 @@
 #include <script/names.h>
 #include <shutdown.h>
 #include <uint256.h>
-#include <util.h>
+#include <util/system.h>
 #include <ui_interface.h>
 #include <validation.h>
 

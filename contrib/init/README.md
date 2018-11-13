@@ -5,7 +5,7 @@ Upstart: namecoind.conf
 OpenRC:  namecoind.openrc
          namecoind.openrcconf
 CentOS:  namecoind.init
-macOS:    org.namecoin.namecoind.plist
+macOS:   org.namecoin.namecoind.plist
 ```
 have been made available to assist packagers in creating node packages here.
 

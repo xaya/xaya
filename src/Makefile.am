@@ -126,6 +126,7 @@ BITCOIN_CORE_H = \
   index/txindex.h \
   indirectmap.h \
   init.h \
+  interfaces/chain.h \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
@@ -189,10 +190,11 @@ BITCOIN_CORE_H = \
   txmempool.h \
   ui_interface.h \
   undo.h \
-  util.h \
-  utilmemory.h \
-  utilmoneystr.h \
-  utiltime.h \
+  util/bytevectorhash.h \
+  util/system.h \
+  util/memory.h \
+  util/moneystr.h \
+  util/time.h \
   validation.h \
   validationinterface.h \
   versionbits.h \
@@ -238,6 +240,7 @@ libbitcoin_server_a_SOURCES = \
   httpserver.cpp \
   index/base.cpp \
   index/txindex.cpp \
+  interfaces/chain.cpp \
   interfaces/handler.cpp \
   interfaces/node.cpp \
   init.cpp \
@@ -331,7 +334,9 @@ crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/sha256.cpp \
   crypto/sha256.h \
   crypto/sha512.cpp \
-  crypto/sha512.h
+  crypto/sha512.h \
+  crypto/siphash.cpp \
+  crypto/siphash.h
 
 if USE_ASM
 crypto_libbitcoin_crypto_base_a_SOURCES += crypto/sha256_sse4.cpp
@@ -391,8 +396,8 @@ libbitcoin_consensus_a_SOURCES = \
   tinyformat.h \
   uint256.cpp \
   uint256.h \
-  utilstrencodings.cpp \
-  utilstrencodings.h \
+  util/strencodings.cpp \
+  util/strencodings.h \
   version.h
 
 # common: shared between bitcoind, and bitcoin-qt and non-server tools
@@ -444,10 +449,11 @@ libbitcoin_util_a_SOURCES = \
   support/cleanse.cpp \
   sync.cpp \
   threadinterrupt.cpp \
-  util.cpp \
-  utilmoneystr.cpp \
-  utilstrencodings.cpp \
-  utiltime.cpp \
+  util/bytevectorhash.cpp \
+  util/system.cpp \
+  util/moneystr.cpp \
+  util/strencodings.cpp \
+  util/time.cpp \
   $(BITCOIN_CORE_H)
 
 if GLIBC_BACK_COMPAT
@@ -478,6 +484,7 @@ endif
 namecoind_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \

@@ -8,7 +8,7 @@
 #include <hash.h>
 #include <script/names.h>
 #include <tinyformat.h>
-#include <utilstrencodings.h>
+#include <util/strencodings.h>
 
 std::string COutPoint::ToString() const
 {

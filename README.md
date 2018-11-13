@@ -45,7 +45,8 @@ The `master` branch is regularly built and tested, but is not guaranteed to be
 completely stable. [Tags](https://github.com/namecoin/namecoin-core/tags) are created
 regularly to indicate new official, stable release versions of Namecoin Core.
 
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
+The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md)
+and useful hints for developers can be found in [doc/developer-notes.md](doc/developer-notes.md).
 
 The developer [forum](https://forum.namecoin.info/viewforum.php?f=4)
 should be used to discuss complicated or controversial changes before working
