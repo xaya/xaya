@@ -73,11 +73,9 @@ class ReplaceByFeeTest(BitcoinTestFramework):
                 "-limitancestorsize=101",
                 "-limitdescendantcount=200",
                 "-limitdescendantsize=101",
-                "-minrelaytxfee=0.00001",
             ],
             [
                 "-mempoolreplacement=0",
-                "-minrelaytxfee=0.00001",
             ],
         ]
 
