@@ -11,8 +11,8 @@
 #include <primitives/pureheader.h>
 #include <rpc/protocol.h>
 #include <streams.h>
-#include <utilstrencodings.h>
-#include <utiltime.h>
+#include <util/strencodings.h>
+#include <util/time.h>
 #include <validation.h>
 
 #include <cassert>

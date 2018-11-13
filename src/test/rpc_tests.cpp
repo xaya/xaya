@@ -4,8 +4,11 @@
 
 #include <rpc/server.h>
 #include <rpc/client.h>
+#include <rpc/util.h>
 
 #include <core_io.h>
+#include <init.h>
+#include <interfaces/chain.h>
 #include <key_io.h>
 #include <netbase.h>
 
@@ -112,10 +115,14 @@ BOOST_AUTO_TEST_CASE(rpc_rawsign)
     std::string notsigned = r.get_str();
     std::string privkey1 = "\"LJ2o7vXx5pvLL7gHdA7GYmb5eB7BpkXxSE47oqvH4fbH4pYrs6Bx\"";
     std::string privkey2 = "\"LGrtoQ4hfmGE1ifdG8NwnDuSfP8o69bybqQarvwbKmXiHvmLscJV\"";
+    InitInterfaces interfaces;
+    interfaces.chain = interfaces::MakeChain();
+    g_rpc_interfaces = &interfaces;
     r = CallRPC(std::string("signrawtransactionwithkey ")+notsigned+" [] "+prevout);
     BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == false);
     r = CallRPC(std::string("signrawtransactionwithkey ")+notsigned+" ["+privkey1+","+privkey2+"] "+prevout);
     BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == true);
+    g_rpc_interfaces = nullptr;
 }
 
 BOOST_AUTO_TEST_CASE(rpc_createraw_op_return)

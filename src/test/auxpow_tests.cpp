@@ -12,8 +12,8 @@
 #include <primitives/block.h>
 #include <rpc/auxpow_miner.h>
 #include <script/script.h>
-#include <utilstrencodings.h>
-#include <utiltime.h>
+#include <util/strencodings.h>
+#include <util/time.h>
 #include <uint256.h>
 #include <univalue.h>
 

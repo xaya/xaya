@@ -80,9 +80,9 @@ Running
 
 Xaya is now available at `./src/xayad`
 
-Before running, it's recommended that you create an RPC configuration file:
+Before running, you may create an empty configuration file:
 
-    echo -e "rpcuser=xayarpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
+    touch "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
 
     chmod 600 "/Users/${USER}/Library/Application Support/Xaya/xaya.conf"
 

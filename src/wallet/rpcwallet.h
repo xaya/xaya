@@ -5,7 +5,9 @@
 #ifndef BITCOIN_WALLET_RPCWALLET_H
 #define BITCOIN_WALLET_RPCWALLET_H
 
-#include <map>
+#include <interfaces/chain.h>
+#include <wallet/walletutil.h>
+
 #include <string>
 
 class CCoinControl;
@@ -16,8 +18,6 @@ class JSONRPCRequest;
 class UniValue;
 struct PartiallySignedTransaction;
 class CTransaction;
-
-typedef std::map<std::string, std::string> mapValue_t;
 
 void RegisterWalletRPCCommands(CRPCTable &t);
 
@@ -32,7 +32,8 @@ std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& reques
 std::string HelpRequiringPassphrase(CWallet *);
 void EnsureWalletIsUnlocked(CWallet *);
 bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
-CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
+CTransactionRef SendMoneyToScript(interfaces::Chain::Lock& locked_chain,
+                                  CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,
                                   bool fSubtractFeeFromAmount,
                                   const CCoinControl& coin_control,
@@ -40,5 +41,5 @@ CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
-bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, const CTransaction* txConst, int sighash_type = 1, bool sign = true, bool bip32derivs = false);
+bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, int sighash_type = 1 /* SIGHASH_ALL */, bool sign = true, bool bip32derivs = false);
 #endif //BITCOIN_WALLET_RPCWALLET_H

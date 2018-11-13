@@ -11,8 +11,8 @@
 #include <rpc/server.h>
 #include <script/script.h>
 #include <uint256.h>
-#include <util.h>
-#include <utilstrencodings.h>
+#include <util/strencodings.h>
+#include <util/system.h>
 #include <validation.h>
 #include <zmq/zmqgames.h>
 #include <zmq/zmqnotificationinterface.h>

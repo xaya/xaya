@@ -9,7 +9,7 @@
 #include <hash.h>
 #include <powdata.h>
 #include <streams.h>
-#include <utilstrencodings.h>
+#include <util/strencodings.h>
 
 #include <algorithm>
 #include <cassert>

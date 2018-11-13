@@ -6,7 +6,7 @@
 
 #include <arith_uint256.h>
 #include <consensus/params.h>
-#include <util.h>
+#include <util/system.h>
 
 #include <sstream>
 #include <stdexcept>

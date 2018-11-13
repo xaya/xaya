@@ -7,6 +7,7 @@
 #include <coins.h>
 #include <consensus/merkle.h>
 #include <consensus/validation.h>
+#include <crypto/sha256.h>
 #include <miner.h>
 #include <policy/policy.h>
 #include <pow.h>
@@ -14,7 +15,7 @@
 #include <scheduler.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <utiltime.h>
+#include <util/time.h>
 #include <validation.h>
 #include <validationinterface.h>
 

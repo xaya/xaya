@@ -6,6 +6,7 @@
 #include <coins.h>
 #include <consensus/validation.h>
 #include <init.h>
+#include <interfaces/chain.h>
 #include <key_io.h>
 #include <names/common.h>
 #include <names/encoding.h>
@@ -18,10 +19,11 @@
 #include <rpc/server.h>
 #include <script/names.h>
 #include <txmempool.h>
-#include <util.h>
-#include <utilmoneystr.h>
+#include <util/system.h>
+#include <util/moneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
+#include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 
 #include <univalue.h>
@@ -121,7 +123,8 @@ void DestinationAddressHelper::finalise ()
  * also implements the "sendCoins" option, if included.
  */
 CTransactionRef
-SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
+SendNameOutput (interfaces::Chain::Lock& locked_chain,
+                CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
   RPCTypeCheckObj (opt,
@@ -187,7 +190,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
   int nChangePosRet = -1;
 
   CTransactionRef tx;
-  if (!wallet.CreateTransaction (vecSend, nameInput, tx, keyChange,
+  if (!wallet.CreateTransaction (locked_chain, vecSend,
+                                 nameInput, tx, keyChange,
                                  nFeeRequired, nChangePosRet, strError,
                                  coinControl))
     {
@@ -252,8 +256,14 @@ name_list (const JSONRPCRequest& request)
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
 
+  /* Make sure the results are valid at least up to the most recent block
+     the user could have gotten from another RPC command prior to now.  */
+  pwallet->BlockUntilSyncedToCurrentChain ();
+
   {
-  LOCK2 (cs_main, pwallet->cs_wallet);
+  auto locked_chain = pwallet->chain ().lock ();
+  LOCK (pwallet->cs_wallet);
+
   const int tipHeight = chainActive.Height ();
   for (const auto& item : pwallet->mapWallet)
     {
@@ -284,7 +294,7 @@ name_list (const JSONRPCRequest& request)
       if (!nameFilter.empty () && nameFilter != name)
         continue;
 
-      const int depth = tx.GetDepthInMainChain ();
+      const int depth = tx.GetDepthInMainChain (*locked_chain);
       if (depth <= 0)
         continue;
       const int height = tipHeight - depth + 1;
@@ -382,7 +392,12 @@ name_register (const JSONRPCRequest& request)
                           "this name exists already");
   }
 
-  /* No more locking required, similarly to name_new.  */
+  /* Make sure the results are valid at least up to the most recent block
+     the user could have gotten from another RPC command prior to now.  */
+  pwallet->BlockUntilSyncedToCurrentChain ();
+
+  auto locked_chain = pwallet->chain ().lock ();
+  LOCK (pwallet->cs_wallet);
 
   EnsureWalletIsUnlocked (pwallet);
 
@@ -393,7 +408,8 @@ name_register (const JSONRPCRequest& request)
     = CNameScript::buildNameRegister (destHelper.getScript (), name, value);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, nullptr, options);
+  CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
+                                       nameScript, nullptr, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -468,7 +484,12 @@ name_update (const JSONRPCRequest& request)
   const COutPoint outp = oldData.getUpdateOutpoint ();
   const CTxIn txIn(outp);
 
-  /* No more locking required, similarly to name_new.  */
+  /* Make sure the results are valid at least up to the most recent block
+     the user could have gotten from another RPC command prior to now.  */
+  pwallet->BlockUntilSyncedToCurrentChain ();
+
+  auto locked_chain = pwallet->chain ().lock ();
+  LOCK (pwallet->cs_wallet);
 
   EnsureWalletIsUnlocked (pwallet);
 
@@ -479,7 +500,8 @@ name_update (const JSONRPCRequest& request)
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
   CCoinControl coinControl;
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
+  CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
+                                       nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -536,7 +558,12 @@ sendtoname (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
-  LOCK2 (cs_main, pwallet->cs_wallet);
+  /* Make sure the results are valid at least up to the most recent block
+     the user could have gotten from another RPC command prior to now.  */
+  pwallet->BlockUntilSyncedToCurrentChain();
+
+  auto locked_chain = pwallet->chain().lock();
+  LOCK(pwallet->cs_wallet);
 
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
@@ -588,7 +615,8 @@ sendtoname (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked(pwallet);
 
-  CTransactionRef tx = SendMoneyToScript (pwallet, data.getAddress (), nullptr,
+  CTransactionRef tx = SendMoneyToScript (*locked_chain, pwallet,
+                                          data.getAddress (), nullptr,
                                           nAmount, fSubtractFeeFromAmount,
                                           coin_control, std::move(mapValue));
   return tx->GetHash ().GetHex ();
