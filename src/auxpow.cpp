@@ -13,8 +13,8 @@
 #include <hash.h>
 #include <primitives/block.h>
 #include <script/script.h>
-#include <util.h>
-#include <utilstrencodings.h>
+#include <util/strencodings.h>
+#include <util/system.h>
 
 #include <algorithm>
 #include <cassert>
