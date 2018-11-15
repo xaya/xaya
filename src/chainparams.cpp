@@ -186,13 +186,13 @@ public:
         // BIP147) are deployed together with P2SH.
 
         // The best chain should have at least this much work.
-        // The value is the chain work of the Namecoin mainnet chain at height
-        // 60,000, with best block hash:
-        // de8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000237ea631ca515c459e211");
+        // The value is the chain work of the Xaya mainnet chain at height
+        // 340,000, with best block hash:
+        // e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000f469d71a33ceda65de424");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xde8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9"); //60000
+        consensus.defaultAssumeValid = uint256S("0xe685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47"); // 340,000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -237,15 +237,16 @@ public:
 
         checkpointData = {
             {
-                {     0, uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656")},
+                {      0, uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656")},
+                { 340000, uint256S("e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 de8764d0a6af200416c709b9e652b62bffafe0bc2dfe921821d64e5b0fa827b9
-            /* nTime    */ 1533365986,
-            /* nTxCount */ 65597,
-            /* dTxRate  */ 0.035
+            // Data from rpc: getchaintxstats 4096 e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47
+            /* nTime    */ 1542180015,
+            /* nTxCount */ 362878,
+            /* dTxRate  */ 0.03627
         };
 
         /* disable fallback fee on mainnet */
@@ -282,11 +283,13 @@ public:
         // CSV (BIP68, BIP112 and BIP113) as well as segwit (BIP141, BIP143 and
         // BIP147) are deployed together with P2SH.
 
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00");
+        // The value is the chain work of the Xaya testnet chain at height
+        // 11,000 with best block hash:
+        // 57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000bce71d485b9");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x00");
+        consensus.defaultAssumeValid = uint256S("0x57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4"); // 11,000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -330,13 +333,15 @@ public:
         checkpointData = {
             {
                 {     0, uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578")},
+                { 11000, uint256S("57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4")},
             }
         };
 
         chainTxData = ChainTxData{
-            0,
-            0,
-            0
+            // Data from rpc: getchaintxstats 4096 57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4
+            /* nTime    */ 1541635161,
+            /* nTxCount */ 12842,
+            /* dTxRate  */ 0.00047259
         };
 
         /* enable fallback fee on testnet */
