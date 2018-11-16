@@ -224,8 +224,16 @@ bool CScript::IsPayToWitnessScriptHash(bool allowNames) const
 
 // A witness program is any valid CScript that consists of a 1-byte push opcode
 // followed by a data push between 2 and 40 bytes.
-bool CScript::IsWitnessProgram(int& version, std::vector<unsigned char>& program) const
+bool CScript::IsWitnessProgram(const bool allowNames, int& version, std::vector<unsigned char>& program) const
 {
+    // Strip off a name prefix if present.
+    if (allowNames)
+      {
+        const CNameScript nameOp(*this);
+        return nameOp.getAddress().IsWitnessProgram(false, version, program);
+      }
+
+    // Handle the case without name prefix.
     if (this->size() < 4 || this->size() > 42) {
         return false;
     }

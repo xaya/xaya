@@ -105,7 +105,7 @@ txnouttype Solver(const CScript& scriptPubKey, std::vector<std::vector<unsigned 
 
     int witnessversion;
     std::vector<unsigned char> witnessprogram;
-    if (script.IsWitnessProgram(witnessversion, witnessprogram)) {
+    if (script.IsWitnessProgram(false, witnessversion, witnessprogram)) {
         if (witnessversion == 0 && witnessprogram.size() == WITNESS_V0_KEYHASH_SIZE) {
             vSolutionsRet.push_back(witnessprogram);
             return TX_WITNESS_V0_KEYHASH;
