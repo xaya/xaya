@@ -213,6 +213,7 @@ BASE_SCRIPTS = [
     'name_registration.py',
     'name_reorg.py',
     'name_scanning.py',
+    'name_segwit.py',
     'name_sendcoins.py',
     'name_utxo.py',
     'name_wallet.py',
