@@ -95,6 +95,7 @@ endif
 BITCOIN_CORE_H = \
   addrdb.h \
   addrman.h \
+  attributes.h \
   auxpow.h \
   base58.h \
   bech32.h \

@@ -66,7 +66,7 @@ class InvalidMessagesTest(BitcoinTestFramework):
         msg_at_size = msg_unrecognized("b" * valid_data_limit)
         assert len(msg_at_size.serialize()) == msg_limit
 
-        with node.assert_memory_usage_stable(perc_increase_allowed=0.5):
+        with node.assert_memory_usage_stable(perc_increase_allowed=1.0):
             self.log.info(
                 "Sending a bunch of large, junk messages to test "
                 "memory exhaustion. May take a bit...")

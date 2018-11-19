@@ -159,6 +159,7 @@ BASE_SCRIPTS = [
     'feature_nulldummy.py',
     'mempool_accept.py',
     'wallet_import_rescan.py',
+    'wallet_import_with_label.py',
     'rpc_bind.py --ipv4',
     'rpc_bind.py --ipv6',
     'rpc_bind.py --nonloopback',
@@ -380,7 +381,7 @@ def run_tests(*, test_list, src_dir, build_dir, tmpdir, jobs=1, enable_coverage=
         tmpdir=tmpdir,
         test_list=test_list,
         flags=flags,
-        timeout_duration=20 * 60 if runs_ci else float('inf'),  # in seconds
+        timeout_duration=40 * 60 if runs_ci else float('inf'),  # in seconds
     )
     start_time = time.time()
     test_results = []
