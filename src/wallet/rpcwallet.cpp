@@ -719,7 +719,7 @@ static UniValue getbalance(const JSONRPCRequest& request)
 
     if (request.fHelp || (request.params.size() > 3 ))
         throw std::runtime_error(
-            "getbalance ( \"(dummy)\" minconf include_watchonly )\n"
+            "getbalance ( \"dummy\" minconf include_watchonly )\n"
             "\nReturns the total available balance.\n"
             "The available balance is what the wallet considers currently spendable, and is\n"
             "thus affected by options which limit spendability such as -spendzeroconfchange.\n"
@@ -1287,25 +1287,26 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
 /**
  * List transactions based on the given criteria.
  *
- * @param  pwallet    The wallet.
- * @param  wtx        The wallet transaction.
- * @param  nMinDepth  The minimum confirmation depth.
- * @param  fLong      Whether to include the JSON version of the transaction.
- * @param  ret        The UniValue into which the result is stored.
- * @param  filter     The "is mine" filter bool.
+ * @param  pwallet        The wallet.
+ * @param  wtx            The wallet transaction.
+ * @param  nMinDepth      The minimum confirmation depth.
+ * @param  fLong          Whether to include the JSON version of the transaction.
+ * @param  ret            The UniValue into which the result is stored.
+ * @param  filter_ismine  The "is mine" filter flags.
+ * @param  filter_label   Optional label string to filter incoming transactions.
  */
-static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter)
+static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter_ismine, const std::string* filter_label)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
     std::list<COutputEntry> listSent;
 
-    wtx.GetAmounts(listReceived, listSent, nFee, filter);
+    wtx.GetAmounts(listReceived, listSent, nFee, filter_ismine);
 
     bool involvesWatchonly = wtx.IsFromMe(ISMINE_WATCH_ONLY);
 
     // Sent
-    if ((!listSent.empty() || nFee != 0))
+    if (!filter_label)
     {
         for (const COutputEntry& s : listSent)
         {
@@ -1338,6 +1339,9 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             std::string label;
             if (pwallet->mapAddressBook.count(r.destination)) {
                 label = pwallet->mapAddressBook[r.destination].name;
+            }
+            if (filter_label && label != *filter_label) {
+                continue;
             }
             UniValue entry(UniValue::VOBJ);
             if (involvesWatchonly || (::IsMine(*pwallet, r.destination) & ISMINE_WATCH_ONLY)) {
@@ -1382,10 +1386,12 @@ UniValue listtransactions(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 4)
         throw std::runtime_error(
-            "listtransactions (dummy count skip include_watchonly)\n"
+            "listtransactions ( \"label\" count skip include_watchonly )\n"
+            "\nIf a label name is provided, this will return only incoming transactions paying to addresses with the specified label.\n"
             "\nReturns up to 'count' most recent transactions skipping the first 'from' transactions.\n"
             "\nArguments:\n"
-            "1. \"dummy\"    (string, optional) If set, should be \"*\" for backwards compatibility.\n"
+            "1. \"label\"    (string, optional) If set, should be a valid label name to return only incoming transactions\n"
+            "              with the specified label, or \"*\" to disable filtering and return all transactions.\n"
             "2. count          (numeric, optional, default=10) The number of transactions to return\n"
             "3. skip           (numeric, optional, default=0) The number of transactions to skip\n"
             "4. include_watchonly (bool, optional, default=false) Include transactions to watch-only addresses (see 'importaddress')\n"
@@ -1430,8 +1436,12 @@ UniValue listtransactions(const JSONRPCRequest& request)
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
+    const std::string* filter_label = nullptr;
     if (!request.params[0].isNull() && request.params[0].get_str() != "*") {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Dummy value must be set to \"*\"");
+        filter_label = &request.params[0].get_str();
+        if (filter_label->empty()) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Label argument must be a valid label name or \"*\".");
+        }
     }
     int nCount = 10;
     if (!request.params[1].isNull())
@@ -1461,7 +1471,7 @@ UniValue listtransactions(const JSONRPCRequest& request)
         for (CWallet::TxItems::const_reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
         {
             CWalletTx *const pwtx = (*it).second;
-            ListTransactions(*locked_chain, pwallet, *pwtx, 0, true, ret, filter);
+            ListTransactions(*locked_chain, pwallet, *pwtx, 0, true, ret, filter, filter_label);
             if ((int)ret.size() >= (nCount+nFrom)) break;
         }
     }
@@ -1598,7 +1608,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
         CWalletTx tx = pairWtx.second;
 
         if (depth == -1 || tx.GetDepthInMainChain(*locked_chain) < depth) {
-            ListTransactions(*locked_chain, pwallet, tx, 0, true, transactions, filter);
+            ListTransactions(*locked_chain, pwallet, tx, 0, true, transactions, filter, nullptr /* filter_label */);
         }
     }
 
@@ -1615,7 +1625,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
             if (it != pwallet->mapWallet.end()) {
                 // We want all transactions regardless of confirmation count to appear here,
                 // even negative confirmation ones, hence the big negative.
-                ListTransactions(*locked_chain, pwallet, it->second, -100000000, true, removed, filter);
+                ListTransactions(*locked_chain, pwallet, it->second, -100000000, true, removed, filter, nullptr /* filter_label */);
             }
         }
         paltindex = paltindex->pprev;
@@ -1718,7 +1728,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
     WalletTxToJSON(pwallet->chain(), *locked_chain, wtx, entry);
 
     UniValue details(UniValue::VARR);
-    ListTransactions(*locked_chain, pwallet, wtx, 0, false, details, filter);
+    ListTransactions(*locked_chain, pwallet, wtx, 0, false, details, filter, nullptr /* filter_label */);
     entry.pushKV("details", details);
 
     std::string strHex = EncodeHexTx(*wtx.tx, RPCSerializationFlags());
@@ -2105,7 +2115,21 @@ static UniValue lockunspent(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
-            "lockunspent unlock ([{\"txid\":\"txid\",\"vout\":n},...])\n"
+            RPCHelpMan{"lockunspent",
+                {
+                    {"unlock", RPCArg::Type::BOOL, false},
+                    {"transactions", RPCArg::Type::ARR,
+                        {
+                            {"", RPCArg::Type::OBJ,
+                                {
+                                    {"txid", RPCArg::Type::STR_HEX, false},
+                                    {"vout", RPCArg::Type::NUM, false},
+                                },
+                                true},
+                        },
+                        true},
+                }}
+                .ToString() +
             "\nUpdates list of temporarily unspendable outputs.\n"
             "Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.\n"
             "If no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.\n"
@@ -2650,7 +2674,26 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 5)
         throw std::runtime_error(
-            "listunspent ( minconf maxconf  [\"addresses\",...] [include_unsafe] [query_options])\n"
+            RPCHelpMan{"listunspent",
+                {
+                    {"minconf", RPCArg::Type::NUM, true},
+                    {"maxconf", RPCArg::Type::NUM, true},
+                    {"addresses", RPCArg::Type::ARR,
+                        {
+                            {"address", RPCArg::Type::STR_HEX, true},
+                        },
+                        true},
+                    {"include_unsafe", RPCArg::Type::BOOL, true},
+                    {"query_options", RPCArg::Type::OBJ,
+                        {
+                            {"minimumAmount", RPCArg::Type::AMOUNT, true},
+                            {"maximumAmount", RPCArg::Type::AMOUNT, true},
+                            {"maximumCount", RPCArg::Type::NUM, true},
+                            {"minimumSumAmount", RPCArg::Type::AMOUNT, true},
+                        },
+                        true},
+                }}
+                .ToString() +
             "\nReturns array of unspent transaction outputs\n"
             "with between minconf and maxconf (inclusive) confirmations.\n"
             "Optionally filter to only include txouts paid to specified addresses.\n"
@@ -3056,7 +3099,25 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
-            "signrawtransactionwithwallet \"hexstring\" ( [{\"txid\":\"id\",\"vout\":n,\"scriptPubKey\":\"hex\",\"redeemScript\":\"hex\"},...] sighashtype )\n"
+            RPCHelpMan{"signrawtransactionwithwallet",
+                {
+                    {"hexstring", RPCArg::Type::STR, false},
+                    {"prevtxs", RPCArg::Type::ARR,
+                        {
+                            {"", RPCArg::Type::OBJ,
+                                {
+                                    {"txid", RPCArg::Type::STR_HEX, false},
+                                    {"vout", RPCArg::Type::NUM, false},
+                                    {"scriptPubKey", RPCArg::Type::STR_HEX, false},
+                                    {"redeemScript", RPCArg::Type::STR_HEX, false},
+                                    {"amount", RPCArg::Type::AMOUNT, false},
+                                },
+                                false},
+                        },
+                        true},
+                    {"sighashtype", RPCArg::Type::STR, true},
+                }}
+                .ToString() +
             "\nSign inputs for raw transaction (serialized, hex-encoded).\n"
             "The second optional argument (may be null) is an array of previous transaction outputs that\n"
             "this transaction depends on but may not yet be in the block chain.\n"
@@ -3963,7 +4024,55 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() < 2 || request.params.size() > 5)
         throw std::runtime_error(
-                            "walletcreatefundedpsbt [{\"txid\":\"id\",\"vout\":n},...] [{\"address\":amount},{\"data\":\"hex\"},...] ( locktime ) ( replaceable ) ( options bip32derivs )\n"
+            RPCHelpMan{"walletcreatefundedpsbt",
+                {
+                    {"inputs", RPCArg::Type::ARR,
+                        {
+                            {"", RPCArg::Type::OBJ,
+                                {
+                                    {"txid", RPCArg::Type::STR_HEX, false},
+                                    {"vout", RPCArg::Type::NUM, false},
+                                    {"sequence", RPCArg::Type::NUM, false},
+                                },
+                                false},
+                        },
+                        false},
+                    {"outputs", RPCArg::Type::ARR,
+                        {
+                            {"", RPCArg::Type::OBJ,
+                                {
+                                    {"address", RPCArg::Type::AMOUNT, true},
+                                },
+                                true},
+                            {"", RPCArg::Type::OBJ,
+                                {
+                                    {"data", RPCArg::Type::STR_HEX, true},
+                                },
+                                true},
+                        },
+                        false},
+                    {"locktime", RPCArg::Type::NUM, true},
+                    {"options", RPCArg::Type::OBJ,
+                        {
+                            {"changeAddress", RPCArg::Type::STR_HEX, true},
+                            {"changePosition", RPCArg::Type::NUM, true},
+                            {"change_type", RPCArg::Type::STR, true},
+                            {"includeWatching", RPCArg::Type::BOOL, true},
+                            {"lockUnspents", RPCArg::Type::BOOL, true},
+                            {"feeRate", RPCArg::Type::NUM, true},
+                            {"subtractFeeFromOutputs", RPCArg::Type::ARR,
+                                {
+                                    {"int", RPCArg::Type::NUM, true},
+                                },
+                                true},
+                            {"replaceable", RPCArg::Type::BOOL, true},
+                            {"conf_target", RPCArg::Type::NUM, true},
+                            {"estimate_mode", RPCArg::Type::STR, true},
+                        },
+                        true},
+                    {"bip32derivs", RPCArg::Type::BOOL, true},
+                }}
+                .ToString() +
                             "\nCreates and funds a transaction in the Partially Signed Transaction format. Inputs will be added if supplied inputs are not enough\n"
                             "Implements the Creator and Updater roles.\n"
                             "\nArguments:\n"
@@ -4180,7 +4289,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listreceivedbyaddress",            &listreceivedbyaddress,         {"minconf","include_empty","include_watchonly","address_filter"} },
     { "wallet",             "listreceivedbylabel",              &listreceivedbylabel,           {"minconf","include_empty","include_watchonly"} },
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
-    { "wallet",             "listtransactions",                 &listtransactions,              {"dummy","count","skip","include_watchonly"} },
+    { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },

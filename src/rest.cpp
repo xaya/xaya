@@ -3,16 +3,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <attributes.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <core_io.h>
+#include <httpserver.h>
 #include <index/txindex.h>
 #include <names/common.h>
 #include <names/encoding.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <validation.h>
-#include <httpserver.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
@@ -20,6 +20,7 @@
 #include <sync.h>
 #include <txmempool.h>
 #include <util/strencodings.h>
+#include <validation.h>
 #include <version.h>
 
 #include <boost/algorithm/string.hpp>
