@@ -509,6 +509,14 @@ name_scan (const JSONRPCRequest& request)
         + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withField ("\"minConf\"",
+                        "(numeric, default=1) Minimum number of confirmations")
+            .withField ("\"maxConf\"",
+                        "(numeric) Maximum number of confirmations")
+            .withField ("\"prefix\"",
+                        "(string) Filter for names with the given prefix")
+            .withField ("\"regexp\"",
+                        "(string) Filter for names matching the regexp")
             .finish ("") +
         "\nResult:\n"
         "[\n"
