@@ -388,13 +388,18 @@ namespace
 UniValue
 name_show (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
-        "name_show \"name\"\n"
+        "name_show \"name\" (\"options\")\n"
         "\nLook up the current data for the given name."
         "  Fails if the name doesn't exist.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         + NameInfoHelp ("")
             .withExpiration ()
@@ -404,14 +409,18 @@ name_show (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_show", "\"myname\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+      = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   CNameData data;
   {
@@ -426,7 +435,7 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK (wallet.getLock ());
-  return getNameInfo (NO_OPTIONS, name, data, wallet);
+  return getNameInfo (options, name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -434,13 +443,18 @@ name_show (const JSONRPCRequest& request)
 UniValue
 name_history (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
         "name_history \"name\"\n"
         "\nLook up the current and all past data for the given name."
         "  -namehistory must be enabled.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -453,7 +467,7 @@ name_history (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_history", "\"myname\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
@@ -462,8 +476,12 @@ name_history (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+      = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   CNameData data;
   CNameHistory history;
@@ -487,8 +505,8 @@ name_history (const JSONRPCRequest& request)
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (NO_OPTIONS, name, entry, wallet));
-  res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
+    res.push_back (getNameInfo (options, name, entry, wallet));
+  res.push_back (getNameInfo (options, name, data, wallet));
 
   return res;
 }
@@ -895,8 +913,8 @@ name_checkdb (const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "names",              "name_show",              &name_show,              {"name"} },
-    { "names",              "name_history",           &name_history,           {"name"} },
+    { "names",              "name_show",              &name_show,              {"name","options"} },
+    { "names",              "name_history",           &name_history,           {"name","options"} },
     { "names",              "name_scan",              &name_scan,              {"start","count","options"} },
     { "names",              "name_pending",           &name_pending,           {"name"} },
     { "names",              "name_checkdb",           &name_checkdb,           {} },
