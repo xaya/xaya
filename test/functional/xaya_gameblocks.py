@@ -3,7 +3,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-"""Test the "game-block" ZMQ notifications."""
+"""Tests the "game-block" ZMQ notifications."""
 
 from test_framework.test_framework import (
   BitcoinTestFramework,
@@ -121,6 +121,7 @@ class GameBlocksTest (BitcoinTestFramework):
       self._test_blockData ()
       self._test_multipleUpdates ()
       self._test_moveWithCurrency ()
+      self._test_adminCmd ()
       self._test_reorg ()
       self._test_sendUpdates ()
       self._test_maxGameBlockAttaches ()
@@ -289,6 +290,45 @@ class GameBlocksTest (BitcoinTestFramework):
 
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
+
+  def _test_adminCmd (self):
+    """
+    Tests admin commands for games.
+    """
+
+    self.log.info ("Testing game admin commands...")
+
+    # Register one of the game names already, but in a way that should
+    # not trigger any admin command notifications.
+    self.node.name_register ("g/a", json.dumps ({"foo": "bar"}))
+    self.node.generate (1)
+
+    for g in ["a", "b"]:
+      _, data = self.games[g].receive ()
+      assert_equal (data["moves"], [])
+      assert "cmd" not in data
+
+    # Now actually issue admin commands together with a move.  One of the
+    # g/ names is updated, the other registered.  This makes sure that both
+    # work as expected.
+    self.node.name_update ("g/a", json.dumps ({
+      "stuff": "ignored",
+      "cmd": 42,
+    }))
+    self.node.name_register ("g/b", json.dumps ({
+      "cmd": {"foo": "bar"},
+    }))
+    txid = self.node.name_update ("p/x", json.dumps ({"g":{"a":True}}))
+    self.node.generate (1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], txid, "x", True)
+    assert_equal (data["cmd"], 42)
+
+    _, data = self.games["b"].receive ()
+    assert_equal (data["moves"], [])
+    assert_equal (data["cmd"], {"foo": "bar"})
 
   def buildChain (self, n):
     """

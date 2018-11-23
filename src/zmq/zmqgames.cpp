@@ -36,13 +36,62 @@ namespace
 {
 
 /**
- * Converts a transaction to the corresponding JSON data that is returned
- * for it in the Xaya game interface.  The returned map contains the data
- * for each of the games that may be referenced (and are tracked).  If the
- * transaction is not a name operation, then the empty map is returned.
+ * Helper class that analyses a single transaction and extracts the data
+ * from it that is relevant for the ZMQ game notifications.
  */
-std::map<std::string, UniValue>
-JsonDataForMove (const CTransaction& tx)
+class TransactionData
+{
+
+private:
+
+  /** Type for the map that holds moves for each game.  */
+  using MovePerGame = std::map<std::string, UniValue>;
+
+  /** Move data for each game.  */
+  MovePerGame moves;
+
+  /** Set to true if this is an admin command.  */
+  bool isAdmin = false;
+  /** Game ID for which this is an admin command.  */
+  std::string adminGame;
+  /** The admin command data (if any).  */
+  UniValue adminCmd;
+
+public:
+
+  /**
+   * Construct this by analysing a given transaction.
+   */
+  explicit TransactionData (const CTransaction& tx);
+
+  TransactionData () = delete;
+  TransactionData (const TransactionData&) = delete;
+  void operator= (const TransactionData&) = delete;
+
+  const MovePerGame&
+  GetMovesPerGame () const
+  {
+    return moves;
+  }
+
+  /**
+   * Checks if this is an admin command.  If it is, the game ID and
+   * associated command value are returned.
+   */
+  bool
+  IsAdminCommand (std::string& gameId, UniValue& cmd) const
+  {
+    if (!isAdmin)
+      return false;
+
+    gameId = adminGame;
+    cmd = adminCmd;
+    return true;
+  }
+
+};
+
+TransactionData::TransactionData (const CTransaction& tx)
 {
   /* Determine if this is a name update at all; if it isn't, then there
      is nothing to do for this transaction.  */
@@ -54,14 +103,9 @@ JsonDataForMove (const CTransaction& tx)
         break;
     }
   if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
-    return {};
+    return;
 
-  /* Only consider updates to p/ names.  */
-  const std::string name = EncodeName (nameOp.getOpName (), NameEncoding::UTF8);
-  if (name.substr (0, 2) != "p/")
-    return {};
-
-  /* See if there are actually games mentioned in the update's value.  */
+  /* Parse the value JSON.  */
   const std::string valueStr = EncodeName (nameOp.getOpValue (),
                                            NameEncoding::UTF8);
   UniValue value;
@@ -71,13 +115,33 @@ JsonDataForMove (const CTransaction& tx)
          these conditions for name updates.  But if it does happen, we just
          ignore it for here.  */
       LogPrintf ("%s: invalid value ignored\n", __func__);
-      return {};
+      return;
     }
+
+  /* Special case:  Handle admin commands.  */
+  const std::string name = EncodeName (nameOp.getOpName (), NameEncoding::UTF8);
+  if (name.substr (0, 2) == "g/")
+    {
+      if (!value.exists ("cmd"))
+        return;
+
+      isAdmin = true;
+      adminGame = name.substr (2);
+      adminCmd = value["cmd"];
+      return;
+    }
+  assert (!isAdmin);
+
+  /* Otherwise, we are only interested in p/ names.  */
+  if (name.substr (0, 2) != "p/")
+    return;
+
+  /* See if there are actually games mentioned in the update's value.  */
   if (!value.exists ("g"))
-    return {};
+    return;
   const UniValue& g = value["g"];
   if (!g.isObject () || g.empty ())
-    return {};
+    return;
 
   /* Prepare a template object that is the same for all games.  */
   UniValue tmpl(UniValue::VOBJ);
@@ -105,15 +169,12 @@ JsonDataForMove (const CTransaction& tx)
   tmpl.pushKV ("out", out);
 
   /* Fill the per-game moves into the template.  */
-  std::map<std::string, UniValue> result;
   for (const auto& game : g.getKeys ())
     {
       UniValue obj = tmpl;
       obj.pushKV ("move", g[game]);
-      result[game] = obj;
+      moves.emplace (game, obj);
     }
-
-  return result;
 }
 
 } // anonymous namespace
@@ -127,12 +188,15 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
   std::map<std::string, UniValue> perGameMoves;
   for (const auto& game : games)
     perGameMoves[game] = UniValue (UniValue::VARR);
+  std::map<std::string, UniValue> perGameAdminCmds;
 
-  /* Add relevant moves for each game from all the transactions.  */
+  /* Add relevant moves for each game from all the transactions.  Also keep
+     track of the admin commands for each game, if there are any.  */
   for (const auto& tx : block.vtx)
     {
-      const auto perGameThisTx = JsonDataForMove (*tx);
-      for (const auto& entry : perGameThisTx)
+      const TransactionData data(*tx);
+
+      for (const auto& entry : data.GetMovesPerGame ())
         {
           auto mit = perGameMoves.find (entry.first);
           if (mit == perGameMoves.end ())
@@ -142,10 +206,18 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
           assert (mit->second.isArray ());
           mit->second.push_back (entry.second);
         }
+
+      std::string adminGame;
+      UniValue adminCmd;
+      if (data.IsAdminCommand (adminGame, adminCmd)
+            && games.count (adminGame) > 0)
+        {
+          assert (perGameAdminCmds.count (adminGame) == 0);
+          perGameAdminCmds.emplace (adminGame, adminCmd);
+        }
     }
 
   /* Prepare the template object that is the same for each game.  */
-
   UniValue blockData(UniValue::VOBJ);
   blockData.pushKV ("hash", block.GetHash ().GetHex ());
   if (pindex->nHeight > 0)
@@ -172,6 +244,11 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 
       UniValue data = tmpl;
       data.pushKV ("moves", mit->second);
+
+      auto adminCmd = perGameAdminCmds.find (game);
+      if (adminCmd != perGameAdminCmds.end ())
+        data.pushKV ("cmd", adminCmd->second);
+
       if (!SendMessage (commandPrefix + " json " + game, data))
         return false;
     }
