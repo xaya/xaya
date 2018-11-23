@@ -4315,7 +4315,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getauxblock",                      &getauxblock,                   {"hash","auxpow"} },
 
     // Name-related wallet calls.
-    { "names",              "name_list",                        &name_list,                     {"name"} },
+    { "names",              "name_list",                        &name_list,                     {"name","options"} },
     { "names",              "name_new",                         &name_new,                      {"name","options"} },
     { "names",              "name_firstupdate",                 &name_firstupdate,              {"name","rand","tx","value","options","allow_active"} },
     { "names",              "name_update",                      &name_update,                   {"name","value","options"} },

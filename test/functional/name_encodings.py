@@ -497,6 +497,23 @@ class NameEncodingsTest (NameTestFramework):
       assert_equal (len (res), 1)
       return res[0]
     verifyReadMethod (nameScanWrapper)
+    def nameListWrapper (name, *opt):
+      res = self.node.name_list (name, *opt)
+      assert_equal (len (res), 1)
+      return res[0]
+    verifyReadMethod (nameListWrapper)
+
+    # Test that name_list also supports the options argument if no name
+    # is given.
+    res = self.node.name_list (options={"nameEncoding": "utf8"})
+    found = False
+    for entry in res:
+      if 'name' not in entry:
+        continue
+      if entry['name'] == nameUtf8 and entry['name_encoding'] == 'utf8':
+        found = True
+        break
+    assert found
 
   def test_rpcOption (self):
     """
