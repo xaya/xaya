@@ -151,6 +151,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "name_history", 1, "options" },
     { "name_scan", 1, "count" },
     { "name_scan", 2, "options" },
+    { "name_pending", 1, "options" },
     { "name_list", 1, "options" },
     { "name_new", 1, "options" },
     { "name_firstupdate", 4, "options" },

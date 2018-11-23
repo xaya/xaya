@@ -503,17 +503,34 @@ class NameEncodingsTest (NameTestFramework):
       return res[0]
     verifyReadMethod (nameListWrapper)
 
+    # Helper function for testing name_list and name_pending without a name.
+    # It verifies that an array returned from such a function contains the
+    # given name with the given encoding.
+    def resultContainsName (res, name, enc):
+      for entry in res:
+        if 'name' not in entry:
+          continue
+        if entry['name'] == name and entry['name_encoding'] == enc:
+          return True
+      return False
+
     # Test that name_list also supports the options argument if no name
     # is given.
     res = self.node.name_list (options={"nameEncoding": "utf8"})
-    found = False
-    for entry in res:
-      if 'name' not in entry:
-        continue
-      if entry['name'] == nameUtf8 and entry['name_encoding'] == 'utf8':
-        found = True
-        break
-    assert found
+    assert resultContainsName (res, nameUtf8, 'utf8')
+
+    # Create a pending update for name_pending.
+    self.node.name_update (nameAscii, valueUtf8, {"valueEncoding": "utf8"})
+    self.node.name_update (nameUtf8, valueAscii, {"nameEncoding": "utf8"})
+    def namePendingWrapper (name, *opt):
+      res = self.node.name_pending (name, *opt)
+      assert_equal (len (res), 1)
+      return res[0]
+    verifyReadMethod (namePendingWrapper)
+
+    # Also test name_pending with options but without name.
+    res = self.node.name_pending (options={"nameEncoding": "utf8"})
+    assert resultContainsName (res, nameUtf8, 'utf8')
 
   def test_rpcOption (self):
     """
