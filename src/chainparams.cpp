@@ -167,9 +167,12 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 4200000;
-        /* FIXME: Set to actual value that yields the right total supply
-           after the post-ICO fork height is fixed.  */
-        consensus.initialSubsidy = 10 * COIN;
+        /* The value of ~3.8 CHI is calculated to yield the desired total
+           PoW coin supply.  For the calculation, see here:
+
+           https://github.com/xaya/xaya/issues/70#issuecomment-441292533
+        */
+        consensus.initialSubsidy = 382934346;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
