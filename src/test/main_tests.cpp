@@ -15,8 +15,8 @@ BOOST_FIXTURE_TEST_SUITE(main_tests, TestingSetup)
 
 static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
 {
-    int maxHalvings = 64;
-    CAmount nInitialSubsidy = 10 * COIN;
+    const int maxHalvings = 64;
+    const CAmount nInitialSubsidy = consensusParams.initialSubsidy;
 
     CAmount nPreviousSubsidy = nInitialSubsidy * 2; // for height == 0
     BOOST_CHECK_EQUAL(nPreviousSubsidy, nInitialSubsidy * 2);
@@ -44,29 +44,58 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
        need to craft a ConsensusRules instance for the POST_ICO fork check.  */
 }
 
-/* FIXME: Re-enable when the POST_ICO fork supply has been fixed.
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+
     CAmount nSum = 0;
     CAmount nLastSubsidy;
-    for (int nHeight = 0; nHeight < 140000000; nHeight += 100000) {
-        CAmount nSubsidy = GetBlockSubsidy(nHeight, chainParams->GetConsensus());
-        BOOST_CHECK(nSubsidy <= 1 * COIN);
-        nSum += nSubsidy * 100000;
+    int nLastHeight = 0;
+
+    /* Updates the current state (contained in the variables this closes over)
+       based on the block subsidy at the given height, assuming that it is the
+       same from nLastHeight+1 up to height.  */
+    const auto updateState = [&] (const int height)
+      {
+        const int numBlocks = height - nLastHeight;
+        BOOST_CHECK(numBlocks > 0);
+
+        const CAmount nSubsidy = GetBlockSubsidy(height, chainParams->GetConsensus());
+        BOOST_CHECK(nSubsidy <= 4 * COIN);
+
+        nSum += nSubsidy * numBlocks;
         nLastSubsidy = nSubsidy;
         BOOST_CHECK(MoneyRange(nSum));
-    }
+        nLastHeight = height;
+      };
+
+    updateState(1);
+    updateState(439999);
+    BOOST_CHECK_EQUAL(nLastSubsidy, 1 * COIN);
+    updateState(440000);
+    BOOST_CHECK(nLastSubsidy > 3 * COIN);
+    updateState(4199999);
+    BOOST_CHECK(nLastSubsidy > 3 * COIN);
+    updateState(4200000);
+    BOOST_CHECK(nLastSubsidy < 2 * COIN);
+
+    /* We need to call updateState always at the *last* block that has
+       a certain subsidy.  Thus start iterating on the next block batch
+       (100k more than first halving), and always update on height-1.  */
+    for (int height = 4300000; height < 140000000; height += 100000)
+        updateState(height - 1);
+
     BOOST_CHECK_EQUAL(nLastSubsidy, CAmount{0});
-    BOOST_CHECK_EQUAL(nSum, CAmount{839999949600000});
+    /* This is the real PoW coin supply, taking rounding into account.  The
+       final coin supply is larger by the presale amount.  */
+    BOOST_CHECK_EQUAL(nSum, CAmount{3092157231160000});
 }
-*/
 
 BOOST_AUTO_TEST_CASE(subsidy_post_ico_fork_test)
 {
     const auto main = CreateChainParams(CBaseChainParams::MAIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(999999, main->GetConsensus()), COIN);
-    BOOST_CHECK_EQUAL(GetBlockSubsidy(1000000, main->GetConsensus()), 10 * COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(439999, main->GetConsensus()), COIN);
+    BOOST_CHECK_EQUAL(GetBlockSubsidy(440000, main->GetConsensus()), 382934346);
 
     const auto test = CreateChainParams(CBaseChainParams::TESTNET);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(10999, test->GetConsensus()), COIN);

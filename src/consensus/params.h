@@ -30,7 +30,8 @@ enum class Fork
    * main (non-fakeheader) nonce must be zero in order to resolve
    * https://github.com/xaya/xaya/issues/50.
    *
-   * TODO: Also adjust block rewards to give the final coin supply.
+   * It also increases the block reward from 1 CHI to a value calculated to
+   * yield the correct total PoW supply.
    */
   POST_ICO,
 
@@ -103,8 +104,7 @@ public:
         switch (type)
         {
             case Fork::POST_ICO:
-                /* FIXME: Set correct height once determined.  */
-                return height >= 1000000;
+                return height >= 440000;
             default:
                 assert (false);
         }
