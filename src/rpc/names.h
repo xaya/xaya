@@ -8,9 +8,11 @@
 #include <script/script.h>
 
 #include <names/encoding.h>
+#include <rpc/util.h>
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 class CNameData;
 class COutPoint;
@@ -103,9 +105,15 @@ public:
 
 /**
  * Builder class for the help text of the "options" argument for name RPCs.
+ * This also takes care of building the inner RPCArgs for the RPCHelpMan.
  */
 class NameOptionsHelp : public HelpTextBuilder
 {
+
+private:
+
+  /** Inner RPCArgs for RPCHelpMan.  */
+  std::vector<RPCArg> innerArgs;
 
 public:
 
@@ -118,6 +126,18 @@ public:
 
   NameOptionsHelp& withNameEncoding ();
   NameOptionsHelp& withValueEncoding ();
+
+  /**
+   * Variant of withField that also adds the innerArgs field correctly.  Takes
+   * the name of the field from RPCArg.
+   */
+  NameOptionsHelp& withArg (const RPCArg& arg, const std::string& doc);
+
+  /**
+   * Constructs the RPCArg object for the options argument described by this
+   * builder instance.
+   */
+  RPCArg buildRpcArg () const;
 
 };
 
