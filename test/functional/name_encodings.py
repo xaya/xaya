@@ -415,42 +415,82 @@ class NameEncodingsTest (NameTestFramework):
     self.log.info ("Testing options-override for read RPCs...")
     self.setEncodings ()
 
-    # Type check for the encoding options.
-    assert_raises_rpc_error (-3, "Expected type string",
-                             self.node.name_scan, nameAscii, 1,
-                             {"nameEncoding": 42})
-    assert_raises_rpc_error (-3, "Expected type string",
-                             self.node.name_scan, nameAscii, 1,
-                             {"valueEncoding": 42})
+    # Helper function that tests a method that retrieves name data.
+    # This method can be name_show, name_history or name_scan later on,
+    # but the basic testing is always the same.
+    def verifyReadMethod (func):
+      assert_raises_rpc_error (-3, "Expected type string",
+                               func, nameAscii, {"nameEncoding": 42})
+      assert_raises_rpc_error (-3, "Expected type string",
+                               func, nameAscii, {"valueEncoding": 42})
+      assert_raises_rpc_error (-1000, "Name/value is invalid",
+                               func, nameUtf8)
 
-    # name_scan
-    assert_raises_rpc_error (-1000, "Name/value is invalid",
-                             self.node.name_scan, nameUtf8, 1)
+      res = func (nameUtf8, {"nameEncoding": "utf8"})
+      assert_equal (res['name_encoding'], 'utf8')
+      assert_equal (res['name'], nameUtf8)
+      assert_equal (res['value_encoding'], 'ascii')
+      assert_equal (res['value'], valueAscii)
 
-    res = self.node.name_scan (nameUtf8, 1, {"nameEncoding": "utf8"})
-    assert_equal (len (res), 1)
-    res = res[0]
-    assert_equal (res['name_encoding'], 'utf8')
-    assert_equal (res['name'], nameUtf8)
-    assert_equal (res['value_encoding'], 'ascii')
-    assert_equal (res['value'], valueAscii)
+      res = func (nameAscii)
+      assert_equal (res['name_encoding'], 'ascii')
+      assert_equal (res['name'], nameAscii)
+      assert_equal (res['value_encoding'], 'ascii')
+      assert 'value' not in res
+      assert_equal (res['value_error'], 'invalid data for ascii')
 
-    res = self.node.name_scan (nameAscii, 1)
-    assert_equal (len (res), 1)
-    res = res[0]
-    assert_equal (res['name_encoding'], 'ascii')
-    assert_equal (res['name'], nameAscii)
-    assert_equal (res['value_encoding'], 'ascii')
-    assert 'value' not in res
-    assert_equal (res['value_error'], 'invalid data for ascii')
+      res = func (nameAscii, {"valueEncoding": "utf8"})
+      assert_equal (res['name_encoding'], 'ascii')
+      assert_equal (res['name'], nameAscii)
+      assert_equal (res['value_encoding'], 'utf8')
+      assert_equal (res['value'], valueUtf8)
 
-    res = self.node.name_scan (nameAscii, 1, {"valueEncoding": "utf8"})
-    assert_equal (len (res), 1)
-    res = res[0]
-    assert_equal (res['name_encoding'], 'ascii')
-    assert_equal (res['name'], nameAscii)
-    assert_equal (res['value_encoding'], 'utf8')
-    assert_equal (res['value'], valueUtf8)
+    # Verify the actual methods.
+    verifyReadMethod (self.node.name_show)
+    def nameHistoryWrapper (name, *opt):
+      res = self.node.name_history (name, *opt)
+      assert_greater_than (len (res), 0)
+      return res[-1]
+    verifyReadMethod (nameHistoryWrapper)
+    def nameScanWrapper (name, *opt):
+      res = self.node.name_scan (name, 1, *opt)
+      assert_equal (len (res), 1)
+      return res[0]
+    verifyReadMethod (nameScanWrapper)
+    def nameListWrapper (name, *opt):
+      res = self.node.name_list (name, *opt)
+      assert_equal (len (res), 1)
+      return res[0]
+    verifyReadMethod (nameListWrapper)
+
+    # Helper function for testing name_list and name_pending without a name.
+    # It verifies that an array returned from such a function contains the
+    # given name with the given encoding.
+    def resultContainsName (res, name, enc):
+      for entry in res:
+        if 'name' not in entry:
+          continue
+        if entry['name'] == name and entry['name_encoding'] == enc:
+          return True
+      return False
+
+    # Test that name_list also supports the options argument if no name
+    # is given.
+    res = self.node.name_list (options={"nameEncoding": "utf8"})
+    assert resultContainsName (res, nameUtf8, 'utf8')
+
+    # Create a pending update for name_pending.
+    self.node.name_update (nameAscii, valueUtf8, {"valueEncoding": "utf8"})
+    self.node.name_update (nameUtf8, valueAscii, {"nameEncoding": "utf8"})
+    def namePendingWrapper (name, *opt):
+      res = self.node.name_pending (name, *opt)
+      assert_equal (len (res), 1)
+      return res[0]
+    verifyReadMethod (namePendingWrapper)
+
+    # Also test name_pending with options but without name.
+    res = self.node.name_pending (options={"nameEncoding": "utf8"})
+    assert resultContainsName (res, nameUtf8, 'utf8')
 
   def test_rpcOption (self):
     """

@@ -136,8 +136,6 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
 namespace
 {
 
-const UniValue NO_OPTIONS(UniValue::VOBJ);
-
 valtype
 DecodeNameValueFromRPCOrThrow (const UniValue& val, const UniValue& opt,
                                const std::string& optKey,
@@ -374,13 +372,18 @@ namespace
 UniValue
 name_show (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
-        "name_show \"name\"\n"
+        "name_show \"name\" (\"options\")\n"
         "\nLook up the current data for the given name."
         "  Fails if the name doesn't exist.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         + NameInfoHelp ("")
             .withHeight ()
@@ -390,14 +393,18 @@ name_show (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_show", "\"myname\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+      = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   CNameData data;
   {
@@ -412,7 +419,7 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK (wallet.getLock ());
-  return getNameInfo (NO_OPTIONS, name, data, wallet);
+  return getNameInfo (options, name, data, wallet);
 }
 
 /* ************************************************************************** */
@@ -420,13 +427,18 @@ name_show (const JSONRPCRequest& request)
 UniValue
 name_history (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 1)
+  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
         "name_history \"name\"\n"
         "\nLook up the current and all past data for the given name."
         "  -namehistory must be enabled.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to query for\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -439,7 +451,7 @@ name_history (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_history", "\"myname\"")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
@@ -448,8 +460,12 @@ name_history (const JSONRPCRequest& request)
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+      = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   CNameData data;
   CNameHistory history;
@@ -473,8 +489,8 @@ name_history (const JSONRPCRequest& request)
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (NO_OPTIONS, name, entry, wallet));
-  res.push_back (getNameInfo (NO_OPTIONS, name, data, wallet));
+    res.push_back (getNameInfo (options, name, entry, wallet));
+  res.push_back (getNameInfo (options, name, data, wallet));
 
   return res;
 }
@@ -495,6 +511,14 @@ name_scan (const JSONRPCRequest& request)
         + NameOptionsHelp ()
             .withNameEncoding ()
             .withValueEncoding ()
+            .withField ("\"minConf\"",
+                        "(numeric, default=1) Minimum number of confirmations")
+            .withField ("\"maxConf\"",
+                        "(numeric) Maximum number of confirmations")
+            .withField ("\"prefix\"",
+                        "(string) Filter for names with the given prefix")
+            .withField ("\"regexp\"",
+                        "(string) Filter for names matching the regexp")
             .finish ("") +
         "\nResult:\n"
         "[\n"
@@ -622,13 +646,18 @@ name_scan (const JSONRPCRequest& request)
 UniValue
 name_pending (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () > 1)
+  if (request.fHelp || request.params.size () > 2)
     throw std::runtime_error (
-        "name_pending (\"name\")\n"
+        "name_pending (\"name\") (\"options\")\n"
         "\nList unconfirmed name operations in the mempool.\n"
         "\nIf a name is given, only check for operations on this name.\n"
         "\nArguments:\n"
-        "1. \"name\"        (string, optional) only look for this name\n"
+        "1. \"name\"          (string, optional) only look for this name\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -642,18 +671,22 @@ name_pending (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_pending", "")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
   MaybeWalletForRequest wallet(request);
   LOCK2 (wallet.getLock (), mempool.cs);
 
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
+
   std::vector<uint256> txHashes;
-  if (request.params.size () == 0)
+  if (request.params.size () == 0 || request.params[0].isNull ())
     mempool.queryHashes (txHashes);
   else
     {
       const valtype name
-          = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+          = DecodeNameFromRPCOrThrow (request.params[0], options);
       const uint256 txid = mempool.getTxForName (name);
       if (!txid.IsNull ())
         txHashes.push_back (txid);
@@ -673,7 +706,7 @@ name_pending (const JSONRPCRequest& request)
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
 
-          UniValue obj = getNameInfo (NO_OPTIONS,
+          UniValue obj = getNameInfo (options,
                                       op.getOpName (), op.getOpValue (),
                                       COutPoint (tx->GetHash (), n),
                                       op.getAddress ());
@@ -744,6 +777,12 @@ namerawtransaction (const JSONRPCRequest& request)
   if (nOut >= mtx.vout.size ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
 
+  /* namerawtransaction does not have an options argument.  This would just
+     make the already long list of arguments longer.  Instead of using
+     namerawtransaction, namecoin-tx can be used anyway to create name
+     operations with arbitrary hex data.  */
+  const UniValue NO_OPTIONS(UniValue::VOBJ);
+
   const UniValue nameOp = request.params[2].get_obj ();
   RPCTypeCheckObj (nameOp,
     {
@@ -805,10 +844,10 @@ name_checkdb (const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "names",              "name_show",              &name_show,              {"name"} },
-    { "names",              "name_history",           &name_history,           {"name"} },
+    { "names",              "name_show",              &name_show,              {"name","options"} },
+    { "names",              "name_history",           &name_history,           {"name","options"} },
     { "names",              "name_scan",              &name_scan,              {"start","count","options"} },
-    { "names",              "name_pending",           &name_pending,           {"name"} },
+    { "names",              "name_pending",           &name_pending,           {"name","options"} },
     { "names",              "name_checkdb",           &name_checkdb,           {} },
     { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
 };

@@ -4381,7 +4381,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getwork",                          &getwork,                       {"hash","data"} },
 
     // Name-related wallet calls.
-    { "names",              "name_list",                        &name_list,                     {"name"} },
+    { "names",              "name_list",                        &name_list,                     {"name","options"} },
     { "names",              "name_register",                    &name_register,                 {"name","value","options"} },
     { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
     { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },

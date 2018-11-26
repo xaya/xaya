@@ -214,8 +214,6 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
   return tx;
 }
 
-const UniValue NO_OPTIONS(UniValue::VOBJ);
-
 } // anonymous namespace
 /* ************************************************************************** */
 
@@ -228,12 +226,17 @@ name_list (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
-  if (request.fHelp || request.params.size () > 1)
+  if (request.fHelp || request.params.size () > 2)
     throw std::runtime_error (
-        "name_list (\"name\")\n"
+        "name_list (\"name\" (\"options\"))\n"
         "\nShow status of names in the wallet.\n"
         "\nArguments:\n"
         "1. \"name\"          (string, optional) only include this name\n"
+        "2. \"options\"       (object, optional)\n"
+        + NameOptionsHelp ()
+            .withNameEncoding ()
+            .withValueEncoding ()
+            .finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -247,11 +250,15 @@ name_list (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_list", "")
       );
 
-  RPCTypeCheck (request.params, {UniValue::VSTR});
+  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
+
+  UniValue options(UniValue::VOBJ);
+  if (request.params.size () >= 2)
+    options = request.params[1].get_obj ();
 
   valtype nameFilter;
-  if (request.params.size () >= 1)
-    nameFilter = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
+  if (request.params.size () >= 1 && !request.params[0].isNull ())
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   std::map<valtype, int> mapHeights;
   std::map<valtype, UniValue> mapObjects;
@@ -304,8 +311,7 @@ name_list (const JSONRPCRequest& request)
         continue;
 
       UniValue obj
-        = getNameInfo (NO_OPTIONS,
-                       name, nameOp.getOpValue (),
+        = getNameInfo (options, name, nameOp.getOpValue (),
                        COutPoint (tx.GetHash (), nOut),
                        nameOp.getAddress ());
       addOwnershipInfo (nameOp.getAddress (), pwallet, obj);
@@ -564,6 +570,13 @@ sendtoname (const JSONRPCRequest& request)
 
   auto locked_chain = pwallet->chain().lock();
   LOCK(pwallet->cs_wallet);
+
+  /* sendtoname does not support an options argument (e.g. to override the
+     configured name/value encodings).  That would just add to the already
+     long list of rarely used arguments.  Also, this function is inofficially
+     deprecated anyway, see
+     https://github.com/namecoin/namecoin-core/issues/12.  */
+  const UniValue NO_OPTIONS(UniValue::VOBJ);
 
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
