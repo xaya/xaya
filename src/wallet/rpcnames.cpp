@@ -17,6 +17,7 @@
 #include <rpc/mining.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
+#include <rpc/util.h>
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/system.h>
@@ -226,17 +227,24 @@ name_list (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
+  NameOptionsHelp optHelp;
+  optHelp
+      .withNameEncoding ()
+      .withValueEncoding ();
+
   if (request.fHelp || request.params.size () > 2)
     throw std::runtime_error (
-        "name_list (\"name\" (\"options\"))\n"
-        "\nShow status of names in the wallet.\n"
+        RPCHelpMan ("name_list",
+            "\nShows the status of all names in the wallet.\n",
+            {
+                {"name", RPCArg::Type::STR, true},
+                optHelp.buildRpcArg (),
+            })
+            .ToString () +
         "\nArguments:\n"
         "1. \"name\"          (string, optional) only include this name\n"
         "2. \"options\"       (object, optional)\n"
-        + NameOptionsHelp ()
-            .withNameEncoding ()
-            .withValueEncoding ()
-            .finish ("") +
+        + optHelp.finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -342,22 +350,29 @@ name_new (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
+  NameOptionsHelp optHelp;
+  optHelp
+      .withNameEncoding ()
+      .withWriteOptions ()
+      .withArg (RPCArg ("allowExisting", RPCArg::Type::BOOL, true),
+                "(boolean, optional, default=false) If set, then the"
+                " name_new is sent even if the name exists already");
+
   if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
     throw std::runtime_error (
-        "name_new \"name\" (\"options\")\n"
-        "\nStart registration of the given name.  Must be followed up with"
-        " name_firstupdate to finish the registration.\n"
+        RPCHelpMan ("name_new",
+            "\nStarts registration of the given name.  Must be followed up with"
+            " name_firstupdate to finish the registration.\n",
+            {
+                {"name", RPCArg::Type::STR, false},
+                optHelp.buildRpcArg (),
+            })
+            .ToString ()
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
         "2. \"options\"       (object, optional)\n"
-        + NameOptionsHelp ()
-            .withNameEncoding ()
-            .withWriteOptions ()
-            .withField ("\"allowExisting\"",
-                        "(boolean, optional, default=false) If set, then the"
-                        " name_new is sent even if the name exists already")
-            .finish ("") +
+        + optHelp.finish ("") +
         "\nResult:\n"
         "[\n"
         "  xxxxx,   (string) the txid, required for name_firstupdate\n"
@@ -490,11 +505,25 @@ name_firstupdate (const JSONRPCRequest& request)
      by the regtests to catch a bug that was previously present but
      has presumably no other use.  */
 
+  NameOptionsHelp optHelp;
+  optHelp
+      .withNameEncoding ()
+      .withValueEncoding ()
+      .withWriteOptions ();
+
   if (request.fHelp || request.params.size () < 4 || request.params.size () > 6)
     throw std::runtime_error (
-        "name_firstupdate \"name\" \"rand\" \"tx\" \"value\" (\"options\")\n"
-        "\nFinish the registration of a name.  Depends on name_new being"
-        " already issued.\n"
+        RPCHelpMan ("name_firstupdate",
+            "\nFinishes the registration of a name.  Depends on name_new being"
+            " already issued.\n",
+            {
+                {"name", RPCArg::Type::STR, false},
+                {"rand", RPCArg::Type::STR_HEX, false},
+                {"tx", RPCArg::Type::STR_HEX, false},
+                {"value", RPCArg::Type::STR, false},
+                optHelp.buildRpcArg (),
+            })
+            .ToString ()
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to register\n"
@@ -502,11 +531,7 @@ name_firstupdate (const JSONRPCRequest& request)
         "3. \"tx\"            (string, required) the name_new txid\n"
         "4. \"value\"         (string, required) value for the name\n"
         "5. \"options\"       (object, optional)\n"
-        + NameOptionsHelp ()
-            .withNameEncoding ()
-            .withValueEncoding ()
-            .withWriteOptions ()
-            .finish ("") +
+        + optHelp.finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_firstupdate's txid\n"
         "\nExamples:\n"
@@ -605,20 +630,28 @@ name_update (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
 
+  NameOptionsHelp optHelp;
+  optHelp
+      .withNameEncoding ()
+      .withValueEncoding ()
+      .withWriteOptions ();
+
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
-        "name_update \"name\" \"value\" (\"options\")\n"
-        "\nUpdate a name and possibly transfer it.\n"
+        RPCHelpMan ("name_update",
+            "\nUpdates a name and possibly transfers it.\n",
+            {
+                {"name", RPCArg::Type::STR, false},
+                {"value", RPCArg::Type::STR, false},
+                optHelp.buildRpcArg (),
+            })
+            .ToString ()
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"          (string, required) the name to update\n"
         "2. \"value\"         (string, required) value for the name\n"
         "3. \"options\"       (object, optional)\n"
-        + NameOptionsHelp ()
-            .withNameEncoding ()
-            .withValueEncoding ()
-            .withWriteOptions ()
-            .finish ("") +
+        + optHelp.finish ("") +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
         "\nExamples:\n"
@@ -698,10 +731,20 @@ sendtoname (const JSONRPCRequest& request)
   
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 8)
     throw std::runtime_error (
-        "sendtoname \"name\" amount ( \"comment\" \"comment_to\" subtractfeefromamount replaceable conf_target \"estimate_mode\")\n"
-        "\nSend an amount to the owner of a name. "
-        " The amount is a real and is rounded to the nearest 0.00000001.\n"
-        "\nIt is an error if the name is expired.\n"
+        RPCHelpMan{"sendtoname",
+            "\nSend an amount to the owner of a name.\n"
+            "\nIt is an error if the name is expired.\n",
+            {
+                {"name", RPCArg::Type::STR, false},
+                {"amount", RPCArg::Type::AMOUNT, false},
+                {"comment", RPCArg::Type::STR, true},
+                {"comment_to", RPCArg::Type::STR, true},
+                {"subtractfeefromamount", RPCArg::Type::BOOL, true},
+                {"replaceable", RPCArg::Type::BOOL, true},
+                {"conf_target", RPCArg::Type::NUM, true},
+                {"estimate_mode", RPCArg::Type::STR, true},
+            }}
+            .ToString()
         + HelpRequiringPassphrase (pwallet) +
         "\nArguments:\n"
         "1. \"name\"        (string, required) The name to send to.\n"
