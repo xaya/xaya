@@ -4352,11 +4352,17 @@ UniValue getauxblock(const JSONRPCRequest& request)
     if (request.fHelp
           || (request.params.size() != 0 && request.params.size() != 2))
         throw std::runtime_error(
-            "getauxblock (hash auxpow)\n"
-            "\nCreate or submit a merge-mined block.\n"
-            "\nWithout arguments, create a new block and return information\n"
-            "required to merge-mine it.  With arguments, submit a solved\n"
-            "auxpow for a previously returned block.\n"
+            RPCHelpMan{"getauxblock",
+                "\nCreates or submits a merge-mined block.\n"
+                "\nWithout arguments, creates a new block and returns"
+                " information\n"
+                "required to merge-mine it.  With arguments, submits a solved\n"
+                "auxpow for a previously returned block.\n",
+                {
+                    {"hash", RPCArg::Type::STR, true},
+                    {"auxpow", RPCArg::Type::STR, true},
+                }}
+                .ToString() +
             "\nArguments:\n"
             "1. hash      (string, optional) hash of the block to submit\n"
             "2. auxpow    (string, optional) serialised auxpow found\n"

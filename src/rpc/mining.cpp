@@ -1026,8 +1026,13 @@ UniValue createauxblock(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "createauxblock <address>\n"
-            "\ncreate a new block and return information required to merge-mine it.\n"
+            RPCHelpMan{"createauxblock",
+                "\nCreates a new block and returns information required to"
+                " merge-mine it.\n",
+                {
+                    {"address", RPCArg::Type::STR, false},
+                }}
+                .ToString() +
             "\nArguments:\n"
             "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
@@ -1061,8 +1066,14 @@ UniValue submitauxblock(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
-            "submitauxblock <hash> <auxpow>\n"
-            "\nsubmit a solved auxpow for a previously block created by 'createauxblock'.\n"
+            RPCHelpMan{"submitauxblock",
+                "\nSubmits a solved auxpow for a block that was previously"
+                " created by 'createauxblock'.\n",
+                {
+                    {"hash", RPCArg::Type::STR, false},
+                    {"auxpow", RPCArg::Type::STR, false},
+                }}
+                .ToString() +
             "\nArguments:\n"
             "1. hash      (string, required) hash of the block to submit\n"
             "2. auxpow    (string, required) serialised auxpow found\n"
