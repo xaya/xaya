@@ -4359,8 +4359,8 @@ UniValue getauxblock(const JSONRPCRequest& request)
                 "required to merge-mine it.  With arguments, submits a solved\n"
                 "auxpow for a previously returned block.\n",
                 {
-                    {"hash", RPCArg::Type::STR, true},
-                    {"auxpow", RPCArg::Type::STR, true},
+                    {"hash", RPCArg::Type::STR_HEX, true},
+                    {"auxpow", RPCArg::Type::STR_HEX, true},
                 }}
                 .ToString() +
             "\nArguments:\n"
