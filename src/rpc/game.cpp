@@ -9,6 +9,7 @@
 #include <logging.h>
 #include <random.h>
 #include <rpc/server.h>
+#include <rpc/util.h>
 #include <script/script.h>
 #include <uint256.h>
 #include <util/strencodings.h>
@@ -212,9 +213,15 @@ game_sendupdates (const JSONRPCRequest& request)
 {
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
-        "game_sendupdates \"gameid\" \"fromblock\" (\"toblock\")\n"
-        "\nSend on-demand block attach/detach notifications through the game"
-        " ZMQ interface.\n"
+        RPCHelpMan ("game_sendupdates",
+            "\nRequests on-demand block attach/detach notifications to be sent"
+            " through the game ZMQ interface.\n",
+            {
+                {"gameid", RPCArg::Type::STR, false},
+                {"fromblock", RPCArg::Type::STR_HEX, false},
+                {"toblock", RPCArg::Type::STR_HEX, true},
+            })
+            .ToString () +
         "\nArguments:\n"
         "1. \"gameid\"          (string, required) the gameid for which to send notifications\n"
         "2. \"fromblock\"       (string, required) starting block hash\n"
@@ -338,12 +345,17 @@ trackedgames (const JSONRPCRequest& request)
   if (request.fHelp
         || (request.params.size () != 0 && request.params.size () != 2))
     throw std::runtime_error (
-        "trackedgames (\"command\" \"gameid\")\n"
-        "\nReturns or modifies the list of tracked games for the game"
-        " ZMQ interface.\n"
-        "\nIf called without arguments, the list of tracked games is"
-        " returned.\n"
-        "Otherwise, the given game is added or removed from the list.\n"
+        RPCHelpMan ("trackedgames",
+            "\nReturns or modifies the list of tracked games for the game"
+            " ZMQ interface.\n"
+            "\nIf called without arguments, the list of tracked games is"
+            " returned.\n"
+            "Otherwise, the given game is added or removed from the list.\n",
+            {
+                {"command", RPCArg::Type::STR, true},
+                {"gameid", RPCArg::Type::STR, true},
+            })
+            .ToString () +
         "\nArguments:\n"
         "1. \"command\"         (string, optional) can be \"add\" or \"remove\"\n"
         "2. \"gameid\"          (string, optional) the gameid to add or remove\n"
