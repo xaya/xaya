@@ -1157,8 +1157,13 @@ UniValue creatework(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
-            "creatework <address>\n"
-            "\ncreate a new block and return information required to mine it.\n"
+            RPCHelpMan{"creatework",
+                "\nCreates a new block and returns information required to"
+                " mine it stand-alone.\n",
+                {
+                    {"address", RPCArg::Type::STR, false},
+                }}
+                .ToString() +
             "\nArguments:\n"
             "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
@@ -1193,10 +1198,17 @@ UniValue submitwork(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
-            "submitwork (<hash>) <data>\n"
-            "\nsubmit a solved PoW for a block previously created by 'creatework'.\n"
-            "\nIf <hash> is not given, it will be deduced from <data>.\n"
-            "This feature is deprecated, though -- prefer to add <hash>!\n"
+            RPCHelpMan{"submitwork",
+                "\nSubmits a solved PoW for a block that was previously"
+                " created by 'creatework'.\n"
+                "\nIf no hash is given, it will be deduced from the data."
+                "  This feature is deprecated, though -- prefer to add an"
+                " explicit hash!\n",
+                {
+                    {"hash", RPCArg::Type::STR_HEX, false},
+                    {"data", RPCArg::Type::STR_HEX, false},
+                }}
+                .ToString() +
             "\nArguments:\n"
             "1. hash      (string, optional) hash of the block to submit\n"
             "2. data      (string, required) solved block header data\n"
