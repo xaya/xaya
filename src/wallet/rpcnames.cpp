@@ -424,7 +424,6 @@ name_new (const JSONRPCRequest& request)
   const CScript newScript
       = CNameScript::buildNameNew (destHelper.getScript (), name, rand);
 
-  CCoinControl coinControl;
   CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
                                        newScript, nullptr, options);
   destHelper.finalise ();
@@ -611,7 +610,6 @@ name_firstupdate (const JSONRPCRequest& request)
     = CNameScript::buildNameFirstupdate (destHelper.getScript (), name, value,
                                          rand);
 
-  CCoinControl coinControl;
   CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
                                        nameScript, &txIn, options);
   destHelper.finalise ();
@@ -710,7 +708,6 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
-  CCoinControl coinControl;
   CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
                                        nameScript, &txIn, options);
   destHelper.finalise ();
