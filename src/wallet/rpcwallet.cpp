@@ -23,6 +23,7 @@
 #include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+#include <script/descriptor.h>
 #include <script/names.h>
 #include <script/sign.h>
 #include <shutdown.h>
@@ -2039,21 +2040,13 @@ static UniValue walletpassphrase(const JSONRPCRequest& request)
         nSleepTime = MAX_SLEEP_TIME;
     }
 
-    if (strWalletPass.length() > 0)
-    {
-        if (!pwallet->Unlock(strWalletPass)) {
-            throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The wallet passphrase entered was incorrect.");
-        }
+    if (strWalletPass.empty()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
     }
-    else
-        throw std::runtime_error(
-            RPCHelpMan{"walletpassphrase",
-                "Stores the wallet decryption key in memory for <timeout> seconds.",
-                {
-                    {"passphrase", RPCArg::Type::STR, false},
-                    {"timeout", RPCArg::Type::NUM, false},
-                }}
-                .ToString());
+
+    if (!pwallet->Unlock(strWalletPass)) {
+        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The wallet passphrase entered was incorrect.");
+    }
 
     pwallet->TopUpKeyPool();
 
@@ -2119,15 +2112,9 @@ static UniValue walletpassphrasechange(const JSONRPCRequest& request)
     strNewWalletPass.reserve(100);
     strNewWalletPass = request.params[1].get_str().c_str();
 
-    if (strOldWalletPass.length() < 1 || strNewWalletPass.length() < 1)
-        throw std::runtime_error(
-            RPCHelpMan{"walletpassphrasechange",
-                "Changes the wallet passphrase from <oldpassphrase> to <newpassphrase>.",
-                {
-                    {"oldpassphrase", RPCArg::Type::STR, false},
-                    {"newpassphrase", RPCArg::Type::STR, false},
-                }}
-                .ToString());
+    if (strOldWalletPass.empty() || strNewWalletPass.empty()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
+    }
 
     if (!pwallet->ChangeWalletPassphrase(strOldWalletPass, strNewWalletPass)) {
         throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The wallet passphrase entered was incorrect.");
@@ -2230,14 +2217,9 @@ static UniValue encryptwallet(const JSONRPCRequest& request)
     strWalletPass.reserve(100);
     strWalletPass = request.params[0].get_str().c_str();
 
-    if (strWalletPass.length() < 1)
-        throw std::runtime_error(
-            RPCHelpMan{"encryptwallet",
-                "Encrypts the wallet with <passphrase>.",
-                {
-                    {"passphrase", RPCArg::Type::STR, false},
-                }}
-                .ToString());
+    if (strWalletPass.empty()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "passphrase can not be empty");
+    }
 
     if (!pwallet->EncryptWallet(strWalletPass)) {
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: Failed to encrypt the wallet.");
@@ -2895,6 +2877,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "    \"redeemScript\" : n        (string) The redeemScript if scriptPubKey is P2SH\n"
             "    \"spendable\" : xxx,        (bool) Whether we have the private keys to spend this output\n"
             "    \"solvable\" : xxx,         (bool) Whether we know how to spend this output, ignoring the lack of keys\n"
+            "    \"desc\" : xxx,             (string, only when solvable) A descriptor for spending this output\n"
             "    \"safe\" : xxx              (bool) Whether this output is considered safe to spend. Unconfirmed transactions\n"
             "                              from outside keys and unconfirmed replacement transactions are considered unsafe\n"
             "                              and are not eligible for spending by fundrawtransaction and sendtoaddress.\n"
@@ -3043,6 +3026,10 @@ static UniValue listunspent(const JSONRPCRequest& request)
         entry.pushKV("confirmations", out.nDepth);
         entry.pushKV("spendable", out.fSpendable);
         entry.pushKV("solvable", out.fSolvable);
+        if (out.fSolvable) {
+            auto descriptor = InferDescriptor(scriptPubKey, *pwallet);
+            entry.pushKV("desc", descriptor->ToString());
+        }
         entry.pushKV("safe", out.fSafe);
         results.push_back(entry);
     }
@@ -3829,6 +3816,8 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
             "  \"ismine\" : true|false,        (boolean) If the address is yours or not\n"
             "  \"solvable\" : true|false,      (boolean) If the address is solvable by the wallet\n"
             "  \"iswatchonly\" : true|false,   (boolean) If the address is watchonly\n"
+            "  \"solvable\" : true|false,      (boolean) Whether we know how to spend coins sent to this address, ignoring the possible lack of private keys\n"
+            "  \"desc\" : \"desc\",            (string, optional) A descriptor for spending coins sent to this address (only when solvable)\n"
             "  \"isscript\" : true|false,      (boolean) If the key is a script\n"
             "  \"ischange\" : true|false,      (boolean) If the address was used for change output\n"
             "  \"iswitness\" : true|false,     (boolean) If the address is a witness address\n"
@@ -3882,6 +3871,11 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
 
     isminetype mine = IsMine(*pwallet, dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
+    bool solvable = IsSolvable(*pwallet, scriptPubKey);
+    ret.pushKV("solvable", solvable);
+    if (solvable) {
+       ret.pushKV("desc", InferDescriptor(scriptPubKey, *pwallet)->ToString());
+    }
     ret.pushKV("iswatchonly", bool(mine & ISMINE_WATCH_ONLY));
     ret.pushKV("solvable", IsSolvable(*pwallet, scriptPubKey));
     UniValue detail = DescribeWalletAddress(pwallet, dest);
@@ -4419,8 +4413,8 @@ UniValue getauxblock(const JSONRPCRequest& request)
                 "required to merge-mine it.  With arguments, submits a solved\n"
                 "auxpow for a previously returned block.\n",
                 {
-                    {"hash", RPCArg::Type::STR, true},
-                    {"auxpow", RPCArg::Type::STR, true},
+                    {"hash", RPCArg::Type::STR_HEX, true},
+                    {"auxpow", RPCArg::Type::STR_HEX, true},
                 }}
                 .ToString() +
             "\nArguments:\n"
