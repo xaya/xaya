@@ -1135,8 +1135,8 @@ UniValue submitauxblock(const JSONRPCRequest& request)
                 "\nSubmits a solved auxpow for a block that was previously"
                 " created by 'createauxblock'.\n",
                 {
-                    {"hash", RPCArg::Type::STR, false},
-                    {"auxpow", RPCArg::Type::STR, false},
+                    {"hash", RPCArg::Type::STR_HEX, false},
+                    {"auxpow", RPCArg::Type::STR_HEX, false},
                 }}
                 .ToString() +
             "\nArguments:\n"
