@@ -190,6 +190,7 @@ BASE_SCRIPTS = [
     'feature_config_args.py',
     'rpc_help.py',
     'feature_help.py',
+    'feature_shutdown.py',
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time
 
@@ -288,7 +289,7 @@ def main():
     if tests:
         # Individual tests have been specified. Run specified tests that exist
         # in the ALL_SCRIPTS list. Accept the name with or without .py extension.
-        tests = [re.sub("\.py$", "", test) + ".py" for test in tests]
+        tests = [test + ".py" if ".py" not in test else test for test in tests]
         for test in tests:
             if test in ALL_SCRIPTS:
                 test_list.append(test)
