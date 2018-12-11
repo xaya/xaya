@@ -237,14 +237,10 @@ name_list (const JSONRPCRequest& request)
         RPCHelpMan ("name_list",
             "\nShows the status of all names in the wallet.\n",
             {
-                {"name", RPCArg::Type::STR, true},
+                {"name", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Only include this name"},
                 optHelp.buildRpcArg (),
             })
             .ToString () +
-        "\nArguments:\n"
-        "1. \"name\"          (string, optional) only include this name\n"
-        "2. \"options\"       (object, optional)\n"
-        + optHelp.finish ("") +
         "\nResult:\n"
         "[\n"
         + NameInfoHelp ("  ")
@@ -357,19 +353,14 @@ name_register (const JSONRPCRequest& request)
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
         RPCHelpMan ("name_register",
-            "\nRegisters a new name.\n",
+            "\nRegisters a new name."
+                + HelpRequiringPassphrase (pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, false},
-                {"value", RPCArg::Type::STR, false},
+                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to register"},
+                {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
                 optHelp.buildRpcArg (),
             })
-            .ToString ()
-        + HelpRequiringPassphrase (pwallet) +
-        "\nArguments:\n"
-        "1. \"name\"          (string, required) the name to register\n"
-        "2. \"value\"         (string, required) value for the name\n"
-        "3. \"options\"       (object, optional)\n"
-        + optHelp.finish ("") +
+            .ToString () +
         "\nResult:\n"
         "\"txid\"             (string) the name_register's txid\n"
         "\nExamples:\n"
@@ -455,19 +446,14 @@ name_update (const JSONRPCRequest& request)
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
         RPCHelpMan ("name_update",
-            "\nUpdates a name and possibly transfers it.\n",
+            "\nUpdates a name and possibly transfers it."
+                + HelpRequiringPassphrase (pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, false},
-                {"value", RPCArg::Type::STR, false},
+                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to update"},
+                {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
                 optHelp.buildRpcArg (),
             })
-            .ToString ()
-        + HelpRequiringPassphrase (pwallet) +
-        "\nArguments:\n"
-        "1. \"name\"          (string, required) the name to update\n"
-        "2. \"value\"         (string, required) value for the name\n"
-        "3. \"options\"       (object, optional)\n"
-        + optHelp.finish ("") +
+            .ToString () +
         "\nResult:\n"
         "\"txid\"             (string) the name_update's txid\n"
         "\nExamples:\n"
@@ -549,35 +535,26 @@ sendtoname (const JSONRPCRequest& request)
     throw std::runtime_error (
         RPCHelpMan{"sendtoname",
             "\nSend an amount to the owner of a name.\n"
-            "\nIt is an error if the name is expired.\n",
+            "\nIt is an error if the name is expired."
+                + HelpRequiringPassphrase(pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, false},
-                {"amount", RPCArg::Type::AMOUNT, false},
-                {"comment", RPCArg::Type::STR, true},
-                {"comment_to", RPCArg::Type::STR, true},
-                {"subtractfeefromamount", RPCArg::Type::BOOL, true},
-                {"replaceable", RPCArg::Type::BOOL, true},
-                {"conf_target", RPCArg::Type::NUM, true},
-                {"estimate_mode", RPCArg::Type::STR, true},
-            }}
-            .ToString()
-        + HelpRequiringPassphrase (pwallet) +
-        "\nArguments:\n"
-        "1. \"name\"        (string, required) The name to send to.\n"
-        "2. \"amount\"      (numeric, required) The amount in CHI to send. eg 0.1\n"
-        "3. \"comment\"     (string, optional) A comment used to store what the transaction is for. \n"
-        "                             This is not part of the transaction, just kept in your wallet.\n"
-        "4. \"comment-to\"  (string, optional) A comment to store the name of the person or organization \n"
+                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to send to."},
+                {"amount", RPCArg::Type::AMOUNT, /* opt */ false, /* default_val */ "", "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                {"comment", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "A comment used to store what the transaction is for.\n"
+        "                             This is not part of the transaction, just kept in your wallet."},
+                {"comment_to", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "A comment to store the name of the person or organization\n"
         "                             to which you're sending the transaction. This is not part of the \n"
-        "                             transaction, just kept in your wallet.\n"
-        "5. subtractfeefromamount  (boolean, optional, default=false) The fee will be deducted from the amount being sent.\n"
-        "                             The recipient will receive less CHI than you enter in the amount field.\n"
-        "6. replaceable            (boolean, optional) Allow this transaction to be replaced by a transaction with higher fees via BIP 125\n"
-        "7. conf_target            (numeric, optional) Confirmation target (in blocks)\n"
-        "8. \"estimate_mode\"      (string, optional, default=UNSET) The fee estimate mode, must be one of:\n"
+        "                             transaction, just kept in your wallet."},
+                {"subtractfeefromamount", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "false", "The fee will be deducted from the amount being sent.\n"
+        "                             The recipient will receive less bitcoins than you enter in the amount field."},
+                {"replaceable", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
+                {"conf_target", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "", "Confirmation target (in blocks)"},
+                {"estimate_mode", RPCArg::Type::STR, /* opt */ true, /* default_val */ "UNSET", "The fee estimate mode, must be one of:\n"
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
-        "       \"CONSERVATIVE\"\n"
+        "       \"CONSERVATIVE\""},
+            }}
+            .ToString() +
         "\nResult:\n"
         "\"transactionid\"  (string) The transaction id.\n"
         "\nExamples:\n"

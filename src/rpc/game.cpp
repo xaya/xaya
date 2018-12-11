@@ -214,18 +214,13 @@ game_sendupdates (const JSONRPCRequest& request)
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
         RPCHelpMan ("game_sendupdates",
-            "\nRequests on-demand block attach/detach notifications to be sent"
-            " through the game ZMQ interface.\n",
+            "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n",
             {
-                {"gameid", RPCArg::Type::STR, false},
-                {"fromblock", RPCArg::Type::STR_HEX, false},
-                {"toblock", RPCArg::Type::STR_HEX, true},
+                {"gameid", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The game ID for which to send notifications"},
+                {"fromblock", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Starting block hash"},
+                {"toblock", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "current tip", "Target block hash"},
             })
             .ToString () +
-        "\nArguments:\n"
-        "1. \"gameid\"          (string, required) the gameid for which to send notifications\n"
-        "2. \"fromblock\"       (string, required) starting block hash\n"
-        "3. \"toblock\"         (string, optional) target block hash (defaults to current tip)\n"
         "\nResult:\n"
         "{\n"
         "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
@@ -346,19 +341,13 @@ trackedgames (const JSONRPCRequest& request)
         || (request.params.size () != 0 && request.params.size () != 2))
     throw std::runtime_error (
         RPCHelpMan ("trackedgames",
-            "\nReturns or modifies the list of tracked games for the game"
-            " ZMQ interface.\n"
-            "\nIf called without arguments, the list of tracked games is"
-            " returned.\n"
-            "Otherwise, the given game is added or removed from the list.\n",
+            "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
+            "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
             {
-                {"command", RPCArg::Type::STR, true},
-                {"gameid", RPCArg::Type::STR, true},
+                {"command", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Can be \"add\" or \"remove\""},
+                {"gameid", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "The game ID to add or remove"},
             })
             .ToString () +
-        "\nArguments:\n"
-        "1. \"command\"         (string, optional) can be \"add\" or \"remove\"\n"
-        "2. \"gameid\"          (string, optional) the gameid to add or remove\n"
         "\nResult if called without arguments:\n"
         "[                    (json array) currently tracked game IDs\n"
         "  \"game1\",\n"

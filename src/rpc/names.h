@@ -104,10 +104,9 @@ public:
 };
 
 /**
- * Builder class for the help text of the "options" argument for name RPCs.
- * This also takes care of building the inner RPCArgs for the RPCHelpMan.
+ * Builder class for the help of the "options" argument for name RPCs.
  */
-class NameOptionsHelp : public HelpTextBuilder
+class NameOptionsHelp
 {
 
 private:
@@ -128,10 +127,17 @@ public:
   NameOptionsHelp& withValueEncoding ();
 
   /**
-   * Variant of withField that also adds the innerArgs field correctly.  Takes
-   * the name of the field from RPCArg.
+   * Variant of withField that also adds the innerArgs field correctly.
    */
-  NameOptionsHelp& withArg (const RPCArg& arg, const std::string& doc);
+  NameOptionsHelp& withArg (const std::string& name, RPCArg::Type type,
+                            const std::string& doc);
+
+  /**
+   * Adds a new inner argument with a default value.
+   */
+  NameOptionsHelp& withArg (const std::string& name, RPCArg::Type type,
+                            const std::string& defaultValue,
+                            const std::string& doc);
 
   /**
    * Constructs the RPCArg object for the options argument described by this

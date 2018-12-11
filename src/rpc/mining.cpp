@@ -117,13 +117,10 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
                 "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
                 "Pass in [height] to estimate the network speed at the time when a certain block was found.\n",
                 {
-                    {"nblocks", RPCArg::Type::NUM, true},
-                    {"height", RPCArg::Type::NUM, true},
+                    {"nblocks", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "120", "The number of blocks, or -1 for blocks since last difficulty change."},
+                    {"height", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "-1", "To estimate at the time of the given height."},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. nblocks     (numeric, optional, default=120) The number of blocks.\n"
-            "2. height      (numeric, optional, default=-1) To estimate at the time of the given height.\n"
             "\nResult:\n"
             "{\n"
             "  \"sha256d\": x,              (numeric) Estimated hashes per second for SHA256D\n"
@@ -224,17 +221,12 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
             RPCHelpMan{"generatetoaddress",
                 "\nMine blocks immediately to a specified address (before the RPC call returns)\n",
                 {
-                    {"nblocks", RPCArg::Type::NUM, false},
-                    {"address", RPCArg::Type::STR, false},
-                    {"maxtries", RPCArg::Type::NUM, true},
-                    {"algo", RPCArg::Type::STR, true},
+                    {"nblocks", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "How many blocks are generated immediately."},
+                    {"address", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The address to send the newly generated bitcoin to."},
+                    {"maxtries", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "1000000", "How many iterations to try."},
+                    {"algo", RPCArg::Type::STR, /* opt */ true, /* default_val */ "neoscrypt", "Which mining algorithm to use."},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. nblocks      (numeric, required) How many blocks are generated immediately.\n"
-            "2. address      (string, required) The address to send the newly generated bitcoin to.\n"
-            "3. maxtries     (numeric, optional) How many iterations to try (default = 1000000).\n"
-            "4. algo         (string, optional) Which mining algorithm to use (default: neoscrypt).\n"
             "\nResult:\n"
             "[ blockhashes ]     (array) hashes of blocks generated\n"
             "\nExamples:\n"
@@ -308,19 +300,15 @@ static UniValue prioritisetransaction(const JSONRPCRequest& request)
             RPCHelpMan{"prioritisetransaction",
                 "Accepts the transaction into mined blocks at a higher (or lower) priority\n",
                 {
-                    {"txid", RPCArg::Type::STR, false},
-                    {"dummy", RPCArg::Type::NUM, false},
-                    {"fee_delta", RPCArg::Type::NUM, false},
-                }}
-                .ToString() +
-            "\nArguments:\n"
-            "1. \"txid\"       (string, required) The transaction id.\n"
-            "2. dummy          (numeric, optional) API-Compatibility for previous API. Must be zero or null.\n"
-            "                  DEPRECATED. For forward compatibility use named arguments and omit this parameter.\n"
-            "3. fee_delta      (numeric, required) The fee value (in satoshis) to add (or subtract, if negative).\n"
+                    {"txid", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "The transaction id."},
+                    {"dummy", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "API-Compatibility for previous API. Must be zero or null.\n"
+            "                  DEPRECATED. For forward compatibility use named arguments and omit this parameter."},
+                    {"fee_delta", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "The fee value (in satoshis) to add (or subtract, if negative).\n"
             "                  Note, that this value is not a fee rate. It is a value to modify absolute fee of the TX.\n"
             "                  The fee is not actually paid, only the algorithm for selecting transactions into a block\n"
-            "                  considers the transaction as it would have paid a higher (or lower) fee.\n"
+            "                  considers the transaction as it would have paid a higher (or lower) fee."},
+                }}
+                .ToString() +
             "\nResult:\n"
             "true              (boolean) Returns true\n"
             "\nExamples:\n"
@@ -383,39 +371,24 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
                 "    https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki#getblocktemplate_changes\n"
                 "    https://github.com/bitcoin/bips/blob/master/bip-0145.mediawiki\n",
                 {
-                    {"template_request", RPCArg::Type::OBJ,
+                    {"template_request", RPCArg::Type::OBJ, /* opt */ true, /* default_val */ "", "A json object in the following spec",
                         {
-                            {"mode", RPCArg::Type::STR, true},
-                            {"capabilities", RPCArg::Type::ARR,
+                            {"mode", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "This must be set to \"template\", \"proposal\" (see BIP 23), or omitted"},
+                            {"algo", RPCArg::Type::STR, /* opt */ true, /* default_val */ "neoscrypt", "The PoW algo to use"},
+                            {"capabilities", RPCArg::Type::ARR, /* opt */ true, /* default_val */ "", "A list of strings",
                                 {
-                                    {"support", RPCArg::Type::STR, true},
+                                    {"support", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "client side supported feature, 'longpoll', 'coinbasetxn', 'coinbasevalue', 'proposal', 'serverlist', 'workid'"},
                                 },
-                                true},
-                            {"rules", RPCArg::Type::ARR,
+                                },
+                            {"rules", RPCArg::Type::ARR, /* opt */ true, /* default_val */ "", "A list of strings",
                                 {
-                                    {"support", RPCArg::Type::STR, true},
+                                    {"support", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "client side supported softfork deployment"},
                                 },
-                                true},
+                                },
                         },
-                        true, "\"template_request\""},
+                        "\"template_request\""},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. template_request         (json object, optional) A json object in the following spec\n"
-            "     {\n"
-            "       \"mode\":\"template\"    (string, optional) This must be set to \"template\", \"proposal\" (see BIP 23), or omitted\n"
-            "       \"algo\":\"algo\"        (string, optional) The PoW algo to use (default: neoscrypt)\n"
-            "       \"capabilities\":[     (array, optional) A list of strings\n"
-            "           \"support\"          (string) client side supported feature, 'longpoll', 'coinbasetxn', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n"
-            "           ,...\n"
-            "       ],\n"
-            "       \"rules\":[            (array, optional) A list of strings\n"
-            "           \"support\"          (string) client side supported softfork deployment\n"
-            "           ,...\n"
-            "       ]\n"
-            "     }\n"
-            "\n"
-
             "\nResult:\n"
             "{\n"
             "  \"version\" : n,                    (numeric) The preferred block version\n"
@@ -808,13 +781,10 @@ static UniValue submitblock(const JSONRPCRequest& request)
                 "\nAttempts to submit new block to network.\n"
                 "See https://en.bitcoin.it/wiki/BIP_0022 for full specification.\n",
                 {
-                    {"hexdata", RPCArg::Type::STR_HEX, false},
-                    {"dummy", RPCArg::Type::STR, true},
+                    {"hexdata", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "the hex-encoded block data to submit"},
+                    {"dummy", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "dummy value, for compatibility with BIP22. This value is ignored."},
                 }}
                 .ToString() +
-            "\nArguments\n"
-            "1. \"hexdata\"        (string, required) the hex-encoded block data to submit\n"
-            "2. \"dummy\"          (optional) dummy value, for compatibility with BIP22. This value is ignored.\n"
             "\nResult:\n"
             "\nExamples:\n"
             + HelpExampleCli("submitblock", "\"mydata\"")
@@ -876,11 +846,9 @@ static UniValue submitheader(const JSONRPCRequest& request)
                 "\nDecode the given hexdata as a header and submit it as a candidate chain tip if valid."
                 "\nThrows when the header is invalid.\n",
                 {
-                    {"hexdata", RPCArg::Type::STR_HEX, false},
+                    {"hexdata", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "the hex-encoded block header data"},
                 }}
                 .ToString() +
-            "\nArguments\n"
-            "1. \"hexdata\"        (string, required) the hex-encoded block header data\n"
             "\nResult:\n"
             "None"
             "\nExamples:\n" +
@@ -918,13 +886,8 @@ static UniValue estimatesmartfee(const JSONRPCRequest& request)
                 "for which the estimate is valid. Uses virtual transaction size as defined\n"
                 "in BIP 141 (witness data is discounted).\n",
                 {
-                    {"conf_target", RPCArg::Type::NUM, false},
-                    {"estimate_mode", RPCArg::Type::STR, true},
-                }}
-                .ToString() +
-            "\nArguments:\n"
-            "1. conf_target     (numeric) Confirmation target in blocks (1 - 1008)\n"
-            "2. \"estimate_mode\" (string, optional, default=CONSERVATIVE) The fee estimate mode.\n"
+                    {"conf_target", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "Confirmation target in blocks (1 - 1008)"},
+                    {"estimate_mode", RPCArg::Type::STR, /* opt */ true, /* default_val */ "CONSERVATIVE", "The fee estimate mode.\n"
             "                   Whether to return a more conservative estimate which also satisfies\n"
             "                   a longer history. A conservative estimate potentially returns a\n"
             "                   higher feerate and is more likely to be sufficient for the desired\n"
@@ -932,7 +895,9 @@ static UniValue estimatesmartfee(const JSONRPCRequest& request)
             "                   prevailing fee market.  Must be one of:\n"
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
-            "       \"CONSERVATIVE\"\n"
+            "       \"CONSERVATIVE\""},
+                }}
+                .ToString() +
             "\nResult:\n"
             "{\n"
             "  \"feerate\" : x.x,     (numeric, optional) estimate fee rate in " + CURRENCY_UNIT + "/kB\n"
@@ -987,15 +952,12 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
                 "confirmation within conf_target blocks if possible. Uses virtual transaction size as\n"
                 "defined in BIP 141 (witness data is discounted).\n",
                 {
-                    {"conf_target", RPCArg::Type::NUM, false},
-                    {"threshold", RPCArg::Type::NUM, true},
+                    {"conf_target", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "Confirmation target in blocks (1 - 1008)"},
+                    {"threshold", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "", "The proportion of transactions in a given feerate range that must have been\n"
+            "               confirmed within conf_target in order to consider those feerates as high enough and proceed to check\n"
+            "               lower buckets.  Default: 0.95"},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. conf_target (numeric) Confirmation target in blocks (1 - 1008)\n"
-            "2. threshold   (numeric, optional) The proportion of transactions in a given feerate range that must have been\n"
-            "               confirmed within conf_target in order to consider those feerates as high enough and proceed to check\n"
-            "               lower buckets.  Default: 0.95\n"
             "\nResult:\n"
             "{\n"
             "  \"short\" : {            (json object, optional) estimate for short time horizon\n"
@@ -1094,11 +1056,9 @@ UniValue createauxblock(const JSONRPCRequest& request)
                 "\nCreates a new block and returns information required to"
                 " merge-mine it.\n",
                 {
-                    {"address", RPCArg::Type::STR, false},
+                    {"address", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Payout address for the coinbase transaction"},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
             "{\n"
             "  \"hash\"               (string) hash of the created block\n"
@@ -1135,13 +1095,10 @@ UniValue submitauxblock(const JSONRPCRequest& request)
                 "\nSubmits a solved auxpow for a block that was previously"
                 " created by 'createauxblock'.\n",
                 {
-                    {"hash", RPCArg::Type::STR_HEX, false},
-                    {"auxpow", RPCArg::Type::STR_HEX, false},
+                    {"hash", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Hash of the block to submit"},
+                    {"auxpow", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Serialised auxpow found"},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. hash      (string, required) hash of the block to submit\n"
-            "2. auxpow    (string, required) serialised auxpow found\n"
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
@@ -1158,14 +1115,11 @@ UniValue creatework(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             RPCHelpMan{"creatework",
-                "\nCreates a new block and returns information required to"
-                " mine it stand-alone.\n",
+                "\nCreates a new block and returns information required to mine it stand-alone.\n",
                 {
-                    {"address", RPCArg::Type::STR, false},
+                    {"address", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Payout address for the coinbase transaction"},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. address      (string, required) specify coinbase transaction payout address\n"
             "\nResult:\n"
             "{\n"
             "  \"hash\"               (string) hash of the created block\n"
@@ -1199,19 +1153,13 @@ UniValue submitwork(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
         throw std::runtime_error(
             RPCHelpMan{"submitwork",
-                "\nSubmits a solved PoW for a block that was previously"
-                " created by 'creatework'.\n"
-                "\nIf no hash is given, it will be deduced from the data."
-                "  This feature is deprecated, though -- prefer to add an"
-                " explicit hash!\n",
+                "\nSubmits a solved PoW for a block that was previously created by 'creatework'.\n"
+                "\nDEPRECATED: If no hash is given, it will be deduced from the data.  Prefer to add an explicit hash.\n",
                 {
-                    {"hash", RPCArg::Type::STR_HEX, false},
-                    {"data", RPCArg::Type::STR_HEX, false},
+                    {"hash", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Hash of the block to submit"},
+                    {"data", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Solved block header data"},
                 }}
                 .ToString() +
-            "\nArguments:\n"
-            "1. hash      (string, optional) hash of the block to submit\n"
-            "2. data      (string, required) solved block header data\n"
             "\nResult:\n"
             "xxxxx        (boolean) whether the submitted block was correct\n"
             "\nExamples:\n"
