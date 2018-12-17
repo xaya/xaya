@@ -36,6 +36,9 @@ echo "\nName reorgs..."
 echo "\nName scanning..."
 ./name_scanning.py
 
+echo "\nNames and segwit..."
+./name_segwit.py
+
 echo "\nName operation with sendCoins..."
 ./name_sendcoins.py
 
