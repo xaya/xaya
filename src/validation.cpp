@@ -3230,6 +3230,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     // Start enforcing BIP113 (Median Time Past) together with P2SH.
     int nLockTimeFlags = 0;
     if (nHeight >= consensusParams.BIP16Height) {
+        assert(pindexPrev != nullptr);
         nLockTimeFlags |= LOCKTIME_MEDIAN_TIME_PAST;
     }
 
