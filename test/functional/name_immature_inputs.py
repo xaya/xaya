@@ -70,7 +70,7 @@ class NameImmatureInputsTest (NameTestFramework):
     first = self.nodes[0].sendrawtransaction (signed['hex'])
 
     assert_equal (set ([new[0], first]), set (self.nodes[0].getrawmempool ()))
-    self.nodes[0].getblocktemplate ()
+    self.nodes[0].getblocktemplate ({'rules': ['segwit']})
     self.nodes[0].generate (1)
     assert_equal ([first], self.nodes[0].getrawmempool ())
     self.nodes[0].generate (11)
