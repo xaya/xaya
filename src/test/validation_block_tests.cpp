@@ -55,7 +55,7 @@ std::shared_ptr<CBlock> Block(const uint256& prev_hash)
     CScript pubKey;
     pubKey << i++ << OP_TRUE;
 
-    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(PowAlgo::NEOSCRYPT, pubKey, false);
+    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(PowAlgo::NEOSCRYPT, pubKey);
     auto pblock = std::make_shared<CBlock>(ptemplate->block);
     pblock->hashPrevBlock = prev_hash;
     pblock->nTime = ++time;
@@ -154,12 +154,13 @@ BOOST_AUTO_TEST_CASE(processnewblock_signals_ordering)
     // create a bunch of threads that repeatedly process a block generated above at random
     // this will create parallelism and randomness inside validation - the ValidationInterface
     // will subscribe to events generated during block validation and assert on ordering invariance
-    boost::thread_group threads;
+    std::vector<std::thread> threads;
     for (int i = 0; i < 10; i++) {
-        threads.create_thread([&blocks]() {
+        threads.emplace_back([&blocks]() {
             bool ignored;
+            FastRandomContext insecure;
             for (int i = 0; i < 1000; i++) {
-                auto block = blocks[InsecureRandRange(blocks.size() - 1)];
+                auto block = blocks[insecure.randrange(blocks.size() - 1)];
                 ProcessNewBlock(Params(), block, true, &ignored);
             }
 
@@ -173,7 +174,9 @@ BOOST_AUTO_TEST_CASE(processnewblock_signals_ordering)
         });
     }
 
-    threads.join_all();
+    for (auto& t : threads) {
+        t.join();
+    }
     while (GetMainSignals().CallbacksPending() > 0) {
         MilliSleep(100);
     }

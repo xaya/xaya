@@ -30,7 +30,7 @@ from test_framework.script import CScriptNum
 def assert_template(node, block, expect, rehash=True):
     if rehash:
         block.hashMerkleRoot = block.calc_merkle_root()
-    rsp = node.getblocktemplate(template_request={'data': b2x(block.serialize()), 'mode': 'proposal'})
+    rsp = node.getblocktemplate(template_request={'data': b2x(block.serialize()), 'mode': 'proposal', 'rules': ['segwit']})
     assert_equal(rsp, expect)
 
 
@@ -64,7 +64,7 @@ class MiningTest(BitcoinTestFramework):
 
         # Mine a block to leave initial block download
         node.generatetoaddress(1, node.get_deterministic_priv_key().address)
-        tmpl = node.getblocktemplate()
+        tmpl = node.getblocktemplate({'rules': ['segwit']})
         self.log.info("getblocktemplate: Test capability advertised")
         assert 'proposal' in tmpl['capabilities']
         assert 'coinbasetxn' not in tmpl
@@ -92,6 +92,9 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(tmpl["algo"], "neoscrypt")
         block.vtx = [coinbase_tx]
 
+        self.log.info("getblocktemplate: segwit rule must be set")
+        assert_raises_rpc_error(-8, "getblocktemplate must be called with the segwit rule set", node.getblocktemplate)
+
         self.log.info("getblocktemplate: Test valid block")
         assert_template(node, block, None)
 
@@ -108,7 +111,7 @@ class MiningTest(BitcoinTestFramework):
         assert_raises_rpc_error(-22, "Block does not start with a coinbase", node.submitblock, b2x(bad_block.serialize()))
 
         self.log.info("getblocktemplate: Test truncated final transaction")
-        assert_raises_rpc_error(-22, "Block decode failed", node.getblocktemplate, {'data': b2x(block.serialize()[:-1]), 'mode': 'proposal'})
+        assert_raises_rpc_error(-22, "Block decode failed", node.getblocktemplate, {'data': b2x(block.serialize()[:-1]), 'mode': 'proposal', 'rules': ['segwit']})
 
         self.log.info("getblocktemplate: Test duplicate transaction")
         bad_block = copy.deepcopy(block)
@@ -138,7 +141,7 @@ class MiningTest(BitcoinTestFramework):
         bad_block_sn = bytearray(block.serialize())
         assert_equal(bad_block_sn[TX_COUNT_OFFSET], 1)
         bad_block_sn[TX_COUNT_OFFSET] += 1
-        assert_raises_rpc_error(-22, "Block decode failed", node.getblocktemplate, {'data': b2x(bad_block_sn), 'mode': 'proposal'})
+        assert_raises_rpc_error(-22, "Block decode failed", node.getblocktemplate, {'data': b2x(bad_block_sn), 'mode': 'proposal', 'rules': ['segwit']})
 
         self.log.info("getblocktemplate: Test bad bits")
         bad_block = copy.deepcopy(block)
