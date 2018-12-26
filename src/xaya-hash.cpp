@@ -17,7 +17,7 @@ int main (int argc, char** argv)
 {
   if (argc != 3)
     {
-      std::cerr << "USAGE: xaya-hash BLOCK-HEADER-HEX" << std::endl;
+      std::cerr << "USAGE: xaya-hash ALGO BLOCK-HEADER-HEX" << std::endl;
       return EXIT_FAILURE;
     }
   const std::string algoStr(argv[1]);
