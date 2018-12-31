@@ -95,7 +95,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.nodes = []
         self.network_thread = None
         self.mocktime = 0
-        self.rpc_timewait = 60  # Wait for up to 60 seconds for the RPC server to respond
+        self.rpc_timeout = 60  # Wait for up to 60 seconds for the RPC server to respond
         self.supports_cli = False
         self.bind_to_localhost_only = True
         self.set_test_params()
@@ -301,7 +301,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 i,
                 get_datadir_path(self.options.tmpdir, i),
                 rpchost=rpchost,
-                timewait=self.rpc_timewait,
+                timewait=self.rpc_timeout,
                 bitcoind=binary[i],
                 bitcoin_cli=self.options.bitcoincli,
                 mocktime=self.mocktime,
@@ -388,21 +388,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             sync_blocks(group)
             sync_mempools(group)
 
-    def enable_mocktime(self):
-        """Enable mocktime for the script.
-
-        mocktime may be needed for scripts that use the cached version of the
-        blockchain.  If the cached version of the blockchain is used without
-        mocktime then the mempools will not sync due to IBD.
-
-        For backward compatibility of the python scripts with previous
-        versions of the cache, this helper function sets mocktime to Jan 1,
-        2014 + (201 * 10 * 60)"""
-        self.mocktime = 1388534400 + (201 * 10 * 60)
-
-    def disable_mocktime(self):
-        self.mocktime = 0
-
     # Private helper methods. These should not be accessed by the subclass test scripts.
 
     def _start_logging(self):
@@ -460,13 +445,29 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 args = [self.options.bitcoind, "-datadir=" + datadir, '-disablewallet']
                 if i > 0:
                     args.append("-connect=127.0.0.1:" + str(p2p_port(0)))
-                self.nodes.append(TestNode(i, get_datadir_path(self.options.cachedir, i), extra_conf=["bind=127.0.0.1"], extra_args=[], rpchost=None, timewait=self.rpc_timewait, bitcoind=self.options.bitcoind, bitcoin_cli=self.options.bitcoincli, mocktime=self.mocktime, coverage_dir=None))
+                self.nodes.append(TestNode(
+                    i,
+                    get_datadir_path(self.options.cachedir, i),
+                    extra_conf=["bind=127.0.0.1"],
+                    extra_args=[],
+                    rpchost=None,
+                    timewait=self.rpc_timeout,
+                    bitcoind=self.options.bitcoind,
+                    bitcoin_cli=self.options.bitcoincli,
+                    mocktime=self.mocktime,
+                    coverage_dir=None,
+                ))
                 self.nodes[i].args = args
                 self.start_node(i)
 
             # Wait for RPC connections to be ready
             for node in self.nodes:
                 node.wait_for_rpc_connection()
+
+            # For backward compatibility of the python scripts with previous
+            # versions of the cache, set mocktime to Jan 1,
+            # 2014 + (201 * 10 * 60)"""
+            self.mocktime = 1388534400 + (201 * 10 * 60)
 
             # Create a 200-block-long chain; each of the 4 first nodes
             # gets 25 mature blocks and 25 immature.
@@ -475,7 +476,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             #
             # blocks are created with timestamps 10 minutes apart
             # starting from 2010 minutes in the past
-            self.enable_mocktime()
             block_time = self.mocktime - (201 * 10 * 60)
             for i in range(2):
                 for peer in range(4):
@@ -489,7 +489,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             # Shut them down, and clean up cache directories:
             self.stop_nodes()
             self.nodes = []
-            self.disable_mocktime()
+            self.mocktime = 0
 
             def cache_path(n, *paths):
                 return os.path.join(get_datadir_path(self.options.cachedir, n), "regtest", *paths)
