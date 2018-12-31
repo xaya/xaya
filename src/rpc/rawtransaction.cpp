@@ -129,8 +129,8 @@ static UniValue getrawtransaction(const JSONRPCRequest& request)
             "  ],\n"
             "  \"blockhash\" : \"hash\",   (string) the block hash\n"
             "  \"confirmations\" : n,      (numeric) The confirmations\n"
-            "  \"time\" : ttt,             (numeric) The transaction time in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"blocktime\" : ttt         (numeric) The block time in seconds since epoch (Jan 1 1970 GMT)\n"
+            "  \"time\" : ttt,             (numeric) Same as \"blocktime\"\n"
             "}\n"
 
             "\nExamples:\n"
@@ -1134,7 +1134,7 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
             "Sign the transaction, and get back the hex\n"
             + HelpExampleCli("signrawtransactionwithwallet", "\"myhex\"") +
             "\nTest acceptance of the transaction (signed hex)\n"
-            + HelpExampleCli("testmempoolaccept", "\"signedhex\"") +
+            + HelpExampleCli("testmempoolaccept", "[\"signedhex\"]") +
             "\nAs a JSON-RPC call\n"
             + HelpExampleRpc("testmempoolaccept", "[\"signedhex\"]")
             );
