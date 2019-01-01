@@ -22,9 +22,9 @@ class NameTestFramework (BitcoinTestFramework):
     self.extra_args = args
     self.node_groups = None
 
-    # Since we use a cached chain, enable mocktime so nodes do not see
-    # themselves in IBD.
-    self.enable_mocktime ()
+    # Enable mocktime based on the value for the cached blockchain from
+    # test_framework.py.  This is needed to get us out of IBD.
+    self.mocktime = 1388534400 + (201 * 10 * 60)
 
   def split_network (self):
     # Override this method to keep track of the node groups, so that we can

@@ -33,9 +33,6 @@ class AuxpowMiningTest (BitcoinTestFramework):
                          help="Test behaviour with SegWit active")
 
   def run_test (self):
-    # Enable mock time to be out of IBD.
-    self.enable_mocktime ()
-
     # Activate segwit if requested.
     if self.options.segwit:
       self.nodes[0].generate (500)
