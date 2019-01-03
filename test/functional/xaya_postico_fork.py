@@ -25,15 +25,10 @@ class PostIcoForkTest (BitcoinTestFramework):
   def run_test (self):
     self.node = self.nodes[0]
 
-    # Test that non-zero nonce values are disallowed before the fork height.
-    height = self.node.getblockcount ()
-    assert_greater_than (FORK_HEIGHT - 2, height)
-    self.node.generate (FORK_HEIGHT - 2 - height)
-    assert_equal (FORK_HEIGHT - 2, self.node.getblockcount ())
-    assert_equal (self.tryNonzeroNonceBlock (), 'nonzero-nonce')
-
     # Test that non-zero nonce values are fine at the fork.
-    self.node.generate (1)
+    height = self.node.getblockcount ()
+    assert_greater_than (FORK_HEIGHT - 1, height)
+    self.node.generate (FORK_HEIGHT - 1 - height)
     assert_equal (FORK_HEIGHT - 1, self.node.getblockcount ())
     assert_equal (self.tryNonzeroNonceBlock (), None)
     assert_equal (FORK_HEIGHT, self.node.getblockcount ())

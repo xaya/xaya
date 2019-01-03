@@ -3170,15 +3170,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     if (block.nBits != 0)
         return state.Invalid(false, REJECT_INVALID, "nonzero-bits",
                              "block header has non-zero nonce");
-    /* Until the POST_ICO fork, also the nonce has to be zero.
-     *
-     * TODO: Remove this requirement after we are past the fork height!
-     */
-    if (!params.GetConsensus().rules->ForkInEffect(Consensus::Fork::POST_ICO,
-                                                   nHeight)
-          && block.nNonce != 0)
-        return state.Invalid(false, REJECT_INVALID, "nonzero-nonce",
-                             "block header has non-zero nonce");
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
