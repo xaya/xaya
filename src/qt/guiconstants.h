@@ -50,5 +50,6 @@ static const int MAX_URI_LENGTH = 255;
 #define QAPP_ORG_DOMAIN "namecoin.org"
 #define QAPP_APP_NAME_DEFAULT "Namecoin-Qt"
 #define QAPP_APP_NAME_TESTNET "Namecoin-Qt-testnet"
+#define QAPP_APP_NAME_REGTEST "Namecoin-Qt-regtest"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H
