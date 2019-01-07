@@ -50,5 +50,6 @@ static const int MAX_URI_LENGTH = 255;
 #define QAPP_ORG_DOMAIN "xaya.io"
 #define QAPP_APP_NAME_DEFAULT "Xaya-Qt"
 #define QAPP_APP_NAME_TESTNET "Xaya-Qt-testnet"
+#define QAPP_APP_NAME_REGTEST "Xaya-Qt-regtest"
 
 #endif // BITCOIN_QT_GUICONSTANTS_H
