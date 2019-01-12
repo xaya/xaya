@@ -15,6 +15,9 @@
 - `name_filter` has been removed.  Instead, `name_scan` with the newly added
   filtering options can be used.
 
+- `ismine` is no longer added to RPC results if no wallet is associated
+  to an RPC call.
+
 ## Version 0.17
 
 - Previously, `createrawtransaction` supported a separate argument for creating
