@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -214,13 +214,22 @@ CAuxpowBuilder::buildCoinbaseData (bool header, const valtype& auxRoot,
   valtype res;
 
   if (header)
-    res.insert (res.end (), UBEGIN (pchMergedMiningHeader),
-                UEND (pchMergedMiningHeader));
+    res.insert (res.end (),
+                pchMergedMiningHeader,
+                pchMergedMiningHeader + sizeof (pchMergedMiningHeader));
   res.insert (res.end (), auxRoot.begin (), auxRoot.end ());
 
-  const int size = (1 << h);
-  res.insert (res.end (), UBEGIN (size), UEND (size));
-  res.insert (res.end (), UBEGIN (nonce), UEND (nonce));
+  int size = (1 << h);
+  for (int i = 0; i < 4; ++i)
+    {
+      res.insert (res.end (), size & 0xFF);
+      size >>= 8;
+    }
+  for (int i = 0; i < 4; ++i)
+    {
+      res.insert (res.end (), nonce & 0xFF);
+      nonce >>= 8;
+    }
 
   return res;
 }

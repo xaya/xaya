@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2018 The Bitcoin Core developers
+// Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -410,15 +410,15 @@ private:
     // whitelisted (as well as those connecting to whitelisted binds).
     std::vector<CSubNet> vWhitelistedRange;
 
-    unsigned int nSendBufferMaxSize;
-    unsigned int nReceiveFloodSize;
+    unsigned int nSendBufferMaxSize{0};
+    unsigned int nReceiveFloodSize{0};
 
     std::vector<ListenSocket> vhListenSocket;
-    std::atomic<bool> fNetworkActive;
+    std::atomic<bool> fNetworkActive{true};
     banmap_t setBanned GUARDED_BY(cs_setBanned);
     CCriticalSection cs_setBanned;
-    bool setBannedIsDirty GUARDED_BY(cs_setBanned);
-    bool fAddressesInitialized;
+    bool setBannedIsDirty GUARDED_BY(cs_setBanned){false};
+    bool fAddressesInitialized{false};
     CAddrMan addrman;
     std::deque<std::string> vOneShots GUARDED_BY(cs_vOneShots);
     CCriticalSection cs_vOneShots;
@@ -427,8 +427,8 @@ private:
     std::vector<CNode*> vNodes;
     std::list<CNode*> vNodesDisconnected;
     mutable CCriticalSection cs_vNodes;
-    std::atomic<NodeId> nLastNodeId;
-    unsigned int nPrevNodeCount;
+    std::atomic<NodeId> nLastNodeId{0};
+    unsigned int nPrevNodeCount{0};
 
     /** Services this instance offers */
     ServiceFlags nLocalServices;
@@ -452,7 +452,7 @@ private:
 
     std::condition_variable condMsgProc;
     Mutex mutexMsgProc;
-    std::atomic<bool> flagInterruptMsgProc;
+    std::atomic<bool> flagInterruptMsgProc{false};
 
     CThreadInterrupt interruptNet;
 
@@ -556,6 +556,8 @@ struct LocalServiceInfo {
 
 extern CCriticalSection cs_mapLocalHost;
 extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost GUARDED_BY(cs_mapLocalHost);
+
+extern const std::string NET_MESSAGE_COMMAND_OTHER;
 typedef std::map<std::string, uint64_t> mapMsgCmdSize; //command, total bytes
 
 class CNodeStats
@@ -702,8 +704,8 @@ public:
     const uint64_t nKeyedNetGroup;
     std::atomic_bool fPauseRecv;
     std::atomic_bool fPauseSend;
-protected:
 
+protected:
     mapMsgCmdSize mapSendBytesPerMsgCmd;
     mapMsgCmdSize mapRecvBytesPerMsgCmd GUARDED_BY(cs_vRecv);
 

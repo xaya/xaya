@@ -1,13 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 Vince Durham
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <auxpow.h>
 
-#include <compat/endian.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
 #include <hash.h>
@@ -18,6 +17,26 @@
 
 #include <algorithm>
 #include <cassert>
+
+namespace
+{
+
+/**
+ * Decodes a 32-bit little endian integer from raw bytes.
+ */
+uint32_t
+DecodeLE32 (const unsigned char* bytes)
+{
+  uint32_t res = 0;
+  for (int i = 0; i < 4; ++i)
+    {
+      res <<= 8;
+      res |= bytes[3 - i];
+    }
+  return res;
+}
+
+} // anonymous namespace
 
 bool
 CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
@@ -49,8 +68,11 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
     // Check that the same work is not submitted twice to our chain.
     //
 
+    const unsigned char* const mmHeaderBegin = pchMergedMiningHeader;
+    const unsigned char* const mmHeaderEnd
+        = mmHeaderBegin + sizeof (pchMergedMiningHeader);
     CScript::const_iterator pcHead =
-        std::search(script.begin(), script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
+        std::search(script.begin(), script.end(), mmHeaderBegin, mmHeaderEnd);
 
     CScript::const_iterator pc =
         std::search(script.begin(), script.end(), vchRootHash.begin(), vchRootHash.end());
@@ -62,7 +84,8 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
     {
         // Enforce only one chain merkle root by checking that a single instance of the merged
         // mining header exists just before.
-        if (script.end() != std::search(pcHead + 1, script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader)))
+        if (script.end() != std::search(pcHead + 1, script.end(),
+                                        mmHeaderBegin, mmHeaderEnd))
             return error("Multiple merged mining headers in coinbase");
         if (pcHead + sizeof(pchMergedMiningHeader) != pc)
             return error("Merged mining header is not just before chain merkle root");
@@ -83,16 +106,12 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
     if (script.end() - pc < 8)
         return error("Aux POW missing chain merkle tree size and nonce in parent coinbase");
 
-    uint32_t nSize;
-    memcpy(&nSize, &pc[0], 4);
-    nSize = le32toh (nSize);
+    const uint32_t nSize = DecodeLE32 (&pc[0]);
     const unsigned merkleHeight = vChainMerkleBranch.size ();
     if (nSize != (1u << merkleHeight))
         return error("Aux POW merkle branch size does not match parent coinbase");
 
-    uint32_t nNonce;
-    memcpy(&nNonce, &pc[4], 4);
-    nNonce = le32toh (nNonce);
+    const uint32_t nNonce = DecodeLE32 (&pc[4]);
     if (nChainIndex != getExpectedIndex (nNonce, nChainId, merkleHeight))
         return error("Aux POW wrong index");
 
@@ -136,9 +155,9 @@ CAuxPow::CheckMerkleBranch (uint256 hash,
        it != vMerkleBranch.end (); ++it)
   {
     if (nIndex & 1)
-      hash = Hash (BEGIN (*it), END (*it), BEGIN (hash), END (hash));
+      hash = Hash (it->begin (), it->end (), hash.begin (), hash.end ());
     else
-      hash = Hash (BEGIN (hash), END (hash), BEGIN (*it), END (*it));
+      hash = Hash (hash.begin (), hash.end (), it->begin (), it->end ());
     nIndex >>= 1;
   }
   return hash;

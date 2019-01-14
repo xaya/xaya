@@ -97,7 +97,6 @@ public:
            after them.  They are too deep in the chain to be ever reorged,
            and thus this is also fine.  */
         consensus.BIP34Height = 250000;
-        consensus.BIP34Hash = uint256S("0x514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a");
         consensus.BIP65Height = 335000;
         consensus.BIP66Height = 250000;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -141,6 +140,8 @@ public:
         pchMessageStart[3] = 0xfe;
         nDefaultPort = 8334;
         nPruneAfterHeight = 100000;
+        m_assumed_blockchain_size = 200;
+        m_assumed_chain_state_size = 3;
 
         genesis = CreateGenesisBlock(1303000001, 0xa21ea192u, 0x1c007fff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -261,7 +262,6 @@ public:
         /* As before, these are not the actual activation heights but some
            blocks after them.  */
         consensus.BIP34Height = 130000;
-        consensus.BIP34Hash = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954");
         consensus.BIP65Height = 130000;
         consensus.BIP66Height = 130000;
         consensus.powLimit = uint256S("0000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -301,6 +301,8 @@ public:
         pchMessageStart[3] = 0xfe;
         nDefaultPort = 18334;
         nPruneAfterHeight = 1000;
+        m_assumed_blockchain_size = 20;
+        m_assumed_chain_state_size = 2;
 
         genesis = CreateTestnetGenesisBlock(1296688602, 0x16ec0bff, 0x1d07fff8, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -373,10 +375,9 @@ public:
         strNetworkID = "regtest";
         consensus.nSubsidyHalvingInterval = 150;
         consensus.BIP16Height = 432; // Corresponds to activation height using BIP9 rules
-        consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP34Hash = uint256();
-        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
-        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
+        consensus.BIP34Height = 500; // BIP34 activated on regtest (Used in functional tests)
+        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in functional tests)
+        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in functional tests)
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -408,6 +409,8 @@ public:
         pchMessageStart[3] = 0xda;
         nDefaultPort = 18445;
         nPruneAfterHeight = 1000;
+        m_assumed_blockchain_size = 0;
+        m_assumed_chain_state_size = 0;
 
         UpdateVersionBitsParametersFromArgs(args);
 
