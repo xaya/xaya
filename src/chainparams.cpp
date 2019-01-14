@@ -212,6 +212,8 @@ public:
         pchMessageStart[3] = 0xfe;
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
+        m_assumed_blockchain_size = 2;
+        m_assumed_chain_state_size = 1;
 
         genesis = CreateGenesisBlock (1531470713, 482087, 0x1e0ffff0,
                                       pszTimestampMainnet,
@@ -304,6 +306,8 @@ public:
         pchMessageStart[3] = 0xfe;
         nDefaultPort = 18394;
         nPruneAfterHeight = 1000;
+        m_assumed_blockchain_size = 1;
+        m_assumed_chain_state_size = 1;
 
         genesis = CreateGenesisBlock (1530623291, 343829, 0x1e0ffff0,
                                       pszTimestampTestnet,
@@ -369,9 +373,9 @@ public:
         // that we don't have to update many of the tests unnecessarily.
         consensus.initialSubsidy = 50 * COIN;
         consensus.BIP16Height = 432; // Corresponds to activation height using BIP9 rules
-        consensus.BIP34Height = 100000000; // BIP34 has not activated on regtest (far in the future so block v1 are not rejected in tests)
-        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in rpc activation tests)
-        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in rpc activation tests)
+        consensus.BIP34Height = 500; // BIP34 activated on regtest (Used in functional tests)
+        consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in functional tests)
+        consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in functional tests)
         consensus.powLimitNeoscrypt = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
@@ -396,6 +400,8 @@ public:
         pchMessageStart[3] = 0xda;
         nDefaultPort = 18495;
         nPruneAfterHeight = 1000;
+        m_assumed_blockchain_size = 0;
+        m_assumed_chain_state_size = 0;
 
         UpdateVersionBitsParametersFromArgs(args);
 

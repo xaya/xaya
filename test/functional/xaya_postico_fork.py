@@ -47,7 +47,8 @@ class PostIcoForkTest (BitcoinTestFramework):
     tip = self.node.getbestblockhash ()
     height = self.node.getblockcount () + 1
     time = self.node.getblockheader (tip)["mediantime"] + 1
-    block = create_block (int (tip, 16), create_coinbase (height), time)
+    block = create_block (int (tip, 16), create_coinbase (height), time,
+                          version=4)
     block.nNonce = 42
 
     block.solve ()

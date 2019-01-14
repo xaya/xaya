@@ -86,6 +86,11 @@ public:
 #endif // ENABLE_WALLET
     bool enableWallet = false;
 
+    /** Get the tray icon status.
+        Some systems have not "system tray" or "notification area" available.
+    */
+    bool hasTrayIcon() const { return trayIcon; }
+
 protected:
     void changeEvent(QEvent *e);
     void closeEvent(QCloseEvent *event);
@@ -187,6 +192,8 @@ private:
 Q_SIGNALS:
     /** Signal raised when a URI was entered or dragged to the GUI */
     void receivedURI(const QString &uri);
+    /** Signal raised when RPC console shown */
+    void consoleShown(RPCConsole* console);
 
 public Q_SLOTS:
     /** Set number of connections shown in the UI */

@@ -813,15 +813,20 @@ static UniValue getblockheader(const JSONRPCRequest& request)
             + HelpExampleRpc("getblockheader", "\"00000000c937983704a73af28acdec37b049d214adbda81d7e2a3dd146f6ed09\"")
         );
 
-    LOCK(cs_main);
-
     uint256 hash(ParseHashV(request.params[0], "hash"));
 
     bool fVerbose = true;
     if (!request.params[1].isNull())
         fVerbose = request.params[1].get_bool();
 
-    const CBlockIndex* pblockindex = LookupBlockIndex(hash);
+    const CBlockIndex* pblockindex;
+    const CBlockIndex* tip;
+    {
+        LOCK(cs_main);
+        pblockindex = LookupBlockIndex(hash);
+        tip = chainActive.Tip();
+    }
+
     if (!pblockindex) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
@@ -834,7 +839,7 @@ static UniValue getblockheader(const JSONRPCRequest& request)
         return strHex;
     }
 
-    return blockheaderToJSON(chainActive.Tip(), pblockindex);
+    return blockheaderToJSON(tip, pblockindex);
 }
 
 static CBlock GetBlockChecked(const CBlockIndex* pblockindex)
@@ -1644,7 +1649,7 @@ static UniValue reconsiderblock(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             RPCHelpMan{"reconsiderblock",
-                "\nRemoves invalidity status of a block and its descendants, reconsider them for activation.\n"
+                "\nRemoves invalidity status of a block, its ancestors and its descendants, reconsider them for activation.\n"
                 "This can be used to undo the effects of invalidateblock.\n",
                 {
                     {"blockhash", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "the hash of the block to reconsider"},

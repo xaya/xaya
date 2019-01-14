@@ -5,6 +5,8 @@ Setup
 ---------------------
 [Xaya](https://xaya.io/) provides the official Xaya client and it builds the backbone of the network. However, it downloads and stores the entire history of Xaya transactions; depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
 
+To download Namecoin Core, visit [namecoin.org](https://namecoin.org/download/).
+
 Running
 ---------------------
 The following are some helpful notes on how to run Xaya on your native platform.
@@ -36,9 +38,10 @@ The following are developer notes on how to build Bitcoin Core on your native pl
 - [macOS Build Notes](build-osx.md)
 - [Unix Build Notes](build-unix.md)
 - [Windows Build Notes](build-windows.md)
+- [FreeBSD Build Notes](build-freebsd.md)
 - [OpenBSD Build Notes](build-openbsd.md)
 - [NetBSD Build Notes](build-netbsd.md)
-- [Gitian Building Guide](gitian-building.md)
+- [Gitian Building Guide (External Link)](https://github.com/bitcoin-core/docs/blob/master/gitian-building.md)
 
 Development
 ---------------------
