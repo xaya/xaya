@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -81,6 +81,12 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (self.nodes[1].getrawmempool (), [txid])
     auxblock = create ()
     target = reverseHex (auxblock['_target'])
+
+    # Cross-check target value with GBT to make explicitly sure that it is
+    # correct (not just implicitly by successfully mining blocks for it
+    # later on).
+    gbt = self.nodes[0].getblocktemplate ({"rules": ["segwit"]})
+    assert_equal (target, gbt['target'].encode ("ascii"))
 
     # Compute invalid auxpow.
     apow = computeAuxpow (auxblock['hash'], target, False)

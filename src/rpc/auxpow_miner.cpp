@@ -136,7 +136,7 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
   result.pushKV ("bits", strprintf ("%08x", pblock->nBits));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
-  result.pushKV ("_target", HexStr (BEGIN (target), END (target)));
+  result.pushKV ("_target", HexStr (target.begin (), target. end ()));
 
   return result;
 }

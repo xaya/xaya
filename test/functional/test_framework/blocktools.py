@@ -46,9 +46,10 @@ MAX_BLOCK_SIGOPS = 20000
 # From BIP141
 WITNESS_COMMITMENT_HEADER = b"\xaa\x21\xa9\xed"
 
-def create_block(hashprev, coinbase, ntime=None):
+def create_block(hashprev, coinbase, ntime=None, *, version=1):
     """Create a block (with regtest difficulty)."""
     block = CBlock()
+    block.set_base_version(version)
     if ntime is None:
         import time
         block.nTime = int(time.time() + 600)
