@@ -113,7 +113,7 @@ void FreespaceChecker::check()
 Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_size) :
     QDialog(parent),
     ui(new Ui::Intro),
-    thread(0),
+    thread(nullptr),
     signalled(false),
     m_blockchain_size(blockchain_size),
     m_chain_state_size(chain_state_size)
@@ -156,7 +156,7 @@ Intro::~Intro()
 {
     delete ui;
     /* Ensure thread is finished before it is deleted */
-    Q_EMIT stopThread();
+    thread->quit();
     thread->wait();
 }
 
@@ -226,7 +226,7 @@ bool Intro::pickDataDirectory(interfaces::Node& node)
                 }
                 break;
             } catch (const fs::filesystem_error&) {
-                QMessageBox::critical(0, tr(PACKAGE_NAME),
+                QMessageBox::critical(nullptr, tr(PACKAGE_NAME),
                     tr("Error: Specified data directory \"%1\" cannot be created.").arg(dataDir));
                 /* fall through, back to choosing screen */
             }
@@ -286,7 +286,7 @@ void Intro::on_dataDirectory_textChanged(const QString &dataDirStr)
 
 void Intro::on_ellipsisButton_clicked()
 {
-    QString dir = QDir::toNativeSeparators(QFileDialog::getExistingDirectory(0, "Choose data directory", ui->dataDirectory->text()));
+    QString dir = QDir::toNativeSeparators(QFileDialog::getExistingDirectory(nullptr, "Choose data directory", ui->dataDirectory->text()));
     if(!dir.isEmpty())
         ui->dataDirectory->setText(dir);
 }
@@ -311,8 +311,7 @@ void Intro::startThread()
     connect(executor, &FreespaceChecker::reply, this, &Intro::setStatus);
     connect(this, &Intro::requestCheck, executor, &FreespaceChecker::check);
     /*  make sure executor object is deleted in its own thread */
-    connect(this, &Intro::stopThread, executor, &QObject::deleteLater);
-    connect(this, &Intro::stopThread, thread, &QThread::quit);
+    connect(thread, &QThread::finished, executor, &QObject::deleteLater);
 
     thread->start();
 }
