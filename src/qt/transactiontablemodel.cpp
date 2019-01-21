@@ -192,12 +192,13 @@ public:
             // simply re-use the cached status.
             interfaces::WalletTxStatus wtx;
             int numBlocks;
-            if (wallet.tryGetTxStatus(rec->hash, wtx, numBlocks) && rec->statusUpdateNeeded(numBlocks)) {
-                rec->updateStatus(wtx, numBlocks);
+            int64_t block_time;
+            if (wallet.tryGetTxStatus(rec->hash, wtx, numBlocks, block_time) && rec->statusUpdateNeeded(numBlocks)) {
+                rec->updateStatus(wtx, numBlocks, block_time);
             }
             return rec;
         }
-        return 0;
+        return nullptr;
     }
 
     QString describe(interfaces::Node& node, interfaces::Wallet& wallet, TransactionRecord *rec, int unit)

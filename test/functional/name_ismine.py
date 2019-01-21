@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -70,6 +70,16 @@ class NameIsMineTest (NameTestFramework):
     # name_scan, name_list
     self.verifyExpectedIsMineInList (self.node.name_scan ())
     self.verifyExpectedIsMineInList (self.node.name_list ())
+
+    # Test the multiwallet situation.  If no wallet is specified for the RPC,
+    # then ismine should not be set at all.
+    self.node.createwallet ("extra")
+    defaultRpc = self.node.get_wallet_rpc ("")
+    extraRpc = self.node.get_wallet_rpc ("extra")
+    self.verifyExpectedIsMineInList (defaultRpc.name_list ())
+    for nm in ["d/a", "d/b"]:
+      assert 'ismine' not in self.node.name_show (nm)
+      assert_equal (extraRpc.name_show (nm)['ismine'], False)
 
 if __name__ == '__main__':
   NameIsMineTest ().main ()

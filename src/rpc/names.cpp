@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -121,10 +121,7 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
                   UniValue& data)
 {
   if (pwallet == nullptr)
-    {
-      data.pushKV ("ismine", false);
-      return;
-    }
+    return;
 
   AssertLockHeld (pwallet->cs_wallet);
   const isminetype mine = IsMine (*pwallet, addr);
