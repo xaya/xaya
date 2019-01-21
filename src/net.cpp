@@ -183,7 +183,7 @@ bool IsPeerAddrLocalGood(CNode *pnode)
 {
     CService addrLocal = pnode->GetAddrLocal();
     return fDiscover && pnode->addr.IsRoutable() && addrLocal.IsRoutable() &&
-           !IsLimited(addrLocal.GetNetwork());
+           IsReachable(addrLocal.GetNetwork());
 }
 
 // pushes our own address to a peer
@@ -222,7 +222,7 @@ bool AddLocal(const CService& addr, int nScore)
     if (!fDiscover && nScore < LOCAL_MANUAL)
         return false;
 
-    if (IsLimited(addr))
+    if (!IsReachable(addr))
         return false;
 
     LogPrintf("AddLocal(%s,%i)\n", addr.ToString(), nScore);
@@ -252,24 +252,23 @@ void RemoveLocal(const CService& addr)
     mapLocalHost.erase(addr);
 }
 
-/** Make a particular network entirely off-limits (no automatic connects to it) */
-void SetLimited(enum Network net, bool fLimited)
+void SetReachable(enum Network net, bool reachable)
 {
     if (net == NET_UNROUTABLE || net == NET_INTERNAL)
         return;
     LOCK(cs_mapLocalHost);
-    vfLimited[net] = fLimited;
+    vfLimited[net] = !reachable;
 }
 
-bool IsLimited(enum Network net)
+bool IsReachable(enum Network net)
 {
     LOCK(cs_mapLocalHost);
-    return vfLimited[net];
+    return !vfLimited[net];
 }
 
-bool IsLimited(const CNetAddr &addr)
+bool IsReachable(const CNetAddr &addr)
 {
-    return IsLimited(addr.GetNetwork());
+    return IsReachable(addr.GetNetwork());
 }
 
 /** vote for a local address */
@@ -291,19 +290,6 @@ bool IsLocal(const CService& addr)
     LOCK(cs_mapLocalHost);
     return mapLocalHost.count(addr) > 0;
 }
-
-/** check whether a given network is one we can probably connect to */
-bool IsReachable(enum Network net)
-{
-    return !IsLimited(net);
-}
-
-/** check whether a given address is in a network we can probably connect to */
-bool IsReachable(const CNetAddr& addr)
-{
-    return IsReachable(addr.GetNetwork());
-}
-
 
 CNode* CConnman::FindNode(const CNetAddr& ip)
 {
@@ -1965,7 +1951,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             if (nTries > 100)
                 break;
 
-            if (IsLimited(addr))
+            if (!IsReachable(addr))
                 continue;
 
             // only consider very recently tried nodes after 30 failed attempts
@@ -2327,7 +2313,7 @@ NodeId CConnman::GetNewNodeId()
 
 
 bool CConnman::Bind(const CService &addr, unsigned int flags) {
-    if (!(flags & BF_EXPLICIT) && IsLimited(addr))
+    if (!(flags & BF_EXPLICIT) && !IsReachable(addr))
         return false;
     std::string strError;
     if (!BindListenPort(addr, strError, (flags & BF_WHITELIST) != 0)) {
@@ -2794,8 +2780,8 @@ int CConnman::GetBestHeight() const
 
 unsigned int CConnman::GetReceiveFloodSize() const { return nReceiveFloodSize; }
 
-CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress &addrBindIn, const std::string& addrNameIn, bool fInboundIn) :
-    nTimeConnected(GetSystemTimeInSeconds()),
+CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, bool fInboundIn)
+    : nTimeConnected(GetSystemTimeInSeconds()),
     addr(addrIn),
     addrBind(addrBindIn),
     fInbound(fInboundIn),
@@ -2805,56 +2791,14 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
     id(idIn),
     nLocalHostNonce(nLocalHostNonceIn),
     nLocalServices(nLocalServicesIn),
-    nMyStartingHeight(nMyStartingHeightIn),
-    nSendVersion(0)
+    nMyStartingHeight(nMyStartingHeightIn)
 {
-    nServices = NODE_NONE;
     hSocket = hSocketIn;
-    nRecvVersion = INIT_PROTO_VERSION;
-    nLastSend = 0;
-    nLastRecv = 0;
-    nSendBytes = 0;
-    nRecvBytes = 0;
-    nTimeOffset = 0;
     addrName = addrNameIn == "" ? addr.ToStringIPPort() : addrNameIn;
-    nVersion = 0;
     strSubVer = "";
-    fWhitelisted = false;
-    fOneShot = false;
-    m_manual_connection = false;
-    fClient = false; // set by version message
-    m_limited_node = false; // set by version message
-    fFeeler = false;
-    fSuccessfullyConnected = false;
-    fDisconnect = false;
-    nRefCount = 0;
-    nSendSize = 0;
-    nSendOffset = 0;
     hashContinue = uint256();
-    nStartingHeight = -1;
     filterInventoryKnown.reset();
-    fSendMempool = false;
-    fGetAddr = false;
-    nNextLocalAddrSend = 0;
-    nNextAddrSend = 0;
-    nNextInvSend = 0;
-    fRelayTxes = false;
-    fSentAddr = false;
     pfilter = MakeUnique<CBloomFilter>();
-    timeLastMempoolReq = 0;
-    nLastBlockTime = 0;
-    nLastTXTime = 0;
-    nPingNonceSent = 0;
-    nPingUsecStart = 0;
-    nPingUsecTime = 0;
-    fPingQueued = false;
-    nMinPingUsecTime = std::numeric_limits<int64_t>::max();
-    minFeeFilter = 0;
-    lastSentFeeFilter = 0;
-    nextSendTimeFeeFilter = 0;
-    fPauseRecv = false;
-    fPauseSend = false;
-    nProcessQueueSize = 0;
 
     for (const std::string &msg : getAllNetMessageTypes())
         mapRecvBytesPerMsgCmd[msg] = 0;

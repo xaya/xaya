@@ -267,10 +267,10 @@ void Shutdown(InitInterfaces& interfaces)
         LogPrintf("%s: Unable to remove pidfile: %s\n", __func__, e.what());
     }
 #endif
+    interfaces.chain_clients.clear();
     UnregisterAllValidationInterfaces();
     GetMainSignals().UnregisterBackgroundSignalScheduler();
     GetMainSignals().UnregisterWithMempoolSignals(mempool);
-    interfaces.chain_clients.clear();
     globalVerifyHandle.reset();
     ECC_Stop();
     LogPrintf("%s: done\n", __func__);
@@ -936,7 +936,7 @@ bool AppInitParameterInteraction()
 
     // also see: InitParameterInteraction()
 
-    if (!fs::is_directory(GetBlocksDir(false))) {
+    if (!fs::is_directory(GetBlocksDir())) {
         return InitError(strprintf(_("Specified blocks directory \"%s\" does not exist."), gArgs.GetArg("-blocksdir", "").c_str()));
     }
 
@@ -1329,7 +1329,7 @@ bool AppInitMain(InitInterfaces& interfaces)
         for (int n = 0; n < NET_MAX; n++) {
             enum Network net = (enum Network)n;
             if (!nets.count(net))
-                SetLimited(net);
+                SetReachable(net, false);
         }
     }
 
@@ -1340,7 +1340,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     // -proxy sets a proxy for all outgoing network traffic
     // -noproxy (or -proxy=0) as well as the empty string can be used to not set a proxy, this is the default
     std::string proxyArg = gArgs.GetArg("-proxy", "");
-    SetLimited(NET_ONION);
+    SetReachable(NET_ONION, false);
     if (proxyArg != "" && proxyArg != "0") {
         CService proxyAddr;
         if (!Lookup(proxyArg.c_str(), proxyAddr, 9050, fNameLookup)) {
@@ -1355,7 +1355,7 @@ bool AppInitMain(InitInterfaces& interfaces)
         SetProxy(NET_IPV6, addrProxy);
         SetProxy(NET_ONION, addrProxy);
         SetNameProxy(addrProxy);
-        SetLimited(NET_ONION, false); // by default, -proxy sets onion as reachable, unless -noonion later
+        SetReachable(NET_ONION, true); // by default, -proxy sets onion as reachable, unless -noonion later
     }
 
     // -onion can be used to set only a proxy for .onion, or override normal proxy for .onion addresses
@@ -1364,7 +1364,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     std::string onionArg = gArgs.GetArg("-onion", "");
     if (onionArg != "") {
         if (onionArg == "0") { // Handle -noonion/-onion=0
-            SetLimited(NET_ONION); // set onions as unreachable
+            SetReachable(NET_ONION, false);
         } else {
             CService onionProxy;
             if (!Lookup(onionArg.c_str(), onionProxy, 9050, fNameLookup)) {
@@ -1374,7 +1374,7 @@ bool AppInitMain(InitInterfaces& interfaces)
             if (!addrOnion.IsValid())
                 return InitError(strprintf(_("Invalid -onion address or hostname: '%s'"), onionArg));
             SetProxy(NET_ONION, addrOnion);
-            SetLimited(NET_ONION, false);
+            SetReachable(NET_ONION, true);
         }
     }
 
