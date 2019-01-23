@@ -217,6 +217,7 @@ public:
      * actual nBits, so that the total work of a chain can be computed from it.
      */
     uint32_t nBits;
+    uint32_t nNonce;
 
     /** Mining algorithm used (necessary to evaluate chain work).  */
     PowAlgo algo;
@@ -247,6 +248,7 @@ public:
         hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
+        nNonce         = 0;
 
         algo = PowAlgo::INVALID;
     }
@@ -264,6 +266,7 @@ public:
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
         nBits          = block.pow.getBits();
+        nNonce         = block.nNonce;
 
         algo = block.pow.getCoreAlgo();
     }
@@ -409,6 +412,7 @@ public:
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
         READWRITE(nBits);
+        READWRITE(nNonce);
 
         READWRITE(algo);
     }
@@ -421,7 +425,7 @@ public:
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
         block.nBits           = 0;
-        block.nNonce          = 0;
+        block.nNonce          = nNonce;
         return block.GetHash();
     }
 
