@@ -3122,7 +3122,7 @@ static UniValue fundrawtransaction(const JSONRPCRequest& request)
     FundTransaction(pwallet, tx, fee, change_position, request.params[1]);
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("hex", EncodeHexTx(tx));
+    result.pushKV("hex", EncodeHexTx(CTransaction(tx)));
     result.pushKV("fee", ValueFromAmount(fee));
     result.pushKV("changepos", change_position);
 
@@ -4102,8 +4102,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                             },
                         },
                     },
-                    {"locktime", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "0", "Raw locktime. Non-0 value also locktime-activates inputs\n"
-                            "                             Allows this transaction to be replaced by a transaction with higher fees. If provided, it is an error if explicit sequence numbers are incompatible."},
+                    {"locktime", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "0", "Raw locktime. Non-0 value also locktime-activates inputs"},
                     {"options", RPCArg::Type::OBJ, /* opt */ true, /* default_val */ "null", "",
                         {
                             {"changeAddress", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "pool address", "The address to receive the change"},

@@ -48,6 +48,20 @@ getTestAddress ()
   return GetScriptForDestination (dest);
 }
 
+/**
+ * Wrapper around CheckNameTransaction to make it callable with a
+ * CMutableTransaction.  This avoids tons of explicit conversions that
+ * would otherwise be needed below for the tests.
+ */
+bool
+CheckNameTransaction (const CMutableTransaction& mtx, const unsigned nHeight,
+                      const CCoinsView& view,
+                      CValidationState& state, const unsigned flags)
+{
+  const CTransaction tx(mtx);
+  return CheckNameTransaction (tx, nHeight, view, state, flags);
+}
+
 } // anonymous namespace
 
 /* ************************************************************************** */
@@ -585,7 +599,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, view, state, 0));
   mtx.vin.push_back (CTxIn (inNew));
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, view, state, 0));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
+  BOOST_CHECK (IsStandardTx (CTransaction (mtx), reason));
 
   /* Greedy names.  */
   mtx.vin.clear ();
@@ -615,7 +629,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   mtx.vin.push_back (CTxIn (inUpdate));
   BOOST_CHECK (CheckNameTransaction (mtx, 135999, viewUpd, state, 0));
   BOOST_CHECK (!CheckNameTransaction (mtx, 136000, viewUpd, state, 0));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
+  BOOST_CHECK (IsStandardTx (CTransaction (mtx), reason));
 
   /* Check update of FIRSTUPDATE output, plus expiry.  */
   mtx.vin.clear ();
@@ -664,7 +678,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
   mtx.vin.push_back (CTxIn (inNew));
   BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state, 0));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
+  BOOST_CHECK (IsStandardTx (CTransaction (mtx), reason));
 
   /* Maturity of prev out, acceptable for mempool.  */
   BOOST_CHECK (!CheckNameTransaction (mtx, 100011, viewClean, state, 0));
@@ -729,14 +743,14 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   CMutableTransaction mtx;
   mtx.SetNamecoin ();
   mtx.vout.push_back (CTxOut (COIN, scrNew));
-  ApplyNameTransaction (mtx, 100, view, undo);
+  ApplyNameTransaction (CTransaction (mtx), 100, view, undo);
   BOOST_CHECK (!view.GetName (name, data));
   BOOST_CHECK (undo.vnameundo.empty ());
   BOOST_CHECK (!view.GetNameHistory (name, history));
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, scrFirst));
-  ApplyNameTransaction (mtx, 200, view, undo);
+  ApplyNameTransaction (CTransaction (mtx), 200, view, undo);
   BOOST_CHECK (view.GetName (name, data));
   BOOST_CHECK (data.getHeight () == 200);
   BOOST_CHECK (data.getValue () == value1);
@@ -747,7 +761,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
-  ApplyNameTransaction (mtx, 300, view, undo);
+  ApplyNameTransaction (CTransaction (mtx), 300, view, undo);
   BOOST_CHECK (view.GetName (name, data));
   BOOST_CHECK (data.getHeight () == 300);
   BOOST_CHECK (data.getValue () == value2);
@@ -904,44 +918,51 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   /* The constructed tx needs not be valid.  We only test
      the mempool acceptance and not validation.  */
 
-  CMutableTransaction txNew1;
-  txNew1.SetNamecoin ();
-  txNew1.vout.push_back (CTxOut (COIN, new1));
-  CMutableTransaction txNew1p;
-  txNew1p.SetNamecoin ();
-  txNew1p.vout.push_back (CTxOut (COIN, new1p));
-  CMutableTransaction txNew2;
-  txNew2.SetNamecoin ();
-  txNew2.vout.push_back (CTxOut (COIN, new2));
+  CMutableTransaction mtxNew1;
+  mtxNew1.SetNamecoin ();
+  mtxNew1.vout.push_back (CTxOut (COIN, new1));
+  const CTransaction txNew1(mtxNew1);
+  CMutableTransaction mtxNew1p;
+  mtxNew1p.SetNamecoin ();
+  mtxNew1p.vout.push_back (CTxOut (COIN, new1p));
+  const CTransaction txNew1p(mtxNew1p);
+  CMutableTransaction mtxNew2;
+  mtxNew2.SetNamecoin ();
+  mtxNew2.vout.push_back (CTxOut (COIN, new2));
+  const CTransaction txNew2(mtxNew2);
 
-  CMutableTransaction txReg1;
-  txReg1.SetNamecoin ();
-  txReg1.vout.push_back (CTxOut (COIN, first1));
-  CMutableTransaction txReg2;
-  txReg2.SetNamecoin ();
-  txReg2.vout.push_back (CTxOut (COIN, first2));
+  CMutableTransaction mtxReg1;
+  mtxReg1.SetNamecoin ();
+  mtxReg1.vout.push_back (CTxOut (COIN, first1));
+  const CTransaction txReg1(mtxReg1);
+  CMutableTransaction mtxReg2;
+  mtxReg2.SetNamecoin ();
+  mtxReg2.vout.push_back (CTxOut (COIN, first2));
+  const CTransaction txReg2(mtxReg2);
 
-  CMutableTransaction txUpd1;
-  txUpd1.SetNamecoin ();
-  txUpd1.vout.push_back (CTxOut (COIN, upd1));
-  CMutableTransaction txUpd2;
-  txUpd2.SetNamecoin ();
-  txUpd2.vout.push_back (CTxOut (COIN, upd2));
+  CMutableTransaction mtxUpd1;
+  mtxUpd1.SetNamecoin ();
+  mtxUpd1.vout.push_back (CTxOut (COIN, upd1));
+  const CTransaction txUpd1(mtxUpd1);
+  CMutableTransaction mtxUpd2;
+  mtxUpd2.SetNamecoin ();
+  mtxUpd2.vout.push_back (CTxOut (COIN, upd2));
+  const CTransaction txUpd2(mtxUpd2);
 
   /* Build an invalid transaction.  It should not crash (assert fail)
      the mempool check.  */
 
-  CMutableTransaction txInvalid;
-  txInvalid.SetNamecoin ();
-  mempool.checkNameOps (txInvalid);
+  CMutableTransaction mtxInvalid;
+  mtxInvalid.SetNamecoin ();
+  mempool.checkNameOps (CTransaction (mtxInvalid));
 
-  txInvalid.vout.push_back (CTxOut (COIN, new1));
-  txInvalid.vout.push_back (CTxOut (COIN, new2));
-  txInvalid.vout.push_back (CTxOut (COIN, first1));
-  txInvalid.vout.push_back (CTxOut (COIN, first2));
-  txInvalid.vout.push_back (CTxOut (COIN, upd1));
-  txInvalid.vout.push_back (CTxOut (COIN, upd2));
-  mempool.checkNameOps (txInvalid);
+  mtxInvalid.vout.push_back (CTxOut (COIN, new1));
+  mtxInvalid.vout.push_back (CTxOut (COIN, new2));
+  mtxInvalid.vout.push_back (CTxOut (COIN, first1));
+  mtxInvalid.vout.push_back (CTxOut (COIN, first2));
+  mtxInvalid.vout.push_back (CTxOut (COIN, upd1));
+  mtxInvalid.vout.push_back (CTxOut (COIN, upd2));
+  mempool.checkNameOps (CTransaction (mtxInvalid));
 
   /* For an empty mempool, all tx should be fine.  */
   BOOST_CHECK (!mempool.registersName (nameReg));

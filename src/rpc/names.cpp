@@ -927,8 +927,7 @@ namerawtransaction (const JSONRPCRequest& request)
   else
     throw JSONRPCError (RPC_INVALID_PARAMETER, "Invalid name operation");
 
-
-  result.pushKV ("hex", EncodeHexTx (mtx));
+  result.pushKV ("hex", EncodeHexTx (CTransaction (mtx)));
   return result;
 }
 
