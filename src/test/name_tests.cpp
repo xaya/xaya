@@ -81,6 +81,20 @@ ValueOfLength (const size_t len)
   return DecodeName (result, NameEncoding::ASCII);
 }
 
+/**
+ * Wrapper around CheckNameTransaction to make it callable with a
+ * CMutableTransaction.  This avoids tons of explicit conversions that
+ * would otherwise be needed below for the tests.
+ */
+bool
+CheckNameTransaction (const CMutableTransaction& mtx, const unsigned nHeight,
+                      const CCoinsView& view,
+                      CValidationState& state)
+{
+  const CTransaction tx(mtx);
+  return CheckNameTransaction (tx, nHeight, view, state);
+}
+
 } // anonymous namespace
 
 /* ************************************************************************** */
@@ -632,7 +646,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (!CheckNameTransaction (mtx, 200000, viewUpd, state));
   mtx.vin.push_back (CTxIn (inUpdate));
   BOOST_CHECK (CheckNameTransaction (mtx, 200000, viewUpd, state));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
+  BOOST_CHECK (IsStandardTx (CTransaction (mtx), reason));
 
   /* Check update of REGISTER output.  */
   mtx.vin.clear ();
@@ -672,7 +686,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* Basic valid transaction.  */
   viewClean.DeleteName (name1);
   BOOST_CHECK (CheckNameTransaction (mtx, 100012, viewClean, state));
-  BOOST_CHECK (IsStandardTx (mtx, reason));
+  BOOST_CHECK (IsStandardTx (CTransaction (mtx), reason));
 
   /* Invalid name or value is caught.  */
   mtx = CMutableTransaction (baseTx);
@@ -721,7 +735,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
 
   CMutableTransaction mtx;
   mtx.vout.push_back (CTxOut (COIN, scrRegister));
-  ApplyNameTransaction (mtx, 200, view, undo);
+  ApplyNameTransaction (CTransaction (mtx), 200, view, undo);
   BOOST_CHECK (view.GetName (name, data));
   BOOST_CHECK (data.getHeight () == 200);
   BOOST_CHECK (data.getValue () == value1);
@@ -732,7 +746,7 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, scrUpdate));
-  ApplyNameTransaction (mtx, 300, view, undo);
+  ApplyNameTransaction (CTransaction (mtx), 300, view, undo);
   BOOST_CHECK (view.GetName (name, data));
   BOOST_CHECK (data.getHeight () == 300);
   BOOST_CHECK (data.getValue () == value2);
@@ -779,27 +793,31 @@ BOOST_AUTO_TEST_CASE (name_mempool)
   /* The constructed tx needs not be valid.  We only test
      the mempool acceptance and not validation.  */
 
-  CMutableTransaction txReg1;
-  txReg1.vout.push_back (CTxOut (COIN, reg1));
-  CMutableTransaction txReg2;
-  txReg2.vout.push_back (CTxOut (COIN, reg2));
+  CMutableTransaction mtxReg1;
+  mtxReg1.vout.push_back (CTxOut (COIN, reg1));
+  const CTransaction txReg1(mtxReg1);
+  CMutableTransaction mtxReg2;
+  mtxReg2.vout.push_back (CTxOut (COIN, reg2));
+  const CTransaction txReg2(mtxReg2);
 
-  CMutableTransaction txUpd1;
-  txUpd1.vout.push_back (CTxOut (COIN, upd1));
-  CMutableTransaction txUpd2;
-  txUpd2.vout.push_back (CTxOut (COIN, upd2));
+  CMutableTransaction mtxUpd1;
+  mtxUpd1.vout.push_back (CTxOut (COIN, upd1));
+  const CTransaction txUpd1(mtxUpd1);
+  CMutableTransaction mtxUpd2;
+  mtxUpd2.vout.push_back (CTxOut (COIN, upd2));
+  const CTransaction txUpd2(mtxUpd2);
 
   /* Build an invalid transaction.  It should not crash (assert fail)
      the mempool check.  */
 
-  CMutableTransaction txInvalid;
-  mempool.checkNameOps (txInvalid);
+  CMutableTransaction mtxInvalid;
+  mempool.checkNameOps (CTransaction (mtxInvalid));
 
-  txInvalid.vout.push_back (CTxOut (COIN, reg1));
-  txInvalid.vout.push_back (CTxOut (COIN, reg2));
-  txInvalid.vout.push_back (CTxOut (COIN, upd1));
-  txInvalid.vout.push_back (CTxOut (COIN, upd2));
-  mempool.checkNameOps (txInvalid);
+  mtxInvalid.vout.push_back (CTxOut (COIN, reg1));
+  mtxInvalid.vout.push_back (CTxOut (COIN, reg2));
+  mtxInvalid.vout.push_back (CTxOut (COIN, upd1));
+  mtxInvalid.vout.push_back (CTxOut (COIN, upd2));
+  mempool.checkNameOps (CTransaction (mtxInvalid));
 
   /* For an empty mempool, all tx should be fine.  */
   BOOST_CHECK (!mempool.registersName (nameReg));
