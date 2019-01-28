@@ -9,6 +9,7 @@
 #include <arith_uint256.h>
 #include <consensus/params.h>
 #include <primitives/block.h>
+#include <primitives/pureheader.h>
 #include <tinyformat.h>
 #include <uint256.h>
 
@@ -255,7 +256,7 @@ public:
         SetNull();
     }
 
-    explicit CBlockIndex(const CBlockHeader& block)
+    explicit CBlockIndex(const CPureBlockHeader& block)
     {
         SetNull();
 
@@ -422,7 +423,7 @@ public:
 
     uint256 GetBlockHash() const
     {
-        CBlockHeader block;
+        CPureBlockHeader block;
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
