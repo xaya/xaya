@@ -4183,19 +4183,21 @@ UniValue getauxblock(const JSONRPCRequest& request)
                     {"hash", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "", "Hash of the block to submit"},
                     {"auxpow", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "", "Serialised auxpow found"},
                 },
-                RPCResult{
-            "\nWithout arguments:\n"
-            "{\n"
-            "  \"hash\"               (string) hash of the created block\n"
-            "  \"chainid\"            (numeric) chain ID for this block\n"
-            "  \"previousblockhash\"  (string) hash of the previous block\n"
-            "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
-            "  \"bits\"               (string) compressed target of the block\n"
-            "  \"height\"             (numeric) height of the block\n"
-            "  \"_target\"            (string) target in reversed byte order, deprecated\n"
-            "}\n"
-            "\nWith arguments:\n"
-            "xxxxx        (boolean) whether the submitted block was correct\n"
+                RPCResults{
+                  {"without arguments",
+                      "{\n"
+                      "  \"hash\"               (string) hash of the created block\n"
+                      "  \"chainid\"            (numeric) chain ID for this block\n"
+                      "  \"previousblockhash\"  (string) hash of the previous block\n"
+                      "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
+                      "  \"bits\"               (string) compressed target of the block\n"
+                      "  \"height\"             (numeric) height of the block\n"
+                      "  \"_target\"            (string) target in reversed byte order, deprecated\n"
+                      "}\n"
+                  },
+                  {"with arguments",
+                      "xxxxx        (boolean) whether the submitted block was correct\n"
+                  },
                 },
                 RPCExamples{
                     HelpExampleCli("getauxblock", "")
