@@ -4,12 +4,14 @@
 src/bitcoind
 src/bitcoin-cli
 src/bitcoin-tx
+src/bitcoin-wallet
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
 src/namecoind
 src/namecoin-cli
 src/namecoin-tx
+src/namecoin-wallet
 src/test/test_namecoin
 src/test/test_namecoin_fuzzy
 src/qt/test/test_namecoin-qt

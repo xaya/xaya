@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -27,7 +27,8 @@ class NameRegistrationTest (NameTestFramework):
     # Verify that the name_new with explicit address sent really to this
     # address.  Since there is no equivalent to name_show while we only
     # have a name_new, explicitly check the raw tx.
-    newTx = self.nodes[1].getrawtransaction (newB[0], 1)
+    txHex = self.nodes[1].gettransaction (newB[0])['hex']
+    newTx = self.nodes[1].decoderawtransaction (txHex)
     found = False
     for out in newTx['vout']:
       if 'nameOp' in out['scriptPubKey']:

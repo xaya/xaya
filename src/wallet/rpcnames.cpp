@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -239,20 +239,21 @@ name_list (const JSONRPCRequest& request)
             {
                 {"name", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Only include this name"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withExpiration ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_list", "")
-        + HelpExampleCli ("name_list", "\"myname\"")
-        + HelpExampleRpc ("name_list", "")
-      );
+            },
+            RPCResult {
+              "[\n"
+              + NameInfoHelp ("  ")
+                  .withExpiration ()
+                  .finish (",") +
+              "  ...\n"
+              "]\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_list", "")
+              + HelpExampleCli ("name_list", "\"myname\"")
+              + HelpExampleRpc ("name_list", "")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -361,17 +362,18 @@ name_new (const JSONRPCRequest& request)
             {
                 {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to register"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "[\n"
-        "  xxxxx,   (string) the txid, required for name_firstupdate\n"
-        "  xxxxx    (string) random value for name_firstupdate\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_new", "\"myname\"")
-        + HelpExampleRpc ("name_new", "\"myname\"")
-      );
+            },
+            RPCResult {
+              "[\n"
+              "  xxxxx,   (string) the txid, required for name_firstupdate\n"
+              "  xxxxx    (string) random value for name_firstupdate\n"
+              "]\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_new", "\"myname\"")
+              + HelpExampleRpc ("name_new", "\"myname\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -511,14 +513,15 @@ name_firstupdate (const JSONRPCRequest& request)
                 {"tx", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "The name_new txid"},
                 {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "\"txid\"             (string) the name_firstupdate's txid\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
-        + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
-      );
+            },
+            RPCResult {
+              "\"txid\"             (string) the name_firstupdate's txid\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
+              + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
@@ -625,14 +628,15 @@ name_update (const JSONRPCRequest& request)
                 {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to update"},
                 {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "\"txid\"             (string) the name_update's txid\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
-        + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
-      );
+            },
+            RPCResult {
+              "\"txid\"             (string) the name_update's txid\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
+              + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
@@ -725,16 +729,17 @@ sendtoname (const JSONRPCRequest& request)
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
         "       \"CONSERVATIVE\""},
-            }}
-            .ToString() +
-        "\nResult:\n"
-        "\"transactionid\"  (string) The transaction id.\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1")
-        + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"donation\" \"seans outpost\"")
-        + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
-        + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
-      );
+                },
+                RPCResult{
+            "\"txid\"                  (string) The transaction id.\n"
+                },
+                RPCExamples{
+                    HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1")
+            + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"donation\" \"seans outpost\"")
+            + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
+            + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
+                },
+            }.ToString());
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,
