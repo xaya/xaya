@@ -139,7 +139,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     # this for simplicity.)
     if not self.options.segwit:
       blk = self.nodes[1].getblock (auxblock['hash'])
-      tx = self.nodes[1].getrawtransaction (blk['tx'][0], 1)
+      tx = self.nodes[1].getrawtransaction (blk['tx'][0], True, blk['hash'])
       coinbase = tx['vin'][0]['coinbase']
       assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
 
