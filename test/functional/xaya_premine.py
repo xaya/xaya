@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 The Xaya developers
+# Copyright (c) 2018-2019 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test spendability of premine and that P2SH is enforced correctly for it."""
@@ -42,7 +42,8 @@ class PremineTest(BitcoinTestFramework):
     # special check that disallows the genesis coinbase with getrawtransaction,
     # as it is not spendable).
     node.gettransaction (txid)
-    assert_equal (node.getrawtransaction (txid), tx['hex'])
+    assert_equal (node.getrawtransaction (txid, False, genesis['hash']),
+                  tx['hex'])
 
     # The coinbase txout should be in the UTXO set.
     utxo = node.gettxout (txid, 0)

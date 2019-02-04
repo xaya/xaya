@@ -41,6 +41,7 @@ LIBBITCOINCONSENSUS=libnamecoinconsensus.la
 endif
 if ENABLE_WALLET
 LIBBITCOIN_WALLET=libbitcoin_wallet.a
+LIBBITCOIN_WALLET_TOOL=libbitcoin_wallet_tool.a
 endif
 
 LIBBITCOIN_CRYPTO= $(LIBBITCOIN_CRYPTO_BASE)
@@ -70,6 +71,7 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_WALLET_TOOL) \
   $(LIBBITCOIN_ZMQ)
 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
@@ -88,6 +90,11 @@ if BUILD_BITCOIN_CLI
 endif
 if BUILD_BITCOIN_TX
   bin_PROGRAMS += xaya-tx
+endif
+if ENABLE_WALLET
+if BUILD_BITCOIN_WALLET
+  bin_PROGRAMS += xaya-wallet
+endif
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -150,6 +157,7 @@ BITCOIN_CORE_H = \
   netbase.h \
   netmessagemaker.h \
   noui.h \
+  optional.h \
   outputtype.h \
   policy/feerate.h \
   policy/fees.h \
@@ -212,6 +220,7 @@ BITCOIN_CORE_H = \
   wallet/rpcwallet.h \
   wallet/wallet.h \
   wallet/walletdb.h \
+  wallet/wallettool.h \
   wallet/walletutil.h \
   wallet/coinselection.h \
   warnings.h \
@@ -320,6 +329,12 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/walletdb.cpp \
   wallet/walletutil.cpp \
   wallet/coinselection.cpp \
+  $(BITCOIN_CORE_H)
+
+libbitcoin_wallet_tool_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_wallet_tool_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libbitcoin_wallet_tool_a_SOURCES = \
+  wallet/wallettool.cpp \
   $(BITCOIN_CORE_H)
 
 # crypto primitives library
@@ -568,7 +583,34 @@ xaya_hash_LDADD = \
 xaya_hash_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
-# namecoinconsensus library #
+# bitcoin-wallet binary #
+xaya_wallet_SOURCES = bitcoin-wallet.cpp
+xaya_wallet_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xaya_wallet_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xaya_wallet_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+if TARGET_WINDOWS
+xaya_wallet_SOURCES += bitcoin-wallet-res.rc
+endif
+
+xaya_wallet_LDADD = \
+  $(LIBBITCOIN_WALLET_TOOL) \
+  $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_SERVER) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBUNIVALUE) \
+  $(LIBLEVELDB) \
+  $(LIBLEVELDB_SSE42) \
+  $(LIBMEMENV) \
+  $(LIBSECP256K1)
+
+xaya_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+#
+
+# bitcoinconsensus library #
 if BUILD_BITCOIN_LIBS
 include_HEADERS = script/namecoinconsensus.h
 libnamecoinconsensus_la_SOURCES = $(crypto_libbitcoin_crypto_base_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)

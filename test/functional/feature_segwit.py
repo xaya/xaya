@@ -43,17 +43,21 @@ class SegWitTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 3
         # This test tests SegWit both pre and post-activation, so use the normal BIP9 activation.
+        # TODO: remove -txindex. Currently required for getrawtransaction call.
         self.extra_args = [
             [
                 "-rpcserialversion=0",
                 "-addresstype=legacy",
+                "-txindex"
             ],
             [
                 "-rpcserialversion=1",
                 "-addresstype=legacy",
+                "-txindex"
             ],
             [
                 "-addresstype=legacy",
+                "-txindex"
             ],
         ]
 

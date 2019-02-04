@@ -418,16 +418,17 @@ name_show (const JSONRPCRequest& request)
             {
                 {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to query for"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        + NameInfoHelp ("")
-            .withHeight ()
-            .finish ("") +
-        "\nExamples:\n"
-        + HelpExampleCli ("name_show", "\"myname\"")
-        + HelpExampleRpc ("name_show", "\"myname\"")
-      );
+            },
+            RPCResult {
+              NameInfoHelp ("")
+                .withHeight ()
+                .finish (""),
+            },
+            RPCExamples {
+                HelpExampleCli ("name_show", "\"myname\"")
+              + HelpExampleRpc ("name_show", "\"myname\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -475,19 +476,20 @@ name_history (const JSONRPCRequest& request)
             {
                 {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to query for"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withHeight ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_history", "\"myname\"")
-        + HelpExampleRpc ("name_history", "\"myname\"")
-      );
+            },
+            RPCResult {
+              "[\n"
+              + NameInfoHelp ("  ")
+                  .withHeight ()
+                  .finish (",") +
+              "  ...\n"
+              "]\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_history", "\"myname\"")
+              + HelpExampleRpc ("name_history", "\"myname\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -559,21 +561,22 @@ name_scan (const JSONRPCRequest& request)
                 {"start", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Skip initially to this name"},
                 {"count", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "500", "Stop after this many names"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withHeight ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_scan", "")
-        + HelpExampleCli ("name_scan", "\"d/abc\"")
-        + HelpExampleCli ("name_scan", "\"d/abc\" 10")
-        + HelpExampleRpc ("name_scan", "\"d/abc\"")
-      );
+            },
+            RPCResult {
+              "[\n"
+              + NameInfoHelp ("  ")
+                  .withHeight ()
+                  .finish (",") +
+              "  ...\n"
+              "]\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_scan", "")
+              + HelpExampleCli ("name_scan", "\"d/abc\"")
+              + HelpExampleCli ("name_scan", "\"d/abc\" 10")
+              + HelpExampleRpc ("name_scan", "\"d/abc\"")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
@@ -700,20 +703,22 @@ name_pending (const JSONRPCRequest& request)
             {
                 {"name", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Only look for this name"},
                 optHelp.buildRpcArg (),
-            })
-            .ToString () +
-        "\nResult:\n"
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withField ("\"op\": xxxxx",
-                        "(string) the operation being performed")
-            .finish (",") +
-        "  ...\n"
-        "]\n"
-        + HelpExampleCli ("name_pending", "")
-        + HelpExampleCli ("name_pending", "\"d/domob\"")
-        + HelpExampleRpc ("name_pending", "")
-      );
+            },
+            RPCResult {
+              "[\n"
+              + NameInfoHelp ("  ")
+                  .withField ("\"op\": xxxxx",
+                              "(string) the operation being performed")
+                  .finish (",") +
+              "  ...\n"
+              "]\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_pending", "")
+              + HelpExampleCli ("name_pending", "\"d/domob\"")
+              + HelpExampleRpc ("name_pending", "")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -794,17 +799,18 @@ namerawtransaction (const JSONRPCRequest& request)
                         {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The new value for the name"},
                     },
                  "nameop"},
-            })
-            .ToString () +
-        "\nResult:\n"
-        "{\n"
-        "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
-        "  \"rand\": xxx,       (string) If this is a name_new, the nonce used to create it\n"
-        "}\n"
-        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
-        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-        + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-      );
+            },
+            RPCResult {
+              "{\n"
+              "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
+              "}\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
+              + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+              + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+            }
+        ).ToString ());
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
@@ -864,14 +870,15 @@ name_checkdb (const JSONRPCRequest& request)
         RPCHelpMan ("name_checkdb",
             "\nValidates the name DB's consistency.\n"
             "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
-            {})
-            .ToString () +
-        "\nResult:\n"
-        "xxxxx                        (boolean) whether the state is valid\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("name_checkdb", "")
-        + HelpExampleRpc ("name_checkdb", "")
-      );
+            {},
+            RPCResult {
+              "xxxxx                        (boolean) whether the state is valid\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("name_checkdb", "")
+              + HelpExampleRpc ("name_checkdb", "")
+            }
+        ).ToString ());
 
   LOCK (cs_main);
   pcoinsTip->Flush ();

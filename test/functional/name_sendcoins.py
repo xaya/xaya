@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,7 +16,8 @@ class NameSendCoinsTest (NameTestFramework):
   def verifyTx (self, txid, expected):
     """Verify that the given tx sends currency to the expected recipients."""
 
-    tx = self.nodes[0].getrawtransaction (txid, 1)
+    txHex = self.nodes[0].gettransaction (txid)['hex']
+    tx = self.nodes[0].decoderawtransaction (txHex)
     vout = tx['vout']
 
     # There should be two additional outputs: name and change

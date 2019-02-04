@@ -141,6 +141,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
         config = configparser.ConfigParser()
         config.read_file(open(self.options.configfile))
+        self.config = config
         self.options.bitcoind = os.getenv("BITCOIND", default=config["environment"]["BUILDDIR"] + '/src/xayad' + config["environment"]["EXEEXT"])
         self.options.bitcoincli = os.getenv("BITCOINCLI", default=config["environment"]["BUILDDIR"] + '/src/xaya-cli' + config["environment"]["EXEEXT"])
         powhash.xayahash = os.getenv("XAYA-HASH", default=config["environment"]["BUILDDIR"] + '/src/xaya-hash' + config["environment"]["EXEEXT"])

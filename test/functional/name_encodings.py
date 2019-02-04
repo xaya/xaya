@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -341,7 +341,8 @@ class NameEncodingsTest (NameTestFramework):
     assert found
 
     # Test script and transaction decoding.
-    txAscii = self.node.getrawtransaction (txidAscii, 1)
+    txHex = self.node.gettransaction (txidAscii)['hex']
+    txAscii = self.node.decoderawtransaction (txHex)
     found = False
     for out in txAscii['vout']:
       if not 'nameOp' in out['scriptPubKey']:

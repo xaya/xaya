@@ -4,12 +4,14 @@
 src/bitcoind
 src/bitcoin-cli
 src/bitcoin-tx
+src/bitcoin-wallet
 src/test/test_bitcoin
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
 src/xayad
 src/xaya-cli
 src/xaya-tx
+src/xaya-wallet
 src/xaya-hash
 src/test/test_xaya
 src/test/test_xaya_fuzzy

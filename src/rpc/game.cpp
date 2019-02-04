@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2019 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -219,24 +219,25 @@ game_sendupdates (const JSONRPCRequest& request)
                 {"gameid", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The game ID for which to send notifications"},
                 {"fromblock", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Starting block hash"},
                 {"toblock", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "current tip", "Target block hash"},
-            })
-            .ToString () +
-        "\nResult:\n"
-        "{\n"
-        "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
-        "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
-        "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
-        "  \"steps\":\n"
-        "   {\n"
-        "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
-        "     \"attach\": n,    (numeric) number of attach notifications that will be sent\n"
-        "   },\n"
-        "}\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
-        + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\" \"206c22b7fb26b24b344b5b238325916c8bae4513302403f9f8efaf8b4c3e61f4\"")
-        + HelpExampleRpc ("game_sendupdates", "\"huc\", \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
-      );
+            },
+            RPCResult {
+              "{\n"
+              "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
+              "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
+              "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
+              "  \"steps\":\n"
+              "   {\n"
+              "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
+              "     \"attach\": n,    (numeric) number of attach notifications that will be sent\n"
+              "   },\n"
+              "}\n"
+            },
+            RPCExamples {
+                HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
+              + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\" \"206c22b7fb26b24b344b5b238325916c8bae4513302403f9f8efaf8b4c3e61f4\"")
+              + HelpExampleRpc ("game_sendupdates", "\"huc\", \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
+            }
+        ).ToString ());
 
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params,
@@ -346,20 +347,23 @@ trackedgames (const JSONRPCRequest& request)
             {
                 {"command", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Can be \"add\" or \"remove\""},
                 {"gameid", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "The game ID to add or remove"},
-            })
-            .ToString () +
-        "\nResult if called without arguments:\n"
-        "[                    (json array) currently tracked game IDs\n"
-        "  \"game1\",\n"
-        "  \"game2\",\n"
-        "  ...\n"
-        "]\n"
-        "\nExamples:\n"
-        + HelpExampleCli ("trackedgames", "")
-        + HelpExampleCli ("trackedgames", "\"add\" \"huc\"")
-        + HelpExampleCli ("trackedgames", "\"remove\" \"huc\"")
-        + HelpExampleRpc ("trackedgames", "")
-      );
+            },
+            RPCResults {
+              {"if called without arguments",
+                  "[                    (json array) currently tracked game IDs\n"
+                  "  \"game1\",\n"
+                  "  \"game2\",\n"
+                  "  ...\n"
+                  "]\n"
+              },
+            },
+            RPCExamples {
+                HelpExampleCli ("trackedgames", "")
+              + HelpExampleCli ("trackedgames", "\"add\" \"huc\"")
+              + HelpExampleCli ("trackedgames", "\"remove\" \"huc\"")
+              + HelpExampleRpc ("trackedgames", "")
+            }
+        ).ToString ());
 
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VSTR});

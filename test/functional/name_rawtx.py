@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -111,11 +111,13 @@ class NameRawTxTest (NameTestFramework):
 
   def decodeNameTx (self, ind, txid):
     """
-    Call the node's getrawtransaction on the txid and find the output
-    that is a name operation.  Return the decoded nameop entry.
+    Retrieves the transaction data for the given txid (assuming it is in the
+    node's wallet) and finds the output that is a name operation.  Returns
+    the decoded nameop entry.
     """
 
-    data = self.nodes[ind].getrawtransaction (txid, 1)
+    txHex = self.nodes[ind].gettransaction (txid)['hex']
+    data = self.nodes[ind].decoderawtransaction (txHex)
     res = None
     for out in data['vout']:
       if 'nameOp' in out['scriptPubKey']:
