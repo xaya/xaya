@@ -224,6 +224,7 @@ BASE_SCRIPTS = [
     'xaya_gameblocks.py',
     'xaya_postico_fork.py',
     'xaya_premine.py',
+    'xaya_trading.py',
 ]
 
 EXTENDED_SCRIPTS = [
