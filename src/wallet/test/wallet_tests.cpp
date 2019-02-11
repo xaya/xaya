@@ -44,6 +44,7 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
     CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey()));
     CBlockIndex* newTip = chainActive.Tip();
 
+    LockAnnotation lock(::cs_main);
     auto locked_chain = chain->lock();
 
     // Verify ScanForWalletTransactions accommodates a null start block.
@@ -54,9 +55,9 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         reserver.reserve();
         CWallet::ScanResult result = wallet.ScanForWalletTransactions({} /* start_block */, {} /* stop_block */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
-        BOOST_CHECK(result.failed_block.IsNull());
-        BOOST_CHECK(result.stop_block.IsNull());
-        BOOST_CHECK(!result.stop_height);
+        BOOST_CHECK(result.last_failed_block.IsNull());
+        BOOST_CHECK(result.last_scanned_block.IsNull());
+        BOOST_CHECK(!result.last_scanned_height);
         BOOST_CHECK_EQUAL(wallet.GetImmatureBalance(), 0);
     }
 
@@ -69,9 +70,9 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         reserver.reserve();
         CWallet::ScanResult result = wallet.ScanForWalletTransactions(oldTip->GetBlockHash(), {} /* stop_block */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
-        BOOST_CHECK(result.failed_block.IsNull());
-        BOOST_CHECK_EQUAL(result.stop_block, newTip->GetBlockHash());
-        BOOST_CHECK_EQUAL(*result.stop_height, newTip->nHeight);
+        BOOST_CHECK(result.last_failed_block.IsNull());
+        BOOST_CHECK_EQUAL(result.last_scanned_block, newTip->GetBlockHash());
+        BOOST_CHECK_EQUAL(*result.last_scanned_height, newTip->nHeight);
         BOOST_CHECK_EQUAL(wallet.GetImmatureBalance(), 100 * COIN);
     }
 
@@ -88,9 +89,9 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         reserver.reserve();
         CWallet::ScanResult result = wallet.ScanForWalletTransactions(oldTip->GetBlockHash(), {} /* stop_block */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::FAILURE);
-        BOOST_CHECK_EQUAL(result.failed_block, oldTip->GetBlockHash());
-        BOOST_CHECK_EQUAL(result.stop_block, newTip->GetBlockHash());
-        BOOST_CHECK_EQUAL(*result.stop_height, newTip->nHeight);
+        BOOST_CHECK_EQUAL(result.last_failed_block, oldTip->GetBlockHash());
+        BOOST_CHECK_EQUAL(result.last_scanned_block, newTip->GetBlockHash());
+        BOOST_CHECK_EQUAL(*result.last_scanned_height, newTip->nHeight);
         BOOST_CHECK_EQUAL(wallet.GetImmatureBalance(), 50 * COIN);
     }
 
@@ -106,9 +107,9 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         reserver.reserve();
         CWallet::ScanResult result = wallet.ScanForWalletTransactions(oldTip->GetBlockHash(), {} /* stop_block */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::FAILURE);
-        BOOST_CHECK_EQUAL(result.failed_block, newTip->GetBlockHash());
-        BOOST_CHECK(result.stop_block.IsNull());
-        BOOST_CHECK(!result.stop_height);
+        BOOST_CHECK_EQUAL(result.last_failed_block, newTip->GetBlockHash());
+        BOOST_CHECK(result.last_scanned_block.IsNull());
+        BOOST_CHECK(!result.last_scanned_height);
         BOOST_CHECK_EQUAL(wallet.GetImmatureBalance(), 0);
     }
 }
@@ -123,6 +124,7 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
     CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey()));
     CBlockIndex* newTip = chainActive.Tip();
 
+    LockAnnotation lock(::cs_main);
     auto locked_chain = chain->lock();
 
     // Prune the older block file.
@@ -268,6 +270,7 @@ static int64_t AddTx(CWallet& wallet, uint32_t lockTime, int64_t mockTime, int64
     SetMockTime(mockTime);
     CBlockIndex* block = nullptr;
     if (blockTime > 0) {
+        LockAnnotation lock(::cs_main);
         auto locked_chain = wallet.chain().lock();
         auto inserted = mapBlockIndex.emplace(GetRandHash(), new CBlockIndex);
         assert(inserted.second);
@@ -340,14 +343,20 @@ public:
         wallet = MakeUnique<CWallet>(*m_chain, WalletLocation(), WalletDatabase::CreateMock());
         bool firstRun;
         wallet->LoadWallet(firstRun);
+
+        /* In Xaya, the minimum / default wallet version already supports HD,
+           unlike upstream Bitcoin/Namecoin.  Thus we have to set an HD seed
+           as well, otherwise the wallet won't generate keys.  */
+        wallet->SetHDSeed(wallet->GenerateNewSeed());
+
         AddKey(*wallet, coinbaseKey);
         WalletRescanReserver reserver(wallet.get());
         reserver.reserve();
         CWallet::ScanResult result = wallet->ScanForWalletTransactions(chainActive.Genesis()->GetBlockHash(), {} /* stop_block */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
-        BOOST_CHECK_EQUAL(result.stop_block, chainActive.Tip()->GetBlockHash());
-        BOOST_CHECK_EQUAL(*result.stop_height, chainActive.Height());
-        BOOST_CHECK(result.failed_block.IsNull());
+        BOOST_CHECK_EQUAL(result.last_scanned_block, chainActive.Tip()->GetBlockHash());
+        BOOST_CHECK_EQUAL(*result.last_scanned_height, chainActive.Height());
+        BOOST_CHECK(result.last_failed_block.IsNull());
     }
 
     ~ListCoinsTestingSetup()
@@ -449,6 +458,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_disableprivkeys, TestChain100Setup)
 {
     auto chain = interfaces::MakeChain();
     std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(*chain, WalletLocation(), WalletDatabase::CreateDummy());
+    wallet->SetMinVersion(FEATURE_LATEST);
     wallet->SetWalletFlag(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
     BOOST_CHECK(!wallet->TopUpKeyPool(1000));
     CPubKey pubkey;

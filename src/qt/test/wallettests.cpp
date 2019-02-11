@@ -144,14 +144,20 @@ void TestGUI()
         wallet->SetAddressBook(GetDestinationForKey(test.coinbaseKey.GetPubKey(), wallet->m_default_address_type), "", "receive");
         wallet->AddKeyPubKey(test.coinbaseKey, test.coinbaseKey.GetPubKey());
     }
+
+    /* In Xaya, the minimum / default wallet version already supports HD,
+       unlike upstream Bitcoin/Namecoin.  Thus we have to set an HD seed
+       as well, otherwise the wallet won't generate keys.  */
+    wallet->SetHDSeed(wallet->GenerateNewSeed());
+
     {
         auto locked_chain = wallet->chain().lock();
         WalletRescanReserver reserver(wallet.get());
         reserver.reserve();
         CWallet::ScanResult result = wallet->ScanForWalletTransactions(locked_chain->getBlockHash(0), {} /* stop_block */, reserver, true /* fUpdate */);
         QCOMPARE(result.status, CWallet::ScanResult::SUCCESS);
-        QCOMPARE(result.stop_block, chainActive.Tip()->GetBlockHash());
-        QVERIFY(result.failed_block.IsNull());
+        QCOMPARE(result.last_scanned_block, chainActive.Tip()->GetBlockHash());
+        QVERIFY(result.last_failed_block.IsNull());
     }
     wallet->SetBroadcastTransactions(true);
 

@@ -5,20 +5,44 @@
 # See "man systemd.service" for details.
 
 # Note that almost all daemon options could be specified in
-# /etc/namecoin/namecoin.conf
+# /etc/namecoin/namecoin.conf, except for those explicitly specified as arguments
+# in ExecStart=
 
 [Unit]
 Description=Namecoin daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/namecoind -daemon -conf=/etc/namecoin/namecoin.conf -pid=/run/namecoind/namecoind.pid
-# Creates /run/namecoind owned by namecoin
-RuntimeDirectory=namecoind
-User=namecoin
+ExecStart=/usr/bin/namecoind -daemon \
+                            -pid=/run/namecoind/namecoind.pid \
+                            -conf=/etc/namecoin/namecoin.conf \
+                            -datadir=/var/lib/namecoind
+
+# Process management
+####################
+
 Type=forking
 PIDFile=/run/namecoind/namecoind.pid
 Restart=on-failure
+
+# Directory creation and permissions
+####################################
+
+# Run as namecoin:namecoin
+User=namecoin
+Group=namecoin
+
+# /run/namecoind
+RuntimeDirectory=namecoind
+RuntimeDirectoryMode=0710
+
+# /etc/namecoin
+ConfigurationDirectory=namecoin
+ConfigurationDirectoryMode=0710
+
+# /var/lib/namecoind
+StateDirectory=namecoind
+StateDirectoryMode=0710
 
 # Hardening measures
 ####################
