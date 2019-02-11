@@ -295,7 +295,7 @@ static void HandleSIGTERM(int)
 
 static void HandleSIGHUP(int)
 {
-    g_logger->m_reopen_file = true;
+    LogInstance().m_reopen_file = true;
 }
 #else
 static BOOL WINAPI consoleCtrlHandler(DWORD dwCtrlType)
@@ -839,17 +839,17 @@ static std::string ResolveErrMsg(const char * const optname, const std::string& 
  */
 void InitLogging()
 {
-    g_logger->m_print_to_file = !gArgs.IsArgNegated("-debuglogfile");
-    g_logger->m_file_path = AbsPathForConfigVal(gArgs.GetArg("-debuglogfile", DEFAULT_DEBUGLOGFILE));
+    LogInstance().m_print_to_file = !gArgs.IsArgNegated("-debuglogfile");
+    LogInstance().m_file_path = AbsPathForConfigVal(gArgs.GetArg("-debuglogfile", DEFAULT_DEBUGLOGFILE));
 
     // Add newlines to the logfile to distinguish this execution from the last
     // one; called before console logging is set up, so this is only sent to
     // debug.log.
     LogPrintf("\n\n\n\n\n");
 
-    g_logger->m_print_to_console = gArgs.GetBoolArg("-printtoconsole", !gArgs.GetBoolArg("-daemon", false));
-    g_logger->m_log_timestamps = gArgs.GetBoolArg("-logtimestamps", DEFAULT_LOGTIMESTAMPS);
-    g_logger->m_log_time_micros = gArgs.GetBoolArg("-logtimemicros", DEFAULT_LOGTIMEMICROS);
+    LogInstance().m_print_to_console = gArgs.GetBoolArg("-printtoconsole", !gArgs.GetBoolArg("-daemon", false));
+    LogInstance().m_log_timestamps = gArgs.GetBoolArg("-logtimestamps", DEFAULT_LOGTIMESTAMPS);
+    LogInstance().m_log_time_micros = gArgs.GetBoolArg("-logtimemicros", DEFAULT_LOGTIMEMICROS);
 
     fLogIPs = gArgs.GetBoolArg("-logips", DEFAULT_LOGIPS);
 
@@ -897,16 +897,7 @@ bool AppInitBasicSetup()
 #endif
 #ifdef WIN32
     // Enable Data Execution Prevention (DEP)
-    // Minimum supported OS versions: WinXP SP3, WinVista >= SP1, Win Server 2008
-    // A failure is non-critical and needs no further attention!
-#ifndef PROCESS_DEP_ENABLE
-    // We define this here, because GCCs winbase.h limits this to _WIN32_WINNT >= 0x0601 (Windows 7),
-    // which is not correct. Can be removed, when GCCs winbase.h is fixed!
-#define PROCESS_DEP_ENABLE 0x00000001
-#endif
-    typedef BOOL (WINAPI *PSETPROCDEPPOL)(DWORD);
-    PSETPROCDEPPOL setProcDEPPol = (PSETPROCDEPPOL)GetProcAddress(GetModuleHandleA("Kernel32.dll"), "SetProcessDEPPolicy");
-    if (setProcDEPPol != nullptr) setProcDEPPol(PROCESS_DEP_ENABLE);
+    SetProcessDEPPolicy(PROCESS_DEP_ENABLE);
 #endif
 
     if (!SetupNetworking())
@@ -987,7 +978,7 @@ bool AppInitParameterInteraction()
         if (std::none_of(categories.begin(), categories.end(),
             [](std::string cat){return cat == "0" || cat == "none";})) {
             for (const auto& cat : categories) {
-                if (!g_logger->EnableCategory(cat)) {
+                if (!LogInstance().EnableCategory(cat)) {
                     InitWarning(strprintf(_("Unsupported logging category %s=%s."), "-debug", cat));
                 }
             }
@@ -996,7 +987,7 @@ bool AppInitParameterInteraction()
 
     // Now remove the logging categories which were explicitly excluded
     for (const std::string& cat : gArgs.GetArgs("-debugexclude")) {
-        if (!g_logger->DisableCategory(cat)) {
+        if (!LogInstance().DisableCategory(cat)) {
             InitWarning(strprintf(_("Unsupported logging category %s=%s."), "-debugexclude", cat));
         }
     }
@@ -1113,6 +1104,22 @@ bool AppInitParameterInteraction()
         dustRelayFee = CFeeRate(n);
     }
 
+    // This is required by both the wallet and node
+    if (gArgs.IsArgSet("-maxtxfee"))
+    {
+        CAmount nMaxFee = 0;
+        if (!ParseMoney(gArgs.GetArg("-maxtxfee", ""), nMaxFee))
+            return InitError(AmountErrMsg("maxtxfee", gArgs.GetArg("-maxtxfee", "")));
+        if (nMaxFee > HIGH_MAX_TX_FEE)
+            InitWarning(_("-maxtxfee is set very high! Fees this large could be paid on a single transaction."));
+        maxTxFee = nMaxFee;
+        if (CFeeRate(maxTxFee, 1000) < ::minRelayTxFee)
+        {
+            return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
+                                       gArgs.GetArg("-maxtxfee", ""), ::minRelayTxFee.ToString()));
+        }
+    }
+
     fRequireStandard = !gArgs.GetBoolArg("-acceptnonstdtxn", !chainparams.RequireStandard());
     if (chainparams.RequireStandard() && !fRequireStandard)
         return InitError(strprintf("acceptnonstdtxn is not currently supported for %s chain", chainparams.NetworkIDString()));
@@ -1203,19 +1210,19 @@ bool AppInitMain(InitInterfaces& interfaces)
 #ifndef WIN32
     CreatePidFile(GetPidFile(), getpid());
 #endif
-    if (g_logger->m_print_to_file) {
-        if (gArgs.GetBoolArg("-shrinkdebugfile", g_logger->DefaultShrinkDebugFile())) {
+    if (LogInstance().m_print_to_file) {
+        if (gArgs.GetBoolArg("-shrinkdebugfile", LogInstance().DefaultShrinkDebugFile())) {
             // Do this first since it both loads a bunch of debug.log into memory,
             // and because this needs to happen before any other debug.log printing
-            g_logger->ShrinkDebugFile();
+            LogInstance().ShrinkDebugFile();
         }
-        if (!g_logger->OpenDebugLog()) {
+        if (!LogInstance().OpenDebugLog()) {
             return InitError(strprintf("Could not open debug log file %s",
-                                       g_logger->m_file_path.string()));
+                LogInstance().m_file_path.string()));
         }
     }
 
-    if (!g_logger->m_log_timestamps)
+    if (!LogInstance().m_log_timestamps)
         LogPrintf("Startup time: %s\n", FormatISO8601DateTime(GetTime()));
     LogPrintf("Default data directory %s\n", GetDefaultDataDir().string());
     LogPrintf("Using data directory %s\n", GetDataDir().string());

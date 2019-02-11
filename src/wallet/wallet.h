@@ -137,9 +137,21 @@ enum WalletFlags : uint64_t {
 
     // will enforce the rule that the wallet can't contain any private keys (only watch-only/pubkeys)
     WALLET_FLAG_DISABLE_PRIVATE_KEYS = (1ULL << 32),
+
+    //! Flag set when a wallet contains no HD seed and no private keys, scripts,
+    //! addresses, and other watch only things, and is therefore "blank."
+    //!
+    //! The only function this flag serves is to distinguish a blank wallet from
+    //! a newly created wallet when the wallet database is loaded, to avoid
+    //! initialization that should only happen on first run.
+    //!
+    //! This flag is also a mandatory flag to prevent previous versions of
+    //! bitcoin from opening the wallet, thinking it was newly created, and
+    //! then improperly reinitializing it.
+    WALLET_FLAG_BLANK_WALLET = (1ULL << 33),
 };
 
-static constexpr uint64_t g_known_wallet_flags = WALLET_FLAG_DISABLE_PRIVATE_KEYS;
+static constexpr uint64_t g_known_wallet_flags = WALLET_FLAG_DISABLE_PRIVATE_KEYS | WALLET_FLAG_BLANK_WALLET;
 
 /** A key pool entry */
 class CKeyPool
@@ -751,7 +763,7 @@ public:
     int64_t nOrderPosNext GUARDED_BY(cs_wallet) = 0;
     uint64_t nAccountingEntryNumber = 0;
 
-    std::map<CTxDestination, CAddressBookData> mapAddressBook;
+    std::map<CTxDestination, CAddressBookData> mapAddressBook GUARDED_BY(cs_wallet);
 
     std::set<COutPoint> setLockedCoins GUARDED_BY(cs_wallet);
 
@@ -828,15 +840,15 @@ public:
     bool LoadCScript(const CScript& redeemScript);
 
     //! Adds a destination data tuple to the store, and saves it to disk
-    bool AddDestData(const CTxDestination &dest, const std::string &key, const std::string &value);
+    bool AddDestData(const CTxDestination& dest, const std::string& key, const std::string& value) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     //! Erases a destination data tuple in the store and on disk
-    bool EraseDestData(const CTxDestination &dest, const std::string &key);
+    bool EraseDestData(const CTxDestination& dest, const std::string& key) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     //! Adds a destination data tuple to the store, without saving it to disk
-    void LoadDestData(const CTxDestination &dest, const std::string &key, const std::string &value);
+    void LoadDestData(const CTxDestination& dest, const std::string& key, const std::string& value) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     //! Look up a destination data tuple in the store, return true if found false otherwise
-    bool GetDestData(const CTxDestination &dest, const std::string &key, std::string *value) const;
+    bool GetDestData(const CTxDestination& dest, const std::string& key, std::string* value) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     //! Get all destination values matching a prefix.
-    std::vector<std::string> GetDestValues(const std::string& prefix) const;
+    std::vector<std::string> GetDestValues(const std::string& prefix) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     //! Adds a watch-only address to the store, and saves it to disk.
     bool AddWatchOnly(const CScript& dest, int64_t nCreateTime) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -875,14 +887,14 @@ public:
         //! Hash and height of most recent block that was successfully scanned.
         //! Unset if no blocks were scanned due to read errors or the chain
         //! being empty.
-        uint256 stop_block;
-        Optional<int> stop_height;
+        uint256 last_scanned_block;
+        Optional<int> last_scanned_height;
 
         //! Height of the most recent block that could not be scanned due to
         //! read errors or pruning. Will be set if status is FAILURE, unset if
         //! status is SUCCESS, and may or may not be set if status is
         //! USER_ABORT.
-        uint256 failed_block;
+        uint256 last_failed_block;
     };
     ScanResult ScanForWalletTransactions(const uint256& first_block, const uint256& last_block, const WalletRescanReserver& reserver, bool fUpdate);
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
@@ -1004,7 +1016,7 @@ public:
 
     bool DelAddressBook(const CTxDestination& address);
 
-    const std::string& GetLabelName(const CScript& scriptPubKey) const;
+    const std::string& GetLabelName(const CScript& scriptPubKey) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     void GetScriptForMining(std::shared_ptr<CReserveScript> &script);
 
@@ -1095,6 +1107,12 @@ public:
     /* Returns true if HD is enabled */
     bool IsHDEnabled() const;
 
+    /* Returns true if the wallet can generate new keys */
+    bool CanGenerateKeys();
+
+    /* Returns true if the wallet can give out new addresses. This means it has keys in the keypool or can generate new keys */
+    bool CanGetAddresses(bool internal = false);
+
     /* Generates a new HD seed (will not be activated) */
     CPubKey GenerateNewSeed();
 
@@ -1131,6 +1149,9 @@ public:
 
     /** set a single wallet flag */
     void SetWalletFlag(uint64_t flags);
+
+    /** Unsets a single wallet flag */
+    void UnsetWalletFlag(uint64_t flag);
 
     /** check if a certain wallet flag is set */
     bool IsWalletFlagSet(uint64_t flag);
