@@ -44,11 +44,6 @@
 #pragma warning(disable:4717)
 #endif
 
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0501
-
 #ifdef _WIN32_IE
 #undef _WIN32_IE
 #endif
@@ -114,6 +109,12 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
         dir_locks.emplace(pathLockFile.string(), std::move(lock));
     }
     return true;
+}
+
+void UnlockDirectory(const fs::path& directory, const std::string& lockfile_name)
+{
+    std::lock_guard<std::mutex> lock(cs_dir_locks);
+    dir_locks.erase((directory / lockfile_name).string());
 }
 
 void ReleaseDirectoryLocks()

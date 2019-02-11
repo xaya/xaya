@@ -171,11 +171,17 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
                 },
             }.ToString());
 
+    // Belt and suspenders check for disabled private keys
     if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
     }
 
     LOCK(pwallet->cs_wallet);
+
+    if (!pwallet->CanGetAddresses()) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
+    }
+
 
     // Parse the label first so we don't generate a key if there's an error
     std::string label;
@@ -232,11 +238,16 @@ static UniValue getrawchangeaddress(const JSONRPCRequest& request)
                 },
             }.ToString());
 
+    // Belt and suspenders check for disabled private keys
     if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
     }
 
     LOCK(pwallet->cs_wallet);
+
+    if (!pwallet->CanGetAddresses(true)) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
+    }
 
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
@@ -1335,7 +1346,7 @@ static void MaybePushAddress(UniValue & entry, const CTxDestination &dest)
  * @param  filter_ismine  The "is mine" filter flags.
  * @param  filter_label   Optional label string to filter incoming transactions.
  */
-static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter_ismine, const std::string* filter_label)
+static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CWalletTx& wtx, int nMinDepth, bool fLong, UniValue& ret, const isminefilter& filter_ismine, const std::string* filter_label) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
     CAmount nFee;
     std::list<COutputEntry> listReceived;
@@ -2608,13 +2619,14 @@ static UniValue loadwallet(const JSONRPCRequest& request)
 
 static UniValue createwallet(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2) {
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3) {
         throw std::runtime_error(
             RPCHelpMan{"createwallet",
                 "\nCreates and loads a new wallet.\n",
                 {
                     {"wallet_name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name for the new wallet. If this is a path, the wallet will be created at the path location."},
                     {"disable_private_keys", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "false", "Disable the possibility of private keys (only watchonlys are possible in this mode)."},
+                    {"blank", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "false", "Create a blank wallet. A blank wallet has no keys or HD seed. One can be set using sethdseed."},
                 },
                 RPCResult{
             "{\n"
@@ -2631,9 +2643,13 @@ static UniValue createwallet(const JSONRPCRequest& request)
     std::string error;
     std::string warning;
 
-    bool disable_privatekeys = false;
-    if (!request.params[1].isNull()) {
-        disable_privatekeys = request.params[1].get_bool();
+    uint64_t flags = 0;
+    if (!request.params[1].isNull() && request.params[1].get_bool()) {
+        flags |= WALLET_FLAG_DISABLE_PRIVATE_KEYS;
+    }
+
+    if (!request.params[2].isNull() && request.params[2].get_bool()) {
+        flags |= WALLET_FLAG_BLANK_WALLET;
     }
 
     WalletLocation location(request.params[0].get_str());
@@ -2646,7 +2662,7 @@ static UniValue createwallet(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Wallet file verification failed: " + error);
     }
 
-    std::shared_ptr<CWallet> const wallet = CWallet::CreateWalletFromFile(*g_rpc_interfaces->chain, location, (disable_privatekeys ? (uint64_t)WALLET_FLAG_DISABLE_PRIVATE_KEYS : 0));
+    std::shared_ptr<CWallet> const wallet = CWallet::CreateWalletFromFile(*g_rpc_interfaces->chain, location, flags);
     if (!wallet) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Wallet creation failed.");
     }
@@ -3088,7 +3104,8 @@ static UniValue fundrawtransaction(const JSONRPCRequest& request)
                 "This will not modify existing inputs, and will add at most one change output to the outputs.\n"
                 "No existing outputs will be modified unless \"subtractFeeFromOutputs\" is specified.\n"
                 "Note that inputs which were signed may need to be resigned after completion since in/outputs have been added.\n"
-                "The inputs added will not be signed, use signrawtransaction for that.\n"
+                "The inputs added will not be signed, use signrawtransactionwithkey\n"
+                " or signrawtransactionwithwallet for that.\n"
                 "Note that all existing inputs must have their previous output transaction be in the wallet.\n"
                 "Note that all inputs selected must be of standard form and P2SH scripts must be\n"
                 "in the wallet using importaddress or addmultisigaddress (to calculate fees).\n"
@@ -3137,7 +3154,7 @@ static UniValue fundrawtransaction(const JSONRPCRequest& request)
                             "\nAdd sufficient unsigned inputs to meet the output value\n"
                             + HelpExampleCli("fundrawtransaction", "\"rawtransactionhex\"") +
                             "\nSign the transaction\n"
-                            + HelpExampleCli("signrawtransaction", "\"fundedtransactionhex\"") +
+                            + HelpExampleCli("signrawtransactionwithwallet", "\"fundedtransactionhex\"") +
                             "\nSend the transaction\n"
                             + HelpExampleCli("sendrawtransaction", "\"signedtransactionhex\"")
                                 },
@@ -3472,8 +3489,8 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
                 },
                 RPCResult{
             "{\n"
-            "  \"start_height\"     (numeric) The block height where the rescan has started.\n"
-            "  \"stop_height\"      (numeric) The height of the last rescanned block.\n"
+            "  \"start_height\"     (numeric) The block height where the rescan started (the requested height or 0)\n"
+            "  \"stop_height\"      (numeric) The height of the last rescanned block. May be null in rare cases if there was a reorg and the call didn't scan any blocks because they were already scanned in the background.\n"
             "}\n"
                 },
                 RPCExamples{
@@ -3519,6 +3536,11 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
 
         if (tip_height) {
             start_block = locked_chain->getBlockHash(start_height);
+            // If called with a stop_height, set the stop_height here to
+            // trigger a rescan to that height.
+            // If called without a stop height, leave stop_height as null here
+            // so rescan continues to the tip (even if the tip advances during
+            // rescan).
             if (stop_height) {
                 stop_block = locked_chain->getBlockHash(*stop_height);
             }
@@ -3538,7 +3560,7 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
     }
     UniValue response(UniValue::VOBJ);
     response.pushKV("start_height", start_height);
-    response.pushKV("stop_height", result.stop_height ? *result.stop_height : UniValue());
+    response.pushKV("stop_height", result.last_scanned_height ? *result.last_scanned_height : UniValue());
     return response;
 }
 
@@ -3940,7 +3962,7 @@ UniValue sethdseed(const JSONRPCRequest& request)
     LOCK(pwallet->cs_wallet);
 
     // Do not do anything to non-HD wallets
-    if (!pwallet->IsHDEnabled()) {
+    if (!pwallet->CanSupportFeature(FEATURE_HD)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Cannot set a HD seed on a non-HD wallet. Start with -upgradewallet in order to upgrade a non-HD wallet to HD");
     }
 
@@ -4242,19 +4264,21 @@ UniValue getauxblock(const JSONRPCRequest& request)
                     {"hash", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "", "Hash of the block to submit"},
                     {"auxpow", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "", "Serialised auxpow found"},
                 },
-                RPCResult{
-            "\nWithout arguments:\n"
-            "{\n"
-            "  \"hash\"               (string) hash of the created block\n"
-            "  \"chainid\"            (numeric) chain ID for this block\n"
-            "  \"previousblockhash\"  (string) hash of the previous block\n"
-            "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
-            "  \"bits\"               (string) compressed target of the block\n"
-            "  \"height\"             (numeric) height of the block\n"
-            "  \"_target\"            (string) target in reversed byte order, deprecated\n"
-            "}\n"
-            "\nWith arguments:\n"
-            "xxxxx        (boolean) whether the submitted block was correct\n"
+                RPCResults{
+                  {"without arguments",
+                      "{\n"
+                      "  \"hash\"               (string) hash of the created block\n"
+                      "  \"chainid\"            (numeric) chain ID for this block\n"
+                      "  \"previousblockhash\"  (string) hash of the previous block\n"
+                      "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
+                      "  \"bits\"               (string) compressed target of the block\n"
+                      "  \"height\"             (numeric) height of the block\n"
+                      "  \"_target\"            (string) target in reversed byte order, deprecated\n"
+                      "}\n"
+                  },
+                  {"with arguments",
+                      "xxxxx        (boolean) whether the submitted block was correct\n"
+                  },
                 },
                 RPCExamples{
                     HelpExampleCli("getauxblock", "")
@@ -4323,7 +4347,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "addmultisigaddress",               &addmultisigaddress,            {"nrequired","keys","label","address_type"} },
     { "wallet",             "backupwallet",                     &backupwallet,                  {"destination"} },
     { "wallet",             "bumpfee",                          &bumpfee,                       {"txid", "options"} },
-    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys"} },
+    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank"} },
     { "wallet",             "dumpprivkey",                      &dumpprivkey,                   {"address"}  },
     { "wallet",             "dumpwallet",                       &dumpwallet,                    {"filename"} },
     { "wallet",             "encryptwallet",                    &encryptwallet,                 {"passphrase"} },
