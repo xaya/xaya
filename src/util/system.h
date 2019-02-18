@@ -16,6 +16,7 @@
 
 #include <attributes.h>
 #include <compat.h>
+#include <compat/assumptions.h>
 #include <fs.h>
 #include <logging.h>
 #include <sync.h>
@@ -294,6 +295,9 @@ extern ArgsManager gArgs;
  * @return true if help has been requested via a command-line arg
  */
 bool HelpRequested(const ArgsManager& args);
+
+/** Add help options to the args manager */
+void SetupHelpOptions(ArgsManager& args);
 
 /**
  * Format a string to be used as group of options in help messages
