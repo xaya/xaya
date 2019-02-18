@@ -343,7 +343,7 @@ NameOptionsHelp&
 NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
                           const std::string& doc)
 {
-  return withArg (name, type, /* default_val */ "", doc);
+  return withArg (name, type, "", doc);
 }
 
 NameOptionsHelp&
@@ -370,8 +370,10 @@ NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
     }
   assert (!delim.empty ());
 
-  innerArgs.push_back (RPCArg (name, type, /* opt */ true,
-                               defaultValue, doc));
+  if (defaultValue.empty ())
+    innerArgs.push_back (RPCArg (name, type, RPCArg::Optional::OMITTED, doc));
+  else
+    innerArgs.push_back (RPCArg (name, type, defaultValue, doc));
 
   return *this;
 }
@@ -408,7 +410,7 @@ RPCArg
 NameOptionsHelp::buildRpcArg () const
 {
   return RPCArg ("options", RPCArg::Type::OBJ,
-                 /* opt */ true, /* default_val */ "",
+                 RPCArg::Optional::OMITTED_NAMED_ARG,
                  "Options for this RPC call",
                  innerArgs, "options");
 }
@@ -430,7 +432,7 @@ name_show (const JSONRPCRequest& request)
         RPCHelpMan ("name_show",
             "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to query for"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -488,7 +490,7 @@ name_history (const JSONRPCRequest& request)
         RPCHelpMan ("name_history",
             "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to query for"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -572,8 +574,8 @@ name_scan (const JSONRPCRequest& request)
         RPCHelpMan ("name_scan",
             "\nLists names in the database.\n",
             {
-                {"start", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Skip initially to this name"},
-                {"count", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "500", "Stop after this many names"},
+                {"start", RPCArg::Type::STR, "", "Skip initially to this name"},
+                {"count", RPCArg::Type::NUM, "500", "Stop after this many names"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -715,7 +717,7 @@ name_pending (const JSONRPCRequest& request)
             "\nLists unconfirmed name operations in the mempool.\n"
             "\nIf a name is given, only check for operations on this name.\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Only look for this name"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only look for this name"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -804,14 +806,14 @@ namerawtransaction (const JSONRPCRequest& request)
             "\nAdds a name operation to an existing raw transaction.\n"
             "\nUse createrawtransaction first to create the basic transaction, including the required inputs and outputs also for the name.\n",
             {
-                {"hexstring", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "The transaction hex string"},
-                {"vout", RPCArg::Type::NUM, /* opt */ false, /* default_val */ "", "The vout of the desired name output"},
-                {"nameop", RPCArg::Type::OBJ, /* opt */ false, /* default_val */ "", "The name operation to create",
+                {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
+                {"vout", RPCArg::Type::NUM, RPCArg::Optional::NO, "The vout of the desired name output"},
+                {"nameop", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The name operation to create",
                     {
-                        {"op", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The operation to perform, can be \"name_new\", \"name_firstupdate\" and \"name_update\""},
-                        {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to operate on"},
-                        {"value", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "The new value for the name"},
-                        {"rand", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "The nonce value to use for registrations"},
+                        {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_new\", \"name_firstupdate\" and \"name_update\""},
+                        {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
+                        {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The new value for the name"},
+                        {"rand", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The nonce value to use for registrations"},
                     },
                  "nameop"},
             },

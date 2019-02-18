@@ -20,6 +20,7 @@ from test_framework.script import (
     OP_NOP,
 )
 from test_framework.test_framework import BitcoinTestFramework
+from test_framework.descriptors import descsum_create
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
@@ -545,8 +546,19 @@ class ImportMultiTest(BitcoinTestFramework):
 
         # Test importing of a P2SH-P2WPKH address via descriptor + private key
         key = get_key(self.nodes[0])
-        self.log.info("Should import a p2sh-p2wpkh address from descriptor and private key")
+        self.log.info("Should not import a p2sh-p2wpkh address from descriptor without checksum and private key")
         self.test_importmulti({"desc": "sh(wpkh(" + key.pubkey + "))",
+                               "timestamp": "now",
+                               "label": "Descriptor import test",
+                               "keys": [key.privkey]},
+                              success=False,
+                              error_code=-5,
+                              error_message="Descriptor is invalid")
+
+        # Test importing of a P2SH-P2WPKH address via descriptor + private key
+        key = get_key(self.nodes[0])
+        self.log.info("Should import a p2sh-p2wpkh address from descriptor and private key")
+        self.test_importmulti({"desc": descsum_create("sh(wpkh(" + key.pubkey + "))"),
                                "timestamp": "now",
                                "label": "Descriptor import test",
                                "keys": [key.privkey]},
@@ -562,7 +574,7 @@ class ImportMultiTest(BitcoinTestFramework):
         addresses = ["2N7yv4p8G8yEaPddJxY41kPihnWvs39qCMf", "2MsHxyb2JS3pAySeNUsJ7mNnurtpeenDzLA"] # hdkeypath=m/0'/0'/0' and 1'
         desc = "sh(wpkh(" + xpriv + "/0'/0'/*'" + "))"
         self.log.info("Ranged descriptor import should fail without a specified range")
-        self.test_importmulti({"desc": desc,
+        self.test_importmulti({"desc": descsum_create(desc),
                                "timestamp": "now"},
                               success=False,
                               error_code=-8,
@@ -570,7 +582,7 @@ class ImportMultiTest(BitcoinTestFramework):
 
         # Test importing of a ranged descriptor without keys
         self.log.info("Should import the ranged descriptor with specified range as solvable")
-        self.test_importmulti({"desc": desc,
+        self.test_importmulti({"desc": descsum_create(desc),
                                "timestamp": "now",
                                "range": {"end": 1}},
                               success=True,
@@ -583,7 +595,7 @@ class ImportMultiTest(BitcoinTestFramework):
         # Test importing of a P2PKH address via descriptor
         key = get_key(self.nodes[0])
         self.log.info("Should import a p2pkh address from descriptor")
-        self.test_importmulti({"desc": "pkh(" + key.pubkey + ")",
+        self.test_importmulti({"desc": descsum_create("pkh(" + key.pubkey + ")"),
                                "timestamp": "now",
                                "label": "Descriptor import test"},
                               True,
@@ -597,7 +609,7 @@ class ImportMultiTest(BitcoinTestFramework):
         # Test import fails if both desc and scriptPubKey are provided
         key = get_key(self.nodes[0])
         self.log.info("Import should fail if both scriptPubKey and desc are provided")
-        self.test_importmulti({"desc": "pkh(" + key.pubkey + ")",
+        self.test_importmulti({"desc": descsum_create("pkh(" + key.pubkey + ")"),
                                "scriptPubKey": {"address": key.p2pkh_addr},
                                "timestamp": "now"},
                               success=False,
@@ -616,7 +628,7 @@ class ImportMultiTest(BitcoinTestFramework):
         key1 = get_key(self.nodes[0])
         key2 = get_key(self.nodes[0])
         self.log.info("Should import a 1-of-2 bare multisig from descriptor")
-        self.test_importmulti({"desc": "multi(1," + key1.pubkey + "," + key2.pubkey + ")",
+        self.test_importmulti({"desc": descsum_create("multi(1," + key1.pubkey + "," + key2.pubkey + ")"),
                                "timestamp": "now"},
                               success=True)
         self.log.info("Should not treat individual keys from the imported bare multisig as watchonly")
@@ -625,6 +637,182 @@ class ImportMultiTest(BitcoinTestFramework):
                      ismine=False,
                      iswatchonly=False)
 
+        # Import pubkeys with key origin info
+        self.log.info("Addresses should have hd keypath and master key id after import with key origin")
+        pub_addr = self.nodes[1].getnewaddress()
+        pub_addr = self.nodes[1].getnewaddress()
+        info = self.nodes[1].getaddressinfo(pub_addr)
+        pub = info['pubkey']
+        pub_keypath = info['hdkeypath']
+        pub_fpr = info['hdmasterfingerprint']
+        result = self.nodes[0].importmulti(
+            [{
+                'desc' : descsum_create("wpkh([" + pub_fpr + pub_keypath[1:] +"]" + pub + ")"),
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        pub_import_info = self.nodes[0].getaddressinfo(pub_addr)
+        assert_equal(pub_import_info['hdmasterfingerprint'], pub_fpr)
+        assert_equal(pub_import_info['pubkey'], pub)
+        assert_equal(pub_import_info['hdkeypath'], pub_keypath)
+
+        # Import privkeys with key origin info
+        priv_addr = self.nodes[1].getnewaddress()
+        info = self.nodes[1].getaddressinfo(priv_addr)
+        priv = self.nodes[1].dumpprivkey(priv_addr)
+        priv_keypath = info['hdkeypath']
+        priv_fpr = info['hdmasterfingerprint']
+        result = self.nodes[0].importmulti(
+            [{
+                'desc' : descsum_create("wpkh([" + priv_fpr + priv_keypath[1:] + "]" + priv + ")"),
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        priv_import_info = self.nodes[0].getaddressinfo(priv_addr)
+        assert_equal(priv_import_info['hdmasterfingerprint'], priv_fpr)
+        assert_equal(priv_import_info['hdkeypath'], priv_keypath)
+
+        # Make sure the key origin info are still there after a restart
+        self.stop_nodes()
+        self.start_nodes()
+        import_info = self.nodes[0].getaddressinfo(pub_addr)
+        assert_equal(import_info['hdmasterfingerprint'], pub_fpr)
+        assert_equal(import_info['hdkeypath'], pub_keypath)
+        import_info = self.nodes[0].getaddressinfo(priv_addr)
+        assert_equal(import_info['hdmasterfingerprint'], priv_fpr)
+        assert_equal(import_info['hdkeypath'], priv_keypath)
+
+        # Check legacy import does not import key origin info
+        self.log.info("Legacy imports don't have key origin info")
+        pub_addr = self.nodes[1].getnewaddress()
+        info = self.nodes[1].getaddressinfo(pub_addr)
+        pub = info['pubkey']
+        result = self.nodes[0].importmulti(
+            [{
+                'scriptPubKey': {'address': pub_addr},
+                'pubkeys': [pub],
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        pub_import_info = self.nodes[0].getaddressinfo(pub_addr)
+        assert_equal(pub_import_info['pubkey'], pub)
+        assert 'hdmasterfingerprint' not in pub_import_info
+        assert 'hdkeypath' not in pub_import_info
+
+        # Import some public keys to the keypool of a no privkey wallet
+        self.log.info("Adding pubkey to keypool of disableprivkey wallet")
+        self.nodes[1].createwallet(wallet_name="noprivkeys", disable_private_keys=True)
+        wrpc = self.nodes[1].get_wallet_rpc("noprivkeys")
+
+        addr1 = self.nodes[0].getnewaddress()
+        addr2 = self.nodes[0].getnewaddress()
+        pub1 = self.nodes[0].getaddressinfo(addr1)['pubkey']
+        pub2 = self.nodes[0].getaddressinfo(addr2)['pubkey']
+        result = wrpc.importmulti(
+            [{
+                'desc': descsum_create('wpkh(' + pub1 + ')'),
+                'keypool': True,
+                "timestamp": "now",
+            },
+            {
+                'desc': descsum_create('wpkh(' + pub2 + ')'),
+                'keypool': True,
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        assert result[1]['success']
+        assert_equal(wrpc.getwalletinfo()["keypoolsize"], 2)
+        newaddr1 = wrpc.getnewaddress()
+        assert_equal(addr1, newaddr1)
+        newaddr2 = wrpc.getnewaddress()
+        assert_equal(addr2, newaddr2)
+
+        # Import some public keys to the internal keypool of a no privkey wallet
+        self.log.info("Adding pubkey to internal keypool of disableprivkey wallet")
+        addr1 = self.nodes[0].getnewaddress()
+        addr2 = self.nodes[0].getnewaddress()
+        pub1 = self.nodes[0].getaddressinfo(addr1)['pubkey']
+        pub2 = self.nodes[0].getaddressinfo(addr2)['pubkey']
+        result = wrpc.importmulti(
+            [{
+                'desc': descsum_create('wpkh(' + pub1 + ')'),
+                'keypool': True,
+                'internal': True,
+                "timestamp": "now",
+            },
+            {
+                'desc': descsum_create('wpkh(' + pub2 + ')'),
+                'keypool': True,
+                'internal': True,
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        assert result[1]['success']
+        assert_equal(wrpc.getwalletinfo()["keypoolsize_hd_internal"], 2)
+        newaddr1 = wrpc.getrawchangeaddress()
+        assert_equal(addr1, newaddr1)
+        newaddr2 = wrpc.getrawchangeaddress()
+        assert_equal(addr2, newaddr2)
+
+        # Import a multisig and make sure the keys don't go into the keypool
+        self.log.info('Imported scripts with pubkeys shoud not have their pubkeys go into the keypool')
+        addr1 = self.nodes[0].getnewaddress()
+        addr2 = self.nodes[0].getnewaddress()
+        pub1 = self.nodes[0].getaddressinfo(addr1)['pubkey']
+        pub2 = self.nodes[0].getaddressinfo(addr2)['pubkey']
+        result = wrpc.importmulti(
+            [{
+                'desc': descsum_create('wsh(multi(2,' + pub1 + ',' + pub2 + '))'),
+                'keypool': True,
+                "timestamp": "now",
+            }]
+        )
+        assert result[0]['success']
+        assert_equal(wrpc.getwalletinfo()["keypoolsize"], 0)
+
+        # Cannot import those pubkeys to keypool of wallet with privkeys
+        self.log.info("Pubkeys cannot be added to the keypool of a wallet with private keys")
+        wrpc = self.nodes[1].get_wallet_rpc("")
+        assert wrpc.getwalletinfo()['private_keys_enabled']
+        result = wrpc.importmulti(
+            [{
+                'desc': descsum_create('wpkh(' + pub1 + ')'),
+                'keypool': True,
+                "timestamp": "now",
+            }]
+        )
+        assert_equal(result[0]['error']['code'], -8)
+        assert_equal(result[0]['error']['message'], "Keys can only be imported to the keypool when private keys are disabled")
+
+        # Make sure ranged imports import keys in order
+        self.log.info('Key ranges should be imported in order')
+        wrpc = self.nodes[1].get_wallet_rpc("noprivkeys")
+        assert_equal(wrpc.getwalletinfo()["keypoolsize"], 0)
+        assert_equal(wrpc.getwalletinfo()["private_keys_enabled"], False)
+        xpub = "tpubDAXcJ7s7ZwicqjprRaEWdPoHKrCS215qxGYxpusRLLmJuT69ZSicuGdSfyvyKpvUNYBW1s2U3NSrT6vrCYB9e6nZUEvrqnwXPF8ArTCRXMY"
+        addresses = [
+            'ncrt1qtmp74ayg7p24uslctssvjm06q5phz4yrvy646e', # m/0'/0'/0
+            'ncrt1q8vprchan07gzagd5e6v9wd7azyucksq2vqu8lj', # m/0'/0'/1
+            'ncrt1qtuqdtha7zmqgcrr26n2rqxztv5y8rafjtaapkf', # m/0'/0'/2
+            'ncrt1qau64272ymawq26t90md6an0ps99qkrse7le8u6', # m/0'/0'/3
+            'ncrt1qsg97266hrh6cpmutqen8s4s962aryy77ced5p6', # m/0'/0'/4
+        ]
+        result = wrpc.importmulti(
+            [{
+                'desc': descsum_create('wpkh([80002067/0h/0h]' + xpub + '/*)'),
+                'keypool': True,
+                'timestamp': 'now',
+                'range' : {'start': 0, 'end': 4}
+            }]
+        )
+        for i in range(0, 5):
+            addr = wrpc.getnewaddress('', 'bech32')
+            assert_equal(addr, addresses[i])
 
 if __name__ == '__main__':
     ImportMultiTest().main()

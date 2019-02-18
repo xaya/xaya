@@ -237,7 +237,7 @@ name_list (const JSONRPCRequest& request)
         RPCHelpMan ("name_list",
             "\nShows the status of all names in the wallet.\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Only include this name"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -360,7 +360,7 @@ name_new (const JSONRPCRequest& request)
             "\nStarts registration of the given name.  Must be followed up with name_firstupdate to finish the registration."
                 + HelpRequiringPassphrase (pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to register"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -508,10 +508,10 @@ name_firstupdate (const JSONRPCRequest& request)
             "\nFinishes the registration of a name.  Depends on name_new being already issued."
                 + HelpRequiringPassphrase (pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to register"},
-                {"rand", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "The rand value of name_new"},
-                {"tx", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "The name_new txid"},
-                {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
+                {"rand", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The rand value of name_new"},
+                {"tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The name_new txid"},
+                {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -625,8 +625,8 @@ name_update (const JSONRPCRequest& request)
             "\nUpdates a name and possibly transfers it."
                 + HelpRequiringPassphrase (pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to update"},
-                {"value", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "Value for the name"},
+                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
+                {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {
@@ -714,22 +714,22 @@ sendtoname (const JSONRPCRequest& request)
             "\nIt is an error if the name is expired."
                 + HelpRequiringPassphrase(pwallet) + "\n",
             {
-                {"name", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The name to send to."},
-                {"amount", RPCArg::Type::AMOUNT, /* opt */ false, /* default_val */ "", "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-                {"comment", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "A comment used to store what the transaction is for.\n"
+                {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send to."},
+                {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+                {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment used to store what the transaction is for.\n"
         "                             This is not part of the transaction, just kept in your wallet."},
-                {"comment_to", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "A comment to store the name of the person or organization\n"
+                {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment to store the name of the person or organization\n"
         "                             to which you're sending the transaction. This is not part of the \n"
         "                             transaction, just kept in your wallet."},
-                {"subtractfeefromamount", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "false", "The fee will be deducted from the amount being sent.\n"
-        "                             The recipient will receive less bitcoins than you enter in the amount field."},
-                {"replaceable", RPCArg::Type::BOOL, /* opt */ true, /* default_val */ "", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
-                {"conf_target", RPCArg::Type::NUM, /* opt */ true, /* default_val */ "", "Confirmation target (in blocks)"},
-                {"estimate_mode", RPCArg::Type::STR, /* opt */ true, /* default_val */ "UNSET", "The fee estimate mode, must be one of:\n"
+                {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
+        "                             The recipient will receive less coins than you enter in the amount field."},
+                {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
+                {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
+                {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
         "       \"UNSET\"\n"
         "       \"ECONOMICAL\"\n"
         "       \"CONSERVATIVE\""},
-                },
+            },
                 RPCResult{
             "\"txid\"                  (string) The transaction id.\n"
                 },
