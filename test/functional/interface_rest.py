@@ -24,6 +24,8 @@ from test_framework.util import (
     hex_str_to_bytes,
 )
 
+from test_framework.messages import BLOCK_HEADER_SIZE
+
 class ReqType(Enum):
     JSON = 1
     BIN = 2
@@ -216,25 +218,25 @@ class RESTTest (BitcoinTestFramework):
 
         # Check binary format
         response = self.test_rest_request("/block/{}".format(bb_hash), req_type=ReqType.BIN, ret_type=RetType.OBJ)
-        assert_greater_than(int(response.getheader('content-length')), 80)
+        assert_greater_than(int(response.getheader('content-length')), BLOCK_HEADER_SIZE)
         response_bytes = response.read()
 
         # Compare with block header
         response_header = self.test_rest_request("/headers/1/{}".format(bb_hash), req_type=ReqType.BIN, ret_type=RetType.OBJ)
         headerLen = int(response_header.getheader('content-length'))
-        assert_greater_than(headerLen, 80)
+        assert_equal(headerLen, BLOCK_HEADER_SIZE)
         response_header_bytes = response_header.read()
         assert_equal(response_bytes[:headerLen], response_header_bytes)
 
         # Check block hex format
         response_hex = self.test_rest_request("/block/{}".format(bb_hash), req_type=ReqType.HEX, ret_type=RetType.OBJ)
-        assert_greater_than(int(response_hex.getheader('content-length')), 160)
+        assert_greater_than(int(response_hex.getheader('content-length')), BLOCK_HEADER_SIZE*2)
         response_hex_bytes = response_hex.read().strip(b'\n')
         assert_equal(binascii.hexlify(response_bytes), response_hex_bytes)
 
         # Compare with hex block header
         response_header_hex = self.test_rest_request("/headers/1/{}".format(bb_hash), req_type=ReqType.HEX, ret_type=RetType.OBJ)
-        assert_greater_than(int(response_header_hex.getheader('content-length')), 160)
+        assert_greater_than(int(response_header_hex.getheader('content-length')), BLOCK_HEADER_SIZE*2)
         response_header_hex_bytes = response_header_hex.read().strip()
         headerLen = len (response_header_hex_bytes) // 2
         assert_equal(binascii.hexlify(response_bytes[:headerLen]), response_header_hex_bytes)

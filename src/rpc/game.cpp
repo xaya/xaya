@@ -214,11 +214,12 @@ game_sendupdates (const JSONRPCRequest& request)
   if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
     throw std::runtime_error (
         RPCHelpMan ("game_sendupdates",
-            "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n",
+            "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
+            "\nIf toblock is not given, it defaults to the current chain tip.\n",
             {
-                {"gameid", RPCArg::Type::STR, /* opt */ false, /* default_val */ "", "The game ID for which to send notifications"},
-                {"fromblock", RPCArg::Type::STR_HEX, /* opt */ false, /* default_val */ "", "Starting block hash"},
-                {"toblock", RPCArg::Type::STR_HEX, /* opt */ true, /* default_val */ "current tip", "Target block hash"},
+                {"gameid", RPCArg::Type::STR, RPCArg::Optional::NO, "The game ID for which to send notifications"},
+                {"fromblock", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Starting block hash"},
+                {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Target block hash"},
             },
             RPCResult {
               "{\n"
@@ -345,8 +346,8 @@ trackedgames (const JSONRPCRequest& request)
             "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
             "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
             {
-                {"command", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "Can be \"add\" or \"remove\""},
-                {"gameid", RPCArg::Type::STR, /* opt */ true, /* default_val */ "", "The game ID to add or remove"},
+                {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Can be \"add\" or \"remove\""},
+                {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "The game ID to add or remove"},
             },
             RPCResults {
               {"if called without arguments",

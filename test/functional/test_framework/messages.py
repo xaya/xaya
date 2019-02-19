@@ -29,7 +29,7 @@ import time
 
 from test_framework import powhash
 from test_framework.siphash import siphash256
-from test_framework.util import hex_str_to_bytes, bytes_to_hex_str
+from test_framework.util import hex_str_to_bytes, bytes_to_hex_str, assert_equal
 
 MIN_VERSION_SUPPORTED = 60001
 MY_VERSION = 110014  # past bip-31 for ping/pong
@@ -600,7 +600,6 @@ class CPureBlockHeader():
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
                time.ctime(self.nTime), self.nBits, self.nNonce)
 
-
 # Note that our implementation of PowData only supports neoscrypt PoW with
 # fake header (no merge mining) for now.
 class PowData():
@@ -668,6 +667,9 @@ class CBlockHeader(CPureBlockHeader):
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
                time.ctime(self.nTime), self.nBits, self.nNonce,
                repr(self.powData))
+
+BLOCK_HEADER_SIZE = len(CBlockHeader().serialize())
+assert_equal(BLOCK_HEADER_SIZE, 80 + 85)
 
 
 class CBlock(CBlockHeader):

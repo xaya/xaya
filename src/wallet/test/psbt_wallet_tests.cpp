@@ -4,7 +4,9 @@
 
 #include <key_io.h>
 #include <script/sign.h>
+#include <util/bip32.h>
 #include <util/strencodings.h>
+#include <wallet/psbtwallet.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <univalue.h>
@@ -60,7 +62,9 @@ BOOST_AUTO_TEST_CASE(psbt_updater_test)
     ssData >> psbtx;
 
     // Fill transaction with our data
-    FillPSBT(&m_wallet, psbtx, SIGHASH_ALL, false, true);
+    TransactionError err;
+    bool complete = true;
+    FillPSBT(&m_wallet, psbtx, err, complete, SIGHASH_ALL, false, true);
 
     // Get the final tx
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
