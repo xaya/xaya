@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2018 The Bitcoin Core developers
+# Copyright (c) 2016-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test RPC commands for signing and verifying messages."""
 
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import assert_equal
+
+import base64
 
 class SignMessagesTest(BitcoinTestFramework):
     def set_test_params(self):
@@ -37,6 +39,20 @@ class SignMessagesTest(BitcoinTestFramework):
         other_signature = self.nodes[0].signmessage(other_address, message)
         assert(not self.nodes[0].verifymessage(other_address, signature, message))
         assert(not self.nodes[0].verifymessage(address, other_signature, message))
+
+        self.log.info('test extracting address from signature')
+        res = self.nodes[0].verifymessage("", signature, message)
+        assert_equal(res, {
+            "valid": True,
+            "address": address,
+        })
+        assert_equal(res["address"], address)
+
+        self.log.info('test extracting address from invalid signature')
+        res = self.nodes[0].verifymessage("", base64.b64encode(b"some data").decode("ascii"), message)
+        assert_equal(res, {
+            "valid": False,
+        })
 
 if __name__ == '__main__':
     SignMessagesTest().main()

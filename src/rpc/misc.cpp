@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2018 The Bitcoin Core developers
+// Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -145,11 +145,16 @@ static UniValue verifymessage(const JSONRPCRequest& request)
             "verifymessage \"address\" \"signature\" \"message\"\n"
             "\nVerify a signed message\n"
             "\nArguments:\n"
-            "1. \"address\"         (string, required) The XAYA address to use for the signature.\n"
+            "1. \"address\"         (string, required) The XAYA address to use for the signature or \"\" to recover the address.\n"
             "2. \"signature\"       (string, required) The signature provided by the signer in base 64 encoding (see signmessage).\n"
             "3. \"message\"         (string, required) The message that was signed.\n"
-            "\nResult:\n"
+            "\nResult (with address):\n"
             "true|false   (boolean) If the signature is verified or not.\n"
+            "\"Result (without address, set to \"\"):\n"
+            "{\n"
+            "    \"valid\": true|false,    (boolean) Whether the signature is valid at all.\n"
+            "    \"address\": \"xxxxx\"    (string) For which address the signature is valid.\n"
+            "}\n"
             "\nExamples:\n"
             "\nUnlock the wallet for 30 seconds\n"
             + HelpExampleCli("walletpassphrase", "\"mypassphrase\" 30") +
@@ -157,6 +162,8 @@ static UniValue verifymessage(const JSONRPCRequest& request)
             + HelpExampleCli("signmessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\" \"my message\"") +
             "\nVerify the signature\n"
             + HelpExampleCli("verifymessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\" \"signature\" \"my message\"") +
+            "\nVerify and return address\n"
+            + HelpExampleCli("verifymessage", "\"\" \"signature\" \"my message\"") +
             "\nAs a JSON-RPC call\n"
             + HelpExampleRpc("verifymessage", "\"CJ12BVLi6tx2mST1Z4BSANNeztHunz9LT\", \"signature\", \"my message\"")
         );
@@ -166,16 +173,6 @@ static UniValue verifymessage(const JSONRPCRequest& request)
     std::string strAddress  = request.params[0].get_str();
     std::string strSign     = request.params[1].get_str();
     std::string strMessage  = request.params[2].get_str();
-
-    CTxDestination destination = DecodeDestination(strAddress);
-    if (!IsValidDestination(destination)) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
-    }
-
-    const CKeyID *keyID = boost::get<CKeyID>(&destination);
-    if (!keyID) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
-    }
 
     bool fInvalid = false;
     std::vector<unsigned char> vchSig = DecodeBase64(strSign.c_str(), &fInvalid);
@@ -188,8 +185,32 @@ static UniValue verifymessage(const JSONRPCRequest& request)
     ss << strMessage;
 
     CPubKey pubkey;
-    if (!pubkey.RecoverCompact(ss.GetHash(), vchSig))
+    if (!pubkey.RecoverCompact(ss.GetHash(), vchSig)) {
+        if (strAddress.empty()) {
+            UniValue res(UniValue::VOBJ);
+            res.pushKV("valid", false);
+            return res;
+        }
+
         return false;
+    }
+
+    if (strAddress.empty()) {
+        UniValue res(UniValue::VOBJ);
+        res.pushKV("valid", true);
+        res.pushKV("address", EncodeDestination(pubkey.GetID()));
+        return res;
+    }
+
+    CTxDestination destination = DecodeDestination(strAddress);
+    if (!IsValidDestination(destination)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+    }
+
+    const CKeyID *keyID = boost::get<CKeyID>(&destination);
+    if (!keyID) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
+    }
 
     return (pubkey.GetID() == *keyID);
 }
