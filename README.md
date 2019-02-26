@@ -39,6 +39,9 @@ XAYA Core includes the base elements required for Experienced users, Miners and 
 
 You may check https://github.com/xaya/Specs for more XAYA specs and additional information.
 
+Several tutorials and more information are here:
+https://github.com/xaya/xaya_tutorials/wiki
+
 For compiling on Ubuntu you can use this guide:
 https://forum.xaya.io/topic/59-guide-building-xaya-on-ubuntu/
 
