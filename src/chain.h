@@ -8,6 +8,7 @@
 
 #include <arith_uint256.h>
 #include <consensus/params.h>
+#include <flatfile.h>
 #include <powdata.h>
 #include <primitives/block.h>
 #include <primitives/pureheader.h>
@@ -90,46 +91,6 @@ public:
          if (nTimeIn > nTimeLast)
              nTimeLast = nTimeIn;
      }
-};
-
-struct CDiskBlockPos
-{
-    int nFile;
-    unsigned int nPos;
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(VARINT(nFile, VarIntMode::NONNEGATIVE_SIGNED));
-        READWRITE(VARINT(nPos));
-    }
-
-    CDiskBlockPos() {
-        SetNull();
-    }
-
-    CDiskBlockPos(int nFileIn, unsigned int nPosIn) {
-        nFile = nFileIn;
-        nPos = nPosIn;
-    }
-
-    friend bool operator==(const CDiskBlockPos &a, const CDiskBlockPos &b) {
-        return (a.nFile == b.nFile && a.nPos == b.nPos);
-    }
-
-    friend bool operator!=(const CDiskBlockPos &a, const CDiskBlockPos &b) {
-        return !(a == b);
-    }
-
-    void SetNull() { nFile = -1; nPos = 0; }
-    bool IsNull() const { return (nFile == -1); }
-
-    std::string ToString() const
-    {
-        return strprintf("CDiskBlockPos(nFile=%i, nPos=%i)", nFile, nPos);
-    }
-
 };
 
 enum BlockStatus: uint32_t {
@@ -280,8 +241,8 @@ public:
         algo = block.pow.getCoreAlgo();
     }
 
-    CDiskBlockPos GetBlockPos() const {
-        CDiskBlockPos ret;
+    FlatFilePos GetBlockPos() const {
+        FlatFilePos ret;
         if (nStatus & BLOCK_HAVE_DATA) {
             ret.nFile = nFile;
             ret.nPos  = nDataPos;
@@ -289,8 +250,8 @@ public:
         return ret;
     }
 
-    CDiskBlockPos GetUndoPos() const {
-        CDiskBlockPos ret;
+    FlatFilePos GetUndoPos() const {
+        FlatFilePos ret;
         if (nStatus & BLOCK_HAVE_UNDO) {
             ret.nFile = nFile;
             ret.nPos  = nUndoPos;
