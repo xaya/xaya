@@ -114,6 +114,7 @@ BASE_SCRIPTS = [
     # FIXME: Debug and re-enable.
     #'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
+    'rpc_misc.py',
     'interface_rest.py',
     'mempool_spend_coinbase.py',
     'mempool_reorg.py',

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Bitcoin Core developers
+// Copyright (c) 2017-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -38,6 +38,9 @@ unsigned int ParseConfirmTarget(const UniValue& value);
 RPCErrorCode RPCErrorFromTransactionError(TransactionError terr);
 UniValue JSONRPCTransactionError(TransactionError terr, const std::string& err_string = "");
 
+//! Parse a JSON range specified as int64, or [int64, int64]
+std::pair<int64_t, int64_t> ParseRange(const UniValue& value);
+
 struct RPCArg {
     enum class Type {
         OBJ,
@@ -48,13 +51,14 @@ struct RPCArg {
         OBJ_USER_KEYS, //!< Special type where the user must set the keys e.g. to define multiple addresses; as opposed to e.g. an options object where the keys are predefined
         AMOUNT,        //!< Special type representing a floating point amount (can be either NUM or STR)
         STR_HEX,       //!< Special type that is a STR with only hex chars
+        RANGE,         //!< Special type that is a NUM or [NUM,NUM]
     };
 
     enum class Optional {
         /** Required arg */
         NO,
         /**
-         * Optinal arg that is a named argument and has a default value of
+         * Optional arg that is a named argument and has a default value of
          * `null`. When possible, the default value should be specified.
          */
         OMITTED_NAMED_ARG,
@@ -110,6 +114,8 @@ struct RPCArg {
     {
         assert(type == Type::ARR || type == Type::OBJ);
     }
+
+    bool IsOptional() const;
 
     /**
      * Return the type string of the argument.
@@ -186,6 +192,8 @@ public:
     RPCHelpMan(std::string name, std::string description, std::vector<RPCArg> args, RPCResults results, RPCExamples examples);
 
     std::string ToString() const;
+    /** If the supplied number of args is neither too small nor too high */
+    bool IsValidNumArgs(size_t num_args) const;
 
 private:
     const std::string m_name;
