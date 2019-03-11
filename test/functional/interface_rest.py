@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 The Bitcoin Core developers
+# Copyright (c) 2014-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the REST API."""
@@ -19,7 +19,6 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_greater_than_or_equal,
-    bytes_to_hex_str,
     hex_str_to_bytes,
 )
 
@@ -154,7 +153,7 @@ class RESTTest (BitcoinTestFramework):
         bin_response = self.test_rest_request("/getutxos", http_method='POST', req_type=ReqType.BIN, body=bin_request, ret_type=RetType.BYTES)
         output = BytesIO(bin_response)
         chain_height, = unpack("i", output.read(4))
-        response_hash = binascii.hexlify(output.read(32)[::-1]).decode('ascii')
+        response_hash = output.read(32)[::-1].hex()
 
         assert_equal(bb_hash, response_hash)  # check if getutxo's chaintip during calculation was fine
         assert_equal(chain_height, 102)  # chain height must be 102
@@ -257,7 +256,7 @@ class RESTTest (BitcoinTestFramework):
         resp_hex = self.test_rest_request("/blockhashbyheight/{}".format(block_json_obj['height']), req_type=ReqType.HEX, ret_type=RetType.OBJ)
         assert_equal(resp_hex.read().decode('utf-8').rstrip(), bb_hash)
         resp_bytes = self.test_rest_request("/blockhashbyheight/{}".format(block_json_obj['height']), req_type=ReqType.BIN, ret_type=RetType.BYTES)
-        blockhash = binascii.hexlify(resp_bytes[::-1]).decode('utf-8')
+        blockhash = resp_bytes[::-1].hex()
         assert_equal(blockhash, bb_hash)
 
         # Check invalid blockhashbyheight requests
@@ -342,7 +341,7 @@ class RESTTest (BitcoinTestFramework):
         name = "d/some weird.name++"
         binData = bytearray ([0, 1]).decode ("ascii")
         value = "correct value\nwith newlines\nand binary: " + binData
-        hexValue = bytes_to_hex_str (value.encode ('ascii'))
+        hexValue = value.encode ('ascii').hex ()
         newData = self.nodes[0].name_new(name)
         self.nodes[0].generate(10)
         self.nodes[0].name_firstupdate(name, newData[1], newData[0], hexValue)

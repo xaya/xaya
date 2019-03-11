@@ -22,7 +22,6 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
-  bytes_to_hex_str,
   hex_str_to_bytes,
 )
 
@@ -82,7 +81,7 @@ class NameSegwitTest (NameTestFramework):
     tx.wit.vtxinwit.append (CTxInWitness ())
     tx.wit.vtxinwit[0].scriptWitness = CScriptWitness ()
     tx.wit.vtxinwit[0].scriptWitness.stack = [b"dummy"] * 2
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
 
     return txHex
 
@@ -114,7 +113,7 @@ class NameSegwitTest (NameTestFramework):
     add_witness_commitment (block, 0)
     block.solve ()
 
-    blkHex = bytes_to_hex_str (block.serialize (withWitness))
+    blkHex = block.serialize (withWitness).hex ()
     return self.node.submitblock (blkHex)
 
   def run_test (self):

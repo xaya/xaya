@@ -204,8 +204,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
     }
 
   CValidationState state;
-  if (!wallet.CommitTransaction (tx, {}, {}, keyChange,
-                                 g_connman.get (), state))
+  if (!wallet.CommitTransaction (tx, {}, {}, keyChange, state))
     {
       strError = strprintf ("Error: The transaction was rejected!"
                             "  Reason given: %s", FormatStateMessage (state));
@@ -803,7 +802,7 @@ sendtoname (const JSONRPCRequest& request)
   }
 
   if (!request.params[6].isNull()) {
-      coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
+      coin_control.m_confirm_target = ParseConfirmTarget(request.params[6], pwallet->chain().estimateMaxBlocks());
   }
 
   if (!request.params[7].isNull()) {

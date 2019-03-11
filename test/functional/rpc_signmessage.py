@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2018 The Bitcoin Core developers
+# Copyright (c) 2016-2019 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test RPC commands for signing and verifying messages."""
@@ -25,18 +25,18 @@ class SignMessagesTest(BitcoinTestFramework):
         expected_signature = 'Hx6I/QmVmh4EePAdNrPm1ud7M/w6r9Oz2FNMUz4jxTPnW3FiYTTjNWzV1ESB2NeeoAIG7hEsNVRaVFLyE3dG2VE='
         signature = self.nodes[0].signmessagewithprivkey(priv_key, message)
         assert_equal(expected_signature, signature)
-        assert(self.nodes[0].verifymessage(address, signature, message))
+        assert self.nodes[0].verifymessage(address, signature, message)
 
         self.log.info('test signing with an address with wallet')
         address = self.nodes[0].getnewaddress()
         signature = self.nodes[0].signmessage(address, message)
-        assert(self.nodes[0].verifymessage(address, signature, message))
+        assert self.nodes[0].verifymessage(address, signature, message)
 
         self.log.info('test verifying with another address should not work')
         other_address = self.nodes[0].getnewaddress()
         other_signature = self.nodes[0].signmessage(other_address, message)
-        assert(not self.nodes[0].verifymessage(other_address, signature, message))
-        assert(not self.nodes[0].verifymessage(address, other_signature, message))
+        assert not self.nodes[0].verifymessage(other_address, signature, message)
+        assert not self.nodes[0].verifymessage(address, other_signature, message)
 
 if __name__ == '__main__':
     SignMessagesTest().main()

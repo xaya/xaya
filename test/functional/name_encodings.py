@@ -6,13 +6,17 @@
 # Tests the name/value encoding options in the RPC interface.
 
 from test_framework.names import NameTestFramework
-from test_framework.util import *
+from test_framework.util import (
+  assert_equal,
+  assert_greater_than,
+  assert_raises_rpc_error,
+)
 
 from decimal import Decimal
 
 
 def strToHex (string):
-  return bytes_to_hex_str (string.encode ('latin1'))
+  return string.encode ('latin1').hex ()
 
 
 class NameEncodingsTest (NameTestFramework):
