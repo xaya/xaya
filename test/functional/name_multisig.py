@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,12 @@ from test_framework.script import (
   OP_NAME_UPDATE,
   OP_TRUE,
 )
-from test_framework.util import *
+from test_framework.util import (
+  assert_equal,
+  assert_greater_than,
+  assert_raises_rpc_error,
+  hex_str_to_bytes,
+)
 
 from decimal import Decimal
 import codecs
@@ -64,7 +69,7 @@ class NameMultisigTest (NameTestFramework):
     Takes a CScript instance and returns the corresponding P2SH address.
     """
 
-    scrHex = bytes_to_hex_str (script)
+    scrHex = script.hex ()
     data = self.nodes[ind].decodescript (scrHex)
     return data['p2sh']
 
@@ -91,7 +96,7 @@ class NameMultisigTest (NameTestFramework):
     tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
     tx.vin[ind].scriptSig = CScript (scriptSigOps)
 
-    return bytes_to_hex_str (tx.serialize ())
+    return tx.serialize ().hex ()
 
   def updateAnyoneCanSpendName (self, ind, name, value, addr, scriptSigOps):
     """
@@ -177,7 +182,7 @@ class NameMultisigTest (NameTestFramework):
     # compared to the redeem script).
     txData = bytearray (hex_str_to_bytes (tx))
     txData[44] = (txData[44] + 10) % 256
-    txManipulated = bytes_to_hex_str (txData)
+    txManipulated = txData.hex ()
 
     # Send the tx.  The manipulation should be caught (independently of
     # when strict P2SH checks are enabled, since they are enforced
@@ -233,7 +238,7 @@ class NameMultisigTest (NameTestFramework):
     data = node.name_show (name)
     tx.vin.append (CTxIn (COutPoint (int (data['txid'], 16), data['vout'])))
     tx.vout.append (CTxOut (COIN // 100, updAndAnyoneScript))
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
 
     txHex = node.fundrawtransaction (txHex)['hex']
     signed = node.signrawtransactionwithwallet (txHex)

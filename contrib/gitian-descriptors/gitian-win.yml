@@ -1,5 +1,5 @@
 ---
-name: "xaya-win-0.1"
+name: "xaya-core-win-1.3"
 enable_cache: true
 suites:
 - "bionic"
@@ -20,13 +20,15 @@ packages:
 - "nsis"
 - "zip"
 - "ca-certificates"
-- "python"
+- "python3"
 - "rename"
 remotes:
 - "url": "https://github.com/xaya/xaya.git"
   "dir": "xaya"
 files: []
 script: |
+  set -e -o pipefail
+
   WRAP_DIR=$HOME/wrapped
   HOSTS="i686-w64-mingw32 x86_64-w64-mingw32"
   CONFIGFLAGS="--enable-reduce-exports --disable-bench --disable-gui-tests"

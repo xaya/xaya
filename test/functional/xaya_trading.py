@@ -21,7 +21,6 @@ from test_framework.script import (
 from test_framework.util import (
   assert_equal,
   assert_greater_than,
-  bytes_to_hex_str,
   hex_str_to_bytes,
   sync_blocks,
 )
@@ -173,7 +172,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     changeAddr = node.getnewaddress ()
     tx.vout.append (self.buildTxOut (changeAddr, change))
 
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
 
     signed = node.signrawtransactionwithwallet (txHex)
     assert not signed["complete"]
@@ -208,7 +207,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     tx.vin.append (CTxIn (nameOut))
     tx.vout.append (self.buildNameUpdate (name, value, addr, nameValue + price))
 
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
 
     signed = node.signrawtransactionwithwallet (txHex, [],
                                                 "SINGLE|ANYONECANPAY")
@@ -250,14 +249,14 @@ class AtomicTradingTest (BitcoinTestFramework):
     addr = self.nodes[0].getnewaddress ()
     tx = self.parseHexTx (bid)
     tx.vout[0] = self.buildNameUpdate (name, wrongValue, addr, 0.01)
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
     signed = self.nodes[0].signrawtransactionwithwallet (txHex)
     assert not signed["complete"]
 
     # The seller also must not change the amount he gets.
     tx = self.parseHexTx (bid)
     tx.vout[1].nValue = 20 * COIN
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
     signed = self.nodes[0].signrawtransactionwithwallet (txHex)
     assert not signed["complete"]
 
@@ -295,13 +294,13 @@ class AtomicTradingTest (BitcoinTestFramework):
     changeAddr = self.nodes[1].getnewaddress ()
     tx.vout.append (self.buildTxOut (changeAddr, change))
 
-    ask = bytes_to_hex_str (tx.serialize ())
+    ask = tx.serialize ().hex ()
 
     # The transaction should be invalid if the amount received by the seller
     # is changed.
     tx = self.parseHexTx (ask)
     tx.vout[0].nValue = COIN
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
     signed = self.nodes[1].signrawtransactionwithwallet (txHex)
     assert not signed["complete"]
 
@@ -311,7 +310,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     addr = self.nodes[0].getnewaddress ()
     tx = self.parseHexTx (ask)
     tx.vout[0] = self.buildNameUpdate (name, wrongValue, addr, 10.01)
-    txHex = bytes_to_hex_str (tx.serialize ())
+    txHex = tx.serialize ().hex ()
     signed = self.nodes[1].signrawtransactionwithwallet (txHex)
     assert not signed["complete"]
 

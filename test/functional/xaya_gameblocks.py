@@ -18,7 +18,6 @@ from test_framework.messages import (
 from test_framework.util import (
   assert_equal,
   assert_raises_rpc_error,
-  bytes_to_hex_str,
   hex_str_to_bytes,
 )
 from test_framework.script import (
@@ -264,7 +263,7 @@ class GameBlocksTest (BitcoinTestFramework):
     tx.vout.append (CTxOut (COIN, scr1))
     tx.vout.append (CTxOut (COIN // 2, CScript ([OP_TRUE])))
     tx.vout.append (CTxOut (COIN // 100, scr1))
-    rawtx = bytes_to_hex_str (tx.serialize ())
+    rawtx = tx.serialize ().hex ()
 
     nameOp = {
       "op": "name_update",

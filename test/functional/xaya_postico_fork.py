@@ -12,7 +12,6 @@ from test_framework.blocktools import (
 from test_framework.util import (
   assert_equal,
   assert_greater_than,
-  bytes_to_hex_str,
 )
 
 FORK_HEIGHT = 500
@@ -65,7 +64,7 @@ class PostIcoForkTest (BitcoinTestFramework):
     block.nNonce = 42
 
     block.solve ()
-    return self.node.submitblock (bytes_to_hex_str (block.serialize (True)))
+    return self.node.submitblock (block.serialize (True).hex ())
 
 if __name__ == '__main__':
   PostIcoForkTest ().main ()

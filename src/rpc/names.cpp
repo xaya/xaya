@@ -337,25 +337,6 @@ NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
                           const std::string& defaultValue,
                           const std::string& doc)
 {
-  std::string delim;
-  switch (type)
-    {
-    case RPCArg::Type::STR:
-    case RPCArg::Type::STR_HEX:
-    case RPCArg::Type::NUM:
-    case RPCArg::Type::AMOUNT:
-    case RPCArg::Type::BOOL:
-      delim = ",";
-      break;
-
-    case RPCArg::Type::OBJ:
-    case RPCArg::Type::OBJ_USER_KEYS:
-    case RPCArg::Type::ARR:
-      delim = ":";
-      break;
-    }
-  assert (!delim.empty ());
-
   if (defaultValue.empty ())
     innerArgs.push_back (RPCArg (name, type, RPCArg::Optional::OMITTED, doc));
   else
