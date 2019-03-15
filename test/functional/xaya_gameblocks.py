@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 The Xaya developers
+# Copyright (c) 2018-2019 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,6 +17,7 @@ from test_framework.messages import (
 )
 from test_framework.util import (
   assert_equal,
+  assert_greater_than,
   assert_raises_rpc_error,
   hex_str_to_bytes,
 )
@@ -119,6 +120,7 @@ class GameBlocksTest (BitcoinTestFramework):
       self._test_register ()
       self._test_blockData ()
       self._test_multipleUpdates ()
+      self._test_inputs ()
       self._test_moveWithCurrency ()
       self._test_adminCmd ()
       self._test_reorg ()
@@ -232,6 +234,29 @@ class GameBlocksTest (BitcoinTestFramework):
     assert_equal (len (data["moves"]), 2)
     assertMove (data["moves"][indX], txidX, "x", {"test": True})
     assertMove (data["moves"][indY], txidY, "y", 6.25)
+
+  def _test_inputs (self):
+    """
+    Tests that spent transaction inputs are passed to the game (so that
+    certain atomic transactions can be implemented).
+    """
+
+    self.log.info ("Testing for spent inputs...")
+    txid = self.node.name_update ("p/x", json.dumps ({"g": {"a": "foo"}}))
+    txData = self.node.getrawtransaction (txid, True)
+    self.node.generate (1)
+
+    inputs = []
+    for txin in txData["vin"]:
+      inputs.append ({"txid": txin["txid"], "vout": txin["vout"]})
+    assert_greater_than (len (inputs), 1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assert_equal (data["moves"][0]["inputs"], inputs)
+
+    _, data = self.games["b"].receive ()
+    assert_equal (data["moves"], [])
 
   def _test_moveWithCurrency (self):
     """

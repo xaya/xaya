@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2019 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -147,6 +147,16 @@ TransactionData::TransactionData (const CTransaction& tx)
   UniValue tmpl(UniValue::VOBJ);
   tmpl.pushKV ("txid", tx.GetHash ().GetHex ());
   tmpl.pushKV ("name", name.substr (2));
+
+  UniValue inputs(UniValue::VARR);
+  for (const auto& in : tx.vin)
+    {
+      UniValue cur(UniValue::VOBJ);
+      cur.pushKV ("txid", in.prevout.hash.GetHex ());
+      cur.pushKV ("vout", static_cast<int> (in.prevout.n));
+      inputs.push_back (cur);
+    }
+  tmpl.pushKV ("inputs", inputs);
 
   std::map<std::string, CAmount> outAmounts;
   for (const auto& out : tx.vout)
