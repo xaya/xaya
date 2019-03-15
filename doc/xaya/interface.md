@@ -75,6 +75,12 @@ The `DATA` part, finally, is a JSON object with the relevant information:
             "txid": TXID,
             "name": UPDATED-NAME,
             "move": MOVE,
+            "inputs":
+              [
+                {"txid": PREVID1, "vout": VOUT1},
+                {"txid": PREVID2, "vout": VOUT2},
+                ...
+              ],
             "out":
               {
                 ADDRESS1: AMOUNT1,
@@ -110,6 +116,10 @@ The placeholders have the following meaning:
 * **`MOVE`:**
   The actual [move data](games.md#moves), as it is given in `.g[GAMEID]`
   of the name update's value.
+* **`PREVID`n and `VOUT`n:**
+  Previous outputs spent by the move transaction.  This is mainly useful
+  for implementing certain types of [atomic trades](trading.md).
+  Note that this *includes the name input* being spent!
 * **`ADDRESS`n and `AMOUNT`n:**
   Xaya addresses and amounts that were transacted in the move transaction,
   as described in the model for

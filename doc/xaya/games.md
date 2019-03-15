@@ -63,7 +63,8 @@ The game state must not depend on any other transactions,
 neither pure currency transactions nor name updates not referencing the game.
 Furthermore, the game engine must only take into account the actual move
 value from the name update, not any other data.  It may, however, also depend
-on [*currency outputs*](#currency) created in the same transaction.**
+on [*currency outputs*](#currency) created in the same transaction
+and the *spent inputs* (useful for [atomic trades](trading.md)).**
 
 In particular, games must also not include any newly registered names into
 the game state until those names have been referenced by a move associated
