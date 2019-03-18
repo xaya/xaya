@@ -926,6 +926,14 @@ static UniValue getblock(const JSONRPCRequest& request)
             "  \"rngseed\" : \"xxx\",     (string) Hex-encoded seed that may be used for (not fully secure) random numbers in games\n"
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
+            "  \"auxpow\" : {           (object) The auxpow object attached to this block\n"
+            "    \"tx\" : {...},        (object) The parent chain coinbase tx of this auxpow\n"
+            "    \"index\" : 0,         (numeric) Merkle index of the parent coinbase\n"
+            "    \"merklebranch\" : [...], (array) Merke branch of the parent coinbase\n"
+            "    \"chainindex\" : n,    (numeric) Index in the auxpow Merkle tree\n"
+            "    \"chainmerklebranch\" : [...], (array) Branch in the auxpow Merkle tree\n"
+            "    \"parentblock\" : \"xx\" (string) The parent block serialised as hex string\n"
+            "  }\n"
             "}\n"
                     },
                     RPCResult{"for verbosity = 2",
