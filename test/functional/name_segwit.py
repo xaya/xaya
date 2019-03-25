@@ -91,7 +91,7 @@ class NameSegwitTest (NameTestFramework):
     """
 
     txHex = self.buildDummySegwitNameUpdate (name, value, addr)
-    self.node.sendrawtransaction (txHex, True)
+    self.node.sendrawtransaction (txHex, 0)
 
   def tryUpdateInBlock (self, name, value, addr, withWitness):
     """

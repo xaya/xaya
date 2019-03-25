@@ -8,7 +8,9 @@
 #include <interfaces/chain.h>
 #include <wallet/walletutil.h>
 
+#include <memory>
 #include <string>
+#include <vector>
 
 class CCoinControl;
 class CRPCTable;
@@ -19,7 +21,7 @@ class UniValue;
 struct PartiallySignedTransaction;
 class CTransaction;
 
-void RegisterWalletRPCCommands(CRPCTable &t);
+void RegisterWalletRPCCommands(interfaces::Chain& chain, std::vector<std::unique_ptr<interfaces::Handler>>& handlers);
 
 /**
  * Figures out what wallet, if any, to use for a JSONRPCRequest.

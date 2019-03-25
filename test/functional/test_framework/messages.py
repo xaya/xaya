@@ -601,6 +601,9 @@ class CBlockHeader:
         assert n < VERSION_AUXPOW
         self.nVersion = n + CHAIN_ID * VERSION_CHAIN_START
 
+    def mark_auxpow(self):
+        self.nVersion |= VERSION_AUXPOW
+
     def is_auxpow(self):
         return (self.nVersion & VERSION_AUXPOW) > 0
 
