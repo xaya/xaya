@@ -155,6 +155,7 @@ BITCOIN_CORE_H = \
   netaddress.h \
   netbase.h \
   netmessagemaker.h \
+  node/coin.h \
   node/transaction.h \
   noui.h \
   optional.h \
@@ -264,6 +265,7 @@ libbitcoin_server_a_SOURCES = \
   miner.cpp \
   net.cpp \
   net_processing.cpp \
+  node/coin.cpp \
   node/transaction.cpp \
   noui.cpp \
   outputtype.cpp \
@@ -648,13 +650,13 @@ clean-local:
 check-symbols: $(bin_PROGRAMS)
 if GLIBC_BACK_COMPAT
 	@echo "Checking glibc back compat..."
-	$(AM_V_at) READELF=$(READELF) CPPFILT=$(CPPFILT) $(top_srcdir)/contrib/devtools/symbol-check.py < $(bin_PROGRAMS)
+	$(AM_V_at) READELF=$(READELF) CPPFILT=$(CPPFILT) $(PYTHON) $(top_srcdir)/contrib/devtools/symbol-check.py < $(bin_PROGRAMS)
 endif
 
 check-security: $(bin_PROGRAMS)
 if HARDEN
 	@echo "Checking binary security..."
-	$(AM_V_at) READELF=$(READELF) OBJDUMP=$(OBJDUMP) $(top_srcdir)/contrib/devtools/security-check.py < $(bin_PROGRAMS)
+	$(AM_V_at) READELF=$(READELF) OBJDUMP=$(OBJDUMP) $(PYTHON) $(top_srcdir)/contrib/devtools/security-check.py < $(bin_PROGRAMS)
 endif
 
 if ENABLE_BIP70

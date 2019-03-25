@@ -2369,8 +2369,8 @@ static UniValue settxfee(const JSONRPCRequest& request)
     CFeeRate tx_fee_rate(nAmount, 1000);
     if (tx_fee_rate == 0) {
         // automatic selection
-    } else if (tx_fee_rate < ::minRelayTxFee) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("txfee cannot be less than min relay tx fee (%s)", ::minRelayTxFee.ToString()));
+    } else if (tx_fee_rate < pwallet->chain().relayMinFee()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("txfee cannot be less than min relay tx fee (%s)", pwallet->chain().relayMinFee().ToString()));
     } else if (tx_fee_rate < pwallet->m_min_fee) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("txfee cannot be less than wallet min fee (%s)", pwallet->m_min_fee.ToString()));
     }
@@ -3883,19 +3883,6 @@ UniValue sethdseed(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-void AddKeypathToMap(const CWallet* pwallet, const CKeyID& keyID, std::map<CPubKey, KeyOriginInfo>& hd_keypaths)
-{
-    CPubKey vchPubKey;
-    if (!pwallet->GetPubKey(keyID, vchPubKey)) {
-        return;
-    }
-    KeyOriginInfo info;
-    if (!pwallet->GetKeyOrigin(keyID, info)) {
-        throw JSONRPCError(RPC_INTERNAL_ERROR, "Internal keypath is broken");
-    }
-    hd_keypaths.emplace(vchPubKey, std::move(info));
-}
-
 UniValue walletprocesspsbt(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4253,8 +4240,8 @@ static const CRPCCommand commands[] =
 };
 // clang-format on
 
-void RegisterWalletRPCCommands(CRPCTable &t)
+void RegisterWalletRPCCommands(interfaces::Chain& chain, std::vector<std::unique_ptr<interfaces::Handler>>& handlers)
 {
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
-        t.appendCommand(commands[vcidx].name, &commands[vcidx]);
+        handlers.emplace_back(chain.handleRpc(commands[vcidx]));
 }
