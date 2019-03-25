@@ -202,7 +202,7 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
     for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
     {
         CZMQAbstractNotifier *notifier = *i;
-        if (notifier->NotifyBlockAttached(*pblock, pindexConnected))
+        if (notifier->NotifyBlockAttached(*pblock))
         {
             i++;
         }
@@ -214,12 +214,12 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
     }
 }
 
-void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDelete, const std::vector<CTransactionRef>& vNameConflicts)
+void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const std::vector<CTransactionRef>& vNameConflicts)
 {
     for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
     {
         CZMQAbstractNotifier *notifier = *i;
-        if (notifier->NotifyBlockDetached(*pblock, pindexDelete))
+        if (notifier->NotifyBlockDetached(*pblock))
         {
             i++;
         }

@@ -22,12 +22,12 @@ bool CZMQAbstractNotifier::NotifyTransaction(const CTransaction &/*transaction*/
     return true;
 }
 
-bool CZMQAbstractNotifier::NotifyBlockAttached(const CBlock& /*block*/, const CBlockIndex* /*pindex*/)
+bool CZMQAbstractNotifier::NotifyBlockAttached(const CBlock& /*block*/)
 {
     return true;
 }
 
-bool CZMQAbstractNotifier::NotifyBlockDetached(const CBlock& /*block*/, const CBlockIndex* /*pindex*/)
+bool CZMQAbstractNotifier::NotifyBlockDetached(const CBlock& /*block*/)
 {
     return true;
 }

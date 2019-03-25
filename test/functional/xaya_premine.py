@@ -84,13 +84,13 @@ class PremineTest(BitcoinTestFramework):
     forgedTx.vin[0].scriptSig = codecs.decode (redeemScript, 'hex_codec')
     forgedTx = ToHex (forgedTx)
     assert_raises_rpc_error (-26, "not valid",
-                             node.sendrawtransaction, forgedTx, True)
+                             node.sendrawtransaction, forgedTx, 0)
 
     # Sign and send the raw tx, should succeed.
     signed = node.signrawtransactionwithwallet (rawTx)
     assert signed['complete']
     signedTx = signed['hex']
-    sendId = node.sendrawtransaction (signedTx, True)
+    sendId = node.sendrawtransaction (signedTx, 0)
     node.generate (1)
     assert_equal (node.gettransaction (sendId)['confirmations'], 1)
 

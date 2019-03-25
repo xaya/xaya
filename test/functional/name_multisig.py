@@ -116,7 +116,7 @@ class NameMultisigTest (NameTestFramework):
     tx = self.setScriptSigOps (tx, 0, scriptSigOps)
     signed = self.nodes[ind].signrawtransactionwithwallet (tx)
     assert signed['complete']
-    self.nodes[ind].sendrawtransaction (signed['hex'], True)
+    self.nodes[ind].sendrawtransaction (signed['hex'], 0)
 
   def test_2of2_multisig (self):
     """
@@ -269,7 +269,7 @@ class NameMultisigTest (NameTestFramework):
     tx = node.createrawtransaction (ins, out)
     tx = self.setScriptSigOps (tx, 0, [updAndAnyoneScript])
 
-    node.sendrawtransaction (tx, True)
+    node.sendrawtransaction (tx, 0)
     node.generate (1)
     self.checkNameWithHeight (0, name, val ("value2"), baseHeight + 2)
 

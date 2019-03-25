@@ -15,6 +15,7 @@
 #include <primitives/transaction.h>
 #include <script/names.h>
 #include <script/standard.h>
+#include <validation.h>
 
 #include <univalue.h>
 
@@ -192,7 +193,7 @@ TransactionData::TransactionData (const CTransaction& tx)
 bool
 ZMQGameBlocksNotifier::SendBlockNotifications (
     const std::set<std::string>& games, const std::string& commandPrefix,
-    const std::string& reqtoken, const CBlock& block, const CBlockIndex* pindex)
+    const std::string& reqtoken, const CBlock& block)
 {
   /* Start with an empty array of moves for each game that we track.  */
   std::map<std::string, UniValue> perGameMoves;
@@ -229,12 +230,12 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 
   /* Prepare the template object that is the same for each game.  */
   UniValue blockData(UniValue::VOBJ);
-  blockData.pushKV ("hash", block.GetHash ().GetHex ());
-  if (pindex->nHeight > 0)
-    {
-      assert (pindex->pprev != nullptr);
-      blockData.pushKV ("parent", pindex->pprev->GetBlockHash ().GetHex ());
-    }
+  const uint256& blkHash = block.GetHash ();
+  blockData.pushKV ("hash", blkHash.GetHex ());
+  if (!block.hashPrevBlock.IsNull ())
+    blockData.pushKV ("parent", block.hashPrevBlock.GetHex ());
+  const CBlockIndex* pindex = LookupBlockIndex (blkHash);
+  assert (pindex != nullptr);
   blockData.pushKV ("height", pindex->nHeight);
   blockData.pushKV ("timestamp", block.GetBlockTime ());
   blockData.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
@@ -267,21 +268,17 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 }
 
 bool
-ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
-                                            const CBlockIndex* pindex)
+ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block)
 {
   LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, "",
-                                 block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, "", block);
 }
 
 bool
-ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
-                                            const CBlockIndex* pindex)
+ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block)
 {
   LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_DETACH, "",
-                                 block, pindex);
+  return SendBlockNotifications (trackedGames, PREFIX_DETACH, "", block);
 }
 
 UniValue

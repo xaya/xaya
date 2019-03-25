@@ -531,7 +531,7 @@ class SegWitTest(BitcoinTestFramework):
             tx.vout.append(CTxOut(10000000, i))
         tx.rehash()
         signresults = self.nodes[0].signrawtransactionwithwallet(tx.serialize_without_witness().hex())['hex']
-        txid = self.nodes[0].sendrawtransaction(signresults, True)
+        txid = self.nodes[0].sendrawtransaction(signresults, 0)
         txs_mined[txid] = self.nodes[0].generate(1)[0]
         sync_blocks(self.nodes)
         watchcount = 0
@@ -583,7 +583,7 @@ class SegWitTest(BitcoinTestFramework):
         tx.vout.append(CTxOut(0, CScript()))
         tx.rehash()
         signresults = self.nodes[0].signrawtransactionwithwallet(tx.serialize_without_witness().hex())['hex']
-        self.nodes[0].sendrawtransaction(signresults, True)
+        self.nodes[0].sendrawtransaction(signresults, 0)
         self.nodes[0].generate(1)
         sync_blocks(self.nodes)
 

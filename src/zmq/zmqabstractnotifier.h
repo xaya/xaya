@@ -47,8 +47,8 @@ public:
 
     /* Block attach and detach notifications are used for the game
        interface in Xaya.  */
-    virtual bool NotifyBlockAttached(const CBlock& block, const CBlockIndex* pindex);
-    virtual bool NotifyBlockDetached(const CBlock& block, const CBlockIndex* pindex);
+    virtual bool NotifyBlockAttached(const CBlock& block);
+    virtual bool NotifyBlockDetached(const CBlock& block);
 
 protected:
     void *psocket;

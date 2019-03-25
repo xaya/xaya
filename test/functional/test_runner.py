@@ -201,6 +201,7 @@ BASE_SCRIPTS = [
     'auxpow_getwork.py --segwit',
     'auxpow_mining.py',
     'auxpow_mining.py --segwit',
+    'auxpow_invalidpow.py',
 
     # name tests
     'name_encodings.py',
@@ -523,6 +524,11 @@ class TestHandler:
                               log_stderr))
         if not self.jobs:
             raise IndexError('pop from empty list')
+
+        # Print remaining running jobs when all jobs have been started.
+        if not self.test_list:
+            print("Remaining jobs: [{}]".format(", ".join(j[0] for j in self.jobs)))
+
         dot_count = 0
         while True:
             # Return first proc that finishes

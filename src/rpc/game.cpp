@@ -102,8 +102,7 @@ SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
     }
 
   auto* notifier = GetGameBlocksNotifier ();
-  notifier->SendBlockNotifications (trackedGames, commandPrefix, reqtoken,
-                                    blk, pindex);
+  notifier->SendBlockNotifications (trackedGames, commandPrefix, reqtoken, blk);
 }
 #endif // ENABLE_ZMQ
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2019 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -54,12 +54,10 @@ public:
   bool SendBlockNotifications (const std::set<std::string>& games,
                                const std::string& commandPrefix,
                                const std::string& reqtoken,
-                               const CBlock& block, const CBlockIndex* pindex);
+                               const CBlock& block);
 
-  bool NotifyBlockAttached (const CBlock& block,
-                            const CBlockIndex* pindex) override;
-  bool NotifyBlockDetached (const CBlock& block,
-                            const CBlockIndex* pindex) override;
+  bool NotifyBlockAttached (const CBlock& block) override;
+  bool NotifyBlockDetached (const CBlock& block) override;
 
   /* Methods for the trackedgames RPC.  */
   UniValue GetTrackedGames () const;
