@@ -52,10 +52,11 @@ class CAuxPowForTest : public CAuxPow
 public:
 
   explicit inline CAuxPowForTest (CTransactionRef txIn)
-    : CAuxPow (txIn)
+    : CAuxPow (std::move (txIn))
   {}
 
   using CAuxPow::coinbaseTx;
+  using CAuxPow::vMerkleBranch;
   using CAuxPow::vChainMerkleBranch;
   using CAuxPow::nChainIndex;
   using CAuxPow::parentBlock;
@@ -195,9 +196,7 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   LOCK(cs_main);
 
   CAuxPowForTest res(tx);
-  res.coinbaseTx.nIndex = 0;
-  res.coinbaseTx.vMerkleBranch
-      = merkle_tests::BlockMerkleBranch (parentBlock, res.coinbaseTx.nIndex);
+  res.vMerkleBranch = merkle_tests::BlockMerkleBranch (parentBlock, 0);
 
   res.vChainMerkleBranch = auxpowChainMerkleBranch;
   res.nChainIndex = auxpowChainIndex;

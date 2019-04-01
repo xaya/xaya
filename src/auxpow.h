@@ -89,7 +89,7 @@ public:
 
 /**
  * Data for the merge-mining auxpow.  This uses a merkle tx (the parent block's
- * coinbase tx) and a manual merkle branch to link the actual Namecoin block
+ * coinbase tx) and a second merkle branch to link the actual Namecoin block
  * header to the parent block header, which is mined to satisfy the PoW.
  */
 class CAuxPow
@@ -97,11 +97,11 @@ class CAuxPow
 
 private:
 
-  /**
-   * The parent block's coinbase tx, which is used to link the auxpow from
-   * the tx input to the parent block header.
-   */
-  CBaseMerkleTx coinbaseTx;
+  /** The parent block's coinbase transaction.  */
+  CTransactionRef coinbaseTx;
+
+  /** The Merkle branch of the coinbase tx to the parent block's root.  */
+  std::vector<uint256> vMerkleBranch;
 
   /** The merkle branch connecting the aux block to our coinbase.  */
   std::vector<uint256> vChainMerkleBranch;
@@ -126,8 +126,8 @@ private:
 public:
 
   /* Prevent accidental conversion.  */
-  inline explicit CAuxPow (CTransactionRef txIn)
-    : coinbaseTx (txIn)
+  inline explicit CAuxPow (CTransactionRef&& txIn)
+    : coinbaseTx (std::move (txIn))
   {}
 
   CAuxPow () = default;
@@ -138,21 +138,23 @@ public:
     inline void
     SerializationOp (Stream& s, Operation ser_action)
   {
+    /* The coinbase Merkle tx' hashBlock field is never actually verified
+       or used in the code for an auxpow (and never was).  The parent block
+       is known anyway directly, so this is also redundant.  By setting the
+       value to zero (for serialising), we make sure that the format is
+       backwards compatible but the data can be compressed.  */
+    uint256 hashBlock;
+
+    /* The index of the parent coinbase tx is always zero.  */
+    int nIndex = 0;
+
+    /* Data from the coinbase transaction as Merkle tx.  */
     READWRITE (coinbaseTx);
+    READWRITE (hashBlock);
+    READWRITE (vMerkleBranch);
+    READWRITE (nIndex);
 
-    /* The Merkle block hash in an auxpow is never verified or used for
-       anything, and the block hash is known anyway from the parent block.
-       Thus we can just as well set the hash to zero, so that it compresses
-       better (and we exclude any accidental use in the future).  */
-    if (ser_action.ForRead ())
-      coinbaseTx.hashBlock.SetNull ();
-
-    /* When writing, we should always have a zero hashBlock already.  There
-       is no code path that actually sets the hashBlock to something nonzero
-       (and if there is, then it is a bug).  */
-    else
-      assert (coinbaseTx.hashBlock.IsNull ());
-
+    /* Additional data for the auxpow itself.  */
     READWRITE (vChainMerkleBranch);
     READWRITE (nChainIndex);
     READWRITE (parentBlock);

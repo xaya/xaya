@@ -109,7 +109,6 @@ class AuxpowMiningTest (BitcoinTestFramework):
     data = self.nodes[1].getblock (auxblock['hash'])
     assert 'auxpow' in data
     auxJson = data['auxpow']
-    assert_equal (auxJson['index'], 0)
     assert_equal (auxJson['chainindex'], 0)
     assert_equal (auxJson['merklebranch'], [])
     assert_equal (auxJson['chainmerklebranch'], [])

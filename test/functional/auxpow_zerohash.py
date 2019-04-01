@@ -96,6 +96,18 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     p2pStore.send_blocks_and_test ([blk], node, success=True)
     assert_equal (node.getbestblockhash (), blkHash)
 
+    self.log.info ("Sending non-zero nIndex auxpow through RPC...")
+    blk, blkHash = self.createBlock ()
+    blk.auxpow.nIndex = 42
+    assert_equal (node.submitblock (blk.serialize ().hex ()), None)
+    assert_equal (node.getbestblockhash (), blkHash)
+
+    self.log.info ("Sending non-zero nIndex auxpow through P2P...")
+    blk, blkHash = self.createBlock ()
+    blk.auxpow.nIndex = 42
+    p2pStore.send_blocks_and_test ([blk], node, success=True)
+    assert_equal (node.getbestblockhash (), blkHash)
+
   def createBlock (self):
     """
     Creates and mines a new block with auxpow.
