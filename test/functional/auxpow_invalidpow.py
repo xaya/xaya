@@ -20,7 +20,6 @@ from test_framework.util import (
   hex_str_to_bytes,
 )
 
-from test_framework.auxpow import reverseHex
 from test_framework.auxpow_testing import computeAuxpow
 
 import codecs
