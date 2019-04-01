@@ -13,14 +13,16 @@ from test_framework.blocktools import (
   create_block,
   create_coinbase,
 )
-from test_framework.messages import CAuxPow
+from test_framework.messages import (
+  CAuxPow,
+  uint256_from_compact,
+)
 from test_framework.mininode import P2PDataStore
 from test_framework.util import (
   assert_equal,
   hex_str_to_bytes,
 )
 
-from test_framework.auxpow import reverseHex
 from test_framework.auxpow_testing import computeAuxpow
 
 import codecs
@@ -88,9 +90,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     chosen to be valid (ok = True) or invalid (ok = False).
     """
 
-    tmpl = self.nodes[0].getauxblock ()
-    target = reverseHex (tmpl["_target"])
-
+    target = b"%032x" % uint256_from_compact (block.nBits)
     auxpowHex = computeAuxpow (blkHash, target, ok)
     block.auxpow = CAuxPow ()
     block.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
