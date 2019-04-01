@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2016 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,6 +13,7 @@
 #include <serialize.h>
 #include <uint256.h>
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
@@ -138,6 +139,20 @@ public:
     SerializationOp (Stream& s, Operation ser_action)
   {
     READWRITE (coinbaseTx);
+
+    /* The Merkle block hash in an auxpow is never verified or used for
+       anything, and the block hash is known anyway from the parent block.
+       Thus we can just as well set the hash to zero, so that it compresses
+       better (and we exclude any accidental use in the future).  */
+    if (ser_action.ForRead ())
+      coinbaseTx.hashBlock.SetNull ();
+
+    /* When writing, we should always have a zero hashBlock already.  There
+       is no code path that actually sets the hashBlock to something nonzero
+       (and if there is, then it is a bug).  */
+    else
+      assert (coinbaseTx.hashBlock.IsNull ());
+
     READWRITE (vChainMerkleBranch);
     READWRITE (nChainIndex);
     READWRITE (parentBlock);

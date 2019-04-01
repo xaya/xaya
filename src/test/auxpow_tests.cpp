@@ -195,7 +195,6 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   LOCK(cs_main);
 
   CAuxPowForTest res(tx);
-  res.coinbaseTx.hashBlock = parentBlock.GetHash ();
   res.coinbaseTx.nIndex = 0;
   res.coinbaseTx.vMerkleBranch
       = merkle_tests::BlockMerkleBranch (parentBlock, res.coinbaseTx.nIndex);

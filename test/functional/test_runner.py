@@ -200,6 +200,7 @@ BASE_SCRIPTS = [
     'auxpow_mining.py',
     'auxpow_mining.py --segwit',
     'auxpow_invalidpow.py',
+    'auxpow_zerohash.py',
 ]
 
 EXTENDED_SCRIPTS = [
