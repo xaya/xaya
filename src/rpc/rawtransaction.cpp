@@ -40,6 +40,11 @@
 
 #include <univalue.h>
 
+/** High fee for sendrawtransaction and testmempoolaccept.
+ * By default, transaction with a fee higher than this will be rejected by the
+ * RPCs. This can be overriden with the maxfeerate argument.
+ */
+constexpr static CAmount DEFAULT_MAX_RAW_TX_FEE{COIN / 10};
 
 void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 {
@@ -610,33 +615,54 @@ static UniValue decoderawtransaction(const JSONRPCRequest& request)
     return result;
 }
 
+static std::string GetAllOutputTypes()
+{
+    std::string ret;
+    for (int i = TX_NONSTANDARD; i <= TX_WITNESS_UNKNOWN; ++i) {
+        if (i != TX_NONSTANDARD) ret += ", ";
+        ret += GetTxnOutputType(static_cast<txnouttype>(i));
+    }
+    return ret;
+}
+
 static UniValue decodescript(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1)
-        throw std::runtime_error(
-            RPCHelpMan{"decodescript",
+    const RPCHelpMan help{"decodescript",
                 "\nDecode a hex-encoded script.\n",
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "the hex-encoded script"},
                 },
                 RPCResult{
             "{\n"
-            "  \"asm\":\"asm\",   (string) Script public key\n"
-            "  \"hex\":\"hex\",   (string) hex-encoded public key\n"
-            "  \"type\":\"type\", (string) The output type\n"
-            "  \"reqSigs\": n,    (numeric) The required signatures\n"
-            "  \"addresses\": [   (json array of string)\n"
-            "     \"address\"     (string) bitcoin address\n"
+            "  \"asm\":\"asm\",          (string) Script public key\n"
+            "  \"type\":\"type\",        (string) The output type (e.g. "+GetAllOutputTypes()+")\n"
+            "  \"reqSigs\": n,         (numeric) The required signatures\n"
+            "  \"addresses\": [        (json array of string)\n"
+            "     \"address\"          (string) bitcoin address\n"
             "     ,...\n"
             "  ],\n"
-            "  \"p2sh\",\"address\" (string) address of P2SH script wrapping this redeem script (not returned if the script is already a P2SH).\n"
+            "  \"p2sh\":\"str\"          (string) address of P2SH script wrapping this redeem script (not returned if the script is already a P2SH).\n"
+            "  \"segwit\": {           (json object) Result of a witness script public key wrapping this redeem script (not returned if the script is a P2SH or witness).\n"
+            "    \"asm\":\"str\",        (string) String representation of the script public key\n"
+            "    \"hex\":\"hexstr\",     (string) Hex string of the script public key\n"
+            "    \"type\":\"str\",       (string) The type of the script public key (e.g. witness_v0_keyhash or witness_v0_scripthash)\n"
+            "    \"reqSigs\": n,       (numeric) The required signatures (always 1)\n"
+            "    \"addresses\": [      (json array of string) (always length 1)\n"
+            "      \"address\"         (string) segwit address\n"
+            "       ,...\n"
+            "    ],\n"
+            "    \"p2sh-segwit\":\"str\" (string) address of the P2SH script wrapping this witness redeem script.\n"
             "}\n"
                 },
                 RPCExamples{
                     HelpExampleCli("decodescript", "\"hexstring\"")
             + HelpExampleRpc("decodescript", "\"hexstring\"")
                 },
-            }.ToString());
+    };
+
+    if (request.fHelp || !help.IsValidNumArgs(request.params.size())) {
+        throw std::runtime_error(help.ToString());
+    }
 
     RPCTypeCheck(request.params, {UniValue::VSTR});
 
@@ -648,7 +674,7 @@ static UniValue decodescript(const JSONRPCRequest& request)
     } else {
         // Empty scripts are valid
     }
-    ScriptPubKeyToUniv(script, r, false);
+    ScriptPubKeyToUniv(script, r, /* fIncludeHex */ false);
 
     UniValue type;
     type = find_value(r, "type");
@@ -682,7 +708,7 @@ static UniValue decodescript(const JSONRPCRequest& request)
                 // Newer segwit program versions should be considered when then become available.
                 segwitScr = GetScriptForDestination(WitnessV0ScriptHash(script));
             }
-            ScriptPubKeyToUniv(segwitScr, sr, true);
+            ScriptPubKeyToUniv(segwitScr, sr, /* fIncludeHex */ true);
             sr.pushKV("p2sh-segwit", EncodeDestination(CScriptID(segwitScr)));
             r.pushKV("segwit", sr);
         }
@@ -964,7 +990,7 @@ static UniValue signrawtransactionwithkey(const JSONRPCRequest& request)
                                     {"scriptPubKey", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "script key"},
                                     {"redeemScript", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "(required for P2SH) redeem script"},
                                     {"witnessScript", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "(required for P2WSH or P2SH-P2WSH) witness script"},
-                                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount spent"},
+                                    {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::OMITTED, "(required for Segwit inputs) the amount spent"},
                                 },
                                 },
                         },
@@ -1023,14 +1049,12 @@ static UniValue signrawtransactionwithkey(const JSONRPCRequest& request)
 
 static UniValue sendrawtransaction(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
-        throw std::runtime_error(
-            RPCHelpMan{"sendrawtransaction",
+    const RPCHelpMan help{"sendrawtransaction",
                 "\nSubmits raw transaction (serialized, hex-encoded) to local node and network.\n"
                 "\nAlso see createrawtransaction and signrawtransactionwithkey calls.\n",
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
-                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(maxTxFee), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
+                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(DEFAULT_MAX_RAW_TX_FEE), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
                 },
                 RPCResult{
             "\"hex\"             (string) The transaction hash in hex\n"
@@ -1045,7 +1069,11 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
             "\nAs a JSON-RPC call\n"
             + HelpExampleRpc("sendrawtransaction", "\"signedhex\"")
                 },
-            }.ToString());
+    };
+
+    if (request.fHelp || !help.IsValidNumArgs(request.params.size())) {
+        throw std::runtime_error(help.ToString());
+    }
 
     RPCTypeCheck(request.params, {
         UniValue::VSTR,
@@ -1058,7 +1086,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
 
-    CAmount max_raw_tx_fee = maxTxFee;
+    CAmount max_raw_tx_fee = DEFAULT_MAX_RAW_TX_FEE;
     // TODO: temporary migration code for old clients. Remove in v0.20
     if (request.params[1].isBool()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Second argument must be numeric (maxfeerate) and no longer supports a boolean. To allow a transaction with high fees, set maxfeerate to 0.");
@@ -1085,9 +1113,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
 
 static UniValue testmempoolaccept(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2) {
-        throw std::runtime_error(
-            RPCHelpMan{"testmempoolaccept",
+    const RPCHelpMan help{"testmempoolaccept",
                 "\nReturns result of mempool acceptance tests indicating if raw transaction (serialized, hex-encoded) would be accepted by mempool.\n"
                 "\nThis checks if the transaction violates the consensus or policy rules.\n"
                 "\nSee sendrawtransaction call.\n",
@@ -1098,7 +1124,7 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
                             {"rawtx", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, ""},
                         },
                         },
-                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(maxTxFee), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
+                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(DEFAULT_MAX_RAW_TX_FEE), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
                 },
                 RPCResult{
             "[                   (array) The result of the mempool acceptance test for each raw transaction in the input array.\n"
@@ -1120,7 +1146,10 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
             "\nAs a JSON-RPC call\n"
             + HelpExampleRpc("testmempoolaccept", "[\"signedhex\"]")
                 },
-            }.ToString());
+    };
+
+    if (request.fHelp || !help.IsValidNumArgs(request.params.size())) {
+        throw std::runtime_error(help.ToString());
     }
 
     RPCTypeCheck(request.params, {
@@ -1139,7 +1168,7 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
     const uint256& tx_hash = tx->GetHash();
 
-    CAmount max_raw_tx_fee = maxTxFee;
+    CAmount max_raw_tx_fee = DEFAULT_MAX_RAW_TX_FEE;
     // TODO: temporary migration code for old clients. Remove in v0.20
     if (request.params[1].isBool()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Second argument must be numeric (maxfeerate) and no longer supports a boolean. To allow a transaction with high fees, set maxfeerate to 0.");
