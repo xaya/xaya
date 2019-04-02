@@ -32,62 +32,6 @@ class CAuxPowForTest;
 static const unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' };
 
 /**
- * Base class for CMerkleTx that just holds the fields and implements
- * serialisation.  This is the part that is needed for CAuxPow.  The other
- * functionality, needed by the wallet, is kept in CMerkleTx itself (defined
- * in wallet/wallet.h as in upstream Bitcoin).
- */
-class CBaseMerkleTx
-{
-public:
-    CTransactionRef tx;
-    uint256 hashBlock;
-    std::vector<uint256> vMerkleBranch;
-
-    /* An nIndex == -1 means that hashBlock (in nonzero) refers to the earliest
-     * block in the chain we know this or any in-wallet dependency conflicts
-     * with. Older clients interpret nIndex == -1 as unconfirmed for backward
-     * compatibility.
-     */
-    int nIndex;
-
-    CBaseMerkleTx()
-    {
-        SetTx(MakeTransactionRef());
-        Init();
-    }
-
-    explicit CBaseMerkleTx(CTransactionRef arg)
-    {
-        SetTx(std::move(arg));
-        Init();
-    }
-
-    void Init()
-    {
-        hashBlock = uint256();
-        nIndex = -1;
-    }
-
-    void SetTx(CTransactionRef arg)
-    {
-        tx = std::move(arg);
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(tx);
-        READWRITE(hashBlock);
-        READWRITE(vMerkleBranch);
-        READWRITE(nIndex);
-    }
-
-    const uint256& GetHash() const { return tx->GetHash(); }
-};
-
-/**
  * Data for the merge-mining auxpow.  This uses a merkle tx (the parent block's
  * coinbase tx) and a second merkle branch to link the actual Namecoin block
  * header to the parent block header, which is mined to satisfy the PoW.
