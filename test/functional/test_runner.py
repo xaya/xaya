@@ -77,8 +77,7 @@ BASE_SCRIPTS = [
     'feature_maxuploadtarget.py',
     'feature_block.py',
     'rpc_fundrawtransaction.py',
-    # FIXME: Reenable when it supports always-segit.
-    #'p2p_compactblocks.py',
+    'p2p_compactblocks.py',
     'feature_segwit.py',
     # vv Tests less than 2m vv
     'wallet_basic.py',
@@ -110,8 +109,7 @@ BASE_SCRIPTS = [
     'wallet_txn_doublespend.py --mineblock',
     'tool_wallet.py',
     'wallet_txn_clone.py',
-    # FIXME: Debug and re-enable.
-    #'wallet_txn_clone.py --segwit',
+    'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
     'rpc_misc.py',
     'interface_rest.py',
@@ -215,7 +213,6 @@ EXTENDED_SCRIPTS = [
 SKIPPED = [
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
-    'p2p_compactblocks.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests
