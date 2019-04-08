@@ -97,17 +97,16 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
 
     {
         UniValue tx(UniValue::VOBJ);
-        tx.pushKV("hex", EncodeHexTx(*auxpow.coinbaseTx.tx));
-        TxToJSON(*auxpow.coinbaseTx.tx, auxpow.parentBlock.GetHash(), tx);
+        tx.pushKV("hex", EncodeHexTx(*auxpow.coinbaseTx));
+        TxToJSON(*auxpow.coinbaseTx, auxpow.parentBlock.GetHash(), tx);
         result.pushKV("tx", tx);
     }
 
-    result.pushKV("index", auxpow.coinbaseTx.nIndex);
     result.pushKV("chainindex", auxpow.nChainIndex);
 
     {
         UniValue branch(UniValue::VARR);
-        for (const auto& node : auxpow.coinbaseTx.vMerkleBranch)
+        for (const auto& node : auxpow.vMerkleBranch)
             branch.push_back(node.GetHex());
         result.pushKV("merklebranch", branch);
     }

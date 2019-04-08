@@ -78,8 +78,7 @@ BASE_SCRIPTS = [
     # Does not satisfy Namecoin's BDB limit.
     #'feature_block.py',
     'rpc_fundrawtransaction.py',
-    # FIXME: Reenable when it supports always-segit.
-    #'p2p_compactblocks.py',
+    'p2p_compactblocks.py',
     'feature_segwit.py',
     # vv Tests less than 2m vv
     'wallet_basic.py',
@@ -111,8 +110,7 @@ BASE_SCRIPTS = [
     'wallet_txn_doublespend.py --mineblock',
     'tool_wallet.py',
     'wallet_txn_clone.py',
-    # FIXME: Debug and re-enable.
-    #'wallet_txn_clone.py --segwit',
+    'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
     'rpc_misc.py',
     'interface_rest.py',
@@ -203,6 +201,7 @@ BASE_SCRIPTS = [
     'auxpow_mining.py',
     'auxpow_mining.py --segwit',
     'auxpow_invalidpow.py',
+    'auxpow_zerohash.py',
 
     # name tests
     'name_encodings.py',
@@ -236,7 +235,6 @@ SKIPPED = [
     'feature_block.py',
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
-    'p2p_compactblocks.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests
