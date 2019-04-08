@@ -61,8 +61,8 @@ class RPCInterfaceTest(BitcoinTestFramework):
     def test_http_status_codes(self):
         self.log.info("Testing HTTP status codes for JSON-RPC requests...")
 
-        expect_http_status(404, -32601, self.nodes[0].invalidmethod)
-        expect_http_status(500, -8, self.nodes[0].getblockhash, 42)
+        expect_http_status(200, -32601, self.nodes[0].invalidmethod)
+        expect_http_status(200, -8, self.nodes[0].getblockhash, 42)
 
     def run_test(self):
         self.test_getrpcinfo()
