@@ -908,16 +908,13 @@ public:
     };
     ScanResult ScanForWalletTransactions(const uint256& first_block, const uint256& last_block, const WalletRescanReserver& reserver, bool fUpdate);
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
-    void ReacceptWalletTransactions();
+    void ReacceptWalletTransactions(interfaces::Chain::Lock& locked_chain) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void ResendWalletTransactions(interfaces::Chain::Lock& locked_chain, int64_t nBestBlockTime) override;
-    // ResendWalletTransactionsBefore may only be called if fBroadcastTransactions!
-    std::vector<uint256> ResendWalletTransactionsBefore(interfaces::Chain::Lock& locked_chain, int64_t nTime);
     CAmount GetBalance(const isminefilter& filter=ISMINE_SPENDABLE, const int min_depth=0) const;
     CAmount GetUnconfirmedBalance() const;
     CAmount GetImmatureBalance() const;
     CAmount GetUnconfirmedWatchOnlyBalance() const;
     CAmount GetImmatureWatchOnlyBalance() const;
-    CAmount GetLegacyBalance(const isminefilter& filter, int minDepth) const;
     CAmount GetAvailableBalance(const CCoinControl* coinControl = nullptr) const;
 
     OutputType TransactionChangeType(OutputType change_type, const std::vector<CRecipient>& vecSend);
