@@ -462,8 +462,8 @@ libbitcoin_common_a_SOURCES = \
   netbase.cpp \
   policy/feerate.cpp \
   powdata.cpp \
-  psbt.cpp \
   protocol.cpp \
+  psbt.cpp \
   scheduler.cpp \
   script/descriptor.cpp \
   script/ismine.cpp \

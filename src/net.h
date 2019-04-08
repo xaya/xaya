@@ -59,7 +59,7 @@ static const unsigned int MAX_ADDR_TO_SEND = 1000;
 /* FIXME: Once the headers size limit is deployed sufficiently in the network,
    we may want to lower this again if it seems useful.  */
 static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 32 * 1024 * 1024;
-/** Maximum length of strSubVer in `version` message */
+/** Maximum length of the user agent string in `version` message */
 static const unsigned int MAX_SUBVERSION_LENGTH = 256;
 /** Maximum number of automatic outgoing nodes */
 static const int MAX_OUTBOUND_CONNECTIONS = 8;
@@ -656,12 +656,12 @@ public:
     // Bind address of our side of the connection
     const CAddress addrBind;
     std::atomic<int> nVersion{0};
-    // strSubVer is whatever byte array we read from the wire. However, this field is intended
-    // to be printed out, displayed to humans in various forms and so on. So we sanitize it and
-    // store the sanitized version in cleanSubVer. The original should be used when dealing with
-    // the network or wire types and the cleaned string used when displayed or logged.
-    std::string strSubVer GUARDED_BY(cs_SubVer), cleanSubVer GUARDED_BY(cs_SubVer);
-    CCriticalSection cs_SubVer; // used for both cleanSubVer and strSubVer
+    RecursiveMutex cs_SubVer;
+    /**
+     * cleanSubVer is a sanitized string of the user agent byte array we read
+     * from the wire. This cleaned string can safely be logged or displayed.
+     */
+    std::string cleanSubVer GUARDED_BY(cs_SubVer){};
     bool m_prefer_evict{false}; // This peer is preferred for eviction.
     bool fWhitelisted{false}; // This peer can bypass DoS banning.
     bool fFeeler{false}; // If true this node is being used as a short lived feeler.
@@ -744,6 +744,8 @@ public:
     CCriticalSection cs_feeFilter;
     CAmount lastSentFeeFilter{0};
     int64_t nextSendTimeFeeFilter{0};
+
+    std::set<uint256> orphan_work_set;
 
     CNode(NodeId id, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress &addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress &addrBindIn, const std::string &addrNameIn = "", bool fInboundIn = false);
     ~CNode();
