@@ -74,7 +74,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     time = bestBlock["time"] + 1
 
     block = create_block (tip, create_coinbase (height), time)
-    newHash = "%032x" % block.sha256
+    newHash = "%064x" % block.sha256
 
     block.powData.fakeHeader.hashMerkleRoot = block.sha256
     block.powData.rehash ()

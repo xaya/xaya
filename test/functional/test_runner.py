@@ -200,8 +200,7 @@ BASE_SCRIPTS = [
     'auxpow_mining.py',
     'auxpow_mining.py --segwit',
     'auxpow_invalidpow.py',
-    # FIXME: Enable after adding CAuxPow support in messages.py.
-    #'auxpow_zerohash.py',
+    'auxpow_zerohash.py',
 
     # name tests
     'name_encodings.py',
@@ -240,7 +239,6 @@ EXTENDED_SCRIPTS = [
 SKIPPED = [
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
-    'auxpow_zerohash.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of
     # blocks).  They are also not relevant, since all BIP34-activated forks
     # are active from the start in Xaya.

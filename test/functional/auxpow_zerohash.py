@@ -68,7 +68,7 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
 
     self.log.info ("Adding a block with non-zero hash in the auxpow...")
     blk, blkHash = self.createBlock ()
-    blk.auxpow.hashBlock = 12345678
+    blk.powData.auxpow.hashBlock = 12345678
     blkHex = blk.serialize ().hex ()
     assert_equal (node.submitblock (blkHex), None)
     assert_equal (node.getbestblockhash (), blkHash)
@@ -78,33 +78,33 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     assert gotHex != blkHex
     gotBlk = CBlock ()
     gotBlk.deserialize (BytesIO (hex_str_to_bytes (gotHex)))
-    assert_equal (gotBlk.auxpow.hashBlock, 0)
+    assert_equal (gotBlk.powData.auxpow.hashBlock, 0)
 
     self.log.info ("Retrieving block through P2P...")
     gotBlk = p2pGetter.getBlock (blkHash)
-    assert_equal (gotBlk.auxpow.hashBlock, 0)
+    assert_equal (gotBlk.powData.auxpow.hashBlock, 0)
 
     self.log.info ("Sending zero-hash auxpow through RPC...")
     blk, blkHash = self.createBlock ()
-    blk.auxpow.hashBlock = 0
+    blk.powData.auxpow.hashBlock = 0
     assert_equal (node.submitblock (blk.serialize ().hex ()), None)
     assert_equal (node.getbestblockhash (), blkHash)
 
     self.log.info ("Sending zero-hash auxpow through P2P...")
     blk, blkHash = self.createBlock ()
-    blk.auxpow.hashBlock = 0
+    blk.powData.auxpow.hashBlock = 0
     p2pStore.send_blocks_and_test ([blk], node, success=True)
     assert_equal (node.getbestblockhash (), blkHash)
 
     self.log.info ("Sending non-zero nIndex auxpow through RPC...")
     blk, blkHash = self.createBlock ()
-    blk.auxpow.nIndex = 42
+    blk.powData.auxpow.nIndex = 42
     assert_equal (node.submitblock (blk.serialize ().hex ()), None)
     assert_equal (node.getbestblockhash (), blkHash)
 
     self.log.info ("Sending non-zero nIndex auxpow through P2P...")
     blk, blkHash = self.createBlock ()
-    blk.auxpow.nIndex = 42
+    blk.powData.auxpow.nIndex = 42
     p2pStore.send_blocks_and_test ([blk], node, success=True)
     assert_equal (node.getbestblockhash (), blkHash)
 
@@ -120,14 +120,12 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     time = bestBlock["time"] + 1
 
     block = create_block (tip, create_coinbase (height), time)
-    block.mark_auxpow ()
-    block.rehash ()
-    newHash = "%032x" % block.sha256
+    newHash = "%064x" % block.sha256
 
-    target = b"%032x" % uint256_from_compact (block.nBits)
+    target = b"%064x" % uint256_from_compact (block.powData.nBits)
     auxpowHex = computeAuxpow (newHash, target, True)
-    block.auxpow = CAuxPow ()
-    block.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
+    block.powData.set_merge_mined()
+    block.powData.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
 
     return block, newHash
 

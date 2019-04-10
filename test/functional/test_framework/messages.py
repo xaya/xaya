@@ -50,6 +50,7 @@ NODE_WITNESS = (1 << 3)
 NODE_NETWORK_LIMITED = (1 << 10)
 
 # Constants for PoW data and algorithms.
+POWALGO_SHA256D = 0x01
 POWALGO_NEOSCRYPT = 0x02
 POWALGO_MM_FLAG = 0x80
 
@@ -600,36 +601,85 @@ class CPureBlockHeader():
             % (self.nVersion, self.hashPrevBlock, self.hashMerkleRoot,
                time.ctime(self.nTime), self.nBits, self.nNonce)
 
-# Note that our implementation of PowData only supports neoscrypt PoW with
-# fake header (no merge mining) for now.
+
+class CAuxPow(CTransaction):
+    __slots__ = ("hashBlock", "vMerkleBranch", "nIndex",
+                 "vChainMerkleBranch", "nChainIndex", "parentBlock")
+
+    def __init__(self):
+        super(CAuxPow, self).__init__()
+        self.hashBlock = 0
+        self.vMerkleBranch = []
+        self.nIndex = 0
+        self.vChainMerkleBranch = []
+        self.nChainIndex = 0
+        self.parentBlock = CPureBlockHeader()
+
+    def deserialize(self, f):
+        super(CAuxPow, self).deserialize(f)
+        self.hashBlock = deser_uint256(f)
+        self.vMerkleBranch = deser_uint256_vector(f)
+        self.nIndex = struct.unpack("<I", f.read(4))[0]
+        self.vChainMerkleBranch = deser_uint256_vector(f)
+        self.nChainIndex = struct.unpack("<I", f.read(4))[0]
+        self.parentBlock.deserialize(f)
+
+    def serialize(self):
+        r = b""
+        r += super(CAuxPow, self).serialize()
+        r += ser_uint256(self.hashBlock)
+        r += ser_uint256_vector(self.vMerkleBranch)
+        r += struct.pack("<I", self.nIndex)
+        r += ser_uint256_vector(self.vChainMerkleBranch)
+        r += struct.pack("<I", self.nChainIndex)
+        r += self.parentBlock.serialize()
+        return r
+
+
 class PowData():
-    __slots__ = ("algo", "nBits", "fakeHeader")
+    __slots__ = ("algo", "nBits", "fakeHeader", "auxpow")
 
     def __init__(self):
         self.algo = POWALGO_NEOSCRYPT
         self.nBits = 0
         self.fakeHeader = CPureBlockHeader()
+        self.auxpow = None
 
     def is_merge_mined(self):
         return self.algo & POWALGO_MM_FLAG != 0
 
+    def set_merge_mined(self):
+        self.algo = POWALGO_SHA256D | POWALGO_MM_FLAG
+        self.fakeHeader = None
+        self.auxpow = CAuxPow()
+
     def deserialize(self, f):
         self.algo = struct.unpack("B", f.read(1))[0]
         self.nBits = struct.unpack("<I", f.read(4))[0]
-        assert not self.is_merge_mined()
-        self.fakeHeader.deserialize(f)
+        if self.is_merge_mined():
+            self.fakeHeader = None
+            self.auxpow = CAuxPow()
+            self.auxpow.deserialize(f)
+        else:
+            self.fakeHeader = CPureBlockHeader()
+            self.fakeHeader.deserialize(f)
+            self.auxpow = None
 
     def serialize(self):
         r = b""
         r += struct.pack("B", self.algo)
         r += struct.pack("<I", self.nBits)
-        assert not self.is_merge_mined()
-        r += self.fakeHeader.serialize()
+        if self.is_merge_mined():
+            r += self.auxpow.serialize()
+        else:
+            r += self.fakeHeader.serialize()
         return r
 
     def rehash(self):
         if self.fakeHeader is not None:
             self.fakeHeader.rehash()
+        if self.auxpow is not None:
+            self.auxpow.parentBlock.rehash()
 
     def __repr__(self):
         return "PowData(algo=%i nBits=%08x fakeHeader=%s)" \
