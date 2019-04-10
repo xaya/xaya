@@ -77,8 +77,7 @@ BASE_SCRIPTS = [
     'feature_maxuploadtarget.py',
     'feature_block.py',
     'rpc_fundrawtransaction.py',
-    # FIXME: Reenable when it supports always-segit.
-    #'p2p_compactblocks.py',
+    'p2p_compactblocks.py',
     'feature_segwit.py',
     # vv Tests less than 2m vv
     'wallet_basic.py',
@@ -110,8 +109,7 @@ BASE_SCRIPTS = [
     'wallet_txn_doublespend.py --mineblock',
     'tool_wallet.py',
     'wallet_txn_clone.py',
-    # FIXME: Debug and re-enable.
-    #'wallet_txn_clone.py --segwit',
+    'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
     'rpc_misc.py',
     'interface_rest.py',
@@ -202,6 +200,8 @@ BASE_SCRIPTS = [
     'auxpow_mining.py',
     'auxpow_mining.py --segwit',
     'auxpow_invalidpow.py',
+    # FIXME: Enable after adding CAuxPow support in messages.py.
+    #'auxpow_zerohash.py',
 
     # name tests
     'name_encodings.py',
@@ -240,7 +240,7 @@ EXTENDED_SCRIPTS = [
 SKIPPED = [
     'feature_csv_activation.py',
     'feature_versionbits_warning.py',
-    'p2p_compactblocks.py',
+    'auxpow_zerohash.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of
     # blocks).  They are also not relevant, since all BIP34-activated forks
     # are active from the start in Xaya.
