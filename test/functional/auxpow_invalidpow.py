@@ -79,7 +79,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     block = create_block (tip, create_coinbase (height), time)
     block.mark_auxpow ()
     block.rehash ()
-    newHash = "%032x" % block.sha256
+    newHash = "%064x" % block.sha256
 
     return block, newHash
 
@@ -90,7 +90,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     chosen to be valid (ok = True) or invalid (ok = False).
     """
 
-    target = b"%032x" % uint256_from_compact (block.nBits)
+    target = b"%064x" % uint256_from_compact (block.nBits)
     auxpowHex = computeAuxpow (blkHash, target, ok)
     block.auxpow = CAuxPow ()
     block.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
