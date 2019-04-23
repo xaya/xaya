@@ -82,6 +82,8 @@ Namecoin Core is now available at `./src/namecoind`
 
 Before running, you may create an empty configuration file:
 
+    mkdir -p "/Users/${USER}/Library/Application Support/Namecoin"
+
     touch "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
 
     chmod 600 "/Users/${USER}/Library/Application Support/Namecoin/namecoin.conf"
