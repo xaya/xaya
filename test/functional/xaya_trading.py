@@ -22,7 +22,6 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   hex_str_to_bytes,
-  sync_blocks,
 )
 
 from decimal import Decimal
@@ -226,7 +225,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     self.generate (1, ind=0)
 
     # Make sure everything is as expected.
-    sync_blocks (self.nodes)
+    self.sync_blocks ()
     for node in self.nodes:
       info = node.getwalletinfo ()
       assert_equal (info["immature_balance"], 0)
@@ -268,7 +267,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     before = self.getBalances ()
     self.nodes[0].sendrawtransaction (signed["hex"])
     self.generate (1)
-    sync_blocks (self.nodes)
+    self.sync_blocks ()
     self.assertBalanceChange (before, [10, -10 - FEE])
     nameData = self.nodes[0].name_show (name)
     assert nameData["ismine"]
@@ -322,7 +321,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     before = self.getBalances ()
     self.nodes[0].sendrawtransaction (signed["hex"])
     self.generate (1)
-    sync_blocks (self.nodes)
+    self.sync_blocks ()
     nameData = self.nodes[0].name_show (name)
     assert nameData["ismine"]
     assert_equal (nameData["value"], newValue)

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,6 +17,7 @@
 #include <undo.h>
 #include <util/system.h>
 #include <util/strencodings.h>
+#include <util/validation.h>
 #include <validation.h>
 
 #include <univalue.h>

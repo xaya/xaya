@@ -18,13 +18,16 @@
 #include <powdata.h>
 #include <rpc/auxpow_miner.h>
 #include <rpc/blockchain.h>
-#include <rpc/mining.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+#include <script/script.h>
 #include <shutdown.h>
 #include <txmempool.h>
+#include <univalue.h>
+#include <util/fees.h>
 #include <util/strencodings.h>
 #include <util/system.h>
+#include <util/validation.h>
 #include <validation.h>
 #include <validationinterface.h>
 #include <versionbitsinfo.h>
@@ -142,7 +145,7 @@ powAlgoFromJson (const UniValue& algoJson)
     }
 }
 
-UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson, bool keepScript)
+static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson)
 {
     static const int nInnerLoopCount = 0x10000;
     int nHeightEnd = 0;
@@ -159,7 +162,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(algo, coinbaseScript->reserveScript));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(algo, coinbase_script));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -195,12 +198,6 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
         ++nHeight;
         blockHashes.push_back(pblock->GetHash().GetHex());
-
-        //mark script as important because it was used at least for one coinbase output if the script came from the wallet
-        if (keepScript)
-        {
-            coinbaseScript->KeepScript();
-        }
     }
     return blockHashes;
 }
@@ -239,10 +236,9 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
     }
 
-    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-    coinbaseScript->reserveScript = GetScriptForDestination(destination);
+    CScript coinbase_script = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbaseScript, nGenerate, nMaxTries, request.params[3], false);
+    return generateBlocks(coinbase_script, nGenerate, nMaxTries, request.params[3]);
 }
 
 static UniValue getmininginfo(const JSONRPCRequest& request)
@@ -1042,8 +1038,6 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
 /* ************************************************************************** */
 /* Merge mining.  */
 
-std::unique_ptr<AuxpowMiner> g_auxpow_miner;
-
 UniValue createauxblock(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1)
@@ -1081,7 +1075,7 @@ UniValue createauxblock(const JSONRPCRequest& request)
     }
     const CScript scriptPubKey = GetScriptForDestination(coinbaseScript);
 
-    return g_auxpow_miner->createAuxBlock(scriptPubKey);
+    return AuxpowMiner::get ().createAuxBlock(scriptPubKey);
 }
 
 UniValue submitauxblock(const JSONRPCRequest& request)
@@ -1104,8 +1098,8 @@ UniValue submitauxblock(const JSONRPCRequest& request)
                 },
             }.ToString());
 
-    return g_auxpow_miner->submitAuxBlock(request.params[0].get_str(),
-                                          request.params[1].get_str());
+    return AuxpowMiner::get ().submitAuxBlock(request.params[0].get_str(),
+                                              request.params[1].get_str());
 }
 
 UniValue creatework(const JSONRPCRequest& request)
@@ -1144,7 +1138,7 @@ UniValue creatework(const JSONRPCRequest& request)
     }
     const CScript scriptPubKey = GetScriptForDestination(coinbaseScript);
 
-    return g_auxpow_miner->createWork(scriptPubKey);
+    return AuxpowMiner::get ().createWork(scriptPubKey);
 }
 
 UniValue submitwork(const JSONRPCRequest& request)
@@ -1177,7 +1171,7 @@ UniValue submitwork(const JSONRPCRequest& request)
         dataHex = request.params[1].get_str();
       }
 
-    return g_auxpow_miner->submitWork(hashHex, dataHex);
+    return AuxpowMiner::get ().submitWork(hashHex, dataHex);
 }
 
 /* ************************************************************************** */

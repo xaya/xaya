@@ -10,7 +10,13 @@ from test_framework.blocktools import create_block, create_coinbase, add_witness
 from test_framework.messages import COIN, COutPoint, CTransaction, CTxIn, CTxOut, FromHex, ToHex
 from test_framework.script import CScript
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, assert_greater_than, assert_raises_rpc_error, get_bip9_status, satoshi_round, sync_blocks
+from test_framework.util import (
+    assert_equal,
+    assert_greater_than,
+    assert_raises_rpc_error,
+    get_bip9_status,
+    satoshi_round,
+)
 
 SEQUENCE_LOCKTIME_DISABLE_FLAG = (1<<31)
 SEQUENCE_LOCKTIME_TYPE_FLAG = (1<<22) # this means use time (0 means height)
@@ -339,7 +345,7 @@ class BIP68Test(BitcoinTestFramework):
         if height < min_activation_height:
             self.nodes[0].generate(min_activation_height - height)
         assert_greater_than(self.nodes[0].getblockcount() + 1, min_activation_height)
-        sync_blocks(self.nodes)
+        self.sync_blocks()
 
     # Use self.nodes[1] to test that version 2 transactions are standard.
     def test_version2_relay(self):

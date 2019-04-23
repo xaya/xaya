@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Daniel Kraft
+// Copyright (c) 2018-2019 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -255,4 +255,17 @@ AuxpowMiner::submitWork (const std::string& hashHex,
   assert (shared_block->GetHash ().GetHex () == hashForLookup);
 
   return ProcessNewBlock (Params (), shared_block, true, nullptr);
+}
+
+AuxpowMiner&
+AuxpowMiner::get ()
+{
+  static AuxpowMiner* instance = nullptr;
+  static CCriticalSection lock;
+
+  LOCK (lock);
+  if (instance == nullptr)
+    instance = new AuxpowMiner ();
+
+  return *instance;
 }

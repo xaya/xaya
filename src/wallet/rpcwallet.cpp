@@ -7,7 +7,6 @@
 #include <chain.h>
 #include <consensus/validation.h>
 #include <core_io.h>
-#include <httpserver.h>
 #include <init.h>
 #include <validation.h>
 #include <key_io.h>
@@ -19,8 +18,7 @@
 #include <policy/policy.h>
 #include <policy/rbf.h>
 #include <rpc/auxpow_miner.h>
-#include <rpc/mining.h>
-#include <rpc/rawtransaction.h>
+#include <rpc/rawtransaction_util.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/descriptor.h>
@@ -29,8 +27,11 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <util/bip32.h>
+#include <util/fees.h>
 #include <util/system.h>
 #include <util/moneystr.h>
+#include <util/url.h>
+#include <util/validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
 #include <wallet/psbtwallet.h>
@@ -321,7 +322,7 @@ CTransactionRef SendMoneyToScript(
     const CTxIn* withInput, CAmount nValue, bool fSubtractFeeFromAmount,
     const CCoinControl& coin_control, mapValue_t mapValue)
 {
-    CAmount curBalance = pwallet->GetBalance();
+    CAmount curBalance = pwallet->GetBalance().m_mine_trusted;
 
     // Check amount
     if (nValue <= 0)
@@ -787,12 +788,14 @@ static UniValue getbalance(const JSONRPCRequest& request)
         min_depth = request.params[1].get_int();
     }
 
-    isminefilter filter = ISMINE_SPENDABLE;
+    bool include_watchonly = false;
     if (!request.params[2].isNull() && request.params[2].get_bool()) {
-        filter = filter | ISMINE_WATCH_ONLY;
+        include_watchonly = true;
     }
 
-    return ValueFromAmount(pwallet->GetBalance(filter, min_depth));
+    const auto bal = pwallet->GetBalance(min_depth);
+
+    return ValueFromAmount(bal.m_mine_trusted + (include_watchonly ? bal.m_watchonly_trusted : 0));
 }
 
 static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
@@ -820,7 +823,7 @@ static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    return ValueFromAmount(pwallet->GetUnconfirmedBalance());
+    return ValueFromAmount(pwallet->GetBalance().m_mine_untrusted_pending);
 }
 
 
@@ -1782,7 +1785,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
     ListTransactions(*locked_chain, pwallet, wtx, 0, false, details, filter, nullptr /* filter_label */);
     entry.pushKV("details", details);
 
-    std::string strHex = EncodeHexTx(*wtx.tx, RPCSerializationFlags());
+    std::string strHex = EncodeHexTx(*wtx.tx, pwallet->chain().rpcSerializationFlags());
     entry.pushKV("hex", strHex);
 
     return entry;
@@ -2000,7 +2003,7 @@ static UniValue walletpassphrase(const JSONRPCRequest& request)
     // wallet before the following callback is called. If a valid shared pointer
     // is acquired in the callback then the wallet is still loaded.
     std::weak_ptr<CWallet> weak_wallet = wallet;
-    RPCRunLater(strprintf("lockwallet(%s)", pwallet->GetName()), [weak_wallet] {
+    pwallet->chain().rpcRunLater(strprintf("lockwallet(%s)", pwallet->GetName()), [weak_wallet] {
         if (auto shared_wallet = weak_wallet.lock()) {
             LOCK(shared_wallet->cs_wallet);
             shared_wallet->Lock();
@@ -2446,11 +2449,12 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
     UniValue obj(UniValue::VOBJ);
 
     size_t kpExternalSize = pwallet->KeypoolCountExternalKeys();
+    const auto bal = pwallet->GetBalance();
     obj.pushKV("walletname", pwallet->GetName());
     obj.pushKV("walletversion", pwallet->GetVersion());
-    obj.pushKV("balance",       ValueFromAmount(pwallet->GetBalance()));
-    obj.pushKV("unconfirmed_balance", ValueFromAmount(pwallet->GetUnconfirmedBalance()));
-    obj.pushKV("immature_balance",    ValueFromAmount(pwallet->GetImmatureBalance()));
+    obj.pushKV("balance", ValueFromAmount(bal.m_mine_trusted));
+    obj.pushKV("unconfirmed_balance", ValueFromAmount(bal.m_mine_untrusted_pending));
+    obj.pushKV("immature_balance", ValueFromAmount(bal.m_mine_immature));
     obj.pushKV("txcount",       (int)pwallet->mapWallet.size());
     obj.pushKV("keypoololdest", pwallet->GetOldestKeyPoolTime());
     obj.pushKV("keypoolsize", (int64_t)kpExternalSize);
@@ -3515,7 +3519,7 @@ public:
         UniValue obj(UniValue::VOBJ);
         CScript subscript;
         if (pwallet && pwallet->GetCScript(scriptID, subscript)) {
-            ProcessSubScript(subscript, obj, IsDeprecatedRPCEnabled("validateaddress"));
+            ProcessSubScript(subscript, obj, pwallet->chain().rpcEnableDeprecated("validateaddress"));
         }
         return obj;
     }
@@ -4070,16 +4074,16 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
 namespace
 {
 
-void
-GetScriptForMining (CWallet* pwallet, std::shared_ptr<CReserveScript>& script)
+std::shared_ptr<CReserveKey>
+GetScriptForMining (CWallet* pwallet, CScript& script)
 {
   auto rKey = std::make_shared<CReserveKey> (pwallet);
   CPubKey pubkey;
   if (!rKey->GetReservedKey (pubkey))
-    return;
+    return nullptr;
 
-  script = rKey;
-  script->reserveScript = CScript () << ToByteVector (pubkey) << OP_CHECKSIG;
+  script = CScript () << ToByteVector (pubkey) << OP_CHECKSIG;
+  return rKey;
 }
 
 } // anonymous namespace
@@ -4133,29 +4137,29 @@ UniValue getauxblock(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
     }
 
-    std::shared_ptr<CReserveScript> coinbaseScript;
-    GetScriptForMining(pwallet, coinbaseScript);
+    CScript coinbaseScript;
+    auto rKey = GetScriptForMining(pwallet, coinbaseScript);
 
     /* If the keypool is exhausted, no script is returned at all.
        Catch this.  */
-    if (!coinbaseScript)
+    if (!rKey)
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
 
     /* Throw an error if no script was provided.  */
-    if (!coinbaseScript->reserveScript.size())
+    if (!coinbaseScript.size())
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available (mining requires a wallet)");
 
     /* Create a new block */
     if (request.params.size() == 0)
-        return g_auxpow_miner->createAuxBlock(coinbaseScript->reserveScript);
+        return AuxpowMiner::get ().createAuxBlock(coinbaseScript);
 
     /* Submit a block instead.  */
     assert(request.params.size() == 2);
     bool fAccepted
-        = g_auxpow_miner->submitAuxBlock(request.params[0].get_str(),
-                                         request.params[1].get_str());
+        = AuxpowMiner::get ().submitAuxBlock(request.params[0].get_str(),
+                                             request.params[1].get_str());
     if (fAccepted)
-        coinbaseScript->KeepScript();
+        rKey->KeepKey();
 
     return fAccepted;
 }
@@ -4204,24 +4208,27 @@ UniValue getwork(const JSONRPCRequest& request)
                 },
             }.ToString());
 
-    std::shared_ptr<CReserveScript> coinbaseScript;
-    GetScriptForMining(pwallet, coinbaseScript);
+    if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
+    }
+
+    CScript coinbaseScript;
+    auto rKey = GetScriptForMining(pwallet, coinbaseScript);
 
     /* If the keypool is exhausted, no script is returned at all.
        Catch this.  */
-    if (!coinbaseScript)
+    if (!rKey)
         throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
 
     /* Throw an error if no script was provided.  */
-    if (!coinbaseScript->reserveScript.size())
+    if (!coinbaseScript.size())
         throw JSONRPCError(RPC_INTERNAL_ERROR, "No coinbase script available (mining requires a wallet)");
 
     /* Create a new block */
     if (request.params.size() == 0)
-        return g_auxpow_miner->createWork(coinbaseScript->reserveScript);
+        return AuxpowMiner::get ().createWork(coinbaseScript);
 
     /* Submit a block instead.  */
-
     std::string hashHex;
     std::string dataHex;
     if (request.params.size() == 1)
@@ -4232,9 +4239,9 @@ UniValue getwork(const JSONRPCRequest& request)
         dataHex = request.params[1].get_str();
       }
 
-    const bool fAccepted = g_auxpow_miner->submitWork(hashHex, dataHex);
+    const bool fAccepted = AuxpowMiner::get ().submitWork(hashHex, dataHex);
     if (fAccepted)
-        coinbaseScript->KeepScript();
+        rKey->KeepKey ();
 
     return fAccepted;
 }
