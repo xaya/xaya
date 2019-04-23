@@ -629,7 +629,8 @@ class ImportMultiTest(BitcoinTestFramework):
         self.log.info("Should import a 1-of-2 bare multisig from descriptor")
         self.test_importmulti({"desc": descsum_create("multi(1," + key1.pubkey + "," + key2.pubkey + ")"),
                                "timestamp": "now"},
-                              success=True)
+                              success=True,
+                              warnings=["Some private keys are missing, outputs will be considered watchonly. If this is intentional, specify the watchonly flag."])
         self.log.info("Should not treat individual keys from the imported bare multisig as watchonly")
         test_address(self.nodes[1],
                      key1.p2pkh_addr,
@@ -759,7 +760,7 @@ class ImportMultiTest(BitcoinTestFramework):
         assert_equal(addr2, newaddr2)
 
         # Import a multisig and make sure the keys don't go into the keypool
-        self.log.info('Imported scripts with pubkeys shoud not have their pubkeys go into the keypool')
+        self.log.info('Imported scripts with pubkeys should not have their pubkeys go into the keypool')
         addr1 = self.nodes[0].getnewaddress()
         addr2 = self.nodes[0].getnewaddress()
         pub1 = self.nodes[0].getaddressinfo(addr1)['pubkey']

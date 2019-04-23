@@ -57,6 +57,10 @@ class Wallet;
 //!   notifications to the GUI should go away when GUI and wallet can directly
 //!   communicate with each other without going through the node
 //!   (https://github.com/bitcoin/bitcoin/pull/15288#discussion_r253321096).
+//!
+//! * The handleRpc, registerRpcs, rpcEnableDeprecated methods and other RPC
+//!   methods can go away if wallets listen for HTTP requests on their own
+//!   ports instead of registering to handle requests on the node HTTP port.
 class Chain
 {
 public:
@@ -120,8 +124,9 @@ public:
         //! nullopt if no block in the range is pruned. Range is inclusive.
         virtual Optional<int> findPruned(int start_height = 0, Optional<int> stop_height = nullopt) = 0;
 
-        //! Return height of the highest block on the chain that is an ancestor
-        //! of the specified block, or nullopt if no common ancestor is found.
+        //! Return height of the specified block if it is on the chain, otherwise
+        //! return the height of the highest block on chain that's an ancestor
+        //! of the specified block, or nullopt if there is no common ancestor.
         //! Also return the height of the specified block as an optional output
         //! parameter (to avoid the cost of a second hash lookup in case this
         //! information is desired).
@@ -135,9 +140,9 @@ public:
         //! Get locator for the current chain tip.
         virtual CBlockLocator getTipLocator() = 0;
 
-        //! Return height of the latest block common to locator and chain, which
-        //! is guaranteed to be an ancestor of the block used to create the
-        //! locator.
+        //! Return height of the highest block on chain in common with the locator,
+        //! which will either be the original block used to create the locator,
+        //! or one of its ancestors.
         virtual Optional<int> findLocatorFork(const CBlockLocator& locator) = 0;
 
         //! Check if transaction will be final given chain height current time.
@@ -223,6 +228,9 @@ public:
     //! Check if p2p enabled.
     virtual bool p2pEnabled() = 0;
 
+    //! Check if the node is ready to broadcast transactions.
+    virtual bool isReadyToBroadcast() = 0;
+
     //! Check if in IBD.
     virtual bool isInitialBlockDownload() = 0;
 
@@ -256,8 +264,8 @@ public:
         virtual void TransactionRemovedFromMempool(const CTransactionRef& ptx) {}
         virtual void BlockConnected(const CBlock& block, const std::vector<CTransactionRef>& tx_conflicted, const std::vector<CTransactionRef>& vNameConflicts) {}
         virtual void BlockDisconnected(const CBlock& block, const std::vector<CTransactionRef>& vNameConflicts) {}
+        virtual void UpdatedBlockTip() {}
         virtual void ChainStateFlushed(const CBlockLocator& locator) {}
-        virtual void ResendWalletTransactions(Lock& locked_chain, int64_t best_block_time) {}
     };
 
     //! Register handler for notifications.
@@ -269,6 +277,15 @@ public:
     //! Register handler for RPC. Command is not copied, so reference
     //! needs to remain valid until Handler is disconnected.
     virtual std::unique_ptr<Handler> handleRpc(const CRPCCommand& command) = 0;
+
+    //! Check if deprecated RPC is enabled.
+    virtual bool rpcEnableDeprecated(const std::string& method) = 0;
+
+    //! Run function after given number of seconds. Cancel any previous calls with same name.
+    virtual void rpcRunLater(const std::string& name, std::function<void()> fn, int64_t seconds) = 0;
+
+    //! Current RPC serialization flags.
+    virtual int rpcSerializationFlags() = 0;
 
     //! Synchronously send TransactionAddedToMempool notifications about all
     //! current mempool transactions to the specified handler and return after

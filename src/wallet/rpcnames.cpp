@@ -14,14 +14,15 @@
 #include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
-#include <rpc/mining.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/names.h>
 #include <txmempool.h>
-#include <util/system.h>
+#include <util/fees.h>
 #include <util/moneystr.h>
+#include <util/system.h>
+#include <util/validation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
@@ -163,7 +164,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
   /* Check balance against total amount sent.  If we have a name input, we have
      to take its value into account.  */
 
-  const CAmount curBalance = wallet.GetBalance ();
+  const CAmount curBalance = wallet.GetBalance ().m_mine_trusted;
 
   CAmount totalSpend = 0;
   for (const auto& recv : vecSend)

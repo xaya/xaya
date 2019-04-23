@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,6 +9,7 @@
 #include <names/encoding.h>
 #include <names/main.h>
 #include <policy/policy.h>
+#include <policy/settings.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
 #include <txdb.h>
