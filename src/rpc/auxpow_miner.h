@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Daniel Kraft
+// Copyright (c) 2018-2019 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -89,6 +89,11 @@ public:
    */
   bool submitAuxBlock (const std::string& hashHex,
                        const std::string& auxpowHex) const;
+
+  /**
+   * Returns the singleton instance of AuxpowMiner that is used for RPCs.
+   */
+  static AuxpowMiner& get ();
 
 };
 
