@@ -52,12 +52,12 @@ GENERATED_TEST_FILES = $(JSON_TEST_FILES:.json=.json.h) $(RAW_TEST_FILES:.raw=.r
 
 BITCOIN_TEST_SUITE = \
   test/main.cpp \
-  test/test_bitcoin.h \
-  test/test_bitcoin.cpp
+  test/setup_common.h \
+  test/setup_common.cpp
 
 FUZZ_SUITE = \
-  test/test_bitcoin.h \
-  test/test_bitcoin.cpp \
+  test/setup_common.h \
+  test/setup_common.cpp \
   test/fuzz/fuzz.cpp \
   test/fuzz/fuzz.h
 
@@ -91,6 +91,8 @@ BITCOIN_TESTS =\
   test/bip32_tests.cpp \
   test/blockchain_tests.cpp \
   test/blockencodings_tests.cpp \
+  test/blockfilter_tests.cpp \
+  test/blockfilter_index_tests.cpp \
   test/bloom_tests.cpp \
   test/bswap_tests.cpp \
   test/checkqueue_tests.cpp \
@@ -149,7 +151,6 @@ BITCOIN_TESTS =\
   test/versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
 #   base58_tests
-#   blockfilter_tetss: update data/blockfilters.json for Xaya block format
 #   key_io_tests: update the version in data/key_io_valid.json
 #   key_tests
 #   miner_tests

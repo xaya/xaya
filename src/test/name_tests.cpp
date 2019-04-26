@@ -12,6 +12,7 @@
 #include <policy/settings.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
+#include <test/setup_common.h>
 #include <txdb.h>
 #include <txmempool.h>
 #include <undo.h>
@@ -19,8 +20,6 @@
 #include <validation.h>
 
 #include <univalue.h>
-
-#include <test/test_bitcoin.h>
 
 #include <boost/test/unit_test.hpp>
 

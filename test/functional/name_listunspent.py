@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -62,7 +62,7 @@ class NameListUnspentTest (NameTestFramework):
     addrB = self.nodes[1].getnewaddress ()
     self.nodes[0].name_update ("x/testname", val ("value"),
                                {"destAddress": addrB})
-    sync_mempools (self.nodes)
+    self.sync_mempools ()
 
     # Node 0 should no longer have the unspent output.
     assert self.lookupName (0, "x/testname",

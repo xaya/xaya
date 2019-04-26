@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2018 The Bitcoin Core developers
+// Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,7 @@
 #include <sync.h>
 #include <util/strencodings.h>
 #include <util/moneystr.h>
-#include <test/test_bitcoin.h>
+#include <test/setup_common.h>
 
 #include <stdint.h>
 #include <vector>
@@ -36,8 +36,10 @@ BOOST_AUTO_TEST_CASE(util_criticalsection)
 
     do {
         TRY_LOCK(cs, lockTest);
-        if (lockTest)
+        if (lockTest) {
+            BOOST_CHECK(true); // Needed to suppress "Test case [...] did not check any assertions"
             break;
+        }
 
         BOOST_ERROR("break was swallowed!");
     } while(0);

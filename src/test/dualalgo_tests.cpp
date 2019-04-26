@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2019 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,8 +7,7 @@
 #include <consensus/params.h>
 #include <pow.h>
 #include <powdata.h>
-
-#include <test/test_bitcoin.h>
+#include <test/setup_common.h>
 
 #include <boost/test/unit_test.hpp>
 
