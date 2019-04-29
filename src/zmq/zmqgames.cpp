@@ -51,8 +51,8 @@ TrackedGames::Remove (const std::string& game)
 }
 
 bool
-ZMQGameBlocksNotifier::SendMessage (const std::string& command,
-                                    const UniValue& data)
+ZMQGameNotifier::SendMessage (const std::string& command,
+                              const UniValue& data)
 {
   const std::string dataStr = data.write ();
   return CZMQAbstractPublishNotifier::SendMessage (

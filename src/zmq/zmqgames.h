@@ -50,18 +50,13 @@ public:
 };
 
 /**
- * ZMQ publisher that handles the attach/detach messages for the Xaya game
- * interface (https://github.com/xaya/Specs/blob/master/interface.md).
+ * Superclass for game ZMQ notifiers.  It references a list of tracked
+ * games and provides general utility methods common for all game notifiers.
  */
-class ZMQGameBlocksNotifier : public CZMQAbstractPublishNotifier
+class ZMQGameNotifier : public CZMQAbstractPublishNotifier
 {
 
-public:
-
-  static const char* PREFIX_ATTACH;
-  static const char* PREFIX_DETACH;
-
-private:
+protected:
 
   /** Reference to the list of tracked games.  */
   const TrackedGames& trackedGames;
@@ -73,13 +68,29 @@ private:
 
 public:
 
-  ZMQGameBlocksNotifier () = delete;
-  ZMQGameBlocksNotifier (const ZMQGameBlocksNotifier&) = delete;
-  void operator= (const ZMQGameBlocksNotifier&) = delete;
+  ZMQGameNotifier () = delete;
+  ZMQGameNotifier (const ZMQGameNotifier&) = delete;
+  void operator= (const ZMQGameNotifier&) = delete;
 
-  explicit ZMQGameBlocksNotifier (const TrackedGames& tg)
+  explicit ZMQGameNotifier (const TrackedGames& tg)
     : trackedGames(tg)
   {}
+
+};
+
+/**
+ * ZMQ publisher that handles the attach/detach messages for the Xaya game
+ * interface (see doc/xaya/interface.md).
+ */
+class ZMQGameBlocksNotifier : public ZMQGameNotifier
+{
+
+public:
+
+  static const char* PREFIX_ATTACH;
+  static const char* PREFIX_DETACH;
+
+  using ZMQGameNotifier::ZMQGameNotifier;
 
   /**
    * Sends the block attach or detach notifications.  They are essentially the
