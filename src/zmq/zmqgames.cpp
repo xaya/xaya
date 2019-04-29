@@ -23,6 +23,32 @@
 const char* ZMQGameBlocksNotifier::PREFIX_ATTACH = "game-block-attach";
 const char* ZMQGameBlocksNotifier::PREFIX_DETACH = "game-block-detach";
 
+UniValue
+TrackedGames::Get () const
+{
+  LOCK (cs);
+
+  UniValue res(UniValue::VARR);
+  for (const auto& g : games)
+    res.push_back (g);
+
+  return res;
+}
+
+void
+TrackedGames::Add (const std::string& game)
+{
+  LOCK (cs);
+  games.insert (game);
+}
+
+void
+TrackedGames::Remove (const std::string& game)
+{
+  LOCK (cs);
+  games.erase (game);
+}
+
 bool
 ZMQGameBlocksNotifier::SendMessage (const std::string& command,
                                     const UniValue& data)
@@ -270,8 +296,8 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, "",
+  LOCK (trackedGames.cs);
+  return SendBlockNotifications (trackedGames.games, PREFIX_ATTACH, "",
                                  block, pindex);
 }
 
@@ -279,33 +305,7 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_DETACH, "",
+  LOCK (trackedGames.cs);
+  return SendBlockNotifications (trackedGames.games, PREFIX_DETACH, "",
                                  block, pindex);
-}
-
-UniValue
-ZMQGameBlocksNotifier::GetTrackedGames () const
-{
-  LOCK (csTrackedGames);
-
-  UniValue res(UniValue::VARR);
-  for (const auto& g : trackedGames)
-    res.push_back (g);
-
-  return res;
-}
-
-void
-ZMQGameBlocksNotifier::AddTrackedGame (const std::string& game)
-{
-  LOCK (csTrackedGames);
-  trackedGames.insert (game);
-}
-
-void
-ZMQGameBlocksNotifier::RemoveTrackedGame (const std::string& game)
-{
-  LOCK (csTrackedGames);
-  trackedGames.erase (game);
 }

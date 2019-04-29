@@ -4,7 +4,6 @@
 
 #include <zmq/zmqnotificationinterface.h>
 
-#include <zmq/zmqgames.h>
 #include <zmq/zmqpublishnotifier.h>
 
 #include <version.h>
@@ -52,11 +51,12 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
 
     const std::vector<std::string> vTrackedGames = gArgs.GetArgs("-trackgame");
-    const std::set<std::string> trackedGames(vTrackedGames.begin(), vTrackedGames.end());
+    std::unique_ptr<TrackedGames> trackedGames(new TrackedGames(vTrackedGames));
+
     ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
     factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier]() {
         assert (gameBlocksNotifier == nullptr);
-        gameBlocksNotifier = new ZMQGameBlocksNotifier(trackedGames);
+        gameBlocksNotifier = new ZMQGameBlocksNotifier(*trackedGames);
         return gameBlocksNotifier;
     };
 
@@ -78,6 +78,7 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     if (!notifiers.empty())
     {
         notificationInterface = new CZMQNotificationInterface();
+        notificationInterface->trackedGames = std::move(trackedGames);
         notificationInterface->notifiers = notifiers;
         notificationInterface->gameBlocksNotifier = gameBlocksNotifier;
 
