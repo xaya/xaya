@@ -36,6 +36,7 @@ from test_framework.messages import (
     ser_vector,
     sha256,
     uint256_from_str,
+    FromHex,
 )
 from test_framework.mininode import (
     P2PInterface,
@@ -77,6 +78,7 @@ from test_framework.util import (
     disconnect_nodes,
     get_bip9_status,
     hex_str_to_bytes,
+    assert_raises_rpc_error,
 )
 
 # Activation height of segwit.
@@ -252,6 +254,7 @@ class SegWitTest(BitcoinTestFramework):
         self.test_non_standard_witness_blinding()
         self.test_non_standard_witness()
         self.test_witness_sigops()
+        self.test_superfluous_witness()
 
     # Individual tests
 
@@ -1122,7 +1125,8 @@ class SegWitTest(BitcoinTestFramework):
     def test_segwit_versions(self):
         """Test validity of future segwit version transactions.
 
-        Future segwit version transactions are non-standard, but valid in blocks.
+        Future segwit versions are non-standard to spend, but valid in blocks.
+        Sending to future segwit versions is always allowed.
         Can run this before and after segwit activation."""
 
         NUM_SEGWIT_VERSIONS = 17  # will test OP_0, OP1, ..., OP_16
@@ -1162,7 +1166,7 @@ class SegWitTest(BitcoinTestFramework):
         assert len(self.nodes[0].getrawmempool()) == 0
 
         # Finally, verify that version 0 -> version 1 transactions
-        # are non-standard
+        # are standard
         script_pubkey = CScript([CScriptOp(OP_1), witness_hash])
         tx2 = CTransaction()
         tx2.vin = [CTxIn(COutPoint(tx.sha256, 0), b"")]
@@ -1170,10 +1174,9 @@ class SegWitTest(BitcoinTestFramework):
         tx2.wit.vtxinwit.append(CTxInWitness())
         tx2.wit.vtxinwit[0].scriptWitness.stack = [witness_program]
         tx2.rehash()
-        # Gets accepted to test_node, because standardness of outputs isn't
-        # checked with fRequireStandard
+        # Gets accepted to both policy-enforcing nodes and others.
         test_transaction_acceptance(self.nodes[0], self.test_node, tx2, with_witness=True, accepted=True)
-        test_transaction_acceptance(self.nodes[1], self.std_node, tx2, with_witness=True, accepted=False)
+        test_transaction_acceptance(self.nodes[1], self.std_node, tx2, with_witness=True, accepted=True)
         temp_utxo.pop()  # last entry in temp_utxo was the output we just spent
         temp_utxo.append(UTXO(tx2.sha256, 0, tx2.vout[0].nValue))
 
@@ -1776,6 +1779,32 @@ class SegWitTest(BitcoinTestFramework):
         test_witness_block(self.nodes[0], self.test_node, block_5, accepted=True)
 
         # TODO: test p2sh sigop counting
+
+    def test_superfluous_witness(self):
+        # Serialization of tx that puts witness flag to 1 always
+        def serialize_with_bogus_witness(tx):
+            flags = 1
+            r = b""
+            r += struct.pack("<i", tx.nVersion)
+            if flags:
+                dummy = []
+                r += ser_vector(dummy)
+                r += struct.pack("<B", flags)
+            r += ser_vector(tx.vin)
+            r += ser_vector(tx.vout)
+            if flags & 1:
+                if (len(tx.wit.vtxinwit) != len(tx.vin)):
+                    # vtxinwit must have the same length as vin
+                    tx.wit.vtxinwit = tx.wit.vtxinwit[:len(tx.vin)]
+                    for i in range(len(tx.wit.vtxinwit), len(tx.vin)):
+                        tx.wit.vtxinwit.append(CTxInWitness())
+                r += tx.wit.serialize()
+            r += struct.pack("<I", tx.nLockTime)
+            return r
+
+        raw = self.nodes[0].createrawtransaction([{"txid":"00"*32, "vout":0}], {self.nodes[0].getnewaddress():1})
+        tx = FromHex(CTransaction(), raw)
+        assert_raises_rpc_error(-22, "TX decode failed", self.nodes[0].decoderawtransaction, serialize_with_bogus_witness(tx).hex())
 
 if __name__ == '__main__':
     SegWitTest().main()
