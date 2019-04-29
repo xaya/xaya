@@ -25,6 +25,18 @@
 namespace
 {
 
+TrackedGames*
+GetTrackedGames ()
+{
+  if (g_zmq_notification_interface == nullptr)
+    throw JSONRPCError (RPC_MISC_ERROR, "ZMQ notifications are disabled");
+
+  auto* games = g_zmq_notification_interface->GetTrackedGames ();
+  assert (games != nullptr);
+
+  return games;
+}
+
 ZMQGameBlocksNotifier*
 GetGameBlocksNotifier ()
 {
@@ -368,18 +380,18 @@ trackedgames (const JSONRPCRequest& request)
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VSTR});
 
-  auto* notifier = GetGameBlocksNotifier ();
+  auto* tracked = GetTrackedGames ();
 
   if (request.params.size () == 0)
-    return notifier->GetTrackedGames ();
+    return tracked->Get ();
 
   const std::string& cmd = request.params[0].get_str ();
   const std::string& gameid = request.params[1].get_str ();
 
   if (cmd == "add")
-    notifier->AddTrackedGame (gameid);
+    tracked->Add (gameid);
   else if (cmd == "remove")
-    notifier->RemoveTrackedGame (gameid);
+    tracked->Remove (gameid);
   else
     throw JSONRPCError (RPC_INVALID_PARAMETER,
                         "invalid command for trackedgames: " + cmd);

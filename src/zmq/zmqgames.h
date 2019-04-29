@@ -10,10 +10,44 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 class CBlock;
 class CBlockIndex;
 class UniValue;
+
+/**
+ * Helper class to manage the list of tracked game IDs.
+ */
+class TrackedGames
+{
+
+private:
+
+  /** The set of tracked game IDs.  */
+  std::set<std::string> games GUARDED_BY (cs);
+
+  /** Lock for this instance.  */
+  mutable CCriticalSection cs;
+
+  friend class ZMQGameBlocksNotifier;
+
+public:
+
+  TrackedGames () = delete;
+  TrackedGames (const TrackedGames&) = delete;
+  void operator= (const TrackedGames&) = delete;
+
+  explicit TrackedGames (const std::vector<std::string>& g)
+    : games(g.begin (), g.end ())
+  {}
+
+  UniValue Get () const;
+
+  void Add (const std::string& game);
+  void Remove (const std::string& game);
+
+};
 
 /**
  * ZMQ publisher that handles the attach/detach messages for the Xaya game
@@ -29,10 +63,8 @@ public:
 
 private:
 
-  /** Lock for trackedGames.  */
-  mutable CCriticalSection csTrackedGames;
-  /** The set of games tracked by this notifier.  */
-  std::set<std::string> trackedGames GUARDED_BY (csTrackedGames);
+  /** Reference to the list of tracked games.  */
+  const TrackedGames& trackedGames;
 
   /**
    * Sends a multipart message where the payload data is JSON.
@@ -42,9 +74,11 @@ private:
 public:
 
   ZMQGameBlocksNotifier () = delete;
+  ZMQGameBlocksNotifier (const ZMQGameBlocksNotifier&) = delete;
+  void operator= (const ZMQGameBlocksNotifier&) = delete;
 
-  explicit ZMQGameBlocksNotifier (const std::set<std::string>& games)
-    : trackedGames(games)
+  explicit ZMQGameBlocksNotifier (const TrackedGames& tg)
+    : trackedGames(tg)
   {}
 
   /**
@@ -58,11 +92,6 @@ public:
 
   bool NotifyBlockAttached (const CBlock& block) override;
   bool NotifyBlockDetached (const CBlock& block) override;
-
-  /* Methods for the trackedgames RPC.  */
-  UniValue GetTrackedGames () const;
-  void AddTrackedGame (const std::string& game);
-  void RemoveTrackedGame (const std::string& game);
 
 };
 
