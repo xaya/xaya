@@ -56,8 +56,7 @@ class GameBlocksTest (XayaZmqTest):
     args.append ("-zmqpubgameblocks=%s" % self.address)
     args.append ("-maxgameblockattaches=10")
     args.extend (["-trackgame=%s" % g for g in ["a", "b", "other"]])
-    self.extra_args = [args]
-    self.add_nodes (self.num_nodes, self.extra_args)
+    self.add_nodes (self.num_nodes, extra_args=[args])
     self.start_nodes ()
     self.import_deterministic_coinbase_privkeys ()
 
@@ -84,7 +83,6 @@ class GameBlocksTest (XayaZmqTest):
     self._test_reorg ()
     self._test_sendUpdates ()
     self._test_maxGameBlockAttaches ()
-    self._test_trackedgamesRPC ()
 
     # After all the real tests, verify no more notifications are there.
     # This especially verifies that the "ignored" game we are subscribed to
@@ -577,40 +575,6 @@ class GameBlocksTest (XayaZmqTest):
     })
     self.verifyDetach ("a", longAttachA)
     self.verifyAttach ("a", shortAttachA)
-
-  def _test_trackedgamesRPC (self):
-    """
-    Tests the trackedgames RPC, which can be used to read and modify
-    the list of tracked games dynamically.
-    """
-
-    self.log.info ("Testing the trackedgames RPC...")
-
-    # Test initial set as configured by the startup options.
-    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
-
-    # Remove some tracked (and non-tracked) games.
-    self.node.trackedgames ("remove", "b")
-    self.node.trackedgames ("remove", "not-there")
-    assert_equal (set (self.node.trackedgames ()), set (["a", "other"]))
-
-    # Add a game that was previously not tracked.
-    self.node.trackedgames ("add", "ignored")
-    self.node.trackedgames ("add", "a")
-    assert_equal (set (self.node.trackedgames ()),
-                  set (["a", "ignored", "other"]))
-
-    # Trigger an update to make sure the modified list is taken into account.
-    self.node.generate (1)
-    topic, _ = self.games["a"].receive ()
-    assert_equal (topic, "game-block-attach json a")
-    topic, _ = self.games["ignored"].receive ()
-    assert_equal (topic, "game-block-attach json ignored")
-
-    # Restore original setting.
-    self.node.trackedgames ("add", "b")
-    self.node.trackedgames ("remove", "ignored")
-    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
 
 
 if __name__ == '__main__':
