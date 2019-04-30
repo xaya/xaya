@@ -12,6 +12,7 @@ from test_framework.messages import (
   CTxIn,
   CTxOut,
 )
+from test_framework.names import buildMultiUpdateBlock
 from test_framework.util import (
   assert_equal,
   assert_greater_than,
@@ -145,7 +146,8 @@ class GameBlocksTest (XayaZmqTest):
           "timestamp": data['time'],
           "rngseed": data['rngseed'],
         },
-      "moves": []
+      "admin": [],
+      "moves": [],
     }
 
     for g in ["a", "b"]:
@@ -186,6 +188,23 @@ class GameBlocksTest (XayaZmqTest):
     assert_equal (len (data["moves"]), 2)
     assertMove (data["moves"][indX], txidX, "x", {"test": True})
     assertMove (data["moves"][indY], txidY, "y", 6.25)
+
+    # Construct two updates of a single name in one block, to verify that
+    # edge case is also handled correctly.
+    blk = buildMultiUpdateBlock (self.node, "p/x", [
+      json.dumps ({"g": {"a": 1, "b": 2}}),
+      json.dumps ({"g": {"a": 3}}),
+    ])
+    assert_equal (self.node.submitblock (blk.serialize ().hex ()), None)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 2)
+    assertMove (data["moves"][0], blk.vtx[1].hash, "x", 1)
+    assertMove (data["moves"][1], blk.vtx[2].hash, "x", 3)
+
+    _, data = self.games["b"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], blk.vtx[1].hash, "x", 2)
 
   def _test_inputs (self):
     """
@@ -282,29 +301,52 @@ class GameBlocksTest (XayaZmqTest):
     for g in ["a", "b"]:
       _, data = self.games[g].receive ()
       assert_equal (data["moves"], [])
-      assert "cmd" not in data
+      assert_equal (data["admin"], [])
 
     # Now actually issue admin commands together with a move.  One of the
     # g/ names is updated, the other registered.  This makes sure that both
-    # work as expected.
-    self.node.name_update ("g/a", json.dumps ({
+    # work as expected.  Also send a command for a non-tracked game.
+    txidCmdA = self.node.name_update ("g/a", json.dumps ({
       "stuff": "ignored",
       "cmd": 42,
     }))
-    self.node.name_register ("g/b", json.dumps ({
+    txidCmdB = self.node.name_register ("g/b", json.dumps ({
       "cmd": {"foo": "bar"},
     }))
-    txid = self.node.name_update ("p/x", json.dumps ({"g":{"a":True}}))
+    self.node.name_register ("g/ignored", json.dumps ({
+      "cmd": "this game is not tracked",
+    }))
+    txidMvA = self.node.name_update ("p/x", json.dumps ({"g":{"a":True}}))
     self.node.generate (1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
-    assertMove (data["moves"][0], txid, "x", True)
-    assert_equal (data["cmd"], 42)
+    assertMove (data["moves"][0], txidMvA, "x", True)
+    assert_equal (data["admin"], [{"txid": txidCmdA, "cmd": 42}])
 
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
-    assert_equal (data["cmd"], {"foo": "bar"})
+    assert_equal (data["admin"], [{"txid": txidCmdB, "cmd": {"foo": "bar"}}])
+
+    # Do two admin commands of one game in a single block.  This is not possible
+    # with ordinary commands, as the mempool policy forbids it.  It is valid
+    # if a block is constructed directly, though.
+    blk = buildMultiUpdateBlock (self.node, "g/a", [
+      json.dumps ({"cmd": "first"}),
+      json.dumps ({"cmd": "second"}),
+    ])
+    assert_equal (self.node.submitblock (blk.serialize ().hex ()), None)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (data["moves"], [])
+    assert_equal (data["admin"], [
+      {"txid": blk.vtx[1].hash, "cmd": "first"},
+      {"txid": blk.vtx[2].hash, "cmd": "second"},
+    ])
+
+    _, data = self.games["b"].receive ()
+    assert_equal (data["moves"], [])
+    assert_equal (data["admin"], [])
 
   def buildChain (self, n):
     """
