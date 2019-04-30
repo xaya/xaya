@@ -223,14 +223,17 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
     const std::set<std::string>& games, const std::string& commandPrefix,
     const std::string& reqtoken, const CBlock& block, const CBlockIndex* pindex)
 {
-  /* Start with an empty array of moves for each game that we track.  */
+  /* Start with an empty array of moves and commands for each game.  */
   std::map<std::string, UniValue> perGameMoves;
-  for (const auto& game : games)
-    perGameMoves[game] = UniValue (UniValue::VARR);
   std::map<std::string, UniValue> perGameAdminCmds;
+  for (const auto& game : games)
+    {
+      perGameMoves[game] = UniValue (UniValue::VARR);
+      perGameAdminCmds[game] = UniValue (UniValue::VARR);
+    }
 
-  /* Add relevant moves for each game from all the transactions.  Also keep
-     track of the admin commands for each game, if there are any.  */
+  /* Add relevant moves and admin commands for each game from all the
+     transactions to our arrays.  */
   for (const auto& tx : block.vtx)
     {
       const TransactionData data(*tx);
@@ -248,11 +251,20 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 
       std::string adminGame;
       UniValue adminCmd;
-      if (data.IsAdminCommand (adminGame, adminCmd)
-            && games.count (adminGame) > 0)
+      if (data.IsAdminCommand (adminGame, adminCmd))
         {
-          assert (perGameAdminCmds.count (adminGame) == 0);
-          perGameAdminCmds.emplace (adminGame, adminCmd);
+          auto mit = perGameAdminCmds.find (adminGame);
+          if (mit == perGameAdminCmds.end ())
+            continue;
+
+          assert (games.count (adminGame) > 0);
+          assert (mit->second.isArray ());
+
+          UniValue cmd(UniValue::VOBJ);
+          cmd.pushKV ("txid", tx->GetHash ().GetHex ());
+          cmd.pushKV ("cmd", adminCmd);
+
+          mit->second.push_back (cmd);
         }
     }
 
@@ -277,16 +289,17 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
      template object.  */
   for (const auto& game : games)
     {
-      auto mit = perGameMoves.find (game);
-      assert (mit != perGameMoves.end ());
-      assert (mit->second.isArray ());
+      auto mitMv = perGameMoves.find (game);
+      assert (mitMv != perGameMoves.end ());
+      assert (mitMv->second.isArray ());
+
+      auto mitCmd = perGameAdminCmds.find (game);
+      assert (mitCmd != perGameAdminCmds.end ());
+      assert (mitCmd->second.isArray ());
 
       UniValue data = tmpl;
-      data.pushKV ("moves", mit->second);
-
-      auto adminCmd = perGameAdminCmds.find (game);
-      if (adminCmd != perGameAdminCmds.end ())
-        data.pushKV ("cmd", adminCmd->second);
+      data.pushKV ("moves", mitMv->second);
+      data.pushKV ("admin", mitCmd->second);
 
       if (!SendMessage (commandPrefix + " json " + game, data))
         return false;
