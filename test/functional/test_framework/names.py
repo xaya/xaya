@@ -1,19 +1,106 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # General code for Namecoin tests.
 
 from .test_framework import BitcoinTestFramework
-from .util import *
 
+from .blocktools import (
+  add_witness_commitment,
+  create_block,
+  create_coinbase,
+)
+from .messages import CTransaction
+from .util import (
+  assert_equal,
+  gather_inputs,
+  hex_str_to_bytes,
+  sync_blocks,
+  sync_mempools,
+)
+
+from decimal import Decimal
+import io
 import json
+
 
 def val (text):
   """Returns a valid JSON value for name updates with the given text as part."""
+
+  if type (text) == list:
+    return [val (el) for el in text]
+
   obj = {'text': text}
   return json.dumps (obj)
+
+
+def buildMultiUpdateBlock (node, name, values):
+  """
+  Constructs a CBlock instance that updates the name in a series to all
+  of the given values.  This is something that the mempool policy does not
+  allow, while it is perfectly fine in the consensus if included in a block.
+
+  With this function, other tests can evaluate how this edge case is handled.
+  """
+
+  nameValue = Decimal ("0.01")
+  fee = Decimal ("0.01")
+
+  tip = node.getbestblockhash ()
+  height = node.getblockcount () + 1
+  nTime = node.getblockheader (tip)["mediantime"] + 1
+  block = create_block (int (tip, 16), create_coinbase (height), nTime)
+
+  # While iterating, we keep track of the previous transaction that we build
+  # on.  Initialise with the current data for the name from the blockchain
+  # as well as some random currency inputs to pay fees.
+  prevVal, prevIns = gather_inputs (node, len (values) * fee)
+  prevOuts = None
+  prevNameOut = node.name_show (name)
+
+  for v in values:
+    ins = prevIns
+    ins.append (prevNameOut)
+
+    addrName = node.getnewaddress ()
+    addrChange = node.getnewaddress ()
+    outs = [{addrName: nameValue}, {addrChange: prevVal - fee}]
+
+    txHex = node.createrawtransaction (ins, outs)
+    nameOp = {"op": "name_update", "name": name, "value": v}
+    txHex = node.namerawtransaction (txHex, 0, nameOp)["hex"]
+
+    signed = node.signrawtransactionwithwallet (txHex, prevOuts)
+    assert_equal (signed["complete"], True)
+    txHex = signed["hex"]
+
+    tx = CTransaction ()
+    tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
+    block.vtx.append (tx)
+
+    # Update the variables about the previous transaction for this one,
+    # so that the next is chained on correctly.
+    txid = node.decoderawtransaction (txHex)["txid"]
+    prevNameOut = {"txid": txid, "vout": 0}
+    prevVal -= fee
+    prevIns = [{"txid": txid, "vout": 1}]
+
+    data = node.decoderawtransaction (txHex)
+    prevOuts = []
+    for i in range (len (data["vout"])):
+      prevOuts.append ({
+        "txid": txid,
+        "vout": i,
+        "scriptPubKey": data["vout"][i]["scriptPubKey"]["hex"]
+      })
+
+  add_witness_commitment (block, 0)
+  block.solve ()
+
+  return block
+
 
 class NameTestFramework (BitcoinTestFramework):
 

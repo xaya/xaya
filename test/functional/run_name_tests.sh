@@ -18,6 +18,9 @@ echo "\nName listunspent..."
 echo "\nName multisig..."
 ./name_multisig.py
 
+echo "\nName multiupdates..."
+./name_multiupdate.py
+
 echo "\nName pending..."
 ./name_pending.py
 
