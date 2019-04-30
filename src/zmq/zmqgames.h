@@ -14,6 +14,7 @@
 
 class CBlock;
 class CBlockIndex;
+class CTransaction;
 class UniValue;
 
 /**
@@ -31,6 +32,7 @@ private:
   mutable CCriticalSection cs;
 
   friend class ZMQGameBlocksNotifier;
+  friend class ZMQGamePendingNotifier;
 
 public:
 
@@ -105,6 +107,24 @@ public:
                             const CBlockIndex* pindex) override;
   bool NotifyBlockDetached (const CBlock& block,
                             const CBlockIndex* pindex) override;
+
+};
+
+/**
+ * ZMQ publisher that handles notifications for pending moves.
+ */
+class ZMQGamePendingNotifier : public ZMQGameNotifier
+{
+
+private:
+
+  static const char* PREFIX_MOVE;
+
+public:
+
+  using ZMQGameNotifier::ZMQGameNotifier;
+
+  bool NotifyPendingTx (const CTransaction& tx) override;
 
 };
 

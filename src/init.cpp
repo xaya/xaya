@@ -475,6 +475,7 @@ void SetupServerArgs()
     gArgs.AddArg("-zmqpubrawblockhwm=<n>", strprintf("Set publish raw block outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), false, OptionsCategory::ZMQ);
     gArgs.AddArg("-zmqpubrawtxhwm=<n>", strprintf("Set publish raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), false, OptionsCategory::ZMQ);
     gArgs.AddArg("-zmqpubgameblocks=<address>", "Enable publication of game data for block attach/detach events in <address>", false, OptionsCategory::ZMQ);
+    gArgs.AddArg("-zmqpubgamepending=<address>", "Enable publication of pending game transactions in <address>", false, OptionsCategory::ZMQ);
     gArgs.AddArg("-trackgame=<game>", "Enable tracking of the listed game for the Xaya game interface", false, OptionsCategory::ZMQ);
 #else
     hidden_args.emplace_back("-zmqpubhashblock=<address>");
@@ -486,6 +487,7 @@ void SetupServerArgs()
     hidden_args.emplace_back("-zmqpubrawblockhwm=<n>");
     hidden_args.emplace_back("-zmqpubrawtxhwm=<n>");
     hidden_args.emplace_back("-zmqpubgameblocks=<address>");
+    hidden_args.emplace_back("-zmqpubgamepending=<address>");
     hidden_args.emplace_back("-trackgame=<game>");
 #endif
 
