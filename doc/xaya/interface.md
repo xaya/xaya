@@ -327,3 +327,6 @@ it is re-added after a block detach), the following notification is sent
 
 `DATA` is a description of the move in the same form as in the `moves` array
 for [`game-block-attach` notifications](#attach-detach).
+
+**NOTE:**  Notifications about pending moves are *best-effort only* and
+cannot be relied upon under any circumstances!

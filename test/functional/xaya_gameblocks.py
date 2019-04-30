@@ -5,9 +5,6 @@
 
 """Tests the "game-block" ZMQ notifications."""
 
-from test_framework.test_framework import (
-  BitcoinTestFramework,
-)
 from test_framework.messages import (
   COIN,
   COutPoint,
@@ -20,16 +17,19 @@ from test_framework.util import (
   assert_greater_than,
   assert_raises_rpc_error,
   hex_str_to_bytes,
+  zmq_port,
 )
 from test_framework.script import (
   CScript,
   OP_TRUE,
 )
+from test_framework.xaya_zmq import (
+  XayaZmqTest,
+  ZmqSubscriber,
+)
 
 from decimal import Decimal
-import codecs
 import json
-import struct
 
 
 def assertMove (obj, txid, name, move):
@@ -43,100 +43,52 @@ def assertMove (obj, txid, name, move):
   assert_equal (obj["move"], move)
 
 
-class GameSubscriber:
-
-  def __init__ (self, ctx, addr, game):
-    self.sequence = {}
-    self.game = game
-
-    import zmq
-    self.socket = ctx.socket (zmq.SUB)
-    self.socket.set (zmq.RCVTIMEO, 60000)
-    self.socket.connect (addr)
-    self.socket.setsockopt_string (zmq.SUBSCRIBE,
-                                   "game-block-attach json %s" % game)
-    self.socket.setsockopt_string (zmq.SUBSCRIBE,
-                                   "game-block-detach json %s" % game)
-
-  def receive (self):
-    topic, body, seq = self.socket.recv_multipart ()
-
-    topic = codecs.decode (topic, "ascii")
-    parts = topic.split (" ")
-    assert_equal (len (parts), 3)
-    assert_equal (parts[1], "json")
-    assert_equal (parts[2], self.game)
-    assert parts[0] in ["game-block-attach", "game-block-detach"]
-
-    # Sequence should be incremental for the full topic string.
-    seqNum = struct.unpack ("<I", seq)[-1]
-    if not topic in self.sequence:
-      self.sequence[topic] = 0
-    assert_equal (seqNum, self.sequence[topic])
-    self.sequence[topic] += 1
-
-    return topic, json.loads (codecs.decode (body, "ascii"))
-
-  def assertNoMessage (self):
-    import zmq
-    try:
-      _ = self.socket.recv (zmq.NOBLOCK)
-      raise AssertionError ("expected no more messages, but got one")
-    except zmq.error.Again:
-      pass
-
-
-class GameBlocksTest (BitcoinTestFramework):
-
-  _address = "tcp://127.0.0.1:28332"
+class GameBlocksTest (XayaZmqTest):
 
   def set_test_params (self):
     self.num_nodes = 1
 
   def setup_nodes (self):
-    self.skip_if_no_py3_zmq ()
-    self.skip_if_no_bitcoind_zmq ()
-
-    import zmq
-    self.zmq_context = zmq.Context ()
-    self.games = {}
-    for g in ["a", "b", "ignored"]:
-      self.games[g] = GameSubscriber (self.zmq_context, self._address, g)
+    self.address = "tcp://127.0.0.1:%d" % zmq_port (1)
 
     args = []
-    args.append ("-zmqpubgameblocks=%s" % self._address)
+    args.append ("-zmqpubgameblocks=%s" % self.address)
     args.append ("-maxgameblockattaches=10")
     args.extend (["-trackgame=%s" % g for g in ["a", "b", "other"]])
-    self.extra_args = [args]
-    self.add_nodes (self.num_nodes, self.extra_args)
+    self.add_nodes (self.num_nodes, extra_args=[args])
     self.start_nodes ()
-    self.import_deterministic_coinbase_privkeys()
+    self.import_deterministic_coinbase_privkeys ()
 
     self.node = self.nodes[0]
 
   def run_test (self):
-    try:
-      self._test_currencyIgnored ()
-      self._test_register ()
-      self._test_blockData ()
-      self._test_multipleUpdates ()
-      self._test_inputs ()
-      self._test_moveWithCurrency ()
-      self._test_adminCmd ()
-      self._test_reorg ()
-      self._test_sendUpdates ()
-      self._test_maxGameBlockAttaches ()
-      self._test_trackedgamesRPC ()
+    # Make the checks for BitcoinTestFramework subclasses happy.
+    super ().run_test ()
 
-      # After all the real tests, verify no more notifications are there.
-      # This especially verifies that the "ignored" game we are subscribed to
-      # has no notifications (because it is not tracked by the daemon).
-      self.log.info ("Verifying that there are no unexpected messages...")
-      for _, sub in self.games.items ():
-        sub.assertNoMessage ()
-    finally:
-      self.log.debug ("Destroying ZMQ context")
-      self.zmq_context.destroy (linger=None)
+  def run_test_with_zmq (self, ctx):
+    self.games = {}
+    for g in ["a", "b", "ignored"]:
+      self.games[g] = ZmqSubscriber (ctx, self.address, g)
+      self.games[g].subscribe ("game-block-attach")
+      self.games[g].subscribe ("game-block-detach")
+
+    self._test_currencyIgnored ()
+    self._test_register ()
+    self._test_blockData ()
+    self._test_multipleUpdates ()
+    self._test_inputs ()
+    self._test_moveWithCurrency ()
+    self._test_adminCmd ()
+    self._test_reorg ()
+    self._test_sendUpdates ()
+    self._test_maxGameBlockAttaches ()
+
+    # After all the real tests, verify no more notifications are there.
+    # This especially verifies that the "ignored" game we are subscribed to
+    # has no notifications (because it is not tracked by the daemon).
+    self.log.info ("Verifying that there are no unexpected messages...")
+    for _, sub in self.games.items ():
+      sub.assertNoMessage ()
 
   def _test_currencyIgnored (self):
     """
@@ -622,40 +574,6 @@ class GameBlocksTest (BitcoinTestFramework):
     })
     self.verifyDetach ("a", longAttachA)
     self.verifyAttach ("a", shortAttachA)
-
-  def _test_trackedgamesRPC (self):
-    """
-    Tests the trackedgames RPC, which can be used to read and modify
-    the list of tracked games dynamically.
-    """
-
-    self.log.info ("Testing the trackedgames RPC...")
-
-    # Test initial set as configured by the startup options.
-    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
-
-    # Remove some tracked (and non-tracked) games.
-    self.node.trackedgames ("remove", "b")
-    self.node.trackedgames ("remove", "not-there")
-    assert_equal (set (self.node.trackedgames ()), set (["a", "other"]))
-
-    # Add a game that was previously not tracked.
-    self.node.trackedgames ("add", "ignored")
-    self.node.trackedgames ("add", "a")
-    assert_equal (set (self.node.trackedgames ()),
-                  set (["a", "ignored", "other"]))
-
-    # Trigger an update to make sure the modified list is taken into account.
-    self.node.generate (1)
-    topic, _ = self.games["a"].receive ()
-    assert_equal (topic, "game-block-attach json a")
-    topic, _ = self.games["ignored"].receive ()
-    assert_equal (topic, "game-block-attach json ignored")
-
-    # Restore original setting.
-    self.node.trackedgames ("add", "b")
-    self.node.trackedgames ("remove", "ignored")
-    assert_equal (set (self.node.trackedgames ()), set (["a", "b", "other"]))
 
 
 if __name__ == '__main__':

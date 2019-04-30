@@ -10,29 +10,58 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 class CBlock;
 class CBlockIndex;
+class CTransaction;
 class UniValue;
 
 /**
- * ZMQ publisher that handles the attach/detach messages for the Xaya game
- * interface (https://github.com/xaya/Specs/blob/master/interface.md).
+ * Helper class to manage the list of tracked game IDs.
  */
-class ZMQGameBlocksNotifier : public CZMQAbstractPublishNotifier
+class TrackedGames
 {
-
-public:
-
-  static const char* PREFIX_ATTACH;
-  static const char* PREFIX_DETACH;
 
 private:
 
-  /** Lock for trackedGames.  */
-  mutable CCriticalSection csTrackedGames;
-  /** The set of games tracked by this notifier.  */
-  std::set<std::string> trackedGames GUARDED_BY (csTrackedGames);
+  /** The set of tracked game IDs.  */
+  std::set<std::string> games GUARDED_BY (cs);
+
+  /** Lock for this instance.  */
+  mutable CCriticalSection cs;
+
+  friend class ZMQGameBlocksNotifier;
+  friend class ZMQGamePendingNotifier;
+
+public:
+
+  TrackedGames () = delete;
+  TrackedGames (const TrackedGames&) = delete;
+  void operator= (const TrackedGames&) = delete;
+
+  explicit TrackedGames (const std::vector<std::string>& g)
+    : games(g.begin (), g.end ())
+  {}
+
+  UniValue Get () const;
+
+  void Add (const std::string& game);
+  void Remove (const std::string& game);
+
+};
+
+/**
+ * Superclass for game ZMQ notifiers.  It references a list of tracked
+ * games and provides general utility methods common for all game notifiers.
+ */
+class ZMQGameNotifier : public CZMQAbstractPublishNotifier
+{
+
+protected:
+
+  /** Reference to the list of tracked games.  */
+  const TrackedGames& trackedGames;
 
   /**
    * Sends a multipart message where the payload data is JSON.
@@ -41,11 +70,29 @@ private:
 
 public:
 
-  ZMQGameBlocksNotifier () = delete;
+  ZMQGameNotifier () = delete;
+  ZMQGameNotifier (const ZMQGameNotifier&) = delete;
+  void operator= (const ZMQGameNotifier&) = delete;
 
-  explicit ZMQGameBlocksNotifier (const std::set<std::string>& games)
-    : trackedGames(games)
+  explicit ZMQGameNotifier (const TrackedGames& tg)
+    : trackedGames(tg)
   {}
+
+};
+
+/**
+ * ZMQ publisher that handles the attach/detach messages for the Xaya game
+ * interface (see doc/xaya/interface.md).
+ */
+class ZMQGameBlocksNotifier : public ZMQGameNotifier
+{
+
+public:
+
+  static const char* PREFIX_ATTACH;
+  static const char* PREFIX_DETACH;
+
+  using ZMQGameNotifier::ZMQGameNotifier;
 
   /**
    * Sends the block attach or detach notifications.  They are essentially the
@@ -59,10 +106,23 @@ public:
   bool NotifyBlockAttached (const CBlock& block) override;
   bool NotifyBlockDetached (const CBlock& block) override;
 
-  /* Methods for the trackedgames RPC.  */
-  UniValue GetTrackedGames () const;
-  void AddTrackedGame (const std::string& game);
-  void RemoveTrackedGame (const std::string& game);
+};
+
+/**
+ * ZMQ publisher that handles notifications for pending moves.
+ */
+class ZMQGamePendingNotifier : public ZMQGameNotifier
+{
+
+private:
+
+  static const char* PREFIX_MOVE;
+
+public:
+
+  using ZMQGameNotifier::ZMQGameNotifier;
+
+  bool NotifyPendingTx (const CTransaction& tx) override;
 
 };
 

@@ -4,7 +4,6 @@
 
 #include <zmq/zmqnotificationinterface.h>
 
-#include <zmq/zmqgames.h>
 #include <zmq/zmqpublishnotifier.h>
 
 #include <version.h>
@@ -52,12 +51,17 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
 
     const std::vector<std::string> vTrackedGames = gArgs.GetArgs("-trackgame");
-    const std::set<std::string> trackedGames(vTrackedGames.begin(), vTrackedGames.end());
+    std::unique_ptr<TrackedGames> trackedGames(new TrackedGames(vTrackedGames));
+
     ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
     factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier]() {
         assert (gameBlocksNotifier == nullptr);
-        gameBlocksNotifier = new ZMQGameBlocksNotifier(trackedGames);
+        gameBlocksNotifier = new ZMQGameBlocksNotifier(*trackedGames);
         return gameBlocksNotifier;
+    };
+
+    factories["pubgamepending"] = [&trackedGames]() {
+        return new ZMQGamePendingNotifier(*trackedGames);
     };
 
     for (const auto& entry : factories)
@@ -78,6 +82,7 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     if (!notifiers.empty())
     {
         notificationInterface = new CZMQNotificationInterface();
+        notificationInterface->trackedGames = std::move(trackedGames);
         notificationInterface->notifiers = notifiers;
         notificationInterface->gameBlocksNotifier = gameBlocksNotifier;
 
@@ -170,10 +175,8 @@ void CZMQNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, co
     }
 }
 
-void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx)
+void CZMQNotificationInterface::NotifyTransaction(const CTransactionRef& ptx)
 {
-    // Used by BlockConnected and BlockDisconnected as well, because they're
-    // all the same external callback.
     const CTransaction& tx = *ptx;
 
     for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
@@ -191,11 +194,30 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef&
     }
 }
 
+void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx)
+{
+    NotifyTransaction(ptx);
+
+    for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
+    {
+        CZMQAbstractNotifier *notifier = *i;
+        if (notifier->NotifyPendingTx(*ptx))
+        {
+            i++;
+        }
+        else
+        {
+            notifier->Shutdown();
+            i = notifiers.erase(i);
+        }
+    }
+}
+
 void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts)
 {
     for (const CTransactionRef& ptx : pblock->vtx) {
         // Do a normal notify for each transaction added in the block
-        TransactionAddedToMempool(ptx);
+        NotifyTransaction(ptx);
     }
 
 
@@ -231,8 +253,12 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
     }
 
     for (const CTransactionRef& ptx : pblock->vtx) {
-        // Do a normal notify for each transaction removed in block disconnection
-        TransactionAddedToMempool(ptx);
+        // Do a normal notify for each transaction removed in block disconnection.
+        //
+        // Note that we want notifications for those transactions as "pending",
+        // but those will (typically) be generated anyway from re-adding to
+        // the mempool, which then also fires TransactionAddedToMempool.
+        NotifyTransaction(ptx);
     }
 }
 

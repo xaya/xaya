@@ -50,6 +50,11 @@ public:
     virtual bool NotifyBlockAttached(const CBlock& block);
     virtual bool NotifyBlockDetached(const CBlock& block);
 
+    /* Notification for transactions that are now pending (in the mempool).
+       The difference to NotifyTransaction is that the latter is called also
+       when transactions are confirmed.  */
+    virtual bool NotifyPendingTx(const CTransaction& transaction);
+
 protected:
     void *psocket;
     std::string type;
