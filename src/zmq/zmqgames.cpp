@@ -19,13 +19,42 @@
 #include <univalue.h>
 
 #include <map>
+#include <sstream>
 
 const char* ZMQGameBlocksNotifier::PREFIX_ATTACH = "game-block-attach";
 const char* ZMQGameBlocksNotifier::PREFIX_DETACH = "game-block-detach";
 
+const char* ZMQGamePendingNotifier::PREFIX_MOVE = "game-pending-move";
+
+UniValue
+TrackedGames::Get () const
+{
+  LOCK (cs);
+
+  UniValue res(UniValue::VARR);
+  for (const auto& g : games)
+    res.push_back (g);
+
+  return res;
+}
+
+void
+TrackedGames::Add (const std::string& game)
+{
+  LOCK (cs);
+  games.insert (game);
+}
+
+void
+TrackedGames::Remove (const std::string& game)
+{
+  LOCK (cs);
+  games.erase (game);
+}
+
 bool
-ZMQGameBlocksNotifier::SendMessage (const std::string& command,
-                                    const UniValue& data)
+ZMQGameNotifier::SendMessage (const std::string& command,
+                              const UniValue& data)
 {
   const std::string dataStr = data.write ();
   return CZMQAbstractPublishNotifier::SendMessage (
@@ -270,8 +299,8 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockAttached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_ATTACH, "",
+  LOCK (trackedGames.cs);
+  return SendBlockNotifications (trackedGames.games, PREFIX_ATTACH, "",
                                  block, pindex);
 }
 
@@ -279,33 +308,28 @@ bool
 ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block,
                                             const CBlockIndex* pindex)
 {
-  LOCK (csTrackedGames);
-  return SendBlockNotifications (trackedGames, PREFIX_DETACH, "",
+  LOCK (trackedGames.cs);
+  return SendBlockNotifications (trackedGames.games, PREFIX_DETACH, "",
                                  block, pindex);
 }
 
-UniValue
-ZMQGameBlocksNotifier::GetTrackedGames () const
+bool
+ZMQGamePendingNotifier::NotifyPendingTx (const CTransaction& tx)
 {
-  LOCK (csTrackedGames);
+  const TransactionData data(tx);
 
-  UniValue res(UniValue::VARR);
-  for (const auto& g : trackedGames)
-    res.push_back (g);
+  LOCK (trackedGames.cs);
+  for (const auto& entry : data.GetMovesPerGame ())
+    {
+      if (trackedGames.games.count (entry.first) == 0)
+        continue;
 
-  return res;
-}
+      std::ostringstream cmd;
+      cmd << PREFIX_MOVE << " json " << entry.first;
 
-void
-ZMQGameBlocksNotifier::AddTrackedGame (const std::string& game)
-{
-  LOCK (csTrackedGames);
-  trackedGames.insert (game);
-}
+      if (!SendMessage (cmd.str (), entry.second))
+        return false;
+    }
 
-void
-ZMQGameBlocksNotifier::RemoveTrackedGame (const std::string& game)
-{
-  LOCK (csTrackedGames);
-  trackedGames.erase (game);
+  return true;
 }

@@ -64,7 +64,7 @@ class BitcoinTestMetaClass(type):
     those standards are violated, a ``TypeError`` is raised."""
 
     def __new__(cls, clsname, bases, dct):
-        if not clsname in ['BitcoinTestFramework', 'NameTestFramework']:
+        if not clsname in ['BitcoinTestFramework', 'NameTestFramework', 'XayaZmqTest']:
             if not ('run_test' in dct and 'set_test_params' in dct):
                 raise TypeError("BitcoinTestFramework subclasses must override "
                                 "'run_test' and 'set_test_params'")
