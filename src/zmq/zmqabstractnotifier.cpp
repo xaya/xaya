@@ -31,3 +31,8 @@ bool CZMQAbstractNotifier::NotifyBlockDetached(const CBlock& /*block*/)
 {
     return true;
 }
+
+bool CZMQAbstractNotifier::NotifyPendingTx(const CTransaction& transaction)
+{
+    return true;
+}

@@ -20,9 +20,12 @@
 #include <univalue.h>
 
 #include <map>
+#include <sstream>
 
 const char* ZMQGameBlocksNotifier::PREFIX_ATTACH = "game-block-attach";
 const char* ZMQGameBlocksNotifier::PREFIX_DETACH = "game-block-detach";
+
+const char* ZMQGamePendingNotifier::PREFIX_MOVE = "game-pending-move";
 
 UniValue
 TrackedGames::Get () const
@@ -305,4 +308,25 @@ ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block)
 {
   LOCK (trackedGames.cs);
   return SendBlockNotifications (trackedGames.games, PREFIX_DETACH, "", block);
+}
+
+bool
+ZMQGamePendingNotifier::NotifyPendingTx (const CTransaction& tx)
+{
+  const TransactionData data(tx);
+
+  LOCK (trackedGames.cs);
+  for (const auto& entry : data.GetMovesPerGame ())
+    {
+      if (trackedGames.games.count (entry.first) == 0)
+        continue;
+
+      std::ostringstream cmd;
+      cmd << PREFIX_MOVE << " json " << entry.first;
+
+      if (!SendMessage (cmd.str (), entry.second))
+        return false;
+    }
+
+  return true;
 }

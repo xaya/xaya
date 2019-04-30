@@ -60,6 +60,10 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
         return gameBlocksNotifier;
     };
 
+    factories["pubgamepending"] = [&trackedGames]() {
+        return new ZMQGamePendingNotifier(*trackedGames);
+    };
+
     for (const auto& entry : factories)
     {
         std::string arg("-zmq" + entry.first);
@@ -171,10 +175,8 @@ void CZMQNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, co
     }
 }
 
-void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx)
+void CZMQNotificationInterface::NotifyTransaction(const CTransactionRef& ptx)
 {
-    // Used by BlockConnected and BlockDisconnected as well, because they're
-    // all the same external callback.
     const CTransaction& tx = *ptx;
 
     for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
@@ -192,11 +194,30 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef&
     }
 }
 
+void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx)
+{
+    NotifyTransaction(ptx);
+
+    for (std::list<CZMQAbstractNotifier*>::iterator i = notifiers.begin(); i!=notifiers.end(); )
+    {
+        CZMQAbstractNotifier *notifier = *i;
+        if (notifier->NotifyPendingTx(*ptx))
+        {
+            i++;
+        }
+        else
+        {
+            notifier->Shutdown();
+            i = notifiers.erase(i);
+        }
+    }
+}
+
 void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts)
 {
     for (const CTransactionRef& ptx : pblock->vtx) {
         // Do a normal notify for each transaction added in the block
-        TransactionAddedToMempool(ptx);
+        NotifyTransaction(ptx);
     }
 
 
@@ -232,8 +253,12 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
     }
 
     for (const CTransactionRef& ptx : pblock->vtx) {
-        // Do a normal notify for each transaction removed in block disconnection
-        TransactionAddedToMempool(ptx);
+        // Do a normal notify for each transaction removed in block disconnection.
+        //
+        // Note that we want notifications for those transactions as "pending",
+        // but those will (typically) be generated anyway from re-adding to
+        // the mempool, which then also fires TransactionAddedToMempool.
+        NotifyTransaction(ptx);
     }
 }
 

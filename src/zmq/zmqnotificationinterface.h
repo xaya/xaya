@@ -58,6 +58,13 @@ private:
 
     /** The tracked games for notifications.  */
     std::unique_ptr<TrackedGames> trackedGames;
+
+    /**
+     * Sends out a transaction notification (NotifyTransaction on all our
+     * notifiers).  This is called when adding to the mempool, when connecting
+     * a block and when disconnecting a block.
+     */
+    void NotifyTransaction(const CTransactionRef& ptx);
 };
 
 extern CZMQNotificationInterface* g_zmq_notification_interface;
