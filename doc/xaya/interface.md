@@ -68,7 +68,7 @@ The `DATA` part, finally, is a JSON object with the relevant information:
           "timestamp": BLOCK-TIME,
           "rngseed": RNG-SEED,
         },
-      "cmd": ADMIN-COMMAND,
+      "admin": ADMIN-COMMANDS,
       "moves":
         [
           {
@@ -103,10 +103,6 @@ The placeholders have the following meaning:
 * **`RNG-SEED`, `BLOCK-HEIGHT` and `BLOCK-TIME`:**
   Additional data about the attached block, which might be used by the game
   engine in the update logic.
-* **`ADMIN-COMMAND`:**
-  If the block contains an update the name game's `g/` name, then this
-  field is set to the game-specific [*admin command*](games.md#games)
-  specified with that update.
 * **`TXID`:**
   The Xaya transaction ID of the transaction that performed the given move.
   This is mostly useful as a key and to correlate a single transaction
@@ -124,6 +120,26 @@ The placeholders have the following meaning:
   Xaya addresses and amounts that were transacted in the move transaction,
   as described in the model for
   [currency transaction in games](games.md#currency).
+
+If the block contains an update to the game's `g/` name, then these
+[*admin commands*](games.md#games) are returned in `ADMIN-COMMANDS`.
+This value is a JSON array of zero, one or more elements, where each
+element is a JSON object of the following form corresponding to one update
+of the `g/` name:
+
+    {
+      "txid": TXID,
+      "cmd": COMMAND,
+    }
+
+Here, `TXID` is the transaction ID of the name update, and `COMMAND` is the
+game-specific value sent as admin command through the transaction.
+Note that Xaya typically allows a single name to be updated only once per block,
+but this is a restriction *purely on the mempool and policy side*.  On the
+consensus layer, it is perfectly fine to have more than one update in a block.
+Thus, it is not impossible to have more than one admin command!
+Most of the time, though, `ADMIN-COMMANDS` will have either zero
+or one element.
 
 Note that not all transactions from the block are included in the `moves` list.
 It contains only those that are relevant for the current game, which are
