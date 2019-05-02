@@ -211,6 +211,7 @@ BASE_SCRIPTS = [
     'name_listunspent.py',
     'name_multisig.py',
     'name_multisig.py --bip16-active',
+    'name_multiupdate.py',
     'name_pending.py',
     'name_rawtx.py',
     'name_registration.py',
