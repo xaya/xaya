@@ -644,7 +644,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
     }
 
     if (!pool.checkNameOps(tx))
-        return false;
+        return state.Invalid(false, REJECT_DUPLICATE, "txn-mempool-name-error");
 
     {
         CCoinsView dummy;
