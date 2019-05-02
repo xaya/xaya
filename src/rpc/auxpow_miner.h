@@ -7,6 +7,7 @@
 
 #include <miner.h>
 #include <script/script.h>
+#include <script/standard.h>
 #include <sync.h>
 #include <uint256.h>
 #include <univalue.h>
@@ -40,12 +41,9 @@ private:
   std::vector<std::unique_ptr<CBlockTemplate>> templates;
   /** Maps block hashes to pointers in vTemplates.  Does not own the memory.  */
   std::map<uint256, const CBlock*> blocks;
+  /** Maps coinbase script hashes to pointers in vTemplates.  Does not own the memory.  */
+  std::map<CScriptID, const CBlock*> curBlocks;
 
-  /**
-   * The block we are "currently" working on.  This does not own the memory,
-   * instead, it points into an element of templates.
-   */
-  CBlock* pblockCur = nullptr;
   /** The current extra nonce for block creation.  */
   unsigned extraNonce = 0;
 
