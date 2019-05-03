@@ -74,7 +74,7 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_WALLET_TOOL) \
   $(LIBBITCOIN_ZMQ)
 
-lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
+noinst_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 
 bin_PROGRAMS =
 noinst_PROGRAMS = xaya-hash
@@ -657,7 +657,7 @@ xaya_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(EVENT_PTHREADS_L
 
 # bitcoinconsensus library #
 if BUILD_BITCOIN_LIBS
-include_HEADERS = script/namecoinconsensus.h
+noinst_HEADERS = script/namecoinconsensus.h
 libnamecoinconsensus_la_SOURCES = $(crypto_libbitcoin_crypto_base_a_SOURCES) $(libbitcoin_consensus_a_SOURCES)
 
 if GLIBC_BACK_COMPAT
