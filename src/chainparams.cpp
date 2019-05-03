@@ -91,8 +91,7 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 210000;
-        // FIXME: Activate BIP16 with a softfork.
-        consensus.BIP16Height = 10000000;
+        consensus.BIP16Height = 475000;
         /* Note that these are not the actual activation heights, but blocks
            after them.  They are too deep in the chain to be ever reorged,
            and thus this is also fine.  */
@@ -257,8 +256,7 @@ public:
     CTestNetParams() {
         strNetworkID = "test";
         consensus.nSubsidyHalvingInterval = 210000;
-        // FIXME: Activate BIP16 with a softfork.
-        consensus.BIP16Height = 10000000;
+        consensus.BIP16Height = 232000;
         /* As before, these are not the actual activation heights but some
            blocks after them.  */
         consensus.BIP34Height = 130000;
