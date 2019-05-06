@@ -66,6 +66,13 @@ if os.name != 'nt' or sys.getwindowsversion() >= (10, 0, 14393):
 TEST_EXIT_PASSED = 0
 TEST_EXIT_SKIPPED = 77
 
+EXTENDED_SCRIPTS = [
+    # These tests are not run by the travis build process.
+    # Longest test should go first, to favor running tests in parallel
+    'feature_pruning.py',
+    'feature_dbcrash.py',
+]
+
 BASE_SCRIPTS = [
     # Scripts that are run by the travis build process.
     # Longest test should go first, to favor running tests in parallel
@@ -202,13 +209,6 @@ BASE_SCRIPTS = [
     'auxpow_mining.py --segwit',
     'auxpow_invalidpow.py',
     'auxpow_zerohash.py',
-]
-
-EXTENDED_SCRIPTS = [
-    # These tests are not run by the travis build process.
-    # Longest test should go first, to favor running tests in parallel
-    'feature_pruning.py',
-    'feature_dbcrash.py',
 ]
 
 # Tests that are currently being skipped (e. g., because of BIP9).
