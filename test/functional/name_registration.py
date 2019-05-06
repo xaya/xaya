@@ -30,11 +30,11 @@ class NameRegistrationTest (NameTestFramework):
     txidA = self.nodes[0].name_register ("x/node-0", val ("value-0"),
                                          {"destAddress": addrA})
     self.nodes[1].name_register ("x/node-1", valueOfLength (2048))
-    assert_raises_rpc_error (-8, 'value is too long',
+    assert_raises_rpc_error (-8, 'tx-value-too-long',
                              self.nodes[0].name_register,
                              "x/dummy name", valueOfLength (2049))
     self.nodes[0].name_register ("x/" + "x" * 254, val ("value"))
-    assert_raises_rpc_error (-8, 'name is too long',
+    assert_raises_rpc_error (-8, 'tx-name-too-long',
                              self.nodes[0].name_register,
                              "x/" + "x" * 255, val ("dummy value"))
 
@@ -67,7 +67,7 @@ class NameRegistrationTest (NameTestFramework):
     # Check basic updating.
     self.nodes[0].name_register ("x/test-name", val ("test-value"))
     self.generate (0, 1)
-    assert_raises_rpc_error (-8, 'value is too long',
+    assert_raises_rpc_error (-8, 'tx-value-too-long',
                              self.nodes[0].name_update,
                              "x/test-name",
                              valueOfLength (2049))

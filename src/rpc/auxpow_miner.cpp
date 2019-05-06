@@ -44,11 +44,17 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
                               uint256& target)
 {
   AssertLockHeld (cs);
+  const CBlock* pblockCur = nullptr;
 
   {
     LOCK (cs_main);
-    if (pindexPrev != chainActive.Tip ()
-        || pblockCur->pow.getCoreAlgo () != algo
+    CScriptID scriptID (scriptPubKey);
+    auto iter = curBlocks.find (std::make_pair(algo, scriptID));
+    if (iter != curBlocks.end())
+      pblockCur = iter->second;
+
+    if (pblockCur == nullptr
+        || pindexPrev != chainActive.Tip ()
         || (mempool.GetTransactionsUpdated () != txUpdatedLast
             && GetTime () - startTime > 60))
       {
@@ -57,7 +63,7 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
             /* Clear old blocks since they're obsolete now.  */
             blocks.clear ();
             templates.clear ();
-            pblockCur = nullptr;
+            curBlocks.clear ();
           }
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
@@ -76,6 +82,7 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
 
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;
+        curBlocks.emplace (std::make_pair (algo, scriptID), pblockCur);
         blocks[pblockCur->GetHash ()] = pblockCur;
         templates.push_back (std::move (newBlock));
       }

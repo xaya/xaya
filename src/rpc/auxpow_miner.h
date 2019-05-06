@@ -8,6 +8,7 @@
 #include <miner.h>
 #include <powdata.h>
 #include <script/script.h>
+#include <script/standard.h>
 #include <sync.h>
 #include <uint256.h>
 #include <univalue.h>
@@ -15,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace auxpow_tests
@@ -41,12 +43,12 @@ private:
   std::vector<std::unique_ptr<CBlockTemplate>> templates;
   /** Maps block hashes to pointers in vTemplates.  Does not own the memory.  */
   std::map<uint256, const CBlock*> blocks;
-
   /**
-   * The block we are "currently" working on.  This does not own the memory,
-   * instead, it points into an element of templates.
+   * Maps coinbase script hashes and PoW algorithms to pointers in vTemplates.
+   * Does not own the memory.
    */
-  CBlock* pblockCur = nullptr;
+  std::map<std::pair<PowAlgo, CScriptID>, const CBlock*> curBlocks;
+
   /** The current extra nonce for block creation.  */
   unsigned extraNonce = 0;
 

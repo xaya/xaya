@@ -283,7 +283,9 @@ bool
 IsNameValid (const valtype& name, CValidationState& state)
 {
   if (name.size () > MAX_NAME_LENGTH)
-    return state.Invalid (false, REJECT_INVALID, "the name is too long");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-name-too-long",
+                          "The name is too long");
 
   /* All names must have a namespace.  This means that they must start with
      some lower-case letters and /.  As a regexp, that is: [a-z]+\/.* */
@@ -293,33 +295,40 @@ IsNameValid (const valtype& name, CValidationState& state)
       if (name[i] == '/')
         {
           if (i == 0)
-            return state.Invalid (false, REJECT_INVALID,
-                                  "the empty namespace is not valid");
+            return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                                  REJECT_INVALID, "tx-name-empty-namespace",
+                                  "The empty namespace is not valid");
 
           foundNamespace = true;
           break;
         }
 
       if (name[i] < 'a' || name[i] > 'z')
-        return state.Invalid (false, REJECT_INVALID,
-                              "the namespace must only consist of lower-case"
+        return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                              REJECT_INVALID, "tx-name-invalid-namespace",
+                              "The namespace must only consist of lower-case"
                               " letters");
     }
   if (!foundNamespace)
-    return state.Invalid (false, REJECT_INVALID, "the name has no namespace");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-name-no-namespace",
+                          "The name has no namespace");
 
   /* Non-printable ASCII characters are not allowed.  This check works also for
      UTF-8 encoded strings, as characters <0x80 are encoded as a single byte
      and never occur as part of some other UTF-8 sequence.  */
   for (const unsigned char c : name)
     if (c < 0x20)
-      return state.Invalid (false, REJECT_INVALID,
-                            "non-printable ASCII characters are not allowed"
+      return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                            REJECT_INVALID, "tx-name-unprintable-ascii",
+                            "Non-printable ASCII characters are not allowed"
                             " in names");
 
   /* Only valid UTF-8 strings can be names.  */
   if (!IsValidUtf8String (std::string (name.begin (), name.end ())))
-    return state.Invalid (false, REJECT_INVALID, "the name is not valid UTF-8");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-name-invalid-utf8",
+                          "The name is not valid UTF-8");
 
   return true;
 }
@@ -328,15 +337,20 @@ bool
 IsValueValid (const valtype& value, CValidationState& state)
 {
   if (value.size () > MAX_VALUE_LENGTH)
-    return state.Invalid (false, REJECT_INVALID, "the value is too long");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-value-too-long",
+                          "The value is too long");
 
   /* The value must parse with Univalue as JSON and be an object.  */
   UniValue jsonValue;
   if (!jsonValue.read (std::string (value.begin (), value.end ())))
-    return state.Invalid (false, REJECT_INVALID, "the value is not valid JSON");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-value-invalid-json",
+                          "The value is not valid JSON");
   if (!jsonValue.isObject ())
-    return state.Invalid (false, REJECT_INVALID,
-                          "the value must be a JSON object");
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-value-no-json-object",
+                          "The value must be a JSON object");
 
   return true;
 }
@@ -346,9 +360,6 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                       const CCoinsView& view,
                       CValidationState& state)
 {
-  const std::string strTxid = tx.GetHash ().GetHex ();
-  const char* txid = strTxid.c_str ();
-
   /* As a first step, try to locate inputs and outputs of the transaction
      that are name scripts.  At most one input and output should be
      a name operation.  */
@@ -361,16 +372,17 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       const COutPoint& prevout = tx.vin[i].prevout;
       Coin coin;
       if (!view.GetCoin (prevout, coin))
-        return state.DoS (100, error ("%s: failed to fetch input coin for %s",
-                                      __func__, txid),
-                          REJECT_INVALID, "bad-txns-inputs-missingorspent");
+        return state.Invalid (ValidationInvalidReason::TX_MISSING_INPUTS, false,
+                              REJECT_INVALID, "bad-txns-inputs-missingorspent",
+                              "Failed to fetch name input coin");
 
       const CNameScript op(coin.out.scriptPubKey);
       if (op.isNameOp ())
         {
           if (nameIn != -1)
-            return state.Invalid (error ("%s: multiple name inputs into"
-                                         " transaction %s", __func__, txid));
+            return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                                  REJECT_INVALID, "tx-multiple-name-inputs",
+                                  "Multiple name inputs");
           nameIn = i;
           nameOpIn = op;
           coinIn = coin;
@@ -385,8 +397,9 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp ())
         {
           if (nameOut != -1)
-            return state.Invalid (error ("%s: multiple name outputs from"
-                                         " transaction %s", __func__, txid));
+            return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                                  REJECT_INVALID, "tx-multiple-name-outputs",
+                                  "Multiple name outputs");
           nameOut = i;
           nameOpOut = op;
         }
@@ -398,15 +411,18 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   if (nameOut == -1)
     {
       if (nameIn != -1)
-        return state.Invalid (error ("%s: tx %s has name inputs but no outputs",
-                                     __func__, txid));
+        return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                              REJECT_INVALID, " tx-name-in-no-name-out",
+                              "Transaction has name input but no name output");
       return true;
     }
 
   /* Reject "greedy names".  */
   const Consensus::Params& params = Params ().GetConsensus ();
   if (tx.vout[nameOut].nValue < params.rules->MinNameCoinAmount(nHeight))
-    return state.Invalid (error ("%s: greedy name", __func__));
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-name-greedy",
+                          "Greedy name operation");
 
   /* Now that we have ruled out NAME_NEW, check that we have a previous
      name input that is being updated.  */
@@ -414,12 +430,14 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   assert (nameOpOut.isAnyUpdate ());
   if (nameOpOut.getNameOp () == OP_NAME_REGISTER) {
     if (nameIn != -1)
-      return state.Invalid (error ("%s: name registration with"
-                                   " name input", __func__));
+      return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                            REJECT_INVALID, "tx-nameregister-without-name-in",
+                            "NAME_REGISTER without name input");
   }
   else if (nameIn == -1)
-    return state.Invalid (error ("CheckNameTransaction: update without"
-                                 " previous name input"));
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-nameupdate-without-name-input",
+                          "Name update has no previous name input");
   const valtype& name = nameOpOut.getOpName ();
 
   if (!IsNameValid (name, state))
@@ -438,19 +456,22 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   if (nameOpOut.getNameOp () == OP_NAME_UPDATE)
     {
       if (!nameOpIn.isAnyUpdate ())
-        return state.Invalid (error ("CheckNameTransaction: NAME_UPDATE with"
-                                     " prev input that is no update"));
+        return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                              REJECT_INVALID, "tx-nameupdate-invalid-prev",
+                              "Name input for NAME_UPDATE is not an update");
 
       if (name != nameOpIn.getOpName ())
-        return state.Invalid (error ("%s: NAME_UPDATE name mismatch to prev tx"
-                                     " found in %s", __func__, txid));
+        return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                              REJECT_INVALID, "tx-nameupdate-name-mismatch",
+                              "NAME_UPDATE name mismatch to name input");
 
       /* This is actually redundant, since updates need an existing name coin
          to spend anyway.  But it does not hurt to enforce this here, too.  */
       CNameData oldName;
       if (!view.GetName (name, oldName))
-        return state.Invalid (error ("%s: NAME_UPDATE name does not exist",
-                                     __func__));
+        return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                              REJECT_INVALID, "tx-nameupdate-nonexistant",
+                              "NAME_UPDATE name does not exist");
 
       /* This is an internal consistency check.  If everything is fine,
          the input coins from the UTXO database should match the
@@ -465,8 +486,9 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   CNameData oldName;
   if (view.GetName (name, oldName))
-    return state.Invalid (error ("CheckNameTransaction: NAME_REGISTER"
-                                 " on an existing name"));
+    return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
+                          REJECT_INVALID, "tx-nameregister-existing-name",
+                          "NAME_REGISTER on existing name");
 
   /* We don't have to specifically check that miners don't create blocks with
      conflicting NAME_FIRSTUPDATE's, since the mining's CCoinsViewCache

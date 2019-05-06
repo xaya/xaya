@@ -153,5 +153,10 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     assert_equal (addr1, coinbaseAddr)
     assert_equal (addr2, coinbaseAddr)
 
+    # Ensure that different payout addresses will generate different auxblocks
+    work1 = self.nodes[0].creatework (self.nodes[0].getnewaddress ())
+    work2 = self.nodes[0].creatework (self.nodes[0].getnewaddress ())
+    assert work1['hash'] != work2['hash']
+
 if __name__ == '__main__':
   AuxpowGetworkTest ().main ()
