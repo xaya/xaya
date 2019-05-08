@@ -22,14 +22,14 @@ What does it do?
 What can Xaya be used for?
 --------------------------
 
-* Along with some of Namecoin's uses cases, it is designed especially with gaming in mind.
+* Along with some of Namecoin's uses cases, it is designed especially with gaming and complex decentralised applications in mind.
 * Allow creation of game accounts.
 * Create Virtual Game Currencies.
 * Asset Storage, Ownership and Management (particularly for in game items).
-* Identification Systems.
+* Identification and authentication systems.
 * DAPPs.
-* Payment Gateway (with upcoming third party plugins).
-* Decentralised Autonomous Universes.
+* Payment Gateway.
+* Decentralised Autonomous Worlds.
 * and much more.
 
 More Information
@@ -37,7 +37,7 @@ More Information
 
 XAYA Core includes the base elements required for Experienced users, Miners and Exchanges. xayad, xaya-qt, xaya-cli and the usual.
 
-You may check https://github.com/xaya/Specs for more XAYA specs and additional information.
+You may check https://github.com/xaya/xaya/tree/master/doc/xaya for more XAYA specs and additional information.
 
 Several tutorials and more information are here:
 https://github.com/xaya/xaya_tutorials/wiki
@@ -52,6 +52,6 @@ https://github.com/bitcoin/bitcoin/blob/master/doc/build-unix.md
 https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
 
 
-Standard Users should use the XAYA Electron Wallet which is a front end to xayad
+Standard users should use the XAYA Electron Wallet which is a front end to xayad here https://github.com/xaya/xaya_electron
 
 for issues with XAYA Core you can create an issue in Github or ask on the forum https://forum.xaya.io
