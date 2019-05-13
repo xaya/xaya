@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2019 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,7 +43,7 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
 bool
 CNameData::isExpired () const
 {
-  return isExpired (chainActive.Height ());
+  return isExpired (::ChainActive ().Height ());
 }
 
 bool
@@ -779,7 +779,7 @@ CheckNameDB (bool disconnect)
   assert (option >= 0);
   if (option != 0)
     {
-      if (disconnect || chainActive.Height () % option != 0)
+      if (disconnect || ::ChainActive ().Height () % option != 0)
         return;
     }
 
@@ -793,7 +793,7 @@ CheckNameDB (bool disconnect)
      names), but it remains in the name DB until it expires.  */
   if (!ok)
     {
-      const unsigned nHeight = chainActive.Height ();
+      const unsigned nHeight = ::ChainActive ().Height ();
       LogPrintf ("ERROR: %s : name database is inconsistent\n", __func__);
       if (nHeight >= 139000 && nHeight <= 180000)
         LogPrintf ("This is expected due to 'name stealing'.\n");

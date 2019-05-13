@@ -53,7 +53,8 @@ class NameMultiUpdateTest (NameTestFramework):
     # Submitting two updates at once in a block is fine as long as that does
     # not go through the mempool.
     blk = buildMultiUpdateBlock (self.node, name, ["fourth", "fifth"])
-    assert_equal (self.node.submitblock (blk.serialize ().hex ()), None)
+    blkHex = blk.serialize (with_witness=False).hex ()
+    assert_equal (self.node.submitblock (blkHex), None)
 
     # Verify that the second update took effect, as well as the entire
     # history of the name.

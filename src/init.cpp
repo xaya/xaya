@@ -34,7 +34,6 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
-#include <rpc/auxpow_miner.h>
 #include <rpc/server.h>
 #include <rpc/register.h>
 #include <rpc/blockchain.h>
@@ -460,7 +459,7 @@ void SetupServerArgs()
 #endif
     gArgs.AddArg("-whitebind=<addr>", "Bind to given address and whitelist peers connecting to it. Use [host]:port notation for IPv6", false, OptionsCategory::CONNECTION);
     gArgs.AddArg("-whitelist=<IP address or network>", "Whitelist peers connecting from the given IP address (e.g. 1.2.3.4) or CIDR notated network (e.g. 1.2.3.0/24). Can be specified multiple times."
-        " Whitelisted peers cannot be DoS banned and their transactions are always relayed, even if they are already in the mempool, useful e.g. for a gateway", false, OptionsCategory::CONNECTION);
+        " Whitelisted peers cannot be DoS banned", false, OptionsCategory::CONNECTION);
 
     g_wallet_init_interface.AddWalletOptions();
 
@@ -493,7 +492,7 @@ void SetupServerArgs()
         "and level 4 tries to reconnect the blocks, "
         "each level includes the checks of the previous levels "
         "(0-4, default: %u)", DEFAULT_CHECKLEVEL), true, OptionsCategory::DEBUG_TEST);
-    gArgs.AddArg("-checkblockindex", strprintf("Do a full consistency check for mapBlockIndex, setBlockIndexCandidates, chainActive and mapBlocksUnlinked occasionally. (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), true, OptionsCategory::DEBUG_TEST);
+    gArgs.AddArg("-checkblockindex", strprintf("Do a full consistency check for mapBlockIndex, setBlockIndexCandidates, ::ChainActive() and mapBlocksUnlinked occasionally. (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), true, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-checkmempool=<n>", strprintf("Run checks every <n> transactions (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), true, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-checkpoints", strprintf("Disable expensive verification for known chain history (default: %u)", DEFAULT_CHECKPOINTS_ENABLED), true, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-deprecatedrpc=<method>", "Allows deprecated RPC method(s) to be used", true, OptionsCategory::DEBUG_TEST);
@@ -531,7 +530,7 @@ void SetupServerArgs()
     gArgs.AddArg("-mempoolreplacement", strprintf("Enable transaction replacement in the memory pool (default: %u)", DEFAULT_ENABLE_REPLACEMENT), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-minrelaytxfee=<amt>", strprintf("Fees (in %s/kB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)",
         CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_RELAY_TX_FEE)), false, OptionsCategory::NODE_RELAY);
-    gArgs.AddArg("-whitelistforcerelay", strprintf("Force relay of transactions from whitelisted peers even if they violate local relay policy (default: %d)", DEFAULT_WHITELISTFORCERELAY), false, OptionsCategory::NODE_RELAY);
+    gArgs.AddArg("-whitelistforcerelay", strprintf("Force relay of transactions from whitelisted peers even if the transactions were already in the mempool or violate local relay policy (default: %d)", DEFAULT_WHITELISTFORCERELAY), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-whitelistrelay", strprintf("Accept relayed transactions received from whitelisted peers even when not relaying transactions (default: %d)", DEFAULT_WHITELISTRELAY), false, OptionsCategory::NODE_RELAY);
 
 
@@ -1584,12 +1583,12 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
-                    // LoadChainTip sets chainActive based on pcoinsTip's best block
+                    // LoadChainTip sets ::ChainActive() based on pcoinsTip's best block
                     if (!LoadChainTip(chainparams)) {
                         strLoadError = _("Error initializing block database");
                         break;
                     }
-                    assert(chainActive.Tip() != nullptr);
+                    assert(::ChainActive().Tip() != nullptr);
                 }
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());
@@ -1599,7 +1598,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
             if (!fReset) {
                 // Note that RewindBlockIndex MUST run even if we're about to -reindex-chainstate.
-                // It both disconnects blocks based on chainActive, and drops block data in
+                // It both disconnects blocks based on ::ChainActive(), and drops block data in
                 // mapBlockIndex based on lack of available witness data.
                 uiInterface.InitMessage(_("Rewinding blocks..."));
                 if (!RewindBlockIndex(chainparams)) {
@@ -1617,7 +1616,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                             MIN_BLOCKS_TO_KEEP);
                     }
 
-                    CBlockIndex* tip = chainActive.Tip();
+                    CBlockIndex* tip = ::ChainActive().Tip();
                     RPCNotifyBlockChange(true, tip);
                     if (tip && tip->nTime > GetAdjustedTime() + 2 * 60 * 60) {
                         strLoadError = _("The block database contains a block which appears to be from the future. "
@@ -1722,7 +1721,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     // Either install a handler to notify us when genesis activates, or set fHaveGenesis directly.
     // No locking, as this happens before any background thread is started.
     boost::signals2::connection block_notify_genesis_wait_connection;
-    if (chainActive.Tip() == nullptr) {
+    if (::ChainActive().Tip() == nullptr) {
         block_notify_genesis_wait_connection = uiInterface.NotifyBlockTip_connect(BlockNotifyGenesisWait);
     } else {
         fHaveGenesis = true;
@@ -1762,7 +1761,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     {
         LOCK(cs_main);
         LogPrintf("mapBlockIndex.size() = %u\n", mapBlockIndex.size());
-        chain_active_height = chainActive.Height();
+        chain_active_height = ::ChainActive().Height();
     }
     LogPrintf("nBestHeight = %d\n", chain_active_height);
 

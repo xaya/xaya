@@ -68,14 +68,14 @@ def build():
         subprocess.check_call(['bin/gbuild', '-j', args.jobs, '-m', args.memory, '--commit', 'namecoin='+args.commit, '--url', 'namecoin='+args.url, '../namecoin-core/contrib/gitian-descriptors/gitian-win.yml'])
         subprocess.check_call(['bin/gsign', '-p', args.sign_prog, '--signer', args.signer, '--release', args.version+'-win-unsigned', '--destination', '../gitian.sigs/', '../namecoin-core/contrib/gitian-descriptors/gitian-win.yml'])
         subprocess.check_call('mv build/out/namecoin-*-win-unsigned.tar.gz inputs/', shell=True)
-        subprocess.check_call('mv build/out/namecoin-*.zip build/out/namecoin-*.exe ../namecoin-binaries/'+args.version, shell=True)
+        subprocess.check_call('mv build/out/namecoin-*.zip build/out/namecoin-*.exe build/out/src/namecoin-*.tar.gz ../namecoin-binaries/'+args.version, shell=True)
 
     if args.macos:
         print('\nCompiling ' + args.version + ' MacOS')
         subprocess.check_call(['bin/gbuild', '-j', args.jobs, '-m', args.memory, '--commit', 'namecoin='+args.commit, '--url', 'namecoin='+args.url, '../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml'])
         subprocess.check_call(['bin/gsign', '-p', args.sign_prog, '--signer', args.signer, '--release', args.version+'-osx-unsigned', '--destination', '../gitian.sigs/', '../namecoin-core/contrib/gitian-descriptors/gitian-osx.yml'])
         subprocess.check_call('mv build/out/namecoin-*-osx-unsigned.tar.gz inputs/', shell=True)
-        subprocess.check_call('mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../namecoin-binaries/'+args.version, shell=True)
+        subprocess.check_call('mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg build/out/src/namecoin-*.tar.gz ../namecoin-binaries/'+args.version, shell=True)
 
     os.chdir(workdir)
 
@@ -95,15 +95,14 @@ def sign():
     if args.windows:
         print('\nSigning ' + args.version + ' Windows')
         subprocess.check_call('cp inputs/namecoin-' + args.version + '-win-unsigned.tar.gz inputs/namecoin-win-unsigned.tar.gz', shell=True)
-        subprocess.check_call(['bin/gbuild', '-i', '--commit', 'signature='+args.commit, '../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml'])
+        subprocess.check_call(['bin/gbuild', '--skip-image', '--upgrade', '--commit', 'signature='+args.commit, '../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml'])
         subprocess.check_call(['bin/gsign', '-p', args.sign_prog, '--signer', args.signer, '--release', args.version+'-win-signed', '--destination', '../gitian.sigs/', '../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml'])
         subprocess.check_call('mv build/out/namecoin-*win64-setup.exe ../namecoin-binaries/'+args.version, shell=True)
-        subprocess.check_call('mv build/out/namecoin-*win32-setup.exe ../namecoin-binaries/'+args.version, shell=True)
 
     if args.macos:
         print('\nSigning ' + args.version + ' MacOS')
         subprocess.check_call('cp inputs/namecoin-' + args.version + '-osx-unsigned.tar.gz inputs/namecoin-osx-unsigned.tar.gz', shell=True)
-        subprocess.check_call(['bin/gbuild', '-i', '--commit', 'signature='+args.commit, '../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml'])
+        subprocess.check_call(['bin/gbuild', '--skip-image', '--upgrade', '--commit', 'signature='+args.commit, '../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml'])
         subprocess.check_call(['bin/gsign', '-p', args.sign_prog, '--signer', args.signer, '--release', args.version+'-osx-signed', '--destination', '../gitian.sigs/', '../namecoin-core/contrib/gitian-descriptors/gitian-osx-signer.yml'])
         subprocess.check_call('mv build/out/namecoin-osx-signed.dmg ../namecoin-binaries/'+args.version+'/namecoin-'+args.version+'-osx.dmg', shell=True)
 
