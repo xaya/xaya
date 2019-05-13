@@ -2,6 +2,11 @@
 
 ## Version 0.18
 
+- BIP16, CSV and Segwit will be activated at block height 475,000 on mainnet
+  and 232,000 on testnet.
+  See [#239](https://github.com/namecoin/namecoin-core/issues/239) for
+  a discussion.
+
 - The `options` argument for `name_new`, `name_firstupdate` and `name_update`
   can now be used to specify per-RPC encodings for names and values by setting
   the `nameEncoding` and `valueEncoding` fields, respectively.
