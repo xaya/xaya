@@ -24,6 +24,7 @@
 #include <warnings.h>
 
 #include <stdint.h>
+#include <tuple>
 #ifdef HAVE_MALLOC_INFO
 #include <malloc.h>
 #endif
@@ -215,18 +216,7 @@ UniValue deriveaddresses(const JSONRPCRequest& request)
     int64_t range_end = 0;
 
     if (request.params.size() >= 2 && !request.params[1].isNull()) {
-        auto range = ParseRange(request.params[1]);
-        if (range.first < 0) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Range should be greater or equal than 0");
-        }
-        if ((range.second >> 31) != 0) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "End of range is too high");
-        }
-        if (range.second >= range.first + 1000000) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Range is too large");
-        }
-        range_begin = range.first;
-        range_end = range.second;
+        std::tie(range_begin, range_end) = ParseDescriptorRange(request.params[1]);
     }
 
     FlatSigningProvider key_provider;
@@ -307,8 +297,8 @@ static UniValue verifymessage(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
     }
 
-    const CKeyID *keyID = boost::get<CKeyID>(&destination);
-    if (!keyID) {
+    const PKHash *pkhash = boost::get<PKHash>(&destination);
+    if (!pkhash) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
     }
 
@@ -326,7 +316,7 @@ static UniValue verifymessage(const JSONRPCRequest& request)
     if (!pubkey.RecoverCompact(ss.GetHash(), vchSig))
         return false;
 
-    return (pubkey.GetID() == *keyID);
+    return (pubkey.GetID() == *pkhash);
 }
 
 static UniValue signmessagewithprivkey(const JSONRPCRequest& request)
