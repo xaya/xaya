@@ -1,5 +1,7 @@
 # Release Notes for Namecoin
 
+## Version 0.19
+
 ## Version 0.18
 
 - BIP16, CSV and Segwit will be activated at block height 475,000 on mainnet
