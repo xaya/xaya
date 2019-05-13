@@ -625,10 +625,10 @@ name_scan (const JSONRPCRequest& request)
   MaybeWalletForRequest wallet(request);
   LOCK2 (cs_main, wallet.getLock ());
 
-  const int maxHeight = chainActive.Height () - minConf + 1;
+  const int maxHeight = ::ChainActive ().Height () - minConf + 1;
   int minHeight = -1;
   if (maxConf >= 0)
-    minHeight = chainActive.Height () - maxConf + 1;
+    minHeight = ::ChainActive ().Height () - maxConf + 1;
 
   valtype name;
   CNameData data;

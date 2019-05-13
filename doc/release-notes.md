@@ -1,5 +1,19 @@
-(note: this is a temporary file, to be added-to by anybody, and moved to
-release-notes at release time)
+*After branching off for a major version release of Bitcoin Core, use this
+template to create the initial release notes draft.*
+
+*The release notes draft is a temporary file that can be added to by anyone. See
+[/doc/developer-notes.md#release-notes](/doc/developer-notes.md#release-notes)
+for the process.*
+
+*Create the draft, named* "*version* Release Notes Draft"
+*(e.g. "0.20.0 Release Notes Draft"), as a collaborative wiki in:*
+
+https://github.com/bitcoin-core/bitcoin-devwiki/wiki/
+
+*Before the final release, move the notes back to this git repository.*
+
+*version* Release Notes Draft
+===============================
 
 Bitcoin Core version *version* is now available from:
 
@@ -60,6 +74,15 @@ platform.
 
 Notable changes
 ===============
+
+New RPCs
+--------
+
+- `getbalances` returns an object with all balances (`mine`,
+  `untrusted_pending` and `immature`). Please refer to the RPC help of
+  `getbalances` for details. The new RPC is intended to replace
+  `getunconfirmedbalance` and the balance fields in `getwalletinfo`, as well as
+  `getbalance`. The old calls may be removed in a future version.
 
 Updated RPCs
 ------------

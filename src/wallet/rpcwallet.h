@@ -31,9 +31,9 @@ void RegisterWalletRPCCommands(interfaces::Chain& chain, std::vector<std::unique
  */
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
 
-std::string HelpRequiringPassphrase(CWallet *);
-void EnsureWalletIsUnlocked(CWallet *);
-bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
+std::string HelpRequiringPassphrase(const CWallet*);
+void EnsureWalletIsUnlocked(const CWallet*);
+bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
 CTransactionRef SendMoneyToScript(interfaces::Chain::Lock& locked_chain,
                                   CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,

@@ -538,7 +538,7 @@ CheckNameDB (bool disconnect)
   assert (option >= 0);
   if (option != 0)
     {
-      if (disconnect || chainActive.Height () % option != 0)
+      if (disconnect || ::ChainActive ().Height () % option != 0)
         return;
     }
 

@@ -110,7 +110,9 @@ CScript DestinationAddressHelper::getScript ()
   const bool ok = reserveKey->GetReservedKey (pubKeyReserve, true);
   assert (ok);
 
-  return GetScriptForDestination (pubKeyReserve.GetID ());
+  const auto dest = GetDestinationForKey (pubKeyReserve,
+                                          wallet.m_default_address_type);
+  return GetScriptForDestination (dest);
 }
 
 void DestinationAddressHelper::finalise ()
@@ -276,7 +278,7 @@ name_list (const JSONRPCRequest& request)
   auto locked_chain = pwallet->chain ().lock ();
   LOCK (pwallet->cs_wallet);
 
-  const int tipHeight = chainActive.Height ();
+  const int tipHeight = ::ChainActive ().Height ();
   for (const auto& item : pwallet->mapWallet)
     {
       const CWalletTx& tx = item.second;

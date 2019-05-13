@@ -54,11 +54,11 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
       pblockCur = iter->second;
 
     if (pblockCur == nullptr
-        || pindexPrev != chainActive.Tip ()
+        || pindexPrev != ::ChainActive ().Tip ()
         || (mempool.GetTransactionsUpdated () != txUpdatedLast
             && GetTime () - startTime > 60))
       {
-        if (pindexPrev != chainActive.Tip ())
+        if (pindexPrev != ::ChainActive ().Tip ())
           {
             /* Clear old blocks since they're obsolete now.  */
             blocks.clear ();
@@ -74,7 +74,7 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
 
         /* Update state only when CreateNewBlock succeeded.  */
         txUpdatedLast = mempool.GetTransactionsUpdated ();
-        pindexPrev = chainActive.Tip ();
+        pindexPrev = ::ChainActive ().Tip ();
         startTime = GetTime ();
 
         /* Finalise it by building the merkle root.  */
@@ -90,7 +90,7 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
 
   /* At this point, pblockCur is always initialised:  If we make it here
      without creating a new block above, it means that, in particular,
-     pindexPrev == chainActive.Tip().  But for that to happen, we must
+     pindexPrev == ::ChainActive ().Tip().  But for that to happen, we must
      already have created a pblockCur in a previous call, as pindexPrev is
      initialised only when pblockCur is.  */
   assert (pblockCur);

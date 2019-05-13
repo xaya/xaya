@@ -195,7 +195,8 @@ class GameBlocksTest (XayaZmqTest):
       json.dumps ({"g": {"a": 1, "b": 2}}),
       json.dumps ({"g": {"a": 3}}),
     ])
-    assert_equal (self.node.submitblock (blk.serialize ().hex ()), None)
+    blkHex = blk.serialize (with_witness=False).hex ()
+    assert_equal (self.node.submitblock (blkHex), None)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 2)
@@ -335,7 +336,8 @@ class GameBlocksTest (XayaZmqTest):
       json.dumps ({"cmd": "first"}),
       json.dumps ({"cmd": "second"}),
     ])
-    assert_equal (self.node.submitblock (blk.serialize ().hex ()), None)
+    blkHex = blk.serialize (with_witness=False).hex ()
+    assert_equal (self.node.submitblock (blkHex), None)
 
     _, data = self.games["a"].receive ()
     assert_equal (data["moves"], [])

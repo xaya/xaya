@@ -272,7 +272,7 @@ game_sendupdates (const JSONRPCRequest& request)
   else
     {
       LOCK (cs_main);
-      toBlock = chainActive.Tip ()->GetBlockHash ();
+      toBlock = ::ChainActive ().Tip ()->GetBlockHash ();
     }
 
   const CBlockIndex* fromIndex;
