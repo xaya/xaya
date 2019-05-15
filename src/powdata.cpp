@@ -146,10 +146,10 @@ PowData::isValid (const uint256& hash, const Consensus::Params& params) const
     {
       if (auxpow == nullptr)
         return error ("%s: merge-mined PoW data has no auxpow", __func__);
-      if (!auxpow->check (hash, params.nAuxpowChainId, params))
-        return error ("%s: auxpow is invalid", __func__);
       if (!checkProofOfWork (auxpow->parentBlock, params))
         return error ("%s: auxpow PoW is invalid", __func__);
+      if (!auxpow->check (hash, params.nAuxpowChainId, params))
+        return error ("%s: auxpow is invalid", __func__);
     }
   else
     {
