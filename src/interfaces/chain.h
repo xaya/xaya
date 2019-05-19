@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Bitcoin Core developers
+// Copyright (c) 2018-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -138,11 +138,6 @@ public:
     //! unlocked when the returned interface is freed.
     virtual std::unique_ptr<Lock> lock(bool try_lock = false) = 0;
 
-    //! Return Lock interface assuming chain is already locked. This
-    //! method is temporary and is only used in a few places to avoid changing
-    //! behavior while code is transitioned to use the Chain::Lock interface.
-    virtual std::unique_ptr<Lock> assumeLocked() = 0;
-
     //! Return whether node has the block and optionally return block metadata
     //! or contents.
     //!
@@ -196,8 +191,8 @@ public:
     //! Relay dust fee setting (-dustrelayfee), reflecting lowest rate it's economical to spend.
     virtual CFeeRate relayDustFee() = 0;
 
-    //! Check if pruning is enabled.
-    virtual bool getPruneMode() = 0;
+    //! Check if any block has been pruned.
+    virtual bool havePruned() = 0;
 
     //! Check if p2p enabled.
     virtual bool p2pEnabled() = 0;
