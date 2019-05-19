@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Bitcoin Core developers
+// Copyright (c) 2018-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -37,10 +37,11 @@
 namespace interfaces {
 namespace {
 
-class LockImpl : public Chain::Lock
+class LockImpl : public Chain::Lock, public UniqueLock<CCriticalSection>
 {
     Optional<int> getHeight() override
     {
+        LockAnnotation lock(::cs_main);
         int height = ::ChainActive().Height();
         if (height >= 0) {
             return height;
@@ -49,6 +50,7 @@ class LockImpl : public Chain::Lock
     }
     Optional<int> getBlockHeight(const uint256& hash) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = LookupBlockIndex(hash);
         if (block && ::ChainActive().Contains(block)) {
             return block->nHeight;
@@ -63,29 +65,34 @@ class LockImpl : public Chain::Lock
     }
     uint256 getBlockHash(int height) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = ::ChainActive()[height];
         assert(block != nullptr);
         return block->GetBlockHash();
     }
     int64_t getBlockTime(int height) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = ::ChainActive()[height];
         assert(block != nullptr);
         return block->GetBlockTime();
     }
     int64_t getBlockMedianTimePast(int height) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = ::ChainActive()[height];
         assert(block != nullptr);
         return block->GetMedianTimePast();
     }
     bool haveBlockOnDisk(int height) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = ::ChainActive()[height];
         return block && ((block->nStatus & BLOCK_HAVE_DATA) != 0) && block->nTx > 0;
     }
     Optional<int> findFirstBlockWithTimeAndHeight(int64_t time, int height, uint256* hash) override
     {
+        LockAnnotation lock(::cs_main);
         CBlockIndex* block = ::ChainActive().FindEarliestAtLeast(time, height);
         if (block) {
             if (hash) *hash = block->GetBlockHash();
@@ -95,6 +102,7 @@ class LockImpl : public Chain::Lock
     }
     Optional<int> findPruned(int start_height, Optional<int> stop_height) override
     {
+        LockAnnotation lock(::cs_main);
         if (::fPruneMode) {
             CBlockIndex* block = stop_height ? ::ChainActive()[*stop_height] : ::ChainActive().Tip();
             while (block && block->nHeight >= start_height) {
@@ -108,6 +116,7 @@ class LockImpl : public Chain::Lock
     }
     Optional<int> findFork(const uint256& hash, Optional<int>* height) override
     {
+        LockAnnotation lock(::cs_main);
         const CBlockIndex* block = LookupBlockIndex(hash);
         const CBlockIndex* fork = block ? ::ChainActive().FindFork(block) : nullptr;
         if (height) {
@@ -122,7 +131,11 @@ class LockImpl : public Chain::Lock
         }
         return nullopt;
     }
-    CBlockLocator getTipLocator() override { return ::ChainActive().GetLocator(); }
+    CBlockLocator getTipLocator() override
+    {
+        LockAnnotation lock(::cs_main);
+        return ::ChainActive().GetLocator();
+    }
     Optional<int> findLocatorFork(const CBlockLocator& locator) override
     {
         LockAnnotation lock(::cs_main);
@@ -142,10 +155,7 @@ class LockImpl : public Chain::Lock
         return AcceptToMemoryPool(::mempool, state, tx, nullptr /* missing inputs */, nullptr /* txn replaced */,
             false /* bypass limits */, absurd_fee);
     }
-};
 
-class LockingStateImpl : public LockImpl, public UniqueLock<CCriticalSection>
-{
     using UniqueLock::UniqueLock;
 };
 
@@ -238,13 +248,12 @@ class ChainImpl : public Chain
 public:
     std::unique_ptr<Chain::Lock> lock(bool try_lock) override
     {
-        auto result = MakeUnique<LockingStateImpl>(::cs_main, "cs_main", __FILE__, __LINE__, try_lock);
+        auto result = MakeUnique<LockImpl>(::cs_main, "cs_main", __FILE__, __LINE__, try_lock);
         if (try_lock && result && !*result) return {};
         // std::move necessary on some compilers due to conversion from
-        // LockingStateImpl to Lock pointer
+        // LockImpl to Lock pointer
         return std::move(result);
     }
-    std::unique_ptr<Chain::Lock> assumeLocked() override { return MakeUnique<LockImpl>(); }
     bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max) override
     {
         CBlockIndex* index;
@@ -321,7 +330,11 @@ public:
     CFeeRate relayMinFee() override { return ::minRelayTxFee; }
     CFeeRate relayIncrementalFee() override { return ::incrementalRelayFee; }
     CFeeRate relayDustFee() override { return ::dustRelayFee; }
-    bool getPruneMode() override { return ::fPruneMode; }
+    bool havePruned() override
+    {
+        LOCK(cs_main);
+        return ::fHavePruned;
+    }
     bool p2pEnabled() override { return g_connman != nullptr; }
     bool isReadyToBroadcast() override { return !::fImporting && !::fReindex && !IsInitialBlockDownload(); }
     bool isInitialBlockDownload() override { return IsInitialBlockDownload(); }
