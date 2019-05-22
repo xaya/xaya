@@ -171,6 +171,12 @@ bool CKey::SetPrivKey(const CPrivKey &privkey, bool fCompressedIn) {
     return true;
 }
 
+bool CKey::Negate()
+{
+    assert(fValid);
+    return secp256k1_ec_privkey_negate(secp256k1_context_sign, keydata.data());
+}
+
 CPrivKey CKey::GetPrivKey() const {
     assert(fValid);
     CPrivKey privkey;

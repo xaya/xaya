@@ -86,6 +86,7 @@ std::shared_ptr<CBlock> PrepareBlock(const CScript& coinbase_scriptPubKey)
             .CreateNewBlock(PowAlgo::NEOSCRYPT, coinbase_scriptPubKey)
             ->block);
 
+    LOCK(cs_main);
     block->nTime = ::ChainActive().Tip()->GetMedianTimePast() + 1;
     block->hashMerkleRoot = BlockMerkleRoot(*block);
 
