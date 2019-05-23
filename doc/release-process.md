@@ -75,14 +75,14 @@ For the period during which the notes are being edited on the wiki, the version 
 
 Write the release notes. `git shortlog` helps a lot, for example:
 
-    git shortlog --no-merges v(current version, e.g. 0.19.2)..v(new version, e.g. 0.20.0)
+    git shortlog --no-merges nc(current version, e.g. 0.19.2)..nc(new version, e.g. 0.20.0)
 
 (or ping @wumpus on IRC, he has specific tooling to generate the list of merged pulls
 and sort them into categories based on labels).
 
 Generate list of authors:
 
-    git log --format='- %aN' v(current version, e.g. 0.20.0)..v(new version, e.g. 0.20.1) | sort -fiu
+    git log --format='- %aN' nc(current version, e.g. 0.20.0)..nc(new version, e.g. 0.20.1) | sort -fiu
 
 Tag the version (or release candidate) in git:
 
@@ -225,7 +225,7 @@ Codesigner only: Commit the detached codesign payloads:
     tar xf signature-win.tar.gz
     git add -a
     git commit -m "point to ${VERSION}"
-    git tag -s v${VERSION} HEAD
+    git tag -s nc${VERSION} HEAD
     git push the current branch and new tag
 
 Non-codesigners: wait for Windows/macOS detached signatures:
@@ -245,7 +245,7 @@ Non-codesigners: wait for Windows/macOS detached signatures:
 ( **Not in Namecoin yet.** ) Create (and optionally verify) the signed Windows binaries:
 
     pushd ./gitian-builder
-    ./bin/gbuild -i --commit signature=v${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
+    ./bin/gbuild -i --commit signature=nc${VERSION} ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
     ./bin/gsign --signer "$SIGNER" --release ${VERSION}-win-signed --destination ../gitian.sigs/ ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
     ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-win-signed ../namecoin-core/contrib/gitian-descriptors/gitian-win-signer.yml
     mv build/out/namecoin-*win64-setup.exe ../namecoin-${VERSION}-win64-setup.exe
