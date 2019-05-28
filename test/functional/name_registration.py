@@ -11,9 +11,14 @@ from test_framework.util import *
 class NameRegistrationTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([[]] * 2)
+    self.setup_clean_chain = True
+    self.setup_name_test ([[], ["-namehistory"]])
 
   def run_test (self):
+    self.generate (0, 50)
+    self.generate (1, 50)
+    self.generate (0, 100)
+
     # Perform name_new's.  Check for too long names exception.
     newA = self.nodes[0].name_new ("node-0")
     newAconfl = self.nodes[1].name_new ("node-0")

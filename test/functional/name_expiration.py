@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,7 +12,8 @@ from test_framework.util import *
 class NameExpirationTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([["-debug=names"]] * 4)
+    self.setup_clean_chain = True
+    self.setup_name_test ([[], ["-namehistory"], ["-namehistory"], []])
 
   def checkUTXO (self, ind, name, shouldBeThere):
     """
@@ -30,6 +31,10 @@ class NameExpirationTest (NameTestFramework):
       assert txo is None
 
   def run_test (self):
+    self.generate (0, 50)
+    self.generate (3, 50)
+    self.generate (0, 100)
+
     # Start the registration of two names which will be used.  name-long
     # will expire and be reregistered on the short chain, which will be
     # undone with the reorg.  name-short will be updated before expiration

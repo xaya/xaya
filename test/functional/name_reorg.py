@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2017 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,9 +12,16 @@ from test_framework.util import *
 class NameRegistrationTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ()
+    self.setup_clean_chain = True
+    self.setup_name_test ([["-namehistory"]] * 4)
 
   def run_test (self):
+    self.generate (0, 25)
+    self.generate (1, 25)
+    self.generate (2, 25)
+    self.generate (3, 25)
+    self.generate (0, 100)
+
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
     newA = self.nodes[3].name_new ("a")

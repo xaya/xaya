@@ -40,11 +40,13 @@ class NameEncodingsTest (NameTestFramework):
   def set_test_params (self):
     # We need -namehistory for the test, so use node 1.  Thus we have to
     # have two nodes here.
-    self.setup_name_test ([[]] * 2)
+    self.setup_clean_chain = True
+    self.setup_name_test ([["-namehistory"]])
 
   def setEncodings (self, nameEnc='ascii', valueEnc='ascii'):
     args = ["-nameencoding=%s" % nameEnc, "-valueencoding=%s" % valueEnc]
-    self.restart_node (1, extra_args=args)
+    args.append ("-namehistory")
+    self.restart_node (0, extra_args=args)
 
     self.nameEncoding = nameEnc
     self.valueEncoding = valueEnc
@@ -84,7 +86,7 @@ class NameEncodingsTest (NameTestFramework):
     nameOpData = self.node.namerawtransaction (rawTx, 0, nameOp)
 
     rawTx = self.node.fundrawtransaction (nameOpData['hex'])['hex']
-    vout = self.rawtxOutputIndex (1, rawTx, addr)
+    vout = self.rawtxOutputIndex (0, rawTx, addr)
     assert vout is not None
 
     signed = self.node.signrawtransactionwithwallet (rawTx)
@@ -133,7 +135,7 @@ class NameEncodingsTest (NameTestFramework):
     name = self.uniqueName (baseName, encoding)
     new = self.node.name_new (name)
     self.node.generate (1)
-    txid = self.firstupdateName (1, name, new, self.value)
+    txid = self.firstupdateName (0, name, new, self.value)
     self.node.generate (11)
     self.verifyAndMinePendingUpdate (name, self.value, txid)
 
@@ -178,7 +180,7 @@ class NameEncodingsTest (NameTestFramework):
     name = self.uniqueName (self.name, encoding)
     new = self.node.name_new (name)
     self.node.generate (1)
-    txid = self.firstupdateName (1, name, new, value)
+    txid = self.firstupdateName (0, name, new, value)
     self.node.generate (11)
     self.verifyAndMinePendingUpdate (name, value, txid)
 
@@ -293,7 +295,8 @@ class NameEncodingsTest (NameTestFramework):
                              self.nameRawTx, None, nameUpd)
 
   def run_test (self):
-    self.node = self.nodes[1]
+    self.node = self.nodes[0]
+    self.node.generate (110)
 
     # Note:  The tests here are mainly important to verify that strings
     # are encoded/decoded at all.  The different possibilities for valid
@@ -351,9 +354,9 @@ class NameEncodingsTest (NameTestFramework):
     newAscii = self.node.name_new (strToHex (nameAscii))
     newHex = self.node.name_new (nameHex)
     self.node.generate (10)
-    txidAscii = self.firstupdateName (1, strToHex (nameAscii), newAscii,
+    txidAscii = self.firstupdateName (0, strToHex (nameAscii), newAscii,
                                       valueHex)
-    txidHex = self.firstupdateName (1, nameHex, newHex, strToHex (valueAscii))
+    txidHex = self.firstupdateName (0, nameHex, newHex, strToHex (valueAscii))
     self.node.generate (5)
 
     # Test name_show with ASCII encoding.
@@ -422,7 +425,7 @@ class NameEncodingsTest (NameTestFramework):
 
     new = self.node.name_new (name)
     self.node.generate (12)
-    txid = self.firstupdateName (1, name, new, self.value)
+    txid = self.firstupdateName (0, name, new, self.value)
     self.node.generate (1)
 
     data = self.node.gettransaction (txid)
@@ -574,13 +577,13 @@ class NameEncodingsTest (NameTestFramework):
     # firstupdate the names and verify expected behaviour.
     assert_raises_rpc_error (-1000, "Name/value is invalid",
                              self.firstupdateName,
-                             1, nameAscii, newAscii, valueUtf8)
-    self.firstupdateName (1, nameAscii, newAscii, valueUtf8,
+                             0, nameAscii, newAscii, valueUtf8)
+    self.firstupdateName (0, nameAscii, newAscii, valueUtf8,
                           {"valueEncoding": "utf8"})
     assert_raises_rpc_error (-1000, "Name/value is invalid",
                              self.firstupdateName,
-                             1, nameUtf8, newUtf8, valueAscii)
-    self.firstupdateName (1, nameUtf8, newUtf8, valueAscii,
+                             0, nameUtf8, newUtf8, valueAscii)
+    self.firstupdateName (0, nameUtf8, newUtf8, valueAscii,
                           {"nameEncoding": "utf8"})
     self.node.generate (1)
 

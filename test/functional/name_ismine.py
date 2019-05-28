@@ -11,8 +11,7 @@ from test_framework.util import *
 class NameIsMineTest (NameTestFramework):
 
   def set_test_params (self):
-    # We only use node 1 for the test, but need that (and not node 0) because
-    # it has -namehistory set in the cached chain.
+    self.setup_clean_chain = True
     self.setup_name_test ([[], ['-namehistory']])
 
   def verifyExpectedIsMineInList (self, arr):
@@ -34,6 +33,7 @@ class NameIsMineTest (NameTestFramework):
 
   def run_test (self):
     self.node = self.nodes[1]
+    self.node.generate (110)
 
     # Register two names.  One of them is then sent to an address not owned
     # by the node and one is updated into a pending operation.  That then
