@@ -25,7 +25,8 @@ def setup():
     if not os.path.isdir('gitian.sigs'):
         subprocess.check_call(['git', 'clone', 'https://github.com/namecoin/gitian.sigs.git'])
     if not os.path.isdir('namecoin-detached-sigs'):
-        subprocess.check_call(['git', 'clone', 'https://github.com/namecoin/namecoin-detached-sigs.git'])
+        #subprocess.check_call(['git', 'clone', 'https://github.com/namecoin/namecoin-detached-sigs.git'])
+        print("Cannot clone namecoin-detached-sigs because Namecoin doesn't support detached sigs yet.  Will clone other repos.")
     if not os.path.isdir('gitian-builder'):
         subprocess.check_call(['git', 'clone', 'https://github.com/devrandom/gitian-builder.git'])
     if not os.path.isdir('namecoin-core'):
