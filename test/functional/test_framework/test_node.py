@@ -23,8 +23,8 @@ import sys
 
 from .authproxy import JSONRPCException
 from .util import (
+    MAX_NODES,
     append_config,
-    base_node_args,
     delete_cookie_file,
     get_rpc_proxy,
     rpc_url,
@@ -111,10 +111,8 @@ class TestNode():
 
         self.p2ps = []
 
-    def get_deterministic_priv_key(self):
-        """Return a deterministic priv key in base58, that only depends on the node's index"""
-        AddressKeyPair = collections.namedtuple('AddressKeyPair', ['address', 'key'])
-        PRIV_KEYS = [
+    AddressKeyPair = collections.namedtuple('AddressKeyPair', ['address', 'key'])
+    PRIV_KEYS = [
             # address , privkey
             AddressKeyPair('cUgsrYN7MpuTw67c9nFYQzaNCycmdGDU6Q', 'bAbZzZp9JS8TMfcdtz9eNaFPY47aaTF63jrNKoEtV3KfAKqHoGVr'),
             AddressKeyPair('cckE5ugJdZiZ95C6TjfKBWbcPEdiJUSfL8', 'b9kCNX5sym6vdoTFinrU9CLDD1UVRgLNT6Y9esHdhVmzw4ai9eA5'),
@@ -125,8 +123,15 @@ class TestNode():
             AddressKeyPair('cjE2kTaKYWPn7JnFMLjLAG7ZYpkFARoRqK', 'b5994t4qajxwsVFhRv5mH29oTrT5yy4fchpopFSMUX7qcawCBUno'),
             AddressKeyPair('cf14p5WGGoaEfujmmXX2u364KfWBwoofkk', 'b7K6GsHQ3RZfviFaqvpH677VDxew2KPNiAcKqAe1phSyNoghTSPP'),
             AddressKeyPair('cZiEvmb52be3kiPWYbSPQobqRnN3ELixVr', 'b7arjeefUSbjHPMSbuz4UucPB8qZxmpLi47CN89qAji5FTB8JNw3'),
-        ]
-        return PRIV_KEYS[self.index]
+            AddressKeyPair('caHnXsmzR8Emj4ZjAyVFcDxLPzVUg4yZUv', 'b2rQV8QuiRehQWZFLpwe43xSarfVi7xuCcWMJpmbvLPGxdG6aHRc'),
+            AddressKeyPair('cZUHdistnBCVsNqrwAEJP79gH12CE62J8d', 'b7uAAfRvNNHzbGCtxwUXgx9qqkHRtM1oZ5VJdkUMJfTiDb1wy2vv'),
+            AddressKeyPair('cjemUuhjL83vKMmWeDyhW5h8nG3LWJyauJ', 'b4VkMmtDnMDCBctSY4qch8pR3LyDCWwy2LUQMkcei5BN6xu17AjR'),
+    ]
+
+    def get_deterministic_priv_key(self):
+        """Return a deterministic priv key in base58, that only depends on the node's index"""
+        assert len(self.PRIV_KEYS) == MAX_NODES
+        return self.PRIV_KEYS[self.index]
 
     def get_mem_rss_kilobytes(self):
         """Get the memory usage (RSS) per `ps`.
@@ -175,7 +180,6 @@ class TestNode():
 
     def start(self, extra_args=None, *, cwd=None, stdout=None, stderr=None, **kwargs):
         """Start the node."""
-        base_args = base_node_args(self.index)
         if extra_args is None:
             extra_args = self.extra_args
 
@@ -210,7 +214,7 @@ class TestNode():
         # add environment variable LIBC_FATAL_STDERR_=1 so that libc errors are written to stderr and not the terminal
         subp_env = dict(os.environ, LIBC_FATAL_STDERR_="1")
 
-        self.process = subprocess.Popen(self.args + extra_args + base_args, env=subp_env, stdout=stdout, stderr=stderr, cwd=cwd, **kwargs)
+        self.process = subprocess.Popen(self.args + extra_args, env=subp_env, stdout=stdout, stderr=stderr, cwd=cwd, **kwargs)
 
         self.running = True
         self.log.debug("xayad started, waiting for RPC to come up")

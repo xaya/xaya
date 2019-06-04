@@ -40,11 +40,13 @@ class NameEncodingsTest (NameTestFramework):
   def set_test_params (self):
     # We need -namehistory for the test, so use node 1.  Thus we have to
     # have two nodes here.
-    self.setup_name_test ([[]] * 2)
+    self.setup_clean_chain = True
+    self.setup_name_test ([["-namehistory"]])
 
   def setEncodings (self, nameEnc='ascii', valueEnc='ascii'):
     args = ["-nameencoding=%s" % nameEnc, "-valueencoding=%s" % valueEnc]
-    self.restart_node (1, extra_args=args)
+    args.append ("-namehistory")
+    self.restart_node (0, extra_args=args)
 
     self.nameEncoding = nameEnc
     self.valueEncoding = valueEnc
@@ -84,7 +86,7 @@ class NameEncodingsTest (NameTestFramework):
     nameOpData = self.node.namerawtransaction (rawTx, 0, nameOp)
 
     rawTx = self.node.fundrawtransaction (nameOpData['hex'])['hex']
-    vout = self.rawtxOutputIndex (1, rawTx, addr)
+    vout = self.rawtxOutputIndex (0, rawTx, addr)
     assert vout is not None
 
     signed = self.node.signrawtransactionwithwallet (rawTx)
@@ -261,7 +263,8 @@ class NameEncodingsTest (NameTestFramework):
                              self.nameRawTx, None, nameUpd)
 
   def run_test (self):
-    self.node = self.nodes[1]
+    self.node = self.nodes[0]
+    self.node.generate (110)
 
     # Note:  The tests here are mainly important to verify that strings
     # are encoded/decoded at all.  The different possibilities for valid
