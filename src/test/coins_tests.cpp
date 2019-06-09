@@ -4,7 +4,6 @@
 
 #include <attributes.h>
 #include <coins.h>
-#include <consensus/validation.h>
 #include <script/standard.h>
 #include <test/setup_common.h>
 #include <uint256.h>

@@ -9,8 +9,6 @@
 #include <pubkey.h>
 #include <script/names.h>
 #include <script/script.h>
-#include <util/system.h>
-#include <util/strencodings.h>
 
 
 bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;

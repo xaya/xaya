@@ -4,18 +4,15 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <amount.h>
-#include <chain.h>
 #include <consensus/validation.h>
 #include <core_io.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <key_io.h>
-#include <net.h>
 #include <node/transaction.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
-#include <policy/policy.h>
 #include <policy/rbf.h>
 #include <rpc/auxpow_miner.h>
 #include <rpc/rawtransaction_util.h>
@@ -24,15 +21,12 @@
 #include <script/descriptor.h>
 #include <script/names.h>
 #include <script/sign.h>
-#include <shutdown.h>
-#include <timedata.h>
 #include <util/bip32.h>
 #include <util/fees.h>
 #include <util/moneystr.h>
 #include <util/system.h>
 #include <util/url.h>
 #include <util/validation.h>
-#include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
 #include <wallet/psbtwallet.h>
@@ -2153,6 +2147,10 @@ static UniValue encryptwallet(const JSONRPCRequest& request)
 
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
+
+    if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
+        throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Error: wallet does not contain private keys, nothing to encrypt.");
+    }
 
     if (pwallet->IsCrypted()) {
         throw JSONRPCError(RPC_WALLET_WRONG_ENC_STATE, "Error: running with an encrypted wallet, but encryptwallet was called.");

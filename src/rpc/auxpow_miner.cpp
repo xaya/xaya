@@ -32,7 +32,8 @@ void auxMiningCheck()
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
                         "Xaya is not connected!");
 
-  if (IsInitialBlockDownload () && !Params ().MineBlocksOnDemand ())
+  if (::ChainstateActive ().IsInitialBlockDownload ()
+        && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                         "Xaya is downloading blocks...");
 }

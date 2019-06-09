@@ -273,6 +273,7 @@ The list of files should be:
 namecoin-${VERSION}-aarch64-linux-gnu.tar.gz
 namecoin-${VERSION}-arm-linux-gnueabihf.tar.gz
 namecoin-${VERSION}-i686-pc-linux-gnu.tar.gz
+namecoin-${VERSION}-riscv64-linux-gnu.tar.gz
 namecoin-${VERSION}-x86_64-linux-gnu.tar.gz
 namecoin-${VERSION}-osx64.tar.gz
 namecoin-${VERSION}-osx.dmg

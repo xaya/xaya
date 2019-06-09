@@ -415,7 +415,7 @@ name_show (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
-  if (IsInitialBlockDownload ())
+  if (::ChainstateActive ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
@@ -479,7 +479,7 @@ name_history (const JSONRPCRequest& request)
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
 
-  if (IsInitialBlockDownload ())
+  if (::ChainstateActive ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
@@ -564,7 +564,7 @@ name_scan (const JSONRPCRequest& request)
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
-  if (IsInitialBlockDownload ())
+  if (::ChainstateActive ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 

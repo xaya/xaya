@@ -6,15 +6,12 @@
 
 #include <chainparams.h>
 #include <consensus/merkle.h>
-#include <consensus/validation.h>
 #include <key_io.h>
 #include <miner.h>
 #include <outputtype.h>
 #include <pow.h>
 #include <powdata.h>
-#include <scheduler.h>
 #include <script/standard.h>
-#include <txdb.h>
 #include <validation.h>
 #include <validationinterface.h>
 #ifdef ENABLE_WALLET

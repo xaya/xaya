@@ -5,8 +5,6 @@
 
 #include <txdb.h>
 
-#include <chainparams.h>
-#include <hash.h>
 #include <names/encoding.h>
 #include <random.h>
 #include <pow.h>
