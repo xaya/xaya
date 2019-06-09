@@ -14,8 +14,6 @@
 #include <policy/settings.h>
 #include <reverse_iterator.h>
 #include <script/interpreter.h>
-#include <streams.h>
-#include <timedata.h>
 #include <util/system.h>
 #include <util/moneystr.h>
 #include <util/time.h>

@@ -748,7 +748,7 @@ sendtoname (const JSONRPCRequest& request)
                  UniValue::VSTR, UniValue::VBOOL, UniValue::VBOOL,
                  UniValue::VNUM, UniValue::VSTR});
 
-  if (IsInitialBlockDownload ())
+  if (::ChainstateActive ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 

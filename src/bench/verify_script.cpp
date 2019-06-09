@@ -8,7 +8,6 @@
 #include <script/namecoinconsensus.h>
 #endif
 #include <script/script.h>
-#include <script/sign.h>
 #include <script/standard.h>
 #include <streams.h>
 

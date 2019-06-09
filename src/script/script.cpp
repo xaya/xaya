@@ -6,7 +6,6 @@
 #include <script/script.h>
 
 #include <script/names.h>
-#include <tinyformat.h>
 #include <util/strencodings.h>
 
 const char* GetOpName(opcodetype opcode)
