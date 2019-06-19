@@ -2,13 +2,8 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.18    | :white_check_mark: |
-| 0.17    | :white_check_mark: |
-| 0.16    | :white_check_mark: |
-| 0.15    | :white_check_mark: |
-| < 0.15  | :x:                |
+See our website for versions of Bitcoin Core that are currently supported with
+security updates: https://bitcoincore.org/en/lifecycle/#schedule
 
 ## Reporting a Vulnerability
 
