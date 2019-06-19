@@ -328,6 +328,9 @@ bitcoin.org (see below for bitcoin.org update instructions).
 
   - bitcoincore.org blog post
 
+  - bitcoincore.org maintained versions update:
+    [table](https://github.com/bitcoin-core/bitcoincore.org/commits/master/_includes/posts/maintenance-table.md)
+
   - bitcoincore.org RPC documentation update
 
   - Update packaging repo
