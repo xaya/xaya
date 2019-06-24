@@ -109,14 +109,13 @@ static fs::path GetPidFile()
 
 NODISCARD static bool CreatePidFile()
 {
-    FILE* file = fsbridge::fopen(GetPidFile(), "w");
+    fsbridge::ofstream file{GetPidFile()};
     if (file) {
 #ifdef WIN32
-        fprintf(file, "%d\n", GetCurrentProcessId());
+        tfm::format(file, "%d\n", GetCurrentProcessId());
 #else
-        fprintf(file, "%d\n", getpid());
+        tfm::format(file, "%d\n", getpid());
 #endif
-        fclose(file);
         return true;
     } else {
         return InitError(strprintf(_("Unable to create the PID file '%s': %s"), GetPidFile().string(), std::strerror(errno)));
@@ -526,7 +525,6 @@ void SetupServerArgs()
     gArgs.AddArg("-bytespersigop", strprintf("Equivalent bytes per sigop in transactions for relay and mining (default: %u)", DEFAULT_BYTES_PER_SIGOP), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-datacarrier", strprintf("Relay and mine data carrier transactions (default: %u)", DEFAULT_ACCEPT_DATACARRIER), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-datacarriersize", strprintf("Maximum size of data in data carrier transactions we relay and mine (default: %u)", MAX_OP_RETURN_RELAY), false, OptionsCategory::NODE_RELAY);
-    gArgs.AddArg("-mempoolreplacement", strprintf("Enable transaction replacement in the memory pool (default: %u)", DEFAULT_ENABLE_REPLACEMENT), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-minrelaytxfee=<amt>", strprintf("Fees (in %s/kB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)",
         CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_RELAY_TX_FEE)), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-whitelistforcerelay", strprintf("Force relay of transactions from whitelisted peers even if the transactions were already in the mempool or violate local relay policy (default: %d)", DEFAULT_WHITELISTFORCERELAY), false, OptionsCategory::NODE_RELAY);
@@ -859,12 +857,6 @@ void InitLogging()
 {
     LogInstance().m_print_to_file = !gArgs.IsArgNegated("-debuglogfile");
     LogInstance().m_file_path = AbsPathForConfigVal(gArgs.GetArg("-debuglogfile", DEFAULT_DEBUGLOGFILE));
-
-    // Add newlines to the logfile to distinguish this execution from the last
-    // one; called before console logging is set up, so this is only sent to
-    // debug.log.
-    LogPrintf("\n\n\n\n\n");
-
     LogInstance().m_print_to_console = gArgs.GetBoolArg("-printtoconsole", !gArgs.GetBoolArg("-daemon", false));
     LogInstance().m_log_timestamps = gArgs.GetBoolArg("-logtimestamps", DEFAULT_LOGTIMESTAMPS);
     LogInstance().m_log_time_micros = gArgs.GetBoolArg("-logtimemicros", DEFAULT_LOGTIMEMICROS);
@@ -1181,15 +1173,6 @@ bool AppInitParameterInteraction()
 
     nMaxTipAge = gArgs.GetArg("-maxtipage", DEFAULT_MAX_TIP_AGE);
 
-    fEnableReplacement = gArgs.GetBoolArg("-mempoolreplacement", DEFAULT_ENABLE_REPLACEMENT);
-    if ((!fEnableReplacement) && gArgs.IsArgSet("-mempoolreplacement")) {
-        // Minimal effort at forwards compatibility
-        std::string strReplacementModeList = gArgs.GetArg("-mempoolreplacement", "");  // default is impossible
-        std::vector<std::string> vstrReplacementModes;
-        boost::split(vstrReplacementModes, strReplacementModeList, boost::is_any_of(","));
-        fEnableReplacement = (std::find(vstrReplacementModes.begin(), vstrReplacementModes.end(), "fee") != vstrReplacementModes.end());
-    }
-
     return true;
 }
 
@@ -1253,10 +1236,10 @@ bool AppInitMain(InitInterfaces& interfaces)
             // and because this needs to happen before any other debug.log printing
             LogInstance().ShrinkDebugFile();
         }
-        if (!LogInstance().OpenDebugLog()) {
+    }
+    if (!LogInstance().StartLogging()) {
             return InitError(strprintf("Could not open debug log file %s",
                 LogInstance().m_file_path.string()));
-        }
     }
 
     if (!LogInstance().m_log_timestamps)
