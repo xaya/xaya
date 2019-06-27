@@ -152,6 +152,7 @@ BITCOIN_CORE_H = \
   names/common.h \
   names/encoding.h \
   names/main.h \
+  names/mempool.h \
   net.h \
   net_processing.h \
   netaddress.h \
@@ -268,6 +269,7 @@ libbitcoin_server_a_SOURCES = \
   merkleblock.cpp \
   miner.cpp \
   names/main.cpp \
+  names/mempool.cpp \
   net.cpp \
   net_processing.cpp \
   node/transaction.cpp \

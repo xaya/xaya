@@ -17,7 +17,7 @@
 #include <coins.h>
 #include <crypto/siphash.h>
 #include <indirectmap.h>
-#include <names/main.h>
+#include <names/mempool.h>
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
 #include <sync.h>
