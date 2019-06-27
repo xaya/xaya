@@ -18,6 +18,9 @@
 #include <util/strencodings.h>
 #include <validation.h>
 
+namespace
+{
+
 /**
  * Check whether a name at nPrevHeight is expired at nHeight.  Also
  * heights of MEMPOOL_HEIGHT are supported.  For nHeight == MEMPOOL_HEIGHT,
@@ -26,7 +29,7 @@
  * @param nHeight The height at which it should be updated.
  * @return True iff the name is expired.
  */
-static bool
+bool
 isExpired (unsigned nPrevHeight, unsigned nHeight)
 {
   assert (nHeight != MEMPOOL_HEIGHT);
@@ -36,6 +39,8 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
   const Consensus::Params& params = Params ().GetConsensus ();
   return nPrevHeight + params.rules->NameExpirationDepth (nHeight) <= nHeight;
 }
+
+} // anonymous namespace
 
 /* ************************************************************************** */
 /* CNameData.  */
