@@ -8,6 +8,7 @@
 #include <key_io.h>
 #include <names/encoding.h>
 #include <names/main.h>
+#include <names/mempool.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <primitives/transaction.h>

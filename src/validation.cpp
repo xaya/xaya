@@ -19,6 +19,8 @@
 #include <flatfile.h>
 #include <hash.h>
 #include <index/txindex.h>
+#include <names/main.h>
+#include <names/mempool.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
