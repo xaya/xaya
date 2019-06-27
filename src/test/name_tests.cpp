@@ -14,7 +14,6 @@
 #include <script/names.h>
 #include <test/setup_common.h>
 #include <txdb.h>
-#include <txmempool.h>
 #include <undo.h>
 #include <util/system.h>
 #include <validation.h>
@@ -769,126 +768,6 @@ BOOST_AUTO_TEST_CASE (name_updates_undo)
   BOOST_CHECK (!view.GetNameHistory (name, history) || history.empty ());
   undo.vnameundo.pop_back ();
   BOOST_CHECK (undo.vnameundo.empty ());
-}
-
-/* ************************************************************************** */
-
-BOOST_AUTO_TEST_CASE (name_mempool)
-{
-  LOCK(mempool.cs);
-  mempool.clear ();
-
-  const valtype nameReg = DecodeName ("x/name-reg", NameEncoding::ASCII);
-  const valtype nameUpd = DecodeName ("x/name-upd", NameEncoding::ASCII);
-  const valtype value = DecodeName (val ("value"), NameEncoding::ASCII);
-  const valtype valueA = DecodeName (val ("value-a"), NameEncoding::ASCII);
-  const valtype valueB = DecodeName (val ("value-b"), NameEncoding::ASCII);
-  const CScript addr = getTestAddress ();
-
-  const CScript reg1 = CNameScript::buildNameRegister (addr, nameReg, value);
-  const CScript reg2 = CNameScript::buildNameRegister (addr, nameReg, value);
-  const CScript upd1 = CNameScript::buildNameUpdate (addr, nameUpd, valueA);
-  const CScript upd2 = CNameScript::buildNameUpdate (addr, nameUpd, valueB);
-
-  /* The constructed tx needs not be valid.  We only test
-     the mempool acceptance and not validation.  */
-
-  CMutableTransaction mtxReg1;
-  mtxReg1.vout.push_back (CTxOut (COIN, reg1));
-  const CTransaction txReg1(mtxReg1);
-  CMutableTransaction mtxReg2;
-  mtxReg2.vout.push_back (CTxOut (COIN, reg2));
-  const CTransaction txReg2(mtxReg2);
-
-  CMutableTransaction mtxUpd1;
-  mtxUpd1.vout.push_back (CTxOut (COIN, upd1));
-  const CTransaction txUpd1(mtxUpd1);
-  CMutableTransaction mtxUpd2;
-  mtxUpd2.vout.push_back (CTxOut (COIN, upd2));
-  const CTransaction txUpd2(mtxUpd2);
-
-  /* Build an invalid transaction.  It should not crash (assert fail)
-     the mempool check.  */
-
-  CMutableTransaction mtxInvalid;
-  mempool.checkNameOps (CTransaction (mtxInvalid));
-
-  mtxInvalid.vout.push_back (CTxOut (COIN, reg1));
-  mtxInvalid.vout.push_back (CTxOut (COIN, reg2));
-  mtxInvalid.vout.push_back (CTxOut (COIN, upd1));
-  mtxInvalid.vout.push_back (CTxOut (COIN, upd2));
-  mempool.checkNameOps (CTransaction (mtxInvalid));
-
-  /* For an empty mempool, all tx should be fine.  */
-  BOOST_CHECK (!mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.updatesName (nameUpd));
-  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
-  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
-
-  /* Add a name registration.  */
-  const LockPoints lp;
-  const CTxMemPoolEntry entryReg(MakeTransactionRef(txReg1), 0, 0, 100,
-                                 false, 1, lp);
-  BOOST_CHECK (entryReg.isNameRegistration () && !entryReg.isNameUpdate ());
-  BOOST_CHECK (entryReg.getName () == nameReg);
-  mempool.addUnchecked (entryReg);
-  BOOST_CHECK (mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.updatesName (nameReg));
-  BOOST_CHECK (!mempool.checkNameOps (txReg2) && mempool.checkNameOps (txUpd1));
-
-  /* Add a name update.  */
-  const CTxMemPoolEntry entryUpd(MakeTransactionRef(txUpd1), 0, 0, 100,
-                                 false, 1, lp);
-  BOOST_CHECK (!entryUpd.isNameRegistration () && entryUpd.isNameUpdate ());
-  BOOST_CHECK (entryUpd.getName () == nameUpd);
-  mempool.addUnchecked (entryUpd);
-  BOOST_CHECK (!mempool.registersName (nameUpd));
-  BOOST_CHECK (mempool.updatesName (nameUpd));
-  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
-
-  /* Check getTxForName.  */
-  BOOST_CHECK (mempool.getTxForName (nameReg) == txReg1.GetHash ());
-  BOOST_CHECK (mempool.getTxForName (nameUpd) == txUpd1.GetHash ());
-
-  /* Run mempool sanity check.  */
-  CCoinsViewCache view(pcoinsTip.get());
-  const CNameScript nameOp(upd1);
-  CNameData data;
-  data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
-  view.SetName (nameUpd, data, false);
-  mempool.checkNames (&view);
-
-  /* Remove the transactions again.  */
-
-  mempool.removeRecursive (txReg1);
-  BOOST_CHECK (!mempool.registersName (nameReg));
-  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
-  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
-
-  mempool.removeRecursive (txUpd1);
-  BOOST_CHECK (!mempool.updatesName (nameUpd));
-  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
-  BOOST_CHECK (mempool.checkNameOps (txReg1));
-
-  /* Check getTxForName with non-existent names.  */
-  BOOST_CHECK (mempool.getTxForName (nameReg).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (nameUpd).IsNull ());
-
-  /* Check removing of conflicted name registrations.  */
-
-  mempool.addUnchecked (entryReg);
-  BOOST_CHECK (mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.checkNameOps (txReg2));
-
-  {
-    CNameConflictTracker tracker(mempool);
-    mempool.removeConflicts (txReg2);
-    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                  == txReg1.GetHash ());
-  }
-  BOOST_CHECK (!mempool.registersName (nameReg));
-  BOOST_CHECK (mempool.mapTx.empty ());
 }
 
 /* ************************************************************************** */
