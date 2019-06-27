@@ -9,6 +9,7 @@
 #include <names/mempool.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
+#include <sync.h>
 #include <test/setup_common.h>
 #include <txmempool.h>
 #include <validation.h>
@@ -17,241 +18,317 @@
 
 /* No space between BOOST_FIXTURE_TEST_SUITE and '(', so that extraction of
    the test-suite name works with grep as done in the Makefile.  */
-BOOST_FIXTURE_TEST_SUITE(name_mempool_tests, TestingSetup)
+BOOST_AUTO_TEST_SUITE(name_mempool_tests)
 
 namespace
 {
 
-/**
- * Utility function that returns a sample address script to use in the tests.
- * @return A script that represents a simple address.
- */
-CScript
-getTestAddress ()
+class NameMempoolTestSetup : public TestingSetup
 {
-  const CTxDestination dest
-    = DecodeDestination ("N5e1vXUUL3KfhPyVjQZSes1qQ7eyarDbUU");
-  BOOST_CHECK (IsValidDestination (dest));
 
-  return GetScriptForDestination (dest);
-}
+public:
+
+  CScript ADDR;
+  CScript OTHER_ADDR;
+
+  const LockPoints lp;
+
+  NameMempoolTestSetup ()
+  {
+    ENTER_CRITICAL_SECTION (mempool.cs);
+    mempool.clear ();
+
+    ADDR = CScript () << OP_TRUE;
+    OTHER_ADDR = CScript () << OP_TRUE << OP_RETURN;
+  }
+
+  ~NameMempoolTestSetup ()
+  {
+    LEAVE_CRITICAL_SECTION (mempool.cs);
+  }
+
+  /**
+   * Returns a valtype name based on the given string.
+   */
+  static valtype
+  Name (const std::string& str)
+  {
+    return DecodeName (str, NameEncoding::ASCII);
+  }
+
+  /**
+   * Returns the hash bytes for a name_new.
+   */
+  static valtype
+  NewHash (const std::string& nm, const char rand)
+  {
+    const valtype nameVal = Name (nm);
+    const valtype randVal(20, rand);
+
+    valtype toHash(randVal);
+    toHash.insert (toHash.end (), nameVal.begin (), nameVal.end ());
+    const uint160 hash = Hash160 (toHash);
+
+    return valtype (hash.begin (), hash.end ());
+  }
+
+  /**
+   * Builds a name new script for the given test name and rand based
+   * on a character (just to allow different rand's).
+   */
+  static CScript
+  NewScript (const CScript& addr, const std::string& nm, const char rand)
+  {
+    const valtype randVal(20, rand);
+
+    return CNameScript::buildNameNew (addr, Name (nm), randVal);
+  }
+
+  /**
+   * Builds a name_firstupdate script for the given name and rand value.
+   * The value we update to is just a fixed one.
+   */
+  static CScript
+  FirstScript (const CScript& addr, const std::string& nm, const char rand)
+  {
+    const valtype randVal(20, rand);
+    const valtype value = DecodeName ("firstupdate value", NameEncoding::ASCII);
+
+    return CNameScript::buildNameFirstupdate (addr, Name (nm), value, randVal);
+  }
+
+  /**
+   * Builds a name_update script based on the given name and value.
+   */
+  static CScript
+  UpdateScript (const CScript& addr, const std::string& nm,
+                const std::string& val)
+  {
+    const valtype value = DecodeName (val, NameEncoding::ASCII);
+
+    return CNameScript::buildNameUpdate (addr, Name (nm), value);
+  }
+
+  /**
+   * Builds a transaction spending to a name-output script.  The transaction
+   * is not valid, but it is "valid enough" for testing the name mempool
+   * rules with it.
+   */
+  static CTransaction
+  Tx (const CScript& out)
+  {
+    CMutableTransaction mtx;
+    mtx.SetNamecoin ();
+    mtx.vout.push_back (CTxOut (COIN, out));
+
+    return mtx;
+  }
+
+  /**
+   * Builds a mempool entry for the given transaction.
+   */
+  CTxMemPoolEntry
+  Entry (const CTransaction& tx)
+  {
+    return CTxMemPoolEntry (MakeTransactionRef (tx), 0, 0, 100, false, 1, lp);
+  }
+
+};
 
 } // anonymous namespace
 
 /* ************************************************************************** */
 
-BOOST_AUTO_TEST_CASE (name_mempool)
+BOOST_FIXTURE_TEST_CASE (invalid_tx, NameMempoolTestSetup)
 {
-  LOCK(mempool.cs);
-  mempool.clear ();
+  /* Invalid transactions should not crash / assert fail the mempool check.  */
 
-  const valtype nameReg = DecodeName ("name-reg", NameEncoding::ASCII);
-  const valtype nameUpd = DecodeName ("name-upd", NameEncoding::ASCII);
-  const valtype value = DecodeName ("value", NameEncoding::ASCII);
-  const valtype valueA = DecodeName ("value-a", NameEncoding::ASCII);
-  const valtype valueB = DecodeName ("value-b", NameEncoding::ASCII);
-  const CScript addr = getTestAddress ();
-  const CScript addr2 = (CScript (addr) << OP_RETURN);
+  CMutableTransaction mtx;
+  mtx.SetNamecoin ();
+  mempool.checkNameOps (CTransaction (mtx));
 
-  const valtype rand1(20, 'a');
-  const valtype rand2(20, 'b');
+  mtx.vout.push_back (CTxOut (COIN, NewScript (ADDR, "foo", 'a')));
+  mtx.vout.push_back (CTxOut (COIN, NewScript (ADDR, "bar", 'b')));
+  mtx.vout.push_back (CTxOut (COIN, FirstScript (ADDR, "foo", 'a')));
+  mtx.vout.push_back (CTxOut (COIN, FirstScript (ADDR, "bar", 'b')));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "foo", "x")));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "bar", "y")));
+  mempool.checkNameOps (CTransaction (mtx));
+}
 
-  valtype toHash(rand1);
-  toHash.insert (toHash.end (), nameReg.begin (), nameReg.end ());
-  uint160 hash = Hash160 (toHash);
-  const valtype vchHash1(hash.begin (), hash.end ());
-  toHash = rand2;
-  toHash.insert (toHash.end (), nameReg.begin (), nameReg.end ());
-  hash = Hash160 (toHash);
-  const valtype vchHash2(hash.begin (), hash.end ());
+BOOST_FIXTURE_TEST_CASE (empty_mempool, NameMempoolTestSetup)
+{
+  /* While the mempool is empty (we do not add any transactions in this test),
+     all should be fine without respect to conflicts among the transactions.  */
 
-  const CScript new1
-    = CNameScript::buildNameNew (addr, nameReg, rand1);
-  const CScript new1p
-    = CNameScript::buildNameNew (addr2, nameReg, rand1);
-  const CScript new2
-    = CNameScript::buildNameNew (addr, nameReg, rand2);
-  const CScript first1
-    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand1);
-  const CScript first2
-    = CNameScript::buildNameFirstupdate (addr, nameReg, value, rand2);
-  const CScript upd1 = CNameScript::buildNameUpdate (addr, nameUpd, valueA);
-  const CScript upd2 = CNameScript::buildNameUpdate (addr, nameUpd, valueB);
+  BOOST_CHECK (!mempool.registersName (Name ("foo")));
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
 
-  /* The constructed tx needs not be valid.  We only test
-     the mempool acceptance and not validation.  */
+  BOOST_CHECK (mempool.checkNameOps (Tx (NewScript (ADDR, "foo", 'a'))));
+  BOOST_CHECK (mempool.checkNameOps (Tx (NewScript (ADDR, "foo", 'b'))));
+  BOOST_CHECK (mempool.checkNameOps (Tx (NewScript (OTHER_ADDR, "foo", 'a'))));
 
-  CMutableTransaction mtxNew1;
-  mtxNew1.SetNamecoin ();
-  mtxNew1.vout.push_back (CTxOut (COIN, new1));
-  const CTransaction txNew1(mtxNew1);
-  CMutableTransaction mtxNew1p;
-  mtxNew1p.SetNamecoin ();
-  mtxNew1p.vout.push_back (CTxOut (COIN, new1p));
-  const CTransaction txNew1p(mtxNew1p);
-  CMutableTransaction mtxNew2;
-  mtxNew2.SetNamecoin ();
-  mtxNew2.vout.push_back (CTxOut (COIN, new2));
-  const CTransaction txNew2(mtxNew2);
+  BOOST_CHECK (mempool.checkNameOps (Tx (FirstScript (ADDR, "foo", 'a'))));
+  BOOST_CHECK (mempool.checkNameOps (Tx (FirstScript (ADDR, "foo", 'b'))));
 
-  CMutableTransaction mtxReg1;
-  mtxReg1.SetNamecoin ();
-  mtxReg1.vout.push_back (CTxOut (COIN, first1));
-  const CTransaction txReg1(mtxReg1);
-  CMutableTransaction mtxReg2;
-  mtxReg2.SetNamecoin ();
-  mtxReg2.vout.push_back (CTxOut (COIN, first2));
-  const CTransaction txReg2(mtxReg2);
+  BOOST_CHECK (mempool.checkNameOps (Tx (UpdateScript (ADDR, "foo", "x"))));
+  BOOST_CHECK (mempool.checkNameOps (Tx (UpdateScript (ADDR, "foo", "y"))));
+}
 
-  CMutableTransaction mtxUpd1;
-  mtxUpd1.SetNamecoin ();
-  mtxUpd1.vout.push_back (CTxOut (COIN, upd1));
-  const CTransaction txUpd1(mtxUpd1);
-  CMutableTransaction mtxUpd2;
-  mtxUpd2.SetNamecoin ();
-  mtxUpd2.vout.push_back (CTxOut (COIN, upd2));
-  const CTransaction txUpd2(mtxUpd2);
+BOOST_FIXTURE_TEST_CASE (name_new, NameMempoolTestSetup)
+{
+  const auto tx1 = Tx (NewScript (ADDR, "foo", 'a'));
+  const auto tx1p = Tx (NewScript (OTHER_ADDR, "foo", 'a'));
+  const auto tx2 = Tx (NewScript (ADDR, "foo", 'b'));
 
-  /* Build an invalid transaction.  It should not crash (assert fail)
-     the mempool check.  */
+  const auto e1 = Entry (tx1);
+  const auto e2 = Entry (tx2);
+  BOOST_CHECK (e1.isNameNew () && e2.isNameNew ());
+  BOOST_CHECK (e1.getNameNewHash () == NewHash ("foo", 'a'));
+  BOOST_CHECK (e2.getNameNewHash () == NewHash ("foo", 'b'));
 
-  CMutableTransaction mtxInvalid;
-  mtxInvalid.SetNamecoin ();
-  mempool.checkNameOps (CTransaction (mtxInvalid));
+  mempool.addUnchecked (e1);
+  mempool.addUnchecked (e2);
+  BOOST_CHECK (mempool.checkNameOps (tx1));
+  BOOST_CHECK (mempool.checkNameOps (tx2));
+  BOOST_CHECK (!mempool.checkNameOps (tx1p));
 
-  mtxInvalid.vout.push_back (CTxOut (COIN, new1));
-  mtxInvalid.vout.push_back (CTxOut (COIN, new2));
-  mtxInvalid.vout.push_back (CTxOut (COIN, first1));
-  mtxInvalid.vout.push_back (CTxOut (COIN, first2));
-  mtxInvalid.vout.push_back (CTxOut (COIN, upd1));
-  mtxInvalid.vout.push_back (CTxOut (COIN, upd2));
-  mempool.checkNameOps (CTransaction (mtxInvalid));
+  mempool.removeRecursive (tx1);
+  mempool.removeRecursive (tx2);
+  BOOST_CHECK (mempool.checkNameOps (tx1));
+  BOOST_CHECK (mempool.checkNameOps (tx2));
+  BOOST_CHECK (!mempool.checkNameOps (tx1p));
+}
 
-  /* For an empty mempool, all tx should be fine.  */
-  BOOST_CHECK (!mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.updatesName (nameUpd));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew1p)
-                && mempool.checkNameOps (txNew2));
-  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
-  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
+BOOST_FIXTURE_TEST_CASE (name_firstupdate, NameMempoolTestSetup)
+{
+  const auto tx1 = Tx (FirstScript (ADDR, "foo", 'a'));
+  const auto tx2 = Tx (FirstScript (ADDR, "foo", 'b'));
 
-  /* Add name_new's with "stealing" check.  */
-  const LockPoints lp;
-  const CTxMemPoolEntry entryNew1(MakeTransactionRef(txNew1), 0, 0, 100,
-                                  false, 1, lp);
-  const CTxMemPoolEntry entryNew2(MakeTransactionRef(txNew2), 0, 0, 100,
-                                  false, 1, lp);
-  BOOST_CHECK (entryNew1.isNameNew () && entryNew2.isNameNew ());
-  BOOST_CHECK (entryNew1.getNameNewHash () == vchHash1
-                && entryNew2.getNameNewHash () == vchHash2);
-  mempool.addUnchecked (entryNew1);
-  mempool.addUnchecked (entryNew2);
-  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
+  const auto e = Entry (tx1);
+  BOOST_CHECK (e.isNameRegistration () && !e.isNameUpdate ());
+  BOOST_CHECK (e.getName () == Name ("foo"));
 
-  /* Add a name registration.  */
-  const CTxMemPoolEntry entryReg(MakeTransactionRef(txReg1), 0, 0, 100,
-                                 false, 1, lp);
-  BOOST_CHECK (entryReg.isNameRegistration () && !entryReg.isNameUpdate ());
-  BOOST_CHECK (entryReg.getName () == nameReg);
-  mempool.addUnchecked (entryReg);
-  BOOST_CHECK (mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.updatesName (nameReg));
-  BOOST_CHECK (!mempool.checkNameOps (txReg2) && mempool.checkNameOps (txUpd1));
+  mempool.addUnchecked (e);
+  BOOST_CHECK (mempool.registersName (Name ("foo")));
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (!mempool.checkNameOps (tx2));
 
-  /* Add a name update.  */
-  const CTxMemPoolEntry entryUpd(MakeTransactionRef(txUpd1), 0, 0, 100,
-                                 false, 1, lp);
-  BOOST_CHECK (!entryUpd.isNameRegistration () && entryUpd.isNameUpdate ());
-  BOOST_CHECK (entryUpd.getName () == nameUpd);
-  mempool.addUnchecked (entryUpd);
-  BOOST_CHECK (!mempool.registersName (nameUpd));
-  BOOST_CHECK (mempool.updatesName (nameUpd));
-  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+  mempool.removeRecursive (tx1);
+  BOOST_CHECK (!mempool.registersName (Name ("foo")));
+  BOOST_CHECK (mempool.checkNameOps (tx1));
+  BOOST_CHECK (mempool.checkNameOps (tx2));
+}
 
-  /* Check getTxForName.  */
-  BOOST_CHECK (mempool.getTxForName (nameReg) == txReg1.GetHash ());
-  BOOST_CHECK (mempool.getTxForName (nameUpd) == txUpd1.GetHash ());
+BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
+{
+  const auto tx1 = Tx (UpdateScript (ADDR, "foo", "x"));
+  const auto tx2 = Tx (UpdateScript (ADDR, "foo", "y"));
 
-  /* Run mempool sanity check.  */
+  const auto e = Entry (tx1);
+  BOOST_CHECK (!e.isNameRegistration () && e.isNameUpdate ());
+  BOOST_CHECK (e.getName () == Name ("foo"));
+
+  mempool.addUnchecked (e);
+  BOOST_CHECK (!mempool.registersName (Name ("foo")));
+  BOOST_CHECK (mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (!mempool.checkNameOps (tx2));
+
+  mempool.removeRecursive (tx1);
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (mempool.checkNameOps (tx1));
+  BOOST_CHECK (mempool.checkNameOps (tx2));
+}
+
+BOOST_FIXTURE_TEST_CASE (getTxForName, NameMempoolTestSetup)
+{
+  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
+  BOOST_CHECK (mempool.getTxForName (Name ("reg")).IsNull ());
+  BOOST_CHECK (mempool.getTxForName (Name ("upd")).IsNull ());
+
+  const auto txReg = Tx (FirstScript (ADDR, "reg", 'a'));
+  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "x"));
+
+  mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'a'))));
+  mempool.addUnchecked (Entry (txReg));
+  mempool.addUnchecked (Entry (txUpd));
+
+  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
+  BOOST_CHECK (mempool.getTxForName (Name ("reg")) == txReg.GetHash ());
+  BOOST_CHECK (mempool.getTxForName (Name ("upd")) == txUpd.GetHash ());
+}
+
+BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
+{
+  mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'a'))));
+  mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'b'))));
+
+  mempool.addUnchecked (Entry (Tx (FirstScript (ADDR, "reg", 'a'))));
+  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
+
   CCoinsViewCache view(pcoinsTip.get());
-  const CNameScript nameOp(upd1);
+  const CNameScript nameOp(UpdateScript (ADDR, "upd", "y"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
-  view.SetName (nameUpd, data, false);
+  view.SetName (Name ("upd"), data, false);
   mempool.checkNames (&view);
+}
 
-  /* Remove the transactions again.  */
+BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
+{
+  const auto tx1 = Tx (FirstScript (ADDR, "foo", 'a'));
+  const auto tx2 = Tx (FirstScript (ADDR, "foo", 'b'));
+  const auto e = Entry (tx1);
 
-  mempool.removeRecursive (txReg1);
-  BOOST_CHECK (!mempool.registersName (nameReg));
-  BOOST_CHECK (mempool.checkNameOps (txReg1) && mempool.checkNameOps (txReg2));
-  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+  mempool.addUnchecked (e);
+  BOOST_CHECK (mempool.registersName (Name ("foo")));
+  BOOST_CHECK (!mempool.checkNameOps (tx2));
 
-  mempool.removeRecursive (txUpd1);
-  BOOST_CHECK (!mempool.updatesName (nameUpd));
-  BOOST_CHECK (mempool.checkNameOps (txUpd1) && mempool.checkNameOps (txUpd2));
-  BOOST_CHECK (mempool.checkNameOps (txReg1));
+  CNameConflictTracker tracker(mempool);
+  mempool.removeConflicts (tx2);
+  BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+  BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
+                == tx1.GetHash ());
 
-  mempool.removeRecursive (txNew1);
-  mempool.removeRecursive (txNew2);
-  BOOST_CHECK (!mempool.checkNameOps (txNew1p));
-  BOOST_CHECK (mempool.checkNameOps (txNew1) && mempool.checkNameOps (txNew2));
-
-  /* Check getTxForName with non-existent names.  */
-  BOOST_CHECK (mempool.getTxForName (nameReg).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (nameUpd).IsNull ());
-
-  /* Check removing of conflicted name registrations.  */
-
-  mempool.addUnchecked (entryReg);
-  BOOST_CHECK (mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.checkNameOps (txReg2));
-
-  {
-    CNameConflictTracker tracker(mempool);
-    mempool.removeConflicts (txReg2);
-    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                  == txReg1.GetHash ());
-  }
-  BOOST_CHECK (!mempool.registersName (nameReg));
+  BOOST_CHECK (!mempool.registersName (Name ("foo")));
+  BOOST_CHECK (mempool.checkNameOps (tx1));
+  BOOST_CHECK (mempool.checkNameOps (tx2));
   BOOST_CHECK (mempool.mapTx.empty ());
+}
 
-  /* Check removing of conflicts after name expiration.  */
+BOOST_FIXTURE_TEST_CASE (expire_conflicts, NameMempoolTestSetup)
+{
+  const auto tx = Tx (UpdateScript (ADDR, "foo", "x"));
+  const auto e = Entry (tx);
 
-  mempool.addUnchecked (entryUpd);
-  BOOST_CHECK (mempool.updatesName (nameUpd));
-  BOOST_CHECK (!mempool.checkNameOps (txUpd2));
+  mempool.addUnchecked (e);
+  BOOST_CHECK (mempool.updatesName (Name ("foo")));
 
-  std::set<valtype> names;
-  names.insert (nameUpd);
-  {
-    CNameConflictTracker tracker(mempool);
-    mempool.removeExpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                  == txUpd1.GetHash ());
-  }
-  BOOST_CHECK (!mempool.updatesName (nameUpd));
+  CNameConflictTracker tracker(mempool);
+  mempool.removeExpireConflicts ({Name ("foo")});
+  BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+  BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
+                == tx.GetHash ());
+
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.mapTx.empty ());
+}
 
-  /* Check removing of conflicts after name unexpiration.  */
+BOOST_FIXTURE_TEST_CASE (unexpire_conflicts, NameMempoolTestSetup)
+{
+  const auto tx = Tx (FirstScript (ADDR, "foo", 'a'));
+  const auto e = Entry (tx);
 
-  mempool.addUnchecked (entryReg);
-  BOOST_CHECK (mempool.registersName (nameReg));
-  BOOST_CHECK (!mempool.checkNameOps (txReg2));
+  mempool.addUnchecked (e);
+  BOOST_CHECK (mempool.registersName (Name ("foo")));
 
-  names.clear ();
-  names.insert (nameReg);
-  {
-    CNameConflictTracker tracker(mempool);
-    mempool.removeUnexpireConflicts (names);
-    BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-    BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                  == txReg1.GetHash ());
-  }
-  BOOST_CHECK (!mempool.registersName (nameReg));
+  CNameConflictTracker tracker(mempool);
+  mempool.removeUnexpireConflicts ({Name ("foo")});
+  BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
+  BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
+                == tx.GetHash ());
+
+  BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.mapTx.empty ());
 }
 
