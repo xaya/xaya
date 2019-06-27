@@ -13,6 +13,7 @@
 #include <consensus/merkle.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+#include <names/main.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
 #include <pow.h>
