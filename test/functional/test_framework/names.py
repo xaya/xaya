@@ -25,30 +25,30 @@ from decimal import Decimal
 import io
 
 
-def buildMultiUpdateBlock (node, name, values):
+def buildMultiUpdate (node, name, values):
   """
-  Constructs a CBlock instance that updates the name in a series to all
-  of the given values.  This is something that the mempool policy does not
-  allow, while it is perfectly fine in the consensus if included in a block.
-
-  With this function, other tests can evaluate how this edge case is handled.
+  Constructs a chain of CTransaction objects (returned as array) that update
+  the given name in sequence to all of the given values.  This is something
+  that the name_update RPC interface does not allow (yet), but that is possible
+  to do with raw transactions.  This function allows tests to verify behaviour
+  with such chained multiupdates easily.
   """
 
   nameValue = Decimal ("0.01")
   fee = Decimal ("0.01")
-
-  tip = node.getbestblockhash ()
-  height = node.getblockcount () + 1
-  nTime = node.getblockheader (tip)["mediantime"] + 1
-  block = create_block (int (tip, 16), create_coinbase (height), nTime)
 
   # While iterating, we keep track of the previous transaction that we build
   # on.  Initialise with the current data for the name from the blockchain
   # as well as some random currency inputs to pay fees.
   prevVal, prevIns = gather_inputs (node, len (values) * fee)
   prevOuts = None
-  prevNameOut = node.name_show (name)
+  pending = node.name_pending (name)
+  if len (pending) > 0:
+    prevNameOut = pending[-1]
+  else:
+    prevNameOut = node.name_show (name)
 
+  res = []
   for v in values:
     ins = prevIns
     ins.append (prevNameOut)
@@ -67,7 +67,8 @@ def buildMultiUpdateBlock (node, name, values):
 
     tx = CTransaction ()
     tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
-    block.vtx.append (tx)
+    tx.rehash ()
+    res.append (tx)
 
     # Update the variables about the previous transaction for this one,
     # so that the next is chained on correctly.
@@ -85,10 +86,7 @@ def buildMultiUpdateBlock (node, name, values):
         "scriptPubKey": data["vout"][i]["scriptPubKey"]["hex"]
       })
 
-  add_witness_commitment (block, 0)
-  block.solve ()
-
-  return block
+  return res
 
 
 class NameTestFramework (BitcoinTestFramework):

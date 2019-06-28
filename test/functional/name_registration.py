@@ -154,16 +154,6 @@ class NameRegistrationTest (NameTestFramework):
     assert_raises_rpc_error (-4, 'Input tx not found in wallet',
                              self.nodes[0].name_update, "test-name", "stolen?")
 
-    # Reject update when another update is pending.
-    self.nodes[1].name_update ("test-name", "value")
-    assert_raises_rpc_error (-25, 'is already a pending update for this name',
-                             self.nodes[1].name_update,
-                             "test-name", "new value")
-    self.generate (0, 1)
-    data = self.checkName (0, "test-name", "value", 30, False)
-    self.checkNameHistory (1, "test-name", ["test-value", "x" * 520, "sent",
-                                            "updated", "value"])
-    
     # Update failing after expiry.  Re-registration possible.
     self.checkName (1, "node-1", "x" * 520, None, True)
     assert_raises_rpc_error (-25, 'this name can not be updated',

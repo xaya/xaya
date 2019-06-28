@@ -221,10 +221,15 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                               REJECT_INVALID, "tx-nameupdate-name-mismatch",
                               "NAME_UPDATE name mismatch to name input");
 
-      /* This is actually redundant, since expired names are removed
-         from the UTXO set and thus not available to be spent anyway.
-         But it does not hurt to enforce this here, too.  It is also
-         exercised by the unit tests.  */
+      /* If the name input is pending, then no further checks with respect
+         to the name input in the name database are done.  Otherwise, we verify
+         that the name input matches the name database; this is redundant
+         as UTXO handling takes care of it anyway, but we do it for
+         an extra safety layer.  */
+      const unsigned inHeight = coinIn.nHeight;
+      if (inHeight == MEMPOOL_HEIGHT)
+        return true;
+
       CNameData oldName;
       if (!view.GetName (name, oldName))
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
@@ -234,11 +239,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
                               REJECT_INVALID, "tx-nameupdate-expired",
                               "NAME_UPDATE on an expired name");
-
-      /* This is an internal consistency check.  If everything is fine,
-         the input coins from the UTXO database should match the
-         name database.  */
-      assert (static_cast<unsigned> (coinIn.nHeight) == oldName.getHeight ());
+      assert (inHeight == oldName.getHeight ());
       assert (tx.vin[nameIn].prevout == oldName.getUpdateOutpoint ());
 
       return true;

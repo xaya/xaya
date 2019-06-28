@@ -755,6 +755,13 @@ public:
         return names.updatesName(name);
     }
 
+    COutPoint
+    lastNameOutput(const valtype& name) const
+    {
+        AssertLockHeld(cs);
+        return names.lastNameOutput(name);
+    }
+
     /**
      * Check if a tx can be added to it according to name criteria.
      * (The non-name criteria are checked in main.cpp and not here, we
