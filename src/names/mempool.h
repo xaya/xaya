@@ -86,14 +86,6 @@ public:
   }
 
   /**
-   * Return txid of transaction registering or updating a name.  The returned
-   * txid is null if no such tx exists.
-   * @param name The name to check for.
-   * @return The txid that registers/updates it.  Null if none.
-   */
-  uint256 getTxForName (const valtype& name) const;
-
-  /**
    * Clear all data.
    */
   inline void

@@ -240,24 +240,6 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
   BOOST_CHECK (mempool.checkNameOps (tx2));
 }
 
-BOOST_FIXTURE_TEST_CASE (getTxForName, NameMempoolTestSetup)
-{
-  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")).IsNull ());
-
-  const auto txReg = Tx (FirstScript (ADDR, "reg", 'a'));
-  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "x"));
-
-  mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'a'))));
-  mempool.addUnchecked (Entry (txReg));
-  mempool.addUnchecked (Entry (txUpd));
-
-  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")) == txReg.GetHash ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")) == txUpd.GetHash ());
-}
-
 BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
 {
   mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'a'))));

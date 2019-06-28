@@ -14,28 +14,6 @@
 
 /* ************************************************************************** */
 
-uint256
-CNameMemPool::getTxForName (const valtype& name) const
-{
-  NameTxMap::const_iterator mi;
-
-  mi = mapNameRegs.find (name);
-  if (mi != mapNameRegs.end ())
-    {
-      assert (mapNameUpdates.count (name) == 0);
-      return mi->second;
-    }
-
-  mi = mapNameUpdates.find (name);
-  if (mi != mapNameUpdates.end ())
-    {
-      assert (mapNameRegs.count (name) == 0);
-      return mi->second;
-    }
-
-  return uint256 ();
-}
-
 void
 CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
 {
