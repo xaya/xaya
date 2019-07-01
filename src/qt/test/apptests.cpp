@@ -5,6 +5,7 @@
 #include <qt/test/apptests.h>
 
 #include <chainparams.h>
+#include <key.h>
 #include <qt/bitcoin.h>
 #include <qt/bitcoingui.h>
 #include <qt/networkstyle.h>
@@ -25,7 +26,6 @@
 #include <QtGlobal>
 #include <QtTest/QtTestWidgets>
 #include <QtTest/QtTestGui>
-#include <new>
 #include <string>
 #include <univalue.h>
 
@@ -61,6 +61,9 @@ void AppTests::appTests()
         return;
     }
 #endif
+
+    ECC_Stop(); // Already started by the common test setup, so stop it to avoid interference
+    LogInstance().DisconnectTestLogger();
 
     m_app.parameterSetup();
     m_app.createOptionsModel(true /* reset settings */);
