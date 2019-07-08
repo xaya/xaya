@@ -147,7 +147,6 @@ powAlgoFromJson (const UniValue& algoJson)
 
 static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson)
 {
-    static const int nInnerLoopCount = 0x10000;
     int nHeightEnd = 0;
     int nHeight = 0;
 
@@ -183,14 +182,14 @@ static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, ui
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unknown PoW algo");
         }
         assert (pfakeHeader != nullptr);
-        while (nMaxTries > 0 && pfakeHeader->nNonce < nInnerLoopCount && !pblock->pow.checkProofOfWork(*pfakeHeader, Params().GetConsensus())) {
+        while (nMaxTries > 0 && pfakeHeader->nNonce < std::numeric_limits<uint32_t>::max() && !pblock->pow.checkProofOfWork(*pfakeHeader, Params().GetConsensus()) && !ShutdownRequested()) {
             ++pfakeHeader->nNonce;
             --nMaxTries;
         }
-        if (nMaxTries == 0) {
+        if (nMaxTries == 0 || ShutdownRequested()) {
             break;
         }
-        if (pfakeHeader->nNonce == nInnerLoopCount) {
+        if (pfakeHeader->nNonce == std::numeric_limits<uint32_t>::max()) {
             continue;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
@@ -533,7 +532,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             nTransactionsUpdatedLastLP = nTransactionsUpdatedLast;
         }
 
-        // Release the wallet and main lock while waiting
+        // Release lock while waiting
         LEAVE_CRITICAL_SECTION(cs_main);
         {
             checktxtime = std::chrono::steady_clock::now() + std::chrono::minutes(1);
@@ -544,6 +543,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
                 if (g_best_block_cv.wait_until(lock, checktxtime) == std::cv_status::timeout)
                 {
                     // Timeout: Check transactions for update
+                    // without holding ::mempool.cs to avoid deadlocks
                     if (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLastLP)
                         break;
                     checktxtime += std::chrono::seconds(10);

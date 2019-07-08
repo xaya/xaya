@@ -304,7 +304,9 @@ def test_unconfirmed_not_spendable(rbf_node, rbf_node_address):
 
 
 def test_bumpfee_metadata(rbf_node, dest_address):
-    rbfid = rbf_node.sendtoaddress(dest_address, Decimal("0.00100000"), "comment value", "to value")
+    assert(rbf_node.getbalance() < 49)
+    rbf_node.generatetoaddress(200, rbf_node.getnewaddress())
+    rbfid = rbf_node.sendtoaddress(dest_address, 49, "comment value", "to value")
     bumped_tx = rbf_node.bumpfee(rbfid)
     bumped_wtx = rbf_node.gettransaction(bumped_tx["txid"])
     assert_equal(bumped_wtx["comment"], "comment value")
@@ -368,6 +370,14 @@ def test_no_more_inputs_fails(rbf_node, dest_address):
     # feerate rbf requires confirmed outputs when change output doesn't exist or is insufficient
     rbf_node.generatetoaddress(1, dest_address)
     # spend all funds, no change output
+    # In contrast to upstream, we need to do that in multiple transactions
+    # for Xaya.  Otherwise the lower tx size limit is exceeded.
+    num_chunks = 10
+    per_chunk = (rbf_node.getbalance() - 1) / num_chunks
+    per_chunk = per_chunk.quantize(Decimal('0.00000000'))
+    for i in range(num_chunks):
+        rbf_node.sendtoaddress(rbf_node.getnewaddress(), per_chunk)
+    rbf_node.generate(1)
     rbfid = rbf_node.sendtoaddress(rbf_node.getnewaddress(), rbf_node.getbalance(), "", "", True)
     assert_raises_rpc_error(-4, "Unable to create transaction: Insufficient funds", rbf_node.bumpfee, rbfid)
 
