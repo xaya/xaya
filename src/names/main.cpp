@@ -226,17 +226,20 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         return state.Invalid (error ("%s: NAME_UPDATE name mismatch to prev tx"
                                      " found in %s", __func__, txid));
 
-      /* This is actually redundant, since updates need an existing name coin
-         to spend anyway.  But it does not hurt to enforce this here, too.  */
+      /* If the name input is pending, then no further checks with respect
+         to the name input in the name database are done.  Otherwise, we verify
+         that the name input matches the name database; this is redundant
+         as UTXO handling takes care of it anyway, but we do it for
+         an extra safety layer.  */
+      const unsigned inHeight = coinIn.nHeight;
+      if (inHeight == MEMPOOL_HEIGHT)
+        return true;
+
       CNameData oldName;
       if (!view.GetName (name, oldName))
         return state.Invalid (error ("%s: NAME_UPDATE name does not exist",
                                      __func__));
-
-      /* This is an internal consistency check.  If everything is fine,
-         the input coins from the UTXO database should match the
-         name database.  */
-      assert (static_cast<unsigned> (coinIn.nHeight) == oldName.getHeight ());
+      assert (inHeight == oldName.getHeight ());
       assert (tx.vin[nameIn].prevout == oldName.getUpdateOutpoint ());
 
       return true;

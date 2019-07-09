@@ -14,26 +14,77 @@
 
 /* ************************************************************************** */
 
-uint256
-CNameMemPool::getTxForName (const valtype& name) const
+namespace
 {
-  NameTxMap::const_iterator mi;
 
-  mi = mapNameRegs.find (name);
-  if (mi != mapNameRegs.end ())
+/**
+ * Returns the outpoint matching the name operation in a given mempool tx, if
+ * there is any.  The txid must be for an entry in the mempool.
+ */
+COutPoint
+getNameOutput (const CTxMemPool& pool, const uint256& txid)
+{
+  AssertLockHeld (pool.cs);
+
+  const auto mit = pool.mapTx.find (txid);
+  assert (mit != pool.mapTx.end ());
+  const auto& vout = mit->GetTx ().vout;
+
+  for (unsigned i = 0; i != vout.size (); ++i)
     {
-      assert (mapNameUpdates.count (name) == 0);
-      return mi->second;
+      const CNameScript nameOp(vout[i].scriptPubKey);
+      if (nameOp.isNameOp ())
+        return COutPoint (txid, i);
     }
 
-  mi = mapNameUpdates.find (name);
-  if (mi != mapNameUpdates.end ())
+  return COutPoint ();
+}
+
+} // anonymous namespace
+
+COutPoint
+CNameMemPool::lastNameOutput (const valtype& name) const
+{
+  const auto itUpd = updates.find (name);
+  if (itUpd != updates.end ())
     {
-      assert (mapNameRegs.count (name) == 0);
-      return mi->second;
+      /* From all the pending updates, we have to find the last one.  This is
+         the unique outpoint that is not also spent by some other transaction.
+         Thus, we keep track of all the transactions spent as well, and then
+         remove those from the sets of candidates.  Doing so by txid (rather
+         than outpoint) is enough, as those transactions must be in a "chain"
+         anyway.  */
+
+      const std::set<uint256>& candidateTxids = itUpd->second;
+      std::set<uint256> spentTxids;
+
+      for (const auto& txid : candidateTxids)
+        {
+          const auto mit = pool.mapTx.find (txid);
+          assert (mit != pool.mapTx.end ());
+          for (const auto& in : mit->GetTx ().vin)
+            spentTxids.insert (in.prevout.hash);
+        }
+
+      COutPoint res;
+      for (const auto& txid : candidateTxids)
+        {
+          if (spentTxids.count (txid) > 0)
+            continue;
+
+          assert (res.IsNull ());
+          res = getNameOutput (pool, txid);
+        }
+
+      assert (!res.IsNull ());
+      return res;
     }
 
-  return uint256 ();
+  const auto itReg = mapNameRegs.find (name);
+  if (itReg != mapNameRegs.end ())
+    return getNameOutput (pool, itReg->second);
+
+  return COutPoint ();
 }
 
 void
@@ -52,8 +103,12 @@ CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
   if (entry.isNameUpdate ())
     {
       const valtype& name = entry.getName ();
-      assert (mapNameUpdates.count (name) == 0);
-      mapNameUpdates.insert (std::make_pair (name, txHash));
+      const auto mit = updates.find (name);
+
+      if (mit == updates.end ())
+        updates.emplace (name, std::set<uint256> ({txHash}));
+      else
+        mit->second.insert (txHash);
     }
 }
 
@@ -64,15 +119,21 @@ CNameMemPool::remove (const CTxMemPoolEntry& entry)
 
   if (entry.isNameRegistration ())
     {
-      const NameTxMap::iterator mit = mapNameRegs.find (entry.getName ());
+      const auto mit = mapNameRegs.find (entry.getName ());
       assert (mit != mapNameRegs.end ());
       mapNameRegs.erase (mit);
     }
+
   if (entry.isNameUpdate ())
     {
-      const NameTxMap::iterator mit = mapNameUpdates.find (entry.getName ());
-      assert (mit != mapNameUpdates.end ());
-      mapNameUpdates.erase (mit);
+      const auto itName = updates.find (entry.getName ());
+      assert (itName != updates.end ());
+      auto& txids = itName->second;
+      const auto itTxid = txids.find (entry.GetTx ().GetHash ());
+      assert (itTxid != txids.end ());
+      txids.erase (itTxid);
+      if (txids.empty ())
+        updates.erase (itName);
     }
 }
 
@@ -87,10 +148,10 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
       if (nameOp.isNameOp () && nameOp.getNameOp () == OP_NAME_REGISTER)
         {
           const valtype& name = nameOp.getOpName ();
-          const NameTxMap::const_iterator mit = mapNameRegs.find (name);
+          const auto mit = mapNameRegs.find (name);
           if (mit != mapNameRegs.end ())
             {
-              const CTxMemPool::txiter mit2 = pool.mapTx.find (mit->second);
+              const auto mit2 = pool.mapTx.find (mit->second);
               assert (mit2 != pool.mapTx.end ());
               pool.removeRecursive (mit2->GetTx (),
                                     MemPoolRemovalReason::NAME_CONFLICT);
@@ -105,7 +166,7 @@ CNameMemPool::check (const CCoinsView& coins) const
   AssertLockHeld (pool.cs);
 
   std::set<valtype> nameRegs;
-  std::set<valtype> nameUpdates;
+  std::map<valtype, unsigned> nameUpdates;
   for (const auto& entry : pool.mapTx)
     {
       const uint256 txHash = entry.GetTx ().GetHash ();
@@ -113,7 +174,7 @@ CNameMemPool::check (const CCoinsView& coins) const
         {
           const valtype& name = entry.getName ();
 
-          const NameTxMap::const_iterator mit = mapNameRegs.find (name);
+          const auto mit = mapNameRegs.find (name);
           assert (mit != mapNameRegs.end ());
           assert (mit->second == txHash);
 
@@ -129,40 +190,28 @@ CNameMemPool::check (const CCoinsView& coins) const
         {
           const valtype& name = entry.getName ();
 
-          const NameTxMap::const_iterator mit = mapNameUpdates.find (name);
-          assert (mit != mapNameUpdates.end ());
-          assert (mit->second == txHash);
+          const auto mit = updates.find (name);
+          assert (mit != updates.end ());
+          assert (mit->second.count (txHash) > 0);
 
-          assert (nameUpdates.count (name) == 0);
-          nameUpdates.insert (name);
+          ++nameUpdates[name];
 
           CNameData data;
           if (!coins.GetName (name, data))
-            assert (false);
+            assert (registersName (name));
         }
     }
 
   assert (nameRegs.size () == mapNameRegs.size ());
-  assert (nameUpdates.size () == mapNameUpdates.size ());
-
-  /* Check that nameRegs and nameUpdates are disjoint.  They must be since
-     a name can only be in either category, depending on whether it exists
-     at the moment or not.  */
-  for (const auto& name : nameRegs)
-    assert (nameUpdates.count (name) == 0);
-  for (const auto& name : nameUpdates)
-    assert (nameRegs.count (name) == 0);
+  assert (nameUpdates.size () == updates.size ());
+  for (const auto& upd : nameUpdates)
+    assert (updates.at (upd.first).size () == upd.second);
 }
 
 bool
 CNameMemPool::checkTx (const CTransaction& tx) const
 {
   AssertLockHeld (pool.cs);
-
-  /* In principle, multiple name_updates could be performed within the
-     mempool at once (building upon each other).  This is disallowed, though,
-     since the current mempool implementation does not like it.  (We keep
-     track of only a single update tx for each name.)  */
 
   for (const auto& txout : tx.vout)
     {
@@ -181,12 +230,11 @@ CNameMemPool::checkTx (const CTransaction& tx) const
           }
 
         case OP_NAME_UPDATE:
-          {
-            const valtype& name = nameOp.getOpName ();
-            if (updatesName (name))
-              return false;
-            break;
-          }
+          /* Multiple updates of the same name in a chain are perfectly fine.
+             The main mempool logic takes care that updates are ordered
+             properly and really a chain, as this is automatic due to the
+             coloured-coin nature of names.  */
+          break;
 
         default:
           assert (false);

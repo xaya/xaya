@@ -20,8 +20,8 @@ class CTxMemPoolEntry;
 /**
  * Handle the name component of the transaction mempool.  This keeps track
  * of name operations that are in the mempool and ensures that all transactions
- * kept are consistent.  E. g., no two transactions are allowed to register
- * the same name, and name registration transactions are removed if a
+ * kept are consistent.  For instance, no two transactions are allowed to
+ * register the same name, and name registration transactions are removed if a
  * conflicting registration makes it into a block.
  */
 class CNameMemPool
@@ -29,105 +29,101 @@ class CNameMemPool
 
 private:
 
-  /** The parent mempool object.  Used to, e. g., remove conflicting tx.  */
+  /** The parent mempool object.  Used to e.g. remove conflicting tx.  */
   CTxMemPool& pool;
-
-  /** Type used for internal indices.  */
-  typedef std::map<valtype, uint256> NameTxMap;
 
   /**
    * Keep track of names that are registered by transactions in the pool.
-   * Map name to registering transaction.
+   * For any given name, at most one registering transaction is allowed in the
+   * mempool (as all others would conflict with it).
    */
-  NameTxMap mapNameRegs;
+  std::map<valtype, uint256> mapNameRegs;
 
-  /** Map pending name updates to transaction IDs.  */
-  NameTxMap mapNameUpdates;
+  /**
+   * Keep track of all transactions that update a given name.  For each name,
+   * this may be a whole chain of updates.  This field is used to remove the
+   * transactions from the mempool should the name expire (and the updates
+   * thus become invalid).
+   */
+  std::map<valtype, std::set<uint256>> updates;
 
 public:
 
   /**
-   * Construct with reference to parent mempool.
-   * @param p The parent pool.
+   * Constructs with reference to parent mempool.
    */
-  explicit inline CNameMemPool (CTxMemPool& p)
-    : pool(p), mapNameRegs(), mapNameUpdates()
+  explicit CNameMemPool (CTxMemPool& p)
+    : pool(p)
   {}
 
   /**
-   * Check whether a particular name is being registered by
+   * Checks whether a particular name is being registered by
    * some transaction in the mempool.  Does not lock, this is
    * done by the parent mempool (which calls through afterwards).
-   * @param name The name to check for.
-   * @return True iff there's a matching name registration in the pool.
    */
-  inline bool
+  bool
   registersName (const valtype& name) const
   {
     return mapNameRegs.count (name) > 0;
   }
 
   /**
-   * Check whether a particular name has a pending update.  Does not lock.
-   * @param name The name to check for.
-   * @return True iff there's a matching name update in the pool.
+   * Checks whether a particular name has at least one pending update.
+   * Does not lock.
    */
-  inline bool
+  bool
   updatesName (const valtype& name) const
   {
-    return mapNameUpdates.count (name) > 0;
+    const auto mit = updates.find (name);
+    if (mit == updates.end ())
+      return false;
+    return !mit->second.empty ();
   }
 
   /**
-   * Return txid of transaction registering or updating a name.  The returned
-   * txid is null if no such tx exists.
-   * @param name The name to check for.
-   * @return The txid that registers/updates it.  Null if none.
+   * Returns the last outpoint of a (potential) chain of pending name operations
+   * for the given name.  This is the output that should be spent with the
+   * next constructed name update.  Returns a null outpoint if the name
+   * is not being updated at the moment.
    */
-  uint256 getTxForName (const valtype& name) const;
+  COutPoint lastNameOutput (const valtype& name) const;
 
   /**
-   * Clear all data.
+   * Clears all data.
    */
-  inline void
+  void
   clear ()
   {
     mapNameRegs.clear ();
-    mapNameUpdates.clear ();
+    updates.clear ();
   }
 
   /**
-   * Add an entry without checking it.  It should have been checked
+   * Adds an entry without checking it.  It should have been checked
    * already.  If this conflicts with the mempool, it may throw.
    */
   void addUnchecked (const CTxMemPoolEntry& entry);
 
   /**
-   * Remove the given mempool entry.  It is assumed that it is present.
-   * @param entry The entry to remove.
+   * Removes the given mempool entry.  It is assumed that it is present.
    */
   void remove (const CTxMemPoolEntry& entry);
 
   /**
-   * Remove conflicts for the given tx, based on name operations.  I. e.,
+   * Removes conflicts for the given tx, based on name operations.  I.e.,
    * if the tx registers a name that conflicts with another registration
    * in the mempool, detect this and remove the mempool tx accordingly.
-   * @param tx The transaction for which we look for conflicts.
-   * @param removed Put removed tx here.
    */
   void removeConflicts (const CTransaction& tx);
 
   /**
-   * Perform sanity checks.  Throws if it fails.
-   * @param coins The coins view this represents.
+   * Performs sanity checks.  Throws if it fails.
    */
   void check (const CCoinsView& coins) const;
 
   /**
-   * Check if a tx can be added (based on name criteria) without
+   * Checks if a tx can be added (based on name criteria) without
    * causing a conflict.
-   * @param tx The transaction to check.
-   * @return True if it doesn't conflict.
    */
   bool checkTx (const CTransaction& tx) const;
 
