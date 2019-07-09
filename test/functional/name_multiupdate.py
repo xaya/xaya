@@ -5,7 +5,7 @@
 
 # Tests the behaviour of multiple updates for one name within a single block.
 
-from test_framework.names import NameTestFramework, val, buildMultiUpdateBlock
+from test_framework.names import NameTestFramework, val, buildMultiUpdate
 
 from test_framework.util import (
   assert_equal,
@@ -25,40 +25,55 @@ class NameMultiUpdateTest (NameTestFramework):
 
     # Register a test name.
     name = "d/test"
-    self.node.name_register (name, val ("first"))
-    self.node.generate (1)
-    self.checkName (0, name, val ("first"))
+    new = self.node.name_register (name, val ("first"))
 
-    # Update the name (keep the transaction pending) and check that another
-    # update is not allowed by the mempool.
-    txid = self.node.name_update (name, val ("second"))
-    assert_raises_rpc_error (-25, "already a pending update",
+    # Building an update on top of the pending registration is not allowed
+    # by RPC, but is fine with the mempool itself.
+    assert_raises_rpc_error (-25, "already a pending operation",
                              self.node.name_update, name, val ("wrong"))
+    txn = buildMultiUpdate (self.node, name, val (["second"]))
+    self.node.sendrawtransaction (txn[0].serialize ().hex ())
+
+    # Finalise the registration.
     self.node.generate (1)
     self.checkName (0, name, val ("second"))
+    assert_equal (self.node.name_pending (), [])
 
-    # Build two update transactions building on each other and try to
-    # submit them both as transactions.
-    blk = buildMultiUpdateBlock (self.node, name, val (["third", "wrong"]))
-    assert_equal (len (blk.vtx), 3)
-    self.node.sendrawtransaction (blk.vtx[1].serialize ().hex ())
-    assert_raises_rpc_error (-26, "txn-mempool-name-error",
-                             self.node.sendrawtransaction,
-                             blk.vtx[2].serialize ().hex ())
+    # Update the name (keep the transaction pending) and check that another
+    # update by RPC is not allowed.
+    txid = self.node.name_update (name, val ("third"))
+    assert_raises_rpc_error (-25, "already a pending operation",
+                             self.node.name_update, name, val ("wrong"))
     self.node.generate (1)
     self.checkName (0, name, val ("third"))
+    assert_equal (self.node.name_pending (), [])
 
-    # Submitting two updates at once in a block is fine as long as that does
-    # not go through the mempool.
-    blk = buildMultiUpdateBlock (self.node, name, val (["fourth", "fifth"]))
-    blkHex = blk.serialize (with_witness=False).hex ()
-    assert_equal (self.node.submitblock (blkHex), None)
+    # Build two update transactions building on each other and submit
+    # them directly to the mempool (bypassing the name_update check).
+    txn = buildMultiUpdate (self.node, name, val (["fourth", "fifth"]))
+    for tx in txn:
+      self.node.sendrawtransaction (tx.serialize ().hex ())
 
-    # Verify that the second update took effect, as well as the entire
-    # history of the name.
+    # Check that both are in the mempool.
+    assert_equal (set (self.node.getrawmempool ()), set ([
+      tx.hash for tx in txn
+    ]))
+    pending = self.node.name_pending (name)
+    pendingNameVal = [(p["name"], p["value"]) for p in pending]
+    assert_equal (pendingNameVal,
+                  [(name, val ("fourth")), (name, val ("fifth"))])
+
+    # Mine transactions and verify the effect.
+    self.node.generate (1)
     self.checkName (0, name, val ("fifth"))
     values = [h["value"] for h in self.node.name_history (name)]
     assert_equal (values, val (["first", "second", "third", "fourth", "fifth"]))
+
+    # Detach the last block and check that both transactions are restored
+    # to the mempool.
+    self.node.invalidateblock (self.node.getbestblockhash ())
+    self.checkName (0, name, val ("third"))
+    assert_equal (self.node.name_pending (name), pending)
 
 
 if __name__ == '__main__':

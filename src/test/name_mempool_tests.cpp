@@ -29,6 +29,7 @@ class NameMempoolTestSetup : public TestingSetup
 public:
 
   CScript ADDR;
+  CScript OTHER_ADDR;
 
   const LockPoints lp;
 
@@ -38,6 +39,7 @@ public:
     mempool.clear ();
 
     ADDR = CScript () << OP_TRUE;
+    OTHER_ADDR = CScript () << OP_TRUE << OP_RETURN;
   }
 
   ~NameMempoolTestSetup ()
@@ -52,22 +54,6 @@ public:
   Name (const std::string& str)
   {
     return DecodeName (str, NameEncoding::ASCII);
-  }
-
-  /**
-   * Returns the hash bytes for a name_new.
-   */
-  static valtype
-  NewHash (const std::string& nm, const char rand)
-  {
-    const valtype nameVal = Name (nm);
-    const valtype randVal(20, rand);
-
-    valtype toHash(randVal);
-    toHash.insert (toHash.end (), nameVal.begin (), nameVal.end ());
-    const uint160 hash = Hash160 (toHash);
-
-    return valtype (hash.begin (), hash.end ());
   }
 
   /**
@@ -152,6 +138,52 @@ BOOST_FIXTURE_TEST_CASE (empty_mempool, NameMempoolTestSetup)
   BOOST_CHECK (mempool.checkNameOps (Tx (UpdateScript (ADDR, "foo", "y"))));
 }
 
+BOOST_FIXTURE_TEST_CASE (lastNameOutput, NameMempoolTestSetup)
+{
+  const auto txReg = Tx (RegisterScript (ADDR, "reg", "x"));
+  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "y"));
+
+  mempool.addUnchecked (Entry (txReg));
+  mempool.addUnchecked (Entry (txUpd));
+
+  /* For testing chained name updates, we have to build a "real" chain of
+     transactions with matching inputs and outputs.  */
+
+  CMutableTransaction mtx;
+  mtx.vout.push_back (CTxOut (COIN, RegisterScript (ADDR, "chain", "x")));
+  mtx.vout.push_back (CTxOut (COIN, ADDR));
+  mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
+  const CTransaction chain1(mtx);
+  mempool.addUnchecked (Entry (chain1));
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, ADDR));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "chain", "y")));
+  mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 0)));
+  const CTransaction chain2(mtx);
+  mempool.addUnchecked (Entry (chain2));
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "chain", "z")));
+  mtx.vin.push_back (CTxIn (COutPoint (chain2.GetHash (), 0)));
+  mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 1)));
+  const CTransaction chain3(mtx);
+  mempool.addUnchecked (Entry (chain3));
+
+  CMutableTransaction mtxCurrency;
+  mtxCurrency.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 2)));
+  mtxCurrency.vin.push_back (CTxIn (COutPoint (chain3.GetHash (), 0)));
+  mempool.addUnchecked (Entry (CTransaction (mtxCurrency)));
+
+  BOOST_CHECK (mempool.lastNameOutput (Name ("reg"))
+                  == COutPoint (txReg.GetHash (), 0));
+  BOOST_CHECK (mempool.lastNameOutput (Name ("upd"))
+                  == COutPoint (txUpd.GetHash (), 0));
+  BOOST_CHECK (mempool.lastNameOutput (Name ("chain"))
+                  == COutPoint (chain3.GetHash (), 1));
+}
+
 BOOST_FIXTURE_TEST_CASE (name_register, NameMempoolTestSetup)
 {
   const auto tx1 = Tx (RegisterScript (ADDR, "foo", "x"));
@@ -176,44 +208,44 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
 {
   const auto tx1 = Tx (UpdateScript (ADDR, "foo", "x"));
   const auto tx2 = Tx (UpdateScript (ADDR, "foo", "y"));
+  const auto tx3 = Tx (UpdateScript (ADDR, "bar", "z"));
 
-  const auto e = Entry (tx1);
-  BOOST_CHECK (!e.isNameRegistration () && e.isNameUpdate ());
-  BOOST_CHECK (e.getName () == Name ("foo"));
+  const auto e1 = Entry (tx1);
+  const auto e2 = Entry (tx2);
+  const auto e3 = Entry (tx3);
+  BOOST_CHECK (!e1.isNameRegistration () && e1.isNameUpdate ());
+  BOOST_CHECK (e1.getName () == Name ("foo"));
 
-  mempool.addUnchecked (e);
+  mempool.addUnchecked (e1);
+  mempool.addUnchecked (e2);
+  mempool.addUnchecked (e3);
   BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
-  BOOST_CHECK (!mempool.checkNameOps (tx2));
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
+
+  mempool.removeRecursive (tx2);
+  BOOST_CHECK (mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
   mempool.removeRecursive (tx1);
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
-  BOOST_CHECK (mempool.checkNameOps (tx1));
-  BOOST_CHECK (mempool.checkNameOps (tx2));
-}
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
-BOOST_FIXTURE_TEST_CASE (getTxForName, NameMempoolTestSetup)
-{
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")).IsNull ());
-
-  const auto txReg = Tx (RegisterScript (ADDR, "reg", "x"));
-  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "x"));
-
-  mempool.addUnchecked (Entry (txReg));
-  mempool.addUnchecked (Entry (txUpd));
-
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")) == txReg.GetHash ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")) == txUpd.GetHash ());
+  mempool.removeRecursive (tx3);
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (!mempool.updatesName (Name ("bar")));
 }
 
 BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
 {
   mempool.addUnchecked (Entry (Tx (RegisterScript (ADDR, "reg", "x"))));
+  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "reg", "n"))));
+
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
+  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
   CCoinsViewCache view(pcoinsTip.get());
-  const CNameScript nameOp(UpdateScript (ADDR, "upd", "y"));
+  const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);

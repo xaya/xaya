@@ -104,17 +104,6 @@ class NameRegistrationTest (NameTestFramework):
                              self.nodes[0].name_update,
                              "x/test-name", val ("stolen?"))
 
-    # Reject update when another update is pending.
-    self.nodes[1].name_update ("x/test-name", val ("value"))
-    assert_raises_rpc_error (-25, 'is already a pending update for this name',
-                             self.nodes[1].name_update,
-                             "x/test-name", val ("new value"))
-    self.generate (0, 1)
-    data = self.checkName (0, "x/test-name", val ("value"))
-    self.checkNameHistory (1, "x/test-name",
-                           [val ("test-value"), valueOfLength (2048),
-                            val ("sent"), val ("updated"), val ("value")])
-    
     # Test that name updates are even possible with less balance in the wallet
     # than what is locked in a name (0.01 NMC).  There was a bug preventing
     # this from working.

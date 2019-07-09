@@ -481,25 +481,38 @@ name_update (const JSONRPCRequest& request)
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  /* Reject updates to a name for which the mempool already has
-     a pending update.  This is not a hard rule enforced by network
-     rules, but it is necessary with the current mempool implementation.  */
+  /* For finding the name output to spend, we first check if there are
+     pending operations on the name in the mempool.  If there are, then we
+     build upon the last one to get a valid chain.  If there are none, then we
+     look up the last outpoint from the name database instead.  */
+
+  COutPoint outp;
   {
     LOCK (mempool.cs);
-    if (mempool.updatesName (name))
+    outp = mempool.lastNameOutput (name);
+
+    /* TODO:  For now, we disallow chained updates.  The mempool accepts them,
+       but until most relaying nodes and miners have updated to accept them
+       as well, we should not create them through the wallet.  Once the network
+       is sufficiently updated, remove this restriction.  */
+    if (!outp.IsNull ())
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                          "there is already a pending update for this name");
+                          "there is already a pending operation for this name");
   }
 
-  CNameData oldData;
-  {
-    LOCK (cs_main);
-    if (!pcoinsTip->GetName (name, oldData))
-      throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                          "this name can not be updated");
-  }
+  if (outp.IsNull ())
+    {
+      LOCK (cs_main);
 
-  const COutPoint outp = oldData.getUpdateOutpoint ();
+      CNameData oldData;
+      if (!pcoinsTip->GetName (name, oldData))
+        throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                            "this name can not be updated");
+
+      outp = oldData.getUpdateOutpoint ();
+    }
+
+  assert (!outp.IsNull ());
   const CTxIn txIn(outp);
 
   /* Make sure the results are valid at least up to the most recent block
