@@ -727,16 +727,12 @@ name_pending (const JSONRPCRequest& request)
     options = request.params[1].get_obj ();
 
   std::vector<uint256> txHashes;
-  if (request.params.size () == 0 || request.params[0].isNull ())
-    mempool.queryHashes (txHashes);
-  else
-    {
-      const valtype name
-          = DecodeNameFromRPCOrThrow (request.params[0], options);
-      const uint256 txid = mempool.getTxForName (name);
-      if (!txid.IsNull ())
-        txHashes.push_back (txid);
-    }
+  mempool.queryHashes (txHashes);
+
+  const bool hasNameFilter = !request.params[0].isNull ();
+  valtype nameFilter;
+  if (hasNameFilter)
+    nameFilter = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   UniValue arr(UniValue::VARR);
   for (const auto& txHash : txHashes)
@@ -750,6 +746,8 @@ name_pending (const JSONRPCRequest& request)
           const auto& txOut = tx->vout[n];
           const CNameScript op(txOut.scriptPubKey);
           if (!op.isNameOp () || !op.isAnyUpdate ())
+            continue;
+          if (hasNameFilter && op.getOpName () != nameFilter)
             continue;
 
           UniValue obj = getNameInfo (options,

@@ -175,6 +175,56 @@ BOOST_FIXTURE_TEST_CASE (empty_mempool, NameMempoolTestSetup)
   BOOST_CHECK (mempool.checkNameOps (Tx (UpdateScript (ADDR, "foo", "y"))));
 }
 
+BOOST_FIXTURE_TEST_CASE (lastNameOutput, NameMempoolTestSetup)
+{
+  const auto txNew = Tx (NewScript (ADDR, "new", 'a'));
+  const auto txReg = Tx (FirstScript (ADDR, "reg", 'b'));
+  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "x"));
+
+  mempool.addUnchecked (Entry (txNew));
+  mempool.addUnchecked (Entry (txReg));
+  mempool.addUnchecked (Entry (txUpd));
+
+  /* For testing chained name updates, we have to build a "real" chain of
+     transactions with matching inputs and outputs.  */
+
+  CMutableTransaction mtx;
+  mtx.SetNamecoin ();
+  mtx.vout.push_back (CTxOut (COIN, FirstScript (ADDR, "chain", 'a')));
+  mtx.vout.push_back (CTxOut (COIN, ADDR));
+  mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
+  const CTransaction chain1(mtx);
+  mempool.addUnchecked (Entry (chain1));
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, ADDR));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "chain", "x")));
+  mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 0)));
+  const CTransaction chain2(mtx);
+  mempool.addUnchecked (Entry (chain2));
+
+  mtx.vout.clear ();
+  mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
+  mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "chain", "y")));
+  mtx.vin.push_back (CTxIn (COutPoint (chain2.GetHash (), 0)));
+  mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 1)));
+  const CTransaction chain3(mtx);
+  mempool.addUnchecked (Entry (chain3));
+
+  CMutableTransaction mtxCurrency;
+  mtxCurrency.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 2)));
+  mtxCurrency.vin.push_back (CTxIn (COutPoint (chain3.GetHash (), 0)));
+  mempool.addUnchecked (Entry (CTransaction (mtxCurrency)));
+
+  BOOST_CHECK (mempool.lastNameOutput (Name ("new")).IsNull ());
+  BOOST_CHECK (mempool.lastNameOutput (Name ("reg"))
+                  == COutPoint (txReg.GetHash (), 0));
+  BOOST_CHECK (mempool.lastNameOutput (Name ("upd"))
+                  == COutPoint (txUpd.GetHash (), 0));
+  BOOST_CHECK (mempool.lastNameOutput (Name ("chain"))
+                  == COutPoint (chain3.GetHash (), 1));
+}
+
 BOOST_FIXTURE_TEST_CASE (name_new, NameMempoolTestSetup)
 {
   const auto tx1 = Tx (NewScript (ADDR, "foo", 'a'));
@@ -224,38 +274,32 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
 {
   const auto tx1 = Tx (UpdateScript (ADDR, "foo", "x"));
   const auto tx2 = Tx (UpdateScript (ADDR, "foo", "y"));
+  const auto tx3 = Tx (UpdateScript (ADDR, "bar", "z"));
 
-  const auto e = Entry (tx1);
-  BOOST_CHECK (!e.isNameRegistration () && e.isNameUpdate ());
-  BOOST_CHECK (e.getName () == Name ("foo"));
+  const auto e1 = Entry (tx1);
+  const auto e2 = Entry (tx2);
+  const auto e3 = Entry (tx3);
+  BOOST_CHECK (!e1.isNameRegistration () && e1.isNameUpdate ());
+  BOOST_CHECK (e1.getName () == Name ("foo"));
 
-  mempool.addUnchecked (e);
+  mempool.addUnchecked (e1);
+  mempool.addUnchecked (e2);
+  mempool.addUnchecked (e3);
   BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
-  BOOST_CHECK (!mempool.checkNameOps (tx2));
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
+
+  mempool.removeRecursive (tx2);
+  BOOST_CHECK (mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
   mempool.removeRecursive (tx1);
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
-  BOOST_CHECK (mempool.checkNameOps (tx1));
-  BOOST_CHECK (mempool.checkNameOps (tx2));
-}
+  BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
-BOOST_FIXTURE_TEST_CASE (getTxForName, NameMempoolTestSetup)
-{
-  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")).IsNull ());
-
-  const auto txReg = Tx (FirstScript (ADDR, "reg", 'a'));
-  const auto txUpd = Tx (UpdateScript (ADDR, "upd", "x"));
-
-  mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'a'))));
-  mempool.addUnchecked (Entry (txReg));
-  mempool.addUnchecked (Entry (txUpd));
-
-  BOOST_CHECK (mempool.getTxForName (Name ("new")).IsNull ());
-  BOOST_CHECK (mempool.getTxForName (Name ("reg")) == txReg.GetHash ());
-  BOOST_CHECK (mempool.getTxForName (Name ("upd")) == txUpd.GetHash ());
+  mempool.removeRecursive (tx3);
+  BOOST_CHECK (!mempool.updatesName (Name ("foo")));
+  BOOST_CHECK (!mempool.updatesName (Name ("bar")));
 }
 
 BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
@@ -264,10 +308,13 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   mempool.addUnchecked (Entry (Tx (NewScript (ADDR, "new", 'b'))));
 
   mempool.addUnchecked (Entry (Tx (FirstScript (ADDR, "reg", 'a'))));
+  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "reg", "n"))));
+
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
+  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
   CCoinsViewCache view(pcoinsTip.get());
-  const CNameScript nameOp(UpdateScript (ADDR, "upd", "y"));
+  const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);
@@ -298,17 +345,21 @@ BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
 
 BOOST_FIXTURE_TEST_CASE (expire_conflicts, NameMempoolTestSetup)
 {
-  const auto tx = Tx (UpdateScript (ADDR, "foo", "x"));
-  const auto e = Entry (tx);
+  const auto tx1 = Tx (UpdateScript (ADDR, "foo", "x"));
+  const auto tx2 = Tx (UpdateScript (ADDR, "foo", "y"));
+  const auto e1 = Entry (tx1);
+  const auto e2 = Entry (tx2);
 
-  mempool.addUnchecked (e);
+  mempool.addUnchecked (e1);
+  mempool.addUnchecked (e2);
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
 
   CNameConflictTracker tracker(mempool);
   mempool.removeExpireConflicts ({Name ("foo")});
-  BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-  BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                == tx.GetHash ());
+  const auto& conflicts = *tracker.GetNameConflicts ();
+  BOOST_CHECK (conflicts.size () == 2);
+  BOOST_CHECK (conflicts[0]->GetHash () == tx1.GetHash ());
+  BOOST_CHECK (conflicts[1]->GetHash () == tx2.GetHash ());
 
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.mapTx.empty ());

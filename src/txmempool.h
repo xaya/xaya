@@ -741,23 +741,25 @@ public:
         return (mapTx.count(hash) != 0);
     }
 
-    inline bool
+    bool
     registersName(const valtype& name) const
     {
         AssertLockHeld(cs);
         return names.registersName(name);
     }
-    inline bool
+
+    bool
     updatesName(const valtype& name) const
     {
         AssertLockHeld(cs);
         return names.updatesName(name);
     }
-    inline uint256
-    getTxForName (const valtype& name) const
+
+    COutPoint
+    lastNameOutput(const valtype& name) const
     {
         AssertLockHeld(cs);
-        return names.getTxForName(name);
+        return names.lastNameOutput(name);
     }
 
     /**
