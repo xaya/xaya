@@ -91,7 +91,7 @@ public:
     CMutableTransaction mtx;
     mtx.vout.push_back (CTxOut (COIN, out));
 
-    return mtx;
+    return CTransaction (mtx);
   }
 
   /**
