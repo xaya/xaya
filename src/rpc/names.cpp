@@ -394,24 +394,22 @@ name_show (const JSONRPCRequest& request)
       .withNameEncoding ()
       .withValueEncoding ();
 
-  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
-    throw std::runtime_error (
-        RPCHelpMan ("name_show",
-            "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              NameInfoHelp ("")
-                .withHeight ()
-                .finish (""),
-            },
-            RPCExamples {
-                HelpExampleCli ("name_show", "\"myname\"")
-              + HelpExampleRpc ("name_show", "\"myname\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_show",
+      "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        NameInfoHelp ("")
+          .withHeight ()
+          .finish (""),
+      },
+      RPCExamples {
+          HelpExampleCli ("name_show", "\"myname\"")
+        + HelpExampleRpc ("name_show", "\"myname\"")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -452,27 +450,25 @@ name_history (const JSONRPCRequest& request)
       .withNameEncoding ()
       .withValueEncoding ();
 
-  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
-    throw std::runtime_error (
-        RPCHelpMan ("name_history",
-            "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "[\n"
-              + NameInfoHelp ("  ")
-                  .withHeight ()
-                  .finish (",") +
-              "  ...\n"
-              "]\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_history", "\"myname\"")
-              + HelpExampleRpc ("name_history", "\"myname\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_history",
+      "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "[\n"
+        + NameInfoHelp ("  ")
+            .withHeight ()
+            .finish (",") +
+        "  ...\n"
+        "]\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_history", "\"myname\"")
+        + HelpExampleRpc ("name_history", "\"myname\"")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -536,30 +532,28 @@ name_scan (const JSONRPCRequest& request)
       .withArg ("regexp", RPCArg::Type::STR,
                 "Filter for names matching the regexp");
 
-  if (request.fHelp || request.params.size () > 3)
-    throw std::runtime_error (
-        RPCHelpMan ("name_scan",
-            "\nLists names in the database.\n",
-            {
-                {"start", RPCArg::Type::STR, "", "Skip initially to this name"},
-                {"count", RPCArg::Type::NUM, "500", "Stop after this many names"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "[\n"
-              + NameInfoHelp ("  ")
-                  .withHeight ()
-                  .finish (",") +
-              "  ...\n"
-              "]\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_scan", "")
-              + HelpExampleCli ("name_scan", "\"d/abc\"")
-              + HelpExampleCli ("name_scan", "\"d/abc\" 10")
-              + HelpExampleRpc ("name_scan", "\"d/abc\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_scan",
+      "\nLists names in the database.\n",
+      {
+          {"start", RPCArg::Type::STR, "", "Skip initially to this name"},
+          {"count", RPCArg::Type::NUM, "500", "Stop after this many names"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "[\n"
+        + NameInfoHelp ("  ")
+            .withHeight ()
+            .finish (",") +
+        "  ...\n"
+        "]\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_scan", "")
+        + HelpExampleCli ("name_scan", "\"d/abc\"")
+        + HelpExampleCli ("name_scan", "\"d/abc\" 10")
+        + HelpExampleRpc ("name_scan", "\"d/abc\"")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
@@ -678,30 +672,28 @@ name_pending (const JSONRPCRequest& request)
       .withNameEncoding ()
       .withValueEncoding ();
 
-  if (request.fHelp || request.params.size () > 2)
-    throw std::runtime_error (
-        RPCHelpMan ("name_pending",
-            "\nLists unconfirmed name operations in the mempool.\n"
-            "\nIf a name is given, only check for operations on this name.\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only look for this name"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "[\n"
-              + NameInfoHelp ("  ")
-                  .withField ("\"op\": xxxxx",
-                              "(string) the operation being performed")
-                  .finish (",") +
-              "  ...\n"
-              "]\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_pending", "")
-              + HelpExampleCli ("name_pending", "\"d/domob\"")
-              + HelpExampleRpc ("name_pending", "")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_pending",
+      "\nLists unconfirmed name operations in the mempool.\n"
+      "\nIf a name is given, only check for operations on this name.\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only look for this name"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "[\n"
+        + NameInfoHelp ("  ")
+            .withField ("\"op\": xxxxx",
+                        "(string) the operation being performed")
+            .finish (",") +
+        "  ...\n"
+        "]\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_pending", "")
+        + HelpExampleCli ("name_pending", "\"d/domob\"")
+        + HelpExampleRpc ("name_pending", "")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -765,33 +757,31 @@ name_pending (const JSONRPCRequest& request)
 UniValue
 namerawtransaction (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 3)
-    throw std::runtime_error (
-        RPCHelpMan ("namerawtransaction",
-            "\nAdds a name operation to an existing raw transaction.\n"
-            "\nUse createrawtransaction first to create the basic transaction, including the required inputs and outputs also for the name.\n",
-            {
-                {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
-                {"vout", RPCArg::Type::NUM, RPCArg::Optional::NO, "The vout of the desired name output"},
-                {"nameop", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The name operation to create",
-                    {
-                        {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_new\", \"name_firstupdate\" and \"name_update\""},
-                        {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
-                        {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "The new value for the name"},
-                    },
-                 "nameop"},
-            },
-            RPCResult {
-              "{\n"
-              "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
-              "}\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
-              + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-              + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-            }
-        ).ToString ());
+  RPCHelpMan ("namerawtransaction",
+      "\nAdds a name operation to an existing raw transaction.\n"
+      "\nUse createrawtransaction first to create the basic transaction, including the required inputs and outputs also for the name.\n",
+      {
+          {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
+          {"vout", RPCArg::Type::NUM, RPCArg::Optional::NO, "The vout of the desired name output"},
+          {"nameop", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The name operation to create",
+              {
+                  {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_new\", \"name_firstupdate\" and \"name_update\""},
+                  {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
+                  {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "The new value for the name"},
+              },
+           "nameop"},
+      },
+      RPCResult {
+        "{\n"
+        "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
+        "}\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
+        + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+        + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
@@ -846,20 +836,18 @@ namerawtransaction (const JSONRPCRequest& request)
 UniValue
 name_checkdb (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () != 0)
-    throw std::runtime_error (
-        RPCHelpMan ("name_checkdb",
-            "\nValidates the name DB's consistency.\n"
-            "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
-            {},
-            RPCResult {
-              "xxxxx                        (boolean) whether the state is valid\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_checkdb", "")
-              + HelpExampleRpc ("name_checkdb", "")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_checkdb",
+      "\nValidates the name DB's consistency.\n"
+      "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
+      {},
+      RPCResult {
+        "xxxxx                        (boolean) whether the state is valid\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_checkdb", "")
+        + HelpExampleRpc ("name_checkdb", "")
+      }
+  ).Check (request);
 
   LOCK (cs_main);
   pcoinsTip->Flush ();

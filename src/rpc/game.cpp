@@ -222,34 +222,32 @@ GetDetachSequence (const CBlockIndex* from, const CBlockIndex* ancestor)
 UniValue
 game_sendupdates (const JSONRPCRequest& request)
 {
-  if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
-    throw std::runtime_error (
-        RPCHelpMan ("game_sendupdates",
-            "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
-            "\nIf toblock is not given, it defaults to the current chain tip.\n",
-            {
-                {"gameid", RPCArg::Type::STR, RPCArg::Optional::NO, "The game ID for which to send notifications"},
-                {"fromblock", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Starting block hash"},
-                {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Target block hash"},
-            },
-            RPCResult {
-              "{\n"
-              "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
-              "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
-              "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
-              "  \"steps\":\n"
-              "   {\n"
-              "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
-              "     \"attach\": n,    (numeric) number of attach notifications that will be sent\n"
-              "   },\n"
-              "}\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
-              + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\" \"206c22b7fb26b24b344b5b238325916c8bae4513302403f9f8efaf8b4c3e61f4\"")
-              + HelpExampleRpc ("game_sendupdates", "\"huc\", \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("game_sendupdates",
+      "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
+      "\nIf toblock is not given, it defaults to the current chain tip.\n",
+      {
+          {"gameid", RPCArg::Type::STR, RPCArg::Optional::NO, "The game ID for which to send notifications"},
+          {"fromblock", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Starting block hash"},
+          {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Target block hash"},
+      },
+      RPCResult {
+        "{\n"
+        "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
+        "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
+        "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
+        "  \"steps\":\n"
+        "   {\n"
+        "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
+        "     \"attach\": n,    (numeric) number of attach notifications that will be sent\n"
+        "   },\n"
+        "}\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
+        + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\" \"206c22b7fb26b24b344b5b238325916c8bae4513302403f9f8efaf8b4c3e61f4\"")
+        + HelpExampleRpc ("game_sendupdates", "\"huc\", \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
+      }
+  ).Check (request);
 
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params,
@@ -350,6 +348,8 @@ namespace
 UniValue
 trackedgames (const JSONRPCRequest& request)
 {
+  /* We cannot use RPCHelpMan::Check here, as we have a special case where
+     we need exactly zero or two arguments.  */
   if (request.fHelp
         || (request.params.size () != 0 && request.params.size () != 2))
     throw std::runtime_error (

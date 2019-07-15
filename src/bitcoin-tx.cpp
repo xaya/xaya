@@ -11,7 +11,6 @@
 #include <consensus/consensus.h>
 #include <core_io.h>
 #include <key_io.h>
-#include <keystore.h>
 #include <names/encoding.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
@@ -19,6 +18,7 @@
 #include <script/names.h>
 #include <script/script.h>
 #include <script/sign.h>
+#include <script/signingprovider.h>
 #include <univalue.h>
 #include <util/rbf.h>
 #include <util/system.h>
@@ -641,7 +641,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
 
     if (!registers.count("privatekeys"))
         throw std::runtime_error("privatekeys register variable must be set.");
-    CBasicKeyStore tempKeystore;
+    FillableSigningProvider tempKeystore;
     UniValue keysObj = registers["privatekeys"];
 
     for (unsigned int kidx = 0; kidx < keysObj.size(); kidx++) {
@@ -715,7 +715,7 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
         }
     }
 
-    const CKeyStore& keystore = tempKeystore;
+    const FillableSigningProvider& keystore = tempKeystore;
 
     bool fHashSingle = ((nHashType & ~SIGHASH_ANYONECANPAY) == SIGHASH_SINGLE);
 

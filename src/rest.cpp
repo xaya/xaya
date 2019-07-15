@@ -15,6 +15,7 @@
 #include <primitives/transaction.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
+#include <rpc/protocol.h>
 #include <rpc/server.h>
 #include <streams.h>
 #include <sync.h>

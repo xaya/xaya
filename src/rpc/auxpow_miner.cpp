@@ -10,6 +10,7 @@
 #include <net.h>
 #include <primitives/pureheader.h>
 #include <rpc/protocol.h>
+#include <rpc/request.h>
 #include <streams.h>
 #include <util/strencodings.h>
 #include <util/time.h>
