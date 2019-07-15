@@ -4240,6 +4240,8 @@ UniValue getauxblock(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
+    /* RPCHelpMan::Check is not applicable here since we have the
+       custom check for exactly zero or two arguments.  */
     if (request.fHelp
           || (request.params.size() != 0 && request.params.size() != 2))
         throw std::runtime_error(

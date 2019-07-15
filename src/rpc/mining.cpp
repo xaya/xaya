@@ -956,30 +956,28 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
 
 UniValue createauxblock(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 1)
-        throw std::runtime_error(
-            RPCHelpMan{"createauxblock",
-                "\nCreates a new block and returns information required to"
-                " merge-mine it.\n",
-                {
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Payout address for the coinbase transaction"},
-                },
-                RPCResult{
-            "{\n"
-            "  \"hash\"               (string) hash of the created block\n"
-            "  \"chainid\"            (numeric) chain ID for this block\n"
-            "  \"previousblockhash\"  (string) hash of the previous block\n"
-            "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
-            "  \"bits\"               (string) compressed target of the block\n"
-            "  \"height\"             (numeric) height of the block\n"
-            "  \"_target\"            (string) target in reversed byte order, deprecated\n"
-            "}\n"
-                },
-                RPCExamples{
-                  HelpExampleCli("createauxblock", "\"address\"")
-                  + HelpExampleRpc("createauxblock", "\"address\"")
-                },
-            }.ToString());
+    RPCHelpMan{"createauxblock",
+        "\nCreates a new block and returns information required to"
+        " merge-mine it.\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Payout address for the coinbase transaction"},
+        },
+        RPCResult{
+    "{\n"
+    "  \"hash\"               (string) hash of the created block\n"
+    "  \"chainid\"            (numeric) chain ID for this block\n"
+    "  \"previousblockhash\"  (string) hash of the previous block\n"
+    "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
+    "  \"bits\"               (string) compressed target of the block\n"
+    "  \"height\"             (numeric) height of the block\n"
+    "  \"_target\"            (string) target in reversed byte order, deprecated\n"
+    "}\n"
+        },
+        RPCExamples{
+          HelpExampleCli("createauxblock", "\"address\"")
+          + HelpExampleRpc("createauxblock", "\"address\"")
+        },
+    }.Check(request);
 
     // Check coinbase payout address
     const CTxDestination coinbaseScript
@@ -995,23 +993,21 @@ UniValue createauxblock(const JSONRPCRequest& request)
 
 UniValue submitauxblock(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 2)
-        throw std::runtime_error(
-            RPCHelpMan{"submitauxblock",
-                "\nSubmits a solved auxpow for a block that was previously"
-                " created by 'createauxblock'.\n",
-                {
-                    {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Hash of the block to submit"},
-                    {"auxpow", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Serialised auxpow found"},
-                },
-                RPCResult{
-            "xxxxx        (boolean) whether the submitted block was correct\n"
-                },
-                RPCExamples{
-                    HelpExampleCli("submitauxblock", "\"hash\" \"serialised auxpow\"")
-                    + HelpExampleRpc("submitauxblock", "\"hash\" \"serialised auxpow\"")
-                },
-            }.ToString());
+    RPCHelpMan{"submitauxblock",
+        "\nSubmits a solved auxpow for a block that was previously"
+        " created by 'createauxblock'.\n",
+        {
+            {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Hash of the block to submit"},
+            {"auxpow", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Serialised auxpow found"},
+        },
+        RPCResult{
+    "xxxxx        (boolean) whether the submitted block was correct\n"
+        },
+        RPCExamples{
+            HelpExampleCli("submitauxblock", "\"hash\" \"serialised auxpow\"")
+            + HelpExampleRpc("submitauxblock", "\"hash\" \"serialised auxpow\"")
+        },
+    }.Check(request);
 
     return AuxpowMiner::get ().submitAuxBlock(request.params[0].get_str(),
                                               request.params[1].get_str());
