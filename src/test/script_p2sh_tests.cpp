@@ -4,7 +4,6 @@
 
 #include <consensus/tx_verify.h>
 #include <key.h>
-#include <keystore.h>
 #include <validation.h>
 #include <policy/policy.h>
 #include <script/names.h>
@@ -12,6 +11,7 @@
 #include <script/script_error.h>
 #include <policy/settings.h>
 #include <script/sign.h>
+#include <script/signingprovider.h>
 #include <test/setup_common.h>
 
 #include <vector>
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(sign)
     // scriptPubKey: HASH160 <hash> EQUAL
 
     // Test SignSignature() (and therefore the version of Solver() that signs transactions)
-    CBasicKeyStore keystore;
+    FillableSigningProvider keystore;
     CKey key[4];
     for (int i = 0; i < 4; i++)
     {
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(set)
 {
     LOCK(cs_main);
     // Test the CScript::Set* methods
-    CBasicKeyStore keystore;
+    FillableSigningProvider keystore;
     CKey key[4];
     std::vector<CPubKey> keys;
     for (int i = 0; i < 4; i++)
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(AreInputsStandard)
     LOCK(cs_main);
     CCoinsView coinsDummy;
     CCoinsViewCache coins(&coinsDummy);
-    CBasicKeyStore keystore;
+    FillableSigningProvider keystore;
     CKey key[6];
     std::vector<CPubKey> keys;
     for (int i = 0; i < 6; i++)

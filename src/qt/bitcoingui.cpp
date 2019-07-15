@@ -294,15 +294,15 @@ void BitcoinGUI::createActions()
     quitAction->setStatusTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutAction = new QAction(platformStyle->TextColorIcon(":/icons/about"), tr("&About %1").arg(tr(PACKAGE_NAME)), this);
-    aboutAction->setStatusTip(tr("Show information about %1").arg(tr(PACKAGE_NAME)));
+    aboutAction = new QAction(platformStyle->TextColorIcon(":/icons/about"), tr("&About %1").arg(PACKAGE_NAME), this);
+    aboutAction->setStatusTip(tr("Show information about %1").arg(PACKAGE_NAME));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutAction->setEnabled(false);
     aboutQtAction = new QAction(platformStyle->TextColorIcon(":/icons/about_qt"), tr("About &Qt"), this);
     aboutQtAction->setStatusTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(platformStyle->TextColorIcon(":/icons/options"), tr("&Options..."), this);
-    optionsAction->setStatusTip(tr("Modify configuration options for %1").arg(tr(PACKAGE_NAME)));
+    optionsAction->setStatusTip(tr("Modify configuration options for %1").arg(PACKAGE_NAME));
     optionsAction->setMenuRole(QAction::PreferencesRole);
     optionsAction->setEnabled(false);
     toggleHideAction = new QAction(platformStyle->TextColorIcon(":/icons/about"), tr("&Show / Hide"), this);
@@ -344,7 +344,7 @@ void BitcoinGUI::createActions()
 
     showHelpMessageAction = new QAction(platformStyle->TextColorIcon(":/icons/info"), tr("&Command-line options"), this);
     showHelpMessageAction->setMenuRole(QAction::NoRole);
-    showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Namecoin command-line options").arg(tr(PACKAGE_NAME)));
+    showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Namecoin command-line options").arg(PACKAGE_NAME));
 
     connect(quitAction, &QAction::triggered, qApp, QApplication::quit);
     connect(aboutAction, &QAction::triggered, this, &BitcoinGUI::aboutClicked);
@@ -371,13 +371,12 @@ void BitcoinGUI::createActions()
         connect(openAction, &QAction::triggered, this, &BitcoinGUI::openClicked);
         connect(m_open_wallet_menu, &QMenu::aboutToShow, [this] {
             m_open_wallet_menu->clear();
-            std::vector<std::string> available_wallets = m_wallet_controller->getWalletsAvailableToOpen();
-            std::vector<std::string> wallets = m_node.listWalletDir();
-            for (const auto& path : wallets) {
+            for (const std::pair<const std::string, bool>& i : m_wallet_controller->listWalletDir()) {
+                const std::string& path = i.first;
                 QString name = path.empty() ? QString("["+tr("default wallet")+"]") : QString::fromStdString(path);
                 QAction* action = m_open_wallet_menu->addAction(name);
 
-                if (std::find(available_wallets.begin(), available_wallets.end(), path) == available_wallets.end()) {
+                if (i.second) {
                     // This wallet is already loaded
                     action->setEnabled(false);
                     continue;
@@ -410,7 +409,7 @@ void BitcoinGUI::createActions()
                     assert(invoked);
                 });
             }
-            if (wallets.empty()) {
+            if (m_open_wallet_menu->isEmpty()) {
                 QAction* action = m_open_wallet_menu->addAction(tr("No wallets available"));
                 action->setEnabled(false);
             }
@@ -640,7 +639,7 @@ void BitcoinGUI::setWalletController(WalletController* wallet_controller)
     connect(wallet_controller, &WalletController::walletAdded, this, &BitcoinGUI::addWallet);
     connect(wallet_controller, &WalletController::walletRemoved, this, &BitcoinGUI::removeWallet);
 
-    for (WalletModel* wallet_model : m_wallet_controller->getWallets()) {
+    for (WalletModel* wallet_model : m_wallet_controller->getOpenWallets()) {
         addWallet(wallet_model);
     }
 }
@@ -729,7 +728,7 @@ void BitcoinGUI::createTrayIcon()
 #ifndef Q_OS_MAC
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         trayIcon = new QSystemTrayIcon(m_network_style->getTrayAndWindowIcon(), this);
-        QString toolTip = tr("%1 client").arg(tr(PACKAGE_NAME)) + " " + m_network_style->getTitleAddText();
+        QString toolTip = tr("%1 client").arg(PACKAGE_NAME) + " " + m_network_style->getTitleAddText();
         trayIcon->setToolTip(toolTip);
     }
 #endif
@@ -1292,7 +1291,7 @@ void BitcoinGUI::updateProxyIcon()
 
 void BitcoinGUI::updateWindowTitle()
 {
-    QString window_title = tr(PACKAGE_NAME);
+    QString window_title = PACKAGE_NAME;
 #ifdef ENABLE_WALLET
     if (walletFrame) {
         WalletModel* const wallet_model = walletFrame->currentWalletModel();
@@ -1376,12 +1375,13 @@ static bool ThreadSafeMessageBox(BitcoinGUI* gui, const std::string& message, co
     style &= ~CClientUIInterface::SECURE;
     bool ret = false;
     // In case of modal message, use blocking connection to wait for user to click a button
-    QMetaObject::invokeMethod(gui, "message",
+    bool invoked = QMetaObject::invokeMethod(gui, "message",
                                modal ? GUIUtil::blockingGUIThreadConnection() : Qt::QueuedConnection,
                                Q_ARG(QString, QString::fromStdString(caption)),
                                Q_ARG(QString, QString::fromStdString(message)),
                                Q_ARG(unsigned int, style),
                                Q_ARG(bool*, &ret));
+    assert(invoked);
     return ret;
 }
 

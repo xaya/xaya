@@ -9,6 +9,7 @@
 #include <chainparams.h>
 #include <net.h>
 #include <rpc/protocol.h>
+#include <rpc/request.h>
 #include <util/strencodings.h>
 #include <util/time.h>
 #include <validation.h>

@@ -52,9 +52,9 @@ private:
 
   /**
    * The reserve key that was used if no override is given.  When finalising
-   * (after the sending succeeded), this key needs to be marked as KeepKey().
+   * (after the sending succeeded), this key needs to be marked as Keep().
    */
-  std::unique_ptr<CReserveKey> reserveKey;
+  std::unique_ptr<ReserveDestination> rdest;
 
   /** Set if a valid override destination was added.  */
   std::unique_ptr<CTxDestination> overrideDest;
@@ -105,20 +105,21 @@ CScript DestinationAddressHelper::getScript ()
   if (overrideDest != nullptr)
     return GetScriptForDestination (*overrideDest);
 
-  reserveKey.reset (new CReserveKey (&wallet));
-  CPubKey pubKeyReserve;
-  const bool ok = reserveKey->GetReservedKey (pubKeyReserve, true);
-  assert (ok);
+  rdest.reset (new ReserveDestination (&wallet));
+  CTxDestination dest;
+  if (!rdest->GetReservedDestination (wallet.m_default_address_type,
+                                      dest, false))
+    throw JSONRPCError (RPC_WALLET_KEYPOOL_RAN_OUT,
+                        "Error: Keypool ran out,"
+                        " please call keypoolrefill first");
 
-  const auto dest = GetDestinationForKey (pubKeyReserve,
-                                          wallet.m_default_address_type);
   return GetScriptForDestination (dest);
 }
 
 void DestinationAddressHelper::finalise ()
 {
-  if (reserveKey != nullptr)
-    reserveKey->KeepKey ();
+  if (rdest != nullptr)
+    rdest->KeepDestination ();
 }
 
 /**
@@ -189,13 +190,13 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
      part of SendMoneyToScript and should stay in sync.  */
 
   CCoinControl coinControl;
-  CReserveKey keyChange(&wallet);
+  ReserveDestination rdest(&wallet);
   CAmount nFeeRequired;
   int nChangePosRet = -1;
 
   CTransactionRef tx;
   if (!wallet.CreateTransaction (locked_chain, vecSend,
-                                 nameInput, tx, keyChange,
+                                 nameInput, tx, rdest,
                                  nFeeRequired, nChangePosRet, strError,
                                  coinControl))
     {
@@ -207,7 +208,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
     }
 
   CValidationState state;
-  if (!wallet.CommitTransaction (tx, {}, {}, keyChange, state))
+  if (!wallet.CommitTransaction (tx, {}, {}, rdest, state))
     {
       strError = strprintf ("Error: The transaction was rejected!"
                             "  Reason given: %s", FormatStateMessage (state));

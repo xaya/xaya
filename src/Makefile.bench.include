@@ -24,11 +24,13 @@ bench_bench_namecoin_SOURCES = \
   bench/examples.cpp \
   bench/rollingbloom.cpp \
   bench/chacha20.cpp \
+  bench/chacha_poly_aead.cpp \
   bench/crypto_hash.cpp \
   bench/ccoins_caching.cpp \
   bench/gcs_filter.cpp \
   bench/merkle_root.cpp \
   bench/mempool_eviction.cpp \
+  bench/rpc_blockchain.cpp \
   bench/rpc_mempool.cpp \
   bench/util_time.cpp \
   bench/verify_script.cpp \
