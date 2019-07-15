@@ -448,6 +448,9 @@ int GuiMain(int argc, char* argv[])
 
     // Register meta types used for QMetaObject::invokeMethod
     qRegisterMetaType< bool* >();
+#ifdef ENABLE_WALLET
+    qRegisterMetaType<WalletModel*>();
+#endif
     //   Need to pass name here as CAmount is a typedef (see http://qt-project.org/doc/qt-5/qmetatype.html#qRegisterMetaType)
     //   IMPORTANT if it is no longer a typedef use the normal variant above
     qRegisterMetaType< CAmount >("CAmount");
@@ -459,7 +462,7 @@ int GuiMain(int argc, char* argv[])
     SetupUIArgs();
     std::string error;
     if (!node->parseParameters(argc, argv, error)) {
-        QMessageBox::critical(nullptr, QObject::tr(PACKAGE_NAME),
+        QMessageBox::critical(nullptr, PACKAGE_NAME,
             QObject::tr("Error parsing command line arguments: %1.").arg(QString::fromStdString(error)));
         return EXIT_FAILURE;
     }
@@ -496,12 +499,12 @@ int GuiMain(int argc, char* argv[])
     /// - Do not call GetDataDir(true) before this step finishes
     if (!fs::is_directory(GetDataDir(false)))
     {
-        QMessageBox::critical(nullptr, QObject::tr(PACKAGE_NAME),
+        QMessageBox::critical(nullptr, PACKAGE_NAME,
             QObject::tr("Error: Specified data directory \"%1\" does not exist.").arg(QString::fromStdString(gArgs.GetArg("-datadir", ""))));
         return EXIT_FAILURE;
     }
     if (!node->readConfigFiles(error)) {
-        QMessageBox::critical(nullptr, QObject::tr(PACKAGE_NAME),
+        QMessageBox::critical(nullptr, PACKAGE_NAME,
             QObject::tr("Error: Cannot parse configuration file: %1.").arg(QString::fromStdString(error)));
         return EXIT_FAILURE;
     }
@@ -516,7 +519,7 @@ int GuiMain(int argc, char* argv[])
     try {
         node->selectParams(gArgs.GetChainName());
     } catch(std::exception &e) {
-        QMessageBox::critical(nullptr, QObject::tr(PACKAGE_NAME), QObject::tr("Error: %1").arg(e.what()));
+        QMessageBox::critical(nullptr, PACKAGE_NAME, QObject::tr("Error: %1").arg(e.what()));
         return EXIT_FAILURE;
     }
 #ifdef ENABLE_WALLET
@@ -573,7 +576,7 @@ int GuiMain(int argc, char* argv[])
         if (app.baseInitialize()) {
             app.requestInitialize();
 #if defined(Q_OS_WIN)
-            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(QObject::tr(PACKAGE_NAME)), (HWND)app.getMainWinId());
+            WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(PACKAGE_NAME), (HWND)app.getMainWinId());
 #endif
             app.exec();
             app.requestShutdown();

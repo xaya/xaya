@@ -103,11 +103,11 @@ def test_auxpow(nodes):
     assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
 
     nodes[0].getauxblock()
-    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 0)
     nodes[0].generate(1)
-    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 0)
     auxblock = nodes[0].getauxblock()
-    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 1)
+    assert_equal (nodes[0].getwalletinfo()['keypoolsize'], 0)
 
     target = reverseHex(auxblock['_target'])
     solved = computeAuxpow(auxblock['hash'], target, True)
