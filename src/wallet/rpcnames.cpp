@@ -235,28 +235,26 @@ name_list (const JSONRPCRequest& request)
       .withNameEncoding ()
       .withValueEncoding ();
 
-  if (request.fHelp || request.params.size () > 2)
-    throw std::runtime_error (
-        RPCHelpMan ("name_list",
-            "\nShows the status of all names in the wallet.\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "[\n"
-              + NameInfoHelp ("  ")
-                  .withExpiration ()
-                  .finish (",") +
-              "  ...\n"
-              "]\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_list", "")
-              + HelpExampleCli ("name_list", "\"myname\"")
-              + HelpExampleRpc ("name_list", "")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_list",
+      "\nShows the status of all names in the wallet.\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "[\n"
+        + NameInfoHelp ("  ")
+            .withExpiration ()
+            .finish (",") +
+        "  ...\n"
+        "]\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_list", "")
+        + HelpExampleCli ("name_list", "\"myname\"")
+        + HelpExampleRpc ("name_list", "")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -357,26 +355,24 @@ name_new (const JSONRPCRequest& request)
       .withArg ("allowExisting", RPCArg::Type::BOOL, "false",
                 "If set, then the name_new is sent even if the name exists already");
 
-  if (request.fHelp || request.params.size () < 1 || request.params.size () > 2)
-    throw std::runtime_error (
-        RPCHelpMan ("name_new",
-            "\nStarts registration of the given name.  Must be followed up with name_firstupdate to finish the registration."
-                + HelpRequiringPassphrase (pwallet) + "\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "[\n"
-              "  xxxxx,   (string) the txid, required for name_firstupdate\n"
-              "  xxxxx    (string) random value for name_firstupdate\n"
-              "]\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_new", "\"myname\"")
-              + HelpExampleRpc ("name_new", "\"myname\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_new",
+      "\nStarts registration of the given name.  Must be followed up with name_firstupdate to finish the registration."
+          + HelpRequiringPassphrase (pwallet) + "\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "[\n"
+        "  xxxxx,   (string) the txid, required for name_firstupdate\n"
+        "  xxxxx    (string) random value for name_firstupdate\n"
+        "]\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_new", "\"myname\"")
+        + HelpExampleRpc ("name_new", "\"myname\"")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -505,6 +501,8 @@ name_firstupdate (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withWriteOptions ();
 
+  /* We can not use RPCHelpMan::Check here, as we have that "hidden" sixth
+     argument for "allow active" names (in tests).  */
   if (request.fHelp || request.params.size () < 4 || request.params.size () > 6)
     throw std::runtime_error (
         RPCHelpMan ("name_firstupdate",
@@ -622,24 +620,22 @@ name_update (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withWriteOptions ();
 
-  if (request.fHelp || request.params.size () < 2 || request.params.size () > 3)
-    throw std::runtime_error (
-        RPCHelpMan ("name_update",
-            "\nUpdates a name and possibly transfers it."
-                + HelpRequiringPassphrase (pwallet) + "\n",
-            {
-                {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
-                {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
-                optHelp.buildRpcArg (),
-            },
-            RPCResult {
-              "\"txid\"             (string) the name_update's txid\n"
-            },
-            RPCExamples {
-                HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
-              + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
-            }
-        ).ToString ());
+  RPCHelpMan ("name_update",
+      "\nUpdates a name and possibly transfers it."
+          + HelpRequiringPassphrase (pwallet) + "\n",
+      {
+          {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
+          optHelp.buildRpcArg (),
+      },
+      RPCResult {
+        "\"txid\"             (string) the name_update's txid\n"
+      },
+      RPCExamples {
+          HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
+        + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
+      }
+  ).Check (request);
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
@@ -723,39 +719,37 @@ sendtoname (const JSONRPCRequest& request)
   if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
     return NullUniValue;
   
-  if (request.fHelp || request.params.size () < 2 || request.params.size () > 8)
-    throw std::runtime_error (
-        RPCHelpMan{"sendtoname",
-            "\nSend an amount to the owner of a name.\n"
-            "\nIt is an error if the name is expired."
-                + HelpRequiringPassphrase(pwallet) + "\n",
-            {
-                {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send to."},
-                {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-                {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment used to store what the transaction is for.\n"
-        "                             This is not part of the transaction, just kept in your wallet."},
-                {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment to store the name of the person or organization\n"
-        "                             to which you're sending the transaction. This is not part of the \n"
-        "                             transaction, just kept in your wallet."},
-                {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
-        "                             The recipient will receive less coins than you enter in the amount field."},
-                {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
-                {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
-                {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
-        "       \"UNSET\"\n"
-        "       \"ECONOMICAL\"\n"
-        "       \"CONSERVATIVE\""},
-            },
-                RPCResult{
-            "\"txid\"                  (string) The transaction id.\n"
-                },
-                RPCExamples{
-                    HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1")
-            + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"donation\" \"seans outpost\"")
-            + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
-            + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
-                },
-            }.ToString());
+  RPCHelpMan{"sendtoname",
+      "\nSend an amount to the owner of a name.\n"
+      "\nIt is an error if the name is expired."
+          + HelpRequiringPassphrase(pwallet) + "\n",
+      {
+          {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send to."},
+          {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
+          {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment used to store what the transaction is for.\n"
+  "                             This is not part of the transaction, just kept in your wallet."},
+          {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment to store the name of the person or organization\n"
+  "                             to which you're sending the transaction. This is not part of the \n"
+  "                             transaction, just kept in your wallet."},
+          {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
+  "                             The recipient will receive less coins than you enter in the amount field."},
+          {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
+          {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
+          {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
+  "       \"UNSET\"\n"
+  "       \"ECONOMICAL\"\n"
+  "       \"CONSERVATIVE\""},
+      },
+          RPCResult{
+      "\"txid\"                  (string) The transaction id.\n"
+          },
+          RPCExamples{
+              HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1")
+      + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"donation\" \"seans outpost\"")
+      + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
+      + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
+          },
+      }.Check (request);
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,
