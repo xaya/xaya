@@ -4293,8 +4293,13 @@ UniValue getauxblock(const JSONRPCRequest& request)
     /* Submit a block instead.  */
     assert(request.params.size() == 2);
     const std::string& hash = request.params[0].get_str();
-    g_mining_keys.MarkBlockSubmitted(pwallet, hash);
-    return AuxpowMiner::get().submitAuxBlock(hash, request.params[1].get_str());
+
+    const bool fAccepted
+        = AuxpowMiner::get().submitAuxBlock(hash, request.params[1].get_str());
+    if (fAccepted)
+        g_mining_keys.MarkBlockSubmitted(pwallet, hash);
+
+    return fAccepted;
 }
 
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
