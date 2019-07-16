@@ -485,14 +485,6 @@ name_update (const JSONRPCRequest& request)
   {
     LOCK (mempool.cs);
     outp = mempool.lastNameOutput (name);
-
-    /* TODO:  For now, we disallow chained updates.  The mempool accepts them,
-       but until most relaying nodes and miners have updated to accept them
-       as well, we should not create them through the wallet.  Once the network
-       is sufficiently updated, remove this restriction.  */
-    if (!outp.IsNull ())
-      throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                          "there is already a pending operation for this name");
   }
 
   if (outp.IsNull ())
