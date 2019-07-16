@@ -12,7 +12,6 @@ from test_framework.messages import (
   CTxIn,
   CTxOut,
 )
-from test_framework.names import buildMultiUpdate
 from test_framework.util import (
   assert_equal,
   assert_greater_than,
@@ -192,22 +191,18 @@ class GameBlocksTest (XayaZmqTest):
 
     # Construct two updates of a single name in one block, to verify that
     # edge case is also handled correctly.
-    txn = buildMultiUpdate (self.node, "p/x", [
-      json.dumps ({"g": {"a": 1, "b": 2}}),
-      json.dumps ({"g": {"a": 3}}),
-    ])
-    for tx in txn:
-      self.node.sendrawtransaction (tx.serialize ().hex ())
+    id1 = self.node.name_update ("p/x", json.dumps ({"g": {"a": 1, "b": 2}}))
+    id2 = self.node.name_update ("p/x", json.dumps ({"g": {"a": 3}}))
     self.node.generate (1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 2)
-    assertMove (data["moves"][0], txn[0].hash, "x", 1)
-    assertMove (data["moves"][1], txn[1].hash, "x", 3)
+    assertMove (data["moves"][0], id1, "x", 1)
+    assertMove (data["moves"][1], id2, "x", 3)
 
     _, data = self.games["b"].receive ()
     assert_equal (len (data["moves"]), 1)
-    assertMove (data["moves"][0], txn[0].hash, "x", 2)
+    assertMove (data["moves"][0], id1, "x", 2)
 
   def _test_inputs (self):
     """
@@ -334,19 +329,15 @@ class GameBlocksTest (XayaZmqTest):
     # Do two admin commands of one game in a single block.  This is not possible
     # with ordinary commands, as the mempool policy forbids it.  It is valid
     # if a block is constructed directly, though.
-    txn = buildMultiUpdate (self.node, "g/a", [
-      json.dumps ({"cmd": "first"}),
-      json.dumps ({"cmd": "second"}),
-    ])
-    for tx in txn:
-      self.node.sendrawtransaction (tx.serialize ().hex ())
+    id1 = self.node.name_update ("g/a", json.dumps ({"cmd": "first"}))
+    id2 = self.node.name_update ("g/a", json.dumps ({"cmd": "second"}))
     self.node.generate (1)
 
     _, data = self.games["a"].receive ()
     assert_equal (data["moves"], [])
     assert_equal (data["admin"], [
-      {"txid": txn[0].hash, "cmd": "first"},
-      {"txid": txn[1].hash, "cmd": "second"},
+      {"txid": id1, "cmd": "first"},
+      {"txid": id2, "cmd": "second"},
     ])
 
     _, data = self.games["b"].receive ()
