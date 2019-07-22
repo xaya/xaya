@@ -54,6 +54,7 @@ class GameBlocksTest (XayaZmqTest):
     args = []
     args.append ("-zmqpubgameblocks=%s" % self.address)
     args.append ("-maxgameblockattaches=10")
+    args.append ("-acceptnonstdtxn=1")
     args.extend (["-trackgame=%s" % g for g in ["a", "b", "other"]])
     self.add_nodes (self.num_nodes, extra_args=[args])
     self.start_nodes ()

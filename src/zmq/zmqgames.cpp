@@ -275,11 +275,15 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
   blockData.pushKV ("hash", blkHash.GetHex ());
   if (!block.hashPrevBlock.IsNull ())
     blockData.pushKV ("parent", block.hashPrevBlock.GetHex ());
-  const CBlockIndex* pindex = LookupBlockIndex (blkHash);
-  assert (pindex != nullptr);
-  blockData.pushKV ("height", pindex->nHeight);
   blockData.pushKV ("timestamp", block.GetBlockTime ());
   blockData.pushKV ("rngseed", block.GetRngSeed ().GetHex ());
+
+  {
+    LOCK (cs_main);
+    const CBlockIndex* pindex = LookupBlockIndex (blkHash);
+    assert (pindex != nullptr);
+    blockData.pushKV ("height", pindex->nHeight);
+  }
 
   UniValue tmpl(UniValue::VOBJ);
   tmpl.pushKV ("block", blockData);
