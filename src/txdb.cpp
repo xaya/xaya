@@ -341,7 +341,7 @@ bool CCoinsViewDB::ValidateNameDB() const
     if (blockHash.IsNull())
         nHeight = 0;
     else
-        nHeight = mapBlockIndex.find(blockHash)->second->nHeight;
+        nHeight = ::BlockIndex ().find(blockHash)->second->nHeight;
 
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
@@ -528,7 +528,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
     pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
 
-    // Load mapBlockIndex
+    // Load m_block_index
     while (pcursor->Valid()) {
         boost::this_thread::interruption_point();
         if (ShutdownRequested()) return false;

@@ -190,13 +190,11 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
      part of SendMoneyToScript and should stay in sync.  */
 
   CCoinControl coinControl;
-  ReserveDestination rdest(&wallet);
   CAmount nFeeRequired;
   int nChangePosRet = -1;
 
   CTransactionRef tx;
-  if (!wallet.CreateTransaction (locked_chain, vecSend,
-                                 nameInput, tx, rdest,
+  if (!wallet.CreateTransaction (locked_chain, vecSend, nameInput, tx,
                                  nFeeRequired, nChangePosRet, strError,
                                  coinControl))
     {
@@ -208,7 +206,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
     }
 
   CValidationState state;
-  if (!wallet.CommitTransaction (tx, {}, {}, rdest, state))
+  if (!wallet.CommitTransaction (tx, {}, {}, state))
     {
       strError = strprintf ("Error: The transaction was rejected!"
                             "  Reason given: %s", FormatStateMessage (state));

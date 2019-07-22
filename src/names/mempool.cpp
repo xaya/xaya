@@ -233,7 +233,7 @@ CNameMemPool::check (const CCoinsView& coins) const
   if (blockHash.IsNull())
     nHeight = 0;
   else
-    nHeight = mapBlockIndex.find (blockHash)->second->nHeight;
+    nHeight = ::BlockIndex ().find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   std::map<valtype, unsigned> nameUpdates;

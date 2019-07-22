@@ -39,7 +39,7 @@ BIP16_ACTIVATION_HEIGHT = 432
 class NameMultisigTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([[]] * 2)
+    self.setup_name_test ([["-acceptnonstdtxn=1"]] * 2)
 
   def add_options (self, parser):
     parser.add_argument ("--bip16-active", dest="activated", default=False,
