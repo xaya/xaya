@@ -197,9 +197,6 @@ public:
             /* dTxRate  */ 0.0058,
         };
 
-        /* disable fallback fee on mainnet */
-        m_fallback_fee_enabled = false;
-
         /* See also doc/NamecoinBugs.txt for more explanation on the
            historical bugs added below.  */
 
@@ -352,9 +349,6 @@ public:
             0.0027
         };
 
-        /* enable fallback fee on testnet */
-        m_fallback_fee_enabled = true;
-
         assert(mapHistoricBugs.empty());
     }
 
@@ -443,9 +437,6 @@ public:
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         bech32_hrp = "ncrt";
-
-        /* enable fallback fee on regtest */
-        m_fallback_fee_enabled = true;
 
         assert(mapHistoricBugs.empty());
     }
