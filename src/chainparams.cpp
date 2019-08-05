@@ -50,7 +50,7 @@ Redeem script:
   512103c278d06b977e67b8ea45ef24e3c96a9258c47bc4cce3d0b497b690d672497b6e21
   0221ac9dc97fe12a98374344d08b458a9c2c1df9afb29dd6089b94a3b4dc9ad57052ae
 
-The constant below is the HASH160 of the dedeem script.  In other words, the
+The constant below is the HASH160 of the redeem script.  In other words, the
 final premine script will be:
   OP_HASH160 hexPremineAddress OP_EQUAL
 */

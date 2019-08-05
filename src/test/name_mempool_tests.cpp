@@ -198,7 +198,7 @@ BOOST_FIXTURE_TEST_CASE (name_register, NameMempoolTestSetup)
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (!mempool.checkNameOps (tx2));
 
-  mempool.removeRecursive (tx1);
+  mempool.removeRecursive (tx1, MemPoolRemovalReason::EXPIRY);
   BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.checkNameOps (tx1));
   BOOST_CHECK (mempool.checkNameOps (tx2));
@@ -223,15 +223,15 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
-  mempool.removeRecursive (tx2);
+  mempool.removeRecursive (tx2, MemPoolRemovalReason::EXPIRY);
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
-  mempool.removeRecursive (tx1);
+  mempool.removeRecursive (tx1, MemPoolRemovalReason::EXPIRY);
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("bar")));
 
-  mempool.removeRecursive (tx3);
+  mempool.removeRecursive (tx3, MemPoolRemovalReason::EXPIRY);
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (!mempool.updatesName (Name ("bar")));
 }

@@ -112,6 +112,9 @@ Bitcoin-Qt.app
 Xaya-Qt.app
 background.tiff*
 
+# Qt Creator
+Makefile.am.user
+
 # Unit-tests
 Makefile.test
 bitcoin-qt_test
