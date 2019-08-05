@@ -31,7 +31,11 @@ class PSBTTest(BitcoinTestFramework):
         # test depends on that.  Since we changed it (for now, pending
         # segwit activation in Namecoin), explicitly specify the address
         # type for this test.
-        self.extra_args = [["-addresstype=p2sh-segwit"]] * self.num_nodes
+        self.extra_args = [
+            ["-addresstype=p2sh-segwit", "-walletrbf=1"],
+            ["-addresstype=p2sh-segwit", "-walletrbf=0"],
+            []
+        ]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -216,18 +220,18 @@ class PSBTTest(BitcoinTestFramework):
         # replaceable arg
         block_height = self.nodes[0].getblockcount()
         unspent = self.nodes[0].listunspent()[0]
-        psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], block_height+2, {"replaceable":True}, False)
+        psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], block_height+2, {"replaceable": False}, False)
         decoded_psbt = self.nodes[0].decodepsbt(psbtx_info["psbt"])
         for tx_in, psbt_in in zip(decoded_psbt["tx"]["vin"], decoded_psbt["inputs"]):
-            assert_equal(tx_in["sequence"], MAX_BIP125_RBF_SEQUENCE)
+            assert_greater_than(tx_in["sequence"], MAX_BIP125_RBF_SEQUENCE)
             assert "bip32_derivs" not in psbt_in
         assert_equal(decoded_psbt["tx"]["locktime"], block_height+2)
 
-        # Same construction with only locktime set
-        psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], block_height, {}, True)
+        # Same construction with only locktime set and RBF explicitly enabled
+        psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], block_height, {"replaceable": True}, True)
         decoded_psbt = self.nodes[0].decodepsbt(psbtx_info["psbt"])
         for tx_in, psbt_in in zip(decoded_psbt["tx"]["vin"], decoded_psbt["inputs"]):
-            assert tx_in["sequence"] > MAX_BIP125_RBF_SEQUENCE
+            assert_equal(tx_in["sequence"], MAX_BIP125_RBF_SEQUENCE)
             assert "bip32_derivs" in psbt_in
         assert_equal(decoded_psbt["tx"]["locktime"], block_height)
 
@@ -235,8 +239,15 @@ class PSBTTest(BitcoinTestFramework):
         psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}])
         decoded_psbt = self.nodes[0].decodepsbt(psbtx_info["psbt"])
         for tx_in in decoded_psbt["tx"]["vin"]:
-            assert tx_in["sequence"] > MAX_BIP125_RBF_SEQUENCE
+            assert_equal(tx_in["sequence"], MAX_BIP125_RBF_SEQUENCE)
         assert_equal(decoded_psbt["tx"]["locktime"], 0)
+
+        # Same construction without optional arguments, for a node with -walletrbf=0
+        unspent1 = self.nodes[1].listunspent()[0]
+        psbtx_info = self.nodes[1].walletcreatefundedpsbt([{"txid":unspent1["txid"], "vout":unspent1["vout"]}], [{self.nodes[2].getnewaddress():unspent1["amount"]+1}], block_height)
+        decoded_psbt = self.nodes[1].decodepsbt(psbtx_info["psbt"])
+        for tx_in in decoded_psbt["tx"]["vin"]:
+            assert_greater_than(tx_in["sequence"], MAX_BIP125_RBF_SEQUENCE)
 
         # Make sure change address wallet does not have P2SH innerscript access to results in success
         # when attempting BnB coin selection
