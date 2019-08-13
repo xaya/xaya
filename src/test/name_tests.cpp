@@ -558,6 +558,14 @@ BOOST_AUTO_TEST_CASE (is_value_valid)
     }
   )", NameEncoding::UTF8), state));
 
+  /* Valid JSON with duplicate keys.  */
+  BOOST_CHECK (IsValueValid (DecodeName (R"(
+    {
+      "text": "foo",
+      "text": "bar"
+    }
+  )", NameEncoding::UTF8), state));
+
   /* Invalid JSON or not a JSON object.  */
   BOOST_CHECK (!IsValueValid (DecodeName ("abc", NameEncoding::ASCII), state));
   BOOST_CHECK (!IsValueValid (

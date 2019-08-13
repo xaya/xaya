@@ -80,8 +80,19 @@ class NameRegistrationTest (NameTestFramework):
     self.checkName (0, "x/test-name", val ("test-value"))
     self.generate (0, 1)
     self.checkName (1, "x/test-name", valueOfLength (2048))
-    self.checkNameHistory (1, "x/test-name",
-                           [val ("test-value"), valueOfLength (2048)])
+
+    # In Xaya, we also verify that the value must be valid JSON.
+    # It is specifically allowed to have JSON objects with duplicated keys.
+    # Verify this is true.
+    duplicateKeys = '{"x": 1, "x": 2}'
+    self.nodes[0].name_update ("x/test-name", duplicateKeys)
+    self.generate (0, 1)
+    self.checkName (1, "x/test-name", duplicateKeys)
+    self.checkNameHistory (1, "x/test-name", [
+      val ("test-value"),
+      valueOfLength (2048),
+      duplicateKeys,
+    ])
 
     addrB = self.nodes[1].getnewaddress ()
     self.nodes[0].name_update ("x/test-name", val ("sent"),
@@ -92,9 +103,13 @@ class NameRegistrationTest (NameTestFramework):
     self.nodes[1].name_update ("x/test-name", val ("updated"))
     self.generate (0, 1)
     data = self.checkName (0, "x/test-name", val ("updated"))
-    self.checkNameHistory (1, "x/test-name",
-                           [val ("test-value"), valueOfLength (2048),
-                            val ("sent"), val ("updated")])
+    self.checkNameHistory (1, "x/test-name", [
+      val ("test-value"),
+      valueOfLength (2048),
+      duplicateKeys,
+      val ("sent"),
+      val ("updated"),
+    ])
 
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
