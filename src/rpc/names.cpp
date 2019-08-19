@@ -441,7 +441,7 @@ name_show (const JSONRPCRequest& request)
   CNameData data;
   {
     LOCK (cs_main);
-    if (!pcoinsTip->GetName (name, data))
+    if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
       {
         std::ostringstream msg;
         msg << "name not found: " << EncodeNameForMessage (name);
@@ -506,14 +506,15 @@ name_history (const JSONRPCRequest& request)
   {
     LOCK (cs_main);
 
-    if (!pcoinsTip->GetName (name, data))
+    const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+    if (!coinsTip.GetName (name, data))
       {
         std::ostringstream msg;
         msg << "name not found: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
 
-    if (!pcoinsTip->GetNameHistory (name, history))
+    if (!coinsTip.GetNameHistory (name, history))
       assert (history.empty ());
   }
 
@@ -640,7 +641,8 @@ name_scan (const JSONRPCRequest& request)
 
   valtype name;
   CNameData data;
-  std::unique_ptr<CNameIterator> iter(pcoinsTip->IterateNames ());
+  const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  std::unique_ptr<CNameIterator> iter(coinsTip.IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); )
     {
       const int height = data.getHeight ();
@@ -928,8 +930,9 @@ name_checkdb (const JSONRPCRequest& request)
   ).Check (request);
 
   LOCK (cs_main);
-  pcoinsTip->Flush ();
-  return pcoinsTip->ValidateNameDB ();
+  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  coinsTip.Flush ();
+  return coinsTip.ValidateNameDB ();
 }
 
 } // namespace

@@ -483,8 +483,9 @@ CheckNameDB (bool disconnect)
         return;
     }
 
-  pcoinsTip->Flush ();
-  const bool ok = pcoinsTip->ValidateNameDB ();
+  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  coinsTip.Flush ();
+  const bool ok = coinsTip.ValidateNameDB ();
 
   /* The DB is inconsistent (mismatch between UTXO set and names DB) between
      (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's

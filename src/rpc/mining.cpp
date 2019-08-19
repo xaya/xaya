@@ -355,7 +355,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
             "}\n"
                 },
                 RPCExamples{
-                    HelpExampleCli("getblocktemplate", "{\"rules\": [\"segwit\"]}")
+                    HelpExampleCli("getblocktemplate", "'{\"rules\": [\"segwit\"]}'")
             + HelpExampleRpc("getblocktemplate", "{\"rules\": [\"segwit\"]}")
                 },
             }.Check(request);
@@ -523,7 +523,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     pblock->nNonce = 0;
 
     // NOTE: If at some point we support pre-segwit miners post-segwit-activation, this needs to take segwit support into consideration
-    const bool fPreSegWit = !IsWitnessEnabled(pindexPrev, consensusParams);
+    const bool fPreSegWit = (pindexPrev->nHeight + 1 < consensusParams.SegwitHeight);
 
     UniValue aCaps(UniValue::VARR); aCaps.push_back("proposal");
 

@@ -391,7 +391,8 @@ name_new (const JSONRPCRequest& request)
     {
       LOCK (cs_main);
       CNameData oldData;
-      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+      if (coinsTip.GetName (name, oldData) && !oldData.isExpired ())
         throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name exists already");
     }
 
@@ -461,7 +462,7 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
       const COutPoint outp(txid, i);
 
       Coin coin;
-      if (!pcoinsTip->GetCoin (outp, coin))
+      if (!::ChainstateActive ().CoinsTip ().GetCoin (outp, coin))
         continue;
 
       if (!coin.out.IsNull ()
@@ -555,7 +556,8 @@ name_firstupdate (const JSONRPCRequest& request)
     {
       LOCK (cs_main);
       CNameData oldData;
-      if (pcoinsTip->GetName (name, oldData) && !oldData.isExpired ())
+      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+      if (coinsTip.GetName (name, oldData) && !oldData.isExpired ())
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name is already active");
     }
@@ -674,7 +676,8 @@ name_update (const JSONRPCRequest& request)
       LOCK (cs_main);
 
       CNameData oldData;
-      if (!pcoinsTip->GetName (name, oldData) || oldData.isExpired ())
+      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+      if (!coinsTip.GetName (name, oldData) || oldData.isExpired ())
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
 
@@ -775,7 +778,7 @@ sendtoname (const JSONRPCRequest& request)
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
-  if (!pcoinsTip->GetName (name, data))
+  if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
     {
       std::ostringstream msg;
       msg << "name not found: " << EncodeNameForMessage (name);

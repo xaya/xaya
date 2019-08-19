@@ -175,6 +175,10 @@ class AddressTypeTest(BitcoinTestFramework):
         assert info['desc'] == descsum_create(info['desc'][:-9])
         # Verify that stripping the checksum and feeding it to getdescriptorinfo roundtrips
         assert info['desc'] == self.nodes[0].getdescriptorinfo(info['desc'][:-9])['descriptor']
+        assert_equal(info['desc'][-8:], self.nodes[0].getdescriptorinfo(info['desc'][:-9])['checksum'])
+        # Verify that keeping the checksum and feeding it to getdescriptorinfo roundtrips
+        assert info['desc'] == self.nodes[0].getdescriptorinfo(info['desc'])['descriptor']
+        assert_equal(info['desc'][-8:], self.nodes[0].getdescriptorinfo(info['desc'])['checksum'])
 
         if not multisig and typ == 'legacy':
             # P2PKH
@@ -215,10 +219,9 @@ class AddressTypeTest(BitcoinTestFramework):
         self.test_address(node_sender, change_addresses[0], multisig=False, typ=expected_type)
 
     def run_test(self):
-        # Mine 500 blocks on node5 to bring nodes out of IBD and make sure that
-        # no coinbases are maturing for the nodes-under-test during the test.
-        # Also activates segwit at height 432.
-        self.nodes[5].generate(500)
+        # Mine 101 blocks on node5 to bring nodes out of IBD and make sure that
+        # no coinbases are maturing for the nodes-under-test during the test
+        self.nodes[5].generate(101)
         self.sync_blocks()
 
         uncompressed_1 = "0496b538e853519c726a2c91e61ec11600ae1390813a627c66fb8be7947be63c52da7589379515d4e0a604f8141781e62294721166bf621e73a82cbf2342c858ee"

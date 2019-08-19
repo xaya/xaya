@@ -61,6 +61,14 @@ tuned to conserve memory with additional CXXFLAGS:
 
     ./configure CXXFLAGS="--param ggc-min-expand=1 --param ggc-min-heapsize=32768"
 
+Alternatively, or in addition, debugging information can be skipped for compilation. The default compile flags are
+`-g -O2`, and can be changed with:
+
+    ./configure CXXFLAGS="-O2"
+
+Finally, clang (often less resource hungry) can be used instead of gcc, which is used by default:
+
+    ./configure CXX=clang++ CC=clang
 
 ## Linux Distribution Specific Instructions
 
@@ -88,7 +96,7 @@ Otherwise, you can build from self-compiled `depends` (see above).
 To build Namecoin Core without wallet, see [*Disable-wallet mode*](/doc/build-unix.md#disable-wallet-mode)
 
 
-Optional (see --with-miniupnpc and --enable-upnp-default):
+Optional (see `--with-miniupnpc` and `--enable-upnp-default`):
 
     sudo apt-get install libminiupnpc-dev
 
@@ -122,9 +130,13 @@ Build requirements:
 
     sudo dnf install gcc-c++ libtool make autoconf automake openssl-devel libevent-devel boost-devel libdb4-devel libdb4-cxx-devel python3
 
-Optional:
+Optional (see `--with-miniupnpc` and `--enable-upnp-default`):
 
     sudo dnf install miniupnpc-devel
+
+ZMQ dependencies (provides ZMQ API):
+
+    sudo dnf install zeromq-devel
 
 To build with Qt 5 you need the following:
 

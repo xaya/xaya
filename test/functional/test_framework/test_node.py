@@ -25,6 +25,7 @@ from .authproxy import JSONRPCException
 from .util import (
     MAX_NODES,
     append_config,
+    config_file,
     delete_cookie_file,
     get_rpc_proxy,
     rpc_url,
@@ -68,6 +69,7 @@ class TestNode():
 
         self.index = i
         self.datadir = datadir
+        self.bitcoinconf = os.path.join(self.datadir, config_file)
         self.stdout_dir = os.path.join(self.datadir, "stdout")
         self.stderr_dir = os.path.join(self.datadir, "stderr")
         self.chain = chain

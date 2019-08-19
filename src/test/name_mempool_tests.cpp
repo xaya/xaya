@@ -313,7 +313,7 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
-  CCoinsViewCache view(pcoinsTip.get());
+  CCoinsViewCache view(&::ChainstateActive ().CoinsTip ());
   const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);

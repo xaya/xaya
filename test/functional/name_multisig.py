@@ -26,20 +26,25 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
+  connect_nodes_bi,
   hex_str_to_bytes,
+  softfork_active,
 )
 
 from decimal import Decimal
 import codecs
 import io
 
-BIP16_ACTIVATION_HEIGHT = 432
-
 
 class NameMultisigTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([["-acceptnonstdtxn=1"]] * 2)
+    # For now, BIP16 is active (we do not yet have access to the parsed
+    # options).  If --bip16-active is false, we restart the node later on.
+    # Since Segwit assumes that BIP16 is active and we do not need Segwit
+    # for this test at all, just disable it always.
+    self.node_args = ["-acceptnonstdtxn=1", "-segwitheight=-1"]
+    self.setup_name_test ([self.node_args] * 2)
 
   def add_options (self, parser):
     parser.add_argument ("--bip16-active", dest="activated", default=False,
@@ -173,7 +178,7 @@ class NameMultisigTest (NameTestFramework):
     assert_raises_rpc_error (-26, None,
                              self.nodes[0].sendrawtransaction, partial['hex'])
 
-    # Sign it fully and transmit it.
+    # Sign it fully.
     signed = self.nodes[1].signrawtransactionwithwallet (partial['hex'])
     assert signed['complete']
     tx = signed['hex']
@@ -298,15 +303,18 @@ class NameMultisigTest (NameTestFramework):
     self.checkNameWithHeight (0, name, "value4", baseHeight + 6)
 
   def run_test (self):
-    if self.options.activated:
-      self.generate (0, BIP16_ACTIVATION_HEIGHT, syncBefore=False)
+    if not self.options.activated:
+      self.log.info ("Disabling BIP16 for the test")
+      self.node_args.append ("-bip16height=1000000")
+      for i in range (2):
+        self.restart_node (i, extra_args=self.node_args)
+      connect_nodes_bi (self.nodes, 0, 1)
+
+    assert_equal (softfork_active (self.nodes[0], "bip16"),
+                  self.options.activated)
 
     self.test_2of2_multisig ()
     self.test_namescript_p2sh ()
-
-    if not self.options.activated:
-      assert_greater_than (BIP16_ACTIVATION_HEIGHT,
-                           self.nodes[0].getblockcount ())
 
 
 if __name__ == '__main__':

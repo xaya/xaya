@@ -243,10 +243,11 @@ BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
   if (nameOutFound && nameOpOut.getNameOp () == OP_NAME_FIRSTUPDATE)
     {
       bool nameNewFound = false;
+      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
       for (const auto& txIn : tx.vin)
         {
           Coin coin;
-          if (!pcoinsTip->GetCoin (txIn.prevout, coin))
+          if (!coinsTip.GetCoin (txIn.prevout, coin))
             continue;
 
           const CNameScript op(coin.out.scriptPubKey);
