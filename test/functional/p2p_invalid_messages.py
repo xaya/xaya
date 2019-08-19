@@ -66,7 +66,7 @@ class InvalidMessagesTest(BitcoinTestFramework):
         msg_at_size = msg_unrecognized(str_data="b" * valid_data_limit)
         assert len(msg_at_size.serialize()) == msg_limit
 
-        increase_allowed = 1.0
+        increase_allowed = 0.5
         if [s for s in os.environ.get("BITCOIN_CONFIG", "").split(" ") if "--with-sanitizers" in s and "address" in s]:
             increase_allowed = 3.5
         with node.assert_memory_usage_stable(increase_allowed=increase_allowed):
@@ -75,7 +75,11 @@ class InvalidMessagesTest(BitcoinTestFramework):
                 "memory exhaustion. May take a bit...")
 
             # Run a bunch of times to test for memory exhaustion.
-            for _ in range(80):
+            # Upstream uses 80 iterations here, but its messages are 8x smaller.
+            # So with 10 iterations, we get the same amount of junk data sent
+            # to the node.  If we use 80 here, Python uses an insane amount of
+            # memory by itself.
+            for _ in range(10):
                 node.p2p.send_message(msg_at_size)
 
             # Check that, even though the node is being hammered by nonsense from one

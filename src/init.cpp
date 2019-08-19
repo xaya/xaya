@@ -15,7 +15,6 @@
 #include <blockfilter.h>
 #include <chain.h>
 #include <chainparams.h>
-#include <coins.h>
 #include <compat/sanity.h>
 #include <consensus/validation.h>
 #include <fs.h>
@@ -27,6 +26,7 @@
 #include <key.h>
 #include <miner.h>
 #include <net.h>
+#include <net_permissions.h>
 #include <net_processing.h>
 #include <netbase.h>
 #include <policy/feerate.h>
@@ -149,7 +149,6 @@ NODISCARD static bool CreatePidFile()
 // shutdown thing.
 //
 
-static std::unique_ptr<CCoinsViewErrorCatcher> pcoinscatcher;
 static std::unique_ptr<ECCVerifyHandle> globalVerifyHandle;
 
 static boost::thread_group threadGroup;
@@ -234,8 +233,14 @@ void Shutdown(InitInterfaces& interfaces)
     }
 
     // FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
-    if (pcoinsTip != nullptr) {
-        ::ChainstateActive().ForceFlushStateToDisk();
+    //
+    // g_chainstate is referenced here directly (instead of ::ChainstateActive()) because it
+    // may not have been initialized yet.
+    {
+        LOCK(cs_main);
+        if (g_chainstate && g_chainstate->CanFlushToDisk()) {
+            g_chainstate->ForceFlushStateToDisk();
+        }
     }
 
     // After there are no more peers/RPC left to give us new data which may generate
@@ -250,12 +255,10 @@ void Shutdown(InitInterfaces& interfaces)
 
     {
         LOCK(cs_main);
-        if (pcoinsTip != nullptr) {
-            ::ChainstateActive().ForceFlushStateToDisk();
+        if (g_chainstate && g_chainstate->CanFlushToDisk()) {
+            g_chainstate->ForceFlushStateToDisk();
+            g_chainstate->ResetCoinsViews();
         }
-        pcoinsTip.reset();
-        pcoinscatcher.reset();
-        pcoinsdbview.reset();
         pblocktree.reset();
     }
     for (const auto& client : interfaces.chain_clients) {
@@ -821,11 +824,6 @@ void InitParameterInteraction()
     }
 }
 
-static std::string ResolveErrMsg(const char * const optname, const std::string& strBind)
-{
-    return strprintf(_("Cannot resolve -%s address: '%s'").translated, optname, strBind);
-}
-
 /**
  * Initialize global loggers.
  *
@@ -857,7 +855,7 @@ namespace { // Variables internal to initialization process only
 int nMaxConnections;
 int nUserMaxConnections;
 int nFD;
-ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK | NODE_NETWORK_LIMITED | NODE_WITNESS);
+ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK | NODE_NETWORK_LIMITED);
 int64_t peer_connect_timeout;
 std::vector<BlockFilterType> g_enabled_filter_types;
 
@@ -1466,10 +1464,10 @@ bool AppInitMain(InitInterfaces& interfaces)
             bool is_coinsview_empty;
             try {
                 LOCK(cs_main);
+                // This statement makes ::ChainstateActive() usable.
+                g_chainstate = MakeUnique<CChainState>();
                 UnloadBlockIndex();
-                pcoinsTip.reset();
-                pcoinsdbview.reset();
-                pcoinscatcher.reset();
+
                 // new CBlockTreeDB tries to delete the existing file, which
                 // fails if it's still open from the previous loop. Close it first:
                 pblocktree.reset();
@@ -1520,9 +1518,12 @@ bool AppInitMain(InitInterfaces& interfaces)
                 // At this point we're either in reindex or we've loaded a useful
                 // block tree into BlockIndex()!
 
-                pcoinsdbview.reset(new CCoinsViewDB(nCoinDBCache, false, fReset || fReindexChainState));
-                pcoinscatcher.reset(new CCoinsViewErrorCatcher(pcoinsdbview.get()));
-                pcoinscatcher->AddReadErrCallback([]() {
+                ::ChainstateActive().InitCoinsDB(
+                    /* cache_size_bytes */ nCoinDBCache,
+                    /* in_memory */ false,
+                    /* should_wipe */ fReset || fReindexChainState);
+
+                ::ChainstateActive().CoinsErrorCatcher().AddReadErrCallback([]() {
                     uiInterface.ThreadSafeMessageBox(
                         _("Error reading from database, shutting down.").translated,
                         "", CClientUIInterface::MSG_ERROR);
@@ -1530,23 +1531,25 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // If necessary, upgrade from older database format.
                 // This is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!pcoinsdbview->Upgrade()) {
+                if (!::ChainstateActive().CoinsDB().Upgrade()) {
                     strLoadError = _("Error upgrading chainstate database").translated;
                     break;
                 }
 
                 // ReplayBlocks is a no-op if we cleared the coinsviewdb with -reindex or -reindex-chainstate
-                if (!ReplayBlocks(chainparams, pcoinsdbview.get())) {
+                if (!ReplayBlocks(chainparams, &::ChainstateActive().CoinsDB())) {
                     strLoadError = _("Unable to replay blocks. You will need to rebuild the database using -reindex-chainstate.").translated;
                     break;
                 }
 
                 // The on-disk coinsdb is now in a good state, create the cache
-                pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
+                ::ChainstateActive().InitCoinsCache();
+                assert(::ChainstateActive().CanFlushToDisk());
 
-                is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
+                is_coinsview_empty = fReset || fReindexChainState ||
+                    ::ChainstateActive().CoinsTip().GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
-                    // LoadChainTip sets ::ChainActive() based on pcoinsTip's best block
+                    // LoadChainTip sets ::ChainActive() based on CoinsTip()'s best block
                     if (!LoadChainTip(chainparams)) {
                         strLoadError = _("Error initializing block database").translated;
                         break;
@@ -1588,7 +1591,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                         break;
                     }
 
-                    if (!CVerifyDB().VerifyDB(chainparams, pcoinsdbview.get(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
+                    if (!CVerifyDB().VerifyDB(chainparams, &::ChainstateActive().CoinsDB(), gArgs.GetArg("-checklevel", DEFAULT_CHECKLEVEL),
                                   gArgs.GetArg("-checkblocks", DEFAULT_CHECKBLOCKS))) {
                         strLoadError = _("Corrupted block database detected").translated;
                         break;
@@ -1668,6 +1671,12 @@ bool AppInitMain(InitInterfaces& interfaces)
             uiInterface.InitMessage(_("Pruning blockstore...").translated);
             ::ChainstateActive().PruneAndFlush();
         }
+    }
+
+    if (chainparams.GetConsensus().SegwitHeight != std::numeric_limits<int>::max()) {
+        // Advertise witness capabilities.
+        // The option to not set NODE_WITNESS is only used in the tests and should be removed.
+        nLocalServices = ServiceFlags(nLocalServices | NODE_WITNESS);
     }
 
     // ********************************************************* Step 11: import blocks
@@ -1766,21 +1775,16 @@ bool AppInitMain(InitInterfaces& interfaces)
         connOptions.vBinds.push_back(addrBind);
     }
     for (const std::string& strBind : gArgs.GetArgs("-whitebind")) {
-        CService addrBind;
-        if (!Lookup(strBind.c_str(), addrBind, 0, false)) {
-            return InitError(ResolveErrMsg("whitebind", strBind));
-        }
-        if (addrBind.GetPort() == 0) {
-            return InitError(strprintf(_("Need to specify a port with -whitebind: '%s'").translated, strBind));
-        }
-        connOptions.vWhiteBinds.push_back(addrBind);
+        NetWhitebindPermissions whitebind;
+        std::string error;
+        if (!NetWhitebindPermissions::TryParse(strBind, whitebind, error)) return InitError(error);
+        connOptions.vWhiteBinds.push_back(whitebind);
     }
 
     for (const auto& net : gArgs.GetArgs("-whitelist")) {
-        CSubNet subnet;
-        LookupSubNet(net.c_str(), subnet);
-        if (!subnet.IsValid())
-            return InitError(strprintf(_("Invalid netmask specified in -whitelist: '%s'").translated, net));
+        NetWhitelistPermissions subnet;
+        std::string error;
+        if (!NetWhitelistPermissions::TryParse(net, subnet, error)) return InitError(error);
         connOptions.vWhitelistedRange.push_back(subnet);
     }
 
