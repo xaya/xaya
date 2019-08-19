@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   dataHeight1.fromScript (height1, COutPoint (uint256 (), 0), nameOp);
   dataHeight2.fromScript (height2, COutPoint (uint256 (), 0), nameOp);
 
-  CCoinsViewCache& view = *pcoinsTip;
+  CCoinsViewCache& view = ::ChainstateActive ().CoinsTip ();
 
   BOOST_CHECK (!view.GetName (name1, data2));
   view.SetName (name1, dataHeight2, false);
@@ -453,7 +453,7 @@ NameIterationTester::remove (const std::string& n)
 
 BOOST_AUTO_TEST_CASE (name_iteration)
 {
-  NameIterationTester tester(*pcoinsdbview);
+  NameIterationTester tester(::ChainstateActive ().CoinsDB ());
 
   tester.verify ();
 

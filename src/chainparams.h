@@ -88,7 +88,6 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
-    void TurnOffSegwitForUnitTests();
 
 protected:
     CChainParams() {}
@@ -130,11 +129,6 @@ const CChainParams &Params();
  * @throws std::runtime_error when the chain is not supported.
  */
 void SelectParams(const std::string& chain);
-
-/**
- * Allows turning off segwit for unit tests.
- */
-void TurnOffSegwitForUnitTests();
 
 /**
  * Returns the average target spacing of blocks (including all algorithms)

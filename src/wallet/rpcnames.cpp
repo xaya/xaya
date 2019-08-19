@@ -397,7 +397,7 @@ name_register (const JSONRPCRequest& request)
   {
     LOCK (cs_main);
     CNameData data;
-    if (pcoinsTip->GetName (name, data))
+    if (::ChainstateActive ().CoinsTip ().GetName (name, data))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
                           "this name exists already");
   }
@@ -490,7 +490,8 @@ name_update (const JSONRPCRequest& request)
       LOCK (cs_main);
 
       CNameData oldData;
-      if (!pcoinsTip->GetName (name, oldData))
+      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+      if (!coinsTip.GetName (name, oldData))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
 
@@ -591,7 +592,7 @@ sendtoname (const JSONRPCRequest& request)
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
-  if (!pcoinsTip->GetName (name, data))
+  if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
     {
       std::ostringstream msg;
       msg << "name not found: " << EncodeNameForMessage (name);

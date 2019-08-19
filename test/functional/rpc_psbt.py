@@ -80,10 +80,6 @@ class PSBTTest(BitcoinTestFramework):
         connect_nodes_bi(self.nodes, 0, 2)
 
     def run_test(self):
-        # Activate segwit at height 432.
-        self.nodes[0].generate (500)
-        self.sync_all()
-
         # Create and fund a raw tx for sending 10 BTC
         psbtx1 = self.nodes[0].walletcreatefundedpsbt([], {self.nodes[2].getnewaddress():10})['psbt']
 

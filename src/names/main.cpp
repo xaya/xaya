@@ -327,6 +327,7 @@ CheckNameDB (bool disconnect)
         return;
     }
 
-  pcoinsTip->Flush ();
-  assert (pcoinsTip->ValidateNameDB ());
+  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  coinsTip.Flush ();
+  assert (coinsTip.ValidateNameDB ());
 }

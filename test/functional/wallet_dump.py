@@ -102,9 +102,6 @@ class WalletDumpTest(BitcoinTestFramework):
         wallet_unenc_dump = os.path.join(self.nodes[0].datadir, "wallet.unencrypted.dump")
         wallet_enc_dump = os.path.join(self.nodes[0].datadir, "wallet.encrypted.dump")
 
-        # Activate segwit at height 432.
-        self.nodes[0].generate(500)
-
         # generate 30 addresses to compare against the dump
         # - 10 legacy P2PKH
         # - 10 P2SH-segwit
@@ -135,7 +132,7 @@ class WalletDumpTest(BitcoinTestFramework):
         assert_equal(found_p2sh_segwit_addr, test_addr_count)  # all keys must be in the dump
         assert_equal(found_bech32_addr, test_addr_count)  # all keys must be in the dump
         assert_equal(found_script_addr, 1)  # all scripts must be in the dump
-        assert_equal(found_addr_chg, 0)  # 0 blocks were mined
+        assert_equal(found_addr_chg, 0)  # 0 blocks where mined
         assert_equal(found_addr_rsv, 90 * 2)  # 90 keys plus 100% internal keys
 
         # encrypt wallet, restart, unlock and dump

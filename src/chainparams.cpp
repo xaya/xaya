@@ -154,11 +154,6 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
 
 } // anonymous namespace
 
-void CChainParams::TurnOffSegwitForUnitTests ()
-{
-  consensus.BIP16Height = 1000000;
-}
-
 /**
  * Main network
  */
@@ -177,6 +172,8 @@ public:
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
+        consensus.CSVHeight = 1;
+        consensus.SegwitHeight = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -184,9 +181,6 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
-
-        // CSV (BIP68, BIP112 and BIP113) as well as segwit (BIP141, BIP143 and
-        // BIP147) are deployed together with P2SH.
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Xaya mainnet chain at height
@@ -274,6 +268,8 @@ public:
         consensus.BIP34Height = 1;
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
+        consensus.CSVHeight = 1;
+        consensus.SegwitHeight = 0;
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
@@ -281,9 +277,6 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
-
-        // CSV (BIP68, BIP112 and BIP113) as well as segwit (BIP141, BIP143 and
-        // BIP147) are deployed together with P2SH.
 
         // The value is the chain work of the Xaya testnet chain at height
         // 11,000 with best block hash:
@@ -366,10 +359,12 @@ public:
         // The subsidy for regtest net is kept same as upstream Bitcoin, so
         // that we don't have to update many of the tests unnecessarily.
         consensus.initialSubsidy = 50 * COIN;
-        consensus.BIP16Height = 432; // Corresponds to activation height using BIP9 rules
+        consensus.BIP16Height = 0;
         consensus.BIP34Height = 500; // BIP34 activated on regtest (Used in functional tests)
         consensus.BIP65Height = 1351; // BIP65 activated on regtest (Used in functional tests)
         consensus.BIP66Height = 1251; // BIP66 activated on regtest (Used in functional tests)
+        consensus.CSVHeight = 432; // CSV activated on regtest (Used in rpc activation tests)
+        consensus.SegwitHeight = 0; // SEGWIT is always activated on regtest unless overridden
         consensus.powLimitNeoscrypt = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
@@ -397,7 +392,7 @@ public:
         m_assumed_blockchain_size = 0;
         m_assumed_chain_state_size = 0;
 
-        UpdateVersionBitsParametersFromArgs(args);
+        UpdateActivationParametersFromArgs(args);
 
         genesis = CreateGenesisBlock (1300000000, 0, 0x207fffff,
                                       pszTimestampTestnet,
@@ -447,11 +442,32 @@ public:
         consensus.vDeployments[d].nStartTime = nStartTime;
         consensus.vDeployments[d].nTimeout = nTimeout;
     }
-    void UpdateVersionBitsParametersFromArgs(const ArgsManager& args);
+    void UpdateActivationParametersFromArgs(const ArgsManager& args);
 };
 
-void CRegTestParams::UpdateVersionBitsParametersFromArgs(const ArgsManager& args)
+void CRegTestParams::UpdateActivationParametersFromArgs(const ArgsManager& args)
 {
+    if (gArgs.IsArgSet("-bip16height")) {
+        int64_t height = gArgs.GetArg("-bip16height", consensus.BIP16Height);
+        if (height < -1 || height >= std::numeric_limits<int>::max()) {
+            throw std::runtime_error(strprintf("Activation height %ld for BIP16 is out of valid range. Use -1 to disable BIP16.", height));
+        } else if (height == -1) {
+            LogPrintf("BIP16 disabled for testing\n");
+            height = std::numeric_limits<int>::max();
+        }
+        consensus.BIP16Height = static_cast<int>(height);
+    }
+    if (gArgs.IsArgSet("-segwitheight")) {
+        int64_t height = gArgs.GetArg("-segwitheight", consensus.SegwitHeight);
+        if (height < -1 || height >= std::numeric_limits<int>::max()) {
+            throw std::runtime_error(strprintf("Activation height %ld for segwit is out of valid range. Use -1 to disable segwit.", height));
+        } else if (height == -1) {
+            LogPrintf("Segwit disabled for testing\n");
+            height = std::numeric_limits<int>::max();
+        }
+        consensus.SegwitHeight = static_cast<int>(height);
+    }
+
     if (!args.IsArgSet("-vbparams")) return;
 
     for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
@@ -504,16 +520,6 @@ void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
     globalChainParams = CreateChainParams(network);
-}
-
-void TurnOffSegwitForUnitTests ()
-{
-  /* TODO: It is ugly that we need a const-cast here, but this is only for
-     unit testing.  Upstream avoids this by turning off segwit through
-     forcing command-line args in the tests.  For that to work in our case,
-     we would have to have an explicit argument for BIP16.  */
-  auto* params = const_cast<CChainParams*> (globalChainParams.get ());
-  params->TurnOffSegwitForUnitTests ();
 }
 
 int64_t

@@ -86,8 +86,12 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
 
     mempool.setSanityCheck(1.0);
     pblocktree.reset(new CBlockTreeDB(1 << 20, true));
-    pcoinsdbview.reset(new CCoinsViewDB(1 << 23, true));
-    pcoinsTip.reset(new CCoinsViewCache(pcoinsdbview.get()));
+    g_chainstate = MakeUnique<CChainState>();
+    ::ChainstateActive().InitCoinsDB(
+        /* cache_size_bytes */ 1 << 23, /* in_memory */ true, /* should_wipe */ false);
+    assert(!::ChainstateActive().CanFlushToDisk());
+    ::ChainstateActive().InitCoinsCache();
+    assert(::ChainstateActive().CanFlushToDisk());
     if (!LoadGenesisBlock(chainparams)) {
         throw std::runtime_error("LoadGenesisBlock failed.");
     }
@@ -114,8 +118,7 @@ TestingSetup::~TestingSetup()
     g_connman.reset();
     g_banman.reset();
     UnloadBlockIndex();
-    pcoinsTip.reset();
-    pcoinsdbview.reset();
+    g_chainstate.reset();
     pblocktree.reset();
 }
 
@@ -123,7 +126,7 @@ TestChain100Setup::TestChain100Setup() : TestingSetup(CBaseChainParams::REGTEST)
 {
     // CreateAndProcessBlock() does not support building SegWit blocks, so don't activate in these tests.
     // TODO: fix the code to support SegWit blocks.
-    TurnOffSegwitForUnitTests();
+    gArgs.ForceSetArg("-segwitheight", "432");
     SelectParams(CBaseChainParams::REGTEST);
 
     // Generate a 100-block chain:

@@ -155,6 +155,7 @@ BITCOIN_CORE_H = \
   names/main.h \
   names/mempool.h \
   net.h \
+  net_permissions.h \
   net_processing.h \
   netaddress.h \
   netbase.h \
@@ -484,6 +485,7 @@ libbitcoin_common_a_SOURCES = \
   names/encoding.cpp \
   netaddress.cpp \
   netbase.cpp \
+  net_permissions.cpp \
   outputtype.cpp \
   policy/feerate.cpp \
   policy/policy.cpp \

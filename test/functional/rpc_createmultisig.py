@@ -36,8 +36,7 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         self.check_addmultisigaddress_errors()
 
         self.log.info('Generating blocks ...')
-        # Activate segwit for the test (at height 432).
-        node0.generate(500)
+        node0.generate(149)
         self.sync_all()
 
         self.moved = 0
@@ -92,8 +91,8 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         bal2 = node2.getbalance()
 
         height = node0.getblockchaininfo()["blocks"]
-        assert 549 < height < 649
-        total = 149 * 50 + 150 * 25 + 150 * 12.5 + (height - 449 - 100) * 6.25
+        assert 150 < height < 350
+        total = 149 * 50 + (height - 149 - 100) * 25
         assert bal1 == 0
         assert bal2 == self.moved
         assert bal0 + bal1 + bal2 == total

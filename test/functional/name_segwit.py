@@ -23,18 +23,23 @@ from test_framework.util import (
   assert_greater_than,
   assert_raises_rpc_error,
   hex_str_to_bytes,
+  softfork_active,
 )
 
 from decimal import Decimal
 import io
 
-SEGWIT_ACTIVATION_HEIGHT = 432
+SEGWIT_ACTIVATION_HEIGHT = 300
 
 
 class NameSegwitTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([["-debug", "-par=1"]] * 1)
+    self.setup_name_test ([[
+      "-debug",
+      "-par=1",
+      f"-segwitheight={SEGWIT_ACTIVATION_HEIGHT}"
+    ]] * 1)
 
   def checkNameValueAddr (self, name, value, addr):
     """
@@ -130,7 +135,7 @@ class NameSegwitTest (NameTestFramework):
     # Before segwit activation, the script should behave as anyone-can-spend.
     # It will still fail due to non-mandatory flag checks when submitted
     # into the mempool.
-    assert_greater_than (SEGWIT_ACTIVATION_HEIGHT, self.node.getblockcount ())
+    assert not softfork_active (self.node, "segwit")
     assert_raises_rpc_error (-26, 'Script failed an OP_EQUALVERIFY operation',
                              self.tryUpdateSegwitName,
                              name, val ("wrong value"), addr)
@@ -144,14 +149,14 @@ class NameSegwitTest (NameTestFramework):
     self.checkNameValueAddr (name, val ("stolen"), addr)
 
     # Activate segwit.  Restore original value for name.
-    self.node.generate (400)
+    self.node.generate (100)
     self.node.name_update (name, value, {"destAddress": addr})
     self.node.generate (1)
     self.checkNameValueAddr (name, value, addr)
 
     # Verify that now trying to update the name without a proper signature
     # fails differently.
-    assert_greater_than (self.node.getblockcount (), SEGWIT_ACTIVATION_HEIGHT)
+    assert softfork_active (self.node, "segwit")
     assert_equal (self.tryUpdateInBlock (name, val ("wrong value"), addr,
                                          withWitness=True),
                   'non-mandatory-script-verify-flag'

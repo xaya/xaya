@@ -14,7 +14,7 @@ from test_framework.messages import BlockTransactions, BlockTransactionsRequest,
 from test_framework.mininode import mininode_lock, P2PInterface
 from test_framework.script import CScript, OP_TRUE, OP_DROP
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, wait_until
+from test_framework.util import assert_equal, wait_until, softfork_active
 
 # TestP2PConn: A peer we use to send messages to bitcoind, and store responses.
 class TestP2PConn(P2PInterface):
@@ -796,10 +796,6 @@ class CompactBlocksTest(BitcoinTestFramework):
         assert_equal(int(node.getbestblockhash(), 16), block.sha256)
 
     def run_test(self):
-        # Active segwit at height 432.
-        height = self.nodes[0].getblockcount ()
-        self.nodes[0].generate (432 - height)
-
         # Setup the p2p connections
         self.segwit_node = self.nodes[0].add_p2p_connection(TestP2PConn(cmpct_version=2))
         self.old_node = self.nodes[0].add_p2p_connection(TestP2PConn(cmpct_version=1), services=NODE_NETWORK)
@@ -807,6 +803,8 @@ class CompactBlocksTest(BitcoinTestFramework):
 
         # We will need UTXOs to construct transactions in later tests.
         self.make_utxos()
+
+        assert softfork_active(self.nodes[0], "segwit")
 
         self.log.info("Testing SENDCMPCT p2p message... ")
         self.test_sendcmpct(self.segwit_node, old_node=self.old_node)
