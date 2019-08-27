@@ -4825,6 +4825,8 @@ extern RPCHelpMan name_list(); // in rpcnames.cpp
 extern RPCHelpMan name_new();
 extern RPCHelpMan name_firstupdate();
 extern RPCHelpMan name_update();
+extern RPCHelpMan queuerawtransaction();
+extern RPCHelpMan listqueuedtransactions();
 extern RPCHelpMan sendtoname();
 
 Span<const CRPCCommand> GetWalletRPCCommands()
@@ -4906,6 +4908,8 @@ static const CRPCCommand commands[] =
     { "names",              &name_new,                       },
     { "names",              &name_firstupdate,               },
     { "names",              &name_update,                    },
+    { "names",              &queuerawtransaction             },
+    { "names",              &listqueuedtransactions,         },
     { "names",              &sendtoname,                     },
 };
 // clang-format on

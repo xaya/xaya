@@ -7,6 +7,7 @@
 #include <coins.h>
 #include <consensus/validation.h>
 #include <crypto/hkdf_sha256_32.h>
+#include <core_io.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <key_io.h>
@@ -826,6 +827,80 @@ name_update ()
 }
   );
 }
+
+/* ************************************************************************** */
+
+RPCHelpMan
+queuerawtransaction ()
+{
+  return RPCHelpMan ("queuerawtransaction",
+      "\nQueue a transaction for future broadcast.",
+      {
+          {"hexstring", RPCArg::Type::STR, RPCArg::Optional::NO, "The hex string of the raw transaction"},
+      },
+      RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
+      RPCExamples {
+          HelpExampleCli("queuerawtransaction", "txhex") +
+          HelpExampleRpc("queuerawtransaction", "txhex")
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet) return NullUniValue;
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR});
+
+  // parse transaction from parameter
+  CMutableTransaction mtxParsed;
+  if (!DecodeHexTx(mtxParsed, request.params[0].get_str(), true, true))
+    throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+  CTransactionRef txParsed(MakeTransactionRef(mtxParsed));
+  const uint256& hashTx = txParsed->GetHash();
+
+  // Validate transaction
+  NodeContext& node = EnsureAnyNodeContext(request.context);
+  ChainstateManager& chainman = EnsureChainman(node);
+  CTxMemPool& mempool = EnsureMemPool(node);
+
+  {
+    LOCK (cs_main);
+    // Check validity
+    MempoolAcceptResult result = AcceptToMemoryPool(chainman.ActiveChainstate(), mempool, txParsed,
+      /* bypass_limits */ false, /* test_accept */ true);
+    // If it can be broadcast immediately, do that and return early.
+    if (result.m_result_type == MempoolAcceptResult::ResultType::VALID)
+    {
+      std::string unused_err_string;
+      // Don't check max fee.
+      const TransactionError err = BroadcastTransaction(node, txParsed, unused_err_string,
+        /* max_tx_fee */ 0, /* relay */ true, /* wait_callback */ false);
+      assert(err == TransactionError::OK);
+
+      return hashTx.GetHex();
+    }
+
+    // Otherwise, it's not valid right now.
+    if (result.m_state.GetResult() == TxValidationResult::TX_CONSENSUS)
+        /* We only want to avoid unconditionally invalid transactions.
+         * Blocking e.g. orphan transactions is not desirable. */
+      throw JSONRPCError (RPC_WALLET_ERROR, strprintf("Invalid transaction (%s)", result.m_state.GetRejectReason()));
+  }
+
+  // After these checks, add it to the queue.
+  {
+    LOCK (wallet->cs_wallet);
+    if (!wallet->WriteQueuedTransaction(hashTx, mtxParsed))
+    {
+      throw JSONRPCError (RPC_WALLET_ERROR, "Error queueing transaction");
+    }
+  }
+
+  return hashTx.GetHex();
+}
+  );
+}
+
 
 /* ************************************************************************** */
 
