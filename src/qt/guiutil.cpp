@@ -39,7 +39,6 @@
 #include <QClipboard>
 #include <QDateTime>
 #include <QDesktopServices>
-#include <QDesktopWidget>
 #include <QDoubleValidator>
 #include <QFileDialog>
 #include <QFont>
@@ -58,9 +57,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-#include <objc/objc-runtime.h>
 #include <CoreServices/CoreServices.h>
 #include <QProcess>
+
+void ForceActivation();
 #endif
 
 #define URI_SCHEME "namecoin"
@@ -362,10 +362,7 @@ bool isObscured(QWidget *w)
 void bringToFront(QWidget* w)
 {
 #ifdef Q_OS_MAC
-    // Force application activation on macOS. With Qt 5.4 this is required when
-    // an action in the dock menu is triggered.
-    id app = objc_msgSend((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-    objc_msgSend(app, sel_registerName("activateIgnoringOtherApps:"), YES);
+    ForceActivation();
 #endif
 
     if (w) {
@@ -918,7 +915,7 @@ qreal calculateIdealFontSize(int width, const QString& text, QFont font, qreal m
     while(font_size >= minPointSize) {
         font.setPointSizeF(font_size);
         QFontMetrics fm(font);
-        if (fm.width(text) < width) {
+        if (TextWidth(fm, text) < width) {
             break;
         }
         font_size -= 0.5;
@@ -950,11 +947,20 @@ void PolishProgressDialog(QProgressDialog* dialog)
 {
 #ifdef Q_OS_MAC
     // Workaround for macOS-only Qt bug; see: QTBUG-65750, QTBUG-70357.
-    const int margin = dialog->fontMetrics().width("X");
+    const int margin = TextWidth(dialog->fontMetrics(), ("X"));
     dialog->resize(dialog->width() + 2 * margin, dialog->height());
     dialog->show();
 #else
     Q_UNUSED(dialog);
+#endif
+}
+
+int TextWidth(const QFontMetrics& fm, const QString& text)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
+    return fm.horizontalAdvance(text);
+#else
+    return fm.width(text);
 #endif
 }
 
