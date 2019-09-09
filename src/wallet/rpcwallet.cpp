@@ -135,10 +135,10 @@ static void WalletTxToJSON(interfaces::Chain& chain, interfaces::Chain::Lock& lo
         entry.pushKV("generated", true);
     if (confirms > 0)
     {
-        entry.pushKV("blockhash", wtx.hashBlock.GetHex());
-        entry.pushKV("blockindex", wtx.nIndex);
+        entry.pushKV("blockhash", wtx.m_confirm.hashBlock.GetHex());
+        entry.pushKV("blockindex", wtx.m_confirm.nIndex);
         int64_t block_time;
-        bool found_block = chain.findBlock(wtx.hashBlock, nullptr /* block */, &block_time);
+        bool found_block = chain.findBlock(wtx.m_confirm.hashBlock, nullptr /* block */, &block_time);
         assert(found_block);
         entry.pushKV("blocktime", block_time);
     } else {
@@ -1679,6 +1679,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
                 {
                     {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction id"},
                     {"include_watchonly", RPCArg::Type::BOOL, /* default */ "true for watch-only wallets, otherwise false", "Whether to include watch-only addresses in balance calculation and details[]"},
+                    {"decode", RPCArg::Type::BOOL, /* default */ "false", "Whether to add a field with the decoded transaction"},
                 },
                 RPCResult{
             "{\n"
@@ -1714,11 +1715,13 @@ static UniValue gettransaction(const JSONRPCRequest& request)
             "    ,...\n"
             "  ],\n"
             "  \"hex\" : \"data\"         (string) Raw data for transaction\n"
+            "  \"decoded\" : transaction         (json object) Optional, the decoded transaction\n"
             "}\n"
                 },
                 RPCExamples{
                     HelpExampleCli("gettransaction", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"")
             + HelpExampleCli("gettransaction", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\" true")
+            + HelpExampleCli("gettransaction", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\" false true")
             + HelpExampleRpc("gettransaction", "\"1075db55d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d\"")
                 },
             }.Check(request);
@@ -1737,6 +1740,8 @@ static UniValue gettransaction(const JSONRPCRequest& request)
     if (ParseIncludeWatchonly(request.params[1], *pwallet)) {
         filter |= ISMINE_WATCH_ONLY;
     }
+
+    bool decode_tx = request.params[2].isNull() ? false : request.params[2].get_bool();
 
     UniValue entry(UniValue::VOBJ);
     auto it = pwallet->mapWallet.find(hash);
@@ -1762,6 +1767,12 @@ static UniValue gettransaction(const JSONRPCRequest& request)
 
     std::string strHex = EncodeHexTx(*wtx.tx, pwallet->chain().rpcSerializationFlags());
     entry.pushKV("hex", strHex);
+
+    if (decode_tx) {
+        UniValue decoded(UniValue::VOBJ);
+        TxToUniv(*wtx.tx, uint256(), decoded, false);
+        entry.pushKV("decoded", decoded);
+    }
 
     return entry;
 }
@@ -3329,7 +3340,10 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     }
     pwallet->chain().findCoins(coins);
 
-    return SignTransaction(mtx, request.params[1], pwallet, coins, false, request.params[2]);
+    // Parse the prevtxs array
+    ParsePrevouts(request.params[1], nullptr, coins);
+
+    return SignTransaction(mtx, pwallet, coins, request.params[2]);
 }
 
 static UniValue bumpfee(const JSONRPCRequest& request)
@@ -4428,7 +4442,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
     { "wallet",             "getreceivedbylabel",               &getreceivedbylabel,            {"label","minconf"} },
-    { "wallet",             "gettransaction",                   &gettransaction,                {"txid","include_watchonly"} },
+    { "wallet",             "gettransaction",                   &gettransaction,                {"txid","include_watchonly","decode"} },
     { "wallet",             "getunconfirmedbalance",            &getunconfirmedbalance,         {} },
     { "wallet",             "getbalances",                      &getbalances,                   {} },
     { "wallet",             "getwalletinfo",                    &getwalletinfo,                 {} },
