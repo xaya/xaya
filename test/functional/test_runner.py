@@ -198,6 +198,8 @@ BASE_SCRIPTS = [
     'feature_uacomment.py',
     'wallet_coinbase_category.py',
     'feature_filelock.py',
+    # FIXME: Reenable with data created for Namecoin.
+    #'p2p_dos_header_tree.py',
     'p2p_unrequested_blocks.py',
     'feature_includeconf.py',
     'rpc_deriveaddresses.py',
@@ -244,6 +246,7 @@ BASE_SCRIPTS = [
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
     'feature_versionbits_warning.py',
+    'p2p_dos_header_tree.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests
