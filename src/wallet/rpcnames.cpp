@@ -11,6 +11,7 @@
 #include <names/common.h>
 #include <names/encoding.h>
 #include <names/main.h>
+#include <names/mempool.h>
 #include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
@@ -657,18 +658,20 @@ name_update (const JSONRPCRequest& request)
      build upon the last one to get a valid chain.  If there are none, then we
      look up the last outpoint from the name database instead.  */
 
+  const unsigned chainLimit = gArgs.GetArg ("-limitnamechains",
+                                            DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
     LOCK (mempool.cs);
-    outp = mempool.lastNameOutput (name);
 
-    /* TODO:  For now, we disallow chained updates.  The mempool accepts them,
-       but until most relaying nodes and miners have updated to accept them
-       as well, we should not create them through the wallet.  Once the network
-       is sufficiently updated, remove this restriction.  */
-    if (!outp.IsNull ())
+    const unsigned pendingOps = mempool.pendingNameChainLength (name);
+    if (pendingOps >= chainLimit)
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
-                          "there is already a pending operation for this name");
+                          "there are already too many pending operations"
+                          " on this name");
+
+    if (pendingOps > 0)
+      outp = mempool.lastNameOutput (name);
   }
 
   if (outp.IsNull ())

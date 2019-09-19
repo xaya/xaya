@@ -18,6 +18,18 @@ class CTxMemPool;
 class CTxMemPoolEntry;
 
 /**
+ * Default limit for the length of pending name chains that can be
+ * created with name_update.
+ *
+ * For now, we do not allow any chains (besides a single operation)
+ * at all.  This is because we introduced support for them only recently,
+ * so that most miners/relaying nodes may not accept them at all.  Once
+ * the network has upgraded sufficiently, we should increase this to a value
+ * higher but still lower than the general mempool ancestor limit.
+ */
+static constexpr unsigned DEFAULT_NAME_CHAIN_LIMIT = 1;
+
+/**
  * Handle the name component of the transaction mempool.  This keeps track
  * of name operations that are in the mempool and ensures that all transactions
  * kept are consistent.  For instance, no two transactions are allowed to
