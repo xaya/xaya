@@ -44,6 +44,9 @@ private:
    * this may be a whole chain of updates.  This field is used to remove the
    * transactions from the mempool should the name expire (and the updates
    * thus become invalid).
+   *
+   * We also use this to determine the length of chains of pending name_update
+   * operations.
    */
   std::map<valtype, std::set<uint256>> updates;
 
@@ -86,6 +89,13 @@ public:
       return false;
     return !mit->second.empty ();
   }
+
+  /**
+   * Returns the number of pending operations on this name in the mempool.
+   * In other words, this is the "length" of the chain of operations that
+   * are already pending.
+   */
+  unsigned pendingChainLength (const valtype& name) const;
 
   /**
    * Returns the last outpoint of a (potential) chain of pending name operations

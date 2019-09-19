@@ -175,7 +175,8 @@ BOOST_FIXTURE_TEST_CASE (empty_mempool, NameMempoolTestSetup)
   BOOST_CHECK (mempool.checkNameOps (Tx (UpdateScript (ADDR, "foo", "y"))));
 }
 
-BOOST_FIXTURE_TEST_CASE (lastNameOutput, NameMempoolTestSetup)
+BOOST_FIXTURE_TEST_CASE (pendingChainLength_lastNameOutput,
+                         NameMempoolTestSetup)
 {
   const auto txNew = Tx (NewScript (ADDR, "new", 'a'));
   const auto txReg = Tx (FirstScript (ADDR, "reg", 'b'));
@@ -223,6 +224,11 @@ BOOST_FIXTURE_TEST_CASE (lastNameOutput, NameMempoolTestSetup)
                   == COutPoint (txUpd.GetHash (), 0));
   BOOST_CHECK (mempool.lastNameOutput (Name ("chain"))
                   == COutPoint (chain3.GetHash (), 1));
+
+  BOOST_CHECK_EQUAL (mempool.pendingNameChainLength (Name ("new")), 0);
+  BOOST_CHECK_EQUAL (mempool.pendingNameChainLength (Name ("reg")), 1);
+  BOOST_CHECK_EQUAL (mempool.pendingNameChainLength (Name ("upd")), 1);
+  BOOST_CHECK_EQUAL (mempool.pendingNameChainLength (Name ("chain")), 3);
 }
 
 BOOST_FIXTURE_TEST_CASE (name_new, NameMempoolTestSetup)

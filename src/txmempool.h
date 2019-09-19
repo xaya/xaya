@@ -754,6 +754,13 @@ public:
         return names.updatesName(name);
     }
 
+    unsigned
+    pendingNameChainLength (const valtype& name) const
+    {
+        AssertLockHeld(cs);
+        return names.pendingChainLength(name);
+    }
+
     COutPoint
     lastNameOutput(const valtype& name) const
     {
