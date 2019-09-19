@@ -283,6 +283,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
     const CBlockIndex* pindex = LookupBlockIndex (blkHash);
     assert (pindex != nullptr);
     blockData.pushKV ("height", pindex->nHeight);
+    blockData.pushKV ("mediantime", pindex->GetMedianTimePast ());
   }
 
   UniValue tmpl(UniValue::VOBJ);

@@ -66,6 +66,7 @@ The `DATA` part, finally, is a JSON object with the relevant information:
           "parent": PREVIOUS-BLOCK-HASH,
           "height": BLOCK-HEIGHT,
           "timestamp": BLOCK-TIME,
+          "mediantime": MEDIAN-TIME,
           "rngseed": RNG-SEED,
         },
       "admin": ADMIN-COMMANDS,
@@ -100,7 +101,7 @@ The placeholders have the following meaning:
 * **`PREVIOUS-BLOCK-HASH`:**
   The hash of the previously-current block, i.e. the block on top of which
   the new one is attached.
-* **`RNG-SEED`, `BLOCK-HEIGHT` and `BLOCK-TIME`:**
+* **`RNG-SEED`, `BLOCK-HEIGHT`, `BLOCK-TIME` and `MEDIAN-TIME`:**
   Additional data about the attached block, which might be used by the game
   engine in the update logic.
 * **`TXID`:**
