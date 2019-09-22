@@ -14,6 +14,20 @@
 
 /* ************************************************************************** */
 
+unsigned
+CNameMemPool::pendingChainLength (const valtype& name) const
+{
+  unsigned res = 0;
+  if (registersName (name))
+    ++res;
+
+  const auto mit = updates.find (name);
+  if (mit != updates.end ())
+    res += mit->second.size ();
+
+  return res;
+}
+
 namespace
 {
 

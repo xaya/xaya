@@ -17,7 +17,7 @@ class NameMultiUpdateTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_clean_chain = True
-    self.setup_name_test ([["-debug", "-namehistory"]] * 1)
+    self.setup_name_test ([["-debug", "-namehistory", "-limitnamechains=10"]])
 
   def run_test (self):
     self.node = self.nodes[0]
@@ -55,9 +55,19 @@ class NameMultiUpdateTest (NameTestFramework):
 
     # Detach the last block and check that both transactions are restored
     # to the mempool.
-    self.node.invalidateblock (self.node.getbestblockhash ())
+    blk = self.node.getbestblockhash ()
+    self.node.invalidateblock (blk)
     self.checkName (0, name, val ("second"))
     assert_equal (self.node.name_pending (name), pending)
+    self.node.reconsiderblock (blk)
+    assert_equal (self.node.name_pending (), [])
+
+    # Perform a long chain of updates, which should run into the chain limit.
+    for n in range (10):
+      self.node.name_update (name, val ("value %d" % n))
+    assert_equal (len (self.node.name_pending (name)), 10)
+    assert_raises_rpc_error (-25, "too many pending operations",
+                             self.node.name_update, name, val ("other update"))
 
 
 if __name__ == '__main__':

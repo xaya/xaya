@@ -11,6 +11,7 @@
 #include <names/common.h>
 #include <names/encoding.h>
 #include <names/main.h>
+#include <names/mempool.h>
 #include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
@@ -479,10 +480,20 @@ name_update (const JSONRPCRequest& request)
      build upon the last one to get a valid chain.  If there are none, then we
      look up the last outpoint from the name database instead.  */
 
+  const unsigned chainLimit = gArgs.GetArg ("-limitnamechains",
+                                            DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
     LOCK (mempool.cs);
-    outp = mempool.lastNameOutput (name);
+
+    const unsigned pendingOps = mempool.pendingNameChainLength (name);
+    if (pendingOps >= chainLimit)
+      throw JSONRPCError (RPC_TRANSACTION_ERROR,
+                          "there are already too many pending operations"
+                          " on this name");
+
+    if (pendingOps > 0)
+      outp = mempool.lastNameOutput (name);
   }
 
   if (outp.IsNull ())

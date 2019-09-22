@@ -26,6 +26,7 @@
 #include <key.h>
 #include <miner.h>
 #include <names/encoding.h>
+#include <names/mempool.h>
 #include <net.h>
 #include <net_permissions.h>
 #include <net_processing.h>
@@ -557,6 +558,7 @@ void SetupServerArgs()
 
     gArgs.AddArg("-nameencoding=<enc>", strprintf("Sets the default encoding used for names in the RPC interface (default: %s)", EncodingToString(DEFAULT_NAME_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-valueencoding=<enc>", strprintf("Sets the default encoding used for values in the RPC interface (default: %s)", EncodingToString(DEFAULT_VALUE_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    gArgs.AddArg("-limitnamechains=<n>", strprintf("Limit pending chains of name operations for name_update to <n> (default: %u)", DEFAULT_NAME_CHAIN_LIMIT), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
 
     gArgs.AddArg("-maxgameblockattaches=<n>", strprintf("Sets the maximum number of attach steps sent for a single game_sendupdates request (default: %d)", DEFAULT_MAX_GAME_BLOCK_ATTACHES), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
 
