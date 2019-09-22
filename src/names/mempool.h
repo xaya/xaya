@@ -18,6 +18,18 @@ class CTxMemPool;
 class CTxMemPoolEntry;
 
 /**
+ * Default limit for the length of pending name chains that can be
+ * created with name_update.
+ *
+ * For now, we do not allow any chains (besides a single operation)
+ * at all.  This is because we introduced support for them only recently,
+ * so that most miners/relaying nodes may not accept them at all.  Once
+ * the network has upgraded sufficiently, we should increase this to a value
+ * higher but still lower than the general mempool ancestor limit.
+ */
+static constexpr unsigned DEFAULT_NAME_CHAIN_LIMIT = 1;
+
+/**
  * Handle the name component of the transaction mempool.  This keeps track
  * of name operations that are in the mempool and ensures that all transactions
  * kept are consistent.  For instance, no two transactions are allowed to
@@ -44,6 +56,9 @@ private:
    * this may be a whole chain of updates.  This field is used to remove the
    * transactions from the mempool should the name expire (and the updates
    * thus become invalid).
+   *
+   * We also use this to determine the length of chains of pending name_update
+   * operations.
    */
   std::map<valtype, std::set<uint256>> updates;
 
@@ -86,6 +101,13 @@ public:
       return false;
     return !mit->second.empty ();
   }
+
+  /**
+   * Returns the number of pending operations on this name in the mempool.
+   * In other words, this is the "length" of the chain of operations that
+   * are already pending.
+   */
+  unsigned pendingChainLength (const valtype& name) const;
 
   /**
    * Returns the last outpoint of a (potential) chain of pending name operations

@@ -5,7 +5,7 @@
 
 # Tests the behaviour of multiple updates for one name within a single block.
 
-from test_framework.names import NameTestFramework, buildMultiUpdate
+from test_framework.names import NameTestFramework
 
 from test_framework.util import (
   assert_equal,
@@ -17,7 +17,7 @@ class NameMultiUpdateTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_clean_chain = True
-    self.setup_name_test ([["-debug", "-namehistory"]] * 1)
+    self.setup_name_test ([["-debug", "-namehistory", "-limitnamechains=10"]])
 
   def run_test (self):
     self.node = self.nodes[0]
@@ -29,52 +29,46 @@ class NameMultiUpdateTest (NameTestFramework):
     self.node.generate (12)
     self.firstupdateName (0, name, new, "first")
 
-    # Building an update on top of the pending registration is not allowed
-    # by RPC, but is fine with the mempool itself.
-    assert_raises_rpc_error (-25, "already a pending operation",
-                             self.node.name_update, name, "wrong")
-    txn = buildMultiUpdate (self.node, name, ["second"])
-    self.node.sendrawtransaction (txn[0].serialize ().hex ())
+    # Building an update on top of a pending registration.
+    self.node.name_update (name, "second")
 
     # Finalise the registration.
     self.node.generate (1)
     self.checkName (0, name, "second", None, False)
     assert_equal (self.node.name_pending (), [])
 
-    # Update the name (keep the transaction pending) and check that another
-    # update by RPC is not allowed.
-    txid = self.node.name_update (name, "third")
-    assert_raises_rpc_error (-25, "already a pending operation",
-                             self.node.name_update, name, "wrong")
-    self.node.generate (1)
-    self.checkName (0, name, "third", None, False)
-    assert_equal (self.node.name_pending (), [])
-
-    # Build two update transactions building on each other and submit
-    # them directly to the mempool (bypassing the name_update check).
-    txn = buildMultiUpdate (self.node, name, ["fourth", "fifth"])
-    for tx in txn:
-      self.node.sendrawtransaction (tx.serialize ().hex ())
+    # Build two update transactions building on each other.
+    txn = []
+    txn.append (self.node.name_update (name, "third"))
+    txn.append (self.node.name_update (name, "fourth"))
 
     # Check that both are in the mempool.
-    assert_equal (set (self.node.getrawmempool ()), set ([
-      tx.hash for tx in txn
-    ]))
+    assert_equal (set (self.node.getrawmempool ()), set (txn))
     pending = self.node.name_pending (name)
     pendingNameVal = [(p["name"], p["value"]) for p in pending]
-    assert_equal (pendingNameVal, [(name, "fourth"), (name, "fifth")])
+    assert_equal (pendingNameVal, [(name, "third"), (name, "fourth")])
 
     # Mine transactions and verify the effect.
     self.node.generate (1)
-    self.checkName (0, name, "fifth", None, False)
+    self.checkName (0, name, "fourth", None, False)
     values = [h["value"] for h in self.node.name_history (name)]
-    assert_equal (values, ["first", "second", "third", "fourth", "fifth"])
+    assert_equal (values, ["first", "second", "third", "fourth"])
 
     # Detach the last block and check that both transactions are restored
     # to the mempool.
-    self.node.invalidateblock (self.node.getbestblockhash ())
-    self.checkName (0, name, "third", None, False)
+    blk = self.node.getbestblockhash ()
+    self.node.invalidateblock (blk)
+    self.checkName (0, name, "second", None, False)
     assert_equal (self.node.name_pending (name), pending)
+    self.node.reconsiderblock (blk)
+    assert_equal (self.node.name_pending (), [])
+
+    # Perform a long chain of updates, which should run into the chain limit.
+    for n in range (10):
+      self.node.name_update (name, "value %d" % n)
+    assert_equal (len (self.node.name_pending (name)), 10)
+    assert_raises_rpc_error (-25, "too many pending operations",
+                             self.node.name_update, name, "another update")
 
 
 if __name__ == '__main__':
