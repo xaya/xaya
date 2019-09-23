@@ -415,6 +415,9 @@ static void UpdatePreferredDownload(CNode* node, CNodeState* state) EXCLUSIVE_LO
 
 static void PushNodeVersion(CNode *pnode, CConnman* connman, int64_t nTime)
 {
+    // Note that pnode->GetLocalServices() is a reflection of the local
+    // services we were offering when the CNode object was created for this
+    // peer.
     ServiceFlags nLocalNodeServices = pnode->GetLocalServices();
     uint64_t nonce = pnode->GetLocalNonce();
     int nNodeStartingHeight = pnode->GetMyStartingHeight();
@@ -2596,7 +2599,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 }
                 AddOrphanTx(ptx, pfrom->GetId());
 
-                // DoS prevention: do not allow mapOrphanTransactions to grow unbounded
+                // DoS prevention: do not allow mapOrphanTransactions to grow unbounded (see CVE-2012-3789)
                 unsigned int nMaxOrphanTx = (unsigned int)std::max((int64_t)0, gArgs.GetArg("-maxorphantx", DEFAULT_MAX_ORPHAN_TRANSACTIONS));
                 unsigned int nEvicted = LimitOrphanTxSize(nMaxOrphanTx);
                 if (nEvicted > 0) {

@@ -26,7 +26,7 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
-  connect_nodes_bi,
+  connect_nodes,
   hex_str_to_bytes,
   softfork_active,
 )
@@ -308,7 +308,7 @@ class NameMultisigTest (NameTestFramework):
       self.node_args.append ("-bip16height=1000000")
       for i in range (2):
         self.restart_node (i, extra_args=self.node_args)
-      connect_nodes_bi (self.nodes, 0, 1)
+      connect_nodes (self.nodes[0], 1)
 
     assert_equal (softfork_active (self.nodes[0], "bip16"),
                   self.options.activated)
