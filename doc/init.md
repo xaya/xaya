@@ -53,11 +53,11 @@ Paths
 
 All three configurations assume several paths that might need to be adjusted.
 
-Binary:              `/usr/bin/namecoind`  
-Configuration file:  `/etc/namecoin/namecoin.conf`  
-Data directory:      `/var/lib/namecoind`  
+Binary:              `/usr/bin/namecoind`
+Configuration file:  `/etc/namecoin/namecoin.conf`
+Data directory:      `/var/lib/namecoind`
 PID file:            `/var/run/namecoind/namecoind.pid` (OpenRC and Upstart) or `/run/namecoind/namecoind.pid` (systemd)
-Lock file:           `/var/lock/subsys/namecoind` (CentOS)  
+Lock file:           `/var/lock/subsys/namecoind` (CentOS)
 
 The PID directory (if applicable) and data directory should both be owned by the
 namecoin user and group. It is advised for security reasons to make the
