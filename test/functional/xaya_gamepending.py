@@ -67,6 +67,7 @@ class GamePendingTest (XayaZmqTest):
     self._test_notWhenMined ()
     self._test_update ()
     self._test_multipleGames ()
+    self._test_duplicateKeys ()
     self._test_blockDetach (ctx)
 
     # After all the real tests, verify no more notifications are there.
@@ -137,6 +138,36 @@ class GamePendingTest (XayaZmqTest):
 
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "y", 2)
+
+    self.node.generate (1)
+
+  def _test_duplicateKeys (self):
+    self.log.info ("Testing duplicate JSON keys...")
+
+    mv = """
+      {
+        "g":
+          {
+            "a": "a1"
+          },
+        "g":
+          {
+            "a": "a2",
+            "b": "b1"
+          },
+        "g":
+          {
+            "b": "b2"
+          }
+      }
+    """
+    txid = self.node.name_update ("p/x", mv, {"valueEncoding": "utf8"})
+
+    _, data = self.games["a"].receive ()
+    assertMove (data, txid, "x", "a2")
+
+    _, data = self.games["b"].receive ()
+    assertMove (data, txid, "x", "b2")
 
     self.node.generate (1)
 

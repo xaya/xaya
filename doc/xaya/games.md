@@ -134,6 +134,64 @@ in the `cmd` field of the top-level JSON object.  For instance:
       "other stuff": "ignored",
     }
 
+## Duplicate JSON Keys
+
+The JSON standard allows object values to contain duplicate keys.  Ideally,
+this "feature" should not be used / relied upon at all, especially since
+many JSON libraries cannot handle this very well.
+
+### Moves
+
+From the point of view of moves in a Xaya game, these situations with
+duplicated JSON keys are interesting:
+
+    {
+      "g": {"first": "move 1"},
+      "g": {"second": "move 2"},
+    }
+
+For a duplicated `g` field like this, Xaya will process all of them in order.
+In the example above, the transaction specifies two valid moves,
+one for `g/first` and the other for `g/second`.
+
+    {
+      "g":
+        {
+          "my game": "move a",
+          "my game": "move b"
+        }
+    }
+
+If the game ID itself is duplicated (either within one `g` field or
+because the `g` field is also duplicated), then Xaya will ignore all
+moves **except the last**.  In other words, in the example above,
+**only `move b`** would be "the" move for `g/my game` in this transaction.
+
+    {
+      "g": {"my game": {"x": 1, "x": 2}}
+    }
+
+If keys are duplicated *within a move*, then the data will be passed on
+like that (i.e. `{"x": 1, "x": 2}`) as move to the game.  **Games must
+be prepared for this situation, and handle it gracefully in some
+well-defined way.**
+
+For instance, [`libxayagame`](https://github.com/xaya/libxayagame) will
+de-dup keys (keeping only the last within each JSON object) before passing
+data on to the individual game logic.
+
+### Admin Commands
+
+For an admin command, the `cmd` field can also be duplicated:
+
+    {
+      "cmd": "first",
+      "cmd": "second"
+    }
+
+In this case, all associated values are considered valid admin commands
+for the game in question.
+
 ## CHI Transactions in Games <a name="currency"></a>
 
 Games may also need to process CHI transactions, at least in a limited fashion.

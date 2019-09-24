@@ -77,9 +77,11 @@ class GameBlocksTest (XayaZmqTest):
     self._test_register ()
     self._test_blockData ()
     self._test_multipleUpdates ()
+    self._test_duplicateKeys ()
     self._test_inputs ()
     self._test_moveWithCurrency ()
     self._test_adminCmd ()
+    self._test_duplicateAdminCmds ()
     self._test_reorg ()
     self._test_sendUpdates ()
     self._test_maxGameBlockAttaches ()
@@ -204,6 +206,51 @@ class GameBlocksTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assert_equal (len (data["moves"]), 1)
     assertMove (data["moves"][0], id1, "x", 2)
+
+  def _test_duplicateKeys (self):
+    """
+    Tests what happens if there are duplicate JSON keys ("g" field or
+    game IDs within "g").  Those should be processed fine, and the last
+    of each game's moves be sent in the block notification.
+    """
+
+    self.log.info ("Testing duplicate JSON keys for moves...")
+
+    mv = """
+      {
+        "z": "some stuff to be ignored",
+        "g":
+          {
+            "a": "a1",
+            "x": "ignored"
+          },
+        "y": "some other stuff to be ignored",
+        "g":
+          {
+            "a": "a2",
+            "b": "b1"
+          },
+        "g": 42,
+        "g":
+          {
+            "b": "b2"
+          },
+        "x": "final stuff to be ignored"
+      }
+    """
+
+    # We need to specify the value encoding, since the default ASCII
+    # does not allow newlines.
+    txid = self.node.name_update ("p/x", mv, {"valueEncoding": "utf8"})
+    self.node.generate (1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], txid, "x", "a2")
+
+    _, data = self.games["b"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], txid, "x", "b2")
 
   def _test_inputs (self):
     """
@@ -339,6 +386,41 @@ class GameBlocksTest (XayaZmqTest):
     assert_equal (data["admin"], [
       {"txid": id1, "cmd": "first"},
       {"txid": id2, "cmd": "second"},
+    ])
+
+    _, data = self.games["b"].receive ()
+    assert_equal (data["moves"], [])
+    assert_equal (data["admin"], [])
+
+  def _test_duplicateAdminCmds (self):
+    """
+    Tests that multiple admin commands can be sent in a single move
+    by having a duplicate "cmd" JSON key.
+    """
+
+    self.log.info ("Testing duplicate keys for admin commands...")
+
+    cmds = """
+      {
+        "z": "some stuff that is ignored",
+        "cmd": "first",
+        "y": "some other stuff that is ignored",
+        "cmd": "second",
+        "z": "final stuff that is ignored",
+        "cmd": "third"
+      }
+    """
+
+    # We need to specify the value encoding, since the default ASCII
+    # does not allow newlines.
+    txid = self.node.name_update ("g/a", cmds, {"valueEncoding": "utf8"})
+    self.node.generate (1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (data["admin"], [
+      {"txid": txid, "cmd": "first"},
+      {"txid": txid, "cmd": "second"},
+      {"txid": txid, "cmd": "third"},
     ])
 
     _, data = self.games["b"].receive ()

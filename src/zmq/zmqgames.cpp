@@ -74,7 +74,12 @@ class TransactionData
 
 private:
 
-  /** Type for the map that holds moves for each game.  */
+  /**
+   * Type for the map that holds moves for each game.  Note that a single
+   * transaction may contain multiple moves for a single game, namely if
+   * it has duplicate JSON keys in the "g" object, or multiple "g" entries.
+   * In those cases, we want to always store/send the last of them.
+   */
   using MovePerGame = std::map<std::string, UniValue>;
 
   /** Move data for each game.  */
@@ -84,8 +89,11 @@ private:
   bool isAdmin = false;
   /** Game ID for which this is an admin command.  */
   std::string adminGame;
-  /** The admin command data (if any).  */
-  UniValue adminCmd;
+  /**
+   * The array of admin command data (if any).  There can be multiple entries
+   * if the move had duplicate "cmd" fields.
+   */
+  std::vector<UniValue> adminCmds;
 
 public:
 
@@ -104,19 +112,24 @@ public:
     return moves;
   }
 
-  /**
-   * Checks if this is an admin command.  If it is, the game ID and
-   * associated command value are returned.
-   */
   bool
-  IsAdminCommand (std::string& gameId, UniValue& cmd) const
+  IsAdminCommand () const
   {
-    if (!isAdmin)
-      return false;
+    return isAdmin;
+  }
 
-    gameId = adminGame;
-    cmd = adminCmd;
-    return true;
+  const std::string&
+  GetAdminGame () const
+  {
+    assert (isAdmin);
+    return adminGame;
+  }
+
+  const std::vector<UniValue>&
+  GetAdminCommands () const
+  {
+    assert (isAdmin);
+    return adminCmds;
   }
 
 };
@@ -152,12 +165,14 @@ TransactionData::TransactionData (const CTransaction& tx)
   const std::string name = EncodeName (nameOp.getOpName (), NameEncoding::UTF8);
   if (name.substr (0, 2) == "g/")
     {
-      if (!value.exists ("cmd"))
-        return;
-
       isAdmin = true;
       adminGame = name.substr (2);
-      adminCmd = value["cmd"];
+      assert (adminCmds.empty ());
+
+      for (size_t i = 0; i < value.size (); ++i)
+        if (value.getKeys ()[i] == "cmd")
+          adminCmds.push_back (value.getValues ()[i]);
+
       return;
     }
   assert (!isAdmin);
@@ -209,11 +224,26 @@ TransactionData::TransactionData (const CTransaction& tx)
   tmpl.pushKV ("out", out);
 
   /* Fill the per-game moves into the template.  */
-  for (const auto& game : g.getKeys ())
+  for (size_t i = 0; i < value.size (); ++i)
     {
-      UniValue obj = tmpl;
-      obj.pushKV ("move", g[game]);
-      moves.emplace (game, obj);
+      if (value.getKeys ()[i] != "g")
+        continue;
+      const auto& g = value.getValues ()[i];
+      if (!g.isObject ())
+        continue;
+
+      for (size_t j = 0; j < g.size (); ++j)
+        {
+          UniValue obj = tmpl;
+          obj.pushKV ("move", g.getValues ()[j]);
+
+          const std::string& game = g.getKeys ()[j];
+          auto mit = moves.find (game);
+          if (mit == moves.end ())
+            moves.emplace (game, obj);
+          else
+            mit->second = obj;
+        }
     }
 }
 
@@ -250,10 +280,9 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
           mit->second.push_back (entry.second);
         }
 
-      std::string adminGame;
-      UniValue adminCmd;
-      if (data.IsAdminCommand (adminGame, adminCmd))
+      if (data.IsAdminCommand ())
         {
+          const auto& adminGame = data.GetAdminGame ();
           auto mit = perGameAdminCmds.find (adminGame);
           if (mit == perGameAdminCmds.end ())
             continue;
@@ -261,11 +290,13 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
           assert (games.count (adminGame) > 0);
           assert (mit->second.isArray ());
 
-          UniValue cmd(UniValue::VOBJ);
-          cmd.pushKV ("txid", tx->GetHash ().GetHex ());
-          cmd.pushKV ("cmd", adminCmd);
-
-          mit->second.push_back (cmd);
+          for (const auto& cmd : data.GetAdminCommands ())
+            {
+              UniValue cmdJson(UniValue::VOBJ);
+              cmdJson.pushKV ("txid", tx->GetHash ().GetHex ());
+              cmdJson.pushKV ("cmd", cmd);
+              mit->second.push_back (cmdJson);
+            }
         }
     }
 
