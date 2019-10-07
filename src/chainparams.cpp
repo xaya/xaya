@@ -185,12 +185,12 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Xaya mainnet chain at height
-        // 340,000, with best block hash:
-        // e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000f469d71a33ceda65de424");
+        // 1,234,000, with best block hash:
+        // a853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000005f3932875f0873b98a368a");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xe685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47"); // 340,000
+        consensus.defaultAssumeValid = uint256S("0xa853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897"); // 1,234,000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -239,14 +239,15 @@ public:
             {
                 {      0, uint256S("ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656")},
                 { 340000, uint256S("e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47")},
+                {1234000, uint256S("a853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47
-            /* nTime    */ 1542180015,
-            /* nTxCount */ 362878,
-            /* dTxRate  */ 0.03627
+            // Data from rpc: getchaintxstats 4096 a853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897
+            /* nTime    */ 1570402226,
+            /* nTxCount */ 1924375,
+            /* dTxRate  */ 0.07199120150565784,
         };
     }
 
@@ -281,12 +282,12 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
 
         // The value is the chain work of the Xaya testnet chain at height
-        // 11,000 with best block hash:
-        // 57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000bce71d485b9");
+        // 70,000 with best block hash:
+        // e2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000ad96bc2631b9");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4"); // 11,000
+        consensus.defaultAssumeValid = uint256S("0xe2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1"); // 70,000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -333,14 +334,15 @@ public:
             {
                 {     0, uint256S("3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578")},
                 { 11000, uint256S("57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4")},
+                { 70000, uint256S("e2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4
-            /* nTime    */ 1541635161,
-            /* nTxCount */ 12842,
-            /* dTxRate  */ 0.00047259
+            // Data from rpc: getchaintxstats 4096 e2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1
+            /* nTime    */ 1570129934,
+            /* nTxCount */ 72978,
+            /* dTxRate  */ 0.003022522434976898,
         };
     }
 
