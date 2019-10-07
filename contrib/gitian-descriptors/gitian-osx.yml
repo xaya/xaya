@@ -1,5 +1,5 @@
 ---
-name: "xaya-core-osx-1.3"
+name: "xaya-core-osx-1.4"
 enable_cache: true
 distro: "ubuntu"
 suites:
