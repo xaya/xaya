@@ -110,12 +110,12 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Namecoin mainnet chain at height
-        // 400,000, with best block hash:
-        // 9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000001462665cec01086cca92814");
+        // 474,000, with best block hash:
+        // 83a3251ce38bf08481c3b6ab9128e5d0cbeedd0907dae64029d8669f35a64ad2
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000006d8d8f45cb3f4e48bba4b42");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce"); //400000
+        consensus.defaultAssumeValid = uint256S("0x83a3251ce38bf08481c3b6ab9128e5d0cbeedd0907dae64029d8669f35a64ad2"); // 474,000
 
         consensus.nAuxpowChainId = 0x0001;
         consensus.nAuxpowStartHeight = 19200;
@@ -183,14 +183,16 @@ public:
                 {182000, uint256S("d47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9")},
                 {193000, uint256S("3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58")},
                 {250000, uint256S("514ec75480df318ffa7eb4eff82e1c583c961aa64cce71b5922662f01ed1686a")},
+                {400000, uint256S("9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce")},
+                {474000, uint256S("83a3251ce38bf08481c3b6ab9128e5d0cbeedd0907dae64029d8669f35a64ad2")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 9d90cb7a56827c70b13192f1b2c6d6b2e6188abc13c5112d47cfd2f8efba8cce
-            /* nTime    */ 1527210216,
-            /* nTxCount */ 4787155,
-            /* dTxRate  */ 0.0058,
+            // Data from rpc: getchaintxstats 4096 83a3251ce38bf08481c3b6ab9128e5d0cbeedd0907dae64029d8669f35a64ad2
+            /* nTime    */ 1570335931,
+            /* nTxCount */ 5163032,
+            /* dTxRate  */ 0.01224869480062956,
         };
 
         /* See also doc/NamecoinBugs.txt for more explanation on the
@@ -273,12 +275,12 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Namecoin testnet chain at height
-        // 158,460, with best block hash:
-        // cebebb916288ed48cd8a359576d900c550203883bf69fc8d5ed92c5d778a1e32
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000005cfea5e7ee2dd9d9");
+        // 231,000, with best block hash:
+        // 4964042a9c9ca5f1e104246f4d70ecb4f7217e02a2656379560e4ee4590f9870
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000ed17e243960886ad");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xe0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954"); //130000
+        consensus.defaultAssumeValid = uint256S("0x4964042a9c9ca5f1e104246f4d70ecb4f7217e02a2656379560e4ee4590f9870"); // 231,100
 
         consensus.nAuxpowStartHeight = 0;
         consensus.nAuxpowChainId = 0x0001;
@@ -336,14 +338,15 @@ public:
                 { 48384, uint256S("00000001d528af69dce584f882e3bdb36127104988607b726591cc5e62287922")},
                 { 60480, uint256S("d3af823c32e890ca589dd4277aa4d27b8cd290396b7e0eeeee5121481fd43ca5")},
                 {130000, uint256S("e0a05455d89a54bb7c1b5bb785d6b1b7c5bda42ed4ce8dc19d68652ba8835954")},
+                {231000, uint256S("4964042a9c9ca5f1e104246f4d70ecb4f7217e02a2656379560e4ee4590f9870")},
             }
         };
 
         chainTxData = ChainTxData{
-            // TODO: Update using getchaintxstats as for mainnet.
-            1464247300,
-            173446,
-            0.0027
+            // Data from RPC: getchaintxstats 4096 4964042a9c9ca5f1e104246f4d70ecb4f7217e02a2656379560e4ee4590f9870
+            /* nTime    */ 1567409085,
+            /* nTxCount */ 274904,
+            /* dTxRate  */ 0.0003343483475626561,
         };
 
         assert(mapHistoricBugs.empty());
