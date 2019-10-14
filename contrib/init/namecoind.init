@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-#  namecoind The Namecoin core server.
+#  namecoind The namecoin core server.
 #
 #
 # chkconfig: 345 80 20
@@ -19,15 +19,14 @@ fi
 RETVAL=0
 
 prog=namecoind
-# you can override the lockfile via NAMECOIND_LOCKFILE
-# in /etc/sysconfig/namecoind
-lockfile=${NAMECOIND_LOCKFILE-/var/lock/subsys/namecoind}
+# you can override the lockfile via BITCOIND_LOCKFILE in /etc/sysconfig/namecoind
+lockfile=${BITCOIND_LOCKFILE-/var/lock/subsys/namecoind}
 
-# namecoind defaults to /usr/bin/namecoind, override with NAMECOIND_BIN
-namecoind=${NAMECOIND_BIN-/usr/bin/namecoind}
+# namecoind defaults to /usr/bin/namecoind, override with BITCOIND_BIN
+namecoind=${BITCOIND_BIN-/usr/bin/namecoind}
 
-# namecoind opts default to -disablewallet, override with NAMECOIND_OPTS
-namecoind_opts=${NAMECOIND_OPTS--disablewallet}
+# namecoind opts default to -disablewallet, override with BITCOIND_OPTS
+namecoind_opts=${BITCOIND_OPTS--disablewallet}
 
 start() {
     echo -n $"Starting $prog: "
@@ -40,7 +39,7 @@ start() {
 
 stop() {
     echo -n $"Stopping $prog: "
-    killproc $prog
+    killproc $prog -t600
     RETVAL=$?
     echo
     [ $RETVAL -eq 0 ] && rm -f $lockfile
