@@ -1,33 +1,33 @@
 # /etc/conf.d/namecoind: config file for /etc/init.d/namecoind
 
 # Config file location
-#NAMECOIND_CONFIGFILE="/etc/namecoin/namecoin.conf"
+#BITCOIND_CONFIGFILE="/etc/namecoin/namecoin.conf"
 
-# What directory to write pidfile to?  (created and owned by $NAMECOIND_USER)
-#NAMECOIND_PIDDIR="/var/run/namecoind"
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/namecoind"
 
 # What filename to give the pidfile
-#NAMECOIND_PIDFILE="${NAMECOIND_PIDDIR}/namecoind.pid"
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/namecoind.pid"
 
 # Where to write namecoind data (be mindful that the blockchain is large)
-#NAMECOIND_DATADIR="/var/lib/namecoind"
+#BITCOIND_DATADIR="/var/lib/namecoind"
 
 # User and group to own namecoind process
-#NAMECOIND_USER="namecoin"
-#NAMECOIND_GROUP="namecoin"
+#BITCOIND_USER="namecoin"
+#BITCOIND_GROUP="namecoin"
 
 # Path to namecoind executable
-#NAMECOIND_BIN="/usr/bin/namecoind"
+#BITCOIND_BIN="/usr/bin/namecoind"
 
 # Nice value to run namecoind under
-#NAMECOIND_NICE=0
+#BITCOIND_NICE=0
 
 # Additional options (avoid -conf and -datadir, use flags above)
-#NAMECOIND_OPTS=""
+#BITCOIND_OPTS=""
 
 # The timeout in seconds OpenRC will wait for namecoind to terminate
 # after a SIGTERM has been raised.
 # Note that this will be mapped as argument to start-stop-daemon's
 # '--retry' option, which means you can specify a retry schedule
 # here. For more information see man 8 start-stop-daemon.
-NAMECOIND_SIGTERM_TIMEOUT=60
+BITCOIND_SIGTERM_TIMEOUT=600

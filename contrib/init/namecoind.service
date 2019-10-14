@@ -29,6 +29,7 @@ ExecStartPre=/bin/chgrp namecoin /etc/namecoin
 Type=forking
 PIDFile=/run/namecoind/namecoind.pid
 Restart=on-failure
+TimeoutStopSec=600
 
 # Directory creation and permissions
 ####################################
