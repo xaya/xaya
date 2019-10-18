@@ -145,7 +145,8 @@ class NameMultisigTest (NameTestFramework):
     new = self.nodes[0].name_new ("name")
     self.nodes[0].generate (10)
     self.firstupdateName (0, "name", new, "value", {"destAddress": p2sh})
-    self.generate (0, 5, syncBefore=False)
+    self.nodes[0].generate (5)
+    self.sync_blocks ()
     data = self.checkName (0, "name", "value", None, False)
     assert_equal (data['address'], p2sh)
 
@@ -196,7 +197,8 @@ class NameMultisigTest (NameTestFramework):
     assert_raises_rpc_error (-26, None,
                              self.nodes[0].sendrawtransaction, txManipulated)
     self.nodes[0].sendrawtransaction (tx)
-    self.generate (0, 1, syncBefore=False)
+    self.nodes[0].generate (1)
+    self.sync_blocks ()
 
     # Check that it was transferred correctly.
     self.checkName (1, "name", "it worked", None, False)

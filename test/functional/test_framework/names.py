@@ -7,22 +7,7 @@
 
 from .test_framework import BitcoinTestFramework
 
-from .blocktools import (
-  add_witness_commitment,
-  create_block,
-  create_coinbase,
-)
-from .messages import CTransaction
-from .util import (
-  assert_equal,
-  gather_inputs,
-  hex_str_to_bytes,
-  sync_blocks,
-  sync_mempools,
-)
-
-from decimal import Decimal
-import io
+from .util import assert_equal
 
 
 class NameTestFramework (BitcoinTestFramework):
@@ -35,31 +20,6 @@ class NameTestFramework (BitcoinTestFramework):
     # Enable mocktime based on the value for the cached blockchain from
     # test_framework.py.  This is needed to get us out of IBD.
     self.mocktime = 1388534400 + (201 * 10 * 60)
-
-  def split_network (self):
-    # Override this method to keep track of the node groups, so that we can
-    # sync_with_mode correctly.
-    super ().split_network ()
-    self.node_groups = [self.nodes[:2], self.nodes[2:]]
-
-  def join_network (self):
-    super ().join_network ()
-    self.node_groups = None
-
-  def sync_with_mode (self, mode = 'both'):
-    modes = {'both': {'blocks': True, 'mempool': True},
-             'blocks': {'blocks': True, 'mempool': False},
-             'mempool': {'blocks': False, 'mempool': True}}
-    assert mode in modes
-
-    node_groups = self.node_groups
-    if not node_groups:
-        node_groups = [self.nodes]
-
-    if modes[mode]['blocks']:
-        [sync_blocks(group) for group in node_groups]
-    if modes[mode]['mempool']:
-        [sync_mempools(group) for group in node_groups]
 
   def firstupdateName (self, ind, name, newData, value,
                        opt = None, allowActive = False):
@@ -79,19 +39,6 @@ class NameTestFramework (BitcoinTestFramework):
     if opt is None:
       return node.name_firstupdate (name, newData[1], newData[0], value)
     return node.name_firstupdate (name, newData[1], newData[0], value, opt)
-
-  def generate (self, ind, blocks, syncBefore = True):
-    """
-    Generate blocks and sync all nodes.
-    """
-
-    # Sync before to get the mempools up-to-date and sync afterwards
-    # to ensure that all blocks have propagated.
-
-    if syncBefore:
-        self.sync_with_mode ('both')
-    self.nodes[ind].generate (blocks)
-    self.sync_with_mode ('blocks')
 
   def checkName (self, ind, name, value, expiresIn, expired):
     """
