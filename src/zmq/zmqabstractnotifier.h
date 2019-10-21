@@ -9,6 +9,7 @@
 
 #include <functional>
 
+class CBlock;
 class CBlockIndex;
 class CZMQAbstractNotifier;
 

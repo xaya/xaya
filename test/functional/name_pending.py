@@ -56,7 +56,7 @@ class NamePendingTest (NameTestFramework):
     pending = node.name_pending ('x/does not exist')
     assert_equal (pending, [])
 
-    # Check name_pending with name filter and ismine.
+    # Check name_pending with name filter.
     self.checkPendingName (0, 'x/a', 'name_update', val ('value-a'), txa)
 
     # We don't know the golden value for vout, as this is randomised.  But we
@@ -75,11 +75,10 @@ class NamePendingTest (NameTestFramework):
     # Verify vout from before against name_show.
     confirmed = node.name_show ('x/a')
     assert_equal (pending['vout'], confirmed['vout'])
-    return
 
     # Send a name and check that ismine is handled correctly.
     tx = node.name_update ('x/a', val ('sent-a'), {"destAddress": addrOther})
-    self.sync_with_mode ('mempool')
+    self.sync_mempools ()
     self.checkPendingName (0, 'x/a', 'name_update', val ('sent-a'), tx, False)
     self.checkPendingName (1, 'x/a', 'name_update', val ('sent-a'), tx, True)
 

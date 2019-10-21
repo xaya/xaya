@@ -18,12 +18,10 @@
 #include <policy/settings.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
-#include <protocol.h>
 #include <rpc/protocol.h>
 #include <rpc/server.h>
 #include <shutdown.h>
 #include <sync.h>
-#include <threadsafety.h>
 #include <timedata.h>
 #include <txmempool.h>
 #include <ui_interface.h>
@@ -299,6 +297,11 @@ public:
     void getTransactionAncestry(const uint256& txid, size_t& ancestors, size_t& descendants) override
     {
         ::mempool.GetTransactionAncestry(txid, ancestors, descendants);
+    }
+    void getPackageLimits(unsigned int& limit_ancestor_count, unsigned int& limit_descendant_count) override
+    {
+        limit_ancestor_count = gArgs.GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
+        limit_descendant_count = gArgs.GetArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT);
     }
     bool checkChainLimits(const CTransactionRef& tx) override
     {

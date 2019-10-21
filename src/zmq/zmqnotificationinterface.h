@@ -8,9 +8,6 @@
 #include <validationinterface.h>
 #include <zmq/zmqgames.h>
 
-#include <string>
-#include <map>
-#include <memory>
 #include <list>
 
 class CBlockIndex;

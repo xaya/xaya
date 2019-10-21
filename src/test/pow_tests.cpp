@@ -6,7 +6,6 @@
 #include <chainparams.h>
 #include <pow.h>
 #include <powdata.h>
-#include <util/system.h>
 #include <test/setup_common.h>
 
 #include <boost/test/unit_test.hpp>

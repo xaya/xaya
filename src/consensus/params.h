@@ -10,8 +10,6 @@
 #include <powdata.h>
 #include <uint256.h>
 #include <limits>
-#include <map>
-#include <string>
 
 #include <memory>
 
