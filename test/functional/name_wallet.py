@@ -198,16 +198,17 @@ class NameWalletTest (NameTestFramework):
     self.checkTx (1, txid, -price, -fee,
                   [['send', "none", -price, -fee],
                    ['send', "update: 'name-a'", zero, -fee]])
-    return
 
     # Test sendtoname RPC command.
     addr = self.nodes[0].getnewaddress ()
     newDest = self.nodes[0].name_new ("destination")
     self.generateToOther (0, 5)
-    self.firstupdateName (0, "destination", newDest, "value",
-                          {"destAddress": addr})
+    self.checkBalances (self.getFee (0, newDest[0], nameFee))
+    txid = self.firstupdateName (0, "destination", newDest, "value",
+                                 {"destAddress": addr})
     self.generateToOther (0, 10)
     self.checkName (0, "destination", "value", None, False)
+    self.checkBalances (self.getFee (0, txid))
 
     self.sync_blocks ()
     assert_raises_rpc_error (-5, 'name not found',
