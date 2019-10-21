@@ -12,7 +12,6 @@
 #include <core_io.h>
 #include <key_io.h>
 #include <names/encoding.h>
-#include <policy/policy.h>
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
 #include <script/names.h>

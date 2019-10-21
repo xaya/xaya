@@ -9,8 +9,6 @@
 #include <amount.h>
 #include <uint256.h>
 #include <limits>
-#include <map>
-#include <string>
 
 #include <memory>
 
