@@ -9,79 +9,70 @@
 from test_framework.names import NameTestFramework, val
 from test_framework.util import *
 
-class NameRegistrationTest (NameTestFramework):
+class NameReorgTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_clean_chain = True
-    self.setup_name_test ([["-namehistory"]] * 4)
+    self.setup_name_test ([["-namehistory"]])
 
   def run_test (self):
-    self.generate (0, 25)
-    self.generate (1, 25)
-    self.generate (2, 25)
-    self.generate (3, 25)
-    self.generate (0, 100)
+    node = self.nodes[0]
+    node.generate (200)
 
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
-    self.nodes[3].name_register ("x/a", val ("initial value"))
-    self.generate (0, 1)
-
-    # Split the network.
-    self.split_network ()
+    node.name_register ("x/a", val ("initial value"))
+    node.generate (1)
 
     # Build a long chain that registers "b" (to clash with
     # the same registration on the short chain).
-    self.generate (0, 2)
-    self.nodes[0].name_register ("x/b", val ("b long"))
-    self.generate (0, 2)
+    node.name_register ("x/b", val ("b long"))
+    undoBlk = node.generate (20)[0]
     self.checkName (0, "x/a", val ("initial value"))
     self.checkName (0, "x/b", val ("b long"))
-    self.checkNameHistory (1, "x/a", [val ("initial value")])
-    self.checkNameHistory (1, "x/b", [val ("b long")])
+    self.checkNameHistory (0, "x/a", val (["initial value"]))
+    self.checkNameHistory (0, "x/b", val (["b long"]))
+    node.invalidateblock (undoBlk)
 
     # Build a short chain with an update to "a" and registrations.
-    self.generate (3, 1)
-    txidB = self.nodes[3].name_register ("x/b", val ("b short"))
-    self.nodes[3].name_register ("x/c", val ("c registered"))
-    self.nodes[3].name_update ("x/a", val ("changed value"))
-    self.generate (3, 1)
-    self.checkName (3, "x/a", val ("changed value"))
-    self.checkName (3, "x/b", val ("b short"))
-    self.checkName (3, "x/c", val ("c registered"))
-    self.checkNameHistory (2, "x/a",
-                           [val ("initial value"), val ("changed value")])
-    self.checkNameHistory (2, "x/b", [val ("b short")])
-    self.checkNameHistory (2, "x/c", [val ("c registered")])
+    assert_equal (node.getrawmempool (), [])
+    node.generate (1)
+    txidA = node.name_update ("x/a", val ("changed value"))
+    txidB = node.name_register ("x/b", val ("b short"))
+    txidC = node.name_register ("x/c", val ("c registered"))
+    node.generate (1)
+    self.checkName (0, "x/a", val ("changed value"))
+    self.checkName (0, "x/b", val ("b short"))
+    self.checkName (0, "x/c", val ("c registered"))
+    self.checkNameHistory (0, "x/a", val (["initial value", "changed value"]))
+    self.checkNameHistory (0, "x/b", val (["b short"]))
+    self.checkNameHistory (0, "x/c", val (["c registered"]))
 
-    # Join the network and let the long chain prevail.
-    self.join_network ()
-    self.checkName (3, "x/a", val ("initial value"))
-    self.checkName (3, "x/b", val ("b long"))
-    self.checkNameHistory (2, "x/a", [val ("initial value")])
-    self.checkNameHistory (2, "x/b", [val ("b long")])
-    assert_raises_rpc_error (-4, 'name not found',
-                             self.nodes[3].name_show, "x/c")
-    assert_raises_rpc_error (-4, 'name not found',
-                             self.nodes[2].name_history, "x/c")
+    # Reconsider the long chain to reorg back to it.
+    node.reconsiderblock (undoBlk)
+    self.checkName (0, "x/a", val ("initial value"))
+    self.checkName (0, "x/b", val ("b long"))
+    self.checkNameHistory (0, "x/a", val (["initial value"]))
+    self.checkNameHistory (0, "x/b", val (["b long"]))
+    assert_raises_rpc_error (-4, 'name not found', node.name_show, "x/c")
+    assert_raises_rpc_error (-4, 'name not found', node.name_history, "x/c")
 
     # Mine another block.  This should at least perform the
-    # non-conflicting transactions.  It is done on node 3 so
-    # that these tx are actually in the mempool.
-    self.generate (3, 1, False)
-    self.checkName (3, "x/a", val ("changed value"))
-    self.checkName (3, "x/b", val ("b long"))
-    self.checkName (3, "x/c", val ("c registered"))
-    self.checkNameHistory (2, "x/a",
-                           [val ("initial value"), val ("changed value")])
-    self.checkNameHistory (2, "x/b", [val ("b long")])
-    self.checkNameHistory (2, "x/c", [val ("c registered")])
+    # non-conflicting transactions.
+    assert_equal (set (node.getrawmempool ()), set ([txidA, txidC]))
+    node.generate (1)
+    self.checkName (0, "x/a", val ("changed value"))
+    self.checkName (0, "x/b", val ("b long"))
+    self.checkName (0, "x/c", val ("c registered"))
+    self.checkNameHistory (0, "x/a", val (["initial value", "changed value"]))
+    self.checkNameHistory (0, "x/b", val (["b long"]))
+    self.checkNameHistory (0, "x/c", val (["c registered"]))
 
-    # Check that the conflicting tx got pruned from the mempool properly.
-    assert_equal (self.nodes[0].getrawmempool (), [])
-    assert_equal (self.nodes[3].getrawmempool (), [])
-    data = self.nodes[3].gettransaction (txidB)
+    # Check that the conflicting tx got handled properly.
+    assert_equal (node.getrawmempool (), [])
+    data = node.gettransaction (txidB)
     assert data['confirmations'] <= 0
 
+
 if __name__ == '__main__':
-  NameRegistrationTest ().main ()
+  NameReorgTest ().main ()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,56 +17,55 @@ class NameListTest (NameTestFramework):
     assert_equal (self.nodes[0].name_list (), [])
     assert_equal (self.nodes[1].name_list (), [])
 
-    self.nodes[0].name_register ("x/name-a", val ("value-a"))
-    self.nodes[1].name_register ("x/name-b", val ("value-b"))
-    self.generate (1, 1)
+    self.nodes[0].name_register ("x/name", val ("value"))
+    self.nodes[0].generate (1)
 
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("value-a"), True)
-    arr = self.nodes[1].name_list ()
-    assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-b", val ("value-b"), True)
+    self.checkNameStatus (arr[0], "x/name", val ("value"), True)
 
-    assert_equal (self.nodes[0].name_list ("x/name-b"), [])
-    assert_equal (self.nodes[1].name_list ("x/name-a"), [])
+    self.sync_blocks ()
+    assert_equal (self.nodes[1].name_list ("x/name"), [])
 
-    # Transfer a name away and check that name_list updates accordingly.
-
+    # Transfer the name away and check that name_list updates accordingly.
     addrB = self.nodes[1].getnewaddress ()
-    self.nodes[0].name_update ("x/name-a", val ("enjoy"),
-                               {"destAddress": addrB})
+    self.nodes[0].name_update ("x/name", val ("enjoy"), {"destAddress":addrB})
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("value-a"), True)
+    self.checkNameStatus (arr[0], "x/name", val ("value"), True)
 
-    self.generate (0, 1)
+    self.nodes[0].generate (1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("enjoy"), False)
+    self.checkNameStatus (arr[0], "x/name", val ("enjoy"), False)
+
+    self.sync_blocks ()
     arr = self.nodes[1].name_list ()
-    assert_equal (len (arr), 2)
-    self.checkNameStatus (arr[0], "x/name-a", val ("enjoy"), True)
-    self.checkNameStatus (arr[1], "x/name-b", val ("value-b"), True)
+    assert_equal (len (arr), 1)
+    self.checkNameStatus (arr[0], "x/name", val ("enjoy"), True)
 
     # Updating the name in the new wallet shouldn't change the
     # old wallet's name_list entry.
-    self.nodes[1].name_update ("x/name-a", val ("new value"))
-    self.generate (0, 1)
+    self.nodes[1].name_update ("x/name", val ("new value"))
+    self.nodes[1].generate (1)
+    arr = self.nodes[1].name_list ("x/name")
+    assert_equal (len (arr), 1)
+    self.checkNameStatus (arr[0], "x/name", val ("new value"), True)
+
+    self.sync_blocks ()
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("enjoy"), False)
-    arr = self.nodes[1].name_list ("x/name-a")
-    assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("new value"), True)
+    self.checkNameStatus (arr[0], "x/name", val ("enjoy"), False)
 
     # Transfer it back and see that it updates in wallet A.
     addrA = self.nodes[0].getnewaddress ()
-    self.nodes[1].name_update ("x/name-a", val ("sent"), {"destAddress": addrA})
-    self.generate (0, 1)
+    self.nodes[1].name_update ("x/name", val ("sent"), {"destAddress": addrA})
+    self.nodes[1].generate (1)
+
+    self.sync_blocks ()
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
-    self.checkNameStatus (arr[0], "x/name-a", val ("sent"), True)
+    self.checkNameStatus (arr[0], "x/name", val ("sent"), True)
 
   def checkNameStatus (self, data, name, value, mine):
     """
