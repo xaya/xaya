@@ -107,7 +107,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       Coin coin;
       if (!view.GetCoin (prevout, coin))
         return state.Invalid (ValidationInvalidReason::TX_MISSING_INPUTS, false,
-                              REJECT_INVALID, "bad-txns-inputs-missingorspent",
+                              "bad-txns-inputs-missingorspent",
                               "Failed to fetch name input coin");
 
       const CNameScript op(coin.out.scriptPubKey);
@@ -115,7 +115,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         {
           if (nameIn != -1)
             return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                                  REJECT_INVALID, "tx-multiple-name-inputs",
+                                  "tx-multiple-name-inputs",
                                   "Multiple name inputs");
           nameIn = i;
           nameOpIn = op;
@@ -132,7 +132,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
         {
           if (nameOut != -1)
             return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                                  REJECT_INVALID, "tx-multiple-name-outputs",
+                                  "tx-multiple-name-outputs",
                                   "Multiple name outputs");
           nameOut = i;
           nameOpOut = op;
@@ -147,11 +147,11 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     {
       if (nameIn != -1)
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nonname-with-name-input",
+                              "tx-nonname-with-name-input",
                               "Non-name transaction has name input");
       if (nameOut != -1)
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nonname-with-name-output",
+                              "tx-nonname-with-name-output",
                               "Non-name transaction has name output");
 
       return true;
@@ -160,14 +160,14 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   assert (tx.IsNamecoin ());
   if (nameOut == -1)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-name-without-name-output",
+                          "tx-name-without-name-output",
                           "Name transaction has no name output");
 
   /* Reject "greedy names".  */
   const Consensus::Params& params = Params ().GetConsensus ();
   if (tx.vout[nameOut].nValue < params.rules->MinNameCoinAmount(nHeight))
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-name-greedy",
+                          "tx-name-greedy",
                           "Greedy name operation");
 
   /* Handle NAME_NEW now, since this is easy and different from the other
@@ -177,12 +177,12 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     {
       if (nameIn != -1)
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-namenew-with-name-input",
+                              "tx-namenew-with-name-input",
                               "NAME_NEW with previous name input");
 
       if (nameOpOut.getOpHash ().size () != 20)
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-namenew-wrong-size",
+                              "tx-namenew-wrong-size",
                               "NAME_NEW's hash has the wrong size");
 
       return true;
@@ -194,17 +194,17 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   assert (nameOpOut.isAnyUpdate ());
   if (nameIn == -1)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-nameupdate-without-name-input",
+                          "tx-nameupdate-without-name-input",
                           "Name update has no previous name input");
   const valtype& name = nameOpOut.getOpName ();
 
   if (name.size () > MAX_NAME_LENGTH)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-name-invalid",
+                          "tx-name-invalid",
                           "Invalid name");
   if (nameOpOut.getOpValue ().size () > MAX_VALUE_LENGTH)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-value-invalid",
+                          "tx-value-invalid",
                           "Invalid value");
 
   /* Process NAME_UPDATE next.  */
@@ -213,12 +213,12 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     {
       if (!nameOpIn.isAnyUpdate ())
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nameupdate-invalid-prev",
+                              "tx-nameupdate-invalid-prev",
                               "Name input for NAME_UPDATE is not an update");
 
       if (name != nameOpIn.getOpName ())
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nameupdate-name-mismatch",
+                              "tx-nameupdate-name-mismatch",
                               "NAME_UPDATE name mismatch to name input");
 
       /* If the name input is pending, then no further checks with respect
@@ -233,11 +233,11 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       CNameData oldName;
       if (!view.GetName (name, oldName))
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nameupdate-nonexistant",
+                              "tx-nameupdate-nonexistant",
                               "NAME_UPDATE name does not exist");
       if (oldName.isExpired (nHeight))
         return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                              REJECT_INVALID, "tx-nameupdate-expired",
+                              "tx-nameupdate-expired",
                               "NAME_UPDATE on an expired name");
       assert (inHeight == oldName.getHeight ());
       assert (tx.vin[nameIn].prevout == oldName.getUpdateOutpoint ());
@@ -250,7 +250,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   assert (nameOpOut.getNameOp () == OP_NAME_FIRSTUPDATE);
   if (nameOpIn.getNameOp () != OP_NAME_NEW)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-firstupdate-nonnew-input",
+                          "tx-firstupdate-nonnew-input",
                           "NAME_FIRSTUPDATE input is not a NAME_NEW");
 
   /* Maturity of NAME_NEW is checked only if we're not adding
@@ -260,14 +260,13 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
       assert (static_cast<unsigned> (coinIn.nHeight) != MEMPOOL_HEIGHT);
       if (coinIn.nHeight + MIN_FIRSTUPDATE_DEPTH > nHeight)
         return state.Invalid (ValidationInvalidReason::TX_PREMATURE_SPEND,
-                              false,
-                              REJECT_INVALID, "tx-firstupdate-immature",
+                              false, "tx-firstupdate-immature",
                               "NAME_FIRSTUPDATE on immature NAME_NEW");
     }
 
   if (nameOpOut.getOpRand ().size () > 20)
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-firstupdate-invalid-rand",
+                          "tx-firstupdate-invalid-rand",
                           "NAME_FIRSTUPDATE rand value is too large");
 
   {
@@ -276,14 +275,14 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
     const uint160 hash = Hash160 (toHash);
     if (hash != uint160 (nameOpIn.getOpHash ()))
       return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                            REJECT_INVALID, "tx-firstupdate-hash-mismatch",
+                            "tx-firstupdate-hash-mismatch",
                             "NAME_FIRSTUPDATE mismatch in hash / rand value");
   }
 
   CNameData oldName;
   if (view.GetName (name, oldName) && !oldName.isExpired (nHeight))
     return state.Invalid (ValidationInvalidReason::CONSENSUS, false,
-                          REJECT_INVALID, "tx-firstupdate-existing-name",
+                          "tx-firstupdate-existing-name",
                           "NAME_FIRSTUPDATE on existing name");
 
   /* We don't have to specifically check that miners don't create blocks with

@@ -12,6 +12,7 @@
 
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
+#include <util/string.h>
 
 #include <algorithm>
 
@@ -107,6 +108,12 @@ WalletModel* WalletController::getOrCreateWallet(std::unique_ptr<interfaces::Wal
     wallet_model->moveToThread(thread());
     wallet_model->setParent(this);
     m_wallets.push_back(wallet_model);
+
+    // WalletModel::startPollBalance needs to be called in a thread managed by
+    // Qt because of startTimer. Considering the current thread can be a RPC
+    // thread, better delegate the calling to Qt with Qt::AutoConnection.
+    const bool called = QMetaObject::invokeMethod(wallet_model, "startPollBalance");
+    assert(called);
 
     connect(wallet_model, &WalletModel::unload, [this, wallet_model] {
         // Defer removeAndDeleteWallet when no modal widget is active.
@@ -226,7 +233,7 @@ void CreateWalletActivity::finish()
     if (!m_error_message.empty()) {
         QMessageBox::critical(m_parent_widget, tr("Create wallet failed"), QString::fromStdString(m_error_message));
     } else if (!m_warning_message.empty()) {
-        QMessageBox::warning(m_parent_widget, tr("Create wallet warning"), QString::fromStdString(m_warning_message));
+        QMessageBox::warning(m_parent_widget, tr("Create wallet warning"), QString::fromStdString(Join(m_warning_message, "\n")));
     }
 
     if (m_wallet_model) Q_EMIT created(m_wallet_model);
@@ -267,7 +274,7 @@ void OpenWalletActivity::finish()
     if (!m_error_message.empty()) {
         QMessageBox::critical(m_parent_widget, tr("Open wallet failed"), QString::fromStdString(m_error_message));
     } else if (!m_warning_message.empty()) {
-        QMessageBox::warning(m_parent_widget, tr("Open wallet warning"), QString::fromStdString(m_warning_message));
+        QMessageBox::warning(m_parent_widget, tr("Open wallet warning"), QString::fromStdString(Join(m_warning_message, "\n")));
     }
 
     if (m_wallet_model) Q_EMIT opened(m_wallet_model);

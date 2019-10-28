@@ -206,14 +206,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
       throw JSONRPCError (RPC_WALLET_ERROR, strError);
     }
 
-  CValidationState state;
-  if (!wallet.CommitTransaction (tx, {}, {}, state))
-    {
-      strError = strprintf ("Error: The transaction was rejected!"
-                            "  Reason given: %s", FormatStateMessage (state));
-      throw JSONRPCError (RPC_WALLET_ERROR, strError);
-    }
-
+  wallet.CommitTransaction (tx, {}, {});
   return tx;
 }
 
