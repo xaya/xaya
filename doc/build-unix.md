@@ -44,7 +44,6 @@ Optional dependencies:
  miniupnpc   | UPnP Support     | Firewall-jumping support
  libdb4.8    | Berkeley DB      | Wallet storage (only needed when wallet enabled)
  qt          | GUI              | GUI toolkit (only needed when GUI enabled)
- protobuf    | Payments in GUI  | Data interchange format used for payment protocol (only needed when BIP70 enabled)
  libqrencode | QR codes in GUI  | Optional for generating QR codes (only needed when GUI enabled)
  univalue    | Utility          | JSON parsing and encoding (bundled version will be used unless --with-system-univalue passed to configure)
  libzmq3     | ZMQ notification | Optional, allows generating ZMQ notifications (requires ZMQ version >= 4.0.0)
@@ -118,10 +117,6 @@ libqrencode (optional) can be installed with:
 
     sudo apt-get install libqrencode-dev
 
-protobuf (optional) can be installed with:
-
-    sudo apt-get install libprotobuf-dev protobuf-compiler
-
 Once these are installed, they will be found by configure and a bitcoin-qt executable will be
 built by default.
 
@@ -150,10 +145,6 @@ libqrencode (optional) can be installed with:
 
     sudo dnf install qrencode-devel
 
-protobuf (optional) can be installed with:
-
-    sudo dnf install protobuf-devel
-
 Notes
 -----
 The release is built with GCC and then "strip bitcoind" to strip the debug
@@ -163,8 +154,8 @@ symbols, which reduces the executable size by about 90%.
 miniupnpc
 ---------
 
-[miniupnpc](http://miniupnp.free.fr/) may be used for UPnP port mapping.  It can be downloaded from [here](
-http://miniupnp.tuxfamily.org/files/).  UPnP support is compiled in and
+[miniupnpc](https://miniupnp.tuxfamily.org) may be used for UPnP port mapping.  It can be downloaded from [here](
+https://miniupnp.tuxfamily.org/files/).  UPnP support is compiled in and
 turned off by default.  See the configure options for upnp behavior desired:
 
 	--without-miniupnpc      No UPnP support miniupnp not required

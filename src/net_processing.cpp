@@ -38,6 +38,8 @@
 static constexpr int64_t ORPHAN_TX_EXPIRE_TIME = 20 * 60;
 /** Minimum time between orphan transactions expire time checks in seconds */
 static constexpr int64_t ORPHAN_TX_EXPIRE_INTERVAL = 5 * 60;
+/** How long to cache transactions in mapRelay for normal relay */
+static constexpr std::chrono::seconds RELAY_TX_CACHE_TIME{15 * 60};
 /** Headers download timeout expressed in microseconds
  *  Timeout = base + per_header * (expected number of headers) */
 static constexpr int64_t HEADERS_DOWNLOAD_TIMEOUT_BASE = 15 * 60 * 1000000; // 15 minutes
@@ -116,8 +118,8 @@ namespace {
     int nSyncStarted GUARDED_BY(cs_main) = 0;
 
     /**
-     * Sources of received blocks, saved to be able to send them reject
-     * messages or ban them when processing happens afterwards.
+     * Sources of received blocks, saved to be able punish them when processing
+     * happens afterwards.
      * Set mapBlockSource[hash].second to false if the node should not be
      * punished if the block is invalid.
      */
@@ -1233,11 +1235,12 @@ void PeerLogicValidation::BlockChecked(const CBlock& block, const CValidationSta
     const uint256 hash(block.GetHash());
     std::map<uint256, std::pair<NodeId, bool>>::iterator it = mapBlockSource.find(hash);
 
-    if (state.IsInvalid()) {
-        // Don't send reject message with code 0 or an internal reject code.
-        if (it != mapBlockSource.end() && State(it->second.first) && state.GetRejectCode() > 0 && state.GetRejectCode() < REJECT_INTERNAL) {
+    // If the block failed validation, we know where it came from and we're still connected
+    // to that peer, maybe punish.
+    if (state.IsInvalid() &&
+        it != mapBlockSource.end() &&
+        State(it->second.first)) {
             MaybePunishNode(/*nodeid=*/ it->second.first, state, /*via_compact_block=*/ !it->second.second);
-        }
     }
     // Check that:
     // 1. The block is valid
@@ -1512,6 +1515,10 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
     // messages from this peer (likely resulting in our peer eventually
     // disconnecting us).
     if (pfrom->m_tx_relay != nullptr) {
+        // mempool entries added before this time have likely expired from mapRelay
+        const std::chrono::seconds longlived_mempool_time = GetTime<std::chrono::seconds>() - RELAY_TX_CACHE_TIME;
+        const std::chrono::seconds mempool_req = pfrom->m_tx_relay->m_last_mempool_req.load();
+
         LOCK(cs_main);
 
         while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX)) {
@@ -1531,11 +1538,15 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
             if (mi != mapRelay.end()) {
                 connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *mi->second));
                 push = true;
-            } else if (pfrom->m_tx_relay->m_last_mempool_req.load().count()) {
+            } else {
                 auto txinfo = mempool.info(inv.hash);
                 // To protect privacy, do not answer getdata using the mempool when
-                // that TX couldn't have been INVed in reply to a MEMPOOL request.
-                if (txinfo.tx && txinfo.m_time <= pfrom->m_tx_relay->m_last_mempool_req.load()) {
+                // that TX couldn't have been INVed in reply to a MEMPOOL request,
+                // or when it's too recent to have expired from mapRelay.
+                if (txinfo.tx && (
+                     (mempool_req.count() && txinfo.m_time <= mempool_req)
+                      || (txinfo.m_time <= longlived_mempool_time)))
+                {
                     connman->PushMessage(pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *txinfo.tx));
                     push = true;
                 }
@@ -2899,11 +2910,12 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                 // been run).  This is handled below, so just treat this as
                 // though the block was successfully read, and rely on the
                 // handling in ProcessNewBlock to ensure the block index is
-                // updated, reject messages go out, etc.
+                // updated, etc.
                 MarkBlockAsReceived(resp.blockhash); // it is now an empty pointer
                 fBlockRead = true;
-                // mapBlockSource is only used for sending reject messages and DoS scores,
-                // so the race between here and cs_main in ProcessNewBlock is fine.
+                // mapBlockSource is used for potentially punishing peers and
+                // updating which peers send us compact blocks, so the race
+                // between here and cs_main in ProcessNewBlock is fine.
                 // BIP 152 permits peers to relay compact blocks after validating
                 // the header only; we should not punish peers if the block turns
                 // out to be invalid.
@@ -2975,8 +2987,9 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // Also always process if we requested the block explicitly, as we may
             // need it even though it is not a candidate for a new best tip.
             forceProcessing |= MarkBlockAsReceived(hash);
-            // mapBlockSource is only used for sending reject messages and DoS scores,
-            // so the race between here and cs_main in ProcessNewBlock is fine.
+            // mapBlockSource is only used for punishing peers and setting
+            // which peers send us compact blocks, so the race between here and
+            // cs_main in ProcessNewBlock is fine.
             mapBlockSource.emplace(hash, std::make_pair(pfrom->GetId(), true));
         }
         bool fNewBlock = false;
@@ -3913,7 +3926,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
 
                             auto ret = mapRelay.insert(std::make_pair(hash, std::move(txinfo.tx)));
                             if (ret.second) {
-                                vRelayExpiration.push_back(std::make_pair(nNow + 15 * 60 * 1000000, ret.first));
+                                vRelayExpiration.push_back(std::make_pair(nNow + std::chrono::microseconds{RELAY_TX_CACHE_TIME}.count(), ret.first));
                             }
                         }
                         if (vInv.size() == MAX_INV_SZ) {
