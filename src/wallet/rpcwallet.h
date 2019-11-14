@@ -21,6 +21,12 @@ class UniValue;
 struct PartiallySignedTransaction;
 class CTransaction;
 
+//! Pointer to chain interface that needs to be declared as a global to be
+//! accessible loadwallet and createwallet methods. Due to limitations of the
+//! RPC framework, there's currently no direct way to pass in state to RPC
+//! methods without globals.
+extern interfaces::Chain* g_rpc_chain;
+
 void RegisterWalletRPCCommands(interfaces::Chain& chain, std::vector<std::unique_ptr<interfaces::Handler>>& handlers);
 
 /**

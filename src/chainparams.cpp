@@ -84,7 +84,7 @@ static CBlock CreateTestnetGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_
 class CMainParams : public CChainParams {
 public:
     CMainParams() {
-        strNetworkID = "main";
+        strNetworkID = CBaseChainParams::MAIN;
         consensus.nSubsidyHalvingInterval = 210000;
         consensus.BIP16Height = 475000;
         /* Note that these are not the actual activation heights, but blocks
@@ -249,7 +249,7 @@ public:
 class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
-        strNetworkID = "test";
+        strNetworkID = CBaseChainParams::TESTNET;
         consensus.nSubsidyHalvingInterval = 210000;
         consensus.BIP16Height = 232000;
         /* As before, these are not the actual activation heights but some
@@ -364,7 +364,7 @@ public:
 class CRegTestParams : public CChainParams {
 public:
     explicit CRegTestParams(const ArgsManager& args) {
-        strNetworkID = "regtest";
+        strNetworkID =  CBaseChainParams::REGTEST;
         consensus.nSubsidyHalvingInterval = 150;
         consensus.BIP16Height = 0;
         consensus.BIP34Height = 500; // BIP34 activated on regtest (Used in functional tests)

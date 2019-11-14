@@ -55,7 +55,7 @@ getTestAddress ()
 bool
 CheckNameTransaction (const CMutableTransaction& mtx, const unsigned nHeight,
                       const CCoinsView& view,
-                      CValidationState& state, const unsigned flags)
+                      TxValidationState& state, const unsigned flags)
 {
   const CTransaction tx(mtx);
   return CheckNameTransaction (tx, nHeight, view, state, flags);
@@ -557,7 +557,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* ****************************************************** */
   /* Try out the Namecoin / non-Namecoin tx version check.  */
 
-  CValidationState state;
+  TxValidationState state;
   CMutableTransaction mtx;
   CScript scr;
   std::string reason;

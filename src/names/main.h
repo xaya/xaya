@@ -16,7 +16,7 @@ class CBlockUndo;
 class CCoinsView;
 class CCoinsViewCache;
 class CTxMemPool;
-class CValidationState;
+class TxValidationState;
 
 /* Some constants defining name limits.  */
 constexpr unsigned MAX_VALUE_LENGTH = 1023;
@@ -93,7 +93,7 @@ public:
  */
 bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                            const CCoinsView& view,
-                           CValidationState& state, unsigned flags);
+                           TxValidationState& state, unsigned flags);
 
 /**
  * Apply the changes of a name transaction to the name database.

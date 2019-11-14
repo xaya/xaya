@@ -12,6 +12,7 @@ from .util import hex_str_to_bytes
 from . import segwit_addr
 
 ADDRESS_BCRT1_UNSPENDABLE = 'ncrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvadqwz'
+ADDRESS_BCRT1_UNSPENDABLE_DESCRIPTOR = 'addr(ncrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvadqwz)#8esmyuyj'
 
 
 class AddressType(enum.Enum):
