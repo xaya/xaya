@@ -88,7 +88,7 @@ ValueOfLength (const size_t len)
 bool
 CheckNameTransaction (const CMutableTransaction& mtx, const unsigned nHeight,
                       const CCoinsView& view,
-                      CValidationState& state)
+                      TxValidationState& state)
 {
   const CTransaction tx(mtx);
   return CheckNameTransaction (tx, nHeight, view, state);
@@ -507,7 +507,7 @@ addTestCoin (const CScript& scr, unsigned nHeight, CCoinsViewCache& view)
 
 BOOST_AUTO_TEST_CASE (is_name_valid)
 {
-  CValidationState state;
+  TxValidationState state;
 
   /* Test the length limit.  */
   std::string name;
@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
 
 BOOST_AUTO_TEST_CASE (is_value_valid)
 {
-  CValidationState state;
+  TxValidationState state;
 
   /* Test the length limit.  */
   BOOST_CHECK (IsValueValid (ValueOfLength (2048), state));
@@ -608,7 +608,7 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   /* ************************************************** */
   /* General checks for name/non-name in- and outputs.  */
 
-  CValidationState state;
+  TxValidationState state;
   CMutableTransaction mtx;
   CScript scr;
   std::string reason;

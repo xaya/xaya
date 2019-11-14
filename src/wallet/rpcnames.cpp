@@ -12,9 +12,11 @@
 #include <names/encoding.h>
 #include <names/main.h>
 #include <names/mempool.h>
+#include <node/context.h>
 #include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
+#include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
@@ -139,7 +141,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
     },
     true, false);
 
-  if (wallet.GetBroadcastTransactions () && !g_connman)
+  if (wallet.GetBroadcastTransactions () && !g_rpc_node->connman)
     throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
                         "Error: Peer-to-peer functionality missing"
                         " or disabled");
@@ -369,7 +371,7 @@ name_register (const JSONRPCRequest& request)
     options = request.params[2].get_obj ();
 
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
-  CValidationState state;
+  TxValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
@@ -460,7 +462,7 @@ name_update (const JSONRPCRequest& request)
     options = request.params[2].get_obj ();
 
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
-  CValidationState state;
+  TxValidationState state;
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 

@@ -16,7 +16,7 @@ class CBlockUndo;
 class CCoinsView;
 class CCoinsViewCache;
 class CTxMemPool;
-class CValidationState;
+class TxValidationState;
 
 /** The amount of coins to lock in created transactions.  */
 constexpr CAmount NAME_LOCKED_AMOUNT = COIN / 100;
@@ -78,13 +78,13 @@ public:
  * Verifies whether a given name is valid according to the restrictions we
  * put on its format
  */
-bool IsNameValid (const valtype& name, CValidationState& state);
+bool IsNameValid (const valtype& name, TxValidationState& state);
 
 /**
  * Verifies whether a given value is valid according to the restrictions we
  * have for it.
  */
-bool IsValueValid (const valtype& value, CValidationState& state);
+bool IsValueValid (const valtype& value, TxValidationState& state);
 
 /**
  * Check a transaction according to the additional Namecoin rules.  This
@@ -98,7 +98,7 @@ bool IsValueValid (const valtype& value, CValidationState& state);
  */
 bool CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                            const CCoinsView& view,
-                           CValidationState& state);
+                           TxValidationState& state);
 
 /**
  * Apply the changes of a name transaction to the name database.

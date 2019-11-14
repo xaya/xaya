@@ -124,7 +124,7 @@ addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
     return;
 
   AssertLockHeld (pwallet->cs_wallet);
-  const isminetype mine = IsMine (*pwallet, addr);
+  const isminetype mine = pwallet->IsMine (addr);
   const bool isMine = (mine & ISMINE_SPENDABLE);
   data.pushKV ("ismine", isMine);
 }

@@ -10,11 +10,11 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <coins.h>
-#include <node/coinstats.h>
 #include <consensus/validation.h>
 #include <core_io.h>
 #include <hash.h>
 #include <index/blockfilterindex.h>
+#include <node/coinstats.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
@@ -37,6 +37,8 @@
 #include <validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
+
+#include <stdint.h>
 
 #include <univalue.h>
 
@@ -1277,7 +1279,7 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
                 {},
                 RPCResult{
             "{\n"
-            "  \"chain\": \"xxxx\",              (string) current network name as defined in BIP70 (main, test, regtest)\n"
+            "  \"chain\": \"xxxx\",              (string) current network name (main, test, regtest)\n"
             "  \"blocks\": xxxxxx,             (numeric) the height of the most-work fully-validated chain. The genesis block has height 0\n"
             "  \"headers\": xxxxxx,            (numeric) the current number of headers we have validated\n"
             "  \"bestblockhash\": \"...\",       (string) the hash of the currently best block\n"
@@ -1556,7 +1558,7 @@ static UniValue preciousblock(const JSONRPCRequest& request)
         }
     }
 
-    CValidationState state;
+    BlockValidationState state;
     PreciousBlock(state, Params(), pblockindex);
 
     if (!state.IsValid()) {
@@ -1581,7 +1583,7 @@ static UniValue invalidateblock(const JSONRPCRequest& request)
             }.Check(request);
 
     uint256 hash(ParseHashV(request.params[0], "blockhash"));
-    CValidationState state;
+    BlockValidationState state;
 
     CBlockIndex* pblockindex;
     {
@@ -1631,7 +1633,7 @@ static UniValue reconsiderblock(const JSONRPCRequest& request)
         ResetBlockFailureFlags(pblockindex);
     }
 
-    CValidationState state;
+    BlockValidationState state;
     ActivateBestChain(state, Params());
 
     if (!state.IsValid()) {
@@ -2376,3 +2378,5 @@ void RegisterBlockchainRPCCommands(CRPCTable &t)
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
         t.appendCommand(commands[vcidx].name, &commands[vcidx]);
 }
+
+NodeContext* g_rpc_node = nullptr;

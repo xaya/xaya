@@ -16,6 +16,7 @@
 #include <noui.h>
 #include <pow.h>
 #include <powdata.h>
+#include <rpc/blockchain.h>
 #include <rpc/register.h>
 #include <rpc/server.h>
 #include <script/sigcache.h>
@@ -77,6 +78,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
     const CChainParams& chainparams = Params();
     // Ideally we'd move all the RPC tests to the functional testing framework
     // instead of unit tests, but for now we need these here.
+    g_rpc_node = &m_node;
     RegisterAllCoreRPCCommands(tableRPC);
 
     // We have to run a scheduler thread to prevent ActivateBestChain
@@ -96,7 +98,7 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
         throw std::runtime_error("LoadGenesisBlock failed.");
     }
 
-    CValidationState state;
+    BlockValidationState state;
     if (!ActivateBestChain(state, chainparams)) {
         throw std::runtime_error(strprintf("ActivateBestChain failed. (%s)", FormatStateMessage(state)));
     }
@@ -105,8 +107,8 @@ TestingSetup::TestingSetup(const std::string& chainName) : BasicTestingSetup(cha
     for (int i = 0; i < nScriptCheckThreads - 1; i++)
         threadGroup.create_thread([i]() { return ThreadScriptCheck(i); });
 
-    g_banman = MakeUnique<BanMan>(GetDataDir() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    g_connman = MakeUnique<CConnman>(0x1337, 0x1337); // Deterministic randomness for tests.
+    m_node.banman = MakeUnique<BanMan>(GetDataDir() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
+    m_node.connman = MakeUnique<CConnman>(0x1337, 0x1337); // Deterministic randomness for tests.
 }
 
 TestingSetup::~TestingSetup()
@@ -115,8 +117,9 @@ TestingSetup::~TestingSetup()
     threadGroup.join_all();
     GetMainSignals().FlushBackgroundCallbacks();
     GetMainSignals().UnregisterBackgroundSignalScheduler();
-    g_connman.reset();
-    g_banman.reset();
+    g_rpc_node = nullptr;
+    m_node.connman.reset();
+    m_node.banman.reset();
     UnloadBlockIndex();
     g_chainstate.reset();
     pblocktree.reset();

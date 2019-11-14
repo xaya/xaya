@@ -160,7 +160,7 @@ void MineGenesisBlock (CBlock& block, const Consensus::Params& consensus)
 class CMainParams : public CChainParams {
 public:
     CMainParams() {
-        strNetworkID = "main";
+        strNetworkID = CBaseChainParams::MAIN;
         consensus.nSubsidyHalvingInterval = 4200000;
         /* The value of ~3.8 CHI is calculated to yield the desired total
            PoW coin supply.  For the calculation, see here:
@@ -263,7 +263,7 @@ public:
 class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
-        strNetworkID = "test";
+        strNetworkID = CBaseChainParams::TESTNET;
         consensus.nSubsidyHalvingInterval = 4200000;
         consensus.initialSubsidy = 10 * COIN;
         consensus.BIP16Height = 0;
@@ -358,7 +358,7 @@ public:
 class CRegTestParams : public CChainParams {
 public:
     explicit CRegTestParams(const ArgsManager& args) {
-        strNetworkID = "regtest";
+        strNetworkID =  CBaseChainParams::REGTEST;
         consensus.nSubsidyHalvingInterval = 150;
         // The subsidy for regtest net is kept same as upstream Bitcoin, so
         // that we don't have to update many of the tests unnecessarily.
