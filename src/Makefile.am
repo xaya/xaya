@@ -147,12 +147,14 @@ BITCOIN_CORE_H = \
   dbwrapper.h \
   limitedmap.h \
   logging.h \
+  logging/timer.h \
   memusage.h \
   merkleblock.h \
   miner.h \
   net.h \
   net_permissions.h \
   net_processing.h \
+  net_types.h \
   netaddress.h \
   netbase.h \
   netmessagemaker.h \
@@ -161,6 +163,7 @@ BITCOIN_CORE_H = \
   node/context.h \
   node/psbt.h \
   node/transaction.h \
+  node/utxo_snapshot.h \
   noui.h \
   optional.h \
   outputtype.h \
@@ -219,6 +222,7 @@ BITCOIN_CORE_H = \
   util/memory.h \
   util/moneystr.h \
   util/rbf.h \
+  util/settings.h \
   util/string.h \
   util/threadnames.h \
   util/time.h \
@@ -517,6 +521,7 @@ libbitcoin_util_a_SOURCES = \
   util/system.cpp \
   util/moneystr.cpp \
   util/rbf.cpp \
+  util/settings.cpp \
   util/threadnames.cpp \
   util/spanparsing.cpp \
   util/strencodings.cpp \

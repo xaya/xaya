@@ -384,7 +384,7 @@ Threads
 
 - ThreadScriptCheck : Verifies block scripts.
 
-- ThreadImport : Loads blocks from blk*.dat files or bootstrap.dat.
+- ThreadImport : Loads blocks from `blk*.dat` files or `-loadblock=<file>`.
 
 - StartNode : Starts other threads.
 
@@ -654,7 +654,7 @@ Strings and formatting
 
   - Do not use it to convert to `QString`. Use `QString::fromStdString()`.
 
-    - *Rationale*: Qt has build-in functionality for converting their string
+    - *Rationale*: Qt has built-in functionality for converting their string
       type from/to C++. No need to roll your own.
 
   - In cases where do you call `.c_str()`, you might want to additionally check that the string does not contain embedded '\0' characters, because
