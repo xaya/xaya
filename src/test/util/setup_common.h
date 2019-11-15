@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_TEST_SETUP_COMMON_H
-#define BITCOIN_TEST_SETUP_COMMON_H
+#ifndef BITCOIN_TEST_UTIL_SETUP_COMMON_H
+#define BITCOIN_TEST_UTIL_SETUP_COMMON_H
 
 #include <chainparamsbase.h>
 #include <fs.h>
@@ -39,9 +39,21 @@ extern FastRandomContext g_insecure_rand_ctx;
  */
 extern bool g_mock_deterministic_tests;
 
-static inline void SeedInsecureRand(bool deterministic = false)
+enum class SeedRand {
+    ZEROS, //!< Seed with a compile time constant of zeros
+    SEED,  //!< Call the Seed() helper
+};
+
+/** Seed the given random ctx or use the seed passed in via an environment var */
+void Seed(FastRandomContext& ctx);
+
+static inline void SeedInsecureRand(SeedRand seed = SeedRand::SEED)
 {
-    g_insecure_rand_ctx = FastRandomContext(deterministic);
+    if (seed == SeedRand::ZEROS) {
+        g_insecure_rand_ctx = FastRandomContext(/* deterministic */ true);
+    } else {
+        Seed(g_insecure_rand_ctx);
+    }
 }
 
 static inline uint32_t InsecureRand32() { return g_insecure_rand_ctx.rand32(); }
@@ -76,6 +88,12 @@ struct TestingSetup : public BasicTestingSetup {
     ~TestingSetup();
 };
 
+/** Identical to TestingSetup, but chain set to regtest */
+struct RegTestingSetup : public TestingSetup {
+    RegTestingSetup()
+        : TestingSetup{CBaseChainParams::REGTEST} {}
+};
+
 class CBlock;
 struct CMutableTransaction;
 class CScript;
@@ -84,7 +102,7 @@ class CScript;
 // Testing fixture that pre-creates a
 // 100-block REGTEST-mode block chain
 //
-struct TestChain100Setup : public TestingSetup {
+struct TestChain100Setup : public RegTestingSetup {
     TestChain100Setup();
 
     // Create a new block with just given transactions, coinbase paying to

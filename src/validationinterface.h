@@ -114,7 +114,7 @@ protected:
      *
      * Called on a background thread.
      */
-    virtual void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const std::vector<CTransactionRef> &vNameConflicts) {}
+    virtual void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex* pindex, const std::vector<CTransactionRef> &vNameConflicts) {}
     /**
      * Notifies listeners of the new active block chain on-disk.
      *
@@ -178,7 +178,7 @@ public:
     void UpdatedBlockTip(const CBlockIndex *, const CBlockIndex *, bool fInitialDownload);
     void TransactionAddedToMempool(const CTransactionRef &);
     void BlockConnected(const std::shared_ptr<const CBlock> &, const CBlockIndex *pindex, const std::shared_ptr<const std::vector<CTransactionRef>> &, const std::shared_ptr<const std::vector<CTransactionRef>> &);
-    void BlockDisconnected(const std::shared_ptr<const CBlock> &, const std::shared_ptr<const std::vector<CTransactionRef>> &);
+    void BlockDisconnected(const std::shared_ptr<const CBlock> &, const CBlockIndex* pindex, const std::shared_ptr<const std::vector<CTransactionRef>> &);
     void ChainStateFlushed(const CBlockLocator &);
     void BlockChecked(const CBlock&, const BlockValidationState&);
     void NewPoWValidBlock(const CBlockIndex *, const std::shared_ptr<const CBlock>&);

@@ -87,15 +87,6 @@ static void RescanWallet(CWallet& wallet, const WalletRescanReserver& reserver, 
     }
 }
 
-static LegacyScriptPubKeyMan& GetLegacyScriptPubKeyMan(CWallet& wallet)
-{
-    LegacyScriptPubKeyMan* spk_man = wallet.GetLegacyScriptPubKeyMan();
-    if (!spk_man) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "This type of wallet does not support this command");
-    }
-    return *spk_man;
-}
-
 UniValue importprivkey(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -134,7 +125,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Cannot import private keys to a wallet with private keys disabled");
     }
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    EnsureLegacyScriptPubKeyMan(*wallet);
 
     WalletRescanReserver reserver(pwallet);
     bool fRescan = true;
@@ -168,7 +159,7 @@ UniValue importprivkey(const JSONRPCRequest& request)
         if (!key.IsValid()) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key encoding");
 
         CPubKey pubkey = key.GetPubKey();
-        assert(key.VerifyPubKey(pubkey));
+        CHECK_NONFATAL(key.VerifyPubKey(pubkey));
         CKeyID vchAddress = pubkey.GetID();
         {
             pwallet->MarkDirty();
@@ -262,7 +253,7 @@ UniValue importaddress(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*pwallet);
+    EnsureLegacyScriptPubKeyMan(*pwallet);
 
     std::string strLabel;
     if (!request.params[1].isNull())
@@ -325,7 +316,7 @@ UniValue importaddress(const JSONRPCRequest& request)
         {
             auto locked_chain = pwallet->chain().lock();
             LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions(*locked_chain);
+            pwallet->ReacceptWalletTransactions();
         }
     }
 
@@ -363,28 +354,26 @@ UniValue importprunedfunds(const JSONRPCRequest& request)
     //Search partial merkle tree in proof for our transaction and index in valid block
     std::vector<uint256> vMatch;
     std::vector<unsigned int> vIndex;
-    unsigned int txnIndex = 0;
-    if (merkleBlock.txn.ExtractMatches(vMatch, vIndex) == merkleBlock.header.hashMerkleRoot) {
-
-        auto locked_chain = pwallet->chain().lock();
-        if (locked_chain->getBlockHeight(merkleBlock.header.GetHash()) == nullopt) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found in chain");
-        }
-
-        std::vector<uint256>::const_iterator it;
-        if ((it = std::find(vMatch.begin(), vMatch.end(), hashTx))==vMatch.end()) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction given doesn't exist in proof");
-        }
-
-        txnIndex = vIndex[it - vMatch.begin()];
-    }
-    else {
+    if (merkleBlock.txn.ExtractMatches(vMatch, vIndex) != merkleBlock.header.hashMerkleRoot) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Something wrong with merkleblock");
     }
 
-    wtx.SetConf(CWalletTx::Status::CONFIRMED, merkleBlock.header.GetHash(), txnIndex);
-
     auto locked_chain = pwallet->chain().lock();
+    Optional<int> height = locked_chain->getBlockHeight(merkleBlock.header.GetHash());
+    if (height == nullopt) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found in chain");
+    }
+
+    std::vector<uint256>::const_iterator it;
+    if ((it = std::find(vMatch.begin(), vMatch.end(), hashTx)) == vMatch.end()) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction given doesn't exist in proof");
+    }
+
+    unsigned int txnIndex = vIndex[it - vMatch.begin()];
+
+    CWalletTx::Confirmation confirm(CWalletTx::Status::CONFIRMED, *height, merkleBlock.header.GetHash(), txnIndex);
+    wtx.m_confirm = confirm;
+
     LOCK(pwallet->cs_wallet);
 
     if (pwallet->IsMine(*wtx.tx)) {
@@ -465,7 +454,7 @@ UniValue importpubkey(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    EnsureLegacyScriptPubKeyMan(*wallet);
 
     std::string strLabel;
     if (!request.params[1].isNull())
@@ -516,7 +505,7 @@ UniValue importpubkey(const JSONRPCRequest& request)
         {
             auto locked_chain = pwallet->chain().lock();
             LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions(*locked_chain);
+            pwallet->ReacceptWalletTransactions();
         }
     }
 
@@ -549,7 +538,7 @@ UniValue importwallet(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    EnsureLegacyScriptPubKeyMan(*wallet);
 
     if (pwallet->chain().havePruned()) {
         // Exit early and print an error.
@@ -639,7 +628,7 @@ UniValue importwallet(const JSONRPCRequest& request)
             std::string label = std::get<3>(key_tuple);
 
             CPubKey pubkey = key.GetPubKey();
-            assert(key.VerifyPubKey(pubkey));
+            CHECK_NONFATAL(key.VerifyPubKey(pubkey));
             CKeyID keyid = pubkey.GetID();
 
             pwallet->WalletLogPrintf("Importing %s...\n", EncodeDestination(PKHash(keyid)));
@@ -708,7 +697,7 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*wallet);
 
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
@@ -759,7 +748,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*wallet);
 
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
@@ -906,7 +895,7 @@ static std::string RecurseImportData(const CScript& script, ImportData& import_d
     case TX_SCRIPTHASH: {
         if (script_ctx == ScriptContext::P2SH) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Trying to nest P2SH inside another P2SH");
         if (script_ctx == ScriptContext::WITNESS_V0) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Trying to nest P2SH inside a P2WSH");
-        assert(script_ctx == ScriptContext::TOP);
+        CHECK_NONFATAL(script_ctx == ScriptContext::TOP);
         CScriptID id = CScriptID(uint160(solverdata[0]));
         auto subscript = std::move(import_data.redeemscript); // Remove redeemscript from import_data to check for superfluous script later.
         if (!subscript) return "missing redeemscript";
@@ -1346,7 +1335,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
 
     RPCTypeCheck(mainRequest.params, {UniValue::VARR, UniValue::VOBJ});
 
-    LegacyScriptPubKeyMan& spk_man = GetLegacyScriptPubKeyMan(*wallet);
+    EnsureLegacyScriptPubKeyMan(*wallet);
 
     const UniValue& requests = mainRequest.params[0];
 
@@ -1415,7 +1404,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
         {
             auto locked_chain = pwallet->chain().lock();
             LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions(*locked_chain);
+            pwallet->ReacceptWalletTransactions();
         }
 
         if (pwallet->IsAbortingRescan()) {

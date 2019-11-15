@@ -10,9 +10,10 @@
 #include <primitives/transaction.h>
 #include <script/names.h>
 #include <sync.h>
-#include <test/setup_common.h>
 #include <txmempool.h>
 #include <validation.h>
+
+#include <test/util/setup_common.h>
 
 #include <boost/test/unit_test.hpp>
 

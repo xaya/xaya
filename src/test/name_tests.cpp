@@ -12,11 +12,12 @@
 #include <policy/settings.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
-#include <test/setup_common.h>
 #include <txdb.h>
 #include <undo.h>
 #include <util/system.h>
 #include <validation.h>
+
+#include <test/util/setup_common.h>
 
 #include <boost/test/unit_test.hpp>
 

@@ -17,6 +17,7 @@ class CRPCTable;
 class CWallet;
 class CWalletTx;
 class JSONRPCRequest;
+class LegacyScriptPubKeyMan;
 class UniValue;
 struct PartiallySignedTransaction;
 class CTransaction;
@@ -40,6 +41,8 @@ std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& reques
 std::string HelpRequiringPassphrase(const CWallet*);
 void EnsureWalletIsUnlocked(const CWallet*);
 bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
+LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet);
+
 CTransactionRef SendMoneyToScript(interfaces::Chain::Lock& locked_chain,
                                   CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,

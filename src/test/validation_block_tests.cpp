@@ -12,20 +12,16 @@
 #include <pow.h>
 #include <random.h>
 #include <script/standard.h>
-#include <test/setup_common.h>
+#include <test/util/setup_common.h>
 #include <util/time.h>
 #include <validation.h>
 #include <validationinterface.h>
 
 #include <thread>
 
-struct RegtestingSetup : public TestingSetup {
-    RegtestingSetup() : TestingSetup(CBaseChainParams::REGTEST) {}
-};
-
 static const std::vector<unsigned char> V_OP_TRUE{OP_TRUE};
 
-BOOST_FIXTURE_TEST_SUITE(validation_block_tests, RegtestingSetup)
+BOOST_FIXTURE_TEST_SUITE(validation_block_tests, RegTestingSetup)
 
 struct TestSubscriber : public CValidationInterface {
     uint256 m_expected_tip;
@@ -45,9 +41,10 @@ struct TestSubscriber : public CValidationInterface {
         m_expected_tip = block->GetHash();
     }
 
-    void BlockDisconnected(const std::shared_ptr<const CBlock>& block, const std::vector<CTransactionRef>& vNameConflicts) override
+    void BlockDisconnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex, const std::vector<CTransactionRef>& vNameConflicts) override
     {
         BOOST_CHECK_EQUAL(m_expected_tip, block->GetHash());
+        BOOST_CHECK_EQUAL(m_expected_tip, pindex->GetBlockHash());
 
         m_expected_tip = block->hashPrevBlock;
     }
