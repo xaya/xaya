@@ -58,12 +58,6 @@ class LockImpl : public Chain::Lock, public UniqueLock<CCriticalSection>
         }
         return nullopt;
     }
-    int getBlockDepth(const uint256& hash) override
-    {
-        const Optional<int> tip_height = getHeight();
-        const Optional<int> height = getBlockHeight(hash);
-        return tip_height && height ? *tip_height - *height + 1 : 0;
-    }
     uint256 getBlockHash(int height) override
     {
         LockAssertion lock(::cs_main);
@@ -183,12 +177,13 @@ public:
         const std::vector<CTransactionRef>& tx_conflicted,
         const std::vector<CTransactionRef>& vNameConflicts) override
     {
-        m_notifications->BlockConnected(*block, tx_conflicted, vNameConflicts);
+        m_notifications->BlockConnected(*block, tx_conflicted, vNameConflicts, index->nHeight);
     }
     void BlockDisconnected(const std::shared_ptr<const CBlock>& block,
+        const CBlockIndex* index,
         const std::vector<CTransactionRef>& vNameConflicts) override
     {
-        m_notifications->BlockDisconnected(*block, vNameConflicts);
+        m_notifications->BlockDisconnected(*block, vNameConflicts, index->nHeight);
     }
     void UpdatedBlockTip(const CBlockIndex* index, const CBlockIndex* fork_index, bool is_ibd) override
     {
@@ -355,13 +350,11 @@ public:
     {
         return MakeUnique<NotificationsHandlerImpl>(*this, notifications);
     }
-    void waitForNotificationsIfNewBlocksConnected(const uint256& old_tip) override
+    void waitForNotificationsIfTipChanged(const uint256& old_tip) override
     {
         if (!old_tip.IsNull()) {
             LOCK(::cs_main);
             if (old_tip == ::ChainActive().Tip()->GetBlockHash()) return;
-            CBlockIndex* block = LookupBlockIndex(old_tip);
-            if (block && block->GetAncestor(::ChainActive().Height()) == ::ChainActive().Tip()) return;
         }
         SyncWithValidationInterfaceQueue();
     }

@@ -268,7 +268,6 @@ name_list (const JSONRPCRequest& request)
   pwallet->BlockUntilSyncedToCurrentChain ();
 
   {
-  auto locked_chain = pwallet->chain ().lock ();
   LOCK (pwallet->cs_wallet);
 
   const int tipHeight = ::ChainActive ().Height ();
@@ -301,7 +300,7 @@ name_list (const JSONRPCRequest& request)
       if (!nameFilter.empty () && nameFilter != name)
         continue;
 
-      const int depth = tx.GetDepthInMainChain (*locked_chain);
+      const int depth = tx.GetDepthInMainChain ();
       if (depth <= 0)
         continue;
       const int height = tipHeight - depth + 1;

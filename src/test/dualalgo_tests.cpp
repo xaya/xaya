@@ -7,7 +7,8 @@
 #include <consensus/params.h>
 #include <pow.h>
 #include <powdata.h>
-#include <test/setup_common.h>
+
+#include <test/util/setup_common.h>
 
 #include <boost/test/unit_test.hpp>
 
