@@ -174,7 +174,7 @@ public:
         consensus.BIP66Height = 0;
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 0;
-        consensus.MinBIP9WarningHeight = consensus.SegwitHeight + consensus.nMinerConfirmationWindow;
+        consensus.MinBIP9WarningHeight = 2016; // segwit activation height + miner confirmation window
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -272,7 +272,7 @@ public:
         consensus.BIP66Height = 0;
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 0;
-        consensus.MinBIP9WarningHeight = consensus.SegwitHeight + consensus.nMinerConfirmationWindow;
+        consensus.MinBIP9WarningHeight = 2016; // segwit activation height + miner confirmation window
         consensus.powLimitNeoscrypt = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
