@@ -96,7 +96,7 @@ public:
         /* Namecoin activates CSV/Segwit with BIP16.  */
         consensus.CSVHeight = 475000;
         consensus.SegwitHeight = 475000;
-        consensus.MinBIP9WarningHeight = consensus.SegwitHeight + consensus.nMinerConfirmationWindow;
+        consensus.MinBIP9WarningHeight = 477016; // segwit activation height + miner confirmation window
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
@@ -260,7 +260,7 @@ public:
         /* Namecoin activates CSV/Segwit with BIP16.  */
         consensus.CSVHeight = 232000;
         consensus.SegwitHeight = 232000;
-        consensus.MinBIP9WarningHeight = consensus.SegwitHeight + consensus.nMinerConfirmationWindow;
+        consensus.MinBIP9WarningHeight = 234016; // segwit activation height + miner confirmation window
         consensus.powLimit = uint256S("0000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
