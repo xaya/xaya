@@ -722,7 +722,7 @@ sendtoname (const JSONRPCRequest& request)
       "\nIt is an error if the name is expired."
           + HelpRequiringPassphrase(pwallet) + "\n",
       {
-          {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send to."},
+          {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to send to."},
           {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
           {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment used to store what the transaction is for.\n"
   "                             This is not part of the transaction, just kept in your wallet."},
