@@ -21,6 +21,7 @@
 #include <httprpc.h>
 #include <httpserver.h>
 #include <index/blockfilterindex.h>
+#include <index/namehash.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
 #include <key.h>
@@ -169,6 +170,9 @@ void Interrupt(NodeContext& node)
     if (g_txindex) {
         g_txindex->Interrupt();
     }
+    if (g_name_hash_index) {
+        g_name_hash_index->Interrupt();
+    }
     ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Interrupt(); });
 }
 
@@ -262,6 +266,10 @@ void Shutdown(NodeContext& node)
     if (g_txindex) {
         g_txindex->Stop();
         g_txindex.reset();
+    }
+    if (g_name_hash_index) {
+        g_name_hash_index->Stop();
+        g_name_hash_index.reset();
     }
     ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Stop(); });
     DestroyAllBlockFilterIndexes();
@@ -427,6 +435,7 @@ void SetupServerArgs(NodeContext& node)
                  " If <type> is not supplied or if <type> = 1, indexes for all known types are enabled.",
                  ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     gArgs.AddArg("-namehistory", strprintf("Keep track of the full name history (default: %u)", 0), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-namehashindex", strprintf("Maintain an index of name hashes to preimages (default: %u)", DEFAULT_NAMEHASHINDEX), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 
     gArgs.AddArg("-addnode=<ip>", "Add a node to connect to and attempt to keep the connection open (see the `addnode` RPC command help for more info). This option can be specified multiple times to add multiple nodes.", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-asmap=<file>", strprintf("Specify asn mapping used for bucketing of the peers (default: %s). Relative paths will be prefixed by the net-specific datadir location.", DEFAULT_ASMAP_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -997,6 +1006,8 @@ bool AppInitParameterInteraction()
     if (gArgs.GetArg("-prune", 0)) {
         if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX))
             return InitError(_("Prune mode is incompatible with -txindex.").translated);
+        if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX))
+            return InitError(_("Prune mode is incompatible with -namehashindex.").translated);
         if (!g_enabled_filter_types.empty()) {
             return InitError(_("Prune mode is incompatible with -blockfilterindex.").translated);
         }
@@ -1511,6 +1522,8 @@ bool AppInitMain(NodeContext& node)
     nTotalCache -= nBlockTreeDBCache;
     int64_t nTxIndexCache = std::min(nTotalCache / 8, gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxTxIndexCache << 20 : 0);
     nTotalCache -= nTxIndexCache;
+    const int64_t nNameHashIndexCache = std::min(nTotalCache / 8, gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX) ? MAX_NAMEHASH_CACHE << 20 : 0);
+    nTotalCache -= nNameHashIndexCache;
     int64_t filter_index_cache = 0;
     if (!g_enabled_filter_types.empty()) {
         size_t n_indexes = g_enabled_filter_types.size();
@@ -1527,6 +1540,9 @@ bool AppInitMain(NodeContext& node)
     LogPrintf("* Using %.1f MiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
     if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         LogPrintf("* Using %.1f MiB for transaction index database\n", nTxIndexCache * (1.0 / 1024 / 1024));
+    }
+    if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX)) {
+        LogPrintf("* Using %.1f MiB for name hash database\n", nNameHashIndexCache * (1.0 / 1024 / 1024));
     }
     for (BlockFilterType filter_type : g_enabled_filter_types) {
         LogPrintf("* Using %.1f MiB for %s block filter index database\n",
@@ -1773,6 +1789,11 @@ bool AppInitMain(NodeContext& node)
     if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
         g_txindex->Start();
+    }
+
+    if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX)) {
+        g_name_hash_index = MakeUnique<NameHashIndex>(nNameHashIndexCache, false, fReindex);
+        g_name_hash_index->Start();
     }
 
     for (const auto& filter_type : g_enabled_filter_types) {
