@@ -1,5 +1,13 @@
 # Release Notes for Namecoin
 
+## Version 0.21
+
+- By enabling `-namehashindex`, Namecoin Core can now keep track of a separate
+  database that maps hashes to preimages for all registered names.  With this,
+  `name_show` and `name_history` can now optionally look up names by hash.
+  This has uses for light clients, as discussed in
+  [#329](https://github.com/namecoin/namecoin-core/issues/329).
+
 ## Version 0.19
 
 - The mempool now allows multiple updates of a single name (in a chain of
