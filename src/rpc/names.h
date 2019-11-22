@@ -112,6 +112,7 @@ public:
 
   NameOptionsHelp& withNameEncoding ();
   NameOptionsHelp& withValueEncoding ();
+  NameOptionsHelp& withByHash ();
 
   /**
    * Variant of withField that also adds the innerArgs field correctly.
