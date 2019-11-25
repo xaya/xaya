@@ -24,6 +24,7 @@ FUZZ_TARGETS = \
   test/fuzz/messageheader_deserialize \
   test/fuzz/netaddr_deserialize \
   test/fuzz/parse_iso8601 \
+  test/fuzz/psbt \
   test/fuzz/script \
   test/fuzz/script_flags \
   test/fuzz/service_deserialize \
@@ -57,31 +58,19 @@ RAW_TEST_FILES =
 GENERATED_TEST_FILES = $(JSON_TEST_FILES:.json=.json.h) $(RAW_TEST_FILES:.raw=.raw.h)
 
 BITCOIN_TEST_SUITE = \
-  test/util/blockfilter.cpp \
-  test/util/blockfilter.h \
-  test/util/logging.cpp \
-  test/util/logging.h \
-  test/util/transaction_utils.cpp \
-  test/util/transaction_utils.h \
   test/main.cpp \
-  test/util/setup_common.h \
-  test/util/setup_common.cpp \
-  test/util/str.h \
-  test/util/str.cpp
+  $(TEST_UTIL_H)
 
 FUZZ_SUITE = \
   test/fuzz/fuzz.cpp \
   test/fuzz/fuzz.h \
-  test/fuzz/FuzzedDataProvider.h \
-  test/util/setup_common.cpp \
-  test/util/setup_common.h \
-  test/util/str.cpp \
-  test/util/str.h
+  test/fuzz/FuzzedDataProvider.h
 
 FUZZ_SUITE_LD_COMMON = \
  $(LIBBITCOIN_SERVER) \
  $(LIBBITCOIN_COMMON) \
  $(LIBBITCOIN_UTIL) \
+ $(LIBTEST_UTIL) \
  $(LIBBITCOIN_CONSENSUS) \
  $(LIBBITCOIN_CRYPTO) \
  $(LIBUNIVALUE) \
@@ -91,7 +80,6 @@ FUZZ_SUITE_LD_COMMON = \
  $(LIBMEMENV) \
  $(LIBSECP256K1) \
  $(EVENT_LIBS) \
- $(CRYPTO_LIBS) \
  $(EVENT_PTHREADS_LIBS)
 
 # test_bitcoin binary #
@@ -205,7 +193,7 @@ endif
 
 test_test_xaya_SOURCES = $(BITCOIN_TEST_SUITE) $(BITCOIN_TESTS) $(JSON_TEST_FILES) $(RAW_TEST_FILES)
 test_test_xaya_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(TESTDEFS) $(EVENT_CFLAGS)
-test_test_xaya_LDADD =
+test_test_xaya_LDADD = $(LIBTEST_UTIL)
 if ENABLE_WALLET
 test_test_xaya_LDADD += $(LIBBITCOIN_WALLET)
 endif
@@ -214,7 +202,7 @@ test_test_xaya_LDADD += $(LIBBITCOIN_SERVER) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMM
   $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV) $(BOOST_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(LIBSECP256K1) $(EVENT_LIBS) $(EVENT_PTHREADS_LIBS)
 test_test_xaya_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
-test_test_xaya_LDADD += $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(RAPIDCHECK_LIBS)
+test_test_xaya_LDADD += $(BDB_LIBS) $(MINIUPNPC_LIBS) $(RAPIDCHECK_LIBS)
 test_test_xaya_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
 
 if ENABLE_ZMQ
@@ -299,6 +287,12 @@ test_fuzz_parse_iso8601_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_parse_iso8601_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_parse_iso8601_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_parse_iso8601_LDADD = $(FUZZ_SUITE_LD_COMMON)
+
+test_fuzz_psbt_SOURCES = $(FUZZ_SUITE) test/fuzz/psbt.cpp
+test_fuzz_psbt_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_psbt_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_psbt_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_psbt_LDADD = $(FUZZ_SUITE_LD_COMMON)
 
 test_fuzz_script_SOURCES = $(FUZZ_SUITE) test/fuzz/script.cpp
 test_fuzz_script_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)

@@ -1107,7 +1107,12 @@ class SegWitTest(BitcoinTestFramework):
 
         MAX_PROGRAM_LENGTH = 10000
 
-        # This program is 19 max pushes (9937 bytes), then 64 more opcode-bytes.
+        # Note:  Upstream uses pushes of MAX_SCRIPT_ELEMENT_SIZE here,
+        # which is different in Xaya.  Since this test is not about the
+        # element size itself, we just stick to using 520 bytes and keeping
+        # all the rest as upstream.
+
+        # This program is 19 pushes (9937 bytes), then 64 more opcode-bytes.
         long_witness_program = CScript([b'a' * 520] * 19 + [OP_DROP] * 63 + [OP_TRUE])
         assert len(long_witness_program) == MAX_PROGRAM_LENGTH + 1
         long_witness_hash = sha256(long_witness_program)

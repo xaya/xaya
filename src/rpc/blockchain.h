@@ -51,6 +51,8 @@ void CalculatePercentilesByWeight(CAmount result[NUM_GETBLOCKSTATS_PERCENTILES],
 //! direct way to pass in state to RPC methods without globals.
 extern NodeContext* g_rpc_node;
 
+CTxMemPool& EnsureMemPool();
+
 UniValue getdifficulty(const JSONRPCRequest& request);
 
 #endif

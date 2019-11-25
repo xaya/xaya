@@ -108,10 +108,9 @@ CScript DestinationAddressHelper::getScript ()
   if (overrideDest != nullptr)
     return GetScriptForDestination (*overrideDest);
 
-  rdest.reset (new ReserveDestination (&wallet));
+  rdest.reset (new ReserveDestination (&wallet, wallet.m_default_address_type));
   CTxDestination dest;
-  if (!rdest->GetReservedDestination (wallet.m_default_address_type,
-                                      dest, false))
+  if (!rdest->GetReservedDestination (dest, false))
     throw JSONRPCError (RPC_WALLET_KEYPOOL_RAN_OUT,
                         "Error: Keypool ran out,"
                         " please call keypoolrefill first");
