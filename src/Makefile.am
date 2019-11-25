@@ -19,7 +19,7 @@ else
 LIBUNIVALUE = $(UNIVALUE_LIBS)
 endif
 
-BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) $(CRYPTO_CFLAGS)
+BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS)
 
 BITCOIN_INCLUDES += -I$(srcdir)/secp256k1/include
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
@@ -120,6 +120,7 @@ BITCOIN_CORE_H = \
   compat.h \
   compat/assumptions.h \
   compat/byteswap.h \
+  compat/cpuid.h \
   compat/endian.h \
   compat/sanity.h \
   compressor.h \
@@ -180,6 +181,7 @@ BITCOIN_CORE_H = \
   protocol.h \
   psbt.h \
   random.h \
+  randomenv.h \
   reverse_iterator.h \
   reverselock.h \
   rpc/auxpow_miner.h \
@@ -523,6 +525,7 @@ libbitcoin_util_a_SOURCES = \
   interfaces/handler.cpp \
   logging.cpp \
   random.cpp \
+  randomenv.cpp \
   rpc/request.cpp \
   support/cleanse.cpp \
   sync.cpp \
@@ -588,7 +591,7 @@ namecoind_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-namecoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+namecoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 # bitcoin-cli binary #
 namecoin_cli_SOURCES = bitcoin-cli.cpp
@@ -606,7 +609,7 @@ namecoin_cli_LDADD = \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
-namecoin_cli_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+namecoin_cli_LDADD += $(BOOST_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoin-tx binary #
@@ -627,7 +630,7 @@ namecoin_tx_LDADD = \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-namecoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+namecoin_tx_LDADD += $(BOOST_LIBS)
 #
 
 # bitcoin-wallet binary #
@@ -658,7 +661,7 @@ namecoin_wallet_LDADD = \
   $(LIBSECP256K1) \
   $(LIBUNIVALUE)
 
-namecoin_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(MINIUPNPC_LIBS) $(ZMQ_LIBS)
+namecoin_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(MINIUPNPC_LIBS) $(ZMQ_LIBS)
 #
 
 # bitcoinconsensus library #
@@ -737,6 +740,8 @@ endif
 if EMBEDDED_LEVELDB
 include Makefile.leveldb.include
 endif
+
+include Makefile.test_util.include
 
 if ENABLE_TESTS
 include Makefile.test.include

@@ -132,9 +132,6 @@ CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 CBlockPolicyEstimator feeEstimator;
 CTxMemPool mempool(&feeEstimator);
 
-/** Constant stuff for coinbase transactions we create: */
-CScript COINBASE_FLAGS;
-
 // Internal stuff
 namespace {
     CBlockIndex* pindexBestInvalid = nullptr;
@@ -5199,7 +5196,7 @@ double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex *pin
         fTxTotal = pindex->nChainTx + (nNow - pindex->GetBlockTime()) * data.dTxRate;
     }
 
-    return pindex->nChainTx / fTxTotal;
+    return std::min<double>(pindex->nChainTx / fTxTotal, 1.0);
 }
 
 class CMainCleanup

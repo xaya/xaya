@@ -283,9 +283,9 @@ void Shutdown(NodeContext& node)
     node.chain_clients.clear();
     UnregisterAllValidationInterfaces();
     GetMainSignals().UnregisterBackgroundSignalScheduler();
-    GetMainSignals().UnregisterWithMempoolSignals(mempool);
     globalVerifyHandle.reset();
     ECC_Stop();
+    if (node.mempool) node.mempool = nullptr;
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -570,9 +570,7 @@ std::string LicenseInfo()
            "\n" +
            "\n" +
            _("This is experimental software.").translated + "\n" +
-           strprintf(_("Distributed under the MIT software license, see the accompanying file %s or %s").translated, "COPYING", "<https://opensource.org/licenses/MIT>") + "\n" +
-           "\n" +
-           strprintf(_("This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit %s and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.").translated, "<https://www.openssl.org>") +
+           strprintf(_("Distributed under the MIT software license, see the accompanying file %s or %s").translated, "COPYING", "<https://opensource.org/licenses/MIT>") +
            "\n";
 }
 
@@ -1265,8 +1263,12 @@ bool AppInitMain(NodeContext& node)
     CScheduler::Function serviceLoop = std::bind(&CScheduler::serviceQueue, &scheduler);
     threadGroup.create_thread(std::bind(&TraceThread<CScheduler::Function>, "scheduler", serviceLoop));
 
+    // Gather some entropy once per minute.
+    scheduler.scheduleEvery([]{
+        RandAddPeriodic();
+    }, 60000);
+
     GetMainSignals().RegisterBackgroundSignalScheduler(scheduler);
-    GetMainSignals().RegisterWithMempoolSignals(mempool);
 
     // Create client interfaces for wallets that are supposed to be loaded
     // according to -wallet and -disablewallet options. This only constructs
@@ -1644,6 +1646,11 @@ bool AppInitMain(NodeContext& node)
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
     }
+
+    // Now that the chain state is loaded, make mempool generally available in the node context. For example the
+    // connection manager, wallet, or RPC threads, which are all started after this, may use it from the node context.
+    assert(!node.mempool);
+    node.mempool = &::mempool;
 
     fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
     CAutoFile est_filein(fsbridge::fopen(est_path, "rb"), SER_DISK, CLIENT_VERSION);

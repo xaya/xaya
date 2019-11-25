@@ -71,8 +71,6 @@ static const CAmount WALLET_INCREMENTAL_RELAY_FEE = 5000;
 static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
 //! Default for -walletrejectlongchains
 static const bool DEFAULT_WALLET_REJECT_LONG_CHAINS = false;
-//! Default for -avoidpartialspends
-static const bool DEFAULT_AVOIDPARTIALSPENDS = false;
 //! -txconfirmtarget default
 static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 6;
 //! -walletrbf default
@@ -140,8 +138,9 @@ class ReserveDestination
 {
 protected:
     //! The wallet to reserve from
-    CWallet* pwallet;
+    CWallet* const pwallet;
     LegacyScriptPubKeyMan* m_spk_man{nullptr};
+    OutputType const type;
     //! The index of the address's key in the keypool
     int64_t nIndex{-1};
     //! The public key for the address
@@ -153,10 +152,9 @@ protected:
 
 public:
     //! Construct a ReserveDestination object. This does NOT reserve an address yet
-    explicit ReserveDestination(CWallet* pwalletIn)
-    {
-        pwallet = pwalletIn;
-    }
+    explicit ReserveDestination(CWallet* pwallet, OutputType type)
+      : pwallet(pwallet)
+      , type(type) { }
 
     ReserveDestination(const ReserveDestination&) = delete;
     ReserveDestination& operator=(const ReserveDestination&) = delete;
@@ -168,7 +166,7 @@ public:
     }
 
     //! Reserve an address
-    bool GetReservedDestination(const OutputType type, CTxDestination& pubkey, bool internal);
+    bool GetReservedDestination(CTxDestination& pubkey, bool internal);
     //! Return reserved address
     void ReturnDestination();
     //! Keep the address. Do not return it's key to the keypool when this object goes out of scope
@@ -582,6 +580,8 @@ struct CoinSelectionParams
     size_t change_spend_size = 0;
     CFeeRate effective_fee = CFeeRate(0);
     size_t tx_noinputs_size = 0;
+    //! Indicate that we are subtracting the fee from outputs
+    bool m_subtract_fee_outputs = false;
 
     CoinSelectionParams(bool use_bnb, size_t change_output_size, size_t change_spend_size, CFeeRate effective_fee, size_t tx_noinputs_size) : use_bnb(use_bnb), change_output_size(change_output_size), change_spend_size(change_spend_size), effective_fee(effective_fee), tx_noinputs_size(tx_noinputs_size) {}
     CoinSelectionParams() {}
@@ -1139,8 +1139,13 @@ public:
         LogPrintf(("%s " + fmt).c_str(), GetDisplayName(), parameters...);
     };
 
-    ScriptPubKeyMan* GetScriptPubKeyMan() const;
-    const SigningProvider* GetSigningProvider() const;
+    //! Get the ScriptPubKeyMan for a script
+    ScriptPubKeyMan* GetScriptPubKeyMan(const CScript& script) const;
+
+    //! Get the SigningProvider for a script
+    const SigningProvider* GetSigningProvider(const CScript& script) const;
+    const SigningProvider* GetSigningProvider(const CScript& script, SignatureData& sigdata) const;
+
     LegacyScriptPubKeyMan* GetLegacyScriptPubKeyMan() const;
 
     // Temporary LegacyScriptPubKeyMan accessors and aliases.
