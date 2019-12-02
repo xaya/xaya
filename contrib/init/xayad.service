@@ -1,53 +1,53 @@
 # It is not recommended to modify this file in-place, because it will
 # be overwritten during package upgrades. If you want to add further
 # options or overwrite existing ones then use
-# $ systemctl edit namecoind.service
+# $ systemctl edit xayad.service
 # See "man systemd.service" for details.
 
 # Note that almost all daemon options could be specified in
-# /etc/namecoin/namecoin.conf, but keep in mind those explicitly
+# /etc/xaya/xaya.conf, but keep in mind those explicitly
 # specified as arguments in ExecStart= will override those in the
 # config file.
 
 [Unit]
-Description=Namecoin daemon
+Description=Xaya Core daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/namecoind -daemon \
-                            -pid=/run/namecoind/namecoind.pid \
-                            -conf=/etc/namecoin/namecoin.conf \
-                            -datadir=/var/lib/namecoind
+ExecStart=/usr/bin/xayad -daemon \
+                         -pid=/run/xayad/xayad.pid \
+                         -conf=/etc/xaya/xaya.conf \
+                         -datadir=/var/lib/xayad
 
 # Make sure the config directory is readable by the service user
 PermissionsStartOnly=true
-ExecStartPre=/bin/chgrp namecoin /etc/namecoin
+ExecStartPre=/bin/chgrp xaya /etc/xaya
 
 # Process management
 ####################
 
 Type=forking
-PIDFile=/run/namecoind/namecoind.pid
+PIDFile=/run/xayad/xayad.pid
 Restart=on-failure
 TimeoutStopSec=600
 
 # Directory creation and permissions
 ####################################
 
-# Run as namecoin:namecoin
-User=namecoin
-Group=namecoin
+# Run as xaya:xaya
+User=xaya
+Group=xaya
 
-# /run/namecoind
-RuntimeDirectory=namecoind
+# /run/xayad
+RuntimeDirectory=xayad
 RuntimeDirectoryMode=0710
 
-# /etc/namecoin
-ConfigurationDirectory=namecoin
+# /etc/xaya
+ConfigurationDirectory=xaya
 ConfigurationDirectoryMode=0710
 
-# /var/lib/namecoind
-StateDirectory=namecoind
+# /var/lib/xayad
+StateDirectory=xayad
 StateDirectoryMode=0710
 
 # Hardening measures
