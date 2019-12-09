@@ -824,7 +824,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 
 void CWallet::LoadToWallet(CWalletTx& wtxIn)
 {
-    // If wallet doesn't have a chain (e.g wallet-tool), lock can't be taken.
+    // If wallet doesn't have a chain (e.g bitcoin-wallet), lock can't be taken.
     auto locked_chain = LockChain();
     if (locked_chain) {
         Optional<int> block_height = locked_chain->getBlockHeight(wtxIn.m_confirm.hashBlock);
@@ -3044,7 +3044,7 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
 {
     // Even if we don't use this lock in this function, we want to preserve
     // lock order in LoadToWallet if query of chain state is needed to know
-    // tx status. If lock can't be taken (e.g wallet-tool), tx confirmation
+    // tx status. If lock can't be taken (e.g bitcoin-wallet), tx confirmation
     // status may be not reliable.
     auto locked_chain = LockChain();
     LOCK(cs_wallet);
@@ -3395,21 +3395,15 @@ bool ReserveDestination::GetReservedDestination(CTxDestination& dest, bool inter
         return false;
     }
 
-    if (!pwallet->CanGetAddresses(internal)) {
-        return false;
-    }
 
     if (nIndex == -1)
     {
         CKeyPool keypool;
-        if (!m_spk_man->GetReservedDestination(type, internal, nIndex, keypool)) {
+        if (!m_spk_man->GetReservedDestination(type, internal, address, nIndex, keypool)) {
             return false;
         }
-        vchPubKey = keypool.vchPubKey;
         fInternal = keypool.fInternal;
     }
-    assert(vchPubKey.IsValid());
-    address = GetDestinationForKey(vchPubKey, type);
     dest = address;
     return true;
 }
@@ -3417,21 +3411,18 @@ bool ReserveDestination::GetReservedDestination(CTxDestination& dest, bool inter
 void ReserveDestination::KeepDestination()
 {
     if (nIndex != -1) {
-        m_spk_man->KeepDestination(nIndex);
-        m_spk_man->LearnRelatedScripts(vchPubKey, type);
+        m_spk_man->KeepDestination(nIndex, type);
     }
     nIndex = -1;
-    vchPubKey = CPubKey();
     address = CNoDestination();
 }
 
 void ReserveDestination::ReturnDestination()
 {
     if (nIndex != -1) {
-        m_spk_man->ReturnDestination(nIndex, fInternal, vchPubKey);
+        m_spk_man->ReturnDestination(nIndex, fInternal, address);
     }
     nIndex = -1;
-    vchPubKey = CPubKey();
     address = CNoDestination();
 }
 
