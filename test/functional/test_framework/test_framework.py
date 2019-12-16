@@ -97,7 +97,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.nodes = []
         self.network_thread = None
         self.rpc_timeout = 60  # Wait for up to 60 seconds for the RPC server to respond
-        self.supports_cli = False
+        self.supports_cli = True
         self.bind_to_localhost_only = True
         self.set_test_params()
         self.parse_args()
@@ -161,6 +161,8 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                             help="use bitcoin-cli instead of RPC for all commands")
         parser.add_argument("--perf", dest="perf", default=False, action="store_true",
                             help="profile running nodes with perf for the duration of the test")
+        parser.add_argument("--valgrind", dest="valgrind", default=False, action="store_true",
+                            help="run nodes under the valgrind memory error detector: expect at least a ~10x slowdown, valgrind 3.14 or later required")
         parser.add_argument("--randomseed", type=int,
                             help="set a random seed for deterministically reproducing a previous test run")
         self.add_options(parser)
@@ -398,6 +400,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 extra_args=extra_args[i],
                 use_cli=self.options.usecli,
                 start_perf=self.options.perf,
+                use_valgrind=self.options.valgrind,
             ))
 
     def start_node(self, i, *args, **kwargs):
