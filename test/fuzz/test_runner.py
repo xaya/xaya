@@ -20,9 +20,14 @@ FUZZERS_MISSING_CORPORA = [
     "block_header_and_short_txids_deserialize",
     "fee_rate_deserialize",
     "flat_file_pos_deserialize",
+    "integer",
     "key_origin_info_deserialize",
     "merkle_block_deserialize",
     "out_point_deserialize",
+    "parse_hd_keypath",
+    "parse_numbers",
+    "parse_script",
+    "parse_univalue",
     "partial_merkle_tree_deserialize",
     "partially_signed_transaction_deserialize",
     "prefilled_transaction_deserialize",
@@ -31,7 +36,9 @@ FUZZERS_MISSING_CORPORA = [
     "pub_key_deserialize",
     "script_deserialize",
     "sub_net_deserialize",
+    "tx_in",
     "tx_in_deserialize",
+    "tx_out",
 ]
 
 def main():
