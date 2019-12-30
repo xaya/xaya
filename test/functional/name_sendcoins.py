@@ -2,11 +2,11 @@
 # Copyright (c) 2018-2019 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
-# RPC test for the "sendCoins" option with name operations.
+"""RPC test for the "sendCoins" option with name operations."""
 
 from test_framework.names import NameTestFramework
 from test_framework.util import *
+
 
 class NameSendCoinsTest (NameTestFramework):
 
@@ -16,8 +16,10 @@ class NameSendCoinsTest (NameTestFramework):
   def verifyTx (self, txid, expected):
     """Verify that the given tx sends currency to the expected recipients."""
 
-    txHex = self.nodes[0].gettransaction (txid)['hex']
-    tx = self.nodes[0].decoderawtransaction (txHex)
+    txData = self.nodes[0].gettransaction (txid)
+    assert_greater_than (txData["confirmations"], 0)
+
+    tx = self.nodes[0].decoderawtransaction (txData["hex"])
     vout = tx['vout']
 
     # There should be two additional outputs: name and change
@@ -36,6 +38,7 @@ class NameSendCoinsTest (NameTestFramework):
         # not exactly one key with this property.
         continue
       actual[addr] = out['value']
+
     assert_equal (actual, expected)
 
   def run_test (self):
@@ -54,11 +57,9 @@ class NameSendCoinsTest (NameTestFramework):
     self.nodes[0].generate (5)
     self.verifyTx (txid, sendCoins)
 
-    # Test different variantions (numbers of target addresses) with name_update.
+    # Test different variations (numbers of target addresses) with name_update.
     for n in range (5):
-      sendCoins = {}
-      for i in range (n):
-        sendCoins[self.nodes[0].getnewaddress ()] = 42 + i
+      sendCoins = {self.nodes[0].getnewaddress (): 42 + i for i in range (n)}
       txid = self.nodes[0].name_update ("testname", "value",
                                        {"sendCoins": sendCoins})
       self.nodes[0].generate (1)
@@ -93,6 +94,7 @@ class NameSendCoinsTest (NameTestFramework):
                                       {"sendCoins": sendCoins})
     self.nodes[0].generate (1)
     self.verifyTx (txid, sendCoins)
+
 
 if __name__ == '__main__':
   NameSendCoinsTest ().main ()
