@@ -14,6 +14,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <script/names.h>
+#include <script/script.h>
 #include <script/standard.h>
 #include <validation.h>
 
@@ -64,6 +65,25 @@ ZMQGameNotifier::SendMessage (const std::string& command,
 
 namespace
 {
+
+/**
+ * Checks if the given script is a burn (OP_RETURN) and returns the first
+ * operand as data if it is.
+ */
+bool
+IsBurn (const CScript& script, valtype& data)
+{
+  std::vector<valtype> solutions;
+  if (Solver (script, solutions) != TX_NULL_DATA)
+    return false;
+
+  auto pc = script.begin () + 1;
+  opcodetype op;
+  if (!script.GetOp (pc, op, data))
+    return false;
+
+  return op <= OP_PUSHDATA4;
+}
 
 /**
  * Helper class that analyses a single transaction and extracts the data
@@ -204,6 +224,7 @@ TransactionData::TransactionData (const CTransaction& tx)
   tmpl.pushKV ("inputs", inputs);
 
   std::map<std::string, CAmount> outAmounts;
+  std::map<valtype, CAmount> burns;
   for (const auto& out : tx.vout)
     {
       const CNameScript nameOp(out.scriptPubKey);
@@ -211,11 +232,19 @@ TransactionData::TransactionData (const CTransaction& tx)
         continue;
 
       CTxDestination dest;
-      if (!ExtractDestination (out.scriptPubKey, dest))
-        continue;
+      if (ExtractDestination (out.scriptPubKey, dest))
+        {
+          const std::string addr = EncodeDestination (dest);
+          outAmounts[addr] += out.nValue;
+          continue;
+        }
 
-      const std::string addr = EncodeDestination (dest);
-      outAmounts[addr] += out.nValue;
+      valtype data;
+      if (IsBurn (out.scriptPubKey, data))
+        {
+          burns[data] += out.nValue;
+          continue;
+        }
     }
 
   UniValue out(UniValue::VOBJ);
@@ -238,6 +267,14 @@ TransactionData::TransactionData (const CTransaction& tx)
           obj.pushKV ("move", g.getValues ()[j]);
 
           const std::string& game = g.getKeys ()[j];
+
+          const valtype burnData = ToByteVector ("g/" + game);
+          const auto mitBurn = burns.find (burnData);
+          if (mitBurn != burns.end ())
+            obj.pushKV ("burnt", ValueFromAmount (mitBurn->second));
+          else
+            obj.pushKV ("burnt", 0);
+
           auto mit = moves.find (game);
           if (mit == moves.end ())
             moves.emplace (game, obj);

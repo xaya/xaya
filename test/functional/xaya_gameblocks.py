@@ -21,6 +21,7 @@ from test_framework.util import (
 )
 from test_framework.script import (
   CScript,
+  OP_RETURN,
   OP_TRUE,
 )
 from test_framework.xaya_zmq import (
@@ -80,6 +81,7 @@ class GameBlocksTest (XayaZmqTest):
     self._test_duplicateKeys ()
     self._test_inputs ()
     self._test_moveWithCurrency ()
+    self._test_burn ()
     self._test_adminCmd ()
     self._test_duplicateAdminCmds ()
     self._test_reorg ()
@@ -323,6 +325,7 @@ class GameBlocksTest (XayaZmqTest):
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
     assertMove (data["moves"][0], txid, "x", "move")
+    assert_equal (data["moves"][0]["burnt"], 0)
     out = data["moves"][0]["out"]
     assert_equal (len (out), 3)
     quant = Decimal ('1.00000000')
@@ -331,6 +334,61 @@ class GameBlocksTest (XayaZmqTest):
 
     _, data = self.games["b"].receive ()
     assert_equal (data["moves"], [])
+
+  def _test_burn (self):
+    """
+    Tests CHI burns in moves.
+    """
+
+    self.log.info ("Sending move with CHI burns...")
+
+    # We send a tx that includes moves for two games as well as some CHI burns
+    # related to the games and not related to them.  We build the transaction
+    # directly, so that we can test edge cases not available with the
+    # name_update options argument.  xaya_gamepending.py verifies that the
+    # ZMQ handling works with basic name_update transactions.
+    #
+    # The transaction also sends the name itself to a burn output.  This should
+    # be recognised as a move, but it should not be represented in the burns
+    # data sent with the notification.
+
+    tx = CTransaction ()
+    tx.vout.append (CTxOut (COIN // 100, CScript ([OP_RETURN, b"g/a"])))
+    tx.vout.append (CTxOut (12345678, CScript ([OP_RETURN, b"g/a"])))
+    tx.vout.append (CTxOut (142424242, CScript ([OP_RETURN, b"g/b"])))
+    tx.vout.append (CTxOut (COIN, CScript ([OP_RETURN, b"g/a", b"x"])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_TRUE])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_RETURN])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_RETURN, OP_TRUE])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_RETURN, b"foo"])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_RETURN, b""])))
+    tx.vout.append (CTxOut (COIN // 2, CScript ([OP_RETURN, b"x\0y"])))
+    rawtx = tx.serialize ().hex ()
+
+    nameOp = {
+      "op": "name_register",
+      "name": "p/burn",
+      "value": json.dumps ({"g":{"a":"move 1", "b":"move 2"}}),
+    }
+    rawtx = self.node.namerawtransaction (rawtx, 0, nameOp)
+
+    rawtx = self.node.fundrawtransaction (rawtx["hex"])
+    signed = self.node.signrawtransactionwithwallet (rawtx["hex"])
+    assert signed["complete"]
+    txid = self.node.sendrawtransaction (signed["hex"])
+    self.node.generate (1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], txid, "burn", "move 1")
+    assert_equal (data["moves"][0]["burnt"], 1.12345678)
+    assert_equal (len (data["moves"][0]["out"]), 1)
+
+    _, data = self.games["b"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assertMove (data["moves"][0], txid, "burn", "move 2")
+    assert_equal (data["moves"][0]["burnt"], 1.42424242)
+    assert_equal (len (data["moves"][0]["out"]), 1)
 
   def _test_adminCmd (self):
     """
