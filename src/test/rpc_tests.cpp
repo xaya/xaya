@@ -112,14 +112,10 @@ BOOST_AUTO_TEST_CASE(rpc_rawsign)
     std::string notsigned = r.get_str();
     std::string privkey1 = "\"Th2KhzYvqWjD3zLhGwqvMUKS5u9oZg6JaKCdnZF1cbGs9NZwXGWY\"";
     std::string privkey2 = "\"TfrRPU5gRT56jbL2uv7bavdo77BQq5AKjvZ6qeGKshDJNUfAVNWL\"";
-    NodeContext node;
-    node.chain = interfaces::MakeChain(node);
-    g_rpc_node = &node;
     r = CallRPC(std::string("signrawtransactionwithkey ")+notsigned+" [] "+prevout);
     BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == false);
     r = CallRPC(std::string("signrawtransactionwithkey ")+notsigned+" ["+privkey1+","+privkey2+"] "+prevout);
     BOOST_CHECK(find_value(r.get_obj(), "complete").get_bool() == true);
-    g_rpc_node = nullptr;
 }
 
 BOOST_AUTO_TEST_CASE(rpc_createraw_op_return)
