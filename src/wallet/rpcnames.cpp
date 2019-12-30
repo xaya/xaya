@@ -21,6 +21,7 @@
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/names.h>
+#include <script/standard.h>
 #include <txmempool.h>
 #include <util/fees.h>
 #include <util/moneystr.h>
@@ -137,6 +138,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
   RPCTypeCheckObj (opt,
     {
       {"sendCoins", UniValueType (UniValue::VOBJ)},
+      {"burn", UniValueType (UniValue::VOBJ)},
     },
     true, false);
 
@@ -161,6 +163,24 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
           throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for send");
 
         vecSend.push_back ({GetScriptForDestination (dest), nAmount, false});
+      }
+
+  if (opt.exists ("burn"))
+    for (const std::string& data : opt["burn"].getKeys ())
+      {
+        /* MAX_OP_RETURN_RELAY contains three extra bytes, for the opcodes
+           it includes.  */
+        const auto bytes = ToByteVector (data);
+        if (bytes.size () > MAX_OP_RETURN_RELAY - 3)
+          throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
+                              "Burn data is too long: " + data);
+
+        const CAmount nAmount = AmountFromValue (opt["burn"][data]);
+        if (nAmount <= 0)
+          throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for burn");
+
+        const CScript scr = CScript () << OP_RETURN << bytes;
+        vecSend.push_back ({scr, nAmount, false});
       }
 
   /* Shuffle the recipient list for privacy.  */

@@ -246,6 +246,7 @@ BASE_SCRIPTS = [
     'name_wallet.py',
 
     # Xaya-specific tests
+    'xaya_create_burns.py',
     'xaya_dualalgo.py',
     'xaya_gameblocks.py',
     'xaya_gamepending.py',
