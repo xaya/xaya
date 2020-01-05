@@ -88,6 +88,7 @@ The `DATA` part, finally, is a JSON object with the relevant information:
                 ADDRESS2: AMOUNT2,
                 ...
               },
+            "burnt": BURNT,
           },
           ...
         ],
@@ -121,6 +122,9 @@ The placeholders have the following meaning:
   Xaya addresses and amounts that were transacted in the move transaction,
   as described in the model for
   [currency transaction in games](games.md#currency).
+* **`BURNT`:**
+  The total amount of CHI burnt in this transaction with data `g/GAMEID`
+  (i.e. "for the current game").
 
 If the block contains an update to the game's `g/` name, then these
 [*admin commands*](games.md#games) are returned in `ADMIN-COMMANDS`.

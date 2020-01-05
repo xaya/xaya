@@ -288,13 +288,7 @@ class MempoolAcceptanceTest(BitcoinTestFramework):
             result_expected=[{'txid': tx.rehash(), 'allowed': False, 'reject-reason': 'dust'}],
             rawtxs=[tx.serialize().hex()],
         )
-        tx.deserialize(BytesIO(hex_str_to_bytes(raw_tx_reference)))
-        tx.vout[0].scriptPubKey = CScript([OP_RETURN, b'\xff'])
-        tx.vout = [tx.vout[0]] * 2
-        self.check_mempool_result(
-            result_expected=[{'txid': tx.rehash(), 'allowed': False, 'reject-reason': 'multi-op-return'}],
-            rawtxs=[tx.serialize().hex()],
-        )
+        # Unlike upstream, Xaya allows multiple OP_RETURN outputs.  So no test for this.
 
         self.log.info('A timelocked transaction')
         tx.deserialize(BytesIO(hex_str_to_bytes(raw_tx_reference)))

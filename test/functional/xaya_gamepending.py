@@ -66,6 +66,7 @@ class GamePendingTest (XayaZmqTest):
     self._test_register ()
     self._test_notWhenMined ()
     self._test_update ()
+    self._test_sendAndBurn ()
     self._test_multipleGames ()
     self._test_duplicateKeys ()
     self._test_blockDetach (ctx)
@@ -118,6 +119,25 @@ class GamePendingTest (XayaZmqTest):
 
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "x", "foo")
+
+    self.node.generate (1)
+
+  def _test_sendAndBurn (self):
+    self.log.info ("Sending and burning CHI...")
+
+    addr = self.node.getnewaddress ()
+    opt = {
+      "sendCoins": {addr: 1},
+      "burn": {"g/a": 2, "g/b": 3, "ignored": 0.5},
+    }
+    txid = self.node.name_update ("p/x", json.dumps ({"g": {"a": "foo"}}), opt)
+
+    _, data = self.games["a"].receive ()
+    assertMove (data, txid, "x", "foo")
+
+    assert_equal (len (data["out"]), 2)
+    assert_equal (data["out"][addr], 1)
+    assert_equal (data["burnt"], 2)
 
     self.node.generate (1)
 

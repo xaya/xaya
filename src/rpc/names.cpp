@@ -354,6 +354,9 @@ NameOptionsHelp::withWriteOptions ()
   withArg ("sendCoins", RPCArg::Type::OBJ_USER_KEYS,
            "Addresses to which coins should be sent additionally");
 
+  withArg ("burn", RPCArg::Type::OBJ_USER_KEYS,
+           "Data and amounts of CHI to burn in the transaction");
+
   return *this;
 }
 

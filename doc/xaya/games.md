@@ -217,6 +217,14 @@ Note that there exists a second possibility for trading in games:
 This is particularly useful for market places between players themselves,
 rather than payments to a game developer.
 
+An alternative to handling CHI payments is to require **burning of CHI**.
+This can be used to create a cost for certain actions (e.g. to discourage
+spamming them), while not creating a privileged instance (the receiver
+of payments).  To burn CHI in relation to a given move in a game,
+they should be sent to an `OP_RETURN` output with `g/GAMEID` as the data
+part.  (The burn must be related uniquely to a specific game, since otherwise
+a single burn of CHI could be used for multiple games at the same time.)
+
 ## Processing Backwards in Time <a name="undoing"></a>
 
 While the typical behaviour of the Xaya blockchain is to attach blocks

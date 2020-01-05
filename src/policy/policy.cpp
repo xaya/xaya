@@ -128,11 +128,9 @@ bool IsStandardTx(const CTransaction& tx, bool permit_bare_multisig, const CFeeR
         }
     }
 
-    // only one OP_RETURN txout is permitted
-    if (nDataOut > 1) {
-        reason = "multi-op-return";
-        return false;
-    }
+    /* Upstream disallows more than one OP_RETURN output in a single
+       transaction, but Xaya allows this to enable combined moves with burns
+       for multiple games.  */
 
     return true;
 }
