@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 Daniel Kraft
+// Copyright (c) 2018-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,8 +44,8 @@ void auxMiningCheck()
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
-                              uint256& target)
+AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
+                              const CScript& scriptPubKey, uint256& target)
 {
   AssertLockHeld (cs);
   const CBlock* pblockCur = nullptr;
@@ -72,7 +72,8 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
-            = BlockAssembler (Params ()).CreateNewBlock (algo, scriptPubKey);
+            = BlockAssembler (mempool, Params ())
+                  .CreateNewBlock (algo, scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
@@ -130,9 +131,11 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
   auxMiningCheck ();
   LOCK (cs);
 
+  const auto& mempool = EnsureMemPool ();
+
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (PowAlgo::SHA256D, scriptPubKey,
-                                          target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::SHA256D, mempool,
+                                          scriptPubKey, target);
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
@@ -176,9 +179,11 @@ AuxpowMiner::createWork (const CScript& scriptPubKey)
   auxMiningCheck ();
   LOCK (cs);
 
+  const auto& mempool = EnsureMemPool ();
+
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (PowAlgo::NEOSCRYPT, scriptPubKey,
-                                          target);
+  const CBlock* pblock = getCurrentBlock (PowAlgo::NEOSCRYPT, mempool,
+                                          scriptPubKey, target);
 
   CPureBlockHeader fakeHeader;
   fakeHeader.SetNull ();

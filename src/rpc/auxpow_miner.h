@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 Daniel Kraft
+// Copyright (c) 2018-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,6 +10,7 @@
 #include <script/script.h>
 #include <script/standard.h>
 #include <sync.h>
+#include <txmempool.h>
 #include <uint256.h>
 #include <univalue.h>
 
@@ -63,8 +64,8 @@ private:
    * that should be returned to a miner for working on at the moment.  Also
    * fills in the difficulty target value.
    */
-  const CBlock* getCurrentBlock (PowAlgo algo, const CScript& scriptPubKey,
-                                 uint256& target);
+  const CBlock* getCurrentBlock (PowAlgo algo, const CTxMemPool& mempool,
+                                 const CScript& scriptPubKey, uint256& target);
 
   /**
    * Looks up a previously constructed block by its (hex-encoded) hash.  If the

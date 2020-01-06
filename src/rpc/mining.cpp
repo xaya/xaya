@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2018 The Bitcoin Core developers
+// Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -146,7 +146,7 @@ powAlgoFromJson (const UniValue& algoJson)
     }
 }
 
-static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson)
+static UniValue generateBlocks(const CTxMemPool& mempool, const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries, const UniValue& algoJson)
 {
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -162,7 +162,7 @@ static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, ui
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(algo, coinbase_script));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(mempool, Params()).CreateNewBlock(algo, coinbase_script));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -239,9 +239,11 @@ static UniValue generatetodescriptor(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Cannot derive script without private keys"));
     }
 
+    const CTxMemPool& mempool = EnsureMemPool();
+
     CHECK_NONFATAL(coinbase_script.size() == 1);
 
-    return generateBlocks(coinbase_script.at(0), num_blocks, max_tries, request.params[3]);
+    return generateBlocks(mempool, coinbase_script.at(0), num_blocks, max_tries, request.params[3]);
 }
 
 static UniValue generatetoaddress(const JSONRPCRequest& request)
@@ -276,9 +278,11 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
     }
 
+    const CTxMemPool& mempool = EnsureMemPool();
+
     CScript coinbase_script = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbase_script, nGenerate, nMaxTries, request.params[3]);
+    return generateBlocks(mempool, coinbase_script, nGenerate, nMaxTries, request.params[3]);
 }
 
 static UniValue getmininginfo(const JSONRPCRequest& request)
@@ -614,7 +618,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(algo, scriptDummy);
+        pblocktemplate = BlockAssembler(mempool, Params()).CreateNewBlock(algo, scriptDummy);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
