@@ -2,12 +2,14 @@
 
 *.exe
 *.pdb
+src/namecoin
 src/namecoind
 src/namecoin-cli
 src/namecoin-tx
 src/namecoin-wallet
+src/test/fuzz
+!src/test/fuzz/*.*
 src/test/test_namecoin
-src/test/test_namecoin_fuzzy
 src/qt/test/test_namecoin-qt
 
 # autoreconf
