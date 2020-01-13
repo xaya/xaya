@@ -2,13 +2,15 @@
 
 *.exe
 *.pdb
+src/xaya
 src/xayad
 src/xaya-cli
 src/xaya-tx
 src/xaya-wallet
 src/xaya-hash
+src/test/fuzz
+!src/test/fuzz/*.*
 src/test/test_xaya
-src/test/test_xaya_fuzzy
 src/qt/test/test_xaya-qt
 
 # autoreconf

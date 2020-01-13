@@ -162,6 +162,7 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::COINDB, "coindb"},
     {BCLog::QT, "qt"},
     {BCLog::LEVELDB, "leveldb"},
+    {BCLog::VALIDATION, "validation"},
     {BCLog::NAMES, "names"},
     {BCLog::GAME, "game"},
     {BCLog::ALL, "1"},
