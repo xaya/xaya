@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Xaya developers
+// Copyright (c) 2018-2020 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -29,7 +29,7 @@ private:
   std::set<std::string> games GUARDED_BY (cs);
 
   /** Lock for this instance.  */
-  mutable CCriticalSection cs;
+  mutable RecursiveMutex cs;
 
   friend class ZMQGameBlocksNotifier;
   friend class ZMQGamePendingNotifier;

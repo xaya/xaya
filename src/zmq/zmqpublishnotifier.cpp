@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2019 The Bitcoin Core developers
+// Copyright (c) 2015-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,7 +25,7 @@ static const char *MSG_RAWTX     = "rawtx";
  * sends (also for non-game-blocks) to be sure that the socket is not
  * accessed at the same time from multiple threads.
  */
-static CCriticalSection cs_zmqPublish;
+static RecursiveMutex cs_zmqPublish;
 
 // Internal function to send multipart message
 static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
