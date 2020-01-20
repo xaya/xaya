@@ -183,7 +183,7 @@ AuxpowMiner&
 AuxpowMiner::get ()
 {
   static AuxpowMiner* instance = nullptr;
-  static CCriticalSection lock;
+  static RecursiveMutex lock;
 
   LOCK (lock);
   if (instance == nullptr)

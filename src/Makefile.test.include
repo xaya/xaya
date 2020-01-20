@@ -185,6 +185,7 @@ BITCOIN_TESTS =\
   test/uint256_tests.cpp \
   test/util_tests.cpp \
   test/validation_block_tests.cpp \
+  test/validation_flush_tests.cpp \
   test/versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
 #   base58_tests
