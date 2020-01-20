@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2019 The Bitcoin Core developers
+// Copyright (c) 2009-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -313,6 +313,13 @@ public:
     enum AmountType { DEBIT, CREDIT, IMMATURE_CREDIT, AVAILABLE_CREDIT, AMOUNTTYPE_ENUM_ELEMENTS };
     CAmount GetCachableAmount(AmountType type, const isminefilter& filter, bool recalculate = false) const;
     mutable CachableAmount m_amounts[AMOUNTTYPE_ENUM_ELEMENTS];
+    /**
+     * This flag is true if all m_amounts caches are empty. This is particularly
+     * useful in places where MarkDirty is conditionally called and the
+     * condition can be expensive and thus can be skipped if the flag is true.
+     * See MarkDestinationsDirty.
+     */
+    mutable bool m_is_cache_empty{true};
     mutable bool fChangeCached;
     mutable bool fInMempool;
     mutable CAmount nChangeCached;
@@ -439,6 +446,7 @@ public:
         m_amounts[IMMATURE_CREDIT].Reset();
         m_amounts[AVAILABLE_CREDIT].Reset();
         fChangeCached = false;
+        m_is_cache_empty = true;
     }
 
     void BindWallet(CWallet *pwalletIn)
@@ -699,7 +707,7 @@ public:
      * Main wallet lock.
      * This lock protects all the fields added by CWallet.
      */
-    mutable CCriticalSection cs_wallet;
+    mutable RecursiveMutex cs_wallet;
 
     /** Get database handle used by this wallet. Ideally this function would
      * not be necessary.
@@ -803,7 +811,7 @@ public:
 
     // Whether this or any known UTXO with the same single key has been spent.
     bool IsUsedDestination(const uint256& hash, unsigned int n) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    void SetUsedDestinationState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void SetUsedDestinationState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     std::vector<OutputGroup> GroupOutputs(const std::vector<COutput>& outputs, bool single_coin) const;
 
@@ -962,6 +970,12 @@ public:
     std::map<CTxDestination, CAmount> GetAddressBalances(interfaces::Chain::Lock& locked_chain);
 
     std::set<CTxDestination> GetLabelAddresses(const std::string& label) const;
+
+    /**
+     * Marks all outputs in each one of the destinations dirty, so their cache is
+     * reset and does not return outdated information.
+     */
+    void MarkDestinationsDirty(const std::set<CTxDestination>& destinations) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     bool GetNewDestination(const OutputType type, const std::string label, CTxDestination& dest, std::string& error);
     bool GetNewChangeDestination(const OutputType type, CTxDestination& dest, std::string& error);
@@ -1133,7 +1147,7 @@ public:
     // Temporary LegacyScriptPubKeyMan accessors and aliases.
     friend class LegacyScriptPubKeyMan;
     std::unique_ptr<LegacyScriptPubKeyMan> m_spk_man = MakeUnique<LegacyScriptPubKeyMan>(*this);
-    CCriticalSection& cs_KeyStore = m_spk_man->cs_KeyStore;
+    RecursiveMutex& cs_KeyStore = m_spk_man->cs_KeyStore;
     LegacyScriptPubKeyMan::KeyMap& mapKeys GUARDED_BY(cs_KeyStore) = m_spk_man->mapKeys;
     LegacyScriptPubKeyMan::ScriptMap& mapScripts GUARDED_BY(cs_KeyStore) = m_spk_man->mapScripts;
     LegacyScriptPubKeyMan::CryptedKeyMap& mapCryptedKeys GUARDED_BY(cs_KeyStore) = m_spk_man->mapCryptedKeys;
