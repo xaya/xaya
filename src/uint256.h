@@ -144,6 +144,8 @@ inline uint256 uint256S(const std::string& str)
     return rv;
 }
 
+uint256& UINT256_ONE();
+
 inline
 uint160 uint160S (const char* str)
 {

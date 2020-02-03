@@ -13,6 +13,8 @@ from . import segwit_addr
 
 ADDRESS_BCRT1_UNSPENDABLE = 'chirt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq563mzw'
 ADDRESS_BCRT1_UNSPENDABLE_DESCRIPTOR = 'addr(chirt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq563mzw)#6j3c4r5v'
+# Coins sent to this address can be spent with a witness stack of just OP_TRUE
+ADDRESS_BCRT1_P2WSH_OP_TRUE = 'chirt1qft5p2uhsdcdc3l2ua4ap5qqfg4pjaqlp250x7us7a8qqhrxrxfsq49s6pg'
 
 
 class AddressType(enum.Enum):

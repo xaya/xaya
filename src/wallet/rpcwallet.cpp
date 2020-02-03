@@ -125,9 +125,13 @@ void EnsureWalletIsUnlocked(const CWallet* pwallet)
     }
 }
 
-LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet)
+// also_create should only be set to true only when the RPC is expected to add things to a blank wallet and make it no longer blank
+LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create)
 {
     LegacyScriptPubKeyMan* spk_man = wallet.GetLegacyScriptPubKeyMan();
+    if (!spk_man && also_create) {
+        spk_man = wallet.GetOrCreateLegacyScriptPubKeyMan();
+    }
     if (!spk_man) {
         throw JSONRPCError(RPC_WALLET_ERROR, "This type of wallet does not support this command");
     }
@@ -587,7 +591,7 @@ static UniValue signmessage(const JSONRPCRequest& request)
     }
 
     CScript script_pub_key = GetScriptForDestination(*pkhash);
-    const SigningProvider* provider = pwallet->GetSigningProvider(script_pub_key);
+    std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(script_pub_key);
     if (!provider) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
     }
@@ -1009,7 +1013,7 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
     LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet);
 
     auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
+    LOCK2(pwallet->cs_wallet, spk_man.cs_KeyStore);
 
     std::string label;
     if (!request.params[2].isNull())
@@ -2993,7 +2997,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
                 entry.pushKV("label", i->second.name);
             }
 
-            const SigningProvider* provider = pwallet->GetSigningProvider(scriptPubKey);
+            std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
             if (provider) {
                 if (scriptPubKey.IsPayToScriptHash(true)) {
                     const CScriptID& hash = CScriptID(boost::get<ScriptHash>(address));
@@ -3033,7 +3037,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
         entry.pushKV("spendable", out.fSpendable);
         entry.pushKV("solvable", out.fSolvable);
         if (out.fSolvable) {
-            const SigningProvider* provider = pwallet->GetSigningProvider(scriptPubKey);
+            std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
             if (provider) {
                 auto descriptor = InferDescriptor(scriptPubKey, *provider);
                 entry.pushKV("desc", descriptor->ToString());
@@ -3346,21 +3350,21 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     // Parse the prevtxs array
     ParsePrevouts(request.params[1], nullptr, coins);
 
-    std::set<const SigningProvider*> providers;
+    std::set<std::shared_ptr<SigningProvider>> providers;
     for (const std::pair<COutPoint, Coin> coin_pair : coins) {
-        const SigningProvider* provider = pwallet->GetSigningProvider(coin_pair.second.out.scriptPubKey);
+        std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(coin_pair.second.out.scriptPubKey);
         if (provider) {
             providers.insert(std::move(provider));
         }
     }
     if (providers.size() == 0) {
-        // When there are no available providers, use DUMMY_SIGNING_PROVIDER so we can check if the tx is complete
-        providers.insert(&DUMMY_SIGNING_PROVIDER);
+        // When there are no available providers, use a dummy SigningProvider so we can check if the tx is complete
+        providers.insert(std::make_shared<SigningProvider>());
     }
 
     UniValue result(UniValue::VOBJ);
-    for (const SigningProvider* provider : providers) {
-        SignTransaction(mtx, provider, coins, request.params[2], result);
+    for (std::shared_ptr<SigningProvider> provider : providers) {
+        SignTransaction(mtx, provider.get(), coins, request.params[2], result);
     }
      return result;
 }
@@ -3746,12 +3750,12 @@ static UniValue DescribeWalletAddress(CWallet* pwallet, const CTxDestination& de
     UniValue ret(UniValue::VOBJ);
     UniValue detail = DescribeAddress(dest);
     CScript script = GetScriptForDestination(dest);
-    const SigningProvider* provider = nullptr;
+    std::unique_ptr<SigningProvider> provider = nullptr;
     if (pwallet) {
         provider = pwallet->GetSigningProvider(script);
     }
     ret.pushKVs(detail);
-    ret.pushKVs(boost::apply_visitor(DescribeWalletAddressVisitor(provider), dest));
+    ret.pushKVs(boost::apply_visitor(DescribeWalletAddressVisitor(provider.get()), dest));
     return ret;
 }
 
@@ -3811,18 +3815,18 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
             "                                                         getaddressinfo output fields for the embedded address, excluding metadata (timestamp, hdkeypath,\n"
             "                                                         hdseedid) and relation to the wallet (ismine, iswatchonly).\n"
             "  \"iscompressed\" : true|false,        (boolean, optional) If the pubkey is compressed.\n"
-            "  \"label\" :  \"label\"                  (string) The label associated with the address. Defaults to \"\". Equivalent to the label name in the labels array below.\n"
+            "  \"label\" :  \"label\"                  (string) DEPRECATED. The label associated with the address. Defaults to \"\". Replaced by the labels array below.\n"
             "  \"timestamp\" : timestamp,            (number, optional) The creation time of the key, if available, expressed in " + UNIX_EPOCH_TIME + ".\n"
             "  \"hdkeypath\" : \"keypath\"             (string, optional) The HD keypath, if the key is HD and available.\n"
             "  \"hdseedid\" : \"<hash160>\"            (string, optional) The Hash160 of the HD seed.\n"
             "  \"hdmasterfingerprint\" : \"<hash160>\" (string, optional) The fingerprint of the master key.\n"
-            "  \"labels\"                            (json object) An array of labels associated with the address. Currently limited to one label but returned\n"
-            "                                               as an array to keep the API stable if multiple labels are enabled in the future.\n"
+            "  \"labels\"                            (array) Array of labels associated with the address. Currently limited to one label but returned\n"
+            "                                              as an array to keep the API stable if multiple labels are enabled in the future.\n"
             "    [\n"
-            "      \"label name\" (string) The label name. Defaults to \"\". Equivalent to the label field above.\n\n"
+            "      \"label name\" (string) The label name. Defaults to \"\".\n"
             "      DEPRECATED, will be removed in 0.21. To re-enable, launch bitcoind with `-deprecatedrpc=labelspurpose`:\n"
-            "      { (json object of label data)\n"
-            "        \"name\" : \"label name\" (string) The label name. Defaults to \"\". Equivalent to the label field above.\n"
+            "      {\n"
+            "        \"name\" : \"label name\" (string) The label name. Defaults to \"\".\n"
             "        \"purpose\" : \"purpose\" (string) The purpose of the associated address (send or receive).\n"
             "      }\n"
             "    ]\n"
@@ -3849,7 +3853,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     CScript scriptPubKey = GetScriptForDestination(dest);
     ret.pushKV("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
 
-    const SigningProvider* provider = pwallet->GetSigningProvider(scriptPubKey);
+    std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
 
     isminetype mine = pwallet->IsMine(dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
@@ -3866,10 +3870,10 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     UniValue detail = DescribeWalletAddress(pwallet, dest);
     ret.pushKVs(detail);
 
-    // Return label field if existing. Currently only one label can be
-    // associated with an address, so the label should be equivalent to the
+    // DEPRECATED: Return label field if existing. Currently only one label can
+    // be associated with an address, so the label should be equivalent to the
     // value of the name key/value pair in the labels array below.
-    if (pwallet->mapAddressBook.count(dest)) {
+    if ((pwallet->chain().rpcEnableDeprecated("label")) && (pwallet->mapAddressBook.count(dest))) {
         ret.pushKV("label", pwallet->mapAddressBook[dest].name);
     }
 
@@ -3892,12 +3896,11 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     // associated with an address, but we return an array so the API remains
     // stable if we allow multiple labels to be associated with an address in
     // the future.
-    //
-    // DEPRECATED: The previous behavior of returning an array containing a JSON
-    // object of `name` and `purpose` key/value pairs has been deprecated.
     UniValue labels(UniValue::VARR);
     std::map<CTxDestination, CAddressBookData>::iterator mi = pwallet->mapAddressBook.find(dest);
     if (mi != pwallet->mapAddressBook.end()) {
+        // DEPRECATED: The previous behavior of returning an array containing a
+        // JSON object of `name` and `purpose` key/value pairs is deprecated.
         if (pwallet->chain().rpcEnableDeprecated("labelspurpose")) {
             labels.push_back(AddressBookDataToJSON(mi->second, true));
         } else {
@@ -4052,7 +4055,7 @@ UniValue sethdseed(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
-    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet);
+    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet, true);
 
     if (pwallet->chain().isInitialBlockDownload()) {
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Cannot set a new HD seed while still in Initial Block Download");
@@ -4063,7 +4066,7 @@ UniValue sethdseed(const JSONRPCRequest& request)
     }
 
     auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
+    LOCK2(pwallet->cs_wallet, spk_man.cs_KeyStore);
 
     // Do not do anything to non-HD wallets
     if (!pwallet->CanSupportFeature(FEATURE_HD)) {
@@ -4350,7 +4353,7 @@ public:
   CScript
   GetCoinbaseScript (CWallet* pwallet)
   {
-    LOCK (cs);
+    LOCK2 (cs, pwallet->cs_wallet);
 
     const auto mit = data.find (pwallet->GetName ());
     if (mit != data.end ())

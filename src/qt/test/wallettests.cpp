@@ -144,20 +144,17 @@ void TestGUI(interfaces::Node& node)
     bool firstRun;
     wallet->LoadWallet(firstRun);
     {
-        auto spk_man = wallet->GetLegacyScriptPubKeyMan();
+        auto spk_man = wallet->GetOrCreateLegacyScriptPubKeyMan();
         auto locked_chain = wallet->chain().lock();
-        LOCK(wallet->cs_wallet);
-        AssertLockHeld(spk_man->cs_wallet);
+        LOCK2(wallet->cs_wallet, spk_man->cs_KeyStore);
         wallet->SetAddressBook(GetDestinationForKey(test.coinbaseKey.GetPubKey(), wallet->m_default_address_type), "", "receive");
         spk_man->AddKeyPubKey(test.coinbaseKey, test.coinbaseKey.GetPubKey());
         wallet->SetLastBlockProcessed(105, ::ChainActive().Tip()->GetBlockHash());
+        /* In Xaya, the minimum / default wallet version already supports HD,
+           unlike upstream Bitcoin/Namecoin.  Thus we have to set an HD seed
+           as well, otherwise the wallet won't generate keys.  */
+        spk_man->SetHDSeed(spk_man->GenerateNewSeed());
     }
-
-    /* In Xaya, the minimum / default wallet version already supports HD,
-       unlike upstream Bitcoin/Namecoin.  Thus we have to set an HD seed
-       as well, otherwise the wallet won't generate keys.  */
-    auto* spk_man = wallet->GetLegacyScriptPubKeyMan();
-    spk_man->SetHDSeed(spk_man->GenerateNewSeed());
 
     {
         auto locked_chain = wallet->chain().lock();
