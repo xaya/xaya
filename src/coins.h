@@ -62,7 +62,7 @@ public:
         assert(!IsSpent());
         uint32_t code = nHeight * 2 + fCoinBase;
         ::Serialize(s, VARINT(code));
-        ::Serialize(s, CTxOutCompressor(REF(out)));
+        ::Serialize(s, Using<TxOutCompression>(out));
     }
 
     template<typename Stream>
@@ -71,7 +71,7 @@ public:
         ::Unserialize(s, VARINT(code));
         nHeight = code >> 1;
         fCoinBase = code & 1;
-        ::Unserialize(s, CTxOutCompressor(out));
+        ::Unserialize(s, Using<TxOutCompression>(out));
     }
 
     bool IsSpent() const {
