@@ -54,6 +54,7 @@ FUZZ_TARGETS = \
   test/fuzz/script_flags \
   test/fuzz/service_deserialize \
   test/fuzz/spanparsing \
+  test/fuzz/strprintf \
   test/fuzz/sub_net_deserialize \
   test/fuzz/transaction \
   test/fuzz/tx_in \
@@ -82,7 +83,8 @@ JSON_TEST_FILES = \
   test/data/tx_invalid.json \
   test/data/tx_valid.json
 
-RAW_TEST_FILES =
+RAW_TEST_FILES = \
+  test/data/asmap.raw
 
 GENERATED_TEST_FILES = $(JSON_TEST_FILES:.json=.json.h) $(RAW_TEST_FILES:.raw=.raw.h)
 
@@ -537,6 +539,12 @@ test_fuzz_spanparsing_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_spanparsing_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_spanparsing_SOURCES = $(FUZZ_SUITE) test/fuzz/spanparsing.cpp
 
+test_fuzz_strprintf_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_strprintf_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_strprintf_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_strprintf_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_strprintf_SOURCES = $(FUZZ_SUITE) test/fuzz/strprintf.cpp
+
 test_fuzz_sub_net_deserialize_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) -DSUB_NET_DESERIALIZE=1
 test_fuzz_sub_net_deserialize_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_sub_net_deserialize_LDADD = $(FUZZ_SUITE_LD_COMMON)
@@ -635,5 +643,14 @@ endif
 	 echo "static unsigned const char $(*F)[] = {" && \
 	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
 	 echo "};};"; \
+	} > "$@.new" && mv -f "$@.new" "$@"
+	@echo "Generated $@"
+
+%.raw.h: %.raw
+	@$(MKDIR_P) $(@D)
+	@{ \
+	 echo "static unsigned const char $(*F)_raw[] = {" && \
+	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
+	 echo "};"; \
 	} > "$@.new" && mv -f "$@.new" "$@"
 	@echo "Generated $@"

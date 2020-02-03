@@ -318,8 +318,8 @@ void BitcoinGUI::createActions()
     verifyMessageAction = new QAction(tr("&Verify message..."), this);
     verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified Bitcoin addresses"));
 
-    openRPCConsoleAction = new QAction(tr("&Debug window"), this);
-    openRPCConsoleAction->setStatusTip(tr("Open debugging and diagnostic console"));
+    openRPCConsoleAction = new QAction(tr("Node window"), this);
+    openRPCConsoleAction->setStatusTip(tr("Open node debugging and diagnostic console"));
     // initially disable the debug window menu item
     openRPCConsoleAction->setEnabled(false);
     openRPCConsoleAction->setObjectName("openRPCConsoleAction");
@@ -648,6 +648,10 @@ void BitcoinGUI::addWallet(WalletModel* walletModel)
 void BitcoinGUI::removeWallet(WalletModel* walletModel)
 {
     if (!walletFrame) return;
+
+    labelWalletHDStatusIcon->hide();
+    labelWalletEncryptionIcon->hide();
+
     int index = m_wallet_selector->findData(QVariant::fromValue(walletModel));
     m_wallet_selector->removeItem(index);
     if (m_wallet_selector->count() == 0) {
@@ -659,8 +663,6 @@ void BitcoinGUI::removeWallet(WalletModel* walletModel)
     rpcConsole->removeWallet(walletModel);
     walletFrame->removeWallet(walletModel);
     updateWindowTitle();
-    labelWalletHDStatusIcon->hide();
-    labelWalletEncryptionIcon->hide();
 }
 
 void BitcoinGUI::setCurrentWallet(WalletModel* wallet_model)

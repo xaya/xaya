@@ -13,10 +13,7 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "index/txindex -> validation -> index/txindex"
     "policy/fees -> txmempool -> policy/fees"
     "qt/addresstablemodel -> qt/walletmodel -> qt/addresstablemodel"
-    "qt/bantablemodel -> qt/clientmodel -> qt/bantablemodel"
-    "qt/bitcoingui -> qt/utilitydialog -> qt/bitcoingui"
     "qt/bitcoingui -> qt/walletframe -> qt/bitcoingui"
-    "qt/bitcoingui -> qt/walletview -> qt/bitcoingui"
     "qt/clientmodel -> qt/peertablemodel -> qt/clientmodel"
     "qt/recentrequeststablemodel -> qt/walletmodel -> qt/recentrequeststablemodel"
     "qt/sendcoinsdialog -> qt/walletmodel -> qt/sendcoinsdialog"
@@ -25,15 +22,16 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "wallet/fees -> wallet/wallet -> wallet/fees"
     "wallet/wallet -> wallet/walletdb -> wallet/wallet"
     "policy/fees -> txmempool -> validation -> policy/fees"
-    "wallet/scriptpubkeyman -> wallet/wallet -> wallet/scriptpubkeyman"
 
     # Circular dependencies from auxpow.
     "auxpow -> primitives/block -> auxpow"
     "chain -> validation -> chain"
+    "chain -> validation -> validationinterface -> chain"
     "chain -> validation -> consensus/tx_verify -> chain"
     "chain -> validation -> pow -> chain"
     "chain -> validation -> txdb -> chain"
     "chain -> validation -> versionbits -> chain"
+    "rpc/blockchain -> rpc/rawtransaction -> rpc/blockchain"
 )
 
 EXIT_CODE=0
