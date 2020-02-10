@@ -1000,6 +1000,7 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
             "{\n"
             "  \"address\":\"multisigaddress\",    (string) The value of the new multisig address.\n"
             "  \"redeemScript\":\"script\"         (string) The string value of the hex-encoded redemption script.\n"
+            "  \"descriptor\":\"descriptor\"     (string) The descriptor for this multisig\n"
             "}\n"
                 },
                 RPCExamples{
@@ -1044,9 +1045,13 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
     CTxDestination dest = AddAndGetMultisigDestination(required, pubkeys, output_type, spk_man, inner);
     pwallet->SetAddressBook(dest, label, "send");
 
+    // Make the descriptor
+    std::unique_ptr<Descriptor> descriptor = InferDescriptor(GetScriptForDestination(dest), spk_man);
+
     UniValue result(UniValue::VOBJ);
     result.pushKV("address", EncodeDestination(dest));
     result.pushKV("redeemScript", HexStr(inner.begin(), inner.end()));
+    result.pushKV("descriptor", descriptor->ToString());
     return result;
 }
 
@@ -1417,7 +1422,7 @@ static const std::string TransactionDescriptionString()
            "    \"time\": xxx,                               (numeric) The transaction time expressed in " + UNIX_EPOCH_TIME + ".\n"
            "    \"timereceived\": xxx,                       (numeric) The time received expressed in " + UNIX_EPOCH_TIME + ".\n"
            "    \"comment\": \"...\",                          (string) If a comment is associated with the transaction, only present if not empty.\n"
-           "    \"bip125-replaceable\": \"yes|no|unknown\",    (string) Whether this transaction could be replaced due to BIP125 (replace-by-fee);\n"
+           "    \"bip125-replaceable\" : \"str\",              (string) (\"yes|no|unknown\") Whether this transaction could be replaced due to BIP125 (replace-by-fee);\n"
            "                                                     may be unknown for unconfirmed transactions not in the mempool\n";
 }
 
@@ -1565,11 +1570,12 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
             "                                                           (not guaranteed to work on pruned nodes)"},
                 },
                 RPCResult{
-            "{\n"
-            "  \"transactions\": [\n"
+            "{                             (json object)\n"
+            "  \"transactions\" : [          (json array)\n"
+            "  {                           (json object)\n"
             "    \"involvesWatchonly\": xxx, (bool) Only returns true if imported addresses were involved in transaction.\n"
-            "    \"address\":\"address\",    (string) The address of the transaction.\n"
-            "    \"category\":               (string) The transaction category.\n"
+            "    \"address\" : \"str\",        (string) The address of the transaction.\n"
+            "    \"category\" : \"str\",       (string) The transaction category.\n"
             "                \"send\"                  Transactions sent.\n"
             "                \"receive\"               Non-coinbase transactions received.\n"
             "                \"generate\"              Coinbase transactions received with more than 100 confirmations.\n"
@@ -1581,15 +1587,16 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
             "    \"fee\": x.xxx,             (numeric) The amount of the fee in " + CURRENCY_UNIT + ". This is negative and only available for the 'send' category of transactions.\n"
             + TransactionDescriptionString()
             + "    \"abandoned\": xxx,         (bool) 'true' if the transaction has been abandoned (inputs are respendable). Only available for the 'send' category of transactions.\n"
-            "    \"comment\": \"...\",       (string) If a comment is associated with the transaction.\n"
             "    \"label\" : \"label\"       (string) A comment for the address/transaction, if any\n"
             "    \"to\": \"...\",            (string) If a comment to is associated with the transaction.\n"
+            "   },\n"
+            "   ...\n"
             "  ],\n"
-            "  \"removed\": [\n"
+            "  \"removed\": [              (json array)\n"
             "    <structure is the same as \"transactions\" above, only present if include_removed=true>\n"
             "    Note: transactions that were re-added in the active chain will appear as-is in this array, and may thus have a positive confirmation count.\n"
             "  ],\n"
-            "  \"lastblock\": \"lastblockhash\"     (string) The hash of the block (target_confirmations-1) from the best block on the main chain. This is typically used to feed back into listsinceblock the next time you call it. So you would generally use a target_confirmations of say 6, so you will be continually re-notified of transactions until they've reached 6 confirmations plus any new ones\n"
+            "  \"lastblock\": \"hex\"        (string) The hash of the block (target_confirmations-1) from the best block on the main chain. This is typically used to feed back into listsinceblock the next time you call it. So you would generally use a target_confirmations of say 6, so you will be continually re-notified of transactions until they've reached 6 confirmations plus any new ones\n"
             "}\n"
                 },
                 RPCExamples{
@@ -4139,10 +4146,9 @@ UniValue walletprocesspsbt(const JSONRPCRequest& request)
                     {"bip32derivs", RPCArg::Type::BOOL, /* default */ "false", "If true, includes the BIP 32 derivation paths for public keys if we know them"},
                 },
                 RPCResult{
-            "{\n"
-            "  \"psbt\" : \"value\",          (string) The base64-encoded partially signed transaction\n"
+            "{                            (json object)\n"
+            "  \"psbt\" : \"str\",            (string) The base64-encoded partially signed transaction\n"
             "  \"complete\" : true|false,   (boolean) If the transaction has a complete set of signatures\n"
-            "  ]\n"
             "}\n"
                 },
                 RPCExamples{
