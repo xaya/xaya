@@ -137,7 +137,7 @@ class NameMultisigTest (NameTestFramework):
     pubkeyB = self.getNewPubkey (1)
     multisig = self.nodes[0].addmultisigaddress (2, [pubkeyA, pubkeyB])
     multisig_ = self.nodes[1].addmultisigaddress (2, [pubkeyA, pubkeyB])
-    assert_equal (multisig, multisig_)
+    assert_equal (multisig["address"], multisig_["address"])
     p2sh = multisig['address']
 
     # Register a new name to that address.

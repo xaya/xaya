@@ -39,7 +39,6 @@ class CNetAddr
         explicit CNetAddr(const struct in_addr& ipv4Addr);
         void SetIP(const CNetAddr& ip);
 
-    private:
         /**
          * Set raw IPv4 or IPv6 address (in network byte order)
          * @note Only NET_IPV4 and NET_IPV6 are allowed for network.
@@ -79,6 +78,11 @@ class CNetAddr
         uint64_t GetHash() const;
         bool GetInAddr(struct in_addr* pipv4Addr) const;
         uint32_t GetNetClass() const;
+
+        //! For IPv4, mapped IPv4, SIIT translated IPv4, Teredo, 6to4 tunneled addresses, return the relevant IPv4 address as a uint32.
+        uint32_t GetLinkedIPv4() const;
+        //! Whether this address has a linked IPv4 address (see GetLinkedIPv4()).
+        bool HasLinkedIPv4() const;
 
         // The AS on the BGP path to the node we use to diversify
         // peers in AddrMan bucketing based on the AS infrastructure.
