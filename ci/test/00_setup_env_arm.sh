@@ -16,6 +16,7 @@ if [ -n "$QEMU_USER_CMD" ]; then
   # Likely cross-compiling, so install the needed gcc and qemu-user
   export PACKAGES="$PACKAGES qemu-user"
 fi
+export CONTAINER_NAME=ci_arm_linux
 # Use debian to avoid 404 apt errors when cross compiling
 export DOCKER_NAME_TAG="debian:buster"
 export USE_BUSY_BOX=true
@@ -24,4 +25,4 @@ export RUN_FUNCTIONAL_TESTS=true
 export GOAL="install"
 # -Wno-psabi is to disable ABI warnings: "note: parameter passing for argument of type ... changed in GCC 7.1"
 # This could be removed once the ABI change warning does not show up by default
-export BITCOIN_CONFIG="--enable-glibc-back-compat --enable-reduce-exports CXXFLAGS=-Wno-psabi"
+export BITCOIN_CONFIG="--enable-glibc-back-compat --enable-reduce-exports CXXFLAGS=-Wno-psabi --enable-werror"

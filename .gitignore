@@ -110,9 +110,7 @@ ipch/
 *.qm
 Makefile
 !depends/Makefile
-bitcoin-qt
-xaya-qt
-Bitcoin-Qt.app
+src/qt/xaya-qt
 Xaya-Qt.app
 background.tiff*
 
@@ -129,6 +127,9 @@ qrc_*.cpp
 # Mac specific
 .DS_Store
 build
+
+# Previous releases
+releases
 
 #lcov
 *.gcno
