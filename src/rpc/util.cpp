@@ -14,6 +14,7 @@
 #include <tuple>
 
 const std::string UNIX_EPOCH_TIME = "UNIX epoch time";
+const std::string EXAMPLE_ADDRESS = "\"nc1qkunnuwx82hj7pf48x88c7u78g7jf6dc9uyqxl8\"";
 
 void RPCTypeCheck(const UniValue& params,
                   const std::list<UniValueType>& typesExpected,
