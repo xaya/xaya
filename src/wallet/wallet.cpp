@@ -29,7 +29,6 @@
 #include <util/moneystr.h>
 #include <util/rbf.h>
 #include <util/translation.h>
-#include <util/validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
 #include <validation.h>
@@ -717,7 +716,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
     return success;
 }
 
-void CWallet::SetUsedDestinationState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations)
+void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations)
 {
     AssertLockHeld(cs_wallet);
     const CWalletTx* srctx = GetWalletTx(hash);
@@ -737,7 +736,7 @@ void CWallet::SetUsedDestinationState(WalletBatch& batch, const uint256& hash, u
     }
 }
 
-bool CWallet::IsUsedDestination(const uint256& hash, unsigned int n) const
+bool CWallet::IsSpentKey(const uint256& hash, unsigned int n) const
 {
     AssertLockHeld(cs_wallet);
     CTxDestination dst;
@@ -780,7 +779,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 
         for (const CTxIn& txin : wtxIn.tx->vin) {
             const COutPoint& op = txin.prevout;
-            SetUsedDestinationState(batch, op.hash, op.n, true, tx_destinations);
+            SetSpentKeyState(batch, op.hash, op.n, true, tx_destinations);
         }
 
         MarkDestinationsDirty(tx_destinations);
@@ -1920,7 +1919,7 @@ CAmount CWalletTx::GetAvailableCredit(bool fUseCache, const isminefilter& filter
     uint256 hashTx = GetHash();
     for (unsigned int i = 0; i < tx->vout.size(); i++)
     {
-        if (!pwallet->IsSpent(hashTx, i) && (allow_used_addresses || !pwallet->IsUsedDestination(hashTx, i))) {
+        if (!pwallet->IsSpent(hashTx, i) && (allow_used_addresses || !pwallet->IsSpentKey(hashTx, i))) {
             const CTxOut &txout = tx->vout[i];
             nCredit += pwallet->GetCredit(txout, filter);
             if (!MoneyRange(nCredit))
@@ -2210,7 +2209,7 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
                 continue;
             }
 
-            if (!allow_used_addresses && IsUsedDestination(wtxid, i)) {
+            if (!allow_used_addresses && IsSpentKey(wtxid, i)) {
                 continue;
             }
 

@@ -5,10 +5,14 @@
 #include <util/system.h>
 
 #include <clientversion.h>
+#include <hash.h> // For Hash()
+#include <key.h> // For CKey
 #include <optional.h>
 #include <sync.h>
 #include <test/util/setup_common.h>
 #include <test/util/str.h>
+#include <uint256.h>
+#include <util/message.h> // For MessageSign(), MessageVerify(), MESSAGE_MAGIC
 #include <util/moneystr.h>
 #include <util/strencodings.h>
 #include <util/string.h>
@@ -16,6 +20,7 @@
 #include <util/spanparsing.h>
 #include <util/vector.h>
 
+#include <array>
 #include <stdint.h>
 #include <thread>
 #include <univalue.h>
@@ -1194,6 +1199,12 @@ BOOST_AUTO_TEST_CASE(util_ParseMoney)
     BOOST_CHECK(ParseMoney("0.00000001", ret));
     BOOST_CHECK_EQUAL(ret, COIN/100000000);
 
+    // Parsing amount that can not be represented in ret should fail
+    BOOST_CHECK(!ParseMoney("0.000000001", ret));
+
+    // Parsing empty string should fail
+    BOOST_CHECK(!ParseMoney("", ret));
+
     // Attempted 63 bit overflow should fail
     BOOST_CHECK(!ParseMoney("92233720368.54775808", ret));
 
@@ -2023,6 +2034,148 @@ BOOST_AUTO_TEST_CASE(test_tracked_vector)
     BOOST_CHECK_EQUAL(v8[0].copies, 0);
     BOOST_CHECK_EQUAL(v8[1].copies, 1);
     BOOST_CHECK_EQUAL(v8[2].copies, 0);
+}
+
+BOOST_AUTO_TEST_CASE(message_sign)
+{
+    const std::array<unsigned char, 32> privkey_bytes = {
+        // just some random data
+        // derived address from this private key: CLfKXHz3JsF6Ee4Mp37DW1FwM7qk1SaeC6
+        0xD9, 0x7F, 0x51, 0x08, 0xF1, 0x1C, 0xDA, 0x6E,
+        0xEE, 0xBA, 0xAA, 0x42, 0x0F, 0xEF, 0x07, 0x26,
+        0xB1, 0xF8, 0x98, 0x06, 0x0B, 0x98, 0x48, 0x9F,
+        0xA3, 0x09, 0x84, 0x63, 0xC0, 0x03, 0x28, 0x66
+    };
+
+    const std::string message = "Trust no one";
+
+    const std::string expected_signature =
+        "Hy/vNTVgssoUim+6D5Bu3enzKYdQn8ylD4S/rAfbD2iUec3RcKDlB+9DBohWcWumAsn59TwlKQBc+FOSViu1gl8=";
+
+    CKey privkey;
+    std::string generated_signature;
+
+    BOOST_REQUIRE_MESSAGE(!privkey.IsValid(),
+        "Confirm the private key is invalid");
+
+    BOOST_CHECK_MESSAGE(!MessageSign(privkey, message, generated_signature),
+        "Sign with an invalid private key");
+
+    privkey.Set(privkey_bytes.begin(), privkey_bytes.end(), true);
+
+    BOOST_REQUIRE_MESSAGE(privkey.IsValid(),
+        "Confirm the private key is valid");
+
+    BOOST_CHECK_MESSAGE(MessageSign(privkey, message, generated_signature),
+        "Sign with a valid private key");
+
+    BOOST_CHECK_EQUAL(expected_signature, generated_signature);
+}
+
+BOOST_AUTO_TEST_CASE(message_verify)
+{
+    std::string addr = "invalid address";
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "signature should be irrelevant",
+            "message too"),
+        MessageVerificationResult::ERR_INVALID_ADDRESS);
+
+    addr = "DEXk2agiz653MvxDGDsaFfNzFnCZDJ1vKZ";
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "signature should be irrelevant",
+            "message too"),
+        MessageVerificationResult::ERR_ADDRESS_NO_KEY);
+
+    addr = "CbJUkrh2xJ8xfbHdkEthnjSaMshLgPiZdp";
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "invalid signature, not in base64 encoding",
+            "message should be irrelevant"),
+        MessageVerificationResult::ERR_MALFORMED_SIGNATURE);
+
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "message should be irrelevant"),
+        MessageVerificationResult::ERR_PUBKEY_NOT_RECOVERED);
+
+    /* For the signatures, we use CV29DBR1fVMUemvJ6A2tSbfnkpFP2qk1ev as the
+       signing address.  The corresponding private key is
+       LMerny7HF1mCGYggdyzCMwyCF4VEfHFMjiYYHwLHmLg9qCEJ546V.  */
+
+    addr = "CLfKXHz3JsF6Ee4Mp37DW1FwM7qk1SaeC6";
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "ICEwSCX335VdGDwYF41SB7RqhugobddwGrFqy7Zmi2oSHdti92gRBuTGn6AnS3SbMLKEDh5LOqfAAXSOg1AU0eg=",
+            "I never signed this"),
+        MessageVerificationResult::ERR_NOT_SIGNED);
+
+    addr = "CV29DBR1fVMUemvJ6A2tSbfnkpFP2qk1ev";
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "H1Sv6u5euEkbSqMXaUQau3J3XpPUidtZrXZMoLmxggeSJCOAYS1432pJrl7pTl78JZcuFTA/7O71O/QLNVC+Cls=",
+            "Trust no one"),
+        MessageVerificationResult::OK);
+
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "H3F9NeCYEboFNc4mKVcBgOHiSJiXcw4nHIMVE4HzRCqaV8TqZ1U1MsHpNs3D0uPbLXCF+8hZzh4cS2uUXX96yyY=",
+            "Trust me"),
+        MessageVerificationResult::OK);
+}
+
+BOOST_AUTO_TEST_CASE(message_verify_address_recovery)
+{
+    std::string addr;
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "invalid signature, not in base64 encoding",
+            "message should be irrelevant"),
+        MessageVerificationResult::ERR_MALFORMED_SIGNATURE);
+    BOOST_CHECK_EQUAL(addr, "");
+
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "message should be irrelevant"),
+        MessageVerificationResult::ERR_PUBKEY_NOT_RECOVERED);
+    BOOST_CHECK_EQUAL(addr, "");
+
+    BOOST_CHECK_EQUAL(
+        MessageVerify(
+            addr,
+            "H3F9NeCYEboFNc4mKVcBgOHiSJiXcw4nHIMVE4HzRCqaV8TqZ1U1MsHpNs3D0uPbLXCF+8hZzh4cS2uUXX96yyY=",
+            "Trust me"),
+        MessageVerificationResult::OK);
+    BOOST_CHECK_EQUAL(addr, "CV29DBR1fVMUemvJ6A2tSbfnkpFP2qk1ev");
+}
+
+BOOST_AUTO_TEST_CASE(message_hash)
+{
+    const std::string unsigned_tx = "...";
+    const std::string prefixed_message =
+        std::string(1, (char)MESSAGE_MAGIC.length()) +
+        MESSAGE_MAGIC +
+        std::string(1, (char)unsigned_tx.length()) +
+        unsigned_tx;
+
+    const uint256 signature_hash = Hash(unsigned_tx.begin(), unsigned_tx.end());
+    const uint256 message_hash1 = Hash(prefixed_message.begin(), prefixed_message.end());
+    const uint256 message_hash2 = MessageHash(unsigned_tx);
+
+    BOOST_CHECK_EQUAL(message_hash1, message_hash2);
+    BOOST_CHECK_NE(message_hash1, signature_hash);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

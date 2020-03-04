@@ -30,7 +30,6 @@
 #include <util/fees.h>
 #include <util/strencodings.h>
 #include <util/system.h>
-#include <util/validation.h>
 #include <validation.h>
 #include <validationinterface.h>
 #include <versionbitsinfo.h>
@@ -368,7 +367,7 @@ static UniValue BIP22ValidationResult(const BlockValidationState& state)
         return NullUniValue;
 
     if (state.IsError())
-        throw JSONRPCError(RPC_VERIFY_ERROR, FormatStateMessage(state));
+        throw JSONRPCError(RPC_VERIFY_ERROR, state.ToString());
     if (state.IsInvalid())
     {
         std::string strRejectReason = state.GetRejectReason();
@@ -890,7 +889,7 @@ static UniValue submitheader(const JSONRPCRequest& request)
     ProcessNewBlockHeaders({h}, state, Params());
     if (state.IsValid()) return NullUniValue;
     if (state.IsError()) {
-        throw JSONRPCError(RPC_VERIFY_ERROR, FormatStateMessage(state));
+        throw JSONRPCError(RPC_VERIFY_ERROR, state.ToString());
     }
     throw JSONRPCError(RPC_VERIFY_ERROR, state.GetRejectReason());
 }

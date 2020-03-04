@@ -26,7 +26,6 @@
 #include <util/fees.h>
 #include <util/moneystr.h>
 #include <util/system.h>
-#include <util/validation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>

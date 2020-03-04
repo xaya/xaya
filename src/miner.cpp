@@ -21,7 +21,6 @@
 #include <timedata.h>
 #include <util/moneystr.h>
 #include <util/system.h>
-#include <util/validation.h>
 
 #include <algorithm>
 #include <utility>
@@ -172,7 +171,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const PowAlgo alg
 
     BlockValidationState state;
     if (!TestBlockValidity(state, chainparams, *pblock, pindexPrev, false, false, false)) {
-        throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, FormatStateMessage(state)));
+        throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, state.ToString()));
     }
     int64_t nTime2 = GetTimeMicros();
 

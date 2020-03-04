@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,7 +18,6 @@
 #include <undo.h>
 #include <util/system.h>
 #include <util/strencodings.h>
-#include <util/validation.h>
 #include <validation.h>
 
 #include <univalue.h>
@@ -224,12 +223,12 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   if (!IsNameValid (name, state))
     {
-      error ("%s: Name is invalid: %s", __func__, FormatStateMessage (state));
+      error ("%s: Name is invalid: %s", __func__, state.ToString ());
       return false;
     }
   if (!IsValueValid (nameOpOut.getOpValue (), state))
     {
-      error ("%s: Value is invalid: %s", __func__, FormatStateMessage (state));
+      error ("%s: Value is invalid: %s", __func__, state.ToString ());
       return false;
     }
 
