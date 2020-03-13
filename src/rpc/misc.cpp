@@ -351,8 +351,9 @@ static UniValue setmocktime(const JSONRPCRequest& request)
                 RPCExamples{""},
             }.Check(request);
 
-    if (!Params().MineBlocksOnDemand())
-        throw std::runtime_error("setmocktime for regression testing (-regtest mode) only");
+    if (!Params().IsMockableChain()) {
+        throw std::runtime_error("setmocktime is for regression testing (-regtest mode) only");
+    }
 
     // For now, don't change mocktime if we're in the middle of validation, as
     // this could have an effect on mempool time-based eviction, as well as
@@ -392,7 +393,7 @@ static UniValue mockscheduler(const JSONRPCRequest& request)
     // protect against null pointer dereference
     CHECK_NONFATAL(g_rpc_node);
     CHECK_NONFATAL(g_rpc_node->scheduler);
-    g_rpc_node->scheduler->MockForward(boost::chrono::seconds(delta_seconds));
+    g_rpc_node->scheduler->MockForward(std::chrono::seconds(delta_seconds));
 
     return NullUniValue;
 }
