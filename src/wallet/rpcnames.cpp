@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -253,13 +253,12 @@ name_list (const JSONRPCRequest& request)
           {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withHeight ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
+      RPCResult {RPCResult::Type::ARR, "", "",
+          {
+              NameInfoHelp ()
+                .withHeight ()
+                .finish ()
+          }
       },
       RPCExamples {
           HelpExampleCli ("name_list", "")
@@ -371,9 +370,7 @@ name_register (const JSONRPCRequest& request)
           {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "\"txid\"             (string) the name_register's txid\n"
-      },
+      RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
       RPCExamples {
           HelpExampleCli ("name_register", "\"myname\", \"new-value\"")
         + HelpExampleRpc ("name_register", "\"myname\", \"new-value\"")
@@ -462,9 +459,7 @@ name_update (const JSONRPCRequest& request)
           {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "\"txid\"             (string) the name_update's txid\n"
-      },
+      RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
       RPCExamples {
           HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
@@ -578,9 +573,7 @@ sendtoname (const JSONRPCRequest& request)
   "       \"ECONOMICAL\"\n"
   "       \"CONSERVATIVE\""},
       },
-          RPCResult{
-      "\"txid\"                  (string) The transaction id.\n"
-          },
+          RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
           RPCExamples{
               HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1")
       + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"donation\" \"seans outpost\"")

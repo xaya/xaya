@@ -255,70 +255,31 @@ getNameInfo (const UniValue& options,
 
 /* ************************************************************************** */
 
-HelpTextBuilder::HelpTextBuilder (const std::string& ind, const size_t col)
-  : indent(ind), docColumn(col)
+NameInfoHelp::NameInfoHelp ()
 {
-  result << indent << "{" << std::endl;
-}
+  withField ({RPCResult::Type::STR, "name", "the requested name"});
+  withField ({RPCResult::Type::STR, "name_encoding", "the encoding of \"name\""});
+  withField ({RPCResult::Type::STR, "name_error",
+              "replaces \"name\" in case there is an error"});
+  withField ({RPCResult::Type::STR, "value", "the name's current value"});
+  withField ({RPCResult::Type::STR, "value_encoding", "the encoding of \"value\""});
+  withField ({RPCResult::Type::STR, "value_error",
+              "replaces \"value\" in case there is an error"});
 
-std::string
-HelpTextBuilder::finish (const std::string& trailing)
-{
-  result << indent << "}" << trailing << std::endl;
-  return result.str ();
-}
-
-HelpTextBuilder&
-HelpTextBuilder::withLine (const std::string& line)
-{
-  result << indent << "  " << line << std::endl;
-  return *this;
-}
-
-HelpTextBuilder&
-HelpTextBuilder::withField (const std::string& field, const std::string& doc)
-{
-  return withField (field, ",", doc);
-}
-
-HelpTextBuilder&
-HelpTextBuilder::withField (const std::string& field,
-                            const std::string& delim, const std::string& doc)
-{
-  assert (field.size () < docColumn);
-
-  result << indent << "  " << field << delim;
-  result << std::string (docColumn - field.size (), ' ') << doc << std::endl;
-
-  return *this;
-}
-
-NameInfoHelp::NameInfoHelp (const std::string& ind)
-  : HelpTextBuilder(ind, 25)
-{
-  withField ("\"name\": xxxxx", "(string) the requested name");
-  withField ("\"name_encoding\": xxxxx", "(string) the encoding of \"name\"");
-  withField ("\"name_error\": xxxxx",
-             "(string) replaces \"name\" in case there is an error");
-  withField ("\"value\": xxxxx", "(string) the name's current value");
-  withField ("\"value_encoding\": xxxxx", "(string) the encoding of \"value\"");
-  withField ("\"value_error\": xxxxx",
-             "(string) replaces \"value\" in case there is an error");
-
-  withField ("\"txid\": xxxxx", "(string) the name's last update tx");
-  withField ("\"vout\": xxxxx",
-           "(numeric) the index of the name output in the last update");
-  withField ("\"address\": xxxxx", "(string) the address holding the name");
+  withField ({RPCResult::Type::STR_HEX, "txid", "the name's last update tx"});
+  withField ({RPCResult::Type::NUM, "vout",
+              "the index of the name output in the last update"});
+  withField ({RPCResult::Type::STR, "address", "the address holding the name"});
 #ifdef ENABLE_WALLET
-  withField ("\"ismine\": xxxxx",
-             "(boolean) whether the name is owned by the wallet");
+  withField ({RPCResult::Type::BOOL, "ismine",
+              "whether the name is owned by the wallet"});
 #endif
 }
 
 NameInfoHelp&
 NameInfoHelp::withHeight ()
 {
-  withField ("\"height\": xxxxx", "(numeric) the name's last update height");
+  withField ({RPCResult::Type::NUM, "height", "the name's last update height"});
   return *this;
 }
 
@@ -403,11 +364,9 @@ name_show (const JSONRPCRequest& request)
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        NameInfoHelp ("")
-          .withHeight ()
-          .finish (""),
-      },
+      NameInfoHelp ()
+        .withHeight ()
+        .finish (),
       RPCExamples {
           HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
@@ -459,13 +418,12 @@ name_history (const JSONRPCRequest& request)
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withHeight ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
+      RPCResult {RPCResult::Type::ARR, "", "",
+          {
+              NameInfoHelp ()
+                .withHeight ()
+                .finish ()
+          }
       },
       RPCExamples {
           HelpExampleCli ("name_history", "\"myname\"")
@@ -543,13 +501,12 @@ name_scan (const JSONRPCRequest& request)
           {"count", RPCArg::Type::NUM, "500", "Stop after this many names"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withHeight ()
-            .finish (",") +
-        "  ...\n"
-        "]\n"
+      RPCResult {RPCResult::Type::ARR, "", "",
+          {
+              NameInfoHelp ()
+                .withHeight ()
+                .finish ()
+          }
       },
       RPCExamples {
           HelpExampleCli ("name_scan", "")
@@ -684,14 +641,13 @@ name_pending (const JSONRPCRequest& request)
           {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only look for this name"},
           optHelp.buildRpcArg (),
       },
-      RPCResult {
-        "[\n"
-        + NameInfoHelp ("  ")
-            .withField ("\"op\": xxxxx",
-                        "(string) the operation being performed")
-            .finish (",") +
-        "  ...\n"
-        "]\n"
+      RPCResult {RPCResult::Type::ARR, "", "",
+          {
+              NameInfoHelp ()
+                .withField ({RPCResult::Type::STR, "op", "the operation being performed"})
+                .withHeight ()
+                .finish ()
+          }
       },
       RPCExamples {
           HelpExampleCli ("name_pending", "")
@@ -776,10 +732,10 @@ namerawtransaction (const JSONRPCRequest& request)
               },
            "nameop"},
       },
-      RPCResult {
-        "{\n"
-        "  \"hex\": xxx,        (string) Hex string of the updated transaction\n"
-        "}\n"
+      RPCResult {RPCResult::Type::OBJ, "", "",
+          {
+              {RPCResult::Type::STR_HEX, "hex", "Hex string of the updated transaction"},
+          },
       },
       RPCExamples {
           HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
@@ -845,9 +801,7 @@ name_checkdb (const JSONRPCRequest& request)
       "\nValidates the name DB's consistency.\n"
       "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
       {},
-      RPCResult {
-        "xxxxx                        (boolean) whether the state is valid\n"
-      },
+      RPCResult {RPCResult::Type::BOOL, "", "whether the state is valid"},
       RPCExamples {
           HelpExampleCli ("name_checkdb", "")
         + HelpExampleRpc ("name_checkdb", "")

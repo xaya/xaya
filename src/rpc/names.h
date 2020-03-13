@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,6 @@
 #include <names/encoding.h>
 #include <rpc/util.h>
 
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -50,56 +49,44 @@ valtype DecodeNameFromRPCOrThrow (const UniValue& val, const UniValue& opt);
 valtype DecodeValueFromRPCOrThrow (const UniValue& val, const UniValue& opt);
 
 /**
- * Builder class for help texts describing JSON objects that share a common
- * part between multiple RPCs but also have specialised fields per RPC.
- * This is the generic base class that provides the main implementation.
- * Subclasses are used for the help text describing information about names
- * returned by RPCs like name_show, and for the generic "options" argument
- * that many name RPCs accept.
+ * Builder class for the RPC results for methods that return information about
+ * names (like name_show, name_scan, name_pending or name_list).  Since the
+ * exact fields contained depend on the case, this class
+ * provides a simple and fluent interface to build the right help text for
+ * each case.
  */
-class HelpTextBuilder
+class NameInfoHelp
 {
 
 private:
 
-  std::ostringstream result;
-  const std::string indent;
-
-  /** The column offset at which the "doc" strings are placed.  */
-  const size_t docColumn;
+  /** Result fields that have already been added.  */
+  std::vector<RPCResult> fields;
 
 public:
 
-  explicit HelpTextBuilder (const std::string& ind, size_t col);
-
-  HelpTextBuilder () = delete;
-  HelpTextBuilder (const HelpTextBuilder&) = delete;
-  void operator= (const HelpTextBuilder&) = delete;
-
-  HelpTextBuilder& withLine (const std::string& line);
-  HelpTextBuilder& withField (const std::string& field, const std::string& doc);
-  HelpTextBuilder& withField (const std::string& field,
-                              const std::string& delim, const std::string& doc);
-
-  std::string finish (const std::string& trailing);
-
-};
-
-/**
- * Builder class for the help text of RPCs that return information about
- * names (like name_show, name_scan, name_pending or name_list).  Since the
- * exact fields contained and formatting to use depend on the case, this class
- * provides a simple and fluent interface to build the right help text for
- * each case.
- */
-class NameInfoHelp : public HelpTextBuilder
-{
-
-public:
-
-  explicit NameInfoHelp (const std::string& ind);
+  explicit NameInfoHelp ();
 
   NameInfoHelp& withHeight ();
+
+  /**
+   * Adds a new field for the result.
+   */
+  NameInfoHelp&
+  withField (const RPCResult& field)
+  {
+    fields.push_back (field);
+    return *this;
+  }
+
+  /**
+   * Constructs the final RPCResult for all fields added.
+   */
+  RPCResult
+  finish ()
+  {
+    return RPCResult (RPCResult::Type::OBJ, "", "", fields);
+  }
 
 };
 

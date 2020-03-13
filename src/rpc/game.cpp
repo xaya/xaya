@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Xaya developers
+// Copyright (c) 2018-2020 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -230,17 +230,17 @@ game_sendupdates (const JSONRPCRequest& request)
           {"fromblock", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Starting block hash"},
           {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Target block hash"},
       },
-      RPCResult {
-        "{\n"
-        "  \"toblock\": xxx,    (string) the target block hash to which notifications have been triggered\n"
-        "  \"ancestor\": xxx,   (string) hash of the common ancestor that is used\n"
-        "  \"reqtoken\": xxx,   (string) unique string that is also set in all notifications triggered by this call\n"
-        "  \"steps\":\n"
-        "   {\n"
-        "     \"detach\": n,    (numeric) number of detach notifications that will be sent\n"
-        "     \"attach\": n,    (numeric) number of attach notifications that will be sent\n"
-        "   },\n"
-        "}\n"
+      RPCResult {RPCResult::Type::OBJ, "", "",
+          {
+              {RPCResult::Type::STR_HEX, "toblock", "the target block hash to which notifications have been triggered"},
+              {RPCResult::Type::STR_HEX, "ancestor", "hash of the common ancestor that is used"},
+              {RPCResult::Type::STR, "reqtoken", "unique string that is also set in all notifications triggered by this call"},
+              {RPCResult::Type::OBJ, "steps", "number of notifications that will be sent",
+                  {
+                      {RPCResult::Type::NUM, "detach", "number of block detaches"},
+                      {RPCResult::Type::NUM, "attach", "number of block attaches"},
+                  }},
+          }
       },
       RPCExamples {
           HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
@@ -361,12 +361,10 @@ trackedgames (const JSONRPCRequest& request)
                 {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "The game ID to add or remove"},
             },
             RPCResults {
-              {"if called without arguments",
-                  "[                    (json array) currently tracked game IDs\n"
-                  "  \"game1\",\n"
-                  "  \"game2\",\n"
-                  "  ...\n"
-                  "]\n"
+              RPCResult{"if called without arguments", RPCResult::Type::ARR, "", "",
+                  {
+                      {RPCResult::Type::STR, "game", "currently tracked game ID"},
+                  }
               },
             },
             RPCExamples {
