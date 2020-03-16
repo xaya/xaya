@@ -29,8 +29,8 @@
 #include <util/vector.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
-#include <wallet/psbtwallet.h>
 #include <wallet/rpcwallet.h>
+#include <wallet/wallet.h>
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
 
@@ -305,8 +305,8 @@ static UniValue setlabel(const JSONRPCRequest& request)
                 },
                 RPCResults{},
                 RPCExamples{
-                    HelpExampleCli("setlabel", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" \"tabby\"")
-            + HelpExampleRpc("setlabel", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\", \"tabby\"")
+                    HelpExampleCli("setlabel", "\"" + EXAMPLE_ADDRESS[0] + "\" \"tabby\"")
+            + HelpExampleRpc("setlabel", "\"" + EXAMPLE_ADDRESS[0] + "\", \"tabby\"")
                 },
             }.Check(request);
 
@@ -417,10 +417,10 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
                     RPCResult::Type::STR_HEX, "txid", "The transaction id."
                 },
                 RPCExamples{
-                    HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1")
-            + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1 \"donation\" \"seans outpost\"")
-            + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1 \"\" \"\" true")
-            + HelpExampleRpc("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\", 0.1, \"donation\", \"seans outpost\"")
+                    HelpExampleCli("sendtoaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 0.1")
+            + HelpExampleCli("sendtoaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 0.1 \"donation\" \"seans outpost\"")
+            + HelpExampleCli("sendtoaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 0.1 \"\" \"\" true")
+            + HelpExampleRpc("sendtoaddress", "\"" + EXAMPLE_ADDRESS[0] + "\", 0.1, \"donation\", \"seans outpost\"")
                 },
             }.Check(request);
 
@@ -592,22 +592,12 @@ static UniValue signmessage(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
     }
 
-    CScript script_pub_key = GetScriptForDestination(*pkhash);
-    std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(script_pub_key);
-    if (!provider) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
-    }
-
-    CKey key;
-    CKeyID keyID(*pkhash);
-    if (!provider->GetKey(keyID, key)) {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
-    }
-
     std::string signature;
-
-    if (!MessageSign(key, strMessage, signature)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
+    SigningResult err = pwallet->SignMessage(strMessage, *pkhash, signature);
+    if (err == SigningResult::SIGNING_FAILED) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, SigningResultString(err));
+    } else if (err != SigningResult::OK){
+        throw JSONRPCError(RPC_WALLET_ERROR, SigningResultString(err));
     }
 
     return signature;
@@ -633,13 +623,13 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
                 },
                 RPCExamples{
             "\nThe amount from transactions with at least 1 confirmation\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\"") +
+            + HelpExampleCli("getreceivedbyaddress", "\"" + EXAMPLE_ADDRESS[0] + "\"") +
             "\nThe amount including unconfirmed transactions, zero confirmations\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" 0") +
+            + HelpExampleCli("getreceivedbyaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 0") +
             "\nThe amount with at least 6 confirmations\n"
-            + HelpExampleCli("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\" 6") +
+            + HelpExampleCli("getreceivedbyaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 6") +
             "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("getreceivedbyaddress", "\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\", 6")
+            + HelpExampleRpc("getreceivedbyaddress", "\"" + EXAMPLE_ADDRESS[0] + "\", 6")
                 },
             }.Check(request);
 
@@ -850,14 +840,14 @@ static UniValue sendmany(const JSONRPCRequest& request)
                     HelpRequiringPassphrase(pwallet) + "\n",
                 {
                     {"dummy", RPCArg::Type::STR, RPCArg::Optional::NO, "Must be set to \"\" for backwards compatibility.", "\"\""},
-                    {"amounts", RPCArg::Type::OBJ, RPCArg::Optional::NO, "A json object with addresses and amounts",
+                    {"amounts", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The addresses and amounts",
                         {
                             {"address", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The address is the key, the numeric amount (can be string) in " + CURRENCY_UNIT + " is the value"},
                         },
                     },
                     {"minconf", RPCArg::Type::NUM, RPCArg::Optional::OMITTED_NAMED_ARG, "Ignored dummy value"},
                     {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment"},
-                    {"subtractfeefrom", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array with addresses.\n"
+                    {"subtractfeefrom", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "The addresses.\n"
             "                           The fee will be equally deducted from the amount of each selected address.\n"
             "                           Those recipients will receive less coins than you enter in their corresponding amount field.\n"
             "                           If no addresses are specified here, the sender pays the fee.",
@@ -878,13 +868,13 @@ static UniValue sendmany(const JSONRPCRequest& request)
                  },
                 RPCExamples{
             "\nSend two amounts to two different addresses:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"" + EXAMPLE_ADDRESS[0] + "\\\":0.01,\\\"" + EXAMPLE_ADDRESS[1] + "\\\":0.02}\"") +
             "\nSend two amounts to two different addresses setting the confirmation and comment:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\" 6 \"testing\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"" + EXAMPLE_ADDRESS[0] + "\\\":0.01,\\\"" + EXAMPLE_ADDRESS[1] + "\\\":0.02}\" 6 \"testing\"") +
             "\nSend two amounts to two different addresses, subtract fee from amount:\n"
-            + HelpExampleCli("sendmany", "\"\" \"{\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\":0.01,\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\":0.02}\" 1 \"\" \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"") +
+            + HelpExampleCli("sendmany", "\"\" \"{\\\"" + EXAMPLE_ADDRESS[0] + "\\\":0.01,\\\"" + EXAMPLE_ADDRESS[1] + "\\\":0.02}\" 1 \"\" \"[\\\"" + EXAMPLE_ADDRESS[0] + "\\\",\\\"" + EXAMPLE_ADDRESS[1] + "\\\"]\"") +
             "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("sendmany", "\"\", {\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\":0.01,\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\":0.02}, 6, \"testing\"")
+            + HelpExampleRpc("sendmany", "\"\", {\"" + EXAMPLE_ADDRESS[0] + "\":0.01,\"" + EXAMPLE_ADDRESS[1] + "\":0.02}, 6, \"testing\"")
                 },
     }.Check(request);
 
@@ -988,7 +978,7 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
                 "If 'label' is specified, assign address to that label.\n",
                 {
                     {"nrequired", RPCArg::Type::NUM, RPCArg::Optional::NO, "The number of required signatures out of the n keys or addresses."},
-                    {"keys", RPCArg::Type::ARR, RPCArg::Optional::NO, "A json array of addresses or hex-encoded public keys",
+                    {"keys", RPCArg::Type::ARR, RPCArg::Optional::NO, "The addresses or hex-encoded public keys",
                         {
                             {"key", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "address or hex-encoded public key"},
                         },
@@ -1006,9 +996,9 @@ static UniValue addmultisigaddress(const JSONRPCRequest& request)
                 },
                 RPCExamples{
             "\nAdd a multisig address from 2 addresses\n"
-            + HelpExampleCli("addmultisigaddress", "2 \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"") +
+            + HelpExampleCli("addmultisigaddress", "2 \"[\\\"" + EXAMPLE_ADDRESS[0] + "\\\",\\\"" + EXAMPLE_ADDRESS[1] + "\\\"]\"") +
             "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("addmultisigaddress", "2, \"[\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZXX\\\",\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdVXX\\\"]\"")
+            + HelpExampleRpc("addmultisigaddress", "2, \"[\\\"" + EXAMPLE_ADDRESS[0] + "\\\",\\\"" + EXAMPLE_ADDRESS[1] + "\\\"]\"")
                 },
             }.Check(request);
 
@@ -1251,7 +1241,7 @@ static UniValue listreceivedbyaddress(const JSONRPCRequest& request)
                     HelpExampleCli("listreceivedbyaddress", "")
             + HelpExampleCli("listreceivedbyaddress", "6 true")
             + HelpExampleRpc("listreceivedbyaddress", "6, true, true")
-            + HelpExampleRpc("listreceivedbyaddress", "6, true, true, \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")
+            + HelpExampleRpc("listreceivedbyaddress", "6, true, true, \"" + EXAMPLE_ADDRESS[0] + "\"")
                 },
             }.Check(request);
 
@@ -2083,7 +2073,7 @@ static UniValue walletlock(const JSONRPCRequest& request)
             "\nSet the passphrase for 2 minutes to perform a transaction\n"
             + HelpExampleCli("walletpassphrase", "\"my pass phrase\" 120") +
             "\nPerform a send (requires passphrase set)\n"
-            + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 1.0") +
+            + HelpExampleCli("sendtoaddress", "\"" + EXAMPLE_ADDRESS[0] + "\" 1.0") +
             "\nClear the passphrase since we are done before 2 minutes is up\n"
             + HelpExampleCli("walletlock", "") +
             "\nAs a JSON-RPC call\n"
@@ -2185,7 +2175,7 @@ static UniValue lockunspent(const JSONRPCRequest& request)
                 "Also see the listunspent call\n",
                 {
                     {"unlock", RPCArg::Type::BOOL, RPCArg::Optional::NO, "Whether to unlock (true) or lock (false) the specified transactions"},
-                    {"transactions", RPCArg::Type::ARR, /* default */ "empty array", "A json array of objects. Each object the txid (string) vout (numeric).",
+                    {"transactions", RPCArg::Type::ARR, /* default */ "empty array", "The transaction outputs and within each, the txid (string) vout (numeric).",
                         {
                             {"", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED, "",
                                 {
@@ -2858,7 +2848,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
                 {
                     {"minconf", RPCArg::Type::NUM, /* default */ "1", "The minimum confirmations to filter"},
                     {"maxconf", RPCArg::Type::NUM, /* default */ "9999999", "The maximum confirmations to filter"},
-                    {"addresses", RPCArg::Type::ARR, /* default */ "empty array", "A json array of addresses to filter",
+                    {"addresses", RPCArg::Type::ARR, /* default */ "empty array", "The addresses to filter",
                         {
                             {"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "address"},
                         },
@@ -2900,8 +2890,8 @@ static UniValue listunspent(const JSONRPCRequest& request)
                 },
                 RPCExamples{
                     HelpExampleCli("listunspent", "")
-            + HelpExampleCli("listunspent", "6 9999999 \"[\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\",\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\"]\"")
-            + HelpExampleRpc("listunspent", "6, 9999999 \"[\\\"NDLTK7j8CzK5YAbpCdUxC3Gi1bXGDCdV5h\\\",\\\"N2xHFZ8NWNkGuuXfDxv8iMXdQGMd3tjZfx\\\"]\"")
+            + HelpExampleCli("listunspent", "6 9999999 \"[\\\"" + EXAMPLE_ADDRESS[0] + "\\\",\\\"" + EXAMPLE_ADDRESS[1] + "\\\"]\"")
+            + HelpExampleRpc("listunspent", "6, 9999999 \"[\\\"" + EXAMPLE_ADDRESS[0] + "\\\",\\\"" + EXAMPLE_ADDRESS[1] + "\\\"]\"")
             + HelpExampleCli("listunspent", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
             + HelpExampleRpc("listunspent", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
                 },
@@ -3033,7 +3023,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
                 entry.pushKV("label", i->second.name);
             }
 
-            std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
+            std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
             if (provider) {
                 if (scriptPubKey.IsPayToScriptHash(true)) {
                     const CScriptID& hash = CScriptID(boost::get<ScriptHash>(address));
@@ -3073,7 +3063,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
         entry.pushKV("spendable", out.fSpendable);
         entry.pushKV("solvable", out.fSolvable);
         if (out.fSolvable) {
-            std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
+            std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
             if (provider) {
                 auto descriptor = InferDescriptor(scriptPubKey, *provider);
                 entry.pushKV("desc", descriptor->ToString());
@@ -3238,7 +3228,7 @@ static UniValue fundrawtransaction(const JSONRPCRequest& request)
                                                           "e.g. with 'importpubkey' or 'importmulti' with the 'pubkeys' or 'desc' field."},
                             {"lockUnspents", RPCArg::Type::BOOL, /* default */ "false", "Lock selected unspent outputs"},
                             {"feeRate", RPCArg::Type::AMOUNT, /* default */ "not set: makes wallet determine the fee", "Set a specific fee rate in " + CURRENCY_UNIT + "/kB"},
-                            {"subtractFeeFromOutputs", RPCArg::Type::ARR, /* default */ "empty array", "A json array of integers.\n"
+                            {"subtractFeeFromOutputs", RPCArg::Type::ARR, /* default */ "empty array", "The integers.\n"
                             "                              The fee will be equally deducted from the amount of each specified output.\n"
                             "                              Those recipients will receive less coins than you enter in their corresponding amount field.\n"
                             "                              If no outputs are specified here, the sender pays the fee.",
@@ -3321,7 +3311,7 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
                     HelpRequiringPassphrase(pwallet) + "\n",
                 {
                     {"hexstring", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction hex string"},
-                    {"prevtxs", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "A json array of previous dependent transaction outputs",
+                    {"prevtxs", RPCArg::Type::ARR, RPCArg::Optional::OMITTED_NAMED_ARG, "The previous dependent transaction outputs",
                         {
                             {"", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED, "",
                                 {
@@ -3389,23 +3379,15 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     // Parse the prevtxs array
     ParsePrevouts(request.params[1], nullptr, coins);
 
-    std::set<std::shared_ptr<SigningProvider>> providers;
-    for (const std::pair<COutPoint, Coin> coin_pair : coins) {
-        std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(coin_pair.second.out.scriptPubKey);
-        if (provider) {
-            providers.insert(std::move(provider));
-        }
-    }
-    if (providers.size() == 0) {
-        // When there are no available providers, use a dummy SigningProvider so we can check if the tx is complete
-        providers.insert(std::make_shared<SigningProvider>());
-    }
+    int nHashType = ParseSighashString(request.params[2]);
 
+    // Script verification errors
+    std::map<int, std::string> input_errors;
+
+    bool complete = pwallet->SignTransaction(mtx, coins, nHashType, input_errors);
     UniValue result(UniValue::VOBJ);
-    for (std::shared_ptr<SigningProvider> provider : providers) {
-        SignTransaction(mtx, provider.get(), coins, request.params[2], result);
-    }
-     return result;
+    SignTransactionResultToJSON(mtx, complete, coins, input_errors, result);
+    return result;
 }
 
 static UniValue bumpfee(const JSONRPCRequest& request)
@@ -3584,7 +3566,7 @@ static UniValue bumpfee(const JSONRPCRequest& request)
     } else {
         PartiallySignedTransaction psbtx(mtx);
         bool complete = false;
-        const TransactionError err = FillPSBT(pwallet, psbtx, complete, SIGHASH_ALL, false /* sign */, true /* bip32derivs */);
+        const TransactionError err = pwallet->FillPSBT(psbtx, complete, SIGHASH_ALL, false /* sign */, true /* bip32derivs */);
         CHECK_NONFATAL(err == TransactionError::OK);
         CHECK_NONFATAL(!complete);
         CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
@@ -3795,7 +3777,7 @@ static UniValue DescribeWalletAddress(const CWallet* const pwallet, const CTxDes
     CScript script = GetScriptForDestination(dest);
     std::unique_ptr<SigningProvider> provider = nullptr;
     if (pwallet) {
-        provider = pwallet->GetSigningProvider(script);
+        provider = pwallet->GetSolvingProvider(script);
     }
     ret.pushKVs(detail);
     ret.pushKVs(boost::apply_visitor(DescribeWalletAddressVisitor(provider.get()), dest));
@@ -3877,8 +3859,8 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
                     }
                 },
                 RPCExamples{
-                    HelpExampleCli("getaddressinfo", EXAMPLE_ADDRESS) +
-                    HelpExampleRpc("getaddressinfo", EXAMPLE_ADDRESS)
+                    HelpExampleCli("getaddressinfo", "\"" + EXAMPLE_ADDRESS[0] + "\"") +
+                    HelpExampleRpc("getaddressinfo", "\"" + EXAMPLE_ADDRESS[0] + "\"")
                 },
             }.Check(request);
 
@@ -3897,7 +3879,7 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
     CScript scriptPubKey = GetScriptForDestination(dest);
     ret.pushKV("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
 
-    std::unique_ptr<SigningProvider> provider = pwallet->GetSigningProvider(scriptPubKey);
+    std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
 
     isminetype mine = pwallet->IsMine(dest);
     ret.pushKV("ismine", bool(mine & ISMINE_SPENDABLE));
@@ -4201,7 +4183,7 @@ UniValue walletprocesspsbt(const JSONRPCRequest& request)
     bool sign = request.params[1].isNull() ? true : request.params[1].get_bool();
     bool bip32derivs = request.params[3].isNull() ? true : request.params[3].get_bool();
     bool complete = true;
-    const TransactionError err = FillPSBT(pwallet, psbtx, complete, nHashType, sign, bip32derivs);
+    const TransactionError err = pwallet->FillPSBT(psbtx, complete, nHashType, sign, bip32derivs);
     if (err != TransactionError::OK) {
         throw JSONRPCTransactionError(err);
     }
@@ -4228,7 +4210,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                 "\nCreates and funds a transaction in the Partially Signed Transaction format. Inputs will be added if supplied inputs are not enough\n"
                 "Implements the Creator and Updater roles.\n",
                 {
-                    {"inputs", RPCArg::Type::ARR, RPCArg::Optional::NO, "A json array of json objects",
+                    {"inputs", RPCArg::Type::ARR, RPCArg::Optional::NO, "The inputs",
                         {
                             {"", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED, "",
                                 {
@@ -4239,7 +4221,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                             },
                         },
                         },
-                    {"outputs", RPCArg::Type::ARR, RPCArg::Optional::NO, "a json array with outputs (key-value pairs), where none of the keys are duplicated.\n"
+                    {"outputs", RPCArg::Type::ARR, RPCArg::Optional::NO, "The outputs (key-value pairs), where none of the keys are duplicated.\n"
                             "That is, each address can only appear once and there can only be one 'data' object.\n"
                             "For compatibility reasons, a dictionary, which holds the key-value pairs directly, is also\n"
                             "                             accepted as second parameter.",
@@ -4265,7 +4247,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                             {"includeWatching", RPCArg::Type::BOOL, /* default */ "true for watch-only wallets, otherwise false", "Also select inputs which are watch only"},
                             {"lockUnspents", RPCArg::Type::BOOL, /* default */ "false", "Lock selected unspent outputs"},
                             {"feeRate", RPCArg::Type::AMOUNT, /* default */ "not set: makes wallet determine the fee", "Set a specific fee rate in " + CURRENCY_UNIT + "/kB"},
-                            {"subtractFeeFromOutputs", RPCArg::Type::ARR, /* default */ "empty array", "A json array of integers.\n"
+                            {"subtractFeeFromOutputs", RPCArg::Type::ARR, /* default */ "empty array", "The outputs to subtract the fee from.\n"
                             "                              The fee will be equally deducted from the amount of each specified output.\n"
                             "                              Those recipients will receive less coins than you enter in their corresponding amount field.\n"
                             "                              If no outputs are specified here, the sender pays the fee.",
@@ -4324,7 +4306,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     // Fill transaction with out data but don't sign
     bool bip32derivs = request.params[4].isNull() ? true : request.params[4].get_bool();
     bool complete = true;
-    const TransactionError err = FillPSBT(pwallet, psbtx, complete, 1, false, bip32derivs);
+    const TransactionError err = pwallet->FillPSBT(psbtx, complete, 1, false, bip32derivs);
     if (err != TransactionError::OK) {
         throw JSONRPCTransactionError(err);
     }
