@@ -39,6 +39,12 @@ enum class MessageVerificationResult {
     OK
 };
 
+enum class SigningResult {
+    OK, //!< No error
+    PRIVATE_KEY_NOT_AVAILABLE,
+    SIGNING_FAILED,
+};
+
 /** Verify a signed message.
  * @param[inout] address Signer's bitcoin address, it must refer to a public
  *                       key.  If the empty string, then the recovered address
@@ -66,5 +72,7 @@ bool MessageSign(
  * inadvertently signing a transaction.
  */
 uint256 MessageHash(const std::string& message);
+
+std::string SigningResultString(const SigningResult res);
 
 #endif // BITCOIN_UTIL_MESSAGE_H

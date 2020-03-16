@@ -14,7 +14,7 @@
 #include <tuple>
 
 const std::string UNIX_EPOCH_TIME = "UNIX epoch time";
-const std::string EXAMPLE_ADDRESS = "\"chi1qcy7mpn9ggm85cwsw85dw53unw0v3nks2g0uxw9\"";
+const std::string EXAMPLE_ADDRESS[2] = {"chi1qcy7mpn9ggm85cwsw85dw53unw0v3nks2g0uxw9", "chi1q83vv47j63mrxputa58s8z06xtgzc3dgx3dqq8m"};
 
 void RPCTypeCheck(const UniValue& params,
                   const std::list<UniValueType>& typesExpected,
@@ -116,8 +116,8 @@ std::string HelpExampleCli(const std::string& methodname, const std::string& arg
 
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)
 {
-    return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
-        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:8396/\n";
+    return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\": \"curltest\", "
+        "\"method\": \"" + methodname + "\", \"params\": [" + args + "]}' -H 'content-type: text/plain;' http://127.0.0.1:8396/\n";
 }
 
 // Converts a hex string to a public key if possible
