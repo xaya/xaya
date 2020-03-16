@@ -288,6 +288,7 @@ $ valgrind --suppressions=contrib/valgrind.supp src/test/test_bitcoin
 $ valgrind --suppressions=contrib/valgrind.supp --leak-check=full \
       --show-leak-kinds=all src/test/test_bitcoin --log_level=test_suite
 $ valgrind -v --leak-check=full src/bitcoind -printtoconsole
+$ ./test/functional/test_runner.py --valgrind
 ```
 
 ### Compiling for test coverage
@@ -1089,7 +1090,7 @@ A few guidelines for introducing and reviewing new RPC interfaces:
     new RPC is replacing a deprecated RPC, to avoid both RPCs confusingly
     showing up in the command list.
 
-- Use *invalid* bech32 addresses (e.g. the constant `EXAMPLE_ADDRESS`) for
+- Use *invalid* bech32 addresses (e.g. in the constant array `EXAMPLE_ADDRESS`) for
   `RPCExamples` help documentation.
 
   - *Rationale*: Prevent accidental transactions by users and encourage the use
