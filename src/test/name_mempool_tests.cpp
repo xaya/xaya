@@ -12,6 +12,7 @@
 #include <sync.h>
 #include <txmempool.h>
 #include <validation.h>
+#include <validationinterface.h>
 
 #include <test/util/setup_common.h>
 
@@ -259,6 +260,55 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   mempool.checkNames (&view);
 }
 
+namespace
+{
+
+/**
+ * Helper class that listens to TransactionRemovedFromMempool and records
+ * the txid's of all transactions removed.
+ */
+class NameConflictTracker : public CValidationInterface
+{
+
+private:
+
+  /** The txids that have been removed according to our callback.  */
+  std::vector<uint256> txids;
+
+public:
+
+  NameConflictTracker ()
+  {
+    RegisterValidationInterface (this);
+  }
+
+  ~NameConflictTracker ()
+  {
+    UnregisterValidationInterface (this);
+  }
+
+  void
+  TransactionRemovedFromMempool (const CTransactionRef& ptxn) override
+  {
+    txids.push_back (ptxn->GetHash ());
+  }
+
+  /**
+   * Expects the given list of txids to be removed.  Waits for all outstanding
+   * callbacks to be processed as needed.
+   */
+  void
+  ExpectTxids (const std::vector<uint256>& expected) const
+  {
+    while (GetMainSignals ().CallbacksPending () > 0)
+      UninterruptibleSleep (std::chrono::milliseconds (10));
+    BOOST_CHECK (txids == expected);
+  }
+
+};
+
+} // anonymous namespace
+
 BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
 {
   const auto tx1 = Tx (RegisterScript (ADDR, "foo", "a"));
@@ -269,11 +319,9 @@ BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
   BOOST_CHECK (mempool.registersName (Name ("foo")));
   BOOST_CHECK (!mempool.checkNameOps (tx2));
 
-  CNameConflictTracker tracker(mempool);
+  NameConflictTracker tracker;
   mempool.removeConflicts (tx2);
-  BOOST_CHECK (tracker.GetNameConflicts ()->size () == 1);
-  BOOST_CHECK (tracker.GetNameConflicts ()->front ()->GetHash ()
-                == tx1.GetHash ());
+  tracker.ExpectTxids ({tx1.GetHash ()});
 
   BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.checkNameOps (tx1));
