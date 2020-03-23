@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -167,33 +167,6 @@ public:
    * causing a conflict.
    */
   bool checkTx (const CTransaction& tx) const;
-
-};
-
-/**
- * Utility class that listens to a mempool's removal notifications to track
- * name conflicts.  This is used for DisconnectTip and unit testing.
- */
-class CNameConflictTracker
-{
-
-private:
-
-  std::shared_ptr<std::vector<CTransactionRef>> txNameConflicts;
-  CTxMemPool& pool;
-
-public:
-
-  explicit CNameConflictTracker (CTxMemPool &p);
-  ~CNameConflictTracker ();
-
-  inline const std::shared_ptr<const std::vector<CTransactionRef>>
-  GetNameConflicts () const
-  {
-    return txNameConflicts;
-  }
-
-  void AddConflictedEntry (CTransactionRef txRemoved);
 
 };
 

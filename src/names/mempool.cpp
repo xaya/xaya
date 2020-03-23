@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -354,39 +354,4 @@ CNameMemPool::checkTx (const CTransaction& tx) const
     }
 
   return true;
-}
-
-/* ************************************************************************** */
-
-namespace
-{
-
-void
-ConflictTrackerNotifyEntryRemoved (CNameConflictTracker* tracker,
-                                   CTransactionRef txRemoved,
-                                   MemPoolRemovalReason reason)
-{
-  if (reason == MemPoolRemovalReason::NAME_CONFLICT)
-    tracker->AddConflictedEntry (txRemoved);
-}
-
-} // anonymous namespace
-
-CNameConflictTracker::CNameConflictTracker (CTxMemPool &p)
-  : txNameConflicts(std::make_shared<std::vector<CTransactionRef>>()), pool(p)
-{
-  pool.NotifyEntryRemoved.connect (
-    boost::bind (&ConflictTrackerNotifyEntryRemoved, this, _1, _2));
-}
-
-CNameConflictTracker::~CNameConflictTracker ()
-{
-  pool.NotifyEntryRemoved.disconnect (
-    boost::bind (&ConflictTrackerNotifyEntryRemoved, this, _1, _2));
-}
-
-void
-CNameConflictTracker::AddConflictedEntry (CTransactionRef txRemoved)
-{
-  txNameConflicts->emplace_back (std::move (txRemoved));
 }

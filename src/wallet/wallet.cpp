@@ -1091,18 +1091,6 @@ void CWallet::SyncTransaction(const CTransactionRef& ptx, CWalletTx::Confirmatio
     MarkInputsDirty(ptx);
 }
 
-void CWallet::NameConflict(const CTransactionRef& ptx, const uint256& hashBlock, const int conflictHeight)
-{
-    LOCK2(cs_main, cs_wallet);
-    const uint256& txHash = ptx->GetHash();
-
-    LogPrint (BCLog::NAMES, "name conflict: %s, wallet: %u\n",
-              txHash.GetHex().c_str(), mapWallet.count(txHash));
-
-    if (mapWallet.count(txHash))
-        MarkConflicted(hashBlock, conflictHeight, txHash);
-}
-
 void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
     auto locked_chain = chain().lock();
     LOCK(cs_wallet);
@@ -1123,7 +1111,7 @@ void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
     }
 }
 
-void CWallet::BlockConnected(const CBlock& block, const std::vector<CTransactionRef>& vtxConflicted, const std::vector<CTransactionRef>& vNameConflicts, int height)
+void CWallet::BlockConnected(const CBlock& block, int height)
 {
     const uint256& block_hash = block.GetHash();
     auto locked_chain = chain().lock();
@@ -1136,17 +1124,9 @@ void CWallet::BlockConnected(const CBlock& block, const std::vector<CTransaction
         SyncTransaction(block.vtx[index], confirm);
         TransactionRemovedFromMempool(block.vtx[index]);
     }
-    for (const CTransactionRef& ptx : vtxConflicted) {
-        TransactionRemovedFromMempool(ptx);
-    }
-    for (const CTransactionRef& ptx : vNameConflicts) {
-        NameConflict(ptx, block_hash, height);
-    }
-
-    m_last_block_processed = block_hash;
 }
 
-void CWallet::BlockDisconnected(const CBlock& block, const std::vector<CTransactionRef>& vNameConflicts, int height)
+void CWallet::BlockDisconnected(const CBlock& block, int height)
 {
     auto locked_chain = chain().lock();
     LOCK(cs_wallet);
@@ -1160,9 +1140,6 @@ void CWallet::BlockDisconnected(const CBlock& block, const std::vector<CTransact
     for (const CTransactionRef& ptx : block.vtx) {
         CWalletTx::Confirmation confirm(CWalletTx::Status::UNCONFIRMED, /* block_height */ 0, {}, /* nIndex */ 0);
         SyncTransaction(ptx, confirm);
-    }
-    for (const CTransactionRef& ptx : vNameConflicts) {
-        NameConflict(ptx, block.hashPrevBlock, height);
     }
 }
 
