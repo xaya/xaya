@@ -27,6 +27,7 @@
 #include <uint256.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
+#include <util/string.h>
 #include <util/system.h>
 #include <util/time.h>
 #include <version.h>
@@ -93,11 +94,10 @@ void test_one_input(const std::vector<uint8_t>& buffer)
     // (void)GetVirtualTransactionSize(i64, i64, u32); // function defined only for a subset of int64_t/uint32_t inputs
     (void)HexDigit(ch);
     (void)MoneyRange(i64);
-    (void)i64tostr(i64);
+    (void)ToString(i64);
     (void)IsDigit(ch);
     (void)IsSpace(ch);
     (void)IsSwitchChar(ch);
-    (void)itostr(i32);
     (void)memusage::DynamicUsage(ch);
     (void)memusage::DynamicUsage(i16);
     (void)memusage::DynamicUsage(i32);
@@ -226,5 +226,45 @@ void test_one_input(const std::vector<uint8_t>& buffer)
         const ServiceFlags service_flags = (ServiceFlags)u64;
         (void)HasAllDesirableServiceFlags(service_flags);
         (void)MayHaveUsefulAddressDB(service_flags);
+    }
+
+    {
+        CDataStream stream(SER_NETWORK, INIT_PROTO_VERSION);
+
+        ser_writedata64(stream, u64);
+        const uint64_t deserialized_u64 = ser_readdata64(stream);
+        assert(u64 == deserialized_u64 && stream.empty());
+
+        ser_writedata32(stream, u32);
+        const uint32_t deserialized_u32 = ser_readdata32(stream);
+        assert(u32 == deserialized_u32 && stream.empty());
+
+        ser_writedata32be(stream, u32);
+        const uint32_t deserialized_u32be = ser_readdata32be(stream);
+        assert(u32 == deserialized_u32be && stream.empty());
+
+        ser_writedata16(stream, u16);
+        const uint16_t deserialized_u16 = ser_readdata16(stream);
+        assert(u16 == deserialized_u16 && stream.empty());
+
+        ser_writedata16be(stream, u16);
+        const uint16_t deserialized_u16be = ser_readdata16be(stream);
+        assert(u16 == deserialized_u16be && stream.empty());
+
+        ser_writedata8(stream, u8);
+        const uint8_t deserialized_u8 = ser_readdata8(stream);
+        assert(u8 == deserialized_u8 && stream.empty());
+    }
+
+    {
+        CDataStream stream(SER_NETWORK, INIT_PROTO_VERSION);
+
+        WriteCompactSize(stream, u64);
+        try {
+            const uint64_t deserialized_u64 = ReadCompactSize(stream);
+            assert(u64 == deserialized_u64 && stream.empty());
+        }
+        catch (const std::ios_base::failure&) {
+        }
     }
 }
