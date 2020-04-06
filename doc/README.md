@@ -28,7 +28,8 @@ Drag Namecoin-Qt to your applications folder, and then run Namecoin-Qt.
 
 ### Need Help?
 
-* See the documentation at the [Namecoin Site](https://namecoin.org) for help and more information.
+* See the documentation at the [Namecoin Site](https://namecoin.org)
+for help and more information.
 * Ask for help on [#namecoin](http://webchat.freenode.net?channels=namecoin) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net?channels=namecoin).
 * Ask for help on the [Namecoin forums](https://forum.namecoin.info/index.php), in the [Technical Support board](https://forum.namecoin.info/viewforum.php?f=7).
 
@@ -64,7 +65,7 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [Benchmarking](benchmarking.md)
 
 ### Resources
-* Discuss on the [Namecoin forums](https://forum.namecoin.info/index.php), in the [Development & Technical Discussion board](https://forum.namecoin.info/viewforum.php?f=8).
+* Discuss on the [Namecoin forums](https://forum.namecoin.info/), in the [Development & Technical Discussion board](https://forum.namecoin.info/viewforum.php?f=8).
 * Discuss on [#namecoin-dev](http://webchat.freenode.net/?channels=namecoin-dev) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net/?channels=namecoin-dev).
 
 ### Miscellaneous
