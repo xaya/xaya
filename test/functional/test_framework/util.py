@@ -399,6 +399,7 @@ def connect_nodes(from_connection, node_num):
     # with transaction relaying
     wait_until(lambda:  all(peer['version'] != 0 for peer in from_connection.getpeerinfo()))
 
+
 def sync_blocks(rpc_connections, *, wait=1, timeout=60):
     """
     Wait until everybody has the same tip.
@@ -412,8 +413,11 @@ def sync_blocks(rpc_connections, *, wait=1, timeout=60):
         best_hash = [x.getbestblockhash() for x in rpc_connections]
         if best_hash.count(best_hash[0]) == len(rpc_connections):
             return
+        # Check that each peer has at least one connection
+        assert (all([len(x.getpeerinfo()) for x in rpc_connections]))
         time.sleep(wait)
     raise AssertionError("Block sync timed out:{}".format("".join("\n  {!r}".format(b) for b in best_hash)))
+
 
 def sync_mempools(rpc_connections, *, wait=1, timeout=60, flush_scheduler=True):
     """
@@ -428,6 +432,8 @@ def sync_mempools(rpc_connections, *, wait=1, timeout=60, flush_scheduler=True):
                 for r in rpc_connections:
                     r.syncwithvalidationinterfacequeue()
             return
+        # Check that each peer has at least one connection
+        assert (all([len(x.getpeerinfo()) for x in rpc_connections]))
         time.sleep(wait)
     raise AssertionError("Mempool sync timed out:{}".format("".join("\n  {!r}".format(m) for m in pool)))
 

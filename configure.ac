@@ -135,12 +135,6 @@ AC_ARG_ENABLE(gui-tests,
     [use_gui_tests=$enableval],
     [use_gui_tests=$use_tests])
 
-AC_ARG_WITH([rapidcheck],
-  [AS_HELP_STRING([--with-rapidcheck],
-  [enable RapidCheck property-based tests (default is yes if librapidcheck is found)])],
-  [use_rapidcheck=$withval],
-  [use_rapidcheck=auto])
-
 AC_ARG_ENABLE(bench,
     AS_HELP_STRING([--disable-bench],[do not compile benchmarks (default is to compile)]),
     [use_bench=$enableval],
@@ -907,6 +901,22 @@ if test "x$use_thread_local" = xyes || { test "x$use_thread_local" = xauto && te
   LDFLAGS="$TEMP_LDFLAGS"
 fi
 
+dnl check for gmtime_r(), fallback to gmtime_s() if that is unavailable
+dnl fail if neither are available.
+AC_MSG_CHECKING(for gmtime_r)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctime>]],
+  [[ gmtime_r((const time_t *) nullptr, (struct tm *) nullptr); ]])],
+  [ AC_MSG_RESULT(yes); AC_DEFINE(HAVE_GMTIME_R, 1, [Define this symbol if gmtime_r is available]) ],
+  [ AC_MSG_RESULT(no);
+    AC_MSG_CHECKING(for gmtime_s);
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctime>]],
+       [[ gmtime_s((struct tm *) nullptr, (const time_t *) nullptr); ]])],
+       [ AC_MSG_RESULT(yes)],
+       [ AC_MSG_RESULT(no); AC_MSG_ERROR(Both gmtime_r and gmtime_s are unavailable) ]
+    )
+  ]
+)
+
 dnl Check for different ways of gathering OS randomness
 AC_MSG_CHECKING(for Linux getrandom syscall)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <unistd.h>
@@ -1312,22 +1322,6 @@ else
   fi
 fi
 
-dnl RapidCheck property-based testing
-
-enable_property_tests=no
-if test "x$use_rapidcheck" = xauto; then
-    AC_CHECK_HEADERS([rapidcheck.h], [enable_property_tests=yes])
-elif test "x$use_rapidcheck" != xno; then
-    enable_property_tests=yes
-fi
-
-RAPIDCHECK_LIBS=
-if test "x$enable_property_tests" = xyes; then
-   RAPIDCHECK_LIBS=-lrapidcheck
-fi
-AC_SUBST(RAPIDCHECK_LIBS)
-AM_CONDITIONAL([ENABLE_PROPERTY_TESTS], [test x$enable_property_tests = xyes])
-
 dnl univalue check
 
 need_bundled_univalue=yes
@@ -1597,6 +1591,7 @@ AC_SUBST(EVENT_LIBS)
 AC_SUBST(EVENT_PTHREADS_LIBS)
 AC_SUBST(ZMQ_LIBS)
 AC_SUBST(QR_LIBS)
+AC_SUBST(HAVE_GMTIME_R)
 AC_SUBST(HAVE_FDATASYNC)
 AC_SUBST(HAVE_FULLFSYNC)
 AC_SUBST(HAVE_O_CLOEXEC)
@@ -1663,7 +1658,6 @@ fi
 echo "  with zmq      = $use_zmq"
 echo "  with test     = $use_tests"
 if test x$use_tests != xno; then
-    echo "    with prop   = $enable_property_tests"
     echo "    with fuzz   = $enable_fuzz"
 fi
 echo "  with bench    = $use_bench"

@@ -364,7 +364,7 @@ name_register (const JSONRPCRequest& request)
 
   RPCHelpMan ("name_register",
       "\nRegisters a new name."
-          + HelpRequiringPassphrase (pwallet) + "\n",
+          + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
           {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
@@ -453,7 +453,7 @@ name_update (const JSONRPCRequest& request)
 
   RPCHelpMan ("name_update",
       "\nUpdates a name and possibly transfers it."
-          + HelpRequiringPassphrase (pwallet) + "\n",
+          + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
           {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
@@ -555,7 +555,7 @@ sendtoname (const JSONRPCRequest& request)
   RPCHelpMan{"sendtoname",
       "\nSend an amount to the owner of a name.\n"
       "\nIt is an error if the name is expired."
-          + HelpRequiringPassphrase(pwallet) + "\n",
+          + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to send to."},
           {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},

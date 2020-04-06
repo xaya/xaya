@@ -28,7 +28,8 @@ Drag Xaya-Qt to your applications folder, and then run Xaya-Qt.
 
 ### Need Help?
 
-* See the documentation at the [Xaya Site](https://xaya.io) for help and more information.
+* See the documentation at the [Xaya Site](https://xaya.io)
+for help and more information.
 
 Building
 ---------------------
@@ -60,7 +61,6 @@ The Xaya repo's [root README](https://github.com/xaya/xaya/blob/master/README.md
 - [BIPS](bips.md)
 - [Dnsseed Policy](dnsseed-policy.md)
 - [Benchmarking](benchmarking.md)
-
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)

@@ -22,6 +22,8 @@ class UniValue;
 struct PartiallySignedTransaction;
 class CTransaction;
 
+extern const std::string HELP_REQUIRING_PASSPHRASE;
+
 //! Pointer to chain interface that needs to be declared as a global to be
 //! accessible loadwallet and createwallet methods. Due to limitations of the
 //! RPC framework, there's currently no direct way to pass in state to RPC
@@ -38,7 +40,6 @@ void RegisterWalletRPCCommands(interfaces::Chain& chain, std::vector<std::unique
  */
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
 
-std::string HelpRequiringPassphrase(const CWallet*);
 void EnsureWalletIsUnlocked(const CWallet*);
 bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
 LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
