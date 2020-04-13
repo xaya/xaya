@@ -151,12 +151,12 @@ public:
         std::string* purpose) override
     {
         LOCK(m_wallet->cs_wallet);
-        auto it = m_wallet->mapAddressBook.find(dest);
-        if (it == m_wallet->mapAddressBook.end()) {
+        auto it = m_wallet->m_address_book.find(dest);
+        if (it == m_wallet->m_address_book.end() || it->second.IsChange()) {
             return false;
         }
         if (name) {
-            *name = it->second.name;
+            *name = it->second.GetLabel();
         }
         if (is_mine) {
             *is_mine = m_wallet->IsMine(dest);
@@ -170,8 +170,9 @@ public:
     {
         LOCK(m_wallet->cs_wallet);
         std::vector<WalletAddress> result;
-        for (const auto& item : m_wallet->mapAddressBook) {
-            result.emplace_back(item.first, m_wallet->IsMine(item.first), item.second.name, item.second.purpose);
+        for (const auto& item : m_wallet->m_address_book) {
+            if (item.second.IsChange()) continue;
+            result.emplace_back(item.first, m_wallet->IsMine(item.first), item.second.GetLabel(), item.second.purpose);
         }
         return result;
     }
