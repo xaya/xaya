@@ -817,6 +817,8 @@ name_checkdb (const JSONRPCRequest& request)
 } // namespace
 /* ************************************************************************** */
 
+void RegisterNameRPCCommands(CRPCTable &t)
+{
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -828,8 +830,6 @@ static const CRPCCommand commands[] =
     { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
 };
 
-void RegisterNameRPCCommands(CRPCTable &t)
-{
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
         t.appendCommand(commands[vcidx].name, &commands[vcidx]);
 }

@@ -403,20 +403,15 @@ trackedgames (const JSONRPCRequest& request)
 } // anonymous namespace
 /* ************************************************************************** */
 
-namespace
+void RegisterGameRPCCommands (CRPCTable& t)
 {
-
-const CRPCCommand commands[] =
+static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
     { "game",               "game_sendupdates",       &game_sendupdates,       {"gameid","fromblock","toblock"} },
     { "game",               "trackedgames",           &trackedgames,           {"command","gameid"} },
 };
 
-} // anonymous namespace
-
-void RegisterGameRPCCommands (CRPCTable& t)
-{
   for (const auto& c : commands)
     t.appendCommand (c.name, &c);
 }
