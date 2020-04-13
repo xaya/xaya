@@ -285,7 +285,7 @@ name_list (const JSONRPCRequest& request)
   pwallet->BlockUntilSyncedToCurrentChain ();
 
   {
-  LOCK (pwallet->cs_wallet);
+  LOCK2 (cs_main, pwallet->cs_wallet);
 
   const int tipHeight = ::ChainActive ().Height ();
   for (const auto& item : pwallet->mapWallet)

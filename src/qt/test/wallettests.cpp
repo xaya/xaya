@@ -176,7 +176,7 @@ void TestGUI(interfaces::Node& node)
     OptionsModel optionsModel(node);
     ClientModel clientModel(node, &optionsModel);
     AddWallet(wallet);
-    WalletModel walletModel(interfaces::MakeWallet(wallet), node, platformStyle.get(), &optionsModel);
+    WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
     RemoveWallet(wallet);
     sendCoinsDialog.setClientModel(&clientModel);
     sendCoinsDialog.setModel(&walletModel);
