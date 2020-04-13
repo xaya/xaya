@@ -409,7 +409,7 @@ name_show (const JSONRPCRequest& request)
   }
 
   MaybeWalletForRequest wallet(request);
-  LOCK (wallet.getLock ());
+  LOCK2 (cs_main, wallet.getLock ());
   return getNameInfo (options, name, data, wallet);
 }
 
@@ -477,7 +477,7 @@ name_history (const JSONRPCRequest& request)
   }
 
   MaybeWalletForRequest wallet(request);
-  LOCK (wallet.getLock ());
+  LOCK2 (cs_main, wallet.getLock ());
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())

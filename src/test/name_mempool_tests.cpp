@@ -37,6 +37,7 @@ public:
 
   NameMempoolTestSetup ()
   {
+    ENTER_CRITICAL_SECTION (cs_main);
     ENTER_CRITICAL_SECTION (mempool.cs);
     mempool.clear ();
 
@@ -47,6 +48,7 @@ public:
   ~NameMempoolTestSetup ()
   {
     LEAVE_CRITICAL_SECTION (mempool.cs);
+    LEAVE_CRITICAL_SECTION (cs_main);
   }
 
   /**
