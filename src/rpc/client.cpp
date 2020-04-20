@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2019 The Bitcoin Core developers
+// Copyright (c) 2009-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -153,6 +153,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "logging", 0, "include" },
     { "logging", 1, "exclude" },
     { "disconnectnode", 1, "nodeid" },
+    { "upgradewallet", 0, "version" },
+
     { "name_show", 1, "options" },
     { "name_history", 1, "options" },
     { "name_scan", 1, "count" },
@@ -165,6 +167,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "namerawtransaction", 2, "nameop" },
     { "sendtoname", 1, "amount" },
     { "sendtoname", 4, "subtractfeefromamount" },
+
     // Echo with conversion (For testing only)
     { "echojson", 0, "arg0" },
     { "echojson", 1, "arg1" },

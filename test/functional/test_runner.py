@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 The Bitcoin Core developers
+# Copyright (c) 2014-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Run regression test suite.
@@ -237,6 +237,7 @@ BASE_SCRIPTS = [
     'auxpow_zerohash.py',
 
     # name tests
+    'name_ant_workflow.py',
     'name_encodings.py',
     'name_immature_inputs.py',
     'name_ismine.py',

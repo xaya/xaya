@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2010 ArtForz -- public domain half-a-node
 # Copyright (c) 2012 Jeff Garzik
-# Copyright (c) 2010-2019 The Bitcoin Core developers
+# Copyright (c) 2010-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Bitcoin P2P network half-a-node.
@@ -180,7 +180,7 @@ class P2PConnection(asyncio.Protocol):
                     raise ValueError("magic bytes mismatch: {} != {}".format(repr(self.magic_bytes), repr(self.recvbuf)))
                 if len(self.recvbuf) < 4 + 12 + 4 + 4:
                     return
-                command = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
+                msgtype = self.recvbuf[4:4+12].split(b"\x00", 1)[0]
                 msglen = struct.unpack("<i", self.recvbuf[4+12:4+12+4])[0]
                 checksum = self.recvbuf[4+12+4:4+12+4+4]
                 if len(self.recvbuf) < 4 + 12 + 4 + 4 + msglen:
@@ -191,10 +191,10 @@ class P2PConnection(asyncio.Protocol):
                 if checksum != h[:4]:
                     raise ValueError("got bad checksum " + repr(self.recvbuf))
                 self.recvbuf = self.recvbuf[4+12+4+4+msglen:]
-                if command not in MESSAGEMAP:
-                    raise ValueError("Received unknown command from %s:%d: '%s' %s" % (self.dstaddr, self.dstport, command, repr(msg)))
+                if msgtype not in MESSAGEMAP:
+                    raise ValueError("Received unknown msgtype from %s:%d: '%s' %s" % (self.dstaddr, self.dstport, msgtype, repr(msg)))
                 f = BytesIO(msg)
-                t = MESSAGEMAP[command]()
+                t = MESSAGEMAP[msgtype]()
                 t.deserialize(f)
                 self._log_message("receive", t)
                 self.on_message(t)
@@ -233,11 +233,11 @@ class P2PConnection(asyncio.Protocol):
 
     def build_message(self, message):
         """Build a serialized P2P message"""
-        command = message.command
+        msgtype = message.msgtype
         data = message.serialize()
         tmsg = self.magic_bytes
-        tmsg += command
-        tmsg += b"\x00" * (12 - len(command))
+        tmsg += msgtype
+        tmsg += b"\x00" * (12 - len(msgtype))
         tmsg += struct.pack("<I", len(data))
         th = sha256(data)
         h = sha256(th)
@@ -304,10 +304,10 @@ class P2PInterface(P2PConnection):
         and the most recent message of each type."""
         with mininode_lock:
             try:
-                command = message.command.decode('ascii')
-                self.message_count[command] += 1
-                self.last_message[command] = message
-                getattr(self, 'on_' + command)(message)
+                msgtype = message.msgtype.decode('ascii')
+                self.message_count[msgtype] += 1
+                self.last_message[msgtype] = message
+                getattr(self, 'on_' + msgtype)(message)
             except:
                 print("ERROR delivering %s (%s)" % (repr(message), sys.exc_info()[0]))
                 raise
