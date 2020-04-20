@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2019 The Bitcoin Core developers
+# Copyright (c) 2017-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test message sending before handshake completion.
@@ -12,7 +12,12 @@ into sending us something it shouldn't."""
 
 import time
 
-from test_framework.messages import msg_getaddr, msg_ping, msg_verack
+from test_framework.messages import (
+    msg_getaddr,
+    msg_ping,
+    msg_verack,
+    msg_version,
+)
 from test_framework.mininode import mininode_lock, P2PInterface
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
@@ -32,7 +37,7 @@ class CLazyNode(P2PInterface):
 
     def bad_message(self, message):
         self.unexpected_msg = True
-        self.log.info("should not have received message: %s" % message.command)
+        self.log.info("should not have received message: %s" % message.msgtype)
 
     def on_open(self):
         self.ever_connected = True
@@ -146,6 +151,15 @@ class P2PLeakTest(BitcoinTestFramework):
         assert_equal(ver.addrFrom.ip, '0.0.0.0')
         assert_equal(ver.nStartingHeight, 201)
         assert_equal(ver.nRelay, 1)
+
+        self.log.info('Check that old nodes are disconnected')
+        p2p_old_node = self.nodes[0].add_p2p_connection(P2PInterface(), send_version=False, wait_for_verack=False)
+        old_version_msg = msg_version()
+        old_version_msg.nVersion = 31799
+        wait_until(lambda: p2p_old_node.is_connected)
+        with self.nodes[0].assert_debug_log(['peer=4 using obsolete version 31799; disconnecting']):
+            p2p_old_node.send_message(old_version_msg)
+            p2p_old_node.wait_for_disconnect()
 
 
 if __name__ == '__main__':

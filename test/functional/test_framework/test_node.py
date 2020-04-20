@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2019 The Bitcoin Core developers
+# Copyright (c) 2017-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Class for bitcoind node under test"""
@@ -225,9 +225,6 @@ class TestNode():
                 self.rpc_connected = True
                 self.url = self.rpc.url
                 return
-            except IOError as e:
-                if e.errno != errno.ECONNREFUSED:  # Port not yet open?
-                    raise  # unknown IO error
             except JSONRPCException as e:  # Initialization phase
                 # -28 RPC in warmup
                 # -342 Service unavailable, RPC server started but is shutting down due to error
@@ -237,11 +234,14 @@ class TestNode():
                 # This might happen when the RPC server is in warmup, but shut down before the call to getblockcount
                 # succeeds. Try again to properly raise the FailedToStartError
                 pass
+            except OSError as e:
+                if e.errno != errno.ECONNREFUSED:  # Port not yet open?
+                    raise  # unknown OS error
             except ValueError as e:  # cookie file not found and no rpcuser or rpcassword. bitcoind still starting
                 if "No RPC credentials" not in str(e):
                     raise
             time.sleep(1.0 / poll_per_s)
-        self._raise_assertion_error("Unable to connect to bitcoind")
+        self._raise_assertion_error("Unable to connect to bitcoind after {}s".format(self.rpc_timeout))
 
     def generate(self, nblocks, maxtries=1000000):
         self.log.debug("TestNode.generate() dispatches `generate` call to `generatetoaddress`")
@@ -527,7 +527,6 @@ def arg_to_cli(arg):
 
 class TestNodeCLI():
     """Interface to bitcoin-cli for an individual node"""
-
     def __init__(self, binary, datadir):
         self.options = []
         self.binary = binary
