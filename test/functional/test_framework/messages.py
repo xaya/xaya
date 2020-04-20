@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2010 ArtForz -- public domain half-a-node
 # Copyright (c) 2012 Jeff Garzik
-# Copyright (c) 2010-2019 The Bitcoin Core developers
+# Copyright (c) 2010-2020 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Bitcoin test framework primitive and message structures
@@ -1014,7 +1014,7 @@ class CMerkleBlock:
 class msg_version:
     __slots__ = ("addrFrom", "addrTo", "nNonce", "nRelay", "nServices",
                  "nStartingHeight", "nTime", "nVersion", "strSubVer")
-    command = b"version"
+    msgtype = b"version"
 
     def __init__(self):
         self.nVersion = MY_VERSION
@@ -1072,7 +1072,7 @@ class msg_version:
 
 class msg_verack:
     __slots__ = ()
-    command = b"verack"
+    msgtype = b"verack"
 
     def __init__(self):
         pass
@@ -1089,7 +1089,7 @@ class msg_verack:
 
 class msg_addr:
     __slots__ = ("addrs",)
-    command = b"addr"
+    msgtype = b"addr"
 
     def __init__(self):
         self.addrs = []
@@ -1106,7 +1106,7 @@ class msg_addr:
 
 class msg_inv:
     __slots__ = ("inv",)
-    command = b"inv"
+    msgtype = b"inv"
 
     def __init__(self, inv=None):
         if inv is None:
@@ -1126,7 +1126,7 @@ class msg_inv:
 
 class msg_getdata:
     __slots__ = ("inv",)
-    command = b"getdata"
+    msgtype = b"getdata"
 
     def __init__(self, inv=None):
         self.inv = inv if inv is not None else []
@@ -1143,7 +1143,7 @@ class msg_getdata:
 
 class msg_getblocks:
     __slots__ = ("locator", "hashstop")
-    command = b"getblocks"
+    msgtype = b"getblocks"
 
     def __init__(self):
         self.locator = CBlockLocator()
@@ -1167,7 +1167,7 @@ class msg_getblocks:
 
 class msg_tx:
     __slots__ = ("tx",)
-    command = b"tx"
+    msgtype = b"tx"
 
     def __init__(self, tx=CTransaction()):
         self.tx = tx
@@ -1191,7 +1191,7 @@ class msg_no_witness_tx(msg_tx):
 
 class msg_block:
     __slots__ = ("block",)
-    command = b"block"
+    msgtype = b"block"
 
     def __init__(self, block=None):
         if block is None:
@@ -1210,12 +1210,12 @@ class msg_block:
 
 
 # for cases where a user needs tighter control over what is sent over the wire
-# note that the user must supply the name of the command, and the data
+# note that the user must supply the name of the msgtype, and the data
 class msg_generic:
-    __slots__ = ("command", "data")
+    __slots__ = ("msgtype", "data")
 
-    def __init__(self, command, data=None):
-        self.command = command
+    def __init__(self, msgtype, data=None):
+        self.msgtype = msgtype
         self.data = data
 
     def serialize(self):
@@ -1233,7 +1233,7 @@ class msg_no_witness_block(msg_block):
 
 class msg_getaddr:
     __slots__ = ()
-    command = b"getaddr"
+    msgtype = b"getaddr"
 
     def __init__(self):
         pass
@@ -1250,7 +1250,7 @@ class msg_getaddr:
 
 class msg_ping:
     __slots__ = ("nonce",)
-    command = b"ping"
+    msgtype = b"ping"
 
     def __init__(self, nonce=0):
         self.nonce = nonce
@@ -1269,7 +1269,7 @@ class msg_ping:
 
 class msg_pong:
     __slots__ = ("nonce",)
-    command = b"pong"
+    msgtype = b"pong"
 
     def __init__(self, nonce=0):
         self.nonce = nonce
@@ -1288,7 +1288,7 @@ class msg_pong:
 
 class msg_mempool:
     __slots__ = ()
-    command = b"mempool"
+    msgtype = b"mempool"
 
     def __init__(self):
         pass
@@ -1305,7 +1305,7 @@ class msg_mempool:
 
 class msg_notfound:
     __slots__ = ("vec", )
-    command = b"notfound"
+    msgtype = b"notfound"
 
     def __init__(self, vec=None):
         self.vec = vec or []
@@ -1322,7 +1322,7 @@ class msg_notfound:
 
 class msg_sendheaders:
     __slots__ = ()
-    command = b"sendheaders"
+    msgtype = b"sendheaders"
 
     def __init__(self):
         pass
@@ -1343,7 +1343,7 @@ class msg_sendheaders:
 # hash_stop (hash of last desired block header, 0 to get as many as possible)
 class msg_getheaders:
     __slots__ = ("hashstop", "locator",)
-    command = b"getheaders"
+    msgtype = b"getheaders"
 
     def __init__(self):
         self.locator = CBlockLocator()
@@ -1369,7 +1369,7 @@ class msg_getheaders:
 # <count> <vector of block headers>
 class msg_headers:
     __slots__ = ("headers",)
-    command = b"headers"
+    msgtype = b"headers"
 
     def __init__(self, headers=None):
         self.headers = headers if headers is not None else []
@@ -1390,7 +1390,7 @@ class msg_headers:
 
 class msg_merkleblock:
     __slots__ = ("merkleblock",)
-    command = b"merkleblock"
+    msgtype = b"merkleblock"
 
     def __init__(self, merkleblock=None):
         if merkleblock is None:
@@ -1410,7 +1410,7 @@ class msg_merkleblock:
 
 class msg_filterload:
     __slots__ = ("data", "nHashFuncs", "nTweak", "nFlags")
-    command = b"filterload"
+    msgtype = b"filterload"
 
     def __init__(self, data=b'00', nHashFuncs=0, nTweak=0, nFlags=0):
         self.data = data
@@ -1439,7 +1439,7 @@ class msg_filterload:
 
 class msg_filteradd:
     __slots__ = ("data")
-    command = b"filteradd"
+    msgtype = b"filteradd"
 
     def __init__(self, data):
         self.data = data
@@ -1458,7 +1458,7 @@ class msg_filteradd:
 
 class msg_filterclear:
     __slots__ = ()
-    command = b"filterclear"
+    msgtype = b"filterclear"
 
     def __init__(self):
         pass
@@ -1475,7 +1475,7 @@ class msg_filterclear:
 
 class msg_feefilter:
     __slots__ = ("feerate",)
-    command = b"feefilter"
+    msgtype = b"feefilter"
 
     def __init__(self, feerate=0):
         self.feerate = feerate
@@ -1494,7 +1494,7 @@ class msg_feefilter:
 
 class msg_sendcmpct:
     __slots__ = ("announce", "version")
-    command = b"sendcmpct"
+    msgtype = b"sendcmpct"
 
     def __init__(self):
         self.announce = False
@@ -1516,7 +1516,7 @@ class msg_sendcmpct:
 
 class msg_cmpctblock:
     __slots__ = ("header_and_shortids",)
-    command = b"cmpctblock"
+    msgtype = b"cmpctblock"
 
     def __init__(self, header_and_shortids = None):
         self.header_and_shortids = header_and_shortids
@@ -1536,7 +1536,7 @@ class msg_cmpctblock:
 
 class msg_getblocktxn:
     __slots__ = ("block_txn_request",)
-    command = b"getblocktxn"
+    msgtype = b"getblocktxn"
 
     def __init__(self):
         self.block_txn_request = None
@@ -1556,7 +1556,7 @@ class msg_getblocktxn:
 
 class msg_blocktxn:
     __slots__ = ("block_transactions",)
-    command = b"blocktxn"
+    msgtype = b"blocktxn"
 
     def __init__(self):
         self.block_transactions = BlockTransactions()

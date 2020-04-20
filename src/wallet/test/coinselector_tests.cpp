@@ -1,16 +1,16 @@
-// Copyright (c) 2017-2019 The Bitcoin Core developers
+// Copyright (c) 2017-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <node/context.h>
-#include <wallet/wallet.h>
-#include <wallet/coinselection.h>
-#include <wallet/coincontrol.h>
 #include <amount.h>
+#include <node/context.h>
 #include <primitives/transaction.h>
 #include <random.h>
 #include <test/util/setup_common.h>
+#include <wallet/coincontrol.h>
+#include <wallet/coinselection.h>
 #include <wallet/test/wallet_test_fixture.h>
+#include <wallet/wallet.h>
 
 #include <boost/test/unit_test.hpp>
 #include <random>
@@ -176,8 +176,8 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     selection.clear();
 
     // Select 5 Cent
-    add_coin(3 * CENT, 3, actual_selection);
-    add_coin(2 * CENT, 2, actual_selection);
+    add_coin(4 * CENT, 4, actual_selection);
+    add_coin(1 * CENT, 1, actual_selection);
     BOOST_CHECK(SelectCoinsBnB(GroupCoins(utxo_pool), 5 * CENT, 0.5 * CENT, selection, value_ret, not_input_fees));
     BOOST_CHECK(equal_sets(selection, actual_selection));
     BOOST_CHECK_EQUAL(value_ret, 5 * CENT);
@@ -204,9 +204,8 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
 
     // Select 10 Cent
     add_coin(5 * CENT, 5, utxo_pool);
+    add_coin(5 * CENT, 5, actual_selection);
     add_coin(4 * CENT, 4, actual_selection);
-    add_coin(3 * CENT, 3, actual_selection);
-    add_coin(2 * CENT, 2, actual_selection);
     add_coin(1 * CENT, 1, actual_selection);
     BOOST_CHECK(SelectCoinsBnB(GroupCoins(utxo_pool), 10 * CENT, 0.5 * CENT, selection, value_ret, not_input_fees));
     BOOST_CHECK(equal_sets(selection, actual_selection));
