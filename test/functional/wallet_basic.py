@@ -329,7 +329,7 @@ class WalletTest(BitcoinTestFramework):
         assert_raises_rpc_error(-5, "Invalid address", self.nodes[0].dumpprivkey, "invalid")
 
         # This will raise an exception for attempting to set a label for an invalid Bitcoin address
-        assert_raises_rpc_error(-5, "Invalid Xaya address", self.nodes[0].setlabel, "invalid address", "label")
+        assert_raises_rpc_error(-5, "Invalid address", self.nodes[0].setlabel, "invalid address", "label")
 
         # This will raise an exception for importing an invalid address
         assert_raises_rpc_error(-5, "Invalid address or script", self.nodes[0].importaddress, "invalid")
