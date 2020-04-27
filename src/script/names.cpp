@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -64,6 +64,22 @@ CNameScript::CNameScript (const CScript& script)
   address = CScript (pc, script.end ());
 }
 
+namespace
+{
+
+/**
+ * Concats together a base address and name prefix script.
+ */
+CScript
+AddNamePrefix (const CScript& addr, const CScript& prefix)
+{
+  CScript res = prefix;
+  res.insert (res.end (), addr.begin (), addr.end ());
+  return res;
+}
+
+} // anonymous namespace
+
 CScript
 CNameScript::buildNameNew (const CScript& addr, const valtype& name,
                            const valtype& rand)
@@ -75,7 +91,7 @@ CNameScript::buildNameNew (const CScript& addr, const valtype& name,
   CScript prefix;
   prefix << OP_NAME_NEW << ToByteVector (hash) << OP_2DROP;
 
-  return prefix + addr;
+  return AddNamePrefix (addr, prefix);
 }
 
 CScript
@@ -86,7 +102,7 @@ CNameScript::buildNameFirstupdate (const CScript& addr, const valtype& name,
   prefix << OP_NAME_FIRSTUPDATE << name << rand << value
          << OP_2DROP << OP_2DROP;
 
-  return prefix + addr;
+  return AddNamePrefix (addr, prefix);
 }
 
 CScript
@@ -96,5 +112,5 @@ CNameScript::buildNameUpdate (const CScript& addr, const valtype& name,
   CScript prefix;
   prefix << OP_NAME_UPDATE << name << value << OP_2DROP << OP_DROP;
 
-  return prefix + addr;
+  return AddNamePrefix (addr, prefix);
 }
