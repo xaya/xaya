@@ -29,13 +29,7 @@ RUN (make distclean || true) \
   && ./autogen.sh \
   && ./configure --disable-tests --disable-bench --disable-wallet \
                  --without-gui \
-  && make && make install
-ARG binaries="xayad xaya-cli xaya-tx"
-RUN mkdir /usr/local/bin/stripped && \
-    for b in $binaries; do \
-      echo $b; \
-      strip "/usr/local/bin/${b}" -o "/usr/local/bin/stripped/${b}"; \
-    done
+  && make && make install-strip
 
 # For the final image, just copy over all built / installed stuff and only
 # install the runtime libraries (without build environment).
@@ -48,7 +42,7 @@ RUN apt-get update && apt-get install -y \
   libevent-2.1-6 \
   libevent-pthreads-2.1-6 \
   libzmq5
-COPY --from=build /usr/local/bin/stripped /usr/local/bin/
+COPY --from=build /usr/local/bin/ /usr/local/bin/
 LABEL description="Debian-based image with Xaya Core and utilities."
 
 # Set up the runtime environment.
