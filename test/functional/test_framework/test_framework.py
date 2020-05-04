@@ -6,11 +6,12 @@
 
 import configparser
 from enum import Enum
-import logging
 import argparse
+import logging
 import os
 import pdb
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -102,6 +103,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.bind_to_localhost_only = True
         self.set_test_params()
         self.parse_args()
+        self.rpc_timeout = int(self.rpc_timeout * self.options.factor) # optionally, increase timeout by a factor
 
     def main(self):
         """Main function. This should not be overridden by the subclass test scripts."""
@@ -168,6 +170,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                             help="set a random seed for deterministically reproducing a previous test run")
         parser.add_argument("--descriptors", default=False, action="store_true",
                             help="Run test using a descriptor wallet")
+        parser.add_argument('--factor', type=float, default=1.0, help='adjust test timeouts by a factor')
         self.add_options(parser)
         self.options = parser.parse_args()
 
@@ -187,10 +190,11 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.options.bitcoincli = os.getenv("BITCOINCLI", default=config["environment"]["BUILDDIR"] + '/src/xaya-cli' + config["environment"]["EXEEXT"])
         powhash.xayahash = os.getenv("XAYA-HASH", default=config["environment"]["BUILDDIR"] + '/src/xaya-hash' + config["environment"]["EXEEXT"])
 
+        self.options.previous_releases_path = os.getenv("PREVIOUS_RELEASES_DIR") or os.getcwd() + "/releases"
+
         os.environ['PATH'] = os.pathsep.join([
             os.path.join(config['environment']['BUILDDIR'], 'src'),
-            os.path.join(config['environment']['BUILDDIR'], 'src', 'qt'),
-            os.environ['PATH']
+            os.path.join(config['environment']['BUILDDIR'], 'src', 'qt'), os.environ['PATH']
         ])
 
         # Set up temp directory and start logging
@@ -390,6 +394,25 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
         Should only be called once after the nodes have been specified in
         set_test_params()."""
+        def get_bin_from_version(version, bin_name, bin_default):
+            if not version:
+                return bin_default
+            return os.path.join(
+                self.options.previous_releases_path,
+                re.sub(
+                    r'\.0$',
+                    '',  # remove trailing .0 for point releases
+                    'v{}.{}.{}.{}'.format(
+                        (version % 100000000) // 1000000,
+                        (version % 1000000) // 10000,
+                        (version % 10000) // 100,
+                        (version % 100) // 1,
+                    ),
+                ),
+                'bin',
+                bin_name,
+            )
+
         if self.bind_to_localhost_only:
             extra_confs = [["bind=127.0.0.1"]] * num_nodes
         else:
@@ -399,9 +422,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if versions is None:
             versions = [None] * num_nodes
         if binary is None:
-            binary = [self.options.bitcoind] * num_nodes
+            binary = [get_bin_from_version(v, 'bitcoind', self.options.bitcoind) for v in versions]
         if binary_cli is None:
-            binary_cli = [self.options.bitcoincli] * num_nodes
+            binary_cli = [get_bin_from_version(v, 'bitcoin-cli', self.options.bitcoincli) for v in versions]
         assert_equal(len(extra_confs), num_nodes)
         assert_equal(len(extra_args), num_nodes)
         assert_equal(len(versions), num_nodes)
@@ -414,6 +437,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 chain=self.chain,
                 rpchost=rpchost,
                 timewait=self.rpc_timeout,
+                factor=self.options.factor,
                 bitcoind=binary[i],
                 bitcoin_cli=binary_cli[i],
                 version=versions[i],
@@ -563,6 +587,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                     extra_args=['-disablewallet'],
                     rpchost=None,
                     timewait=self.rpc_timeout,
+                    factor=self.options.factor,
                     bitcoind=self.options.bitcoind,
                     bitcoin_cli=self.options.bitcoincli,
                     coverage_dir=None,
@@ -644,6 +669,25 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         """Skip the running test if bitcoin-cli has not been compiled."""
         if not self.is_cli_compiled():
             raise SkipTest("bitcoin-cli has not been compiled.")
+
+    def skip_if_no_previous_releases(self):
+        """Skip the running test if previous releases are not available."""
+        if not self.has_previous_releases():
+            raise SkipTest("previous releases not available or disabled")
+
+    def has_previous_releases(self):
+        """Checks whether previous releases are present and enabled."""
+        if os.getenv("TEST_PREVIOUS_RELEASES") == "false":
+            # disabled
+            return False
+
+        if not os.path.isdir(self.options.previous_releases_path):
+            if os.getenv("TEST_PREVIOUS_RELEASES") == "true":
+                raise AssertionError("TEST_PREVIOUS_RELEASES=true but releases missing: {}".format(
+                    self.options.previous_releases_path))
+            # missing
+            return False
+        return True
 
     def is_cli_compiled(self):
         """Checks whether bitcoin-cli was compiled."""

@@ -398,7 +398,7 @@ name_show (const JSONRPCRequest& request)
   }
 
   MaybeWalletForRequest wallet(request);
-  LOCK2 (cs_main, wallet.getLock ());
+  LOCK2 (wallet.getLock (), cs_main);
   return getNameInfo (options, name, data, wallet);
 }
 
@@ -466,7 +466,7 @@ name_history (const JSONRPCRequest& request)
   }
 
   MaybeWalletForRequest wallet(request);
-  LOCK2 (cs_main, wallet.getLock ());
+  LOCK2 (wallet.getLock (), cs_main);
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
@@ -578,7 +578,7 @@ name_scan (const JSONRPCRequest& request)
     return res;
 
   MaybeWalletForRequest wallet(request);
-  LOCK2 (cs_main, wallet.getLock ());
+  LOCK2 (wallet.getLock (), cs_main);
 
   const int maxHeight = ::ChainActive ().Height () - minConf + 1;
   int minHeight = -1;

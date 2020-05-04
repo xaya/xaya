@@ -62,8 +62,20 @@ case $host in
      lt_cv_deplibs_check_method="pass_all"
   ;;
 esac
-dnl Require C++11 compiler (no GNU extensions)
-AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory], [nodefault])
+
+AC_ARG_ENABLE([c++17],
+  [AS_HELP_STRING([--enable-c++17],
+  [enable compilation in c++17 mode (disabled by default)])],
+  [use_cxx17=$enableval],
+  [use_cxx17=no])
+
+dnl Require C++11 or C++17 compiler (no GNU extensions)
+if test "x$use_cxx17" = xyes; then
+  AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
+else
+  AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
+fi
+
 dnl Check if -latomic is required for <std::atomic>
 CHECK_ATOMIC
 
@@ -758,7 +770,9 @@ if test x$use_hardening != xno; then
   esac
 fi
 
-dnl this flag screws up non-darwin gcc even when the check fails. special-case it.
+dnl These flags are specific to ld64, and may cause issues with other linkers.
+dnl For example: GNU ld will intepret -dead_strip as -de and then try and use
+dnl "ad_strip" as the symbol for the entry point.
 if test x$TARGET_OS = xdarwin; then
   AX_CHECK_LINK_FLAG([[-Wl,-dead_strip]], [LDFLAGS="$LDFLAGS -Wl,-dead_strip"])
   AX_CHECK_LINK_FLAG([[-Wl,-dead_strip_dylibs]], [LDFLAGS="$LDFLAGS -Wl,-dead_strip_dylibs"])
@@ -842,6 +856,22 @@ AC_MSG_CHECKING(for mallopt M_ARENA_MAX)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <malloc.h>]],
  [[ mallopt(M_ARENA_MAX, 1); ]])],
  [ AC_MSG_RESULT(yes); AC_DEFINE(HAVE_MALLOPT_ARENA_MAX, 1,[Define this symbol if you have mallopt with M_ARENA_MAX]) ],
+ [ AC_MSG_RESULT(no)]
+)
+
+dnl Check for posix_fallocate
+AC_MSG_CHECKING(for posix_fallocate)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+                   // same as in src/util/system.cpp
+                   #ifdef __linux__
+                   #ifdef _POSIX_C_SOURCE
+                   #undef _POSIX_C_SOURCE
+                   #endif
+                   #define _POSIX_C_SOURCE 200112L
+                   #endif // __linux__
+                   #include <fcntl.h>]],
+                   [[ int f = posix_fallocate(0, 0, 0); ]])],
+ [ AC_MSG_RESULT(yes); AC_DEFINE(HAVE_POSIX_FALLOCATE, 1,[Define this symbol if you have posix_fallocate]) ],
  [ AC_MSG_RESULT(no)]
 )
 

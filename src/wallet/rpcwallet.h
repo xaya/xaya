@@ -44,8 +44,7 @@ void EnsureWalletIsUnlocked(const CWallet*);
 bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
 LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
 
-CTransactionRef SendMoneyToScript(interfaces::Chain::Lock& locked_chain,
-                                  CWallet* pwallet, const CScript& scriptPubKey,
+CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
                                   const CTxIn* withInput, CAmount nValue,
                                   bool fSubtractFeeFromAmount,
                                   const CCoinControl& coin_control,
