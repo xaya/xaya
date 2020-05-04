@@ -129,8 +129,7 @@ void DestinationAddressHelper::finalise ()
  * also implements the "sendCoins" option, if included.
  */
 CTransactionRef
-SendNameOutput (interfaces::Chain::Lock& locked_chain,
-                CWallet& wallet, const CScript& nameOutScript,
+SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
   RPCTypeCheckObj (opt,
@@ -195,7 +194,7 @@ SendNameOutput (interfaces::Chain::Lock& locked_chain,
   int nChangePosRet = -1;
 
   CTransactionRef tx;
-  if (!wallet.CreateTransaction (locked_chain, vecSend, nameInput, tx,
+  if (!wallet.CreateTransaction (vecSend, nameInput, tx,
                                  nFeeRequired, nChangePosRet, strError,
                                  coinControl))
     {
@@ -265,7 +264,7 @@ name_list (const JSONRPCRequest& request)
   pwallet->BlockUntilSyncedToCurrentChain ();
 
   {
-  LOCK2 (cs_main, pwallet->cs_wallet);
+  LOCK2 (pwallet->cs_wallet, cs_main);
 
   const int tipHeight = ::ChainActive ().Height ();
   for (const auto& item : pwallet->mapWallet)
@@ -395,7 +394,6 @@ name_new (const JSONRPCRequest& request)
      the user could have gotten from another RPC command prior to now.  */
   pwallet->BlockUntilSyncedToCurrentChain ();
 
-  auto locked_chain = pwallet->chain ().lock ();
   LOCK (pwallet->cs_wallet);
 
   EnsureWalletIsUnlocked (pwallet);
@@ -406,8 +404,7 @@ name_new (const JSONRPCRequest& request)
   const CScript newScript
       = CNameScript::buildNameNew (destHelper.getScript (), name, rand);
 
-  CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
-                                       newScript, nullptr, options);
+  CTransactionRef tx = SendNameOutput (*pwallet, newScript, nullptr, options);
   destHelper.finalise ();
 
   const std::string randStr = HexStr (rand);
@@ -574,7 +571,6 @@ name_firstupdate (const JSONRPCRequest& request)
      the user could have gotten from another RPC command prior to now.  */
   pwallet->BlockUntilSyncedToCurrentChain ();
 
-  auto locked_chain = pwallet->chain ().lock ();
   LOCK (pwallet->cs_wallet);
 
   EnsureWalletIsUnlocked (pwallet);
@@ -586,8 +582,7 @@ name_firstupdate (const JSONRPCRequest& request)
     = CNameScript::buildNameFirstupdate (destHelper.getScript (), name, value,
                                          rand);
 
-  CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
-                                       nameScript, &txIn, options);
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -681,7 +676,6 @@ name_update (const JSONRPCRequest& request)
      the user could have gotten from another RPC command prior to now.  */
   pwallet->BlockUntilSyncedToCurrentChain ();
 
-  auto locked_chain = pwallet->chain ().lock ();
   LOCK (pwallet->cs_wallet);
 
   EnsureWalletIsUnlocked (pwallet);
@@ -692,8 +686,7 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
-  CTransactionRef tx = SendNameOutput (*locked_chain, *pwallet,
-                                       nameScript, &txIn, options);
+  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -753,7 +746,6 @@ sendtoname (const JSONRPCRequest& request)
      the user could have gotten from another RPC command prior to now.  */
   pwallet->BlockUntilSyncedToCurrentChain();
 
-  auto locked_chain = pwallet->chain().lock();
   LOCK(pwallet->cs_wallet);
 
   /* sendtoname does not support an options argument (e.g. to override the
@@ -815,8 +807,7 @@ sendtoname (const JSONRPCRequest& request)
 
   EnsureWalletIsUnlocked(pwallet);
 
-  CTransactionRef tx = SendMoneyToScript (*locked_chain, pwallet,
-                                          data.getAddress (), nullptr,
+  CTransactionRef tx = SendMoneyToScript (pwallet, data.getAddress (), nullptr,
                                           nAmount, fSubtractFeeFromAmount,
                                           coin_control, std::move(mapValue));
   return tx->GetHash ().GetHex ();
