@@ -18,7 +18,7 @@ if [ "$TRAVIS_OS_NAME" == "osx" ]; then
   ${CI_RETRY_EXE} pip3 install $PIP_PACKAGES
 fi
 
-mkdir -p "${BASE_SCRATCH_DIR}"
+# Create folders that are mounted into the docker
 mkdir -p "${CCACHE_DIR}"
 mkdir -p "${PREVIOUS_RELEASES_DIR}"
 
@@ -58,6 +58,7 @@ else
     bash -c "export PATH=$BASE_SCRATCH_DIR/bins/:\$PATH && cd $P_CI_DIR && $*"
   }
 fi
+export -f DOCKER_EXEC
 
 if [ -n "$DPKG_ADD_ARCH" ]; then
   DOCKER_EXEC dpkg --add-architecture "$DPKG_ADD_ARCH"
