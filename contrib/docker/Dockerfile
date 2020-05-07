@@ -7,56 +7,51 @@
 
 # Create the image that we use to build everything, and install additional
 # packages that are needed only for the build itself.
-FROM debian:buster AS build
-RUN apt-get update && apt-get install -y \
+FROM alpine AS build
+RUN apk add --no-cache \
   autoconf \
   automake \
-  build-essential \
-  libboost-chrono1.67-dev \
-  libboost-filesystem1.67-dev \
-  libboost-system1.67-dev \
-  libboost-thread1.67-dev \
+  boost-dev \
+  build-base \
+  czmq-dev \
   libevent-dev \
-  libtool \
-  libzmq3-dev \
-  pkg-config
+  libtool
 
 # Build and install Xaya Core itself.  Make sure to clean up any build artefacts
 # that may have been copied over from the host machine.
 WORKDIR /usr/src/xaya
 COPY . .
-RUN (make distclean || true) \
-  && ./autogen.sh \
-  && ./configure --disable-tests --disable-bench --disable-wallet \
-                 --without-gui \
-  && make && make install-strip
+RUN make distclean || true
+RUN ./autogen.sh
+RUN ./configure --disable-tests --disable-bench --disable-wallet --without-gui
+RUN make && make install-strip
 
-# For the final image, just copy over all built / installed stuff and only
-# install the runtime libraries (without build environment).
-FROM debian:buster
-RUN apt-get update && apt-get install -y \
-  libboost-chrono1.67.0 \
-  libboost-filesystem1.67.0 \
-  libboost-system1.67.0 \
-  libboost-thread1.67.0 \
-  libevent-2.1-6 \
-  libevent-pthreads-2.1-6 \
-  libzmq5
+# For the final image, just copy over the build binaries and install
+# the necessary runtime libraries (without build environment).
+FROM alpine
+RUN apk add --no-cache \
+  boost-chrono \
+  boost-filesystem \
+  boost-system \
+  boost-thread \
+  libevent \
+  libzmq
 COPY --from=build /usr/local/bin/ /usr/local/bin/
-LABEL description="Debian-based image with Xaya Core and utilities."
+LABEL description="Minimal image with Xaya Core and utilities"
 
 # Set up the runtime environment.
-RUN  useradd xaya \
+RUN addgroup xaya && adduser -S -G xaya xaya \
   && mkdir -p /var/lib/xaya \
   && chown xaya:xaya -R /var/lib/xaya
+ENV PATH "/usr/local/bin"
+USER xaya
 COPY contrib/docker/xaya.conf /var/lib/xaya/
 COPY contrib/docker/entrypoint.sh /usr/local/bin/
-USER xaya
 VOLUME ["/var/lib/xaya"]
-ENV HOST 127.0.0.1
-ENV ZMQ_PORT 28555
+ENV HOST "127.0.0.1"
+ENV ZMQ_PORT "28555"
 ENV RPC_PASSWORD ""
-ENV RPC_ALLOW_IP 127.0.0.1
+ENV RPC_ALLOW_IP "127.0.0.1"
 EXPOSE ${ZMQ_PORT}
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD []
