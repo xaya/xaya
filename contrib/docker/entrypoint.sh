@@ -11,7 +11,6 @@ case $1 in
       --datadir="/var/lib/xaya" \
       --rpcconnect="${HOST}" \
       --rpcpassword="${RPC_PASSWORD}" \
-      --rpcport="${RPC_PORT}" \
       "$@"
     ;;
 
@@ -36,8 +35,6 @@ exec $bin \
   --rpcpassword="${RPC_PASSWORD}" \
   --rpcbind="${HOST}" \
   --rpcallowip="${RPC_ALLOW_IP}" \
-  --rpcport="${RPC_PORT}" \
-  --port="${P2P_PORT}" \
   --zmqpubgameblocks="tcp://${HOST}:${ZMQ_PORT}" \
   --zmqpubgamepending="tcp://${HOST}:${ZMQ_PORT}" \
   "$@"

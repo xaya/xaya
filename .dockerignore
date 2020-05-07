@@ -1,0 +1,4 @@
+.git
+**/.*.swp
+
+contrib/docker/Dockerfile
