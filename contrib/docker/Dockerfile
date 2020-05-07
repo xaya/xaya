@@ -54,11 +54,9 @@ COPY contrib/docker/entrypoint.sh /usr/local/bin/
 USER xaya
 VOLUME ["/var/lib/xaya"]
 ENV HOST 127.0.0.1
-ENV P2P_PORT=8394 RPC_PORT=8396 ZMQ_PORT=28555
-ENV RPC_PASSWORD=
+ENV ZMQ_PORT 28555
+ENV RPC_PASSWORD ""
 ENV RPC_ALLOW_IP 127.0.0.1
-EXPOSE ${P2P_PORT}
-EXPOSE ${RPC_PORT}
 EXPOSE ${ZMQ_PORT}
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD []
