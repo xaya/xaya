@@ -6,6 +6,7 @@
 #include <chainparams.h>
 #include <core_io.h>
 #include <init.h>
+#include <index/namehash.h>
 #include <key_io.h>
 #include <names/common.h>
 #include <names/main.h>
@@ -169,6 +170,56 @@ DecodeValueFromRPCOrThrow (const UniValue& val, const UniValue& opt)
 
 namespace
 {
+
+/**
+ * Decodes the identifier for a name lookup according to the nameEncoding,
+ * and also looks up the preimage if we look up by hash.
+ */
+valtype
+GetNameForLookup (const UniValue& val, const UniValue& opt)
+{
+  const valtype identifier = DecodeNameFromRPCOrThrow (val, opt);
+
+  RPCTypeCheckObj (opt,
+    {
+      {"byHash", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
+
+  if (!opt.exists ("byHash"))
+    return identifier;
+
+  const std::string byHashType = opt["byHash"].get_str ();
+  if (byHashType == "direct")
+    return identifier;
+
+  if (g_name_hash_index == nullptr)
+    throw std::runtime_error ("-namehashindex is not enabled");
+  if (!g_name_hash_index->BlockUntilSyncedToCurrentChain ())
+    throw std::runtime_error ("The name-hash index is not caught up yet");
+
+  if (byHashType != "sha256d")
+    {
+      std::ostringstream msg;
+      msg << "Invalid value for byHash: " << byHashType;
+      throw JSONRPCError (RPC_INVALID_PARAMETER, msg.str ());
+    }
+
+  if (identifier.size () != 32)
+    throw JSONRPCError (RPC_INVALID_PARAMETER,
+                        "SHA-256d hash must be 32 bytes long");
+
+  const uint256 hash(identifier);
+  valtype name;
+  if (!g_name_hash_index->FindNamePreimage (hash, name))
+    {
+      std::ostringstream msg;
+      msg << "name hash not found: " << hash.GetHex ();
+      throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
+    }
+
+  return name;
+}
 
 /**
  * Helper class that extracts the wallet for the current RPC request, if any.
@@ -337,6 +388,14 @@ NameOptionsHelp::withValueEncoding ()
   return *this;
 }
 
+NameOptionsHelp&
+NameOptionsHelp::withByHash ()
+{
+  withArg ("byHash", RPCArg::Type::STR,
+           "Interpret \"name\" as hash (\"direct\" or \"sha256d\")");
+  return *this;
+}
+
 RPCArg
 NameOptionsHelp::buildRpcArg () const
 {
@@ -356,7 +415,8 @@ name_show (const JSONRPCRequest& request)
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
-      .withValueEncoding ();
+      .withValueEncoding ()
+      .withByHash ();
 
   RPCHelpMan ("name_show",
       "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
@@ -383,8 +443,7 @@ name_show (const JSONRPCRequest& request)
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
 
-  const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], options);
+  const valtype name = GetNameForLookup (request.params[0], options);
 
   CNameData data;
   {
@@ -410,7 +469,8 @@ name_history (const JSONRPCRequest& request)
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
-      .withValueEncoding ();
+      .withValueEncoding ()
+      .withByHash ();
 
   RPCHelpMan ("name_history",
       "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
@@ -444,8 +504,7 @@ name_history (const JSONRPCRequest& request)
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
 
-  const valtype name
-      = DecodeNameFromRPCOrThrow (request.params[0], options);
+  const valtype name = GetNameForLookup (request.params[0], options);
 
   CNameData data;
   CNameHistory history;

@@ -256,6 +256,7 @@ BASE_SCRIPTS = [
 
     # name tests
     'name_ant_workflow.py',
+    'name_byhash.py',
     'name_encodings.py',
     'name_immature_inputs.py',
     'name_ismine.py',
