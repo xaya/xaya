@@ -25,6 +25,7 @@
 #include <util/fees.h>
 #include <util/moneystr.h>
 #include <util/system.h>
+#include <util/translation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
@@ -174,13 +175,13 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
     totalSpend += recv.nAmount;
 
   CAmount lockedValue = 0;
-  std::string strError;
+  bilingual_str error;
   if (nameInput != nullptr)
     {
       const CWalletTx* dummyWalletTx;
       if (!wallet.FindValueInNameInput (*nameInput, lockedValue,
-                                        dummyWalletTx, strError))
-        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+                                        dummyWalletTx, error))
+        throw JSONRPCError(RPC_WALLET_ERROR, error.original);
     }
 
   if (totalSpend > curBalance + lockedValue)
@@ -195,14 +196,15 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
 
   CTransactionRef tx;
   if (!wallet.CreateTransaction (vecSend, nameInput, tx,
-                                 nFeeRequired, nChangePosRet, strError,
+                                 nFeeRequired, nChangePosRet, error,
                                  coinControl))
     {
       if (totalSpend + nFeeRequired > curBalance)
-        strError = strprintf ("Error: This transaction requires a transaction"
-                              " fee of at least %s",
-                              FormatMoney (nFeeRequired));
-      throw JSONRPCError (RPC_WALLET_ERROR, strError);
+        error = strprintf (Untranslated (
+                    "Error: This transaction requires a transaction"
+                    " fee of at least %s"),
+                    FormatMoney (nFeeRequired));
+      throw JSONRPCError (RPC_WALLET_ERROR, error.original);
     }
 
   wallet.CommitTransaction (tx, {}, {});
