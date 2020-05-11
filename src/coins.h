@@ -6,11 +6,11 @@
 #ifndef BITCOIN_COINS_H
 #define BITCOIN_COINS_H
 
-#include <primitives/transaction.h>
 #include <compressor.h>
 #include <core_memusage.h>
 #include <crypto/siphash.h>
 #include <memusage.h>
+#include <primitives/transaction.h>
 #include <serialize.h>
 #include <uint256.h>
 
@@ -25,7 +25,7 @@
  *
  * Serialized format:
  * - VARINT((coinbase ? 1 : 0) | (height << 1))
- * - the non-spent CTxOut (via CTxOutCompressor)
+ * - the non-spent CTxOut (via TxOutCompression)
  */
 class Coin
 {
@@ -314,16 +314,6 @@ public:
 
     //! Calculate the size of the cache (in bytes)
     size_t DynamicMemoryUsage() const;
-
-    /**
-     * Amount of bitcoins coming in to a transaction
-     * Note that lightweight clients may not know anything besides the hash of previous transactions,
-     * so may not be able to calculate this.
-     *
-     * @param[in] tx    transaction for which we are checking input total
-     * @return  Sum of value of all inputs (scriptSigs)
-     */
-    CAmount GetValueIn(const CTransaction& tx) const;
 
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;
