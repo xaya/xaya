@@ -27,9 +27,10 @@ class Coin;
 class RPCTimerInterface;
 class UniValue;
 class proxyType;
+enum class WalletCreationStatus;
 struct CNodeStateStats;
 struct NodeContext;
-enum class WalletCreationStatus;
+struct bilingual_str;
 
 namespace interfaces {
 class Handler;
@@ -201,10 +202,10 @@ public:
     //! Attempts to load a wallet from file or directory.
     //! The loaded wallet is also notified to handlers previously registered
     //! with handleLoadWallet.
-    virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, std::string& error, std::vector<std::string>& warnings) = 0;
+    virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) = 0;
 
     //! Create a wallet from file
-    virtual std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, std::string& error, std::vector<std::string>& warnings, WalletCreationStatus& status) = 0;
+    virtual std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;
@@ -212,11 +213,11 @@ public:
 
     //! Register handler for message box messages.
     using MessageBoxFn =
-        std::function<bool(const std::string& message, const std::string& caption, unsigned int style)>;
+        std::function<bool(const bilingual_str& message, const std::string& caption, unsigned int style)>;
     virtual std::unique_ptr<Handler> handleMessageBox(MessageBoxFn fn) = 0;
 
     //! Register handler for question messages.
-    using QuestionFn = std::function<bool(const std::string& message,
+    using QuestionFn = std::function<bool(const bilingual_str& message,
         const std::string& non_interactive_message,
         const std::string& caption,
         unsigned int style)>;
