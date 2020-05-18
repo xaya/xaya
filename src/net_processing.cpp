@@ -8,9 +8,11 @@
 #include <addrman.h>
 #include <banman.h>
 #include <blockencodings.h>
+#include <blockfilter.h>
 #include <chainparams.h>
 #include <consensus/validation.h>
 #include <hash.h>
+#include <index/blockfilterindex.h>
 #include <validation.h>
 #include <merkleblock.h>
 #include <netmessagemaker.h>
@@ -143,6 +145,8 @@ static constexpr unsigned int INVENTORY_BROADCAST_MAX = 7 * INVENTORY_BROADCAST_
 static constexpr unsigned int AVG_FEEFILTER_BROADCAST_INTERVAL = 10 * 60;
 /** Maximum feefilter broadcast delay after significant change. */
 static constexpr unsigned int MAX_FEEFILTER_CHANGE_DELAY = 5 * 60;
+/** Interval between compact filter checkpoints. See BIP 157. */
+static constexpr int CFCHECKPT_INTERVAL = 1000;
 
 struct COrphanTx {
     // When modifying, adapt the copy of this definition in tests/DoS_tests.
@@ -1628,26 +1632,32 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
     std::vector<CInv> vNotFound;
     const CNetMsgMaker msgMaker(pfrom->GetSendVersion());
 
-    // Note that if we receive a getdata for a MSG_TX or MSG_WITNESS_TX from a
-    // block-relay-only outbound peer, we will stop processing further getdata
-    // messages from this peer (likely resulting in our peer eventually
-    // disconnecting us).
-    if (pfrom->m_tx_relay != nullptr) {
-        // mempool entries added before this time have likely expired from mapRelay
-        const std::chrono::seconds longlived_mempool_time = GetTime<std::chrono::seconds>() - RELAY_TX_CACHE_TIME;
-        const std::chrono::seconds mempool_req = pfrom->m_tx_relay->m_last_mempool_req.load();
+    // mempool entries added before this time have likely expired from mapRelay
+    const std::chrono::seconds longlived_mempool_time = GetTime<std::chrono::seconds>() - RELAY_TX_CACHE_TIME;
+    // Get last mempool request time
+    const std::chrono::seconds mempool_req = pfrom->m_tx_relay != nullptr ? pfrom->m_tx_relay->m_last_mempool_req.load()
+                                                                          : std::chrono::seconds::min();
 
+    {
         LOCK(cs_main);
 
+        // Process as many TX items from the front of the getdata queue as
+        // possible, since they're common and it's efficient to batch process
+        // them.
         while (it != pfrom->vRecvGetData.end() && (it->type == MSG_TX || it->type == MSG_WITNESS_TX)) {
             if (interruptMsgProc)
                 return;
-            // Don't bother if send buffer is too full to respond anyway
+            // The send buffer provides backpressure. If there's no space in
+            // the buffer, pause processing until the next call.
             if (pfrom->fPauseSend)
                 break;
 
-            const CInv &inv = *it;
-            it++;
+            const CInv &inv = *it++;
+
+            if (pfrom->m_tx_relay == nullptr) {
+                // Ignore GETDATA requests for transactions from blocks-only peers.
+                continue;
+            }
 
             // Send stream from relay memory
             bool push = false;
@@ -1681,18 +1691,16 @@ void static ProcessGetData(CNode* pfrom, const CChainParams& chainparams, CConnm
         }
     } // release cs_main
 
+    // Only process one BLOCK item per call, since they're uncommon and can be
+    // expensive to process.
     if (it != pfrom->vRecvGetData.end() && !pfrom->fPauseSend) {
-        const CInv &inv = *it;
+        const CInv &inv = *it++;
         if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK || inv.type == MSG_WITNESS_BLOCK) {
-            it++;
             ProcessGetBlockData(pfrom, chainparams, inv, connman);
         }
+        // else: If the first item on the queue is an unknown type, we erase it
+        // and continue processing the queue on the next call.
     }
-
-    // Unknown types in the GetData stay in vRecvGetData and block any future
-    // message from this peer, see vRecvGetData check in ProcessMessages().
-    // Depending on future p2p changes, we might either drop unknown getdata on
-    // the floor or disconnect the peer.
 
     pfrom->vRecvGetData.erase(pfrom->vRecvGetData.begin(), it);
 
@@ -1997,6 +2005,107 @@ void static ProcessOrphanTx(CConnman* connman, CTxMemPool& mempool, std::set<uin
         }
         mempool.check(&::ChainstateActive().CoinsTip());
     }
+}
+
+/**
+ * Validation logic for compact filters request handling.
+ *
+ * May disconnect from the peer in the case of a bad request.
+ *
+ * @param[in]   pfrom           The peer that we received the request from
+ * @param[in]   chain_params    Chain parameters
+ * @param[in]   filter_type     The filter type the request is for. Must be basic filters.
+ * @param[in]   stop_hash       The stop_hash for the request
+ * @param[out]  stop_index      The CBlockIndex for the stop_hash block, if the request can be serviced.
+ * @param[out]  filter_index    The filter index, if the request can be serviced.
+ * @return                      True if the request can be serviced.
+ */
+static bool PrepareBlockFilterRequest(CNode* pfrom, const CChainParams& chain_params,
+                                      BlockFilterType filter_type,
+                                      const uint256& stop_hash,
+                                      const CBlockIndex*& stop_index,
+                                      const BlockFilterIndex*& filter_index)
+{
+    const bool supported_filter_type =
+        (filter_type == BlockFilterType::BASIC &&
+         gArgs.GetBoolArg("-peerblockfilters", DEFAULT_PEERBLOCKFILTERS));
+    if (!supported_filter_type) {
+        LogPrint(BCLog::NET, "peer %d requested unsupported block filter type: %d\n",
+                 pfrom->GetId(), static_cast<uint8_t>(filter_type));
+        pfrom->fDisconnect = true;
+        return false;
+    }
+
+    {
+        LOCK(cs_main);
+        stop_index = LookupBlockIndex(stop_hash);
+
+        // Check that the stop block exists and the peer would be allowed to fetch it.
+        if (!stop_index || !BlockRequestAllowed(stop_index, chain_params.GetConsensus())) {
+            LogPrint(BCLog::NET, "peer %d requested invalid block hash: %s\n",
+                     pfrom->GetId(), stop_hash.ToString());
+            pfrom->fDisconnect = true;
+            return false;
+        }
+    }
+
+    filter_index = GetBlockFilterIndex(filter_type);
+    if (!filter_index) {
+        LogPrint(BCLog::NET, "Filter index for supported type %s not found\n", BlockFilterTypeName(filter_type));
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Handle a getcfcheckpt request.
+ *
+ * May disconnect from the peer in the case of a bad request.
+ *
+ * @param[in]   pfrom           The peer that we received the request from
+ * @param[in]   vRecv           The raw message received
+ * @param[in]   chain_params    Chain parameters
+ * @param[in]   connman         Pointer to the connection manager
+ */
+static void ProcessGetCFCheckPt(CNode* pfrom, CDataStream& vRecv, const CChainParams& chain_params,
+                                CConnman* connman)
+{
+    uint8_t filter_type_ser;
+    uint256 stop_hash;
+
+    vRecv >> filter_type_ser >> stop_hash;
+
+    const BlockFilterType filter_type = static_cast<BlockFilterType>(filter_type_ser);
+
+    const CBlockIndex* stop_index;
+    const BlockFilterIndex* filter_index;
+    if (!PrepareBlockFilterRequest(pfrom, chain_params, filter_type, stop_hash,
+                                   stop_index, filter_index)) {
+        return;
+    }
+
+    std::vector<uint256> headers(stop_index->nHeight / CFCHECKPT_INTERVAL);
+
+    // Populate headers.
+    const CBlockIndex* block_index = stop_index;
+    for (int i = headers.size() - 1; i >= 0; i--) {
+        int height = (i + 1) * CFCHECKPT_INTERVAL;
+        block_index = block_index->GetAncestor(height);
+
+        if (!filter_index->LookupFilterHeader(block_index, headers[i])) {
+            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+                         BlockFilterTypeName(filter_type), block_index->GetBlockHash().ToString());
+            return;
+        }
+    }
+
+    CSerializedNetMsg msg = CNetMsgMaker(pfrom->GetSendVersion())
+        .Make(NetMsgType::CFCHECKPT,
+              filter_type_ser,
+              stop_index->GetBlockHash(),
+              headers);
+    connman->PushMessage(pfrom, std::move(msg));
 }
 
 bool ProcessMessage(CNode* pfrom, const std::string& msg_type, CDataStream& vRecv, int64_t nTimeReceived, const CChainParams& chainparams, CTxMemPool& mempool, CConnman* connman, BanMan* banman, const std::atomic<bool>& interruptMsgProc)
@@ -2345,6 +2454,7 @@ bool ProcessMessage(CNode* pfrom, const std::string& msg_type, CDataStream& vRec
 
         uint32_t nFetchFlags = GetFetchFlags(pfrom);
         const auto current_time = GetTime<std::chrono::microseconds>();
+        uint256* best_block{nullptr};
 
         for (CInv &inv : vInv)
         {
@@ -2361,17 +2471,14 @@ bool ProcessMessage(CNode* pfrom, const std::string& msg_type, CDataStream& vRec
             if (inv.type == MSG_BLOCK) {
                 UpdateBlockAvailability(pfrom->GetId(), inv.hash);
                 if (!fAlreadyHave && !fImporting && !fReindex && !mapBlocksInFlight.count(inv.hash)) {
-                    // We used to request the full block here, but since headers-announcements are now the
-                    // primary method of announcement on the network, and since, in the case that a node
-                    // fell back to inv we probably have a reorg which we should get the headers for first,
-                    // we now only provide a getheaders response here. When we receive the headers, we will
-                    // then ask for the blocks we need.
-                    connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, ::ChainActive().GetLocator(pindexBestHeader), inv.hash));
-                    LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n", pindexBestHeader->nHeight, inv.hash.ToString(), pfrom->GetId());
+                    // Headers-first is the primary method of announcement on
+                    // the network. If a node fell back to sending blocks by inv,
+                    // it's probably for a re-org. The final block hash
+                    // provided should be the highest, so send a getheaders and
+                    // then fetch the blocks we need to catch up.
+                    best_block = &inv.hash;
                 }
-            }
-            else
-            {
+            } else {
                 pfrom->AddInventoryKnown(inv);
                 if (fBlocksOnly) {
                     LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol, disconnecting peer=%d\n", inv.hash.ToString(), pfrom->GetId());
@@ -2382,6 +2489,12 @@ bool ProcessMessage(CNode* pfrom, const std::string& msg_type, CDataStream& vRec
                 }
             }
         }
+
+        if (best_block != nullptr) {
+            connman->PushMessage(pfrom, msgMaker.Make(NetMsgType::GETHEADERS, ::ChainActive().GetLocator(pindexBestHeader), *best_block));
+            LogPrint(BCLog::NET, "getheaders (%d) %s to peer=%d\n", pindexBestHeader->nHeight, best_block->ToString(), pfrom->GetId());
+        }
+
         return true;
     }
 
@@ -3323,6 +3436,11 @@ bool ProcessMessage(CNode* pfrom, const std::string& msg_type, CDataStream& vRec
             }
             LogPrint(BCLog::NET, "received: feefilter of %s from peer=%d\n", CFeeRate(newFeeFilter).ToString(), pfrom->GetId());
         }
+        return true;
+    }
+
+    if (msg_type == NetMsgType::GETCFCHECKPT) {
+        ProcessGetCFCheckPt(pfrom, vRecv, chainparams, connman);
         return true;
     }
 

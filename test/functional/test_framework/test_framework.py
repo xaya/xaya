@@ -186,9 +186,24 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         config = configparser.ConfigParser()
         config.read_file(open(self.options.configfile))
         self.config = config
-        self.options.bitcoind = os.getenv("BITCOIND", default=config["environment"]["BUILDDIR"] + '/src/xayad' + config["environment"]["EXEEXT"])
-        self.options.bitcoincli = os.getenv("BITCOINCLI", default=config["environment"]["BUILDDIR"] + '/src/xaya-cli' + config["environment"]["EXEEXT"])
-        powhash.xayahash = os.getenv("XAYA-HASH", default=config["environment"]["BUILDDIR"] + '/src/xaya-hash' + config["environment"]["EXEEXT"])
+        fname_bitcoind = os.path.join(
+            config["environment"]["BUILDDIR"],
+            "src",
+            "xayad" + config["environment"]["EXEEXT"]
+        )
+        fname_bitcoincli = os.path.join(
+            config["environment"]["BUILDDIR"],
+            "src",
+            "xaya-cli" + config["environment"]["EXEEXT"]
+        )
+        fname_xayahash = os.path.join(
+            config["environment"]["BUILDDIR"],
+            "src",
+            "xaya-hash" + config["environment"]["EXEEXT"]
+        )
+        self.options.bitcoind = os.getenv("BITCOIND", default=fname_bitcoind)
+        self.options.bitcoincli = os.getenv("BITCOINCLI", default=fname_bitcoincli)
+        powhash.xayahash = os.getenv("XAYA-HASH", default=fname_xayahash)
 
         self.options.previous_releases_path = os.getenv("PREVIOUS_RELEASES_DIR") or os.getcwd() + "/releases"
 
@@ -422,9 +437,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if versions is None:
             versions = [None] * num_nodes
         if binary is None:
-            binary = [get_bin_from_version(v, 'bitcoind', self.options.bitcoind) for v in versions]
+            binary = [get_bin_from_version(v, 'xayad', self.options.bitcoind) for v in versions]
         if binary_cli is None:
-            binary_cli = [get_bin_from_version(v, 'bitcoin-cli', self.options.bitcoincli) for v in versions]
+            binary_cli = [get_bin_from_version(v, 'xaya-cli', self.options.bitcoincli) for v in versions]
         assert_equal(len(extra_confs), num_nodes)
         assert_equal(len(extra_args), num_nodes)
         assert_equal(len(versions), num_nodes)
