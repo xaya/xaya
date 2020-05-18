@@ -157,6 +157,7 @@ BASE_SCRIPTS = [
     'rpc_deprecated.py',
     'wallet_disable.py',
     'p2p_addr_relay.py',
+    'p2p_getdata.py',
     'rpc_net.py',
     'wallet_keypool.py',
     'wallet_keypool.py --descriptors',
@@ -227,6 +228,7 @@ BASE_SCRIPTS = [
     # FIXME: Reenable with data created for Namecoin.
     #'p2p_dos_header_tree.py',
     'p2p_unrequested_blocks.py',
+    'p2p_blockfilters.py',
     'feature_includeconf.py',
     'feature_asmap.py',
     'mempool_unbroadcast.py',
