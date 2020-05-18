@@ -88,26 +88,6 @@ jobs:
         FILE_ENV="./ci/test/00_setup_env_arm.sh"
         QEMU_USER_CMD=""
 
-    - stage: test
-      name: 's390x native BE [GOAL: install] [bionic] [no depends, no GUI]'
-      arch: s390x
-      dist: bionic
-      addons:
-        apt:
-          packages:
-            - bsdmainutils
-            - libboost-filesystem-dev
-            - libboost-system-dev
-            - libboost-test-dev
-            - libboost-thread-dev
-            - libdb++-dev
-            - libdb-dev
-            - libevent-dev
-      env: >-
-        DANGER_RUN_CI_ON_HOST=true
-        CI_USE_APT_INSTALL=no
-        FILE_ENV="./ci/test/00_setup_env_s390x_host.sh"
-
 # s390 build was disabled temporarily because of disk space issues on the Travis VM
 #
 #    - stage: test
@@ -144,19 +124,9 @@ jobs:
         FILE_ENV="./ci/test/00_setup_env_native_asan.sh"
 
     - stage: test
-      name: 'x86_64 Linux  [GOAL: install]  [bionic]  [no depends, only system libs, valgrind]'
-      env: >-
-        FILE_ENV="./ci/test/00_setup_env_native_valgrind.sh"
-
-    - stage: test
       name: 'x86_64 Linux  [GOAL: install]  [focal]  [no depends, only system libs, sanitizers: fuzzer,address,undefined]'
       env: >-
         FILE_ENV="./ci/test/00_setup_env_native_fuzz.sh"
-
-    - stage: test
-      name: 'x86_64 Linux  [GOAL: install]  [focal]  [no depends, only system libs, fuzzers under valgrind]'
-      env: >-
-        FILE_ENV="./ci/test/00_setup_env_native_fuzz_with_valgrind.sh"
 
     - stage: test
       name: 'x86_64 Linux  [GOAL: install]  [bionic]  [no wallet]'
