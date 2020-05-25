@@ -7,6 +7,7 @@
 
 #include <miner.h>
 #include <powdata.h>
+#include <rpc/request.h>
 #include <script/script.h>
 #include <script/standard.h>
 #include <sync.h>
@@ -84,7 +85,8 @@ public:
    * to work on with the given address for the block reward and return the
    * necessary information for the miner to construct an auxpow for it.
    */
-  UniValue createAuxBlock (const CScript& scriptPubKey);
+  UniValue createAuxBlock (const JSONRPCRequest& request,
+                           const CScript& scriptPubKey);
 
   /**
    * Performs the main work for the "submitauxblock" RPC:  Look up the block
@@ -92,18 +94,21 @@ public:
    * and try to submit it.  Returns true if all was successful and the block
    * was accepted.
    */
-  bool submitAuxBlock (const std::string& hashHex,
+  bool submitAuxBlock (const JSONRPCRequest& request,
+                       const std::string& hashHex,
                        const std::string& auxpowHex) const;
 
   /**
    * Performs the main logic needed for the "create" form of the "getwork" RPC.
    */
-  UniValue createWork (const CScript& scriptPubKey);
+  UniValue createWork (const JSONRPCRequest& request,
+                       const CScript& scriptPubKey);
 
   /**
    * Performs the "submit" form of the "getwork" RPC.
    */
-  bool submitWork (const std::string& hashHex,
+  bool submitWork (const JSONRPCRequest& request,
+                   const std::string& hashHex,
                    const std::string& dataHex) const;
 
   /**

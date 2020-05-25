@@ -85,6 +85,10 @@ if BUILD_BITCOIND
   bin_PROGRAMS += xayad
 endif
 
+if BUILD_BITCOIN_NODE
+  bin_PROGRAMS += xaya-node
+endif
+
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += xaya-cli
 endif
@@ -234,6 +238,7 @@ BITCOIN_CORE_H = \
   util/message.h \
   util/moneystr.h \
   util/rbf.h \
+  util/ref.h \
   util/settings.h \
   util/string.h \
   util/threadnames.h \
@@ -579,22 +584,24 @@ libbitcoin_cli_a_SOURCES = \
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
-# bitcoind binary #
-xayad_SOURCES = bitcoind.cpp
-xayad_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xayad_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xayad_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# bitcoind & bitcoin-node binaries #
+bitcoin_daemon_sources = bitcoind.cpp
+bitcoin_bin_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+bitcoin_bin_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bitcoin_bin_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-xayad_SOURCES += bitcoind-res.rc
+bitcoin_daemon_sources += bitcoind-res.rc
 endif
 
-xayad_LDADD = \
+# FIXME: Remove SERVER once we have cleaned up getauxblock.
+bitcoin_bin_ldadd = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
-  $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
+  $(LIBUNIVALUE) \
   $(LIBBITCOIN_ZMQ) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
@@ -603,7 +610,19 @@ xayad_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-xayad_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+
+xayad_SOURCES = $(bitcoin_daemon_sources)
+xayad_CPPFLAGS = $(bitcoin_bin_cppflags)
+xayad_CXXFLAGS = $(bitcoin_bin_cxxflags)
+xayad_LDFLAGS = $(bitcoin_bin_ldflags)
+xayad_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
+
+xaya_node_SOURCES = $(bitcoin_daemon_sources)
+xaya_node_CPPFLAGS = $(bitcoin_bin_cppflags)
+xaya_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
+xaya_node_LDFLAGS = $(bitcoin_bin_ldflags)
+xaya_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
 
 # bitcoin-cli binary #
 xaya_cli_SOURCES = bitcoin-cli.cpp
@@ -663,33 +682,14 @@ xaya_hash_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 xaya_wallet_SOURCES = bitcoin-wallet.cpp
-xaya_wallet_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xaya_wallet_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xaya_wallet_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xaya_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
+xaya_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
+xaya_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
+xaya_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
 
 if TARGET_WINDOWS
 xaya_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
-
-# FIXME: Remove SERVER once we have cleaned up getauxblock!
-xaya_wallet_LDADD = \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBUNIVALUE) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
-  $(LIBSECP256K1) \
-  $(LIBUNIVALUE)
-
-xaya_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(MINIUPNPC_LIBS) $(ZMQ_LIBS)
 #
 
 # bitcoinconsensus library #

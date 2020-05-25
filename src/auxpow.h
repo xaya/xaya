@@ -86,11 +86,7 @@ public:
 
   CAuxPow () = default;
 
-  ADD_SERIALIZE_METHODS;
-
-  template<typename Stream, typename Operation>
-    inline void
-    SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS (CAuxPow, obj)
   {
     /* The coinbase Merkle tx' hashBlock field is never actually verified
        or used in the code for an auxpow (and never was).  The parent block
@@ -103,15 +99,10 @@ public:
     int nIndex = 0;
 
     /* Data from the coinbase transaction as Merkle tx.  */
-    READWRITE (coinbaseTx);
-    READWRITE (hashBlock);
-    READWRITE (vMerkleBranch);
-    READWRITE (nIndex);
+    READWRITE (obj.coinbaseTx, hashBlock, obj.vMerkleBranch, nIndex);
 
     /* Additional data for the auxpow itself.  */
-    READWRITE (vChainMerkleBranch);
-    READWRITE (nChainIndex);
-    READWRITE (parentBlock);
+    READWRITE (obj.vChainMerkleBranch, obj.nChainIndex, obj.parentBlock);
   }
 
   /**

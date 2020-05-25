@@ -16,8 +16,12 @@ extern RecursiveMutex cs_main;
 class CBlock;
 class CBlockIndex;
 class CTxMemPool;
+class ChainstateManager;
 class UniValue;
 struct NodeContext;
+namespace util {
+class Ref;
+} // namespace util
 
 class JSONRPCRequest;
 
@@ -29,7 +33,7 @@ static constexpr int NUM_GETBLOCKSTATS_PERCENTILES = 5;
 double GetDifficultyForBits(uint32_t nBits);
 
 /** Callback for when block tip changed. */
-void RPCNotifyBlockChange(bool ibd, const CBlockIndex *);
+void RPCNotifyBlockChange(const CBlockIndex*);
 
 /** Block description to JSON */
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, bool txDetails = false) LOCKS_EXCLUDED(cs_main);
@@ -46,12 +50,9 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
 /** Used by getblockstats to get feerates at different percentiles by weight  */
 void CalculatePercentilesByWeight(CAmount result[NUM_GETBLOCKSTATS_PERCENTILES], std::vector<std::pair<CAmount, int64_t>>& scores, int64_t total_weight);
 
-//! Pointer to node state that needs to be declared as a global to be accessible
-//! RPC methods. Due to limitations of the RPC framework, there's currently no
-//! direct way to pass in state to RPC methods without globals.
-extern NodeContext* g_rpc_node;
-
-CTxMemPool& EnsureMemPool();
+NodeContext& EnsureNodeContext(const util::Ref& context);
+CTxMemPool& EnsureMemPool(const util::Ref& context);
+ChainstateManager& EnsureChainman(const util::Ref& context);
 
 UniValue getdifficulty(const JSONRPCRequest& request);
 

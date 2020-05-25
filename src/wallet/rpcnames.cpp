@@ -131,7 +131,8 @@ void DestinationAddressHelper::finalise ()
  * also implements the "sendCoins" option, if included.
  */
 CTransactionRef
-SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
+SendNameOutput (const JSONRPCRequest& request,
+                CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
   RPCTypeCheckObj (opt,
@@ -141,7 +142,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
     },
     true, false);
 
-  if (wallet.GetBroadcastTransactions () && !g_rpc_node->connman)
+  auto& node = EnsureNodeContext (request.context);
+  if (wallet.GetBroadcastTransactions () && !node.connman)
     throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
                         "Error: Peer-to-peer functionality missing"
                         " or disabled");
@@ -427,7 +429,8 @@ name_register (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameRegister (destHelper.getScript (), name, value);
 
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, nullptr, options);
+  CTransactionRef tx
+      = SendNameOutput (request, *pwallet, nameScript, nullptr, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -532,7 +535,8 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
+  CTransactionRef tx
+      = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();

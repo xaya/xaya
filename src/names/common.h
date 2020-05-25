@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,15 +47,9 @@ private:
 
 public:
 
-  ADD_SERIALIZE_METHODS;
-
-  template<typename Stream, typename Operation>
-    inline void SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS (CNameData, obj)
   {
-    READWRITE (value);
-    READWRITE (nHeight);
-    READWRITE (prevout);
-    READWRITE (*(CScriptBase*)(&addr));
+    READWRITE (obj.value, obj.nHeight, obj.prevout, obj.addr);
   }
 
   /* Compare for equality.  */
@@ -138,12 +132,9 @@ private:
 
 public:
 
-  ADD_SERIALIZE_METHODS;
-
-  template<typename Stream, typename Operation>
-    inline void SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS (CNameHistory, obj)
   {
-    READWRITE (data);
+    READWRITE (obj.data);
   }
 
   /**

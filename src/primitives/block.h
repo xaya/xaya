@@ -28,14 +28,10 @@ public:
   /** The PoW data for this block.  */
   PowData pow;
 
-  ADD_SERIALIZE_METHODS;
-
-  template <typename Stream, typename Operation>
-    inline void
-    SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS(CBlockHeader, obj)
   {
-    READWRITEAS (CPureBlockHeader, *this);
-    READWRITE (pow);
+      READWRITEAS(CPureBlockHeader, obj);
+      READWRITE (obj.pow);
   }
 
   /**
@@ -70,12 +66,10 @@ public:
         *(static_cast<CBlockHeader*>(this)) = header;
     }
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITEAS(CBlockHeader, *this);
-        READWRITE(vtx);
+    SERIALIZE_METHODS(CBlock, obj)
+    {
+        READWRITEAS(CBlockHeader, obj);
+        READWRITE(obj.vtx);
     }
 
     void SetNull()
@@ -113,14 +107,12 @@ struct CBlockLocator
 
     explicit CBlockLocator(const std::vector<uint256>& vHaveIn) : vHave(vHaveIn) {}
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    SERIALIZE_METHODS(CBlockLocator, obj)
+    {
         int nVersion = s.GetVersion();
         if (!(s.GetType() & SER_GETHASH))
             READWRITE(nVersion);
-        READWRITE(vHave);
+        READWRITE(obj.vHave);
     }
 
     void SetNull()

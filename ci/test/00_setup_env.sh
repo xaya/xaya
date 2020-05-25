@@ -33,13 +33,15 @@ export HOST=${HOST:-$("$BASE_ROOT_DIR/depends/config.guess")}
 export USE_BUSY_BOX=${USE_BUSY_BOX:-false}
 export RUN_UNIT_TESTS=${RUN_UNIT_TESTS:-true}
 export RUN_FUNCTIONAL_TESTS=${RUN_FUNCTIONAL_TESTS:-true}
-export TEST_PREVIOUS_RELEASES=${TEST_PREVIOUS_RELEASES:-false}
+export TEST_RUNNER_ENV=${TEST_RUNNER_ENV:-}
 export RUN_FUZZ_TESTS=${RUN_FUZZ_TESTS:-false}
 export CONTAINER_NAME=${CONTAINER_NAME:-ci_unnamed}
 export DOCKER_NAME_TAG=${DOCKER_NAME_TAG:-ubuntu:18.04}
 # Randomize test order.
 # See https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/boost_test/utf_reference/rt_param_reference/random.html
 export BOOST_TEST_RANDOM=${BOOST_TEST_RANDOM:-1}
+# See man 7 debconf
+export DEBIAN_FRONTEND=noninteractive
 export CCACHE_SIZE=${CCACHE_SIZE:-100M}
 export CCACHE_TEMPDIR=${CCACHE_TEMPDIR:-/tmp/.ccache-temp}
 export CCACHE_COMPRESS=${CCACHE_COMPRESS:-1}
