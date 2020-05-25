@@ -21,14 +21,15 @@
 namespace
 {
 
-void auxMiningCheck()
+void auxMiningCheck(const JSONRPCRequest& request)
 {
-  if (!g_rpc_node->connman)
+  NodeContext& node = EnsureNodeContext (request.context);
+  if (!node.connman)
     throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
                         "Error: Peer-to-peer functionality missing or"
                         " disabled");
 
-  if (g_rpc_node->connman->GetNodeCount (CConnman::CONNECTIONS_ALL) == 0
+  if (node.connman->GetNodeCount (CConnman::CONNECTIONS_ALL) == 0
         && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
                         "Namecoin is not connected!");
@@ -133,12 +134,13 @@ AuxpowMiner::lookupSavedBlock (const std::string& hashHex) const
 }
 
 UniValue
-AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
+AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
+                             const CScript& scriptPubKey)
 {
-  auxMiningCheck ();
+  auxMiningCheck (request);
   LOCK (cs);
 
-  const auto& mempool = EnsureMemPool ();
+  const auto& mempool = EnsureMemPool (request.context);
 
   uint256 target;
   const CBlock* pblock = getCurrentBlock (mempool, scriptPubKey, target);
@@ -157,10 +159,12 @@ AuxpowMiner::createAuxBlock (const CScript& scriptPubKey)
 }
 
 bool
-AuxpowMiner::submitAuxBlock (const std::string& hashHex,
+AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
+                             const std::string& hashHex,
                              const std::string& auxpowHex) const
 {
-  auxMiningCheck ();
+  auxMiningCheck (request);
+  auto& chainman = EnsureChainman (request.context);
 
   std::shared_ptr<CBlock> shared_block;
   {
@@ -176,7 +180,7 @@ AuxpowMiner::submitAuxBlock (const std::string& hashHex,
   shared_block->SetAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
-  return ProcessNewBlock (Params (), shared_block, true, nullptr);
+  return chainman.ProcessNewBlock (Params (), shared_block, true, nullptr);
 }
 
 AuxpowMiner&

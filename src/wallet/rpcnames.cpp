@@ -130,7 +130,8 @@ void DestinationAddressHelper::finalise ()
  * also implements the "sendCoins" option, if included.
  */
 CTransactionRef
-SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
+SendNameOutput (const JSONRPCRequest& request,
+                CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
   RPCTypeCheckObj (opt,
@@ -139,7 +140,8 @@ SendNameOutput (CWallet& wallet, const CScript& nameOutScript,
     },
     true, false);
 
-  if (wallet.GetBroadcastTransactions () && !g_rpc_node->connman)
+  auto& node = EnsureNodeContext (request.context);
+  if (wallet.GetBroadcastTransactions () && !node.connman)
     throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
                         "Error: Peer-to-peer functionality missing"
                         " or disabled");
@@ -406,7 +408,8 @@ name_new (const JSONRPCRequest& request)
   const CScript newScript
       = CNameScript::buildNameNew (destHelper.getScript (), name, rand);
 
-  CTransactionRef tx = SendNameOutput (*pwallet, newScript, nullptr, options);
+  CTransactionRef tx
+      = SendNameOutput (request, *pwallet, newScript, nullptr, options);
   destHelper.finalise ();
 
   const std::string randStr = HexStr (rand);
@@ -584,7 +587,8 @@ name_firstupdate (const JSONRPCRequest& request)
     = CNameScript::buildNameFirstupdate (destHelper.getScript (), name, value,
                                          rand);
 
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
+  CTransactionRef tx
+      = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();
@@ -688,7 +692,8 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
-  CTransactionRef tx = SendNameOutput (*pwallet, nameScript, &txIn, options);
+  CTransactionRef tx
+      = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
   return tx->GetHash ().GetHex ();

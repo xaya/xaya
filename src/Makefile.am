@@ -85,6 +85,10 @@ if BUILD_BITCOIND
   bin_PROGRAMS += namecoind
 endif
 
+if BUILD_BITCOIN_NODE
+  bin_PROGRAMS += namecoin-node
+endif
+
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += namecoin-cli
 endif
@@ -232,6 +236,7 @@ BITCOIN_CORE_H = \
   util/message.h \
   util/moneystr.h \
   util/rbf.h \
+  util/ref.h \
   util/settings.h \
   util/string.h \
   util/threadnames.h \
@@ -568,22 +573,24 @@ libbitcoin_cli_a_SOURCES = \
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
-# bitcoind binary #
-namecoind_SOURCES = bitcoind.cpp
-namecoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-namecoind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-namecoind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# bitcoind & bitcoin-node binaries #
+bitcoin_daemon_sources = bitcoind.cpp
+bitcoin_bin_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+bitcoin_bin_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bitcoin_bin_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-namecoind_SOURCES += bitcoind-res.rc
+bitcoin_daemon_sources += bitcoind-res.rc
 endif
 
-namecoind_LDADD = \
+# FIXME: Remove SERVER once we have cleaned up getauxblock.
+bitcoin_bin_ldadd = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_WALLET) \
+  $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
-  $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL) \
+  $(LIBUNIVALUE) \
   $(LIBBITCOIN_ZMQ) \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
@@ -592,7 +599,19 @@ namecoind_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-namecoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+
+namecoind_SOURCES = $(bitcoin_daemon_sources)
+namecoind_CPPFLAGS = $(bitcoin_bin_cppflags)
+namecoind_CXXFLAGS = $(bitcoin_bin_cxxflags)
+namecoind_LDFLAGS = $(bitcoin_bin_ldflags)
+namecoind_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
+
+namecoin_node_SOURCES = $(bitcoin_daemon_sources)
+namecoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
+namecoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
+namecoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
+namecoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
 
 # bitcoin-cli binary #
 namecoin_cli_SOURCES = bitcoin-cli.cpp
@@ -636,33 +655,14 @@ namecoin_tx_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 namecoin_wallet_SOURCES = bitcoin-wallet.cpp
-namecoin_wallet_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-namecoin_wallet_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-namecoin_wallet_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+namecoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
+namecoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
+namecoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
+namecoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
 
 if TARGET_WINDOWS
 namecoin_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
-
-# FIXME: Remove SERVER once we have cleaned up getauxblock!
-namecoin_wallet_LDADD = \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_WALLET) \
-  $(LIBBITCOIN_SERVER) \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBBITCOIN_ZMQ) \
-  $(LIBUNIVALUE) \
-  $(LIBLEVELDB) \
-  $(LIBLEVELDB_SSE42) \
-  $(LIBMEMENV) \
-  $(LIBSECP256K1) \
-  $(LIBUNIVALUE)
-
-namecoin_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(MINIUPNPC_LIBS) $(ZMQ_LIBS)
 #
 
 # bitcoinconsensus library #

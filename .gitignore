@@ -5,6 +5,8 @@
 src/namecoin
 src/namecoind
 src/namecoin-cli
+src/namecoin-gui
+src/namecoin-node
 src/namecoin-tx
 src/namecoin-wallet
 src/test/fuzz
