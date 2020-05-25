@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -51,15 +51,11 @@ private:
 
 public:
 
-  ADD_SERIALIZE_METHODS;
-
-  template<typename Stream, typename Operation>
-    inline void SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS (CNameTxUndo, obj)
   {
-    READWRITE (name);
-    READWRITE (isNew);
-    if (!isNew)
-      READWRITE (oldData);
+    READWRITE (obj.name, obj.isNew);
+    if (!obj.isNew)
+      READWRITE (obj.oldData);
   }
 
   /**
