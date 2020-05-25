@@ -33,20 +33,19 @@ public:
         SetNull();
     }
 
-    ADD_SERIALIZE_METHODS;
+    SERIALIZE_METHODS(CBlockHeader, obj)
+    {
+        READWRITEAS(CPureBlockHeader, obj);
 
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(*(CPureBlockHeader*)this);
-
-        if (this->IsAuxpow())
+        if (obj.IsAuxpow())
         {
-            if (ser_action.ForRead())
-                auxpow = std::make_shared<CAuxPow>();
-            assert(auxpow != nullptr);
-            READWRITE(*auxpow);
-        } else if (ser_action.ForRead())
-            auxpow.reset();
+            SER_READ(obj, obj.auxpow = std::make_shared<CAuxPow>());
+            assert(obj.auxpow != nullptr);
+            READWRITE(*obj.auxpow);
+        } else
+        {
+            SER_READ(obj, obj.auxpow.reset());
+        }
     }
 
     void SetNull()
@@ -83,12 +82,10 @@ public:
         *(static_cast<CBlockHeader*>(this)) = header;
     }
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITEAS(CBlockHeader, *this);
-        READWRITE(vtx);
+    SERIALIZE_METHODS(CBlock, obj)
+    {
+        READWRITEAS(CBlockHeader, obj);
+        READWRITE(obj.vtx);
     }
 
     void SetNull()
@@ -126,14 +123,12 @@ struct CBlockLocator
 
     explicit CBlockLocator(const std::vector<uint256>& vHaveIn) : vHave(vHaveIn) {}
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
+    SERIALIZE_METHODS(CBlockLocator, obj)
+    {
         int nVersion = s.GetVersion();
         if (!(s.GetType() & SER_GETHASH))
             READWRITE(nVersion);
-        READWRITE(vHave);
+        READWRITE(obj.vHave);
     }
 
     void SetNull()
