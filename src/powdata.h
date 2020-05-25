@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2020 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -104,35 +104,24 @@ public:
   PowData (const PowData&) = default;
   PowData& operator= (const PowData&) = default;
 
-  ADD_SERIALIZE_METHODS;
-
-  template <typename Stream, typename Operation>
-    inline void
-    SerializationOp (Stream& s, Operation ser_action)
+  SERIALIZE_METHODS (PowData, obj)
   {
-    READWRITE (algo);
-    READWRITE (nBits);
+    READWRITE (obj.algo, obj.nBits);
 
-    if (isMergeMined ())
+    if (obj.isMergeMined ())
       {
-        if (ser_action.ForRead ())
-          {
-            fakeHeader.reset ();
-            auxpow = std::make_shared<CAuxPow> ();
-          }
-        assert (auxpow != nullptr);
-        READWRITE (*auxpow);
+        SER_READ (obj, obj.fakeHeader.reset ());
+        SER_READ (obj, obj.auxpow = std::make_shared<CAuxPow> ());
+        assert (obj.auxpow != nullptr);
+        READWRITE (*obj.auxpow);
 
       }
     else
       {
-        if (ser_action.ForRead ())
-          {
-            auxpow.reset ();
-            fakeHeader = std::make_shared<CPureBlockHeader> ();
-          }
-        assert (fakeHeader != nullptr);
-        READWRITE (*fakeHeader);
+        SER_READ (obj, obj.auxpow.reset ());
+        SER_READ (obj, obj.fakeHeader = std::make_shared<CPureBlockHeader> ());
+        assert (obj.fakeHeader != nullptr);
+        READWRITE (*obj.fakeHeader);
       }
   }
 
