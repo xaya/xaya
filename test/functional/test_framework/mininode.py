@@ -32,6 +32,8 @@ from test_framework.messages import (
     MSG_BLOCK,
     msg_blocktxn,
     msg_cfcheckpt,
+    msg_cfheaders,
+    msg_cfilter,
     msg_cmpctblock,
     msg_feefilter,
     msg_filteradd,
@@ -69,6 +71,8 @@ MESSAGEMAP = {
     b"block": msg_block,
     b"blocktxn": msg_blocktxn,
     b"cfcheckpt": msg_cfcheckpt,
+    b"cfheaders": msg_cfheaders,
+    b"cfilter": msg_cfilter,
     b"cmpctblock": msg_cmpctblock,
     b"feefilter": msg_feefilter,
     b"filteradd": msg_filteradd,
@@ -331,6 +335,8 @@ class P2PInterface(P2PConnection):
     def on_block(self, message): pass
     def on_blocktxn(self, message): pass
     def on_cfcheckpt(self, message): pass
+    def on_cfheaders(self, message): pass
+    def on_cfilter(self, message): pass
     def on_cmpctblock(self, message): pass
     def on_feefilter(self, message): pass
     def on_filteradd(self, message): pass
@@ -371,7 +377,7 @@ class P2PInterface(P2PConnection):
 
     # Connection helper methods
 
-    def wait_until(self, test_function, timeout):
+    def wait_until(self, test_function, timeout=60):
         wait_until(test_function, timeout=timeout, lock=mininode_lock, timeout_factor=self.timeout_factor)
 
     def wait_for_disconnect(self, timeout=60):
@@ -651,6 +657,8 @@ class P2PTxInvStore(P2PInterface):
             if i.type == MSG_TX:
                 # save txid
                 self.tx_invs_received[i.hash] += 1
+
+        super().on_inv(message)
 
     def get_invs(self):
         with mininode_lock:

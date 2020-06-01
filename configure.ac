@@ -382,7 +382,7 @@ if test "x$enable_werror" = "xyes"; then
   AX_CHECK_COMPILE_FLAG([-Werror=gnu],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=gnu"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Werror=vla],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=vla"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Werror=switch],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=switch"],,[[$CXXFLAG_WERROR]])
-  AX_CHECK_COMPILE_FLAG([-Werror=thread-safety-analysis],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=thread-safety-analysis"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Werror=thread-safety],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=thread-safety"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Werror=unused-variable],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=unused-variable"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Werror=date-time],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=date-time"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Werror=return-type],[ERROR_CXXFLAGS="$ERROR_CXXFLAGS -Werror=return-type"],,[[$CXXFLAG_WERROR]])
@@ -402,7 +402,7 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wvla],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wvla"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wswitch],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wswitch"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wformat-security],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wformat-security"],,[[$CXXFLAG_WERROR]])
-  AX_CHECK_COMPILE_FLAG([-Wthread-safety-analysis],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wthread-safety-analysis"],,[[$CXXFLAG_WERROR]])
+  AX_CHECK_COMPILE_FLAG([-Wthread-safety],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wthread-safety"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wrange-loop-analysis],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wrange-loop-analysis"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wredundant-decls],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wredundant-decls"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wunused-variable],[WARN_CXXFLAGS="$WARN_CXXFLAGS -Wunused-variable"],,[[$CXXFLAG_WERROR]])
@@ -422,6 +422,9 @@ if test "x$CXXFLAGS_overridden" = "xno"; then
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-implicit-fallthrough"],,[[$CXXFLAG_WERROR]])
   AX_CHECK_COMPILE_FLAG([-Wdeprecated-copy],[NOWARN_CXXFLAGS="$NOWARN_CXXFLAGS -Wno-deprecated-copy"],,[[$CXXFLAG_WERROR]])
 fi
+
+dnl Don't allow extended (non-ASCII) symbols in identifiers. This is easier for code review.
+AX_CHECK_COMPILE_FLAG([-fno-extended-identifiers],[[CXXFLAGS="$CXXFLAGS -fno-extended-identifiers"]],,[[$CXXFLAG_WERROR]])
 
 enable_sse42=no
 enable_sse41=no
