@@ -10,6 +10,8 @@
 #include <script/names.h>
 #include <script/script.h>
 
+#include <string>
+
 bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;
 unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
@@ -24,7 +26,7 @@ WitnessV0ScriptHash::WitnessV0ScriptHash(const CScript& in)
     CSHA256().Write(in.data(), in.size()).Finalize(begin());
 }
 
-const char* GetTxnOutputType(txnouttype t)
+std::string GetTxnOutputType(txnouttype t)
 {
     switch (t)
     {
@@ -38,7 +40,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
     }
-    return nullptr;
+    assert(false);
 }
 
 static bool MatchPayToPubkey(const CScript& script, valtype& pubkey)
