@@ -226,6 +226,30 @@ extern const char* GETBLOCKTXN;
  */
 extern const char* BLOCKTXN;
 /**
+ * getcfilters requests compact filters for a range of blocks.
+ * Only available with service bit NODE_COMPACT_FILTERS as described by
+ * BIP 157 & 158.
+ */
+extern const char* GETCFILTERS;
+/**
+ * cfilter is a response to a getcfilters request containing a single compact
+ * filter.
+ */
+extern const char* CFILTER;
+/**
+ * getcfheaders requests a compact filter header and the filter hashes for a
+ * range of blocks, which can then be used to reconstruct the filter headers
+ * for those blocks.
+ * Only available with service bit NODE_COMPACT_FILTERS as described by
+ * BIP 157 & 158.
+ */
+extern const char* GETCFHEADERS;
+/**
+ * cfheaders is a response to a getcfheaders request containing a filter header
+ * and a vector of filter hashes for each subsequent block in the requested range.
+ */
+extern const char* CFHEADERS;
+/**
  * getcfcheckpt requests evenly spaced compact filter headers, enabling
  * parallelized download and validation of the headers between them.
  * Only available with service bit NODE_COMPACT_FILTERS as described by
@@ -235,8 +259,6 @@ extern const char* GETCFCHECKPT;
 /**
  * cfcheckpt is a response to a getcfcheckpt request containing a vector of
  * evenly spaced filter headers for blocks on the requested chain.
- * Only available with service bit NODE_COMPACT_FILTERS as described by
- * BIP 157 & 158.
  */
 extern const char* CFCHECKPT;
 }; // namespace NetMsgType
@@ -246,7 +268,7 @@ const std::vector<std::string>& getAllNetMessageTypes();
 
 /** nServices flags */
 enum ServiceFlags : uint64_t {
-    // NOTE: When adding here, be sure to update qt/guiutil.cpp's formatServicesStr too
+    // NOTE: When adding here, be sure to update serviceFlagToStr too
     // Nothing
     NODE_NONE = 0,
     // NODE_NETWORK means that the node is capable of serving the complete block chain. It is currently
@@ -276,6 +298,13 @@ enum ServiceFlags : uint64_t {
     // do not actually support. Other service bits should be allocated via the
     // BIP process.
 };
+
+/**
+ * Convert service flags (a bitmask of NODE_*) to human readable strings.
+ * It supports unknown service flags which will be returned as "UNKNOWN[...]".
+ * @param[in] flags multiple NODE_* bitwise-OR-ed together
+ */
+std::vector<std::string> serviceFlagsToStr(uint64_t flags);
 
 /**
  * Gets the set of service flags which are "desirable" for a given peer.
