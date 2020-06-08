@@ -7,6 +7,7 @@
 #include <amount.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <node/context.h>
 #include <policy/fees.h>
 #include <primitives/transaction.h>
 #include <rpc/server.h>
@@ -492,7 +493,13 @@ public:
     {
         for (const CRPCCommand& command : GetWalletRPCCommands()) {
             m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
-                return command.actor({request, m_context}, result, last_handler);
+                /* Unlike upstream Bitcoin, we need the NodeContext for
+                   getauxblock.  Thus we construct a new context that
+                   contains both and use that.  */
+                WalletContext extendedCtx = m_context;
+                if (request.context.Has<NodeContext>())
+                    extendedCtx.nodeContext = &request.context.Get<NodeContext>();
+                return command.actor({request, extendedCtx}, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
