@@ -38,6 +38,7 @@
 #include <util/system.h>
 #include <validation.h>
 #include <validationinterface.h>
+#include <wallet/context.h>
 #include <warnings.h>
 
 #include <stdint.h>
@@ -60,6 +61,12 @@ static CUpdatedBlock latestblock GUARDED_BY(cs_blockchange);
 
 NodeContext& EnsureNodeContext(const util::Ref& context)
 {
+    if (context.Has<WalletContext>()) {
+        const auto& wctx = context.Get<WalletContext>();
+        if (wctx.nodeContext != nullptr)
+            return *wctx.nodeContext;
+    }
+
     if (!context.Has<NodeContext>()) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Node context not found");
     }
@@ -1199,7 +1206,8 @@ static UniValue verifychain(const JSONRPCRequest& request)
             RPCHelpMan{"verifychain",
                 "\nVerifies blockchain database.\n",
                 {
-                    {"checklevel", RPCArg::Type::NUM, /* default */ strprintf("%d, range=0-4", DEFAULT_CHECKLEVEL), "How thorough the block verification is."},
+                    {"checklevel", RPCArg::Type::NUM, /* default */ strprintf("%d, range=0-4", DEFAULT_CHECKLEVEL),
+                        strprintf("How thorough the block verification is:\n - %s", Join(CHECKLEVEL_DOC, "\n- "))},
                     {"nblocks", RPCArg::Type::NUM, /* default */ strprintf("%d, 0=all", DEFAULT_CHECKBLOCKS), "The number of blocks to check."},
                 },
                 RPCResult{

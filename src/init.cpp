@@ -75,11 +75,9 @@
 #include <sys/stat.h>
 #endif
 
-#include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/signals2/signal.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp>
 
 #if ENABLE_ZMQ
 #include <zmq/zmqabstractnotifier.h>
@@ -463,7 +461,7 @@ void SetupServerArgs(NodeContext& node)
     gArgs.AddArg("-maxreceivebuffer=<n>", strprintf("Maximum per-connection receive buffer, <n>*1000 bytes (default: %u)", DEFAULT_MAXRECEIVEBUFFER), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-maxsendbuffer=<n>", strprintf("Maximum per-connection send buffer, <n>*1000 bytes (default: %u)", DEFAULT_MAXSENDBUFFER), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-maxtimeadjustment", strprintf("Maximum allowed median peer time offset adjustment. Local perspective of time may be influenced by peers forward or backward by this amount. (default: %u seconds)", DEFAULT_MAX_TIME_ADJUSTMENT), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
-    gArgs.AddArg("-maxuploadtarget=<n>", strprintf("Tries to keep outbound traffic under the given target (in MiB per 24h), 0 = no limit (default: %d)", DEFAULT_MAX_UPLOAD_TARGET), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
+    gArgs.AddArg("-maxuploadtarget=<n>", strprintf("Tries to keep outbound traffic under the given target (in MiB per 24h). Limit does not apply to peers with 'noban' permission. 0 = no limit (default: %d)", DEFAULT_MAX_UPLOAD_TARGET), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-onion=<ip:port>", "Use separate SOCKS5 proxy to reach peers via Tor hidden services, set -noonion to disable (default: -proxy)", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-onlynet=<net>", "Make outgoing connections only through network <net> (ipv4, ipv6 or onion). Incoming connections are not affected by this option. This option can be specified multiple times to allow multiple networks.", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     gArgs.AddArg("-peerbloomfilters", strprintf("Support filtering of blocks and transaction with bloom filters (default: %u)", DEFAULT_PEERBLOOMFILTERS), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -527,14 +525,7 @@ void SetupServerArgs(NodeContext& node)
 #endif
 
     gArgs.AddArg("-checkblocks=<n>", strprintf("How many blocks to check at startup (default: %u, 0 = all)", DEFAULT_CHECKBLOCKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
-    gArgs.AddArg("-checklevel=<n>", strprintf("How thorough the block verification of -checkblocks is: "
-        "level 0 reads the blocks from disk, "
-        "level 1 verifies block validity, "
-        "level 2 verifies undo data, "
-        "level 3 checks disconnection of tip blocks, "
-        "and level 4 tries to reconnect the blocks, "
-        "each level includes the checks of the previous levels "
-        "(0-4, default: %u)", DEFAULT_CHECKLEVEL), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
+    gArgs.AddArg("-checklevel=<n>", strprintf("How thorough the block verification of -checkblocks is: %s (0-4, default: %u)", Join(CHECKLEVEL_DOC, ", "), DEFAULT_CHECKLEVEL), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-checkblockindex", strprintf("Do a consistency check for the block tree, chainstate, and other validation data structures occasionally. (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-checkmempool=<n>", strprintf("Run checks every <n> transactions (default: %u, regtest: %u)", defaultChainParams->DefaultConsistencyChecks(), regtestChainParams->DefaultConsistencyChecks()), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-checkpoints", strprintf("Enable rejection of any forks from the known historical chain until block 295000 (default: %u)", DEFAULT_CHECKPOINTS_ENABLED), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
@@ -995,17 +986,27 @@ bool AppInitParameterInteraction()
 
     // also see: InitParameterInteraction()
 
-    // Warn if network-specific options (-addnode, -connect, etc) are
+    // Error if network-specific options (-addnode, -connect, etc) are
     // specified in default section of config file, but not overridden
     // on the command line or in this network's section of the config file.
     std::string network = gArgs.GetChainName();
+    bilingual_str errors;
     for (const auto& arg : gArgs.GetUnsuitableSectionOnlyArgs()) {
-        return InitError(strprintf(_("Config setting for %s only applied on %s network when in [%s] section."), arg, network, network));
+        errors += strprintf(_("Config setting for %s only applied on %s network when in [%s] section.") + Untranslated("\n"), arg, network, network);
+    }
+
+    if (!errors.empty()) {
+        return InitError(errors);
     }
 
     // Warn if unrecognized section name are present in the config file.
+    bilingual_str warnings;
     for (const auto& section : gArgs.GetUnrecognizedSections()) {
-        InitWarning(strprintf(Untranslated("%s:%i ") + _("Section [%s] is not recognized."), section.m_file, section.m_line, section.m_name));
+        warnings += strprintf(Untranslated("%s:%i ") + _("Section [%s] is not recognized.") + Untranslated("\n"), section.m_file, section.m_line, section.m_name);
+    }
+
+    if (!warnings.empty()) {
+        InitWarning(warnings);
     }
 
     if (!fs::is_directory(GetBlocksDir())) {

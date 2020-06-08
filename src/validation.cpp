@@ -52,7 +52,6 @@
 #include <string>
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/thread.hpp>
 
 #if defined(NDEBUG)
 # error "Bitcoin cannot be compiled without assertions."
@@ -73,12 +72,20 @@ static const unsigned int MAX_DISCONNECTED_TX_POOL_SIZE = 20000;
 static const unsigned int BLOCKFILE_CHUNK_SIZE = 0x1000000; // 16 MiB
 /** The pre-allocation chunk size for rev?????.dat files (since 0.8) */
 static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
-/** Time to wait (in seconds) between writing blocks/block index to disk. */
-static const unsigned int DATABASE_WRITE_INTERVAL = 60 * 60;
-/** Time to wait (in seconds) between flushing chainstate to disk. */
-static const unsigned int DATABASE_FLUSH_INTERVAL = 24 * 60 * 60;
-/** Maximum age of our tip in seconds for us to be considered current for fee estimation */
-static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
+/** Time to wait between writing blocks/block index to disk. */
+static constexpr std::chrono::hours DATABASE_WRITE_INTERVAL{1};
+/** Time to wait between flushing chainstate to disk. */
+static constexpr std::chrono::hours DATABASE_FLUSH_INTERVAL{24};
+/** Maximum age of our tip for us to be considered current for fee estimation */
+static constexpr std::chrono::hours MAX_FEE_ESTIMATION_TIP_AGE{3};
+const std::vector<std::string> CHECKLEVEL_DOC {
+    "level 0 reads the blocks from disk",
+    "level 1 verifies block validity",
+    "level 2 verifies undo data",
+    "level 3 checks disconnection of tip blocks",
+    "level 4 tries to reconnect the blocks",
+    "each level includes the checks of the previous levels",
+};
 
 bool CBlockIndexWorkComparator::operator()(const CBlockIndex *pa, const CBlockIndex *pb) const {
     // First sort by most total work, ...
@@ -349,7 +356,7 @@ static bool IsCurrentForFeeEstimation() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     AssertLockHeld(cs_main);
     if (::ChainstateActive().IsInitialBlockDownload())
         return false;
-    if (::ChainActive().Tip()->GetBlockTime() < (GetTime() - MAX_FEE_ESTIMATION_TIP_AGE))
+    if (::ChainActive().Tip()->GetBlockTime() < count_seconds(GetTime<std::chrono::seconds>() - MAX_FEE_ESTIMATION_TIP_AGE))
         return false;
     if (::ChainActive().Height() < pindexBestHeader->nHeight - 1)
         return false;
@@ -1537,14 +1544,21 @@ int GetSpendHeight(const CCoinsViewCache& inputs)
 }
 
 
-static CuckooCache::cache<uint256, SignatureCacheHasher> scriptExecutionCache;
-static uint256 scriptExecutionCacheNonce(GetRandHash());
+static CuckooCache::cache<uint256, SignatureCacheHasher> g_scriptExecutionCache;
+static CSHA256 g_scriptExecutionCacheHasher;
 
 void InitScriptExecutionCache() {
+    // Setup the salted hasher
+    uint256 nonce = GetRandHash();
+    // We want the nonce to be 64 bytes long to force the hasher to process
+    // this chunk, which makes later hash computations more efficient. We
+    // just write our 32-byte entropy twice to fill the 64 bytes.
+    g_scriptExecutionCacheHasher.Write(nonce.begin(), 32);
+    g_scriptExecutionCacheHasher.Write(nonce.begin(), 32);
     // nMaxCacheSize is unsigned. If -maxsigcachesize is set to zero,
     // setup_bytes creates the minimum possible cache (2 elements).
     size_t nMaxCacheSize = std::min(std::max((int64_t)0, gArgs.GetArg("-maxsigcachesize", DEFAULT_MAX_SIG_CACHE_SIZE) / 2), MAX_MAX_SIG_CACHE_SIZE) * ((size_t) 1 << 20);
-    size_t nElems = scriptExecutionCache.setup_bytes(nMaxCacheSize);
+    size_t nElems = g_scriptExecutionCache.setup_bytes(nMaxCacheSize);
     LogPrintf("Using %zu MiB out of %zu/2 requested for script execution cache, able to store %zu elements\n",
             (nElems*sizeof(uint256)) >>20, (nMaxCacheSize*2)>>20, nElems);
 }
@@ -1582,12 +1596,10 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
     // properly commits to the scriptPubKey in the inputs view of that
     // transaction).
     uint256 hashCacheEntry;
-    // We only use the first 19 bytes of nonce to avoid a second SHA
-    // round - giving us 19 + 32 + 4 = 55 bytes (+ 8 + 1 = 64)
-    static_assert(55 - sizeof(flags) - 32 >= 128/8, "Want at least 128 bits of nonce for script execution cache");
-    CSHA256().Write(scriptExecutionCacheNonce.begin(), 55 - sizeof(flags) - 32).Write(tx.GetWitnessHash().begin(), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
+    CSHA256 hasher = g_scriptExecutionCacheHasher;
+    hasher.Write(tx.GetWitnessHash().begin(), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
     AssertLockHeld(cs_main); //TODO: Remove this requirement by making CuckooCache not require external locks
-    if (scriptExecutionCache.contains(hashCacheEntry, !cacheFullScriptStore)) {
+    if (g_scriptExecutionCache.contains(hashCacheEntry, !cacheFullScriptStore)) {
         return true;
     }
 
@@ -1642,7 +1654,7 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
     if (cacheFullScriptStore && !pvChecks) {
         // We executed all of the provided scripts, and were told to
         // cache the result. Do so now.
-        scriptExecutionCache.insert(hashCacheEntry);
+        g_scriptExecutionCache.insert(hashCacheEntry);
     }
 
     return true;
@@ -1814,19 +1826,24 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
-void static FlushBlockFile(bool fFinalize = false)
+static void FlushUndoFile(int block_file, bool finalize = false)
+{
+    FlatFilePos undo_pos_old(block_file, vinfoBlockFile[block_file].nUndoSize);
+    if (!UndoFileSeq().Flush(undo_pos_old, finalize)) {
+        AbortNode("Flushing undo file to disk failed. This is likely the result of an I/O error.");
+    }
+}
+
+static void FlushBlockFile(bool fFinalize = false, bool finalize_undo = false)
 {
     LOCK(cs_LastBlockFile);
-
     FlatFilePos block_pos_old(nLastBlockFile, vinfoBlockFile[nLastBlockFile].nSize);
-    FlatFilePos undo_pos_old(nLastBlockFile, vinfoBlockFile[nLastBlockFile].nUndoSize);
-
-    bool status = true;
-    status &= BlockFileSeq().Flush(block_pos_old, fFinalize);
-    status &= UndoFileSeq().Flush(undo_pos_old, fFinalize);
-    if (!status) {
+    if (!BlockFileSeq().Flush(block_pos_old, fFinalize)) {
         AbortNode("Flushing block file to disk failed. This is likely the result of an I/O error.");
     }
+    // we do not always flush the undo file, as the chain tip may be lagging behind the incoming blocks,
+    // e.g. during IBD or a sync after a node going offline
+    if (!fFinalize || finalize_undo) FlushUndoFile(nLastBlockFile, finalize_undo);
 }
 
 static bool FindUndoPos(BlockValidationState &state, int nFile, FlatFilePos &pos, unsigned int nAddSize);
@@ -1840,6 +1857,14 @@ static bool WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationSt
             return error("ConnectBlock(): FindUndoPos failed");
         if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
             return AbortNode(state, "Failed to write undo data");
+        // rev files are written in block height order, whereas blk files are written as blocks come in (often out of order)
+        // we want to flush the rev (undo) file once we've written the last block, which is indicated by the last height
+        // in the block file info as below; note that this does not catch the case where the undo writes are keeping up
+        // with the block writes (usually when a synced up node is getting newly mined blocks) -- this case is caught in
+        // the FindBlockPos function
+        if (_pos.nFile < nLastBlockFile && static_cast<uint32_t>(pindex->nHeight) == vinfoBlockFile[_pos.nFile].nHeightLast) {
+            FlushUndoFile(_pos.nFile, true);
+        }
 
         // update nUndoPos in block index
         pindex->nUndoPos = _pos.nPos;
@@ -2207,8 +2232,8 @@ bool CChainState::FlushStateToDisk(
 {
     LOCK(cs_main);
     assert(this->CanFlushToDisk());
-    static int64_t nLastWrite = 0;
-    static int64_t nLastFlush = 0;
+    static std::chrono::microseconds nLastWrite{0};
+    static std::chrono::microseconds nLastFlush{0};
     std::set<int> setFilesToPrune;
     bool full_flush_completed = false;
 
@@ -2240,12 +2265,12 @@ bool CChainState::FlushStateToDisk(
                 }
             }
         }
-        int64_t nNow = GetTimeMicros();
+        const auto nNow = GetTime<std::chrono::microseconds>();
         // Avoid writing/flushing immediately after startup.
-        if (nLastWrite == 0) {
+        if (nLastWrite.count() == 0) {
             nLastWrite = nNow;
         }
-        if (nLastFlush == 0) {
+        if (nLastFlush.count() == 0) {
             nLastFlush = nNow;
         }
         // The cache is large and we're within 10% and 10 MiB of the limit, but we have time now (not in the middle of a block processing).
@@ -2253,9 +2278,9 @@ bool CChainState::FlushStateToDisk(
         // The cache is over the limit, we have to write now.
         bool fCacheCritical = mode == FlushStateMode::IF_NEEDED && cache_state >= CoinsCacheSizeState::CRITICAL;
         // It's been a while since we wrote the block index to disk. Do this frequently, so we don't need to redownload after a crash.
-        bool fPeriodicWrite = mode == FlushStateMode::PERIODIC && nNow > nLastWrite + (int64_t)DATABASE_WRITE_INTERVAL * 1000000;
+        bool fPeriodicWrite = mode == FlushStateMode::PERIODIC && nNow > nLastWrite + DATABASE_WRITE_INTERVAL;
         // It's been very long since we flushed the cache. Do this infrequently, to optimize cache usage.
-        bool fPeriodicFlush = mode == FlushStateMode::PERIODIC && nNow > nLastFlush + (int64_t)DATABASE_FLUSH_INTERVAL * 1000000;
+        bool fPeriodicFlush = mode == FlushStateMode::PERIODIC && nNow > nLastFlush + DATABASE_FLUSH_INTERVAL;
         // Combine all conditions that result in a full cache flush.
         fDoFullFlush = (mode == FlushStateMode::ALWAYS) || fCacheLarge || fCacheCritical || fPeriodicFlush || fFlushForPrune;
         // Write blocks and block index to disk.
@@ -2803,8 +2828,6 @@ bool CChainState::ActivateBestChain(BlockValidationState &state, const CChainPar
     CBlockIndex *pindexNewTip = nullptr;
     int nStopAtHeight = gArgs.GetArg("-stopatheight", DEFAULT_STOPATHEIGHT);
     do {
-        boost::this_thread::interruption_point();
-
         // Block until the validation queue drains. This should largely
         // never happen in normal operation, however may happen during
         // reindex, causing memory blowup if we run too far ahead.
@@ -2873,8 +2896,7 @@ bool CChainState::ActivateBestChain(BlockValidationState &state, const CChainPar
         // never shutdown before connecting the genesis block during LoadChainTip(). Previously this
         // caused an assert() failure during shutdown in such cases as the UTXO DB flushing checks
         // that the best block hash is non-null.
-        if (ShutdownRequested())
-            break;
+        if (ShutdownRequested()) break;
     } while (pindexNewTip != pindexMostWork);
     CheckBlockIndex(chainparams.GetConsensus());
 
@@ -3192,8 +3214,13 @@ static bool FindBlockPos(FlatFilePos &pos, unsigned int nAddSize, unsigned int n
         vinfoBlockFile.resize(nFile + 1);
     }
 
+    bool finalize_undo = false;
     if (!fKnown) {
         while (vinfoBlockFile[nFile].nSize + nAddSize >= MAX_BLOCKFILE_SIZE) {
+            // when the undo file is keeping up with the block file, we want to flush it explicitly
+            // when it is lagging behind (more blocks arrive than are being connected), we let the
+            // undo block write case handle it
+            finalize_undo = (vinfoBlockFile[nFile].nHeightLast == (unsigned int)ChainActive().Tip()->nHeight);
             nFile++;
             if (vinfoBlockFile.size() <= nFile) {
                 vinfoBlockFile.resize(nFile + 1);
@@ -3207,7 +3234,7 @@ static bool FindBlockPos(FlatFilePos &pos, unsigned int nAddSize, unsigned int n
         if (!fKnown) {
             LogPrintf("Leaving block file %i: %s\n", nLastBlockFile, vinfoBlockFile[nLastBlockFile].ToString());
         }
-        FlushBlockFile(!fKnown);
+        FlushBlockFile(!fKnown, finalize_undo);
         nLastBlockFile = nFile;
     }
 
@@ -4227,7 +4254,6 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
     int reportDone = 0;
     LogPrintf("[0%%]..."); /* Continued */
     for (pindex = ::ChainActive().Tip(); pindex && pindex->pprev; pindex = pindex->pprev) {
-        boost::this_thread::interruption_point();
         const int percentageDone = std::max(1, std::min(99, (int)(((double)(::ChainActive().Height() - pindex->nHeight)) / (double)nCheckDepth * (nCheckLevel >= 4 ? 50 : 100))));
         if (reportDone < percentageDone/10) {
             // report every 10% step
@@ -4273,8 +4299,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
                 nGoodTransactions += block.vtx.size();
             }
         }
-        if (ShutdownRequested())
-            return true;
+        if (ShutdownRequested()) return true;
     }
     if (pindexFailure)
         return error("VerifyDB(): *** coin database inconsistencies found (last %i blocks, %i good transactions before that)\n", ::ChainActive().Height() - pindexFailure->nHeight + 1, nGoodTransactions);
@@ -4285,7 +4310,6 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
     // check level 4: try reconnecting blocks
     if (nCheckLevel >= 4) {
         while (pindex != ::ChainActive().Tip()) {
-            boost::this_thread::interruption_point();
             const int percentageDone = std::max(1, std::min(99, 100 - (int)(((double)(::ChainActive().Height() - pindex->nHeight)) / (double)nCheckDepth * 50)));
             if (reportDone < percentageDone/10) {
                 // report every 10% step
@@ -4299,6 +4323,7 @@ bool CVerifyDB::VerifyDB(const CChainParams& chainparams, CCoinsView *coinsview,
                 return error("VerifyDB(): *** ReadBlockFromDisk failed at %d, hash=%s", pindex->nHeight, pindex->GetBlockHash().ToString());
             if (!::ChainstateActive().ConnectBlock(block, state, pindex, coins, chainparams))
                 return error("VerifyDB(): *** found unconnectable block at %d, hash=%s (%s)", pindex->nHeight, pindex->GetBlockHash().ToString(), state.ToString());
+            if (ShutdownRequested()) return true;
         }
     }
 
