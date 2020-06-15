@@ -239,12 +239,6 @@ SendNameOutput (const JSONRPCRequest& request,
 UniValue
 name_list (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -269,6 +263,11 @@ name_list (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_list", "")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -353,12 +352,6 @@ name_list (const JSONRPCRequest& request)
 UniValue
 name_register (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -379,6 +372,11 @@ name_register (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_register", "\"myname\", \"new-value\"")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
@@ -441,12 +439,6 @@ name_register (const JSONRPCRequest& request)
 UniValue
 name_update (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -467,6 +459,11 @@ name_update (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
@@ -547,12 +544,6 @@ name_update (const JSONRPCRequest& request)
 UniValue
 sendtoname (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-  
   RPCHelpMan{"sendtoname",
       "\nSend an amount to the owner of a name.\n"
       "\nIt is an error if the name is expired."
@@ -582,6 +573,11 @@ sendtoname (const JSONRPCRequest& request)
       + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
           },
       }.Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,

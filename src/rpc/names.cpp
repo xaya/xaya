@@ -245,7 +245,20 @@ public:
   explicit MaybeWalletForRequest (const JSONRPCRequest& request)
   {
 #ifdef ENABLE_WALLET
-    wallet = GetWalletForJSONRPCRequest (request);
+    try
+      {
+        wallet = GetWalletForJSONRPCRequest (request);
+      }
+    catch (const UniValue& exc)
+      {
+        const auto& code = exc["code"];
+        if (!code.isNum () || code.get_int () != RPC_WALLET_NOT_SPECIFIED)
+          throw;
+
+        /* If the wallet is not set, that's fine, and we just indicate it to
+           other code (by having a null wallet).  */
+        wallet = nullptr;
+      }
 #endif
   }
 
