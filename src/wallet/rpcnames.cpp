@@ -219,12 +219,6 @@ SendNameOutput (const JSONRPCRequest& request,
 UniValue
 name_list (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -249,6 +243,11 @@ name_list (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_list", "")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
@@ -335,12 +334,6 @@ name_list (const JSONRPCRequest& request)
 UniValue
 name_new (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -366,6 +359,11 @@ name_new (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_new", "\"myname\"")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
@@ -476,12 +474,6 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 UniValue
 name_firstupdate (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   /* There is an undocumented sixth argument that can be used to disable
      the check for already existing names here (it will still be checked
      by the mempool and tx validation logic, of course).  This is used
@@ -514,6 +506,11 @@ name_firstupdate (const JSONRPCRequest& request)
               + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
             }
         ).ToString ());
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
@@ -599,12 +596,6 @@ name_firstupdate (const JSONRPCRequest& request)
 UniValue
 name_update (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -625,6 +616,11 @@ name_update (const JSONRPCRequest& request)
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
       }
   ).Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
@@ -704,12 +700,6 @@ name_update (const JSONRPCRequest& request)
 UniValue
 sendtoname (const JSONRPCRequest& request)
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  CWallet* const pwallet = wallet.get ();
-
-  if (!EnsureWalletIsAvailable (pwallet, request.fHelp))
-    return NullUniValue;
-  
   RPCHelpMan{"sendtoname",
       "\nSend an amount to the owner of a name.\n"
       "\nIt is an error if the name is expired."
@@ -739,6 +729,11 @@ sendtoname (const JSONRPCRequest& request)
       + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
           },
       }.Check (request);
+
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet)
+    return NullUniValue;
+  CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,

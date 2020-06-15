@@ -79,12 +79,6 @@ bool RemoveWallet(const std::shared_ptr<CWallet>& wallet)
     return true;
 }
 
-bool HasWallets()
-{
-    LOCK(cs_wallets);
-    return !vpwallets.empty();
-}
-
 std::vector<std::shared_ptr<CWallet>> GetWallets()
 {
     LOCK(cs_wallets);
@@ -3077,7 +3071,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend,
     }
 
     if (nFeeRet > m_default_max_tx_fee) {
-        error = Untranslated(TransactionErrorString(TransactionError::MAX_FEE_EXCEEDED));
+        error = TransactionErrorString(TransactionError::MAX_FEE_EXCEEDED);
         return false;
     }
 
