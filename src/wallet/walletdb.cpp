@@ -439,10 +439,11 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             // Extract some CHDChain info from this metadata if it has any
             if (keyMeta.nVersion >= CKeyMetadata::VERSION_WITH_HDDATA && !keyMeta.hd_seed_id.IsNull() && keyMeta.hdKeypath.size() > 0) {
                 // Get the path from the key origin or from the path string
-                // Not applicable when path is "s" as that indicates a seed
+                // Not applicable when path is "s" or "m" as those indicate a seed
+                // See https://github.com/bitcoin/bitcoin/pull/12924
                 bool internal = false;
                 uint32_t index = 0;
-                if (keyMeta.hdKeypath != "s") {
+                if (keyMeta.hdKeypath != "s" && keyMeta.hdKeypath != "m") {
                     std::vector<uint32_t> path;
                     if (keyMeta.has_key_origin) {
                         // We have a key origin, so pull it from its path vector
@@ -1017,4 +1018,28 @@ bool WalletBatch::TxnCommit()
 bool WalletBatch::TxnAbort()
 {
     return m_batch.TxnAbort();
+}
+
+bool IsWalletLoaded(const fs::path& wallet_path)
+{
+    return IsBDBWalletLoaded(wallet_path);
+}
+
+/** Return object for accessing database at specified path. */
+std::unique_ptr<BerkeleyDatabase> CreateWalletDatabase(const fs::path& path)
+{
+    std::string filename;
+    return MakeUnique<BerkeleyDatabase>(GetWalletEnv(path, filename), std::move(filename));
+}
+
+/** Return object for accessing dummy database with no read/write capabilities. */
+std::unique_ptr<BerkeleyDatabase> CreateDummyWalletDatabase()
+{
+    return MakeUnique<BerkeleyDatabase>();
+}
+
+/** Return object for accessing temporary in-memory database. */
+std::unique_ptr<BerkeleyDatabase> CreateMockWalletDatabase()
+{
+    return MakeUnique<BerkeleyDatabase>(std::make_shared<BerkeleyEnvironment>(), "");
 }
