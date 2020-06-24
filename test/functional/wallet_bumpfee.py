@@ -31,8 +31,8 @@ WALLET_PASSPHRASE_TIMEOUT = 3600
 
 # Fee rates (in BTC per 1000 vbytes)
 INSUFFICIENT = 0.00001000
-ECONOMICAL   = 0.00050000
-NORMAL       = 0.00100000
+ECONOMICAL   = 0.00150000
+NORMAL       = 0.00250000
 HIGH         = 0.00500000
 TOO_HIGH     = 1.00000000
 
@@ -276,7 +276,7 @@ def test_settxfee(self, rbf_node, dest_address):
     assert_raises_rpc_error(-8, "txfee cannot be less than wallet min fee", rbf_node.settxfee, Decimal('0.000015'))
     # check that bumpfee reacts correctly to the use of settxfee (paytxfee)
     rbfid = spend_one_input(rbf_node, dest_address)
-    requested_feerate = Decimal("0.00025000")
+    requested_feerate = Decimal("0.00250000")
     rbf_node.settxfee(requested_feerate)
     bumped_tx = rbf_node.bumpfee(rbfid)
     actual_feerate = bumped_tx["fee"] * 1000 / rbf_node.getrawtransaction(bumped_tx["txid"], True)["vsize"]

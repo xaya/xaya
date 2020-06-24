@@ -73,7 +73,7 @@ static const CAmount DEFAULT_DISCARD_FEE = 10000;
 //! -mintxfee default
 static const CAmount DEFAULT_TRANSACTION_MINFEE = 1000;
 //! minimum recommended increment for BIP 125 replacement txs
-static const CAmount WALLET_INCREMENTAL_RELAY_FEE = 5000;
+static const CAmount WALLET_INCREMENTAL_RELAY_FEE = COIN / 1000;
 //! Default for -spendzeroconfchange
 static const bool DEFAULT_SPEND_ZEROCONF_CHANGE = true;
 //! Default for -walletrejectlongchains
@@ -962,7 +962,8 @@ public:
                   bool& complete,
                   int sighash_type = 1 /* SIGHASH_ALL */,
                   bool sign = true,
-                  bool bip32derivs = true) const;
+                  bool bip32derivs = true,
+                  size_t* n_signed = nullptr) const;
 
     /**
      * Find the amount in the given tx input.  This must only be called with
