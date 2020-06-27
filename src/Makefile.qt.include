@@ -31,6 +31,7 @@ QT_FORMS_UI = \
   qt/forms/debugwindow.ui \
   qt/forms/sendcoinsdialog.ui \
   qt/forms/sendcoinsentry.ui \
+  qt/forms/managenamespage.ui \
   qt/forms/signverifymessagedialog.ui \
   qt/forms/transactiondescdialog.ui
 
@@ -55,6 +56,8 @@ QT_MOC_CPP = \
   qt/moc_macdockiconhandler.cpp \
   qt/moc_macnotificationhandler.cpp \
   qt/moc_modaloverlay.cpp \
+  qt/moc_managenamespage.cpp \
+  qt/moc_nametablemodel.cpp \
   qt/moc_notificator.cpp \
   qt/moc_openuridialog.cpp \
   qt/moc_optionsdialog.cpp \
@@ -125,8 +128,10 @@ BITCOIN_QT_H = \
   qt/macnotificationhandler.h \
   qt/macos_appnap.h \
   qt/modaloverlay.h \
+  qt/managenamespage.h \
   qt/networkstyle.h \
   qt/notificator.h \
+  qt/nametablemodel.h \
   qt/openuridialog.h \
   qt/optionsdialog.h \
   qt/optionsmodel.h \
@@ -245,6 +250,8 @@ BITCOIN_QT_WALLET_CPP = \
   qt/coincontroltreewidget.cpp \
   qt/createwalletdialog.cpp \
   qt/editaddressdialog.cpp \
+  qt/managenamespage.cpp \
+  qt/nametablemodel.cpp \
   qt/openuridialog.cpp \
   qt/overviewpage.cpp \
   qt/paymentserver.cpp \

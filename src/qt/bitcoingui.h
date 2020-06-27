@@ -138,6 +138,8 @@ private:
     QAction* sendCoinsMenuAction = nullptr;
     QAction* usedSendingAddressesAction = nullptr;
     QAction* usedReceivingAddressesAction = nullptr;
+    QAction* manageNamesAction = nullptr;
+    QAction* manageNamesMenuAction = nullptr;
     QAction* signMessageAction = nullptr;
     QAction* verifyMessageAction = nullptr;
     QAction* m_load_psbt_action = nullptr;
@@ -276,6 +278,8 @@ public Q_SLOTS:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
+    /** Switch to manage names page */
+    void gotoManageNamesPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

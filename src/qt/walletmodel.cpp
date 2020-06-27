@@ -12,6 +12,7 @@
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
+#include <qt/nametablemodel.h>
 #include <qt/optionsmodel.h>
 #include <qt/paymentserver.h>
 #include <qt/recentrequeststablemodel.h>
@@ -35,7 +36,6 @@
 #include <QSet>
 #include <QTimer>
 
-
 WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel& client_model, const PlatformStyle *platformStyle, QObject *parent) :
     QObject(parent),
     m_wallet(std::move(wallet)),
@@ -44,6 +44,7 @@ WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel
     optionsModel(client_model.getOptionsModel()),
     addressTableModel(nullptr),
     transactionTableModel(nullptr),
+    nameTableModel(nullptr),
     recentRequestsTableModel(nullptr),
     cachedEncryptionStatus(Unencrypted),
     timer(new QTimer(this))
@@ -51,6 +52,7 @@ WalletModel::WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel
     fHaveWatchOnly = m_wallet->haveWatchOnly();
     addressTableModel = new AddressTableModel(this);
     transactionTableModel = new TransactionTableModel(platformStyle, this);
+    nameTableModel = new NameTableModel(platformStyle, this);
     recentRequestsTableModel = new RecentRequestsTableModel(this);
 
     subscribeToCoreSignals();
@@ -285,6 +287,11 @@ OptionsModel *WalletModel::getOptionsModel()
 AddressTableModel *WalletModel::getAddressTableModel()
 {
     return addressTableModel;
+}
+
+NameTableModel *WalletModel::getNameTableModel()
+{
+    return nameTableModel;
 }
 
 TransactionTableModel *WalletModel::getTransactionTableModel()
