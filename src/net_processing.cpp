@@ -205,7 +205,7 @@ namespace {
      * We use this to avoid requesting transactions that have already been
      * confirnmed.
      */
-    RecursiveMutex g_cs_recent_confirmed_transactions;
+    Mutex g_cs_recent_confirmed_transactions;
     std::unique_ptr<CRollingBloomFilter> g_recent_confirmed_transactions GUARDED_BY(g_cs_recent_confirmed_transactions);
 
     /** Blocks that are in flight, and that are in the queue to be downloaded. */
@@ -2488,7 +2488,7 @@ void ProcessMessage(
         if (vAddr.size() > 1000)
         {
             LOCK(cs_main);
-            Misbehaving(pfrom.GetId(), 20, strprintf("message addr size() = %u", vAddr.size()));
+            Misbehaving(pfrom.GetId(), 20, strprintf("addr message size = %u", vAddr.size()));
             return;
         }
 
@@ -2564,7 +2564,7 @@ void ProcessMessage(
         if (vInv.size() > MAX_INV_SZ)
         {
             LOCK(cs_main);
-            Misbehaving(pfrom.GetId(), 20, strprintf("message inv size() = %u", vInv.size()));
+            Misbehaving(pfrom.GetId(), 20, strprintf("inv message size = %u", vInv.size()));
             return;
         }
 
@@ -2630,7 +2630,7 @@ void ProcessMessage(
         if (vInv.size() > MAX_INV_SZ)
         {
             LOCK(cs_main);
-            Misbehaving(pfrom.GetId(), 20, strprintf("message getdata size() = %u", vInv.size()));
+            Misbehaving(pfrom.GetId(), 20, strprintf("getdata message size = %u", vInv.size()));
             return;
         }
 
