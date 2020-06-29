@@ -74,7 +74,7 @@ bool
 IsBurn (const CScript& script, valtype& data)
 {
   std::vector<valtype> solutions;
-  if (Solver (script, solutions) != TX_NULL_DATA)
+  if (Solver (script, solutions) != TxoutType::NULL_DATA)
     return false;
 
   auto pc = script.begin () + 1;

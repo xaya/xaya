@@ -300,7 +300,7 @@ static UniValue gettxoutproof(const JSONRPCRequest& request)
     CDataStream ssMB(SER_NETWORK, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS);
     CMerkleBlock mb(block, setTxids);
     ssMB << mb;
-    std::string strHex = HexStr(ssMB.begin(), ssMB.end());
+    std::string strHex = HexStr(ssMB);
     return strHex;
 }
 
@@ -506,12 +506,12 @@ static UniValue decoderawtransaction(const JSONRPCRequest& request)
 
 static std::string GetAllOutputTypes()
 {
-    std::string ret;
-    for (int i = TX_NONSTANDARD; i <= TX_WITNESS_UNKNOWN; ++i) {
-        if (i != TX_NONSTANDARD) ret += ", ";
-        ret += GetTxnOutputType(static_cast<txnouttype>(i));
+    std::vector<std::string> ret;
+    using U = std::underlying_type<TxoutType>::type;
+    for (U i = (U)TxoutType::NONSTANDARD; i <= (U)TxoutType::WITNESS_UNKNOWN; ++i) {
+        ret.emplace_back(GetTxnOutputType(static_cast<TxoutType>(i)));
     }
-    return ret;
+    return Join(ret, ", ");
 }
 
 static UniValue decodescript(const JSONRPCRequest& request)
@@ -575,10 +575,10 @@ static UniValue decodescript(const JSONRPCRequest& request)
         // is a witness program, don't return addresses for a segwit programs.
         if (type.get_str() == "pubkey" || type.get_str() == "pubkeyhash" || type.get_str() == "multisig" || type.get_str() == "nonstandard") {
             std::vector<std::vector<unsigned char>> solutions_data;
-            txnouttype which_type = Solver(script, solutions_data);
+            TxoutType which_type = Solver(script, solutions_data);
             // Uncompressed pubkeys cannot be used with segwit checksigs.
             // If the script contains an uncompressed pubkey, skip encoding of a segwit program.
-            if ((which_type == TX_PUBKEY) || (which_type == TX_MULTISIG)) {
+            if ((which_type == TxoutType::PUBKEY) || (which_type == TxoutType::MULTISIG)) {
                 for (const auto& solution : solutions_data) {
                     if ((solution.size() != 1) && !CPubKey(solution).IsCompressed()) {
                         return r;
@@ -587,9 +587,9 @@ static UniValue decodescript(const JSONRPCRequest& request)
             }
             UniValue sr(UniValue::VOBJ);
             CScript segwitScr;
-            if (which_type == TX_PUBKEY) {
+            if (which_type == TxoutType::PUBKEY) {
                 segwitScr = GetScriptForDestination(WitnessV0KeyHash(Hash160(solutions_data[0].begin(), solutions_data[0].end())));
-            } else if (which_type == TX_PUBKEYHASH) {
+            } else if (which_type == TxoutType::PUBKEYHASH) {
                 segwitScr = GetScriptForDestination(WitnessV0KeyHash(uint160{solutions_data[0]}));
             } else {
                 // Scripts that are not fit for P2WPKH are encoded as P2WSH.
@@ -1181,7 +1181,7 @@ UniValue decodepsbt(const JSONRPCRequest& request)
         if (!input.final_script_witness.IsNull()) {
             UniValue txinwitness(UniValue::VARR);
             for (const auto& item : input.final_script_witness.stack) {
-                txinwitness.push_back(HexStr(item.begin(), item.end()));
+                txinwitness.push_back(HexStr(item));
             }
             in.pushKV("final_scriptwitness", txinwitness);
         }

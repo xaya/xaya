@@ -261,7 +261,7 @@ game_sendupdates (const JSONRPCRequest& request)
 
   std::vector<unsigned char> tokenBin(16);
   GetRandBytes (tokenBin.data (), tokenBin.size ());
-  const std::string reqtoken = HexStr (tokenBin.begin (), tokenBin.end ());
+  const std::string reqtoken = HexStr (tokenBin);
   w.reqtoken = reqtoken;
 
   uint256 toBlock;
