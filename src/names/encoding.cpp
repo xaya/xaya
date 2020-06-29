@@ -143,7 +143,7 @@ EncodeName (const valtype& data, const NameEncoding enc)
       break;
 
     case NameEncoding::HEX:
-      res = HexStr (data.begin (), data.end ());
+      res = HexStr (data);
       break;
     }
 

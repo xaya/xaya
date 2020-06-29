@@ -886,7 +886,7 @@ namerawtransaction (const JSONRPCRequest& request)
 
       mtx.vout[nOut].scriptPubKey
         = CNameScript::buildNameNew (mtx.vout[nOut].scriptPubKey, name, rand);
-      result.pushKV ("rand", HexStr (rand.begin (), rand.end ()));
+      result.pushKV ("rand", HexStr (rand));
     }
   else if (op == "name_firstupdate")
     {
