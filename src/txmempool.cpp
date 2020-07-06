@@ -635,7 +635,8 @@ static void CheckInputsAndUpdateCoins(const CTransaction& tx, CCoinsViewCache& m
     UpdateCoins(tx, mempoolDuplicate, std::numeric_limits<int>::max());
 }
 
-void CTxMemPool::check(const CCoinsViewCache *pcoins) const
+void CTxMemPool::check(ChainstateManager& chainman,
+                       const CCoinsViewCache *pcoins) const
 {
     LOCK(cs);
     if (nCheckFrequency == 0)
@@ -750,12 +751,13 @@ void CTxMemPool::check(const CCoinsViewCache *pcoins) const
     assert(totalTxSize == checkTotal);
     assert(innerUsage == cachedInnerUsage);
 
-    checkNames(pcoins);
+    checkNames(chainman, pcoins);
 }
 
-void CTxMemPool::checkNames(const CCoinsViewCache *pcoins) const
+void CTxMemPool::checkNames(ChainstateManager& chainman,
+                            const CCoinsViewCache *pcoins) const
 {
-    names.check (*pcoins);
+    names.check (chainman, *pcoins);
 }
 
 bool CTxMemPool::CompareDepthAndScore(const uint256& hasha, const uint256& hashb)

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2020 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -467,7 +467,7 @@ UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
 }
 
 void
-CheckNameDB (bool disconnect)
+CheckNameDB (ChainstateManager& chainman, bool disconnect)
 {
   const int option
     = gArgs.GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
@@ -478,13 +478,13 @@ CheckNameDB (bool disconnect)
   assert (option >= 0);
   if (option != 0)
     {
-      if (disconnect || ::ChainActive ().Height () % option != 0)
+      if (disconnect || chainman.ActiveChain ().Height () % option != 0)
         return;
     }
 
-  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
-  const bool ok = coinsTip.ValidateNameDB ();
+  const bool ok = coinsTip.ValidateNameDB (chainman);
 
   /* The DB is inconsistent (mismatch between UTXO set and names DB) between
      (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's
