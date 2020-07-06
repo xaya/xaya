@@ -14,11 +14,11 @@
 #include <script/standard.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
-#include <ui_interface.h>
 #include <uint256.h>
 #include <util/check.h>
 #include <util/ref.h>
 #include <util/system.h>
+#include <util/ui_change_type.h>
 #include <wallet/context.h>
 #include <wallet/feebumper.h>
 #include <wallet/fees.h>
@@ -439,7 +439,6 @@ public:
     bool canGetAddresses() override { return m_wallet->CanGetAddresses(); }
     bool privateKeysDisabled() override { return m_wallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS); }
     OutputType getDefaultAddressType() override { return m_wallet->m_default_address_type; }
-    OutputType getDefaultChangeType() override { return m_wallet->m_default_change_type; }
     CAmount getDefaultMaxTxFee() override { return m_wallet->m_default_max_tx_fee; }
     void remove() override
     {
