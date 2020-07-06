@@ -2534,7 +2534,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
 {
     CBlockIndex *pindexDelete = m_chain.Tip();
     assert(pindexDelete);
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Read block from disk.
     std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
     CBlock& block = *pblock;
@@ -2577,7 +2577,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
     m_chain.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Let wallets know transactions went from 1-confirmed to
     // 0-confirmed or conflicted:
     GetMainSignals().BlockDisconnected(pblock, pindexDelete);
@@ -2639,7 +2639,7 @@ public:
 bool CChainState::ConnectTip(BlockValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool)
 {
     assert(pindexNew->pprev == m_chain.Tip());
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Read block from disk.
     int64_t nTime1 = GetTimeMicros();
     std::shared_ptr<const CBlock> pthisBlock;
@@ -2686,7 +2686,7 @@ bool CChainState::ConnectTip(BlockValidationState& state, const CChainParams& ch
     // Update m_chain & related variables.
     m_chain.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
-    CheckNameDB (false);
+    CheckNameDB (g_chainman, false);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint(BCLog::BENCH, "  - Connect postprocess: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime5) * MILLI, nTimePostConnect * MICRO, nTimePostConnect * MILLI / nBlocksTotal);
@@ -2850,7 +2850,7 @@ bool CChainState::ActivateBestChainStep(BlockValidationState& state, const CChai
         // any disconnected transactions back to the mempool.
         UpdateMempoolForReorg(disconnectpool, true);
     }
-    mempool.check(&CoinsTip());
+    mempool.check(g_chainman, &CoinsTip());
 
     // Callbacks/notifications for a new best chain.
     if (fInvalidFound)

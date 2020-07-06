@@ -322,14 +322,14 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CCoinsViewDB::ValidateNameDB() const
+bool CCoinsViewDB::ValidateNameDB(ChainstateManager& chainman) const
 {
     const uint256 blockHash = GetBestBlock();
     int nHeight;
     if (blockHash.IsNull())
         nHeight = 0;
     else
-        nHeight = ::BlockIndex ().find(blockHash)->second->nHeight;
+        nHeight = chainman.BlockIndex ().find(blockHash)->second->nHeight;
 
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around

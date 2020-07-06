@@ -238,7 +238,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 }
 
 void
-CNameMemPool::check (const CCoinsView& coins) const
+CNameMemPool::check (ChainstateManager& chainman, const CCoinsView& coins) const
 {
   AssertLockHeld (pool.cs);
 
@@ -247,7 +247,7 @@ CNameMemPool::check (const CCoinsView& coins) const
   if (blockHash.IsNull())
     nHeight = 0;
   else
-    nHeight = ::BlockIndex ().find (blockHash)->second->nHeight;
+    nHeight = chainman.BlockIndex ().find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   std::map<valtype, unsigned> nameUpdates;

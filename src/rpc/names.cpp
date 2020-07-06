@@ -11,6 +11,7 @@
 #include <names/common.h>
 #include <names/main.h>
 #include <primitives/transaction.h>
+#include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/names.h>
@@ -955,10 +956,11 @@ name_checkdb (const JSONRPCRequest& request)
       }
   ).Check (request);
 
+  ChainstateManager& chainman = EnsureChainman (request.context);
   LOCK (cs_main);
-  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
-  return coinsTip.ValidateNameDB ();
+  return coinsTip.ValidateNameDB (chainman);
 }
 
 } // namespace

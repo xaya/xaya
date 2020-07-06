@@ -21,6 +21,8 @@
 #include <functional>
 #include <unordered_map>
 
+class ChainstateManager;
+
 /**
  * A UTXO entry.
  *
@@ -219,7 +221,7 @@ public:
     virtual CCoinsViewCursor *Cursor() const;
 
     // Validate the name database.
-    virtual bool ValidateNameDB() const;
+    virtual bool ValidateNameDB(ChainstateManager& chainman) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
@@ -249,7 +251,7 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor *Cursor() const override;
     size_t EstimateSize() const override;
-    bool ValidateNameDB() const override;
+    bool ValidateNameDB(ChainstateManager& chainman) const override;
 };
 
 

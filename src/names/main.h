@@ -15,6 +15,7 @@
 class CBlockUndo;
 class CCoinsView;
 class CCoinsViewCache;
+class ChainstateManager;
 class CTxMemPool;
 class TxValidationState;
 
@@ -131,6 +132,6 @@ bool UnexpireNames (unsigned nHeight, CBlockUndo& undo,
  * this throws an assertion failure.
  * @param disconnect Whether we are disconnecting blocks.
  */
-void CheckNameDB (bool disconnect);
+void CheckNameDB (ChainstateManager& chainman, bool disconnect);
 
 #endif // H_BITCOIN_NAMES_MAIN

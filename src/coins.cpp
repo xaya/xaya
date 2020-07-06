@@ -18,7 +18,7 @@ bool CCoinsView::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names) c
 CNameIterator* CCoinsView::IterateNames() const { assert (false); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
 CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
-bool CCoinsView::ValidateNameDB() const { return false; }
+bool CCoinsView::ValidateNameDB(ChainstateManager& chainman) const { return false; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 {
@@ -39,7 +39,7 @@ void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return base->BatchWrite(mapCoins, hashBlock, names); }
 CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
-bool CCoinsViewBacked::ValidateNameDB() const { return base->ValidateNameDB(); }
+bool CCoinsViewBacked::ValidateNameDB(ChainstateManager& chainman) const { return base->ValidateNameDB(chainman); }
 
 SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
 
