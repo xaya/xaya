@@ -23,6 +23,7 @@
 #include <logging/timer.h>
 #include <names/main.h>
 #include <names/mempool.h>
+#include <node/ui_interface.h>
 #include <optional.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
@@ -39,9 +40,9 @@
 #include <tinyformat.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <ui_interface.h>
 #include <uint256.h>
 #include <undo.h>
+#include <util/check.h> // For NDEBUG compile time check
 #include <util/moneystr.h>
 #include <util/rbf.h>
 #include <util/strencodings.h>
@@ -53,10 +54,6 @@
 #include <string>
 
 #include <boost/algorithm/string/replace.hpp>
-
-#if defined(NDEBUG)
-# error "Bitcoin cannot be compiled without assertions."
-#endif
 
 #define MICRO 0.000001
 #define MILLI 0.001
@@ -1412,12 +1409,6 @@ bool CChainState::IsInitialBlockDownload() const
 }
 
 static CBlockIndex *pindexBestForkTip = nullptr, *pindexBestForkBase = nullptr;
-
-BlockMap& BlockIndex()
-{
-    LOCK(::cs_main);
-    return g_chainman.m_blockman.m_block_index;
-}
 
 static void AlertNotify(const std::string& strMessage)
 {
@@ -5350,10 +5341,10 @@ CChainState& ChainstateManager::InitializeChainstate(const uint256& snapshot_blo
     return *to_modify;
 }
 
-CChain& ChainstateManager::ActiveChain() const
+CChainState& ChainstateManager::ActiveChainstate() const
 {
     assert(m_active_chainstate);
-    return m_active_chainstate->m_chain;
+    return *m_active_chainstate;
 }
 
 bool ChainstateManager::IsSnapshotActive() const

@@ -131,6 +131,9 @@ public:
     /** Make sure all changes are flushed to disk.
      */
     void Flush(bool shutdown);
+    /* flush the wallet passively (TRY_LOCK)
+       ideal to be called periodically */
+    bool PeriodicFlush();
 
     void IncrementUpdateCounter();
 
@@ -140,6 +143,9 @@ public:
     unsigned int nLastSeen;
     unsigned int nLastFlushed;
     int64_t nLastWalletUpdate;
+
+    /** Verifies the environment and database file */
+    bool Verify(bilingual_str& error);
 
     /**
      * Pointer to shared database environment.
@@ -198,6 +204,7 @@ protected:
     Db* pdb;
     std::string strFile;
     DbTxn* activeTxn;
+    Dbc* m_cursor;
     bool fReadOnly;
     bool fFlushOnClose;
     BerkeleyEnvironment *env;
@@ -211,14 +218,6 @@ public:
 
     void Flush();
     void Close();
-
-    /* flush the wallet passively (TRY_LOCK)
-       ideal to be called periodically */
-    static bool PeriodicFlush(BerkeleyDatabase& database);
-    /* verifies the database environment */
-    static bool VerifyEnvironment(const fs::path& file_path, bilingual_str& errorStr);
-    /* verifies the database file */
-    static bool VerifyDatabaseFile(const fs::path& file_path, bilingual_str& errorStr);
 
     template <typename K, typename T>
     bool Read(const K& key, T& value)
@@ -284,13 +283,12 @@ public:
         return HasKey(ssKey);
     }
 
-    Dbc* GetCursor();
-    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue);
+    bool StartCursor();
+    bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete);
+    void CloseCursor();
     bool TxnBegin();
     bool TxnCommit();
     bool TxnAbort();
-
-    bool static Rewrite(BerkeleyDatabase& database, const char* pszSkip = nullptr);
 };
 
 std::string BerkeleyDatabaseVersion();
