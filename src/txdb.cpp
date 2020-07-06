@@ -6,11 +6,11 @@
 #include <txdb.h>
 
 #include <names/encoding.h>
+#include <node/ui_interface.h>
 #include <pow.h>
 #include <random.h>
 #include <script/names.h>
 #include <shutdown.h>
-#include <ui_interface.h>
 #include <uint256.h>
 #include <util/system.h>
 #include <util/translation.h>
@@ -289,7 +289,7 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CCoinsViewDB::ValidateNameDB() const
+bool CCoinsViewDB::ValidateNameDB(ChainstateManager& chainman) const
 {
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around

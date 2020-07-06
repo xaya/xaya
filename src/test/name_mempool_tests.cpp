@@ -254,12 +254,15 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
-  CCoinsViewCache view(&::ChainstateActive ().CoinsTip ());
+  ChainstateManager& chainman = g_chainman;
+  CCoinsViewCache view(&chainman.ActiveChainstate ().CoinsTip ());
+
   const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);
-  mempool.checkNames (&view);
+
+  mempool.checkNames (chainman, &view);
 }
 
 namespace

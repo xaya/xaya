@@ -12,6 +12,7 @@
 #include <pow.h>
 #include <powdata.h>
 #include <script/standard.h>
+#include <util/check.h>
 #include <validation.h>
 
 CTxIn generatetoaddress(const NodeContext& node, const std::string& address)
@@ -33,7 +34,7 @@ CTxIn MineBlock(const NodeContext& node, const CScript& coinbase_scriptPubKey)
         assert(fakeHeader.nNonce);
     }
 
-    bool processed{EnsureChainman(node).ProcessNewBlock(Params(), block, true, nullptr)};
+    bool processed{Assert(node.chainman)->ProcessNewBlock(Params(), block, true, nullptr)};
     assert(processed);
 
     return CTxIn{block->vtx[0]->GetHash(), 0};
@@ -41,9 +42,8 @@ CTxIn MineBlock(const NodeContext& node, const CScript& coinbase_scriptPubKey)
 
 std::shared_ptr<CBlock> PrepareBlock(const NodeContext& node, const CScript& coinbase_scriptPubKey)
 {
-    assert(node.mempool);
     auto block = std::make_shared<CBlock>(
-        BlockAssembler{*node.mempool, Params()}
+        BlockAssembler{*Assert(node.mempool), Params()}
             .CreateNewBlock(PowAlgo::NEOSCRYPT, coinbase_scriptPubKey)
             ->block);
 

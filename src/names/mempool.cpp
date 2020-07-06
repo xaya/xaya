@@ -175,7 +175,7 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
 }
 
 void
-CNameMemPool::check (const CCoinsView& coins) const
+CNameMemPool::check (ChainstateManager& chainman, const CCoinsView& coins) const
 {
   AssertLockHeld (pool.cs);
 

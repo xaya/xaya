@@ -311,7 +311,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
 }
 
 void
-CheckNameDB (bool disconnect)
+CheckNameDB (ChainstateManager& chainman, bool disconnect)
 {
   const int option
     = gArgs.GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
@@ -322,11 +322,11 @@ CheckNameDB (bool disconnect)
   assert (option >= 0);
   if (option != 0)
     {
-      if (disconnect || ::ChainActive ().Height () % option != 0)
+      if (disconnect || chainman.ActiveChain ().Height () % option != 0)
         return;
     }
 
   auto& coinsTip = ::ChainstateActive ().CoinsTip ();
   coinsTip.Flush ();
-  assert (coinsTip.ValidateNameDB ());
+  assert (coinsTip.ValidateNameDB (chainman));
 }

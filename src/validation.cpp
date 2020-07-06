@@ -22,6 +22,7 @@
 #include <logging/timer.h>
 #include <names/main.h>
 #include <names/mempool.h>
+#include <node/ui_interface.h>
 #include <optional.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
@@ -38,9 +39,9 @@
 #include <tinyformat.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <ui_interface.h>
 #include <uint256.h>
 #include <undo.h>
+#include <util/check.h> // For NDEBUG compile time check
 #include <util/moneystr.h>
 #include <util/rbf.h>
 #include <util/strencodings.h>
@@ -52,10 +53,6 @@
 #include <string>
 
 #include <boost/algorithm/string/replace.hpp>
-
-#if defined(NDEBUG)
-# error "Bitcoin cannot be compiled without assertions."
-#endif
 
 #define MICRO 0.000001
 #define MILLI 0.001
@@ -1377,12 +1374,6 @@ bool CChainState::IsInitialBlockDownload() const
 
 static CBlockIndex *pindexBestForkTip = nullptr, *pindexBestForkBase = nullptr;
 
-BlockMap& BlockIndex()
-{
-    LOCK(::cs_main);
-    return g_chainman.m_blockman.m_block_index;
-}
-
 static void AlertNotify(const std::string& strMessage)
 {
     uiInterface.NotifyAlertChanged();
@@ -2451,7 +2442,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
 {
     CBlockIndex *pindexDelete = m_chain.Tip();
     assert(pindexDelete);
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Read block from disk.
     std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
     CBlock& block = *pblock;
@@ -2490,7 +2481,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
     m_chain.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Let wallets know transactions went from 1-confirmed to
     // 0-confirmed or conflicted:
     GetMainSignals().BlockDisconnected(pblock, pindexDelete);
@@ -2552,7 +2543,7 @@ public:
 bool CChainState::ConnectTip(BlockValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool)
 {
     assert(pindexNew->pprev == m_chain.Tip());
-    CheckNameDB (true);
+    CheckNameDB (g_chainman, true);
     // Read block from disk.
     int64_t nTime1 = GetTimeMicros();
     std::shared_ptr<const CBlock> pthisBlock;
@@ -2597,7 +2588,7 @@ bool CChainState::ConnectTip(BlockValidationState& state, const CChainParams& ch
     // Update m_chain & related variables.
     m_chain.SetTip(pindexNew);
     UpdateTip(pindexNew, chainparams);
-    CheckNameDB (false);
+    CheckNameDB (g_chainman, false);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
     LogPrint(BCLog::BENCH, "  - Connect postprocess: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime5) * MILLI, nTimePostConnect * MICRO, nTimePostConnect * MILLI / nBlocksTotal);
@@ -2761,7 +2752,7 @@ bool CChainState::ActivateBestChainStep(BlockValidationState& state, const CChai
         // any disconnected transactions back to the mempool.
         UpdateMempoolForReorg(disconnectpool, true);
     }
-    mempool.check(&CoinsTip());
+    mempool.check(g_chainman, &CoinsTip());
 
     // Callbacks/notifications for a new best chain.
     if (fInvalidFound)
@@ -5213,10 +5204,10 @@ CChainState& ChainstateManager::InitializeChainstate(const uint256& snapshot_blo
     return *to_modify;
 }
 
-CChain& ChainstateManager::ActiveChain() const
+CChainState& ChainstateManager::ActiveChainstate() const
 {
     assert(m_active_chainstate);
-    return m_active_chainstate->m_chain;
+    return *m_active_chainstate;
 }
 
 bool ChainstateManager::IsSnapshotActive() const

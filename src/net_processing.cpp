@@ -13,10 +13,9 @@
 #include <consensus/validation.h>
 #include <hash.h>
 #include <index/blockfilterindex.h>
-#include <validation.h>
 #include <merkleblock.h>
-#include <netmessagemaker.h>
 #include <netbase.h>
+#include <netmessagemaker.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <primitives/block.h>
@@ -26,15 +25,13 @@
 #include <scheduler.h>
 #include <tinyformat.h>
 #include <txmempool.h>
-#include <util/system.h>
+#include <util/check.h> // For NDEBUG compile time check
 #include <util/strencodings.h>
+#include <util/system.h>
+#include <validation.h>
 
 #include <memory>
 #include <typeinfo>
-
-#if defined(NDEBUG)
-# error "Bitcoin cannot be compiled without assertions."
-#endif
 
 /** Expiration time for orphan transactions in seconds */
 static constexpr int64_t ORPHAN_TX_EXPIRE_TIME = 20 * 60;
@@ -1961,7 +1958,7 @@ static void ProcessHeadersMessage(CNode& pfrom, CConnman* connman, ChainstateMan
     return;
 }
 
-void static ProcessOrphanTx(CConnman* connman, CTxMemPool& mempool, std::set<uint256>& orphan_work_set, std::list<CTransactionRef>& removed_txn) EXCLUSIVE_LOCKS_REQUIRED(cs_main, g_cs_orphans)
+void static ProcessOrphanTx(ChainstateManager& chainman, CConnman* connman, CTxMemPool& mempool, std::set<uint256>& orphan_work_set, std::list<CTransactionRef>& removed_txn) EXCLUSIVE_LOCKS_REQUIRED(cs_main, g_cs_orphans)
 {
     AssertLockHeld(cs_main);
     AssertLockHeld(g_cs_orphans);
@@ -2017,7 +2014,7 @@ void static ProcessOrphanTx(CConnman* connman, CTxMemPool& mempool, std::set<uin
             EraseOrphanTx(orphanHash);
             done = true;
         }
-        mempool.check(&::ChainstateActive().CoinsTip());
+        mempool.check(chainman, &::ChainstateActive().CoinsTip());
     }
 }
 
@@ -2610,7 +2607,7 @@ void ProcessMessage(
                     LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol, disconnecting peer=%d\n", inv.hash.ToString(), pfrom.GetId());
                     pfrom.fDisconnect = true;
                     return;
-                } else if (!fAlreadyHave && !fImporting && !fReindex && !::ChainstateActive().IsInitialBlockDownload()) {
+                } else if (!fAlreadyHave && !chainman.ActiveChainstate().IsInitialBlockDownload()) {
                     RequestTx(State(pfrom.GetId()), inv.hash, current_time);
                 }
             }
@@ -2882,7 +2879,7 @@ void ProcessMessage(
 
         if (!AlreadyHave(inv, mempool) &&
             AcceptToMemoryPool(mempool, state, ptx, &lRemovedTxn, false /* bypass_limits */, 0 /* nAbsurdFee */)) {
-            mempool.check(&::ChainstateActive().CoinsTip());
+            mempool.check(chainman, &::ChainstateActive().CoinsTip());
             RelayTransaction(tx.GetHash(), *connman);
             for (unsigned int i = 0; i < tx.vout.size(); i++) {
                 auto it_by_prev = mapOrphanTransactionsByPrev.find(COutPoint(inv.hash, i));
@@ -2901,7 +2898,7 @@ void ProcessMessage(
                 mempool.size(), mempool.DynamicMemoryUsage() / 1000);
 
             // Recursively process any orphan transactions that depended on this one
-            ProcessOrphanTx(connman, mempool, pfrom.orphan_work_set, lRemovedTxn);
+            ProcessOrphanTx(chainman, connman, mempool, pfrom.orphan_work_set, lRemovedTxn);
         }
         else if (state.GetResult() == TxValidationResult::TX_MISSING_INPUTS)
         {
@@ -3666,7 +3663,7 @@ bool PeerLogicValidation::ProcessMessages(CNode* pfrom, std::atomic<bool>& inter
     if (!pfrom->orphan_work_set.empty()) {
         std::list<CTransactionRef> removed_txn;
         LOCK2(cs_main, g_cs_orphans);
-        ProcessOrphanTx(connman, m_mempool, pfrom->orphan_work_set, removed_txn);
+        ProcessOrphanTx(m_chainman, connman, m_mempool, pfrom->orphan_work_set, removed_txn);
         for (const CTransactionRef& removedTx : removed_txn) {
             AddToCompactExtraTransactions(removedTx);
         }
@@ -4448,10 +4445,21 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         ) {
             CAmount currentFilter = m_mempool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFeePerK();
             int64_t timeNow = GetTimeMicros();
+            static FeeFilterRounder g_filter_rounder{CFeeRate{DEFAULT_MIN_RELAY_TX_FEE}};
+            if (m_chainman.ActiveChainstate().IsInitialBlockDownload()) {
+                // Received tx-inv messages are discarded when the active
+                // chainstate is in IBD, so tell the peer to not send them.
+                currentFilter = MAX_MONEY;
+            } else {
+                static const CAmount MAX_FILTER{g_filter_rounder.round(MAX_MONEY)};
+                if (pto->m_tx_relay->lastSentFeeFilter == MAX_FILTER) {
+                    // Send the current filter if we sent MAX_FILTER previously
+                    // and made it out of IBD.
+                    pto->m_tx_relay->nextSendTimeFeeFilter = timeNow - 1;
+                }
+            }
             if (timeNow > pto->m_tx_relay->nextSendTimeFeeFilter) {
-                static CFeeRate default_feerate(DEFAULT_MIN_RELAY_TX_FEE);
-                static FeeFilterRounder filterRounder(default_feerate);
-                CAmount filterToSend = filterRounder.round(currentFilter);
+                CAmount filterToSend = g_filter_rounder.round(currentFilter);
                 // We always have a fee filter of at least minRelayTxFee
                 filterToSend = std::max(filterToSend, ::minRelayTxFee.GetFeePerK());
                 if (filterToSend != pto->m_tx_relay->lastSentFeeFilter) {

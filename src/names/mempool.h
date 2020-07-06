@@ -14,6 +14,7 @@
 #include <set>
 
 class CCoinsView;
+class ChainstateManager;
 class CTxMemPool;
 class CTxMemPoolEntry;
 
@@ -138,7 +139,7 @@ public:
   /**
    * Performs sanity checks.  Throws if it fails.
    */
-  void check (const CCoinsView& coins) const;
+  void check (ChainstateManager& chainman, const CCoinsView& coins) const;
 
   /**
    * Checks if a tx can be added (based on name criteria) without
