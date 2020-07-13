@@ -357,7 +357,8 @@ public:
   }
 
   void
-  TransactionRemovedFromMempool (const CTransactionRef& ptxn) override
+  TransactionRemovedFromMempool (const CTransactionRef& ptxn,
+                                 const MemPoolRemovalReason reason) override
   {
     txids.push_back (ptxn->GetHash ());
   }
