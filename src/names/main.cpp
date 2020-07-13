@@ -326,7 +326,7 @@ CheckNameDB (ChainstateManager& chainman, bool disconnect)
         return;
     }
 
-  auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
   assert (coinsTip.ValidateNameDB (chainman));
 }

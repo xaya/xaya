@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2020 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -131,7 +131,7 @@ class NameRegistrationTest (NameTestFramework):
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
                              node.name_update, "x/wrong-name", val ("foo"))
-    assert_raises_rpc_error (-4, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
                              node.name_update, "x/test-name", val ("stolen?"))
 
     # Test that name updates are even possible with less balance in the wallet

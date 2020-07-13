@@ -5,6 +5,7 @@
 #ifndef BITCOIN_WALLET_CONTEXT_H
 #define BITCOIN_WALLET_CONTEXT_H
 
+class ArgsManager;
 namespace interfaces {
 class Chain;
 } // namespace interfaces
@@ -23,6 +24,7 @@ struct NodeContext;
 //! behavior.
 struct WalletContext {
     interfaces::Chain* chain{nullptr};
+    ArgsManager* args{nullptr};
 
     /* getauxwork is a wallet RPC but actually needs the NodeContext (unlike
        any of the upstream Bitcoin wallet RPCs).  */

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 The Xaya developers
+# Copyright (c) 2019-2020 The Xaya developers
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """RPC test for the "burn" option of name operations."""
@@ -90,7 +90,7 @@ class XayaCreateBurnsTest (NameTestFramework):
                              self.nodes[0].name_update,
                              "x/testname", val ("value"),
                              {"burn": {"x": balance + 1}})
-    assert_raises_rpc_error (-4, 'requires a transaction fee',
+    assert_raises_rpc_error (-6, 'Insufficient funds',
                              self.nodes[0].name_update,
                              "x/testname", val ("value"),
                              {"burn": {"x": balance}})

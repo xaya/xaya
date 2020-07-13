@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2020 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -147,10 +147,10 @@ class NameMultisigTest (NameTestFramework):
     assert_equal (data['address'], p2sh)
 
     # Straight-forward name updating should fail (for both nodes).
-    assert_raises_rpc_error (-4, None,
+    assert_raises_rpc_error (-6, None,
                              self.nodes[0].name_update,
                              "x/name", val ("new value"))
-    assert_raises_rpc_error (-4, None,
+    assert_raises_rpc_error (-6, None,
                              self.nodes[1].name_update,
                              "x/name", val ("new value"))
 

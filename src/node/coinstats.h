@@ -14,6 +14,11 @@
 
 class CCoinsView;
 
+enum class CoinStatsHashType {
+    HASH_SERIALIZED,
+    NONE,
+};
+
 struct CCoinsStats
 {
     int nHeight{0};
@@ -31,6 +36,6 @@ struct CCoinsStats
 };
 
 //! Calculate statistics about the unspent transaction output set
-bool GetUTXOStats(CCoinsView* view, CCoinsStats& stats, const std::function<void()>& interruption_point = {});
+bool GetUTXOStats(CCoinsView* view, CCoinsStats& stats, const CoinStatsHashType hash_type, const std::function<void()>& interruption_point = {});
 
 #endif // BITCOIN_NODE_COINSTATS_H

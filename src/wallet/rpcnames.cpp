@@ -130,7 +130,7 @@ void DestinationAddressHelper::finalise ()
  * is common between name_new, name_firstupdate and name_update.  This method
  * also implements the "sendCoins" option, if included.
  */
-CTransactionRef
+UniValue
 SendNameOutput (const JSONRPCRequest& request,
                 CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
@@ -184,53 +184,8 @@ SendNameOutput (const JSONRPCRequest& request,
         vecSend.push_back ({scr, nAmount, false});
       }
 
-  /* Shuffle the recipient list for privacy.  */
-  std::shuffle (vecSend.begin (), vecSend.end (), FastRandomContext ());
-
-  /* Check balance against total amount sent.  If we have a name input, we have
-     to take its value into account.  */
-
-  const CAmount curBalance = wallet.GetBalance ().m_mine_trusted;
-
-  CAmount totalSpend = 0;
-  for (const auto& recv : vecSend)
-    totalSpend += recv.nAmount;
-
-  CAmount lockedValue = 0;
-  bilingual_str error;
-  if (nameInput != nullptr)
-    {
-      const CWalletTx* dummyWalletTx;
-      if (!wallet.FindValueInNameInput (*nameInput, lockedValue,
-                                        dummyWalletTx, error))
-        throw JSONRPCError(RPC_WALLET_ERROR, error.original);
-    }
-
-  if (totalSpend > curBalance + lockedValue)
-    throw JSONRPCError (RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
-
-  /* Create and send the transaction.  This code is based on the corresponding
-     part of SendMoneyToScript and should stay in sync.  */
-
   CCoinControl coinControl;
-  CAmount nFeeRequired;
-  int nChangePosRet = -1;
-
-  CTransactionRef tx;
-  if (!wallet.CreateTransaction (vecSend, nameInput, tx,
-                                 nFeeRequired, nChangePosRet, error,
-                                 coinControl))
-    {
-      if (totalSpend + nFeeRequired > curBalance)
-        error = strprintf (Untranslated (
-                    "Error: This transaction requires a transaction"
-                    " fee of at least %s"),
-                    FormatMoney (nFeeRequired));
-      throw JSONRPCError (RPC_WALLET_ERROR, error.original);
-    }
-
-  wallet.CommitTransaction (tx, {}, {});
-  return tx;
+  return SendMoney (&wallet, coinControl, nameInput, vecSend, {});
 }
 
 } // anonymous namespace
@@ -427,11 +382,11 @@ name_register (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameRegister (destHelper.getScript (), name, value);
 
-  CTransactionRef tx
+  const UniValue txidVal
       = SendNameOutput (request, *pwallet, nameScript, nullptr, options);
   destHelper.finalise ();
 
-  return tx->GetHash ().GetHex ();
+  return txidVal;
 }
 
 /* ************************************************************************** */
@@ -532,11 +487,11 @@ name_update (const JSONRPCRequest& request)
   const CScript nameScript
     = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
 
-  CTransactionRef tx
+  const UniValue txidVal
       = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
   destHelper.finalise ();
 
-  return tx->GetHash ().GetHex ();
+  return txidVal;
 }
 
 /* ************************************************************************** */
@@ -559,11 +514,6 @@ sendtoname (const JSONRPCRequest& request)
           {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
   "                             The recipient will receive less coins than you enter in the amount field."},
           {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
-          {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
-          {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
-  "       \"UNSET\"\n"
-  "       \"ECONOMICAL\"\n"
-  "       \"CONSERVATIVE\""},
       },
           RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
           RPCExamples{
@@ -578,11 +528,6 @@ sendtoname (const JSONRPCRequest& request)
   if (!wallet)
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
-
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VNUM, UniValue::VSTR,
-                 UniValue::VSTR, UniValue::VBOOL, UniValue::VBOOL,
-                 UniValue::VNUM, UniValue::VSTR});
 
   if (::ChainstateActive ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -614,11 +559,6 @@ sendtoname (const JSONRPCRequest& request)
   /* The code below is strongly based on sendtoaddress.  Make sure to
      keep it in sync.  */
 
-  // Amount
-  CAmount nAmount = AmountFromValue(request.params[1]);
-  if (nAmount <= 0)
-      throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
-
   // Wallet comments
   mapValue_t mapValue;
   if (request.params.size() > 2 && !request.params[2].isNull()
@@ -637,22 +577,11 @@ sendtoname (const JSONRPCRequest& request)
       coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
   }
 
-  if (!request.params[6].isNull()) {
-      coin_control.m_confirm_target = ParseConfirmTarget(request.params[6], pwallet->chain().estimateMaxBlocks());
-  }
-
-  if (!request.params[7].isNull()) {
-      if (!FeeModeFromString(request.params[7].get_str(),
-          coin_control.m_fee_mode)) {
-          throw JSONRPCError(RPC_INVALID_PARAMETER,
-                             "Invalid estimate_mode parameter");
-      }
-  }
-
   EnsureWalletIsUnlocked(pwallet);
 
-  CTransactionRef tx = SendMoneyToScript (pwallet, data.getAddress (), nullptr,
-                                          nAmount, fSubtractFeeFromAmount,
-                                          coin_control, std::move(mapValue));
-  return tx->GetHash ().GetHex ();
+  std::vector<CRecipient> recipients;
+  const CAmount amount = AmountFromValue (request.params[1]);
+  recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
+
+  return SendMoney(pwallet, coin_control, nullptr, recipients, mapValue);
 }

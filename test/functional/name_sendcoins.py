@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Daniel Kraft
+# Copyright (c) 2018-2020 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """RPC test for the "sendCoins" option with name operations."""
@@ -77,7 +77,7 @@ class NameSendCoinsTest (NameTestFramework):
                              self.nodes[0].name_update,
                              "x/testname", val ("value"),
                              {"sendCoins": {addr1: balance + 1}})
-    assert_raises_rpc_error (-4, 'requires a transaction fee',
+    assert_raises_rpc_error (-6, 'Insufficient funds',
                              self.nodes[0].name_update,
                              "x/testname", val ("value"),
                              {"sendCoins": {addr1: balance}})
