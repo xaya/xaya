@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2020 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -107,7 +107,7 @@ class NameRegistrationTest (NameTestFramework):
     # Check for mismatch with prev tx from another node for name_firstupdate
     # and name_update.
     self.sync_blocks ()
-    assert_raises_rpc_error (-4, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
                              self.firstupdateName,
                              1, "test-name", newA, "value")
     self.firstupdateName (0, "test-name", newA, "test-value")
@@ -162,7 +162,7 @@ class NameRegistrationTest (NameTestFramework):
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
                              node.name_update, "wrong-name", "foo")
-    assert_raises_rpc_error (-4, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
                              node.name_update, "test-name", "stolen?")
 
     # Update failing after expiry.  Re-registration possible.

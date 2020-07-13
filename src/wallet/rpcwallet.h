@@ -13,6 +13,7 @@
 #include <vector>
 
 class CCoinControl;
+class CRecipient;
 class CRPCCommand;
 class CWallet;
 class CWalletTx;
@@ -39,11 +40,11 @@ void EnsureWalletIsUnlocked(const CWallet*);
 WalletContext& EnsureWalletContext(const util::Ref& context);
 LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
 
-CTransactionRef SendMoneyToScript(CWallet* pwallet, const CScript& scriptPubKey,
-                                  const CTxIn* withInput, CAmount nValue,
-                                  bool fSubtractFeeFromAmount,
-                                  const CCoinControl& coin_control,
-                                  mapValue_t mapValue);
+/* These are private to rpcwallet.cpp upstream, but are used also from
+   rpcnames.cpp in Namecoin.  */
+UniValue SendMoney(CWallet* pwallet, const CCoinControl& coin_control,
+                   const CTxIn* withInput,
+                   std::vector<CRecipient>& recipients, mapValue_t map_value);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
