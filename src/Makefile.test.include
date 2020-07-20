@@ -10,6 +10,7 @@ FUZZ_TARGETS = \
   test/fuzz/addrman_deserialize \
   test/fuzz/asmap \
   test/fuzz/asmap_direct \
+  test/fuzz/autofile \
   test/fuzz/banentry_deserialize \
   test/fuzz/banman \
   test/fuzz/base_encode_decode \
@@ -29,12 +30,19 @@ FUZZ_TARGETS = \
   test/fuzz/blockundo_deserialize \
   test/fuzz/bloom_filter \
   test/fuzz/bloomfilter_deserialize \
+  test/fuzz/buffered_file \
   test/fuzz/chain \
   test/fuzz/checkqueue \
   test/fuzz/coins_deserialize \
   test/fuzz/coins_view \
   test/fuzz/crypto \
+  test/fuzz/crypto_aes256 \
+  test/fuzz/crypto_aes256cbc \
+  test/fuzz/crypto_chacha20 \
+  test/fuzz/crypto_chacha20_poly1305_aead \
   test/fuzz/crypto_common \
+  test/fuzz/crypto_hkdf_hmac_sha256_l32 \
+  test/fuzz/crypto_poly1305 \
   test/fuzz/cuckoocache \
   test/fuzz/decode_tx \
   test/fuzz/descriptor_parse \
@@ -55,6 +63,7 @@ FUZZ_TARGETS = \
   test/fuzz/key_io \
   test/fuzz/key_origin_info_deserialize \
   test/fuzz/kitchen_sink \
+  test/fuzz/load_external_block_file \
   test/fuzz/locale \
   test/fuzz/merkle_block_deserialize \
   test/fuzz/merkleblock \
@@ -74,6 +83,7 @@ FUZZ_TARGETS = \
   test/fuzz/partial_merkle_tree_deserialize \
   test/fuzz/partially_signed_transaction_deserialize \
   test/fuzz/policy_estimator \
+  test/fuzz/policy_estimator_io \
   test/fuzz/pow \
   test/fuzz/prefilled_transaction_deserialize \
   test/fuzz/prevector \
@@ -354,6 +364,12 @@ test_fuzz_asmap_direct_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_asmap_direct_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_asmap_direct_SOURCES = test/fuzz/asmap_direct.cpp
 
+test_fuzz_autofile_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_autofile_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_autofile_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_autofile_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_autofile_SOURCES = test/fuzz/autofile.cpp
+
 test_fuzz_banentry_deserialize_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) -DBANENTRY_DESERIALIZE=1
 test_fuzz_banentry_deserialize_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_banentry_deserialize_LDADD = $(FUZZ_SUITE_LD_COMMON)
@@ -468,6 +484,12 @@ test_fuzz_bloomfilter_deserialize_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_bloomfilter_deserialize_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_bloomfilter_deserialize_SOURCES = test/fuzz/deserialize.cpp
 
+test_fuzz_buffered_file_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_buffered_file_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_buffered_file_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_buffered_file_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_buffered_file_SOURCES = test/fuzz/buffered_file.cpp
+
 test_fuzz_chain_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_chain_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_chain_LDADD = $(FUZZ_SUITE_LD_COMMON)
@@ -498,11 +520,47 @@ test_fuzz_crypto_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_crypto_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_crypto_SOURCES = test/fuzz/crypto.cpp
 
+test_fuzz_crypto_aes256_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_aes256_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_aes256_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_aes256_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_aes256_SOURCES = test/fuzz/crypto_aes256.cpp
+
+test_fuzz_crypto_aes256cbc_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_aes256cbc_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_aes256cbc_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_aes256cbc_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_aes256cbc_SOURCES = test/fuzz/crypto_aes256cbc.cpp
+
+test_fuzz_crypto_chacha20_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_chacha20_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_chacha20_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_chacha20_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_chacha20_SOURCES = test/fuzz/crypto_chacha20.cpp
+
+test_fuzz_crypto_chacha20_poly1305_aead_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_chacha20_poly1305_aead_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_chacha20_poly1305_aead_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_chacha20_poly1305_aead_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_chacha20_poly1305_aead_SOURCES = test/fuzz/crypto_chacha20_poly1305_aead.cpp
+
 test_fuzz_crypto_common_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_crypto_common_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_crypto_common_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_crypto_common_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_crypto_common_SOURCES = test/fuzz/crypto_common.cpp
+
+test_fuzz_crypto_hkdf_hmac_sha256_l32_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_hkdf_hmac_sha256_l32_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_hkdf_hmac_sha256_l32_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_hkdf_hmac_sha256_l32_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_hkdf_hmac_sha256_l32_SOURCES = test/fuzz/crypto_hkdf_hmac_sha256_l32.cpp
+
+test_fuzz_crypto_poly1305_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_crypto_poly1305_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_crypto_poly1305_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_crypto_poly1305_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_crypto_poly1305_SOURCES = test/fuzz/crypto_poly1305.cpp
 
 test_fuzz_cuckoocache_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_cuckoocache_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -624,6 +682,12 @@ test_fuzz_kitchen_sink_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_kitchen_sink_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_kitchen_sink_SOURCES = test/fuzz/kitchen_sink.cpp
 
+test_fuzz_load_external_block_file_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_load_external_block_file_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_load_external_block_file_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_load_external_block_file_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_load_external_block_file_SOURCES = test/fuzz/load_external_block_file.cpp
+
 test_fuzz_locale_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_locale_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_locale_LDADD = $(FUZZ_SUITE_LD_COMMON)
@@ -743,6 +807,12 @@ test_fuzz_policy_estimator_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_policy_estimator_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_policy_estimator_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 test_fuzz_policy_estimator_SOURCES = test/fuzz/policy_estimator.cpp
+
+test_fuzz_policy_estimator_io_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fuzz_policy_estimator_io_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fuzz_policy_estimator_io_LDADD = $(FUZZ_SUITE_LD_COMMON)
+test_fuzz_policy_estimator_io_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_policy_estimator_io_SOURCES = test/fuzz/policy_estimator_io.cpp
 
 test_fuzz_pow_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 test_fuzz_pow_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

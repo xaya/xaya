@@ -4,6 +4,7 @@
 
 #include <amount.h>
 #include <policy/fees.h>
+#include <validation.h>
 
 #include <test/util/setup_common.h>
 
@@ -29,6 +30,12 @@ BOOST_AUTO_TEST_CASE(FeeRounder)
 
     // check that MAX_MONEY rounds to 9170997
     BOOST_CHECK_EQUAL(fee_rounder.round(MAX_MONEY), 9170997);
+
+    /* Namecoin uses a different DEFAULT_MIN_RELAY_TX_FEE value than
+       upstream Bitcoin.  Verify the expected rounding value for MAX_MONEY
+       (which is used as fee filter during IBD) also for that.  */
+    FeeFilterRounder nmc_rounder{CFeeRate{DEFAULT_MIN_RELAY_TX_FEE}};
+    BOOST_CHECK_EQUAL(nmc_rounder.round(MAX_MONEY), 9452957);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
