@@ -1105,39 +1105,38 @@ UniValue decodepsbt(const JSONRPCRequest& request)
         UniValue in(UniValue::VOBJ);
         // UTXOs
         bool have_a_utxo = false;
+        CTxOut txout;
         if (!input.witness_utxo.IsNull()) {
-            const CTxOut& txout = input.witness_utxo;
+            txout = input.witness_utxo;
+
+            UniValue o(UniValue::VOBJ);
+            ScriptToUniv(txout.scriptPubKey, o, true);
 
             UniValue out(UniValue::VOBJ);
-
             out.pushKV("amount", ValueFromAmount(txout.nValue));
+            out.pushKV("scriptPubKey", o);
+
+            in.pushKV("witness_utxo", out);
+
+            have_a_utxo = true;
+        }
+        if (input.non_witness_utxo) {
+            txout = input.non_witness_utxo->vout[psbtx.tx->vin[i].prevout.n];
+
+            UniValue non_wit(UniValue::VOBJ);
+            TxToUniv(*input.non_witness_utxo, uint256(), non_wit, false);
+            in.pushKV("non_witness_utxo", non_wit);
+
+            have_a_utxo = true;
+        }
+        if (have_a_utxo) {
             if (MoneyRange(txout.nValue) && MoneyRange(total_in + txout.nValue)) {
                 total_in += txout.nValue;
             } else {
                 // Hack to just not show fee later
                 have_all_utxos = false;
             }
-
-            UniValue o(UniValue::VOBJ);
-            ScriptToUniv(txout.scriptPubKey, o, true);
-            out.pushKV("scriptPubKey", o);
-            in.pushKV("witness_utxo", out);
-            have_a_utxo = true;
-        }
-        if (input.non_witness_utxo) {
-            UniValue non_wit(UniValue::VOBJ);
-            TxToUniv(*input.non_witness_utxo, uint256(), non_wit, false);
-            in.pushKV("non_witness_utxo", non_wit);
-            CAmount utxo_val = input.non_witness_utxo->vout[psbtx.tx->vin[i].prevout.n].nValue;
-            if (MoneyRange(utxo_val) && MoneyRange(total_in + utxo_val)) {
-                total_in += utxo_val;
-            } else {
-                // Hack to just not show fee later
-                have_all_utxos = false;
-            }
-            have_a_utxo = true;
-        }
-        if (!have_a_utxo) {
+        } else {
             have_all_utxos = false;
         }
 
@@ -1633,7 +1632,7 @@ UniValue joinpsbts(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "At least two PSBTs are required to join PSBTs.");
     }
 
-    int32_t best_version = 1;
+    uint32_t best_version = 1;
     uint32_t best_locktime = 0xffffffff;
     for (unsigned int i = 0; i < txs.size(); ++i) {
         PartiallySignedTransaction psbtx;
@@ -1643,8 +1642,8 @@ UniValue joinpsbts(const JSONRPCRequest& request)
         }
         psbtxs.push_back(psbtx);
         // Choose the highest version number
-        if (psbtx.tx->nVersion > best_version) {
-            best_version = psbtx.tx->nVersion;
+        if (static_cast<uint32_t>(psbtx.tx->nVersion) > best_version) {
+            best_version = static_cast<uint32_t>(psbtx.tx->nVersion);
         }
         // Choose the lowest lock time
         if (psbtx.tx->nLockTime < best_locktime) {
@@ -1655,7 +1654,7 @@ UniValue joinpsbts(const JSONRPCRequest& request)
     // Create a blank psbt where everything will be added
     PartiallySignedTransaction merged_psbt;
     merged_psbt.tx = CMutableTransaction();
-    merged_psbt.tx->nVersion = best_version;
+    merged_psbt.tx->nVersion = static_cast<int32_t>(best_version);
     merged_psbt.tx->nLockTime = best_locktime;
 
     // Merge

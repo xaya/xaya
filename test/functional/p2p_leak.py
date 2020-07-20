@@ -26,7 +26,7 @@ from test_framework.util import (
     wait_until,
 )
 
-banscore = 10
+DISCOURAGEMENT_THRESHOLD = 100
 
 
 class CLazyNode(P2PInterface):
@@ -65,12 +65,13 @@ class CLazyNode(P2PInterface):
 
 # Node that never sends a version. We'll use this to send a bunch of messages
 # anyway, and eventually get disconnected.
-class CNodeNoVersionBan(CLazyNode):
-    # send a bunch of veracks without sending a message. This should get us disconnected.
-    # NOTE: implementation-specific check here. Remove if bitcoind ban behavior changes
+class CNodeNoVersionMisbehavior(CLazyNode):
+    # Send enough veracks without a message to reach the peer discouragement
+    # threshold. This should get us disconnected. NOTE: implementation-specific
+    # test; update if our discouragement policy for peer misbehavior changes.
     def on_open(self):
         super().on_open()
-        for i in range(banscore):
+        for _ in range(DISCOURAGEMENT_THRESHOLD):
             self.send_message(msg_verack())
 
 # Node that never sends a version. This one just sits idle and hopes to receive
@@ -106,10 +107,10 @@ class P2PVersionStore(P2PInterface):
 class P2PLeakTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
-        self.extra_args = [['-banscore=' + str(banscore)]]
 
     def run_test(self):
-        no_version_bannode = self.nodes[0].add_p2p_connection(CNodeNoVersionBan(), send_version=False, wait_for_verack=False)
+        no_version_disconnect_node = self.nodes[0].add_p2p_connection(
+            CNodeNoVersionMisbehavior(), send_version=False, wait_for_verack=False)
         no_version_idlenode = self.nodes[0].add_p2p_connection(CNodeNoVersionIdle(), send_version=False, wait_for_verack=False)
         no_verack_idlenode = self.nodes[0].add_p2p_connection(CNodeNoVerackIdle(), wait_for_verack=False)
 
@@ -117,7 +118,7 @@ class P2PLeakTest(BitcoinTestFramework):
         # verack, since we never sent one
         no_verack_idlenode.wait_for_verack()
 
-        wait_until(lambda: no_version_bannode.ever_connected, timeout=10, lock=mininode_lock)
+        wait_until(lambda: no_version_disconnect_node.ever_connected, timeout=10, lock=mininode_lock)
         wait_until(lambda: no_version_idlenode.ever_connected, timeout=10, lock=mininode_lock)
         wait_until(lambda: no_verack_idlenode.version_received, timeout=10, lock=mininode_lock)
 
@@ -127,13 +128,13 @@ class P2PLeakTest(BitcoinTestFramework):
         #Give the node enough time to possibly leak out a message
         time.sleep(5)
 
-        #This node should have been banned
-        assert not no_version_bannode.is_connected
+        # Expect this node to be disconnected for misbehavior
+        assert not no_version_disconnect_node.is_connected
 
         self.nodes[0].disconnect_p2ps()
 
         # Make sure no unexpected messages came in
-        assert no_version_bannode.unexpected_msg == False
+        assert no_version_disconnect_node.unexpected_msg == False
         assert no_version_idlenode.unexpected_msg == False
         assert no_verack_idlenode.unexpected_msg == False
 
