@@ -87,6 +87,28 @@ Updated RPCs
   whether initial broadcast of the transaction has been acknowledged by a
   peer. `getmempoolancestors` and `getmempooldescendants` are also updated.
 
+- The `bumpfee`, `fundrawtransaction`, `sendmany`, `sendtoaddress`, and `walletcreatefundedpsbt`
+RPC commands have been updated to include two new fee estimation methods "BTC/kB" and "sat/B".
+The target is the fee expressed explicitly in the given form. Note that use of this feature
+will trigger BIP 125 (replace-by-fee) opt-in. (#11413)
+
+- In addition, the `estimate_mode` parameter is now case insensitive for all of
+  the above RPC commands. (#11413)
+
+- The `bumpfee` command now uses `conf_target` rather than `confTarget` in the
+  options. (#11413)
+
+- The `getpeerinfo` RPC no longer returns the `banscore` field unless the configuration
+  option `-deprecatedrpc=banscore` is used. The `banscore` field will be fully
+  removed in the next major release. (#19469)
+
+- The `walletcreatefundedpsbt` RPC call will now fail with
+  `Insufficient funds` when inputs are manually selected but are not enough to cover
+  the outputs and fee. Additional inputs can automatically be added through the
+  new `add_inputs` option. (#16377)
+
+- The `fundrawtransaction` RPC now supports `add_inputs` option that when `false`
+  prevents adding more inputs if necessary and consequently the RPC fails.
 
 Changes to Wallet or GUI related RPCs can be found in the GUI or Wallet section below.
 
@@ -99,6 +121,12 @@ Build System
 Updated settings
 ----------------
 
+- The `-banscore` configuration option, which modified the default threshold for
+  disconnecting and discouraging misbehaving peers, has been removed as part of
+  changes in 0.20.1 and in this release to the handling of misbehaving peers.
+  Refer to "Changes regarding misbehaving peers" in the 0.20.1 release notes for
+  details. (#19464)
+
 - The `-debug=db` logging category, which was deprecated in 0.20 and replaced by
   `-debug=walletdb` to distinguish it from `coindb`, has been removed. (#19202)
 
@@ -109,11 +137,29 @@ Updated settings
 
 Changes to Wallet or GUI related settings can be found in the GUI or Wallet  section below.
 
+Tools and Utilities
+-------------------
+
+- A new `bitcoin-cli -generate` command, equivalent to RPC `generatenewaddress`
+  followed by `generatetoaddress`, can generate blocks for command line testing
+  purposes. This is a client-side version of the
+  former `generate` RPC. See the help for details. (#19133)
+
+- The `bitcoin-cli -getinfo` command now displays the wallet name and balance for
+  each of the loaded wallets when more than one is loaded (e.g. in multiwallet
+  mode) and a wallet is not specified with `-rpcwallet`. (#18594)
+
 New settings
 ------------
 
 Wallet
 ------
+
+- Backwards compatibility has been dropped for two `getaddressinfo` RPC
+  deprecations, as notified in the 0.20 release notes. The deprecated `label`
+  field has been removed as well as the deprecated `labels` behavior of
+  returning a JSON object containing `name` and `purpose` key-value pairs. Since
+  0.20, the `labels` field returns a JSON array of label names. (#19200)
 
 - To improve wallet privacy, the frequency of wallet rebroadcast attempts is
   reduced from approximately once every 15 minutes to once every 12-36 hours.
@@ -258,8 +304,22 @@ issue.
 GUI changes
 -----------
 
+- The GUI Peers window no longer displays a "Ban Score" field. This is part of
+  changes in 0.20.1 and in this release to the handling of misbehaving
+  peers. Refer to "Changes regarding misbehaving peers" in the 0.20.1 release
+  notes for details. (#19512)
+
 Low-level changes
 =================
+
+RPC
+---
+
+- To make RPC `sendtoaddress` more consistent with `sendmany` the following error
+    `sendtoaddress` codes were changed from `-4` to `-6`:
+  - Insufficient funds
+  - Fee estimation failed
+  - Transaction has too long of a mempool chain
 
 Tests
 -----
