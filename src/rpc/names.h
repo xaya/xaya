@@ -13,6 +13,9 @@
 #include <string>
 #include <vector>
 
+/** Default value for the -allowexpired argument.  */
+static constexpr bool DEFAULT_ALLOWEXPIRED = true;
+
 class CNameData;
 class COutPoint;
 class CScript;

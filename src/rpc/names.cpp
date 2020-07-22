@@ -437,6 +437,8 @@ namespace
 UniValue
 name_show (const JSONRPCRequest& request)
 {
+  bool allow_expired = DEFAULT_ALLOWEXPIRED;
+
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
@@ -483,7 +485,15 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK2 (wallet.getLock (), cs_main);
-  return getNameInfo (options, name, data, wallet);
+  UniValue name_object = getNameInfo(options, name, data, wallet);
+  assert(!name_object["expired"].isNull());
+  const bool is_expired = name_object["expired"].get_bool();
+  if (is_expired && !allow_expired) {
+      std::ostringstream msg;
+      msg << "name not found: " << EncodeNameForMessage(name);
+      throw JSONRPCError(RPC_WALLET_ERROR, msg.str());
+  }
+  return name_object;
 }
 
 /* ************************************************************************** */
