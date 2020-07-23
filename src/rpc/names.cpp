@@ -437,7 +437,7 @@ namespace
 UniValue
 name_show (const JSONRPCRequest& request)
 {
-  bool allow_expired_default = DEFAULT_ALLOWEXPIRED;
+  const bool allow_expired_default = gArgs.GetBoolArg("-allowexpired", DEFAULT_ALLOWEXPIRED);
 
   NameOptionsHelp optHelp;
   optHelp
