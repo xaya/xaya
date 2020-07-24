@@ -28,9 +28,8 @@ What can it be used for?
 * Human readable Tor .onion names/domains.
 * File signatures, Voting, bonds/stocks,/shares, web of trust, escrow and notary services (to be implemented).
 
-~~For more information, as well as an immediately useable, binary version of~~
-~~the Namecoin Core software, see https://namecoin.org/?p=download.~~
-Public binary downloads are not yet posted.
+For more information, as well as an immediately useable, binary version of
+the Namecoin Core software, see https://www.namecoin.org/download.
 
 License
 -------
