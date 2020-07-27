@@ -940,7 +940,7 @@ bool MemPoolAccept::PolicyScriptChecks(ATMPArgs& args, Workspace& ws, Precompute
         if (!tx.HasWitness() && CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~(SCRIPT_VERIFY_WITNESS | SCRIPT_VERIFY_CLEANSTACK), true, false, txdata) &&
                 !CheckInputScripts(tx, state_dummy, m_view, scriptVerifyFlags & ~SCRIPT_VERIFY_CLEANSTACK, true, false, txdata)) {
             // Only the witness is missing, so the transaction itself may be fine.
-            state.Invalid(TxValidationResult::TX_WITNESS_MUTATED,
+            state.Invalid(TxValidationResult::TX_WITNESS_STRIPPED,
                     state.GetRejectReason(), state.GetDebugMessage());
         }
         return false; // state filled in by CheckInputScripts
@@ -3684,8 +3684,10 @@ bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, BlockValidationS
             return true;
         }
 
-        if (!CheckBlockHeader(block, state, chainparams.GetConsensus()))
-            return error("%s: Consensus::CheckBlockHeader: %s, %s", __func__, hash.ToString(), state.ToString());
+        if (!CheckBlockHeader(block, state, chainparams.GetConsensus())) {
+            LogPrint(BCLog::VALIDATION, "%s: Consensus::CheckBlockHeader: %s, %s\n", __func__, hash.ToString(), state.ToString());
+            return false;
+        }
 
         // Get prev block index
         CBlockIndex* pindexPrev = nullptr;
@@ -4751,7 +4753,6 @@ void LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, FlatFi
                 if (dbp)
                     dbp->nPos = nBlockPos;
                 blkdat.SetLimit(nBlockPos + nSize);
-                blkdat.SetPos(nBlockPos);
                 std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
                 CBlock& block = *pblock;
                 blkdat >> block;
@@ -5126,19 +5127,22 @@ bool LoadMempool(CTxMemPool& pool)
         }
 
         // TODO: remove this try except in v0.22
+        std::map<uint256, uint256> unbroadcast_txids;
         try {
-          std::set<uint256> unbroadcast_txids;
           file >> unbroadcast_txids;
           unbroadcast = unbroadcast_txids.size();
-
-          for (const auto& txid : unbroadcast_txids) {
-            pool.AddUnbroadcastTx(txid);
-          }
         } catch (const std::exception&) {
           // mempool.dat files created prior to v0.21 will not have an
           // unbroadcast set. No need to log a failure if parsing fails here.
         }
-
+        for (const auto& elem : unbroadcast_txids) {
+            // Don't add unbroadcast transactions that didn't get back into the
+            // mempool.
+            const CTransactionRef& added_tx = pool.get(elem.first);
+            if (added_tx != nullptr) {
+                pool.AddUnbroadcastTx(elem.first, added_tx->GetWitnessHash());
+            }
+        }
     } catch (const std::exception& e) {
         LogPrintf("Failed to deserialize mempool data on disk: %s. Continuing anyway.\n", e.what());
         return false;
@@ -5154,7 +5158,7 @@ bool DumpMempool(const CTxMemPool& pool)
 
     std::map<uint256, CAmount> mapDeltas;
     std::vector<TxMempoolInfo> vinfo;
-    std::set<uint256> unbroadcast_txids;
+    std::map<uint256, uint256> unbroadcast_txids;
 
     static Mutex dump_mutex;
     LOCK(dump_mutex);
