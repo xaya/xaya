@@ -67,7 +67,7 @@ static const int MAX_OUTBOUND_FULL_RELAY_CONNECTIONS = 8;
 /** Maximum number of addnode outgoing nodes */
 static const int MAX_ADDNODE_CONNECTIONS = 8;
 /** Maximum number of block-relay-only outgoing connections */
-static const int MAX_BLOCKS_ONLY_CONNECTIONS = 2;
+static const int MAX_BLOCK_RELAY_ONLY_CONNECTIONS = 2;
 /** Maximum number of feeler connections */
 static const int MAX_FEELER_CONNECTIONS = 1;
 /** -listen default */
@@ -187,7 +187,7 @@ public:
         }
     }
 
-    CConnman(uint64_t seed0, uint64_t seed1);
+    CConnman(uint64_t seed0, uint64_t seed1, bool network_active = true);
     ~CConnman();
     bool Start(CScheduler& scheduler, const Options& options);
 
@@ -971,11 +971,11 @@ public:
     }
 
 
-    void AddInventoryKnown(const CInv& inv)
+    void AddKnownTx(const uint256& hash)
     {
         if (m_tx_relay != nullptr) {
             LOCK(m_tx_relay->cs_tx_inventory);
-            m_tx_relay->filterInventoryKnown.insert(inv.hash);
+            m_tx_relay->filterInventoryKnown.insert(hash);
         }
     }
 
