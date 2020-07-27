@@ -139,7 +139,7 @@ BerkeleyEnvironment::~BerkeleyEnvironment()
     Close();
 }
 
-bool BerkeleyEnvironment::Open(bool retry)
+bool BerkeleyEnvironment::Open(bilingual_str& err)
 {
     if (fDbEnvInit) {
         return true;
@@ -149,6 +149,7 @@ bool BerkeleyEnvironment::Open(bool retry)
     TryCreateDirectories(pathIn);
     if (!LockDirectory(pathIn, ".walletlock")) {
         LogPrintf("Cannot obtain a lock on wallet directory %s. Another instance of bitcoin may be using it.\n", strPath);
+        err = strprintf(_("Error initializing wallet database environment %s!"), Directory());
         return false;
     }
 
@@ -188,23 +189,11 @@ bool BerkeleyEnvironment::Open(bool retry)
             LogPrintf("BerkeleyEnvironment::Open: Error %d closing failed database environment: %s\n", ret2, DbEnv::strerror(ret2));
         }
         Reset();
-        if (retry) {
-            // try moving the database env out of the way
-            fs::path pathDatabaseBak = pathIn / strprintf("database.%d.bak", GetTime());
-            try {
-                fs::rename(pathLogDir, pathDatabaseBak);
-                LogPrintf("Moved old %s to %s. Retrying.\n", pathLogDir.string(), pathDatabaseBak.string());
-            } catch (const fs::filesystem_error&) {
-                // failure is ok (well, not really, but it's not worse than what we started with)
-            }
-            // try opening it again one more time
-            if (!Open(false /* retry */)) {
-                // if it still fails, it probably means we can't even create the database env
-                return false;
-            }
-        } else {
-            return false;
+        err = strprintf(_("Error initializing wallet database environment %s!"), Directory());
+        if (ret == DB_RUNRECOVERY) {
+            err += Untranslated(" ") + _("This error could occur if this wallet was not shutdown cleanly and was last loaded using a build with a newer version of Berkeley DB. If so, please use the software that last loaded this wallet");
         }
+        return false;
     }
 
     fDbEnvInit = true;
@@ -300,8 +289,7 @@ bool BerkeleyDatabase::Verify(bilingual_str& errorStr)
     LogPrintf("Using BerkeleyDB version %s\n", BerkeleyDatabaseVersion());
     LogPrintf("Using wallet %s\n", file_path.string());
 
-    if (!env->Open(true /* retry */)) {
-        errorStr = strprintf(_("Error initializing wallet database environment %s!"), walletDir);
+    if (!env->Open(errorStr)) {
         return false;
     }
 
@@ -324,8 +312,17 @@ void BerkeleyEnvironment::CheckpointLSN(const std::string& strFile)
     dbenv->lsn_reset(strFile.c_str(), 0);
 }
 
+BerkeleyDatabase::~BerkeleyDatabase()
+{
+    if (env) {
+        LOCK(cs_db);
+        size_t erased = env->m_databases.erase(strFile);
+        assert(erased == 1);
+        env->m_fileids.erase(strFile);
+    }
+}
 
-BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bool fFlushOnCloseIn) : pdb(nullptr), activeTxn(nullptr), m_cursor(nullptr)
+BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bool fFlushOnCloseIn) : pdb(nullptr), activeTxn(nullptr), m_cursor(nullptr), m_database(database)
 {
     fReadOnly = (!strchr(pszMode, '+') && !strchr(pszMode, 'w'));
     fFlushOnClose = fFlushOnCloseIn;
@@ -342,7 +339,8 @@ BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bo
 
     {
         LOCK(cs_db);
-        if (!env->Open(false /* retry */))
+        bilingual_str open_err;
+        if (!env->Open(open_err))
             throw std::runtime_error("BerkeleyBatch: Failed to open database environment.");
 
         pdb = database.m_db.get();
@@ -399,9 +397,14 @@ BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bo
                 fReadOnly = fTmp;
             }
         }
-        ++env->mapFileUseCount[strFilename];
+        database.AddRef();
         strFile = strFilename;
     }
+}
+
+void BerkeleyDatabase::Open(const char* mode)
+{
+    throw std::logic_error("BerkeleyDatabase does not implement Open. This function should not be called.");
 }
 
 void BerkeleyBatch::Flush()
@@ -437,11 +440,7 @@ void BerkeleyBatch::Close()
     if (fFlushOnClose)
         Flush();
 
-    {
-        LOCK(cs_db);
-        --env->mapFileUseCount[strFile];
-    }
-    env->m_db_in_use.notify_all();
+    m_database.RemoveRef();
 }
 
 void BerkeleyEnvironment::CloseDb(const std::string& strFile)
@@ -482,7 +481,8 @@ void BerkeleyEnvironment::ReloadDbEnv()
     // Reset the environment
     Flush(true); // This will flush and close the environment
     Reset();
-    Open(true);
+    bilingual_str open_err;
+    Open(open_err);
 }
 
 bool BerkeleyDatabase::Rewrite(const char* pszSkip)
@@ -685,22 +685,17 @@ bool BerkeleyDatabase::Backup(const std::string& strDest) const
     }
 }
 
-void BerkeleyDatabase::Flush(bool shutdown)
+void BerkeleyDatabase::Flush()
 {
     if (!IsDummy()) {
-        env->Flush(shutdown);
-        if (shutdown) {
-            LOCK(cs_db);
-            g_dbenvs.erase(env->Directory().string());
-            env = nullptr;
-        } else {
-            // TODO: To avoid g_dbenvs.erase erasing the environment prematurely after the
-            // first database shutdown when multiple databases are open in the same
-            // environment, should replace raw database `env` pointers with shared or weak
-            // pointers, or else separate the database and environment shutdowns so
-            // environments can be shut down after databases.
-            env->m_fileids.erase(strFile);
-        }
+        env->Flush(false);
+    }
+}
+
+void BerkeleyDatabase::Close()
+{
+    if (!IsDummy()) {
+        env->Flush(true);
     }
 }
 
@@ -842,7 +837,22 @@ bool BerkeleyBatch::HasKey(CDataStream&& key)
     return ret == 0;
 }
 
-std::unique_ptr<BerkeleyBatch> BerkeleyDatabase::MakeBatch(const char* mode, bool flush_on_close)
+void BerkeleyDatabase::AddRef()
+{
+    LOCK(cs_db);
+    ++env->mapFileUseCount[strFile];
+}
+
+void BerkeleyDatabase::RemoveRef()
+{
+    {
+        LOCK(cs_db);
+        --env->mapFileUseCount[strFile];
+    }
+    env->m_db_in_use.notify_all();
+}
+
+std::unique_ptr<DatabaseBatch> BerkeleyDatabase::MakeBatch(const char* mode, bool flush_on_close)
 {
     return MakeUnique<BerkeleyBatch>(*this, mode, flush_on_close);
 }
