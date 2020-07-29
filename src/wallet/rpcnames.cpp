@@ -30,6 +30,7 @@
 #include <util/moneystr.h>
 #include <util/system.h>
 #include <util/translation.h>
+#include <util/vector.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
@@ -901,6 +902,54 @@ queuerawtransaction ()
   );
 }
 
+/* ************************************************************************** */
+
+RPCHelpMan
+listqueuedtransactions ()
+{
+  return RPCHelpMan{"listqueuedtransactions",
+      "\nList the transactions that are queued for future broadcast.\n",
+      {
+      },
+      RPCResult{
+          RPCResult::Type::OBJ_DYN, "", "JSON object with transaction ID's as keys",
+          {
+              {RPCResult::Type::OBJ, "", "",
+              {
+                  {RPCResult::Type::STR_HEX, "transaction", "The hex string of the raw transaction."},
+              }},
+          }
+      },
+      RPCExamples{
+          HelpExampleCli("listqueuedtransactions", "") +
+          HelpExampleRpc("listqueuedtransactions", "")
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet) return NullUniValue;
+
+  LOCK (wallet->cs_wallet);
+
+  UniValue result(UniValue::VOBJ);
+
+  for (const auto& i : wallet->queuedTransactionMap)
+  {
+    const uint256& txid = i.first;
+    const CMutableTransaction& tx = i.second;
+
+    const std::string txStr = EncodeHexTx(CTransaction(tx), RPCSerializationFlags());
+
+    UniValue entry(UniValue::VOBJ);
+    entry.pushKV("transaction", txStr);
+
+    result.pushKV(txid.GetHex(), entry);
+  }
+
+  return result;
+}
+  };
+}
 
 /* ************************************************************************** */
 
