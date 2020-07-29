@@ -4339,6 +4339,43 @@ bool CWallet::BackupWallet(const std::string& strDest) const
     return GetDatabase().Backup(strDest);
 }
 
+bool CWallet::QueuedTransactionExists(const uint256& txid) const
+{
+    AssertLockHeld(cs_wallet);
+    return queuedTransactionMap.count(txid) > 0;
+}
+
+bool CWallet::WriteQueuedTransaction(const uint256 &txid, const CMutableTransaction &tx)
+{
+    AssertLockHeld(cs_wallet);
+
+    const bool success = WalletBatch(GetDatabase()).WriteQueuedTransaction(txid, tx);
+    if(success)
+        queuedTransactionMap[txid] = tx;
+
+    return success;
+}
+
+bool CWallet::EraseQueuedTransaction(const uint256& txid)
+{
+    AssertLockHeld(cs_wallet);
+    const bool success = WalletBatch(GetDatabase()).EraseQueuedTransaction(txid);
+    if(success)
+        queuedTransactionMap.erase(txid);
+    return success;
+}
+
+bool CWallet::GetQueuedTransaction(const uint256 &txid, CMutableTransaction *data) const
+{
+    AssertLockHeld(cs_wallet);
+    auto it = queuedTransactionMap.find(txid);
+    if (it == queuedTransactionMap.end())
+        return false;
+    if (data != nullptr)
+        (*data) = it->second;
+    return true;
+}
+
 CKeyPool::CKeyPool()
 {
     nTime = GetTime();
