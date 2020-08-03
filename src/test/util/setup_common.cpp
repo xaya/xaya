@@ -142,7 +142,7 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
     ::ChainstateActive().InitCoinsDB(
         /* cache_size_bytes */ 1 << 23, /* in_memory */ true, /* should_wipe */ false);
     assert(!::ChainstateActive().CanFlushToDisk());
-    ::ChainstateActive().InitCoinsCache();
+    ::ChainstateActive().InitCoinsCache(1 << 23);
     assert(::ChainstateActive().CanFlushToDisk());
     if (!LoadGenesisBlock(chainparams)) {
         throw std::runtime_error("LoadGenesisBlock failed.");
@@ -182,9 +182,9 @@ TestingSetup::~TestingSetup()
     m_node.connman.reset();
     m_node.banman.reset();
     m_node.args = nullptr;
+    UnloadBlockIndex(m_node.mempool);
     m_node.mempool = nullptr;
     m_node.scheduler.reset();
-    UnloadBlockIndex();
     m_node.chainman->Reset();
     m_node.chainman = nullptr;
     pblocktree.reset();
