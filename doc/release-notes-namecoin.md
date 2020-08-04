@@ -8,6 +8,10 @@
   This has uses for light clients, as discussed in
   [#329](https://github.com/namecoin/namecoin-core/issues/329).
 
+- The new RPC method `namepsbt` can be used to generate name operations
+  based on PSBTs.  It works in the same way as the existing
+  `namerawtransaction`.
+
 ## Version 0.19
 
 - The mempool now allows multiple updates of a single name (in a chain of
