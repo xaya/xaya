@@ -12,7 +12,6 @@ from test_framework.util import (
     assert_fee_amount,
     assert_raises_rpc_error,
     connect_nodes,
-    wait_until,
 )
 from test_framework.wallet_util import test_address
 
@@ -540,7 +539,7 @@ class WalletTest(BitcoinTestFramework):
             self.start_node(2, [m, "-limitancestorcount=" + str(chainlimit)])
             if m == '-reindex':
                 # reindex will leave rpc warm up "early"; Wait for it to finish
-                wait_until(lambda: [block_count] * 3 == [self.nodes[i].getblockcount() for i in range(3)])
+                self.wait_until(lambda: [block_count] * 3 == [self.nodes[i].getblockcount() for i in range(3)])
             assert_equal(balance_nodes, [self.nodes[i].getbalance() for i in range(3)])
 
         # Exercise listsinceblock with the last two blocks
@@ -569,7 +568,7 @@ class WalletTest(BitcoinTestFramework):
         # So we should be able to generate exactly chainlimit txs for each original output
         sending_addr = self.nodes[1].getnewaddress()
         txid_list = []
-        for i in range(chainlimit * 2):
+        for _ in range(chainlimit * 2):
             txid_list.append(self.nodes[0].sendtoaddress(sending_addr, Decimal('0.0001')))
         assert_equal(self.nodes[0].getmempoolinfo()['size'], chainlimit * 2)
         assert_equal(len(txid_list), chainlimit * 2)
@@ -589,7 +588,7 @@ class WalletTest(BitcoinTestFramework):
         self.start_node(0, extra_args=extra_args)
 
         # wait until the wallet has submitted all transactions to the mempool
-        wait_until(lambda: len(self.nodes[0].getrawmempool()) == chainlimit * 2)
+        self.wait_until(lambda: len(self.nodes[0].getrawmempool()) == chainlimit * 2)
 
         node0_balance = self.nodes[0].getbalance()
         # With walletrejectlongchains we will not create the tx and store it in our wallet.

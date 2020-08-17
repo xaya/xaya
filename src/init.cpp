@@ -25,6 +25,7 @@
 #include <index/namehash.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
+#include <interfaces/node.h>
 #include <key.h>
 #include <miner.h>
 #include <names/encoding.h>
@@ -1017,11 +1018,13 @@ bool AppInitParameterInteraction()
         }
     }
 
-    // Basic filters are the only supported filters. The basic filters index must be enabled
-    // to serve compact filters
-    if (gArgs.GetBoolArg("-peerblockfilters", DEFAULT_PEERBLOCKFILTERS) &&
-        g_enabled_filter_types.count(BlockFilterType::BASIC) != 1) {
-        return InitError(_("Cannot set -peerblockfilters without -blockfilterindex."));
+    // Signal NODE_COMPACT_FILTERS if peerblockfilters and basic filters index are both enabled.
+    if (gArgs.GetBoolArg("-peerblockfilters", DEFAULT_PEERBLOCKFILTERS)) {
+        if (g_enabled_filter_types.count(BlockFilterType::BASIC) != 1) {
+            return InitError(_("Cannot set -peerblockfilters without -blockfilterindex."));
+        }
+
+        nLocalServices = ServiceFlags(nLocalServices | NODE_COMPACT_FILTERS);
     }
 
     // if using block pruning, then disallow txindex
@@ -1262,7 +1265,7 @@ bool AppInitLockDataDirectory()
     return true;
 }
 
-bool AppInitMain(const util::Ref& context, NodeContext& node)
+bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 {
     const CChainParams& chainparams = Params();
     // ********************************************************* Step 4a: application initialization
@@ -1913,6 +1916,15 @@ bool AppInitMain(const util::Ref& context, NodeContext& node)
         LOCK(cs_main);
         LogPrintf("block tree size = %u\n", chainman.BlockIndex().size());
         chain_active_height = chainman.ActiveChain().Height();
+        if (tip_info) {
+            tip_info->block_height = chain_active_height;
+            tip_info->block_time = chainman.ActiveChain().Tip() ? chainman.ActiveChain().Tip()->GetBlockTime() : Params().GenesisBlock().GetBlockTime();
+            tip_info->verification_progress = GuessVerificationProgress(Params().TxData(), chainman.ActiveChain().Tip());
+        }
+        if (tip_info && ::pindexBestHeader) {
+            tip_info->header_height = ::pindexBestHeader->nHeight;
+            tip_info->header_time = ::pindexBestHeader->GetBlockTime();
+        }
     }
     LogPrintf("nBestHeight = %d\n", chain_active_height);
 

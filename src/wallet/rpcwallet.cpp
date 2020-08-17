@@ -32,6 +32,7 @@
 #include <wallet/coincontrol.h>
 #include <wallet/context.h>
 #include <wallet/feebumper.h>
+#include <wallet/load.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
@@ -228,6 +229,18 @@ static void SetFeeEstimateMode(const CWallet* pwallet, CCoinControl& cc, const U
         if (cc.m_signal_bip125_rbf == nullopt) cc.m_signal_bip125_rbf = true;
     } else if (!estimate_param.isNull()) {
         cc.m_confirm_target = ParseConfirmTarget(estimate_param, pwallet->chain().estimateMaxBlocks());
+    }
+}
+
+static void UpdateWalletSetting(interfaces::Chain& chain,
+                                const std::string& wallet_name,
+                                const UniValue& load_on_startup,
+                                std::vector<bilingual_str>& warnings)
+{
+    if (load_on_startup.isTrue() && !AddWalletSetting(chain, wallet_name)) {
+        warnings.emplace_back(Untranslated("Wallet load on startup setting could not be updated, so wallet may not be loaded next node startup."));
+    } else if (load_on_startup.isFalse() && !RemoveWalletSetting(chain, wallet_name)) {
+        warnings.emplace_back(Untranslated("Wallet load on startup setting could not be updated, so wallet may still be loaded next node startup."));
     }
 }
 
@@ -1492,7 +1505,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
                         {RPCResult::Type::ARR, "removed", "<structure is the same as \"transactions\" above, only present if include_removed=true>\n"
                             "Note: transactions that were re-added in the active chain will appear as-is in this array, and may thus have a positive confirmation count."
                         , {{RPCResult::Type::ELISION, "", ""},}},
-                        {RPCResult::Type::STR_HEX, "lastblock", "The hash of the block (target_confirmations-1) from the best block on the main chain. This is typically used to feed back into listsinceblock the next time you call it. So you would generally use a target_confirmations of say 6, so you will be continually re-notified of transactions until they've reached 6 confirmations plus any new ones"},
+                        {RPCResult::Type::STR_HEX, "lastblock", "The hash of the block (target_confirmations-1) from the best block on the main chain, or the genesis hash if the referenced block does not exist yet. This is typically used to feed back into listsinceblock the next time you call it. So you would generally use a target_confirmations of say 6, so you will be continually re-notified of transactions until they've reached 6 confirmations plus any new ones"},
                     }
                 },
                 RPCExamples{
@@ -1575,6 +1588,7 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
     }
 
     uint256 lastblock;
+    target_confirms = std::min(target_confirms, wallet.GetLastBlockHeight() + 1);
     CHECK_NONFATAL(wallet.chain().findAncestorByHeight(wallet.GetLastBlockHash(), wallet.GetLastBlockHeight() + 1 - target_confirms, FoundBlock().hash(lastblock)));
 
     UniValue ret(UniValue::VOBJ);
@@ -2491,6 +2505,7 @@ static UniValue loadwallet(const JSONRPCRequest& request)
                 "\napplied to the new wallet (eg -zapwallettxes, rescan, etc).\n",
                 {
                     {"filename", RPCArg::Type::STR, RPCArg::Optional::NO, "The wallet directory or .dat file."},
+                    {"load_on_startup", RPCArg::Type::BOOL, /* default */ "null", "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
                 },
                 RPCResult{
                     RPCResult::Type::OBJ, "", "",
@@ -2522,6 +2537,8 @@ static UniValue loadwallet(const JSONRPCRequest& request)
     std::vector<bilingual_str> warnings;
     std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, error, warnings);
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+
+    UpdateWalletSetting(*context.chain, location.GetName(), request.params[1], warnings);
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2607,6 +2624,7 @@ static UniValue createwallet(const JSONRPCRequest& request)
             {"passphrase", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Encrypt the wallet with this passphrase."},
             {"avoid_reuse", RPCArg::Type::BOOL, /* default */ "false", "Keep track of coin reuse, and treat dirty and clean coins differently with privacy considerations in mind."},
             {"descriptors", RPCArg::Type::BOOL, /* default */ "false", "Create a native descriptor wallet. The wallet will use descriptors internally to handle address creation"},
+            {"load_on_startup", RPCArg::Type::BOOL, /* default */ "null", "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -2662,6 +2680,8 @@ static UniValue createwallet(const JSONRPCRequest& request)
         // no default case, so the compiler can warn about missing cases
     }
 
+    UpdateWalletSetting(*context.chain, request.params[0].get_str(), request.params[6], warnings);
+
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
     obj.pushKV("warning", Join(warnings, Untranslated("\n")).original);
@@ -2676,8 +2696,11 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
                 "Specifying the wallet name on a wallet endpoint is invalid.",
                 {
                     {"wallet_name", RPCArg::Type::STR, /* default */ "the wallet name from the RPC request", "The name of the wallet to unload."},
+                    {"load_on_startup", RPCArg::Type::BOOL, /* default */ "null", "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
                 },
-                RPCResult{RPCResult::Type::NONE, "", ""},
+                RPCResult{RPCResult::Type::OBJ, "", "", {
+                    {RPCResult::Type::STR, "warning", "Warning message if wallet was not unloaded cleanly."},
+                }},
                 RPCExamples{
                     HelpExampleCli("unloadwallet", "wallet_name")
             + HelpExampleRpc("unloadwallet", "wallet_name")
@@ -2705,9 +2728,15 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
     }
 
-    UnloadWallet(std::move(wallet));
+    interfaces::Chain& chain = wallet->chain();
+    std::vector<bilingual_str> warnings;
 
-    return NullUniValue;
+    UnloadWallet(std::move(wallet));
+    UpdateWalletSetting(chain, wallet_name, request.params[1], warnings);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("warning", Join(warnings, Untranslated("\n")).original);
+    return result;
 }
 
 static UniValue listunspent(const JSONRPCRequest& request)
@@ -3203,7 +3232,7 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
                     {
                         {RPCResult::Type::STR_HEX, "hex", "The hex-encoded raw transaction with signature(s)"},
                         {RPCResult::Type::BOOL, "complete", "If the transaction has a complete set of signatures"},
-                        {RPCResult::Type::ARR, "errors", "Script verification errors (if there are any)",
+                        {RPCResult::Type::ARR, "errors", /* optional */ true, "Script verification errors (if there are any)",
                         {
                             {RPCResult::Type::OBJ, "", "",
                             {
@@ -3260,58 +3289,72 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
 
 static UniValue bumpfee(const JSONRPCRequest& request)
 {
-            RPCHelpMan{"bumpfee",
-                "\nBumps the fee of an opt-in-RBF transaction T, replacing it with a new transaction B.\n"
-                "An opt-in RBF transaction with the given txid must be in the wallet.\n"
-                "The command will pay the additional fee by reducing change outputs or adding inputs when necessary. It may add a new change output if one does not already exist.\n"
-                "All inputs in the original transaction will be included in the replacement transaction.\n"
-                "The command will fail if the wallet or mempool contains a transaction that spends one of T's outputs.\n"
-                "By default, the new fee will be calculated automatically using estimatesmartfee.\n"
-                "The user can specify a confirmation target for estimatesmartfee.\n"
-                "Alternatively, the user can specify a fee_rate (" + CURRENCY_UNIT + " per kB) for the new transaction.\n"
-                "At a minimum, the new fee rate must be high enough to pay an additional new relay fee (incrementalfee\n"
-                "returned by getnetworkinfo) to enter the node's mempool.\n",
+    bool want_psbt = request.strMethod == "psbtbumpfee";
+
+    RPCHelpMan{request.strMethod,
+        "\nBumps the fee of an opt-in-RBF transaction T, replacing it with a new transaction B.\n"
+        + std::string(want_psbt ? "Returns a PSBT instead of creating and signing a new transaction.\n" : "") +
+        "An opt-in RBF transaction with the given txid must be in the wallet.\n"
+        "The command will pay the additional fee by reducing change outputs or adding inputs when necessary. It may add a new change output if one does not already exist.\n"
+        "All inputs in the original transaction will be included in the replacement transaction.\n"
+        "The command will fail if the wallet or mempool contains a transaction that spends one of T's outputs.\n"
+        "By default, the new fee will be calculated automatically using estimatesmartfee.\n"
+        "The user can specify a confirmation target for estimatesmartfee.\n"
+        "Alternatively, the user can specify a fee_rate (" + CURRENCY_UNIT + " per kB) for the new transaction.\n"
+        "At a minimum, the new fee rate must be high enough to pay an additional new relay fee (incrementalfee\n"
+        "returned by getnetworkinfo) to enter the node's mempool.\n",
+        {
+            {"txid", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The txid to be bumped"},
+            {"options", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED_NAMED_ARG, "",
                 {
-                    {"txid", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The txid to be bumped"},
-                    {"options", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED_NAMED_ARG, "",
-                        {
-                            {"conf_target", RPCArg::Type::NUM, /* default */ "wallet default", "Confirmation target (in blocks)"},
-                            {"fee_rate", RPCArg::Type::NUM, /* default */ "fall back to 'conf_target'", "fee rate (NOT total fee) to pay, in " + CURRENCY_UNIT + " per kB\n"
-            "                         Specify a fee rate instead of relying on the built-in fee estimator.\n"
-                                     "Must be at least 0.0001 " + CURRENCY_UNIT + " per kB higher than the current transaction fee rate.\n"},
-                            {"replaceable", RPCArg::Type::BOOL, /* default */ "true", "Whether the new transaction should still be\n"
-            "                         marked bip-125 replaceable. If true, the sequence numbers in the transaction will\n"
-            "                         be left unchanged from the original. If false, any input sequence numbers in the\n"
-            "                         original transaction that were less than 0xfffffffe will be increased to 0xfffffffe\n"
-            "                         so the new transaction will not be explicitly bip-125 replaceable (though it may\n"
-            "                         still be replaceable in practice, for example if it has unconfirmed ancestors which\n"
-            "                         are replaceable)."},
-                            {"estimate_mode", RPCArg::Type::STR, /* default */ "unset", std::string() + "The fee estimate mode, must be one of (case insensitive):\n"
-            "         \"" + FeeModes("\"\n\"") + "\""},
-                        },
-                        "options"},
+                    {"conf_target", RPCArg::Type::NUM, /* default */ "wallet default", "Confirmation target (in blocks)"},
+                    {"fee_rate", RPCArg::Type::NUM, /* default */ "fall back to 'conf_target'", "fee rate (NOT total fee) to pay, in " + CURRENCY_UNIT + " per kB\n"
+    "                         Specify a fee rate instead of relying on the built-in fee estimator.\n"
+                             "Must be at least 0.0001 " + CURRENCY_UNIT + " per kB higher than the current transaction fee rate.\n"},
+                    {"replaceable", RPCArg::Type::BOOL, /* default */ "true", "Whether the new transaction should still be\n"
+    "                         marked bip-125 replaceable. If true, the sequence numbers in the transaction will\n"
+    "                         be left unchanged from the original. If false, any input sequence numbers in the\n"
+    "                         original transaction that were less than 0xfffffffe will be increased to 0xfffffffe\n"
+    "                         so the new transaction will not be explicitly bip-125 replaceable (though it may\n"
+    "                         still be replaceable in practice, for example if it has unconfirmed ancestors which\n"
+    "                         are replaceable)."},
+                    {"estimate_mode", RPCArg::Type::STR, /* default */ "unset", std::string() + "The fee estimate mode, must be one of (case insensitive):\n"
+    "         \"" + FeeModes("\"\n\"") + "\""},
                 },
-                RPCResult{
-                    RPCResult::Type::OBJ, "", "", {
-                        {RPCResult::Type::STR, "psbt", "The base64-encoded unsigned PSBT of the new transaction. Only returned when wallet private keys are disabled."},
-                        {RPCResult::Type::STR_HEX, "txid", "The id of the new transaction. Only returned when wallet private keys are enabled."},
-                        {RPCResult::Type::STR_AMOUNT, "origfee", "The fee of the replaced transaction."},
-                        {RPCResult::Type::STR_AMOUNT, "fee", "The fee of the new transaction."},
-                        {RPCResult::Type::ARR, "errors", "Errors encountered during processing (may be empty).",
-                        {
-                            {RPCResult::Type::STR, "", ""},
-                        }},
-                    }
-                },
-                RPCExamples{
-            "\nBump the fee, get the new transaction\'s txid\n" +
-                    HelpExampleCli("bumpfee", "<txid>")
-                },
-            }.Check(request);
+                "options"},
+        },
+        RPCResult{
+            RPCResult::Type::OBJ, "", "", Cat(Cat<std::vector<RPCResult>>(
+            {
+                {RPCResult::Type::STR, "psbt", "The base64-encoded unsigned PSBT of the new transaction." + std::string(want_psbt ? "" : " Only returned when wallet private keys are disabled. (DEPRECATED)")},
+            },
+            want_psbt ? std::vector<RPCResult>{} : std::vector<RPCResult>{{RPCResult::Type::STR_HEX, "txid", "The id of the new transaction. Only returned when wallet private keys are enabled."}}
+            ),
+            {
+                {RPCResult::Type::STR_AMOUNT, "origfee", "The fee of the replaced transaction."},
+                {RPCResult::Type::STR_AMOUNT, "fee", "The fee of the new transaction."},
+                {RPCResult::Type::ARR, "errors", "Errors encountered during processing (may be empty).",
+                {
+                    {RPCResult::Type::STR, "", ""},
+                }},
+            })
+        },
+        RPCExamples{
+    "\nBump the fee, get the new transaction\'s" + std::string(want_psbt ? "psbt" : "txid") + "\n" +
+            HelpExampleCli(request.strMethod, "<txid>")
+        },
+    }.Check(request);
 
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
     CWallet* const pwallet = wallet.get();
+
+    if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) && !want_psbt) {
+        if (!pwallet->chain().rpcEnableDeprecated("bumpfee")) {
+            throw JSONRPCError(RPC_METHOD_DEPRECATED, "Using bumpfee with wallets that have private keys disabled is deprecated. Use psbtbumpfee instead or restart bitcoind with -deprecatedrpc=bumpfee. This functionality will be removed in 0.22");
+        }
+        want_psbt = true;
+    }
 
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
     uint256 hash(ParseHashV(request.params[0], "txid"));
@@ -3397,7 +3440,7 @@ static UniValue bumpfee(const JSONRPCRequest& request)
 
     // If wallet private keys are enabled, return the new transaction id,
     // otherwise return the base64-encoded unsigned PSBT of the new transaction.
-    if (!pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
+    if (!want_psbt) {
         if (!feebumper::SignTransaction(*pwallet, mtx)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Can't sign transaction.");
         }
@@ -3428,6 +3471,11 @@ static UniValue bumpfee(const JSONRPCRequest& request)
     result.pushKV("errors", result_errors);
 
     return result;
+}
+
+static UniValue psbtbumpfee(const JSONRPCRequest& request)
+{
+    return bumpfee(request);
 }
 
 UniValue rescanblockchain(const JSONRPCRequest& request)
@@ -4365,7 +4413,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "addmultisigaddress",               &addmultisigaddress,            {"nrequired","keys","label","address_type"} },
     { "wallet",             "backupwallet",                     &backupwallet,                  {"destination"} },
     { "wallet",             "bumpfee",                          &bumpfee,                       {"txid", "options"} },
-    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank", "passphrase", "avoid_reuse", "descriptors"} },
+    { "wallet",             "psbtbumpfee",                      &psbtbumpfee,                   {"txid", "options"} },
+    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank", "passphrase", "avoid_reuse", "descriptors", "load_on_startup"} },
     { "wallet",             "dumpprivkey",                      &dumpprivkey,                   {"address"}  },
     { "wallet",             "dumpwallet",                       &dumpwallet,                    {"filename"} },
     { "wallet",             "encryptwallet",                    &encryptwallet,                 {"passphrase"} },
@@ -4398,7 +4447,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
-    { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
+    { "wallet",             "loadwallet",                       &loadwallet,                    {"filename", "load_on_startup"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },
@@ -4410,7 +4459,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "setwalletflag",                    &setwalletflag,                 {"flag","value"} },
     { "wallet",             "signmessage",                      &signmessage,                   {"address","message"} },
     { "wallet",             "signrawtransactionwithwallet",     &signrawtransactionwithwallet,  {"hexstring","prevtxs","sighashtype"} },
-    { "wallet",             "unloadwallet",                     &unloadwallet,                  {"wallet_name"} },
+    { "wallet",             "unloadwallet",                     &unloadwallet,                  {"wallet_name", "load_on_startup"} },
     { "wallet",             "upgradewallet",                    &upgradewallet,                 {"version"} },
     { "wallet",             "walletcreatefundedpsbt",           &walletcreatefundedpsbt,        {"inputs","outputs","locktime","options","bip32derivs"} },
     { "wallet",             "walletlock",                       &walletlock,                    {} },
