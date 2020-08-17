@@ -13,7 +13,7 @@ class NameRegistrationTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_clean_chain = True
-    self.setup_name_test ([["-namehistory"], []])
+    self.setup_name_test ([["-namehistory", "-allowexpired"], []])
 
   def generateToOther (self, n):
     """

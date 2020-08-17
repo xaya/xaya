@@ -12,7 +12,7 @@ from test_framework.util import *
 class NameUtxoTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([[]] * 1)
+    self.setup_name_test ([["-allowexpired"]] * 1)
 
   def run_test (self):
     node = self.nodes[0]

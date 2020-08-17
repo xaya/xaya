@@ -2,6 +2,12 @@
 
 ## Version 0.21
 
+- `name_show` now (by default) shows an error for expired names. This can be
+  overridden by setting the `allowExpired` RPC option to true, or by using the
+  `-allowexpired` command-line parameter.
+  For more context,
+  see [issue #194](https://github.com/namecoin/namecoin-core/issues/194).
+
 - By enabling `-namehashindex`, Namecoin Core can now keep track of a separate
   database that maps hashes to preimages for all registered names.  With this,
   `name_show` and `name_history` can now optionally look up names by hash.

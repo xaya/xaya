@@ -40,6 +40,7 @@
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <rpc/blockchain.h>
+#include <rpc/names.h>
 #include <rpc/register.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
@@ -584,6 +585,7 @@ void SetupServerArgs(NodeContext& node)
     gArgs.AddArg("-nameencoding=<enc>", strprintf("Sets the default encoding used for names in the RPC interface (default: %s)", EncodingToString(DEFAULT_NAME_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-valueencoding=<enc>", strprintf("Sets the default encoding used for values in the RPC interface (default: %s)", EncodingToString(DEFAULT_VALUE_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-limitnamechains=<n>", strprintf("Limit pending chains of name operations for name_update to <n> (default: %u)", DEFAULT_NAME_CHAIN_LIMIT), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    gArgs.AddArg("-allowexpired", strprintf("Throw error on expired names (default: %u)", DEFAULT_ALLOWEXPIRED), ArgsManager::ALLOW_BOOL, OptionsCategory::RPC);
 
 #if HAVE_DECL_DAEMON
     argsman.AddArg("-daemon", "Run in the background as a daemon and accept commands", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
