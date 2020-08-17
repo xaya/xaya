@@ -2320,27 +2320,15 @@ bool CWallet::SelectCoinsMinConf(const CAmount& nTargetValue, const CoinEligibil
         for (OutputGroup& group : groups) {
             if (!group.EligibleForSpending(eligibility_filter)) continue;
 
-            group.fee = 0;
-            group.long_term_fee = 0;
-            group.effective_value = 0;
-            for (auto it = group.m_outputs.begin(); it != group.m_outputs.end(); ) {
-                const CInputCoin& coin = *it;
-                CAmount effective_value = coin.txout.nValue - (coin.m_input_bytes < 0 ? 0 : coin_selection_params.effective_fee.GetFee(coin.m_input_bytes));
-                // Only include outputs that are positive effective value (i.e. not dust)
-                if (effective_value > 0) {
-                    group.fee += coin.m_input_bytes < 0 ? 0 : coin_selection_params.effective_fee.GetFee(coin.m_input_bytes);
-                    group.long_term_fee += coin.m_input_bytes < 0 ? 0 : long_term_feerate.GetFee(coin.m_input_bytes);
-                    if (coin_selection_params.m_subtract_fee_outputs) {
-                        group.effective_value += coin.txout.nValue;
-                    } else {
-                        group.effective_value += effective_value;
-                    }
-                    ++it;
-                } else {
-                    it = group.Discard(coin);
-                }
+            if (coin_selection_params.m_subtract_fee_outputs) {
+                // Set the effective feerate to 0 as we don't want to use the effective value since the fees will be deducted from the output
+                group.SetFees(CFeeRate(0) /* effective_feerate */, long_term_feerate);
+            } else {
+                group.SetFees(coin_selection_params.effective_fee, long_term_feerate);
             }
-            if (group.effective_value > 0) utxo_pool.push_back(group);
+
+            OutputGroup pos_group = group.GetPositiveOnlyGroup();
+            if (pos_group.effective_value > 0) utxo_pool.push_back(pos_group);
         }
         // Calculate the fees for things that aren't inputs
         CAmount not_input_fees = coin_selection_params.effective_fee.GetFee(coin_selection_params.tx_noinputs_size);
@@ -2486,23 +2474,6 @@ bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint,
     }
 
     // At this point, one input was not fully signed otherwise we would have exited already
-    // Find that input and figure out what went wrong.
-    for (unsigned int i = 0; i < tx.vin.size(); i++) {
-        // Get the prevout
-        CTxIn& txin = tx.vin[i];
-        auto coin = coins.find(txin.prevout);
-        if (coin == coins.end() || coin->second.IsSpent()) {
-            input_errors[i] = "Input not found or already spent";
-            continue;
-        }
-
-        // Check if this input is complete
-        SignatureData sigdata = DataFromTransaction(tx, i, coin->second.out);
-        if (!sigdata.complete) {
-            input_errors[i] = "Unable to sign input, missing keys";
-            continue;
-        }
-    }
     return false;
 }
 
