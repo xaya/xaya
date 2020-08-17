@@ -22,7 +22,7 @@ class NameWalletTest (NameTestFramework):
 
   def set_test_params (self):
     self.setup_clean_chain = True
-    self.setup_name_test ([["-paytxfee=%s" % txFee, "-allowexpired"]] * 2)
+    self.setup_name_test ([["-paytxfee=%s" % txFee]] * 2)
 
   def generateToOther (self, ind, n):
     """

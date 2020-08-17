@@ -263,7 +263,6 @@ BASE_SCRIPTS = [
     'auxpow_zerohash.py',
 
     # name tests
-    'name_allowexpired.py',
     'name_ant_workflow.py',
     'name_byhash.py',
     'name_encodings.py',

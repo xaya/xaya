@@ -11,7 +11,7 @@ from test_framework.util import *
 class NameListUnspentTest (NameTestFramework):
 
   def set_test_params (self):
-    self.setup_name_test ([["-allowexpired"]] * 2)
+    self.setup_name_test ([[]] * 2)
 
   def lookupName (self, ind, name, **kwargs):
     """Wrapper around lookup that gets txid and vout from the name."""

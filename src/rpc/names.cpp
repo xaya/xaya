@@ -427,15 +427,11 @@ namespace
 UniValue
 name_show (const JSONRPCRequest& request)
 {
-  const bool allow_expired_default = gArgs.GetBoolArg("-allowexpired", DEFAULT_ALLOWEXPIRED);
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
       .withValueEncoding ()
-      .withByHash ()
-      .withArg ("allowExpired", RPCArg::Type::BOOL, allow_expired_default ? "true" : "false",
-                "Whether to throw error for expired names");
+      .withByHash ();
 
   RPCHelpMan ("name_show",
       "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
@@ -448,7 +444,6 @@ name_show (const JSONRPCRequest& request)
         .finish (),
       RPCExamples {
           HelpExampleCli ("name_show", "\"myname\"")
-        + HelpExampleCli ("name_show", R"("myname" '{"allowExpired": false}')")
         + HelpExampleRpc ("name_show", "\"myname\"")
       }
   ).Check (request);
@@ -462,17 +457,6 @@ name_show (const JSONRPCRequest& request)
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
-
-  /* Parse and interpret the name_show-specific options.  */
-  RPCTypeCheckObj(options,
-    {
-      {"allowExpired", UniValueType(UniValue::VBOOL)},
-    },
-    true, false);
-
-  bool allow_expired = allow_expired_default;
-  if (options.exists("allowExpired"))
-    allow_expired = options["allowExpired"].get_bool();
 
   const valtype name = GetNameForLookup (request.params[0], options);
 
@@ -489,16 +473,7 @@ name_show (const JSONRPCRequest& request)
 
   MaybeWalletForRequest wallet(request);
   LOCK2 (wallet.getLock (), cs_main);
-  UniValue name_object = getNameInfo(options, name, data, wallet);
-  assert(!name_object["expired"].isNull());
-  const bool is_expired = name_object["expired"].get_bool();
-  if (is_expired && !allow_expired)
-    {
-      std::ostringstream msg;
-      msg << "name not found: " << EncodeNameForMessage(name);
-      throw JSONRPCError(RPC_WALLET_ERROR, msg.str());
-    }
-  return name_object;
+  return getNameInfo (options, name, data, wallet);
 }
 
 /* ************************************************************************** */
