@@ -49,7 +49,7 @@ class CreateTxWalletTest(BitcoinTestFramework):
         # Upstream uses 10kB here, but that would be beyond the maximum tx
         # size in Xaya.  Thus we use a smaller transaction and also set
         # -maxtxfee to a smaller value.
-        outputs = {self.nodes[0].getnewaddress(address_type='bech32'): 0.000025 for i in range(200)}
+        outputs = {self.nodes[0].getnewaddress(address_type='bech32'): 0.000025 for _ in range(200)}
         raw_tx = self.nodes[0].createrawtransaction(inputs=[], outputs=outputs)
         maxtxfeearg = '-maxtxfee=0.05'
 

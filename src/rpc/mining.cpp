@@ -296,6 +296,17 @@ static UniValue generatetodescriptor(const JSONRPCRequest& request)
     return generateBlocks(chainman, mempool, coinbase_script, num_blocks, max_tries, request.params[3]);
 }
 
+static UniValue generate(const JSONRPCRequest& request)
+{
+    const std::string help_str{"generate ( nblocks maxtries ) has been replaced by the -generate cli option. Refer to -help for more information."};
+
+    if (request.fHelp) {
+        throw std::runtime_error(help_str);
+    } else {
+        throw JSONRPCError(RPC_METHOD_NOT_FOUND, help_str);
+    }
+}
+
 static UniValue generatetoaddress(const JSONRPCRequest& request)
 {
             RPCHelpMan{"generatetoaddress",
@@ -1090,7 +1101,7 @@ static UniValue estimatesmartfee(const JSONRPCRequest& request)
                     RPCResult::Type::OBJ, "", "",
                     {
                         {RPCResult::Type::NUM, "feerate", /* optional */ true, "estimate fee rate in " + CURRENCY_UNIT + "/kB (only present if no errors were encountered)"},
-                        {RPCResult::Type::ARR, "errors", "Errors encountered during processing",
+                        {RPCResult::Type::ARR, "errors", /* optional */ true, "Errors encountered during processing (if there are any)",
                             {
                                 {RPCResult::Type::STR, "", "error"},
                             }},
@@ -1169,7 +1180,7 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
                                 {
                                     {RPCResult::Type::ELISION, "", ""},
                                 }},
-                                {RPCResult::Type::ARR, "errors", /* optional */ true, "Errors encountered during processing",
+                                {RPCResult::Type::ARR, "errors", /* optional */ true, "Errors encountered during processing (if there are any)",
                                 {
                                     {RPCResult::Type::STR, "error", ""},
                                 }},
@@ -1413,9 +1424,10 @@ static const CRPCCommand commands[] =
     { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
 
     { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
+    { "hidden",             "generate",               &generate,               {} },
 };
 // clang-format on
-
-    for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)
-        t.appendCommand(commands[vcidx].name, &commands[vcidx]);
+    for (const auto& c : commands) {
+        t.appendCommand(c.name, &c);
+    }
 }
