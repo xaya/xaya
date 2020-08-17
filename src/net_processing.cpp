@@ -203,7 +203,7 @@ namespace {
      * million to make it highly unlikely for users to have issues with this
      * filter.
      *
-     * We only need to add wtxids to this filter. For non-segwit
+     * We typically only add wtxids to this filter. For non-segwit
      * transactions, the txid == wtxid, so this only prevents us from
      * re-downloading non-segwit transactions when communicating with
      * non-wtxidrelay peers -- which is important for avoiding malleation
@@ -211,6 +211,12 @@ namespace {
      * non-wtxidrelay peers. For communicating with wtxidrelay peers, having
      * the reject filter store wtxids is exactly what we want to avoid
      * redownload of a rejected transaction.
+     *
+     * In cases where we can tell that a segwit transaction will fail
+     * validation no matter the witness, we may add the txid of such
+     * transaction to the filter as well. This can be helpful when
+     * communicating with txid-relay peers or if we were to otherwise fetch a
+     * transaction via txid (eg in our orphan handling).
      *
      * Memory used: 1.3 MB
      */
@@ -1177,6 +1183,7 @@ static bool MaybePunishNodeForTx(NodeId nodeid, const TxValidationState& state, 
         }
     // Conflicting (but not necessarily invalid) data or different policy:
     case TxValidationResult::TX_RECENT_CONSENSUS_CHANGE:
+    case TxValidationResult::TX_INPUTS_NOT_STANDARD:
     case TxValidationResult::TX_NOT_STANDARD:
     case TxValidationResult::TX_MISSING_INPUTS:
     case TxValidationResult::TX_PREMATURE_SPEND:
@@ -2086,6 +2093,19 @@ void static ProcessOrphanTx(ChainstateManager& chainman, CConnman& connman, CTxM
                 // if we start doing this too early.
                 assert(recentRejects);
                 recentRejects->insert(orphanTx.GetWitnessHash());
+                // If the transaction failed for TX_INPUTS_NOT_STANDARD,
+                // then we know that the witness was irrelevant to the policy
+                // failure, since this check depends only on the txid
+                // (the scriptPubKey being spent is covered by the txid).
+                // Add the txid to the reject filter to prevent repeated
+                // processing of this transaction in the event that child
+                // transactions are later received (resulting in
+                // parent-fetching by txid via the orphan-handling logic).
+                if (orphan_state.GetResult() == TxValidationResult::TX_INPUTS_NOT_STANDARD && orphanTx.GetWitnessHash() != orphanTx.GetHash()) {
+                    // We only add the txid if it differs from the wtxid, to
+                    // avoid wasting entries in the rolling bloom filter.
+                    recentRejects->insert(orphanTx.GetHash());
+                }
             }
             EraseOrphanTx(orphanHash);
             done = true;
@@ -2575,7 +2595,7 @@ void ProcessMessage(
         if (!pfrom.IsAddrRelayPeer()) {
             return;
         }
-        if (vAddr.size() > 1000)
+        if (vAddr.size() > MAX_ADDR_TO_SEND)
         {
             LOCK(cs_main);
             Misbehaving(pfrom.GetId(), 20, strprintf("addr message size = %u", vAddr.size()));
@@ -2999,7 +3019,7 @@ void ProcessMessage(
 
         // We do the AlreadyHave() check using wtxid, rather than txid - in the
         // absence of witness malleation, this is strictly better, because the
-        // recent rejects filter may contain the wtxid but will never contain
+        // recent rejects filter may contain the wtxid but rarely contains
         // the txid of a segwit transaction that has been rejected.
         // In the presence of witness malleation, it's possible that by only
         // doing the check with wtxid, we could overlook a transaction which
@@ -3091,6 +3111,17 @@ void ProcessMessage(
                 // if we start doing this too early.
                 assert(recentRejects);
                 recentRejects->insert(tx.GetWitnessHash());
+                // If the transaction failed for TX_INPUTS_NOT_STANDARD,
+                // then we know that the witness was irrelevant to the policy
+                // failure, since this check depends only on the txid
+                // (the scriptPubKey being spent is covered by the txid).
+                // Add the txid to the reject filter to prevent repeated
+                // processing of this transaction in the event that child
+                // transactions are later received (resulting in
+                // parent-fetching by txid via the orphan-handling logic).
+                if (state.GetResult() == TxValidationResult::TX_INPUTS_NOT_STANDARD && tx.GetWitnessHash() != tx.GetHash()) {
+                    recentRejects->insert(tx.GetHash());
+                }
                 if (RecursiveDynamicUsage(*ptx) < 100000) {
                     AddToCompactExtraTransactions(ptx);
                 }
@@ -3530,13 +3561,15 @@ void ProcessMessage(
         pfrom.fSentAddr = true;
 
         pfrom.vAddrToSend.clear();
-        std::vector<CAddress> vAddr = connman.GetAddresses();
+        std::vector<CAddress> vAddr;
+        if (pfrom.HasPermission(PF_ADDR)) {
+            vAddr = connman.GetAddresses();
+        } else {
+            vAddr = connman.GetAddresses(pfrom.addr.GetNetwork());
+        }
         FastRandomContext insecure_rand;
         for (const CAddress &addr : vAddr) {
-            bool banned_or_discouraged = banman && (banman->IsDiscouraged(addr) || banman->IsBanned(addr));
-            if (!banned_or_discouraged) {
-                pfrom.PushAddress(addr, insecure_rand);
-            }
+            pfrom.PushAddress(addr, insecure_rand);
         }
         return;
     }
@@ -4135,8 +4168,8 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
                 {
                     pto->m_addr_known->insert(addr.GetKey());
                     vAddr.push_back(addr);
-                    // receiver rejects addr messages larger than 1000
-                    if (vAddr.size() >= 1000)
+                    // receiver rejects addr messages larger than MAX_ADDR_TO_SEND
+                    if (vAddr.size() >= MAX_ADDR_TO_SEND)
                     {
                         connman->PushMessage(pto, msgMaker.Make(NetMsgType::ADDR, vAddr));
                         vAddr.clear();

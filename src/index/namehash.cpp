@@ -63,7 +63,7 @@ NameHashIndex::WriteBlock (const CBlock& block, const CBlockIndex* pindex)
           continue;
 
         const valtype& name = nameOp.getOpName ();
-        const uint256 hash = Hash (name.begin (), name.end ());
+        const uint256 hash = Hash (name);
         data.emplace_back (hash, name);
       }
 

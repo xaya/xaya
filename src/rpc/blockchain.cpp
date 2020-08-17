@@ -153,7 +153,7 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
 
     CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
     ssParent << auxpow.parentBlock;
-    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
+    const std::string strHex = HexStr(ssParent);
     result.pushKV("parentblock", strHex);
 
     return result;

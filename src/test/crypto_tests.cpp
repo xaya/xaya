@@ -183,7 +183,7 @@ static void TestHKDF_SHA256_32(const std::string &ikm_hex, const std::string &sa
     CHKDF_HMAC_SHA256_L32 hkdf32(initial_key_material.data(), initial_key_material.size(), salt_stringified);
     unsigned char out[32];
     hkdf32.Expand32(info_stringified, out);
-    BOOST_CHECK(HexStr(out, out + 32) == okm_check_hex);
+    BOOST_CHECK(HexStr(out) == okm_check_hex);
 }
 
 static std::string LongTestString()
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE(sha256d64)
             in[j] = InsecureRandBits(8);
         }
         for (int j = 0; j < i; ++j) {
-            CHash256().Write(in + 64 * j, 64).Finalize(out1 + 32 * j);
+            CHash256().Write({in + 64 * j, 64}).Finalize({out1 + 32 * j, 32});
         }
         SHA256D64(out2, in, i);
         BOOST_CHECK(memcmp(out1, out2, 32 * i) == 0);

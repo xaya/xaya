@@ -747,7 +747,7 @@ static bool rest_name(const util::Ref& context, HTTPRequest* req, const std::str
     case RetFormat::HEX:
     {
         const valtype& binVal = data.getValue();
-        const std::string hexVal = HexStr(binVal.begin(), binVal.end()) + "\n";
+        const std::string hexVal = HexStr(binVal) + "\n";
         req->WriteHeader("Content-Type", "text/plain");
         req->WriteReply(HTTP_OK, hexVal);
         return true;
