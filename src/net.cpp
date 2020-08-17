@@ -685,7 +685,7 @@ int V1TransportDeserializer::readData(const char *pch, unsigned int nBytes)
         vRecv.resize(std::min(hdr.nMessageSize, nDataPos + nCopy + 256 * 1024));
     }
 
-    hasher.Write((const unsigned char*)pch, nCopy);
+    hasher.Write({(const unsigned char*)pch, nCopy});
     memcpy(&vRecv[nDataPos], pch, nCopy);
     nDataPos += nCopy;
 
@@ -696,7 +696,7 @@ const uint256& V1TransportDeserializer::GetMessageHash() const
 {
     assert(Complete());
     if (data_hash.IsNull())
-        hasher.Finalize(data_hash.begin());
+        hasher.Finalize(data_hash);
     return data_hash;
 }
 
@@ -722,8 +722,8 @@ CNetMessage V1TransportDeserializer::GetMessage(const CMessageHeader::MessageSta
     if (!msg.m_valid_checksum) {
         LogPrint(BCLog::NET, "CHECKSUM ERROR (%s, %u bytes), expected %s was %s\n",
                  SanitizeString(msg.m_command), msg.m_message_size,
-                 HexStr(hash.begin(), hash.begin()+CMessageHeader::CHECKSUM_SIZE),
-                 HexStr(hdr.pchChecksum, hdr.pchChecksum+CMessageHeader::CHECKSUM_SIZE));
+                 HexStr(Span<uint8_t>(hash.begin(), hash.begin() + CMessageHeader::CHECKSUM_SIZE)),
+                 HexStr(hdr.pchChecksum));
     }
 
     // store receive time
@@ -736,7 +736,7 @@ CNetMessage V1TransportDeserializer::GetMessage(const CMessageHeader::MessageSta
 
 void V1TransportSerializer::prepareForTransport(CSerializedNetMsg& msg, std::vector<unsigned char>& header) {
     // create dbl-sha256 checksum
-    uint256 hash = Hash(msg.data.begin(), msg.data.end());
+    uint256 hash = Hash(msg.data);
 
     // create header
     CMessageHeader hdr(Params().MessageStart(), msg.m_type.c_str(), msg.data.size());
@@ -2530,7 +2530,24 @@ void CConnman::AddNewAddresses(const std::vector<CAddress>& vAddr, const CAddres
 
 std::vector<CAddress> CConnman::GetAddresses()
 {
-    return addrman.GetAddr();
+    std::vector<CAddress> addresses = addrman.GetAddr();
+    if (m_banman) {
+        addresses.erase(std::remove_if(addresses.begin(), addresses.end(),
+                        [this](const CAddress& addr){return m_banman->IsDiscouraged(addr) || m_banman->IsBanned(addr);}),
+                        addresses.end());
+    }
+    return addresses;
+}
+
+std::vector<CAddress> CConnman::GetAddresses(Network requestor_network)
+{
+    const auto current_time = GetTime<std::chrono::microseconds>();
+    if (m_addr_response_caches.find(requestor_network) == m_addr_response_caches.end() ||
+        m_addr_response_caches[requestor_network].m_update_addr_response < current_time) {
+        m_addr_response_caches[requestor_network].m_addrs_response_cache = GetAddresses();
+        m_addr_response_caches[requestor_network].m_update_addr_response = current_time + std::chrono::hours(21) + GetRandMillis(std::chrono::hours(6));
+    }
+    return m_addr_response_caches[requestor_network].m_addrs_response_cache;
 }
 
 bool CConnman::AddNode(const std::string& strNode)

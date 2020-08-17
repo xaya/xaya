@@ -81,7 +81,7 @@ CheckPowRoundtrip (const std::string& hex)
   CVectorWriter writer(SER_NETWORK, PROTOCOL_VERSION, serialised, 0);
   writer << powData;
 
-  BOOST_CHECK_EQUAL (HexStr (serialised.begin (), serialised.end ()), hex);
+  BOOST_CHECK_EQUAL (HexStr (serialised), hex);
 
   return powData;
 }

@@ -709,8 +709,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (fRequireStandard && !AreInputsStandard(tx, m_view))
-        return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "bad-txns-nonstandard-inputs");
+    if (fRequireStandard && !AreInputsStandard(tx, m_view)) {
+        return state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs");
+    }
 
     // Check for non-standard witness in P2WSH
     if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, m_view))
@@ -1246,8 +1247,8 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatFilePos& pos, c
 
         if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE)) {
             return error("%s: Block magic mismatch for %s: %s versus expected %s", __func__, pos.ToString(),
-                    HexStr(blk_start, blk_start + CMessageHeader::MESSAGE_START_SIZE),
-                    HexStr(message_start, message_start + CMessageHeader::MESSAGE_START_SIZE));
+                    HexStr(blk_start),
+                    HexStr(message_start));
         }
 
         if (blk_size > MAX_SIZE) {
@@ -3383,7 +3384,7 @@ std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBloc
     if (consensusParams.SegwitHeight != std::numeric_limits<int>::max()) {
         if (commitpos == -1) {
             uint256 witnessroot = BlockWitnessMerkleRoot(block, nullptr);
-            CHash256().Write(witnessroot.begin(), 32).Write(ret.data(), 32).Finalize(witnessroot.begin());
+            CHash256().Write(witnessroot).Write(ret).Finalize(witnessroot);
             CTxOut out;
             out.nValue = 0;
             out.scriptPubKey.resize(MINIMUM_WITNESS_COMMITMENT);
@@ -3535,7 +3536,7 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
             if (block.vtx[0]->vin[0].scriptWitness.stack.size() != 1 || block.vtx[0]->vin[0].scriptWitness.stack[0].size() != 32) {
                 return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-nonce-size", strprintf("%s : invalid witness reserved value size", __func__));
             }
-            CHash256().Write(hashWitness.begin(), 32).Write(&block.vtx[0]->vin[0].scriptWitness.stack[0][0], 32).Finalize(hashWitness.begin());
+            CHash256().Write(hashWitness).Write(block.vtx[0]->vin[0].scriptWitness.stack[0]).Finalize(hashWitness);
             if (memcmp(hashWitness.begin(), &block.vtx[0]->vout[commitpos].scriptPubKey[6], 32)) {
                 return state.Invalid(BlockValidationResult::BLOCK_MUTATED, "bad-witness-merkle-match", strprintf("%s : witness merkle commitment mismatch", __func__));
             }

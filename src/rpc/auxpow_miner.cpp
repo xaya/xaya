@@ -205,14 +205,14 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());
-  result.pushKV ("data", HexStr (data.begin (), data.end ()));
+  result.pushKV ("data", HexStr (data));
   result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
   result.pushKV ("coinbasevalue",
                  static_cast<int64_t> (pblock->vtx[0]->vout[0].nValue));
   result.pushKV ("bits", strprintf ("%08x", pblock->pow.getBits ()));
   result.pushKV ("height", static_cast<int64_t> (pindexPrev->nHeight + 1));
-  result.pushKV ("target", HexStr (target.begin (), target.end ()));
+  result.pushKV ("target", HexStr (target));
 
   return result;
 }

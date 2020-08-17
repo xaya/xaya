@@ -26,7 +26,7 @@ CBlockHeader::GetRngSeed () const
     powHash = pow.getFakeHeader ().GetHash ();
   assert (!powHash.IsNull ());
 
-  return Hash (powHash.begin (), powHash.end ());
+  return Hash (powHash);
 }
 
 std::string CBlock::ToString() const
