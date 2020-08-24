@@ -278,6 +278,7 @@ BASE_SCRIPTS = [
     'name_multisig.py --bip16-active',
     'name_multiupdate.py',
     'name_pending.py',
+    'name_psbt.py',
     'name_rawtx.py',
     'name_registration.py',
     'name_reorg.py',
