@@ -38,6 +38,8 @@ from test_framework.blocktools import (
     TIME_GENESIS_BLOCK,
 )
 from test_framework.messages import (
+    CBlockHeader,
+    FromHex,
     msg_block,
 )
 from test_framework.mininode import (
@@ -261,6 +263,14 @@ class BlockchainTest(BitcoinTestFramework):
         assert isinstance(header['mediantime'], int)
         assert isinstance(header['version'], int)
         assert isinstance(int(header['versionHex'], 16), int)
+
+        # Test with verbose=False, which should return the header as hex.
+        header_hex = node.getblockheader(blockhash=besthash, verbose=False)
+        assert_is_hex_string(header_hex)
+
+        header = FromHex(CBlockHeader(), header_hex)
+        header.calc_sha256()
+        assert_equal(header.hash, besthash)
 
     def _test_getdifficulty(self):
         difficulty = self.nodes[0].getdifficulty()
