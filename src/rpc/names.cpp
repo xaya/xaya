@@ -12,6 +12,7 @@
 #include <names/common.h>
 #include <names/main.h>
 #include <primitives/transaction.h>
+#include <psbt.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
@@ -789,6 +790,52 @@ name_pending (const JSONRPCRequest& request)
 
 /* ************************************************************************** */
 
+namespace
+{
+
+/**
+ * Performs the action of namerawtransaction and namepsbt on a given
+ * CMutableTransaction.  This is used to share the code between the two
+ * RPC methods.
+ */
+void
+PerformNameRawtx (const int nOut, const UniValue& nameOp,
+                  CMutableTransaction& mtx)
+{
+  if (nOut < 0 || nOut >= mtx.vout.size ())
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
+  auto& script = mtx.vout[nOut].scriptPubKey;
+
+  /* namerawtransaction does not have an options argument.  This would just
+     make the already long list of arguments longer.  Instead of using
+     namerawtransaction, namecoin-tx can be used anyway to create name
+     operations with arbitrary hex data.  */
+  const UniValue NO_OPTIONS(UniValue::VOBJ);
+
+  RPCTypeCheckObj (nameOp,
+    {
+      {"op", UniValueType (UniValue::VSTR)},
+      {"name", UniValueType (UniValue::VSTR)},
+      {"value", UniValueType (UniValue::VSTR)},
+    }
+  );
+
+  const std::string op = find_value (nameOp, "op").get_str ();
+  const valtype name
+    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
+  const valtype value
+    = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"), NO_OPTIONS);
+
+  if (op == "name_register")
+    script = CNameScript::buildNameRegister (script, name, value);
+  else if (op == "name_update")
+    script = CNameScript::buildNameUpdate (script, name, value);
+  else
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Invalid name operation");
+}
+
+} // anonymous namespace
+
 UniValue
 namerawtransaction (const JSONRPCRequest& request)
 {
@@ -800,7 +847,7 @@ namerawtransaction (const JSONRPCRequest& request)
           {"vout", RPCArg::Type::NUM, RPCArg::Optional::NO, "The vout of the desired name output"},
           {"nameop", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The name operation to create",
               {
-                  {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_new\", \"name_firstupdate\" and \"name_update\""},
+                  {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_register\" and \"name_update\""},
                   {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
                   {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "The new value for the name"},
               },
@@ -812,7 +859,7 @@ namerawtransaction (const JSONRPCRequest& request)
           },
       },
       RPCExamples {
-          HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"new value\")")
+          HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"first value\")")
         + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
       }
@@ -825,44 +872,63 @@ namerawtransaction (const JSONRPCRequest& request)
   if (!DecodeHexTx (mtx, request.params[0].get_str (), true))
     throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "TX decode failed");
 
-  const size_t nOut = request.params[1].get_int ();
-  if (nOut >= mtx.vout.size ())
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
+  UniValue result(UniValue::VOBJ);
 
-  /* namerawtransaction does not have an options argument.  This would just
-     make the already long list of arguments longer.  Instead of using
-     namerawtransaction, namecoin-tx can be used anyway to create name
-     operations with arbitrary hex data.  */
-  const UniValue NO_OPTIONS(UniValue::VOBJ);
+  PerformNameRawtx (request.params[1].get_int (), request.params[2].get_obj (),
+                    mtx);
 
-  const UniValue nameOp = request.params[2].get_obj ();
-  RPCTypeCheckObj (nameOp,
-    {
-      {"op", UniValueType (UniValue::VSTR)},
-      {"name", UniValueType (UniValue::VSTR)},
-      {"value", UniValueType (UniValue::VSTR)},
-    }
-  );
-  const std::string op = find_value (nameOp, "op").get_str ();
-  const valtype name
-    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
-  const valtype value
-    = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"), NO_OPTIONS);
+  result.pushKV ("hex", EncodeHexTx (CTransaction (mtx)));
+  return result;
+}
+
+UniValue
+namepsbt (const JSONRPCRequest& request)
+{
+  RPCHelpMan ("namepsbt",
+      "\nAdds a name operation to an existing PSBT.\n"
+      "\nUse createpsbt first to create the basic transaction, including the required inputs and outputs also for the name.\n",
+      {
+          {"psbt", RPCArg::Type::STR, RPCArg::Optional::NO, "A base64 string of a PSBT"},
+          {"vout", RPCArg::Type::NUM, RPCArg::Optional::NO, "The vout of the desired name output"},
+          {"nameop", RPCArg::Type::OBJ, RPCArg::Optional::NO, "The name operation to create",
+              {
+                  {"op", RPCArg::Type::STR, RPCArg::Optional::NO, "The operation to perform, can be \"name_register\" and \"name_update\""},
+                  {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
+                  {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "The new value for the name"},
+              },
+           "nameop"},
+      },
+      RPCResult {RPCResult::Type::OBJ, "", "",
+          {
+              {RPCResult::Type::STR_HEX, "psbt", "The serialised, updated PSBT"},
+          },
+      },
+      RPCExamples {
+          HelpExampleCli ("namepsbt", R"("psbt" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"first value\")")
+        + HelpExampleCli ("namepsbt", R"("psbt" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+        + HelpExampleRpc ("namepsbt", R"("psbt", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
+      }
+  ).Check (request);
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
+
+  PartiallySignedTransaction psbtx;
+  std::string error;
+  if (!DecodeBase64PSBT (psbtx, request.params[0].get_str (), error))
+    throw JSONRPCError (RPC_DESERIALIZATION_ERROR,
+                        strprintf ("TX decode failed %s", error));
 
   UniValue result(UniValue::VOBJ);
 
-  if (op == "name_register")
-    mtx.vout[nOut].scriptPubKey
-      = CNameScript::buildNameRegister (mtx.vout[nOut].scriptPubKey,
-                                        name, value);
-  else if (op == "name_update")
-    mtx.vout[nOut].scriptPubKey
-      = CNameScript::buildNameUpdate (mtx.vout[nOut].scriptPubKey,
-                                      name, value);
-  else
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "Invalid name operation");
+  PerformNameRawtx (request.params[1].get_int (), request.params[2].get_obj (),
+                    *psbtx.tx);
 
-  result.pushKV ("hex", EncodeHexTx (CTransaction (mtx)));
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  ssTx << psbtx;
+  const auto* data = reinterpret_cast<const unsigned char*> (ssTx.data ());
+  result.pushKV ("psbt", EncodeBase64 (data, ssTx.size ()));
+
   return result;
 }
 
@@ -897,12 +963,13 @@ void RegisterNameRPCCommands(CRPCTable &t)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "names",              "name_show",              &name_show,              {"name","options"} },
-    { "names",              "name_history",           &name_history,           {"name","options"} },
-    { "names",              "name_scan",              &name_scan,              {"start","count","options"} },
-    { "names",              "name_pending",           &name_pending,           {"name","options"} },
+    { "names",              "name_show",              &name_show,              {"name", "options"} },
+    { "names",              "name_history",           &name_history,           {"name", "options"} },
+    { "names",              "name_scan",              &name_scan,              {"start", "count", "options"} },
+    { "names",              "name_pending",           &name_pending,           {"name", "options"} },
     { "names",              "name_checkdb",           &name_checkdb,           {} },
-    { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring","vout","nameop"} },
+    { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring", "vout", "nameop"} },
+    { "rawtransactions",    "namepsbt",               &namepsbt,               {"psbt", "vout", "nameop"} },
 };
 
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)

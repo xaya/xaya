@@ -51,14 +51,14 @@ class NameAntWorkflowTest (NameTestFramework):
       for vout in data["vout"]:
         fullOuts.append ({vout["scriptPubKey"]["addresses"][0]: vout["value"]})
     combined = self.nodes[1].createrawtransaction (fullIns, fullOuts)
+    combined = self.nodes[1].converttopsbt (combined)
 
     nameOp = {
       "op": "name_update",
       "name": "x/name",
       "value": val ("updated"),
     }
-    combined = self.nodes[1].namerawtransaction (combined, 0, nameOp)["hex"]
-    combined = self.nodes[1].converttopsbt (combined)
+    combined = self.nodes[1].namepsbt (combined, 0, nameOp)["psbt"]
 
     # Sign and broadcast the partial tx.
     sign1 = self.nodes[0].walletprocesspsbt (combined)
