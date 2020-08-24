@@ -602,7 +602,10 @@ static UniValue getmempoolancestors(const JSONRPCRequest& request)
                         RPCResult::Type::ARR, "", "",
                         {{RPCResult::Type::STR_HEX, "", "The transaction id of an in-mempool ancestor transaction"}}},
                     RPCResult{"for verbose = true",
-                        RPCResult::Type::OBJ, "transactionid", "", MempoolEntryDescription()},
+                        RPCResult::Type::OBJ_DYN, "", "",
+                        {
+                            {RPCResult::Type::OBJ, "transactionid", "", MempoolEntryDescription()},
+                        }},
                 },
                 RPCExamples{
                     HelpExampleCli("getmempoolancestors", "\"mytxid\"")
@@ -634,7 +637,6 @@ static UniValue getmempoolancestors(const JSONRPCRequest& request)
         for (CTxMemPool::txiter ancestorIt : setAncestors) {
             o.push_back(ancestorIt->GetTx().GetHash().ToString());
         }
-
         return o;
     } else {
         UniValue o(UniValue::VOBJ);
@@ -1799,7 +1801,7 @@ static UniValue getblockstats(const JSONRPCRequest& request)
                 {RPCResult::Type::NUM, "total_size", "Total size of all non-coinbase transactions"},
                 {RPCResult::Type::NUM, "total_weight", "Total weight of all non-coinbase transactions divided by segwit scale factor (4)"},
                 {RPCResult::Type::NUM, "totalfee", "The fee total"},
-                {RPCResult::Type::NUM, "txs", "The number of transactions (excluding coinbase)"},
+                {RPCResult::Type::NUM, "txs", "The number of transactions (including coinbase)"},
                 {RPCResult::Type::NUM, "utxo_increase", "The increase/decrease in the number of unspent outputs"},
                 {RPCResult::Type::NUM, "utxo_size_inc", "The increase/decrease in size for the utxo index (not discounting op_return and similar)"},
             }},
