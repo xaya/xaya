@@ -43,9 +43,18 @@ class NameByHashTest (NameTestFramework):
     # -namehashindex is not enabled yet.
     assert_raises_rpc_error (-1, 'namehashindex is not enabled',
                              node.name_show, doubleHashHex, byHashOptions)
+    assert_equal (node.getindexinfo ("namehash"), {})
 
     # Restart the node and enable indexing.
     self.restart_node (0, extra_args=["-namehashindex", "-namehistory"])
+    self.wait_until (
+        lambda: all (i["synced"] for i in node.getindexinfo ().values ()))
+    assert_equal (node.getindexinfo ("namehash"), {
+      "namehash": {
+        "synced": True,
+        "best_block_height": node.getblockcount (),
+      }
+    })
 
     # Now the lookup by hash should work.
     res = node.name_show (doubleHashHex, byHashOptions)
