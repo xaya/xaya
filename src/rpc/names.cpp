@@ -927,7 +927,7 @@ namepsbt (const JSONRPCRequest& request)
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << psbtx;
   const auto* data = reinterpret_cast<const unsigned char*> (ssTx.data ());
-  result.pushKV ("psbt", EncodeBase64 (data, ssTx.size ()));
+  result.pushKV ("psbt", EncodeBase64 (MakeUCharSpan (ssTx)));
 
   return result;
 }
