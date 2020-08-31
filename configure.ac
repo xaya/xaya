@@ -604,7 +604,7 @@ case $host in
        AC_MSG_ERROR("windres not found")
      fi
 
-     CPPFLAGS="$CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -D_WIN32_WINNT=0x0601"
+     CPPFLAGS="$CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -DWIN32_LEAN_AND_MEAN"
 
      dnl libtool insists upon adding -nostdlib and a list of objects/libs to link against.
      dnl That breaks our ability to build dll's with static libgcc/libstdc++/libssp. Override
@@ -794,6 +794,14 @@ if test x$use_hardening != xno; then
   use_hardening=yes
   AX_CHECK_COMPILE_FLAG([-Wstack-protector],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -Wstack-protector"])
   AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
+
+  AX_CHECK_COMPILE_FLAG([-fcf-protection=full],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fcf-protection=full"])
+
+  dnl stack-clash-protection does not work properly when building for Windows.
+  dnl We use the test case from https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90458
+  dnl to determine if it can be enabled.
+  AX_CHECK_COMPILE_FLAG([-fstack-clash-protection],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-clash-protection"],[],["-O0"],
+    [AC_LANG_SOURCE([[class D {public: unsigned char buf[32768];}; int main() {D d; return 0;}]])])
 
   dnl When enable_debug is yes, all optimizations are disabled.
   dnl However, FORTIFY_SOURCE requires that there is some level of optimization, otherwise it does nothing and just creates a compiler warning.
@@ -1161,7 +1169,7 @@ else
   BITCOIN_QT_INIT
 
   dnl sets $bitcoin_enable_qt, $bitcoin_enable_qt_test, $bitcoin_enable_qt_dbus
-  BITCOIN_QT_CONFIGURE
+  BITCOIN_QT_CONFIGURE([5.5.1])
 fi
 
 if test x$enable_wallet != xno; then

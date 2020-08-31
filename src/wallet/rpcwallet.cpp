@@ -2762,6 +2762,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
                             {"maximumAmount", RPCArg::Type::AMOUNT, /* default */ "unlimited", "Maximum value of each UTXO in " + CURRENCY_UNIT + ""},
                             {"maximumCount", RPCArg::Type::NUM, /* default */ "unlimited", "Maximum number of UTXOs"},
                             {"minimumSumAmount", RPCArg::Type::AMOUNT, /* default */ "unlimited", "Minimum sum value of all UTXOs in " + CURRENCY_UNIT + ""},
+                            {"includeNames", RPCArg::Type::BOOL, /* default */ "false", "Include name outputs"},
                         },
                         "query_options"},
                 },
@@ -2844,6 +2845,16 @@ static UniValue listunspent(const JSONRPCRequest& request)
 
     if (!request.params[4].isNull()) {
         const UniValue& options = request.params[4].get_obj();
+
+        RPCTypeCheckObj(options,
+            {
+                {"minimumAmount", UniValueType()},
+                {"maximumAmount", UniValueType()},
+                {"minimumSumAmount", UniValueType()},
+                {"maximumCount", UniValueType(UniValue::VNUM)},
+                {"includeNames", UniValueType(UniValue::VBOOL)},
+            },
+            true, true);
 
         if (options.exists("minimumAmount"))
             nMinimumAmount = AmountFromValue(options["minimumAmount"]);
