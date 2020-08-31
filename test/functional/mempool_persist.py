@@ -39,15 +39,14 @@ from decimal import Decimal
 import os
 import time
 
+from test_framework.p2p import P2PTxInvStore
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.mininode import P2PTxInvStore
 from test_framework.util import (
     assert_equal,
     assert_greater_than_or_equal,
     assert_raises_rpc_error,
     connect_nodes,
     disconnect_nodes,
-    wait_until,
 )
 
 
@@ -172,7 +171,7 @@ class MempoolPersistTest(BitcoinTestFramework):
         # check that txn gets broadcast due to unbroadcast logic
         conn = node0.add_p2p_connection(P2PTxInvStore())
         node0.mockscheduler(16*60) # 15 min + 1 for buffer
-        wait_until(lambda: len(conn.get_invs()) == 1)
+        self.wait_until(lambda: len(conn.get_invs()) == 1)
 
 if __name__ == '__main__':
     MempoolPersistTest().main()
