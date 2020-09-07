@@ -4388,11 +4388,11 @@ RPCHelpMan removeprunedfunds();
 RPCHelpMan importmulti();
 RPCHelpMan importdescriptors();
 
-extern UniValue name_list(const JSONRPCRequest& request); // in rpcnames.cpp
-extern UniValue name_new(const JSONRPCRequest& request);
+extern RPCHelpMan name_list(); // in rpcnames.cpp
+extern RPCHelpMan name_new();
 extern UniValue name_firstupdate(const JSONRPCRequest& request);
-extern UniValue name_update(const JSONRPCRequest& request);
-extern UniValue sendtoname(const JSONRPCRequest& request);
+extern RPCHelpMan name_update();
+extern RPCHelpMan sendtoname();
 
 Span<const CRPCCommand> GetWalletRPCCommands()
 {
@@ -4468,7 +4468,7 @@ static const CRPCCommand commands[] =
     { "names",              "name_new",                         &name_new,                      {"name","options"} },
     { "names",              "name_firstupdate",                 &name_firstupdate,              {"name","rand","tx","value","options","allow_active"} },
     { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
-    { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },
+    { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount","replaceable"} },
 };
 // clang-format on
     return MakeSpan(commands);
