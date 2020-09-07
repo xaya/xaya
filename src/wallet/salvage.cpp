@@ -16,8 +16,20 @@ static const char *HEADER_END = "HEADER=END";
 static const char *DATA_END = "DATA=END";
 typedef std::pair<std::vector<unsigned char>, std::vector<unsigned char> > KeyValPair;
 
+static bool KeyFilter(const std::string& type)
+{
+    return WalletBatch::IsKeyType(type) || type == DBKeys::HDCHAIN;
+}
+
 bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
+    options.verify = false;
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, status, error);
+    if (!database) return false;
+
     std::string filename;
     std::shared_ptr<BerkeleyEnvironment> env = GetWalletEnv(file_path, filename);
 
@@ -118,7 +130,7 @@ bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::v
     }
 
     DbTxn* ptxn = env->TxnBegin();
-    CWallet dummyWallet(nullptr, WalletLocation(), CreateDummyWalletDatabase());
+    CWallet dummyWallet(nullptr, "", CreateDummyWalletDatabase());
     for (KeyValPair& row : salvagedData)
     {
         /* Filter for only private key type KV pairs to be added to the salvaged wallet */
@@ -129,9 +141,9 @@ bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::v
         {
             // Required in LoadKeyMetadata():
             LOCK(dummyWallet.cs_wallet);
-            fReadOK = ReadKeyValue(&dummyWallet, ssKey, ssValue, strType, strErr);
+            fReadOK = ReadKeyValue(&dummyWallet, ssKey, ssValue, strType, strErr, KeyFilter);
         }
-        if (!WalletBatch::IsKeyType(strType) && strType != DBKeys::HDCHAIN) {
+        if (!KeyFilter(strType)) {
             continue;
         }
         if (!fReadOK)

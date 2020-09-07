@@ -232,18 +232,6 @@ static void SetFeeEstimateMode(const CWallet* pwallet, CCoinControl& cc, const U
     }
 }
 
-static void UpdateWalletSetting(interfaces::Chain& chain,
-                                const std::string& wallet_name,
-                                const UniValue& load_on_startup,
-                                std::vector<bilingual_str>& warnings)
-{
-    if (load_on_startup.isTrue() && !AddWalletSetting(chain, wallet_name)) {
-        warnings.emplace_back(Untranslated("Wallet load on startup setting could not be updated, so wallet may not be loaded next node startup."));
-    } else if (load_on_startup.isFalse() && !RemoveWalletSetting(chain, wallet_name)) {
-        warnings.emplace_back(Untranslated("Wallet load on startup setting could not be updated, so wallet may still be loaded next node startup."));
-    }
-}
-
 static UniValue getnewaddress(const JSONRPCRequest& request)
 {
             RPCHelpMan{"getnewaddress",
@@ -2069,6 +2057,7 @@ static UniValue lockunspent(const JSONRPCRequest& request)
                 "Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.\n"
                 "If no transaction outputs are specified when unlocking then all current locked transaction outputs are unlocked.\n"
                 "A locked transaction output will not be chosen by automatic coin selection, when spending coins.\n"
+                "Manually selected coins are automatically unlocked.\n"
                 "Locks are stored in memory only. Nodes start with zero locked outputs, and the locked output list\n"
                 "is always cleared (by virtue of process exit) when a node stops or fails.\n"
                 "Also see the listunspent call\n",
@@ -2502,7 +2491,7 @@ static UniValue loadwallet(const JSONRPCRequest& request)
             RPCHelpMan{"loadwallet",
                 "\nLoads a wallet from a wallet file or directory."
                 "\nNote that all wallet command-line options used when starting namecoind will be"
-                "\napplied to the new wallet (eg -zapwallettxes, rescan, etc).\n",
+                "\napplied to the new wallet (eg -rescan, etc).\n",
                 {
                     {"filename", RPCArg::Type::STR, RPCArg::Optional::NO, "The wallet directory or .dat file."},
                     {"load_on_startup", RPCArg::Type::BOOL, /* default */ "null", "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
@@ -2521,24 +2510,21 @@ static UniValue loadwallet(const JSONRPCRequest& request)
             }.Check(request);
 
     WalletContext& context = EnsureWalletContext(request.context);
-    WalletLocation location(request.params[0].get_str());
+    const std::string name(request.params[0].get_str());
 
-    if (!location.Exists()) {
-        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + location.GetName() + " not found.");
-    } else if (fs::is_directory(location.GetPath())) {
-        // The given filename is a directory. Check that there's a wallet.dat file.
-        fs::path wallet_dat_file = location.GetPath() / "wallet.dat";
-        if (fs::symlink_status(wallet_dat_file).type() == fs::file_not_found) {
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + location.GetName() + " does not contain a wallet.dat file.");
-        }
-    }
-
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, error, warnings);
-    if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
-
-    UpdateWalletSetting(*context.chain, location.GetName(), request.params[1], warnings);
+    Optional<bool> load_on_start = request.params[1].isNull() ? nullopt : Optional<bool>(request.params[1].get_bool());
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, load_on_start, options, status, error, warnings);
+    if (!wallet) {
+        // Map bad format to not found, since bad format is returned when the
+        // wallet directory exists, but doesn't contain a data file.
+        RPCErrorCode code = status == DatabaseStatus::FAILED_NOT_FOUND || status == DatabaseStatus::FAILED_BAD_FORMAT ? RPC_WALLET_NOT_FOUND : RPC_WALLET_ERROR;
+        throw JSONRPCError(code, error.original);
+    }
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2667,20 +2653,18 @@ static UniValue createwallet(const JSONRPCRequest& request)
         warnings.emplace_back(Untranslated("Wallet is an experimental descriptor wallet"));
     }
 
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_create = true;
+    options.create_flags = flags;
+    options.create_passphrase = passphrase;
     bilingual_str error;
-    std::shared_ptr<CWallet> wallet;
-    WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
-    switch (status) {
-        case WalletCreationStatus::CREATION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ERROR, error.original);
-        case WalletCreationStatus::ENCRYPTION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, error.original);
-        case WalletCreationStatus::SUCCESS:
-            break;
-        // no default case, so the compiler can warn about missing cases
+    Optional<bool> load_on_start = request.params[6].isNull() ? nullopt : Optional<bool>(request.params[6].get_bool());
+    std::shared_ptr<CWallet> wallet = CreateWallet(*context.chain, request.params[0].get_str(), load_on_start, options, status, error, warnings);
+    if (!wallet) {
+        RPCErrorCode code = status == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
+        throw JSONRPCError(code, error.original);
     }
-
-    UpdateWalletSetting(*context.chain, request.params[0].get_str(), request.params[6], warnings);
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2724,15 +2708,13 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
     // Release the "main" shared pointer and prevent further notifications.
     // Note that any attempt to load the same wallet would fail until the wallet
     // is destroyed (see CheckUniqueFileid).
-    if (!RemoveWallet(wallet)) {
+    std::vector<bilingual_str> warnings;
+    Optional<bool> load_on_start = request.params[1].isNull() ? nullopt : Optional<bool>(request.params[1].get_bool());
+    if (!RemoveWallet(wallet, load_on_start, warnings)) {
         throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
     }
 
-    interfaces::Chain& chain = wallet->chain();
-    std::vector<bilingual_str> warnings;
-
     UnloadWallet(std::move(wallet));
-    UpdateWalletSetting(chain, wallet_name, request.params[1], warnings);
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("warning", Join(warnings, Untranslated("\n")).original);
@@ -4394,17 +4376,17 @@ UniValue getauxblock(const JSONRPCRequest& request)
     return fAccepted;
 }
 
-UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
-UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
-UniValue importprivkey(const JSONRPCRequest& request);
-UniValue importaddress(const JSONRPCRequest& request);
-UniValue importpubkey(const JSONRPCRequest& request);
-UniValue dumpwallet(const JSONRPCRequest& request);
-UniValue importwallet(const JSONRPCRequest& request);
-UniValue importprunedfunds(const JSONRPCRequest& request);
-UniValue removeprunedfunds(const JSONRPCRequest& request);
-UniValue importmulti(const JSONRPCRequest& request);
-UniValue importdescriptors(const JSONRPCRequest& request);
+RPCHelpMan abortrescan();
+RPCHelpMan dumpprivkey();
+RPCHelpMan importprivkey();
+RPCHelpMan importaddress();
+RPCHelpMan importpubkey();
+RPCHelpMan dumpwallet();
+RPCHelpMan importwallet();
+RPCHelpMan importprunedfunds();
+RPCHelpMan removeprunedfunds();
+RPCHelpMan importmulti();
+RPCHelpMan importdescriptors();
 
 extern UniValue name_list(const JSONRPCRequest& request); // in rpcnames.cpp
 extern UniValue name_new(const JSONRPCRequest& request);
