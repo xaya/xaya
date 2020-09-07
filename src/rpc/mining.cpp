@@ -1212,9 +1212,9 @@ static RPCHelpMan estimaterawfee()
 /* ************************************************************************** */
 /* Merge mining.  */
 
-UniValue createauxblock(const JSONRPCRequest& request)
+static RPCHelpMan createauxblock()
 {
-    RPCHelpMan{"createauxblock",
+    return RPCHelpMan{"createauxblock",
         "\nCreates a new block and returns information required to"
         " merge-mine it.\n",
         {
@@ -1236,7 +1236,8 @@ UniValue createauxblock(const JSONRPCRequest& request)
           HelpExampleCli("createauxblock", "\"address\"")
           + HelpExampleRpc("createauxblock", "\"address\"")
         },
-    }.Check(request);
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
 
     // Check coinbase payout address
     const CTxDestination coinbaseScript
@@ -1248,11 +1249,13 @@ UniValue createauxblock(const JSONRPCRequest& request)
     const CScript scriptPubKey = GetScriptForDestination(coinbaseScript);
 
     return AuxpowMiner::get ().createAuxBlock(request, scriptPubKey);
+},
+    };
 }
 
-UniValue submitauxblock(const JSONRPCRequest& request)
+static RPCHelpMan submitauxblock()
 {
-    RPCHelpMan{"submitauxblock",
+    return RPCHelpMan{"submitauxblock",
         "\nSubmits a solved auxpow for a block that was previously"
         " created by 'createauxblock'.\n",
         {
@@ -1266,11 +1269,13 @@ UniValue submitauxblock(const JSONRPCRequest& request)
             HelpExampleCli("submitauxblock", "\"hash\" \"serialised auxpow\"")
             + HelpExampleRpc("submitauxblock", "\"hash\" \"serialised auxpow\"")
         },
-    }.Check(request);
-
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
     return AuxpowMiner::get ().submitAuxBlock(request,
                                               request.params[0].get_str(),
                                               request.params[1].get_str());
+},
+    };
 }
 
 /* ************************************************************************** */

@@ -4307,7 +4307,7 @@ ReservedKeysForMining g_mining_keys;
 
 } // anonymous namespace
 
-UniValue getauxblock(const JSONRPCRequest& request)
+static UniValue getauxblock(const JSONRPCRequest& request)
 {
     /* RPCHelpMan::Check is not applicable here since we have the
        custom check for exactly zero or two arguments.  */
