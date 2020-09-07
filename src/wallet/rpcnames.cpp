@@ -191,15 +191,15 @@ SendNameOutput (const JSONRPCRequest& request,
 } // anonymous namespace
 /* ************************************************************************** */
 
-UniValue
-name_list (const JSONRPCRequest& request)
+RPCHelpMan
+name_list ()
 {
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
       .withValueEncoding ();
 
-  RPCHelpMan ("name_list",
+  return RPCHelpMan ("name_list",
       "\nShows the status of all names in the wallet.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
@@ -216,9 +216,9 @@ name_list (const JSONRPCRequest& request)
           HelpExampleCli ("name_list", "")
         + HelpExampleCli ("name_list", "\"myname\"")
         + HelpExampleRpc ("name_list", "")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet)
     return NullUniValue;
@@ -301,11 +301,13 @@ name_list (const JSONRPCRequest& request)
 
   return res;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_register (const JSONRPCRequest& request)
+RPCHelpMan
+name_register ()
 {
   NameOptionsHelp optHelp;
   optHelp
@@ -313,7 +315,7 @@ name_register (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withWriteOptions ();
 
-  RPCHelpMan ("name_register",
+  return RPCHelpMan ("name_register",
       "\nRegisters a new name."
           + HELP_REQUIRING_PASSPHRASE,
       {
@@ -325,9 +327,9 @@ name_register (const JSONRPCRequest& request)
       RPCExamples {
           HelpExampleCli ("name_register", "\"myname\", \"new-value\"")
         + HelpExampleRpc ("name_register", "\"myname\", \"new-value\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet)
     return NullUniValue;
@@ -388,11 +390,13 @@ name_register (const JSONRPCRequest& request)
 
   return txidVal;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_update (const JSONRPCRequest& request)
+RPCHelpMan
+name_update ()
 {
   NameOptionsHelp optHelp;
   optHelp
@@ -400,7 +404,7 @@ name_update (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withWriteOptions ();
 
-  RPCHelpMan ("name_update",
+  return RPCHelpMan ("name_update",
       "\nUpdates a name and possibly transfers it."
           + HELP_REQUIRING_PASSPHRASE,
       {
@@ -412,9 +416,9 @@ name_update (const JSONRPCRequest& request)
       RPCExamples {
           HelpExampleCli ("name_update", "\"myname\", \"new-value\"")
         + HelpExampleRpc ("name_update", "\"myname\", \"new-value\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet)
     return NullUniValue;
@@ -493,13 +497,15 @@ name_update (const JSONRPCRequest& request)
 
   return txidVal;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-sendtoname (const JSONRPCRequest& request)
+RPCHelpMan
+sendtoname ()
 {
-  RPCHelpMan{"sendtoname",
+  return RPCHelpMan{"sendtoname",
       "\nSend an amount to the owner of a name.\n"
       "\nIt is an error if the name is expired."
           + HELP_REQUIRING_PASSPHRASE,
@@ -522,8 +528,8 @@ sendtoname (const JSONRPCRequest& request)
       + HelpExampleCli ("sendtoname", "\"id/foobar\" 0.1 \"\" \"\" true")
       + HelpExampleRpc ("sendtoname", "\"id/foobar\", 0.1, \"donation\", \"seans outpost\"")
           },
-      }.Check (request);
-
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet)
     return NullUniValue;
@@ -584,4 +590,6 @@ sendtoname (const JSONRPCRequest& request)
   recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
 
   return SendMoney(pwallet, coin_control, nullptr, recipients, mapValue);
+}
+  };
 }

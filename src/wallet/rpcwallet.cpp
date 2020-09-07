@@ -4296,7 +4296,7 @@ ReservedKeysForMining g_mining_keys;
 
 } // anonymous namespace
 
-UniValue getauxblock(const JSONRPCRequest& request)
+static UniValue getauxblock(const JSONRPCRequest& request)
 {
     /* RPCHelpMan::Check is not applicable here since we have the
        custom check for exactly zero or two arguments.  */
@@ -4450,10 +4450,10 @@ RPCHelpMan removeprunedfunds();
 RPCHelpMan importmulti();
 RPCHelpMan importdescriptors();
 
-extern UniValue name_list(const JSONRPCRequest& request); // in rpcnames.cpp
-extern UniValue name_register(const JSONRPCRequest& request);
-extern UniValue name_update(const JSONRPCRequest& request);
-extern UniValue sendtoname(const JSONRPCRequest& request);
+extern RPCHelpMan name_list(); // in rpcnames.cpp
+extern RPCHelpMan name_register();
+extern RPCHelpMan name_update();
+extern RPCHelpMan sendtoname();
 
 Span<const CRPCCommand> GetWalletRPCCommands()
 {
@@ -4529,7 +4529,7 @@ static const CRPCCommand commands[] =
     { "names",              "name_list",                        &name_list,                     {"name","options"} },
     { "names",              "name_register",                    &name_register,                 {"name","value","options"} },
     { "names",              "name_update",                      &name_update,                   {"name","value","options"} },
-    { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount"} },
+    { "names",              "sendtoname",                       &sendtoname,                    {"name","amount","comment","comment_to","subtractfeefromamount","replaceable"} },
 };
 // clang-format on
     return MakeSpan(commands);

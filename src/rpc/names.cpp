@@ -425,8 +425,8 @@ NameOptionsHelp::buildRpcArg () const
 namespace
 {
 
-UniValue
-name_show (const JSONRPCRequest& request)
+RPCHelpMan
+name_show ()
 {
   NameOptionsHelp optHelp;
   optHelp
@@ -434,7 +434,7 @@ name_show (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withByHash ();
 
-  RPCHelpMan ("name_show",
+  return RPCHelpMan ("name_show",
       "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
@@ -446,9 +446,9 @@ name_show (const JSONRPCRequest& request)
       RPCExamples {
           HelpExampleCli ("name_show", "\"myname\"")
         + HelpExampleRpc ("name_show", "\"myname\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (::ChainstateActive ().IsInitialBlockDownload ())
@@ -476,11 +476,13 @@ name_show (const JSONRPCRequest& request)
   LOCK2 (wallet.getLock (), cs_main);
   return getNameInfo (options, name, data, wallet);
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_history (const JSONRPCRequest& request)
+RPCHelpMan
+name_history ()
 {
   NameOptionsHelp optHelp;
   optHelp
@@ -488,7 +490,7 @@ name_history (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withByHash ();
 
-  RPCHelpMan ("name_history",
+  return RPCHelpMan ("name_history",
       "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
@@ -504,9 +506,9 @@ name_history (const JSONRPCRequest& request)
       RPCExamples {
           HelpExampleCli ("name_history", "\"myname\"")
         + HelpExampleRpc ("name_history", "\"myname\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
 
   if (!fNameHistory)
@@ -550,11 +552,13 @@ name_history (const JSONRPCRequest& request)
 
   return res;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_scan (const JSONRPCRequest& request)
+RPCHelpMan
+name_scan ()
 {
   NameOptionsHelp optHelp;
   optHelp
@@ -569,7 +573,7 @@ name_scan (const JSONRPCRequest& request)
       .withArg ("regexp", RPCArg::Type::STR,
                 "Filter for names matching the regexp");
 
-  RPCHelpMan ("name_scan",
+  return RPCHelpMan ("name_scan",
       "\nLists names in the database.\n",
       {
           {"start", RPCArg::Type::STR, "", "Skip initially to this name"},
@@ -588,9 +592,9 @@ name_scan (const JSONRPCRequest& request)
         + HelpExampleCli ("name_scan", "\"d/abc\"")
         + HelpExampleCli ("name_scan", "\"d/abc\" 10")
         + HelpExampleRpc ("name_scan", "\"d/abc\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
@@ -698,18 +702,20 @@ name_scan (const JSONRPCRequest& request)
 
   return res;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_pending (const JSONRPCRequest& request)
+RPCHelpMan
+name_pending ()
 {
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
       .withValueEncoding ();
 
-  RPCHelpMan ("name_pending",
+  return RPCHelpMan ("name_pending",
       "\nLists unconfirmed name operations in the mempool.\n"
       "\nIf a name is given, only check for operations on this name.\n",
       {
@@ -728,9 +734,9 @@ name_pending (const JSONRPCRequest& request)
           HelpExampleCli ("name_pending", "")
         + HelpExampleCli ("name_pending", "\"d/domob\"")
         + HelpExampleRpc ("name_pending", "")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
   MaybeWalletForRequest wallet(request);
@@ -787,6 +793,8 @@ name_pending (const JSONRPCRequest& request)
 
   return arr;
 }
+  );
+}
 
 /* ************************************************************************** */
 
@@ -836,10 +844,10 @@ PerformNameRawtx (const int nOut, const UniValue& nameOp,
 
 } // anonymous namespace
 
-UniValue
-namerawtransaction (const JSONRPCRequest& request)
+RPCHelpMan
+namerawtransaction ()
 {
-  RPCHelpMan ("namerawtransaction",
+  return RPCHelpMan ("namerawtransaction",
       "\nAdds a name operation to an existing raw transaction.\n"
       "\nUse createrawtransaction first to create the basic transaction, including the required inputs and outputs also for the name.\n",
       {
@@ -862,9 +870,9 @@ namerawtransaction (const JSONRPCRequest& request)
           HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"first value\")")
         + HelpExampleCli ("namerawtransaction", R"("raw tx hex" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleRpc ("namerawtransaction", R"("raw tx hex", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
@@ -880,11 +888,13 @@ namerawtransaction (const JSONRPCRequest& request)
   result.pushKV ("hex", EncodeHexTx (CTransaction (mtx)));
   return result;
 }
+  );
+}
 
-UniValue
-namepsbt (const JSONRPCRequest& request)
+RPCHelpMan
+namepsbt ()
 {
-  RPCHelpMan ("namepsbt",
+  return RPCHelpMan ("namepsbt",
       "\nAdds a name operation to an existing PSBT.\n"
       "\nUse createpsbt first to create the basic transaction, including the required inputs and outputs also for the name.\n",
       {
@@ -907,9 +917,9 @@ namepsbt (const JSONRPCRequest& request)
           HelpExampleCli ("namepsbt", R"("psbt" 1 "{\"op\":\"name_register\",\"name\":\"my-name\",\"value\":\"first value\")")
         + HelpExampleCli ("namepsbt", R"("psbt" 1 "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
         + HelpExampleRpc ("namepsbt", R"("psbt", 1, "{\"op\":\"name_update\",\"name\":\"my-name\",\"value\":\"new value\")")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
 
@@ -931,13 +941,15 @@ namepsbt (const JSONRPCRequest& request)
 
   return result;
 }
+  );
+}
 
 /* ************************************************************************** */
 
-UniValue
-name_checkdb (const JSONRPCRequest& request)
+RPCHelpMan
+name_checkdb ()
 {
-  RPCHelpMan ("name_checkdb",
+  return RPCHelpMan ("name_checkdb",
       "\nValidates the name DB's consistency.\n"
       "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
       {},
@@ -945,14 +957,16 @@ name_checkdb (const JSONRPCRequest& request)
       RPCExamples {
           HelpExampleCli ("name_checkdb", "")
         + HelpExampleRpc ("name_checkdb", "")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   ChainstateManager& chainman = EnsureChainman (request.context);
   LOCK (cs_main);
   auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
   return coinsTip.ValidateNameDB (chainman);
+}
+  );
 }
 
 } // namespace
