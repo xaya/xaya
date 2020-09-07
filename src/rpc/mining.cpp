@@ -1350,9 +1350,9 @@ static RPCHelpMan submitauxblock()
     };
 }
 
-UniValue creatework(const JSONRPCRequest& request)
+static RPCHelpMan creatework()
 {
-    RPCHelpMan{"creatework",
+    return RPCHelpMan{"creatework",
         "\nCreates a new block and returns information required to mine it stand-alone.\n",
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Payout address for the coinbase transaction"},
@@ -1373,9 +1373,9 @@ UniValue creatework(const JSONRPCRequest& request)
         RPCExamples{
             HelpExampleCli("creatework", "\"address\"")
           + HelpExampleRpc("creatework", "\"address\"")
-        }
-    }.Check(request);
-
+        },
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
     // Check coinbase payout address
     const CTxDestination coinbaseScript
       = DecodeDestination(request.params[0].get_str());
@@ -1386,9 +1386,11 @@ UniValue creatework(const JSONRPCRequest& request)
     const CScript scriptPubKey = GetScriptForDestination(coinbaseScript);
 
     return AuxpowMiner::get ().createWork(request, scriptPubKey);
+},
+    };
 }
 
-UniValue submitwork(const JSONRPCRequest& request)
+static UniValue submitwork(const JSONRPCRequest& request)
 {
     /* We cannot use RPCHelpMan::Check because of the somewhat exceptional
        format of arguments (with the first being optional).  */

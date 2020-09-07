@@ -4366,9 +4366,9 @@ static UniValue getauxblock(const JSONRPCRequest& request)
     return fAccepted;
 }
 
-UniValue getwork(const JSONRPCRequest& request)
+static RPCHelpMan getwork()
 {
-    RPCHelpMan{"getwork",
+    return RPCHelpMan{"getwork",
         "\nCreates or submits a stand-alone mined block.\n"
         "\nWithout arguments, creates a new block and returns information required to solve it.\n"
         "\nWith arguments, submits a solved PoW for a previously-returned block.\n"
@@ -4400,8 +4400,8 @@ UniValue getwork(const JSONRPCRequest& request)
           + HelpExampleCli("getwork", "\"hash\" \"solved data\"")
           + HelpExampleRpc("getwork", "")
         },
-    }.Check(request);
-
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
     CWallet* const pwallet = wallet.get();
@@ -4436,6 +4436,8 @@ UniValue getwork(const JSONRPCRequest& request)
         g_mining_keys.MarkBlockSubmitted(pwallet, hashHex);
 
     return fAccepted;
+},
+    };
 }
 
 RPCHelpMan abortrescan();

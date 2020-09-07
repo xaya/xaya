@@ -219,10 +219,10 @@ GetDetachSequence (const CBlockIndex* from, const CBlockIndex* ancestor)
 }
 #endif // ENABLE_ZMQ
 
-UniValue
-game_sendupdates (const JSONRPCRequest& request)
+RPCHelpMan
+game_sendupdates ()
 {
-  RPCHelpMan ("game_sendupdates",
+  return RPCHelpMan ("game_sendupdates",
       "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
       "\nIf toblock is not given, it defaults to the current chain tip.\n",
       {
@@ -246,9 +246,9 @@ game_sendupdates (const JSONRPCRequest& request)
           HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
         + HelpExampleCli ("game_sendupdates", "\"huc\" \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\" \"206c22b7fb26b24b344b5b238325916c8bae4513302403f9f8efaf8b4c3e61f4\"")
         + HelpExampleRpc ("game_sendupdates", "\"huc\", \"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651\"")
-      }
-  ).Check (request);
-
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
@@ -338,6 +338,8 @@ game_sendupdates (const JSONRPCRequest& request)
 #else // ENABLE_ZMQ
   throw JSONRPCError (RPC_MISC_ERROR, "ZMQ is not built into Xaya");
 #endif // ENABLE_ZMQ
+}
+  );
 }
 
 } // anonymous namespace
