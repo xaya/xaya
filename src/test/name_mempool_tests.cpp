@@ -30,6 +30,8 @@ class NameMempoolTestSetup : public TestingSetup
 
 public:
 
+  CTxMemPool mempool;
+
   CScript ADDR;
   CScript OTHER_ADDR;
 
@@ -37,18 +39,15 @@ public:
 
   NameMempoolTestSetup ()
   {
-    ENTER_CRITICAL_SECTION (cs_main);
-    ENTER_CRITICAL_SECTION (mempool.cs);
-    mempool.clear ();
-
     ADDR = CScript () << OP_TRUE;
     OTHER_ADDR = CScript () << OP_TRUE << OP_RETURN;
+
+    ENTER_CRITICAL_SECTION (mempool.cs);
   }
 
   ~NameMempoolTestSetup ()
   {
     LEAVE_CRITICAL_SECTION (mempool.cs);
-    LEAVE_CRITICAL_SECTION (cs_main);
   }
 
   /**

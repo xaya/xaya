@@ -494,6 +494,7 @@ name_firstupdate (const JSONRPCRequest& request)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
   {
+    auto& mempool = EnsureMemPool (request.context);
     LOCK (mempool.cs);
     if (mempool.registersName (name))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
@@ -605,6 +606,7 @@ name_update ()
                                             DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
+    auto& mempool = EnsureMemPool (request.context);
     LOCK (mempool.cs);
 
     const unsigned pendingOps = mempool.pendingNameChainLength (name);

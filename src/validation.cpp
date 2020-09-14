@@ -151,7 +151,6 @@ arith_uint256 nMinimumChainWork;
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 
 CBlockPolicyEstimator feeEstimator;
-CTxMemPool mempool(&feeEstimator);
 
 // Internal stuff
 namespace {
@@ -2553,7 +2552,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams&
     AssertLockHeld(cs_main);
 
     // Fix the memool for conflicts due to unexpired names.
-    mempool.removeUnexpireConflicts(unexpiredNames);
+    m_mempool.removeUnexpireConflicts(unexpiredNames);
 
     if (disconnectpool) {
         // Save transactions to re-add to mempool at end of reorg
@@ -4320,6 +4319,14 @@ bool static LoadBlockIndexDB(ChainstateManager& chainman, const CChainParams& ch
     LogPrintf("LoadBlockIndexDB(): name history %s\n", fNameHistory ? "enabled" : "disabled");
 
     return true;
+}
+
+void CChainState::LoadMempool(const ArgsManager& args)
+{
+    if (args.GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
+        ::LoadMempool(m_mempool);
+    }
+    m_mempool.SetIsLoaded(!ShutdownRequested());
 }
 
 bool CChainState::LoadChainTip(const CChainParams& chainparams)
