@@ -355,6 +355,7 @@ name_register ()
      a pending registration.  This is not a hard rule enforced by network
      rules, but it is necessary with the current mempool implementation.  */
   {
+    auto& mempool = EnsureMemPool (request.context);
     LOCK (mempool.cs);
     if (mempool.registersName (name))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
@@ -449,6 +450,7 @@ name_update ()
                                             DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
+    auto& mempool = EnsureMemPool (request.context);
     LOCK (mempool.cs);
 
     const unsigned pendingOps = mempool.pendingNameChainLength (name);

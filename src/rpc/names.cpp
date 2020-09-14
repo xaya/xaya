@@ -740,6 +740,7 @@ name_pending ()
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
   MaybeWalletForRequest wallet(request);
+  auto& mempool = EnsureMemPool (request.context);
   LOCK2 (wallet.getLock (), mempool.cs);
 
   UniValue options(UniValue::VOBJ);
