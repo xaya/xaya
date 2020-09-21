@@ -66,7 +66,7 @@ protected:
   /**
    * Sends a multipart message where the payload data is JSON.
    */
-  bool SendMessage (const std::string& command, const UniValue& data);
+  bool SendZmqMessage (const std::string& command, const UniValue& data);
 
 public:
 

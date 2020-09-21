@@ -55,11 +55,11 @@ TrackedGames::Remove (const std::string& game)
 }
 
 bool
-ZMQGameNotifier::SendMessage (const std::string& command,
-                              const UniValue& data)
+ZMQGameNotifier::SendZmqMessage (const std::string& command,
+                                 const UniValue& data)
 {
   const std::string dataStr = data.write ();
-  return CZMQAbstractPublishNotifier::SendMessage (
+  return CZMQAbstractPublishNotifier::SendZmqMessage (
       command.c_str (), dataStr.c_str (), dataStr.size ());
 }
 
@@ -375,7 +375,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
       data.pushKV ("moves", mitMv->second);
       data.pushKV ("admin", mitCmd->second);
 
-      if (!SendMessage (commandPrefix + " json " + game, data))
+      if (!SendZmqMessage (commandPrefix + " json " + game, data))
         return false;
     }
 
@@ -410,7 +410,7 @@ ZMQGamePendingNotifier::NotifyPendingTx (const CTransaction& tx)
       std::ostringstream cmd;
       cmd << PREFIX_MOVE << " json " << entry.first;
 
-      if (!SendMessage (cmd.str (), entry.second))
+      if (!SendZmqMessage (cmd.str (), entry.second))
         return false;
     }
 

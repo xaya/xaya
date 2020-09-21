@@ -5,15 +5,19 @@
 #ifndef BITCOIN_ZMQ_ZMQABSTRACTNOTIFIER_H
 #define BITCOIN_ZMQ_ZMQABSTRACTNOTIFIER_H
 
-#include <zmq/zmqconfig.h>
+#include <util/memory.h>
+
+#include <memory>
+#include <string>
 
 #include <functional>
 
 class CBlock;
 class CBlockIndex;
+class CTransaction;
 class CZMQAbstractNotifier;
 
-using CZMQNotifierFactory = std::function<CZMQAbstractNotifier*()>;
+using CZMQNotifierFactory = std::function<std::unique_ptr<CZMQAbstractNotifier> ()>;
 
 class CZMQAbstractNotifier
 {
@@ -24,9 +28,9 @@ public:
     virtual ~CZMQAbstractNotifier();
 
     template <typename T>
-    static CZMQAbstractNotifier* Create()
+    static std::unique_ptr<CZMQAbstractNotifier> Create()
     {
-        return new T();
+        return MakeUnique<T>();
     }
 
     std::string GetType() const { return type; }

@@ -9,6 +9,7 @@
 #include <zmq/zmqgames.h>
 
 #include <list>
+#include <memory>
 
 class CBlockIndex;
 class CZMQAbstractNotifier;
@@ -45,7 +46,7 @@ private:
     CZMQNotificationInterface();
 
     void *pcontext;
-    std::list<CZMQAbstractNotifier*> notifiers;
+    std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
 
     /**
      * The game blocks notifier, if any.  This is used to send on-demand
@@ -62,6 +63,7 @@ private:
      * a block and when disconnecting a block.
      */
     void NotifyTransaction(const CTransactionRef& ptx);
+
 };
 
 extern CZMQNotificationInterface* g_zmq_notification_interface;

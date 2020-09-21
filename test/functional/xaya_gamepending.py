@@ -44,6 +44,7 @@ class GamePendingTest (XayaZmqTest):
     self.address = "tcp://127.0.0.1:%d" % zmq_port (1)
 
     args = []
+    args.append ("-wallet=")
     args.append ("-zmqpubgamepending=%s" % self.address)
     args.extend (["-trackgame=%s" % g for g in ["a", "b", "other"]])
     self.add_nodes (self.num_nodes, extra_args=[args])
