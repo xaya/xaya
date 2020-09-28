@@ -251,7 +251,7 @@ BASE_SCRIPTS = [
     'feature_config_args.py',
     'feature_settings.py',
     'rpc_getdescriptorinfo.py',
-    'rpc_getpeerinfo_banscore_deprecation.py',
+    'rpc_getpeerinfo_deprecation.py',
     'rpc_help.py',
     'feature_help.py',
     'feature_shutdown.py',
@@ -268,6 +268,7 @@ BASE_SCRIPTS = [
 
 # Tests that are currently being skipped (e. g., because of BIP9).
 SKIPPED = [
+    'feature_signet.py',
     'feature_versionbits_warning.py',
 ]
 
