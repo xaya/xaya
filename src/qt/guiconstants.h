@@ -46,6 +46,7 @@ static const int TOOLTIP_WRAP_THRESHOLD = 80;
 #define QAPP_ORG_DOMAIN "namecoin.org"
 #define QAPP_APP_NAME_DEFAULT "Namecoin-Qt"
 #define QAPP_APP_NAME_TESTNET "Namecoin-Qt-testnet"
+#define QAPP_APP_NAME_SIGNET "Namecoin-Qt-signet"
 #define QAPP_APP_NAME_REGTEST "Namecoin-Qt-regtest"
 
 /* One gigabyte (GB) in bytes */
