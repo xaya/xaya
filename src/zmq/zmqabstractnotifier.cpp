@@ -23,17 +23,32 @@ bool CZMQAbstractNotifier::NotifyTransaction(const CTransaction &/*transaction*/
     return true;
 }
 
+bool CZMQAbstractNotifier::NotifyBlockConnect(const CBlockIndex * /*CBlockIndex*/)
+{
+    return true;
+}
+
+bool CZMQAbstractNotifier::NotifyBlockDisconnect(const CBlockIndex * /*CBlockIndex*/)
+{
+    return true;
+}
+
+bool CZMQAbstractNotifier::NotifyTransactionAcceptance(const CTransaction &/*transaction*/, uint64_t mempool_sequence)
+{
+    return true;
+}
+
+bool CZMQAbstractNotifier::NotifyTransactionRemoval(const CTransaction &/*transaction*/, uint64_t mempool_sequence)
+{
+    return true;
+}
+
 bool CZMQAbstractNotifier::NotifyBlockAttached(const CBlock& /*block*/)
 {
     return true;
 }
 
 bool CZMQAbstractNotifier::NotifyBlockDetached(const CBlock& /*block*/)
-{
-    return true;
-}
-
-bool CZMQAbstractNotifier::NotifyPendingTx(const CTransaction& transaction)
 {
     return true;
 }

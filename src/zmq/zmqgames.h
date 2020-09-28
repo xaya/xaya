@@ -122,7 +122,8 @@ public:
 
   using ZMQGameNotifier::ZMQGameNotifier;
 
-  bool NotifyPendingTx (const CTransaction& tx) override;
+  bool NotifyTransactionAcceptance (const CTransaction& tx,
+                                    uint64_t seq) override;
 
 };
 

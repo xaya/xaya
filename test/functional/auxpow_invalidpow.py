@@ -34,19 +34,19 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
 
   def run_test (self):
     node = self.nodes[0]
-    node.add_p2p_connection (P2PDataStore ())
+    peer = node.add_p2p_connection (P2PDataStore ())
 
     self.log.info ("Sending block with invalid auxpow over P2P...")
     tip = node.getbestblockhash ()
     blk, blkHash = self.createBlock ()
     self.solvePowData (blk.powData, False)
-    node.p2p.send_blocks_and_test ([blk], node, force_send=True,
-                                   success=False, reject_reason="high-hash")
+    peer.send_blocks_and_test ([blk], node, force_send=True,
+                               success=False, reject_reason="high-hash")
     assert_equal (node.getbestblockhash (), tip)
 
     self.log.info ("Sending the same block with valid auxpow...")
     self.solvePowData (blk.powData, True)
-    node.p2p.send_blocks_and_test ([blk], node, success=True)
+    peer.send_blocks_and_test ([blk], node, success=True)
     assert_equal (node.getbestblockhash (), blkHash)
 
     self.log.info ("Submitting block with invalid auxpow...")

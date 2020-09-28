@@ -46,6 +46,6 @@ UniValue SendMoney(CWallet* pwallet, const CCoinControl& coin_control,
                    const CTxIn* withInput,
                    std::vector<CRecipient>& recipients, mapValue_t map_value);
 
-UniValue getaddressinfo(const JSONRPCRequest& request);
-UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
+RPCHelpMan getaddressinfo();
+RPCHelpMan signrawtransactionwithwallet();
 #endif //BITCOIN_WALLET_RPCWALLET_H

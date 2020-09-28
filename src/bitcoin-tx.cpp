@@ -91,9 +91,6 @@ static void SetupBitcoinTxArgs(ArgsManager &argsman)
 //
 static int AppInitRawTx(int argc, char* argv[])
 {
-    //
-    // Parameters
-    //
     SetupBitcoinTxArgs(gArgs);
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
@@ -101,7 +98,7 @@ static int AppInitRawTx(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    // Check for -chain, -testnet or -regtest parameter (Params() calls are only valid after this clause)
+    // Check for chain settings (Params() calls are only valid after this clause)
     try {
         SelectParams(gArgs.GetChainName());
     } catch (const std::exception& e) {

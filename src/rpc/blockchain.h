@@ -42,7 +42,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
 UniValue MempoolInfoToJSON(const CTxMemPool& pool);
 
 /** Mempool to JSON */
-UniValue MempoolToJSON(const CTxMemPool& pool, bool verbose = false);
+UniValue MempoolToJSON(const CTxMemPool& pool, bool verbose = false, bool include_mempool_sequence = false);
 
 /** Block header to JSON */
 UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex) LOCKS_EXCLUDED(cs_main);
@@ -54,6 +54,6 @@ NodeContext& EnsureNodeContext(const util::Ref& context);
 CTxMemPool& EnsureMemPool(const util::Ref& context);
 ChainstateManager& EnsureChainman(const util::Ref& context);
 
-UniValue getdifficulty(const JSONRPCRequest& request);
+UniValue GetDifficultyJson();
 
 #endif

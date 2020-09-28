@@ -397,7 +397,8 @@ ZMQGameBlocksNotifier::NotifyBlockDetached (const CBlock& block)
 }
 
 bool
-ZMQGamePendingNotifier::NotifyPendingTx (const CTransaction& tx)
+ZMQGamePendingNotifier::NotifyTransactionAcceptance (const CTransaction& tx,
+                                                     const uint64_t seq)
 {
   const TransactionData data(tx);
 
