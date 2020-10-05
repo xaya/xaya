@@ -375,11 +375,21 @@ public:
         vSeeds.clear();
 
         if (!args.IsArgSet("-signetchallenge")) {
-            LogPrintf("Using default signet network\n");
             /* FIXME: Adjust the default signet challenge to something else if
                we want to use signet for Namecoin.  */
             bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
             //vSeeds.emplace_back("178.128.221.177");
+
+            consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000d145533ce");
+            consensus.defaultAssumeValid = uint256S("0x00000128807d9175c494e24d805fc7854f7d79aa965cbb128342ad8b70cecfa5"); // 5348
+            m_assumed_blockchain_size = 1;
+            m_assumed_chain_state_size = 0;
+            chainTxData = ChainTxData{
+                // Data from RPC: getchaintxstats 4096 00000128807d9175c494e24d805fc7854f7d79aa965cbb128342ad8b70cecfa5
+                /* nTime    */ 1601382000,
+                /* nTxCount */ 5435,
+                /* dTxRate  */ 0.001898346323372538,
+            };
         } else {
             const auto signet_challenge = args.GetArgs("-signetchallenge");
             if (signet_challenge.size() != 1) {
@@ -387,6 +397,13 @@ public:
             }
             bin = ParseHex(signet_challenge[0]);
 
+            m_assumed_blockchain_size = 0;
+            m_assumed_chain_state_size = 0;
+            chainTxData = ChainTxData{
+                0,
+                0,
+                0,
+            };
             LogPrintf("Signet with challenge %s\n", signet_challenge[0]);
         }
 
@@ -427,12 +444,9 @@ public:
         h << consensus.signet_challenge;
         uint256 hash = h.GetHash();
         memcpy(pchMessageStart, hash.begin(), 4);
-        LogPrintf("Signet derived magic (message start): %s\n", HexStr({pchMessageStart, pchMessageStart + 4}));
 
-        nDefaultPort = 38333;
+        nDefaultPort = 38334;
         nPruneAfterHeight = 1000;
-        m_assumed_blockchain_size = 0;
-        m_assumed_chain_state_size = 0;
 
         genesis = CreateTestnetGenesisBlock(1598918400, 52613770, 0x1e0377ae, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -453,12 +467,6 @@ public:
         fRequireStandard = true;
         m_is_test_chain = true;
         m_is_mockable_chain = false;
-
-        chainTxData = ChainTxData{
-            0,
-            0,
-            0
-        };
     }
 
     int DefaultCheckNameDB () const override
@@ -632,16 +640,16 @@ const CChainParams &Params() {
     return *globalChainParams;
 }
 
-std::unique_ptr<const CChainParams> CreateChainParams(const std::string& chain)
+std::unique_ptr<const CChainParams> CreateChainParams(const ArgsManager& args, const std::string& chain)
 {
     if (chain == CBaseChainParams::MAIN) {
         return std::unique_ptr<CChainParams>(new CMainParams());
     } else if (chain == CBaseChainParams::TESTNET) {
         return std::unique_ptr<CChainParams>(new CTestNetParams());
     } else if (chain == CBaseChainParams::SIGNET) {
-        return std::unique_ptr<CChainParams>(new SigNetParams(gArgs));
+        return std::unique_ptr<CChainParams>(new SigNetParams(args));
     } else if (chain == CBaseChainParams::REGTEST) {
-        return std::unique_ptr<CChainParams>(new CRegTestParams(gArgs));
+        return std::unique_ptr<CChainParams>(new CRegTestParams(args));
     }
     throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
 }
@@ -649,5 +657,5 @@ std::unique_ptr<const CChainParams> CreateChainParams(const std::string& chain)
 void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
-    globalChainParams = CreateChainParams(network);
+    globalChainParams = CreateChainParams(gArgs, network);
 }

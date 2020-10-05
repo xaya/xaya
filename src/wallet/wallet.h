@@ -273,7 +273,7 @@ private:
     /** Constant used in hashBlock to indicate tx has been abandoned, only used at
      * serialization/deserialization to avoid ambiguity with conflicted.
      */
-    static const uint256 ABANDON_HASH;
+    static constexpr const uint256& ABANDON_HASH = uint256::ONE;
 
 public:
     /**
@@ -721,7 +721,7 @@ private:
     // ScriptPubKeyMan::GetID. In many cases it will be the hash of an internal structure
     std::map<uint256, std::unique_ptr<ScriptPubKeyMan>> m_spk_managers;
 
-    bool CreateTransactionInternal(const std::vector<CRecipient>& vecSend, const CTxIn* withInput, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, bool sign);
+    bool CreateTransactionInternal(const std::vector<CRecipient>& vecSend, const CTxIn* withInput, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign);
 
 public:
     /*
@@ -982,7 +982,7 @@ public:
      */
     bool CreateTransaction(const std::vector<CRecipient>& vecSend,
                            const CTxIn* withInput,
-                           CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, bool sign = true);
+                           CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign = true);
     /**
      * Submit the transaction to the node's mempool and then relay to peers.
      * Should be called after CreateTransaction unless you want to abort
