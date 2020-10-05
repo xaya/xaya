@@ -53,7 +53,6 @@ class GameBlocksTest (XayaZmqTest):
     self.address = "tcp://127.0.0.1:%d" % zmq_port (1)
 
     args = []
-    args.append ("-wallet=")
     args.append ("-zmqpubgameblocks=%s" % self.address)
     args.append ("-maxgameblockattaches=10")
     args.append ("-acceptnonstdtxn=1")

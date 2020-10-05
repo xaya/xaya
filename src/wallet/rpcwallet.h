@@ -44,7 +44,7 @@ LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_cr
    rpcnames.cpp in Namecoin.  */
 UniValue SendMoney(CWallet* pwallet, const CCoinControl& coin_control,
                    const CTxIn* withInput,
-                   std::vector<CRecipient>& recipients, mapValue_t map_value);
+                   std::vector<CRecipient>& recipients, mapValue_t map_value, bool verbose);
 
 RPCHelpMan getaddressinfo();
 RPCHelpMan signrawtransactionwithwallet();

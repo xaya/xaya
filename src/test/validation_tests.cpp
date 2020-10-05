@@ -4,6 +4,7 @@
 
 #include <chainparams.h>
 #include <net.h>
+#include <signet.h>
 #include <validation.h>
 
 #include <test/util/setup_common.h>
@@ -38,7 +39,7 @@ static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
 
 BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    const auto chainParams = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
     TestBlockSubsidyHalvings(chainParams->GetConsensus()); // As in main
     /* Testing other intervals as is done upstream doesn't work, as we would
        need to craft a ConsensusRules instance for the POST_ICO fork check.  */
@@ -46,8 +47,7 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-
+    const auto chainParams = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
     CAmount nSum = 0;
     CAmount nLastSubsidy;
     int nLastHeight = 0;
@@ -93,16 +93,77 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 
 BOOST_AUTO_TEST_CASE(subsidy_post_ico_fork_test)
 {
-    const auto main = CreateChainParams(CBaseChainParams::MAIN);
+    const auto main = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(439999, main->GetConsensus()), COIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(440000, main->GetConsensus()), 382934346);
 
-    const auto test = CreateChainParams(CBaseChainParams::TESTNET);
+    const auto test = CreateChainParams(*m_node.args, CBaseChainParams::TESTNET);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(10999, test->GetConsensus()), COIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(11000, test->GetConsensus()), 10 * COIN);
 
-    const auto regtest = CreateChainParams(CBaseChainParams::REGTEST);
+    const auto regtest = CreateChainParams(*m_node.args, CBaseChainParams::REGTEST);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(1, regtest->GetConsensus()), 50 * COIN);
+}
+
+BOOST_AUTO_TEST_CASE(signet_parse_tests)
+{
+    ArgsManager signet_argsman;
+    signet_argsman.ForceSetArg("-signetchallenge", "51"); // set challenge to OP_TRUE
+    const auto signet_params = CreateChainParams(signet_argsman, CBaseChainParams::SIGNET);
+    CBlock block;
+    BOOST_CHECK(signet_params->GetConsensus().signet_challenge == std::vector<uint8_t>{OP_TRUE});
+    CScript challenge{OP_TRUE};
+
+    // empty block is invalid
+    BOOST_CHECK(!SignetTxs::Create(block, challenge));
+    BOOST_CHECK(!CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // no witness commitment
+    CMutableTransaction cb;
+    cb.vout.emplace_back(0, CScript{});
+    block.vtx.push_back(MakeTransactionRef(cb));
+    block.vtx.push_back(MakeTransactionRef(cb)); // Add dummy tx to excercise merkle root code
+    BOOST_CHECK(!SignetTxs::Create(block, challenge));
+    BOOST_CHECK(!CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // no header is treated valid
+    std::vector<uint8_t> witness_commitment_section_141{0xaa, 0x21, 0xa9, 0xed};
+    for (int i = 0; i < 32; ++i) {
+        witness_commitment_section_141.push_back(0xff);
+    }
+    cb.vout.at(0).scriptPubKey = CScript{} << OP_RETURN << witness_commitment_section_141;
+    block.vtx.at(0) = MakeTransactionRef(cb);
+    BOOST_CHECK(SignetTxs::Create(block, challenge));
+    BOOST_CHECK(CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // no data after header, valid
+    std::vector<uint8_t> witness_commitment_section_325{0xec, 0xc7, 0xda, 0xa2};
+    cb.vout.at(0).scriptPubKey = CScript{} << OP_RETURN << witness_commitment_section_141 << witness_commitment_section_325;
+    block.vtx.at(0) = MakeTransactionRef(cb);
+    BOOST_CHECK(SignetTxs::Create(block, challenge));
+    BOOST_CHECK(CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // Premature end of data, invalid
+    witness_commitment_section_325.push_back(0x01);
+    witness_commitment_section_325.push_back(0x51);
+    cb.vout.at(0).scriptPubKey = CScript{} << OP_RETURN << witness_commitment_section_141 << witness_commitment_section_325;
+    block.vtx.at(0) = MakeTransactionRef(cb);
+    BOOST_CHECK(!SignetTxs::Create(block, challenge));
+    BOOST_CHECK(!CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // has data, valid
+    witness_commitment_section_325.push_back(0x00);
+    cb.vout.at(0).scriptPubKey = CScript{} << OP_RETURN << witness_commitment_section_141 << witness_commitment_section_325;
+    block.vtx.at(0) = MakeTransactionRef(cb);
+    BOOST_CHECK(SignetTxs::Create(block, challenge));
+    BOOST_CHECK(CheckSignetBlockSolution(block, signet_params->GetConsensus()));
+
+    // Extraneous data, invalid
+    witness_commitment_section_325.push_back(0x00);
+    cb.vout.at(0).scriptPubKey = CScript{} << OP_RETURN << witness_commitment_section_141 << witness_commitment_section_325;
+    block.vtx.at(0) = MakeTransactionRef(cb);
+    BOOST_CHECK(!SignetTxs::Create(block, challenge));
+    BOOST_CHECK(!CheckSignetBlockSolution(block, signet_params->GetConsensus()));
 }
 
 static bool ReturnFalse() { return false; }

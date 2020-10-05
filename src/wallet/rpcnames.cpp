@@ -185,7 +185,7 @@ SendNameOutput (const JSONRPCRequest& request,
       }
 
   CCoinControl coinControl;
-  return SendMoney (&wallet, coinControl, nameInput, vecSend, {});
+  return SendMoney (&wallet, coinControl, nameInput, vecSend, {}, false);
 }
 
 } // anonymous namespace
@@ -591,7 +591,7 @@ sendtoname ()
   const CAmount amount = AmountFromValue (request.params[1]);
   recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
 
-  return SendMoney(pwallet, coin_control, nullptr, recipients, mapValue);
+  return SendMoney(pwallet, coin_control, nullptr, recipients, mapValue, false);
 }
   };
 }
