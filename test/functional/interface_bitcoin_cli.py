@@ -95,8 +95,8 @@ class TestBitcoinCli(BitcoinTestFramework):
             assert_equal(self.nodes[0].cli.getwalletinfo(), wallet_info)
 
             # Setup to test -getinfo, -generate, and -rpcwallet= with multiple wallets.
-            wallets = ['', 'Encrypted', 'secret']
-            amounts = [Decimal('59.99991'), Decimal(9), Decimal(31)]
+            wallets = [self.default_wallet_name, 'Encrypted', 'secret']
+            amounts = [BALANCE + Decimal('9.99991'), Decimal(9), Decimal(31)]
             self.nodes[0].createwallet(wallet_name=wallets[1])
             self.nodes[0].createwallet(wallet_name=wallets[2])
             w1 = self.nodes[0].get_wallet_rpc(wallets[0])
