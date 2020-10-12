@@ -484,7 +484,7 @@ CheckNameDB (ChainstateManager& chainman, bool disconnect)
 
   auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
-  const bool ok = coinsTip.ValidateNameDB (chainman);
+  const bool ok = coinsTip.ValidateNameDB (chainman, [] () {});
 
   /* The DB is inconsistent (mismatch between UTXO set and names DB) between
      (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's
