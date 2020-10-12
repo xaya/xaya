@@ -117,6 +117,7 @@ public:
        which determines further actions.  */
     /* FIXME: Move to consensus params!  */
     bool IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const;
+    virtual ~CChainParams() {}
 
 protected:
     CChainParams() {}
