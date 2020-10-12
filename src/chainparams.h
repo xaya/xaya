@@ -96,6 +96,8 @@ public:
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
 
+    virtual ~CChainParams() {}
+
 protected:
     CChainParams() {}
 
