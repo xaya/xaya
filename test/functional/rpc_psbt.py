@@ -28,13 +28,13 @@ class PSBTTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = False
         self.num_nodes = 3
-        # Upstream Bitcoin has p2sh-segwit as default address type and this
+        # Upstream Bitcoin has segwit as default address type and this
         # test depends on that.  Since we changed it (for now, pending
         # segwit activation in Namecoin), explicitly specify the address
         # type for this test.
         self.extra_args = [
-            ["-addresstype=p2sh-segwit", "-walletrbf=1"],
-            ["-addresstype=p2sh-segwit", "-walletrbf=0"],
+            ["-addresstype=bech32", "-walletrbf=1"],
+            ["-addresstype=bech32", "-walletrbf=0", "-changetype=legacy"],
             []
         ]
         self.supports_cli = False
@@ -86,6 +86,14 @@ class PSBTTest(BitcoinTestFramework):
         # Reconnect
         connect_nodes(self.nodes[0], 1)
         connect_nodes(self.nodes[0], 2)
+
+    def assert_change_type(self, psbtx, expected_type):
+        """Assert that the given PSBT has a change output with the given type."""
+
+        # The decodepsbt RPC is stateless and independent of any settings, we can always just call it on the first node
+        decoded_psbt = self.nodes[0].decodepsbt(psbtx["psbt"])
+        changepos = psbtx["changepos"]
+        assert_equal(decoded_psbt["tx"]["vout"][changepos]["scriptPubKey"]["type"], expected_type)
 
     def run_test(self):
         # Create and fund a raw tx for sending 10 BTC
@@ -188,8 +196,8 @@ class PSBTTest(BitcoinTestFramework):
 
         # feeRate of 10 BTC / KB produces a total fee well above -maxtxfee
         # previously this was silently capped at -maxtxfee
-        assert_raises_rpc_error(-4, "Fee exceeds maximum configured by -maxtxfee", self.nodes[1].walletcreatefundedpsbt, [{"txid":txid,"vout":p2wpkh_pos},{"txid":txid,"vout":p2sh_p2wpkh_pos},{"txid":txid,"vout":p2pkh_pos}], {self.nodes[1].getnewaddress():29.99}, 0, {"feeRate": 10, "add_inputs": True})
-        assert_raises_rpc_error(-4, "Fee exceeds maximum configured by -maxtxfee", self.nodes[1].walletcreatefundedpsbt, [{"txid":txid,"vout":p2wpkh_pos},{"txid":txid,"vout":p2sh_p2wpkh_pos},{"txid":txid,"vout":p2pkh_pos}], {self.nodes[1].getnewaddress():1}, 0, {"feeRate": 10, "add_inputs": False})
+        assert_raises_rpc_error(-4, "Fee exceeds maximum configured by user (e.g. -maxtxfee, maxfeerate)", self.nodes[1].walletcreatefundedpsbt, [{"txid":txid,"vout":p2wpkh_pos},{"txid":txid,"vout":p2sh_p2wpkh_pos},{"txid":txid,"vout":p2pkh_pos}], {self.nodes[1].getnewaddress():29.99}, 0, {"feeRate": 10, "add_inputs": True})
+        assert_raises_rpc_error(-4, "Fee exceeds maximum configured by user (e.g. -maxtxfee, maxfeerate)", self.nodes[1].walletcreatefundedpsbt, [{"txid":txid,"vout":p2wpkh_pos},{"txid":txid,"vout":p2sh_p2wpkh_pos},{"txid":txid,"vout":p2pkh_pos}], {self.nodes[1].getnewaddress():1}, 0, {"feeRate": 10, "add_inputs": False})
 
         # partially sign multisig things with node 1
         psbtx = wmulti.walletcreatefundedpsbt(inputs=[{"txid":txid,"vout":p2wsh_pos},{"txid":txid,"vout":p2sh_pos},{"txid":txid,"vout":p2sh_p2wsh_pos}], outputs={self.nodes[1].getnewaddress():29.99}, options={'changeAddress': self.nodes[1].getrawchangeaddress()})['psbt']
@@ -304,6 +312,21 @@ class PSBTTest(BitcoinTestFramework):
         # Make sure change address wallet does not have P2SH innerscript access to results in success
         # when attempting BnB coin selection
         self.nodes[0].walletcreatefundedpsbt([], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], block_height+2, {"changeAddress":self.nodes[1].getnewaddress()}, False)
+
+        # Make sure the wallet's change type is respected by default
+        small_output = {self.nodes[0].getnewaddress():0.1}
+        psbtx_native = self.nodes[0].walletcreatefundedpsbt([], [small_output])
+        self.assert_change_type(psbtx_native, "witness_v0_keyhash")
+        psbtx_legacy = self.nodes[1].walletcreatefundedpsbt([], [small_output])
+        self.assert_change_type(psbtx_legacy, "pubkeyhash")
+
+        # Make sure the change type of the wallet can also be overwritten
+        psbtx_np2wkh = self.nodes[1].walletcreatefundedpsbt([], [small_output], 0, {"change_type":"p2sh-segwit"})
+        self.assert_change_type(psbtx_np2wkh, "scripthash")
+
+        # Make sure the change type cannot be specified if a change address is given
+        invalid_options = {"change_type":"legacy","changeAddress":self.nodes[0].getnewaddress()}
+        assert_raises_rpc_error(-8, "both change address and address type options", self.nodes[0].walletcreatefundedpsbt, [], [small_output], 0, invalid_options)
 
         # Regression test for 14473 (mishandling of already-signed witness transaction):
         psbtx_info = self.nodes[0].walletcreatefundedpsbt([{"txid":unspent["txid"], "vout":unspent["vout"]}], [{self.nodes[2].getnewaddress():unspent["amount"]+1}], 0, {"add_inputs": True})

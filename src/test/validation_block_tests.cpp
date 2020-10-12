@@ -293,8 +293,7 @@ BOOST_AUTO_TEST_CASE(mempool_locks_reorg)
                     state,
                     tx,
                     &plTxnReplaced,
-                    /* bypass_limits */ false,
-                    /* nAbsurdFee */ 0));
+                    /* bypass_limits */ false));
             }
         }
 
