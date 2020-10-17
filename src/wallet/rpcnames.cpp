@@ -447,7 +447,7 @@ name_firstupdate (const JSONRPCRequest& request)
 
   /* We can not use RPCHelpMan::Check here, as we have that "hidden" sixth
      argument for "allow active" names (in tests).  */
-  if (request.fHelp || request.params.size () < 4 || request.params.size () > 6)
+  if (request.fHelp || request.params.size () < 3 || request.params.size () > 6)
     throw std::runtime_error (
         RPCHelpMan ("name_firstupdate",
             "\nFinishes the registration of a name.  Depends on name_new being already issued."
@@ -456,7 +456,7 @@ name_firstupdate (const JSONRPCRequest& request)
                 {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
                 {"rand", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The rand value of name_new"},
                 {"tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The name_new txid"},
-                {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
+                {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
                 optHelp.buildRpcArg (),
             },
             RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -473,7 +473,7 @@ name_firstupdate (const JSONRPCRequest& request)
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
-                 UniValue::VOBJ});
+                 UniValue::VOBJ}, true);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 5)
@@ -489,7 +489,11 @@ name_firstupdate (const JSONRPCRequest& request)
 
   const uint256 prevTxid = ParseHashV (request.params[2], "txid");
 
-  const valtype value = DecodeValueFromRPCOrThrow (request.params[3], options);
+  const bool isDefaultVal = (request.params.size () < 4 || request.params[3].isNull ());
+  const valtype value = isDefaultVal ?
+      valtype ():
+      DecodeValueFromRPCOrThrow (request.params[3], options);
+
   if (value.size () > MAX_VALUE_LENGTH_UI)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
 
@@ -567,7 +571,7 @@ name_update ()
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
-          {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -583,7 +587,7 @@ name_update ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -593,14 +597,21 @@ name_update ()
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
-  if (value.size () > MAX_VALUE_LENGTH_UI)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
+  const bool isDefaultVal = request.params.size() < 2 || request.params[1].isNull();
 
-  /* For finding the name output to spend, we first check if there are
-     pending operations on the name in the mempool.  If there are, then we
-     build upon the last one to get a valid chain.  If there are none, then we
-     look up the last outpoint from the name database instead.  */
+  valtype value;
+  if (!isDefaultVal) {
+      value = DecodeValueFromRPCOrThrow (request.params[1], options);
+      if (value.size () > MAX_VALUE_LENGTH_UI)
+          throw JSONRPCError (RPC_INVALID_PARAMETER, "the value is too long");
+  }
+
+  /* For finding the name output to spend and its value, we first check if
+     there are pending operations on the name in the mempool.  If there
+     are, then we build upon the last one to get a valid chain.  If there
+     are none, then we look up the last outpoint from the name database
+     instead. */
+  // TODO: Use name_show for this instead.
 
   const unsigned chainLimit = gArgs.GetArg ("-limitnamechains",
                                             DEFAULT_NAME_CHAIN_LIMIT);
@@ -616,7 +627,14 @@ name_update ()
                           " on this name");
 
     if (pendingOps > 0)
-      outp = mempool.lastNameOutput (name);
+      {
+        outp = mempool.lastNameOutput (name);
+        if (isDefaultVal)
+          {
+            const auto& tx = mempool.mapTx.find(outp.hash)->GetTx();
+            value = CNameScript(tx.vout[outp.n].scriptPubKey).getOpValue();
+          }
+      }
   }
 
   if (outp.IsNull ())
@@ -628,10 +646,10 @@ name_update ()
       if (!coinsTip.GetName (name, oldData) || oldData.isExpired ())
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
-
+      if (isDefaultVal)
+        value = oldData.getValue();
       outp = oldData.getUpdateOutpoint ();
     }
-
   assert (!outp.IsNull ());
   const CTxIn txIn(outp);
 
