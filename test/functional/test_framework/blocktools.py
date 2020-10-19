@@ -4,6 +4,10 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Utilities for manipulating blocks and transactions."""
 
+from binascii import a2b_hex
+import io
+import struct
+import time
 import unittest
 
 from .address import (
@@ -43,7 +47,9 @@ from .script import (
 from .util import assert_equal
 from io import BytesIO
 
+WITNESS_SCALE_FACTOR = 4
 MAX_BLOCK_SIGOPS = 20000
+MAX_BLOCK_SIGOPS_WEIGHT = MAX_BLOCK_SIGOPS * WITNESS_SCALE_FACTOR
 
 # Genesis block time (regtest)
 TIME_GENESIS_BLOCK = 1296688602
@@ -51,19 +57,36 @@ TIME_GENESIS_BLOCK = 1296688602
 # From BIP141
 WITNESS_COMMITMENT_HEADER = b"\xaa\x21\xa9\xed"
 
+NORMAL_GBT_REQUEST_PARAMS = {"rules": ["segwit"]}
 
-def create_block(hashprev, coinbase, ntime=None, *, version=1):
+
+def create_block(hashprev=None, coinbase=None, ntime=None, *, version=None, tmpl=None, txlist=None):
     """Create a block (with regtest difficulty)."""
     block = CBlock()
-    block.set_base_version(version)
-    if ntime is None:
-        import time
-        block.nTime = int(time.time() + 600)
+    if tmpl is None:
+        tmpl = {}
+    if version:
+        block.set_base_version(version)
+    elif tmpl.get('version'):
+        block.nVersion = tmpl.get('version')
     else:
-        block.nTime = ntime
-    block.hashPrevBlock = hashprev
-    block.nBits = 0x207fffff  # difficulty retargeting is disabled in REGTEST chainparams
+        block.set_base_version(1)
+    block.nTime = ntime or tmpl.get('curtime') or int(time.time() + 600)
+    block.hashPrevBlock = hashprev or int(tmpl['previousblockhash'], 0x10)
+    if tmpl and not tmpl.get('bits') is None:
+        block.nBits = struct.unpack('>I', a2b_hex(tmpl['bits']))[0]
+    else:
+        block.nBits = 0x207fffff  # difficulty retargeting is disabled in REGTEST chainparams
+    if coinbase is None:
+        coinbase = create_coinbase(height=tmpl['height'])
     block.vtx.append(coinbase)
+    if txlist:
+        for tx in txlist:
+            if not hasattr(tx, 'calc_sha256'):
+                txo = CTransaction()
+                txo.deserialize(io.BytesIO(tx))
+                tx = txo
+            block.vtx.append(tx)
     block.hashMerkleRoot = block.calc_merkle_root()
     block.calc_sha256()
     return block
@@ -101,22 +124,31 @@ def script_BIP34_coinbase_height(height):
     return CScript([CScriptNum(height)])
 
 
-def create_coinbase(height, pubkey=None):
-    """Create a coinbase transaction, assuming no miner fees.
+def create_coinbase(height, pubkey=None, extra_output_script=None, fees=0):
+    """Create a coinbase transaction.
 
     If pubkey is passed in, the coinbase output will be a P2PK output;
-    otherwise an anyone-can-spend output."""
+    otherwise an anyone-can-spend output.
+
+    If extra_output_script is given, make a 0-value output to that
+    script. This is useful to pad block weight/sigops as needed. """
     coinbase = CTransaction()
     coinbase.vin.append(CTxIn(COutPoint(0, 0xffffffff), script_BIP34_coinbase_height(height), 0xffffffff))
     coinbaseoutput = CTxOut()
     coinbaseoutput.nValue = 50 * COIN
     halvings = int(height / 150)  # regtest
     coinbaseoutput.nValue >>= halvings
-    if (pubkey is not None):
+    coinbaseoutput.nValue += fees
+    if pubkey is not None:
         coinbaseoutput.scriptPubKey = CScript([pubkey, OP_CHECKSIG])
     else:
         coinbaseoutput.scriptPubKey = CScript([OP_TRUE])
     coinbase.vout = [coinbaseoutput]
+    if extra_output_script is not None:
+        coinbaseoutput2 = CTxOut()
+        coinbaseoutput2.nValue = 0
+        coinbaseoutput2.scriptPubKey = extra_output_script
+        coinbase.vout.append(coinbaseoutput2)
     coinbase.calc_sha256()
     return coinbase
 
