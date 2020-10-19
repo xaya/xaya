@@ -70,6 +70,7 @@ TEST_FRAMEWORK_MODULES = [
     "address",
     "blocktools",
     "muhash",
+    "key",
     "script",
     "segwit_addr",
     "util",
@@ -88,6 +89,7 @@ BASE_SCRIPTS = [
     'wallet_hd.py',
     'wallet_hd.py --descriptors',
     'wallet_backup.py',
+    'wallet_backup.py --descriptors',
     # vv Tests less than 5m vv
     'mining_getblocktemplate_longpoll.py',
     'feature_maxuploadtarget.py',
@@ -106,6 +108,7 @@ BASE_SCRIPTS = [
     'mempool_updatefromblock.py',
     'wallet_dump.py',
     'wallet_listtransactions.py',
+    'feature_taproot.py',
     # vv Tests less than 60s vv
     'p2p_sendheaders.py',
     'wallet_importmulti.py',
@@ -140,6 +143,7 @@ BASE_SCRIPTS = [
     'mempool_reorg.py',
     'mempool_persist.py',
     'wallet_multiwallet.py',
+    'wallet_multiwallet.py --descriptors',
     'wallet_multiwallet.py --usecli',
     'wallet_createwallet.py',
     'wallet_createwallet.py --usecli',

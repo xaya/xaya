@@ -305,17 +305,16 @@ BerkeleyDatabase::~BerkeleyDatabase()
     }
 }
 
-BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bool fFlushOnCloseIn) : pdb(nullptr), activeTxn(nullptr), m_cursor(nullptr), m_database(database)
+BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const bool read_only, bool fFlushOnCloseIn) : pdb(nullptr), activeTxn(nullptr), m_cursor(nullptr), m_database(database)
 {
     database.AddRef();
-    database.Open(pszMode);
-    fReadOnly = (!strchr(pszMode, '+') && !strchr(pszMode, 'w'));
+    database.Open();
+    fReadOnly = read_only;
     fFlushOnClose = fFlushOnCloseIn;
     env = database.env.get();
     pdb = database.m_db.get();
     strFile = database.strFile;
-    bool fCreate = strchr(pszMode, 'c') != nullptr;
-    if (fCreate && !Exists(std::string("version"))) {
+    if (!Exists(std::string("version"))) {
         bool fTmp = fReadOnly;
         fReadOnly = false;
         Write(std::string("version"), CLIENT_VERSION);
@@ -323,12 +322,9 @@ BerkeleyBatch::BerkeleyBatch(BerkeleyDatabase& database, const char* pszMode, bo
     }
 }
 
-void BerkeleyDatabase::Open(const char* pszMode)
+void BerkeleyDatabase::Open()
 {
-    bool fCreate = strchr(pszMode, 'c') != nullptr;
-    unsigned int nFlags = DB_THREAD;
-    if (fCreate)
-        nFlags |= DB_CREATE;
+    unsigned int nFlags = DB_THREAD | DB_CREATE;
 
     {
         LOCK(cs_db);
@@ -468,7 +464,7 @@ bool BerkeleyDatabase::Rewrite(const char* pszSkip)
                 LogPrintf("BerkeleyBatch::Rewrite: Rewriting %s...\n", strFile);
                 std::string strFileRes = strFile + ".rewrite";
                 { // surround usage of db with extra {}
-                    BerkeleyBatch db(*this, "r");
+                    BerkeleyBatch db(*this, true);
                     std::unique_ptr<Db> pdbCopy = MakeUnique<Db>(env->dbenv.get(), 0);
 
                     int ret = pdbCopy->open(nullptr,               // Txn pointer
@@ -807,9 +803,9 @@ void BerkeleyDatabase::RemoveRef()
     if (env) env->m_db_in_use.notify_all();
 }
 
-std::unique_ptr<DatabaseBatch> BerkeleyDatabase::MakeBatch(const char* mode, bool flush_on_close)
+std::unique_ptr<DatabaseBatch> BerkeleyDatabase::MakeBatch(bool flush_on_close)
 {
-    return MakeUnique<BerkeleyBatch>(*this, mode, flush_on_close);
+    return MakeUnique<BerkeleyBatch>(*this, false, flush_on_close);
 }
 
 bool ExistsBerkeleyDatabase(const fs::path& path)
@@ -817,7 +813,7 @@ bool ExistsBerkeleyDatabase(const fs::path& path)
     fs::path env_directory;
     std::string data_filename;
     SplitWalletPath(path, env_directory, data_filename);
-    return IsBerkeleyBtree(env_directory / data_filename);
+    return IsBDBFile(env_directory / data_filename);
 }
 
 std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
@@ -842,4 +838,29 @@ std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, con
 
     status = DatabaseStatus::SUCCESS;
     return db;
+}
+
+bool IsBDBFile(const fs::path& path)
+{
+    if (!fs::exists(path)) return false;
+
+    // A Berkeley DB Btree file has at least 4K.
+    // This check also prevents opening lock files.
+    boost::system::error_code ec;
+    auto size = fs::file_size(path, ec);
+    if (ec) LogPrintf("%s: %s %s\n", __func__, ec.message(), path.string());
+    if (size < 4096) return false;
+
+    fsbridge::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) return false;
+
+    file.seekg(12, std::ios::beg); // Magic bytes start at offset 12
+    uint32_t data = 0;
+    file.read((char*) &data, sizeof(data)); // Read 4 bytes of file to compare against magic
+
+    // Berkeley DB Btree magic bytes, from:
+    //  https://github.com/file/file/blob/5824af38469ec1ca9ac3ffd251e7afe9dc11e227/magic/Magdir/database#L74-L75
+    //  - big endian systems - 00 05 31 62
+    //  - little endian systems - 62 31 05 00
+    return data == 0x00053162 || data == 0x62310500;
 }

@@ -188,7 +188,7 @@ class CNetAddr
         std::string ToStringIP() const;
         uint64_t GetHash() const;
         bool GetInAddr(struct in_addr* pipv4Addr) const;
-        uint32_t GetNetClass() const;
+        Network GetNetClass() const;
 
         //! For IPv4, mapped IPv4, SIIT translated IPv4, Teredo, 6to4 tunneled addresses, return the relevant IPv4 address as a uint32.
         uint32_t GetLinkedIPv4() const;
@@ -210,6 +210,14 @@ class CNetAddr
         friend bool operator==(const CNetAddr& a, const CNetAddr& b);
         friend bool operator!=(const CNetAddr& a, const CNetAddr& b) { return !(a == b); }
         friend bool operator<(const CNetAddr& a, const CNetAddr& b);
+
+        /**
+         * Whether this address should be relayed to other peers even if we can't reach it ourselves.
+         */
+        bool IsRelayable() const
+        {
+            return IsIPv4() || IsIPv6() || IsTor();
+        }
 
         /**
          * Serialize to a stream.
@@ -451,6 +459,8 @@ class CSubNet
         /// Is this value valid? (only used to signal parse errors)
         bool valid;
 
+        bool SanityCheck() const;
+
     public:
         CSubNet();
         CSubNet(const CNetAddr& addr, uint8_t mask);
@@ -468,7 +478,23 @@ class CSubNet
         friend bool operator!=(const CSubNet& a, const CSubNet& b) { return !(a == b); }
         friend bool operator<(const CSubNet& a, const CSubNet& b);
 
-        SERIALIZE_METHODS(CSubNet, obj) { READWRITE(obj.network, obj.netmask, obj.valid); }
+        SERIALIZE_METHODS(CSubNet, obj)
+        {
+            READWRITE(obj.network);
+            if (obj.network.IsIPv4()) {
+                // Before commit 102867c587f5f7954232fb8ed8e85cda78bb4d32, CSubNet used the last 4 bytes of netmask
+                // to store the relevant bytes for an IPv4 mask. For compatiblity reasons, keep doing so in
+                // serialized form.
+                unsigned char dummy[12] = {0};
+                READWRITE(dummy);
+                READWRITE(MakeSpan(obj.netmask).first(4));
+            } else {
+                READWRITE(obj.netmask);
+            }
+            READWRITE(obj.valid);
+            // Mark invalid if the result doesn't pass sanity checking.
+            SER_READ(obj, if (obj.valid) obj.valid = obj.SanityCheck());
+        }
 };
 
 /** A combination of a network address (CNetAddr) and a (TCP) port */
