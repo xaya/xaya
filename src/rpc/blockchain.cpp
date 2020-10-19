@@ -1471,6 +1471,7 @@ RPCHelpMan getblockchaininfo()
     // FIXME: Real BIP9 deployment (not yet buried) are not supported until we
     // do the always-auxpow fork.
     //BIP9SoftForkDescPushBack(softforks, "testdummy", consensusParams, Consensus::DEPLOYMENT_TESTDUMMY);
+    //BIP9SoftForkDescPushBack(softforks, "taproot", consensusParams, Consensus::DEPLOYMENT_TAPROOT);
     obj.pushKV("softforks",             softforks);
 
     obj.pushKV("warnings", GetWarnings(false).original);

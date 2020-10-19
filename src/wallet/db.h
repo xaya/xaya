@@ -8,6 +8,7 @@
 
 #include <clientversion.h>
 #include <fs.h>
+#include <optional.h>
 #include <streams.h>
 #include <support/allocators/secure.h>
 #include <util/memory.h>
@@ -108,7 +109,7 @@ public:
     virtual ~WalletDatabase() {};
 
     /** Open the database if it is not already opened. */
-    virtual void Open(const char* mode) = 0;
+    virtual void Open() = 0;
 
     //! Counts the number of active database users to be sure that the database is not closed while someone is using it
     std::atomic<int> m_refcount{0};
@@ -149,7 +150,7 @@ public:
     int64_t nLastWalletUpdate;
 
     /** Make a DatabaseBatch connected to this database */
-    virtual std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) = 0;
+    virtual std::unique_ptr<DatabaseBatch> MakeBatch(bool flush_on_close = true) = 0;
 };
 
 /** RAII class that provides access to a DummyDatabase. Never fails. */
@@ -178,7 +179,7 @@ public:
 class DummyDatabase : public WalletDatabase
 {
 public:
-    void Open(const char* mode) override {};
+    void Open() override {};
     void AddRef() override {}
     void RemoveRef() override {}
     bool Rewrite(const char* pszSkip=nullptr) override { return true; }
@@ -189,16 +190,18 @@ public:
     void IncrementUpdateCounter() override { ++nUpdateCounter; }
     void ReloadDbEnv() override {}
     std::string Filename() override { return "dummy"; }
-    std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override { return MakeUnique<DummyBatch>(); }
+    std::unique_ptr<DatabaseBatch> MakeBatch(bool flush_on_close = true) override { return MakeUnique<DummyBatch>(); }
 };
 
 enum class DatabaseFormat {
     BERKELEY,
+    SQLITE,
 };
 
 struct DatabaseOptions {
     bool require_existing = false;
     bool require_create = false;
+    Optional<DatabaseFormat> require_format;
     uint64_t create_flags = 0;
     SecureString create_passphrase;
     bool verify = true;

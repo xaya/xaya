@@ -649,7 +649,7 @@ uint32_t CNetAddr::GetLinkedIPv4() const
     assert(false);
 }
 
-uint32_t CNetAddr::GetNetClass() const
+Network CNetAddr::GetNetClass() const
 {
     // Make sure that if we return NET_IPV6, then IsIPv6() is true. The callers expect that.
 
@@ -1107,6 +1107,17 @@ std::string CSubNet::ToString() const
 bool CSubNet::IsValid() const
 {
     return valid;
+}
+
+bool CSubNet::SanityCheck() const
+{
+    if (!(network.IsIPv4() || network.IsIPv6())) return false;
+
+    for (size_t x = 0; x < network.m_addr.size(); ++x) {
+        if (network.m_addr[x] & ~netmask[x]) return false;
+    }
+
+    return true;
 }
 
 bool operator==(const CSubNet& a, const CSubNet& b)
