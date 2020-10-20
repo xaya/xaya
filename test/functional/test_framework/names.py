@@ -21,7 +21,7 @@ class NameTestFramework (BitcoinTestFramework):
     # test_framework.py.  This is needed to get us out of IBD.
     self.mocktime = 1388534400 + (201 * 10 * 60)
 
-  def firstupdateName (self, ind, name, newData, value,
+  def firstupdateName (self, ind, name, newData, value = None,
                        opt = None, allowActive = False):
     """
     Utility routine to perform a name_firstupdate command.  The rand
@@ -36,9 +36,11 @@ class NameTestFramework (BitcoinTestFramework):
       return node.name_firstupdate (name, newData[1], newData[0],
                                     value, opt, True)
 
-    if opt is None:
+    if opt is not None:
+      return node.name_firstupdate (name, newData[1], newData[0], value, opt)
+    if value is not None:
       return node.name_firstupdate (name, newData[1], newData[0], value)
-    return node.name_firstupdate (name, newData[1], newData[0], value, opt)
+    return node.name_firstupdate (name, newData[1], newData[0])
 
   def checkName (self, ind, name, value, expiresIn, expired):
     """
