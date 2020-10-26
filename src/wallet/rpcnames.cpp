@@ -320,7 +320,7 @@ name_register ()
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
-          {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -336,7 +336,8 @@ name_register ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ},
+                true);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -347,7 +348,11 @@ name_register ()
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
+  const bool isDefaultVal = (request.params.size () < 2 || request.params[1].isNull ());
+  const valtype value = isDefaultVal ?
+      valtype ({'{', '}'}):
+      DecodeValueFromRPCOrThrow (request.params[1], options);
+
   if (!IsValueValid (value, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
@@ -410,7 +415,7 @@ name_update ()
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
-          {"value", RPCArg::Type::STR, RPCArg::Optional::NO, "Value for the name"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -426,7 +431,7 @@ name_update ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ});
+                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -437,14 +442,21 @@ name_update ()
   if (!IsNameValid (name, state))
     throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
 
-  const valtype value = DecodeValueFromRPCOrThrow (request.params[1], options);
-  if (!IsValueValid (value, state))
-    throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
+  const bool isDefaultVal = request.params.size() < 2 || request.params[1].isNull();
 
-  /* For finding the name output to spend, we first check if there are
-     pending operations on the name in the mempool.  If there are, then we
-     build upon the last one to get a valid chain.  If there are none, then we
-     look up the last outpoint from the name database instead.  */
+  valtype value;
+  if (!isDefaultVal) {
+      value = DecodeValueFromRPCOrThrow (request.params[1], options);
+      if (!IsValueValid (value, state))
+        throw JSONRPCError (RPC_INVALID_PARAMETER, state.GetRejectReason ());
+  }
+
+  /* For finding the name output to spend and its value, we first check if
+     there are pending operations on the name in the mempool.  If there
+     are, then we build upon the last one to get a valid chain.  If there
+     are none, then we look up the last outpoint from the name database
+     instead. */
+  // TODO: Use name_show for this instead.
 
   const unsigned chainLimit = gArgs.GetArg ("-limitnamechains",
                                             DEFAULT_NAME_CHAIN_LIMIT);
@@ -460,7 +472,14 @@ name_update ()
                           " on this name");
 
     if (pendingOps > 0)
-      outp = mempool.lastNameOutput (name);
+      {
+        outp = mempool.lastNameOutput (name);
+        if (isDefaultVal)
+          {
+            const auto& tx = mempool.mapTx.find(outp.hash)->GetTx();
+            value = CNameScript(tx.vout[outp.n].scriptPubKey).getOpValue();
+          }
+      }
   }
 
   if (outp.IsNull ())
@@ -472,10 +491,10 @@ name_update ()
       if (!coinsTip.GetName (name, oldData))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
-
+      if (isDefaultVal)
+        value = oldData.getValue();
       outp = oldData.getUpdateOutpoint ();
     }
-
   assert (!outp.IsNull ());
   const CTxIn txIn(outp);
 

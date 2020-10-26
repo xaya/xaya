@@ -24,7 +24,6 @@ from test_framework.util import (
     assert_greater_than_or_equal,
     assert_greater_than,
     assert_raises_rpc_error,
-    connect_nodes,
     p2p_port,
 )
 
@@ -53,8 +52,9 @@ class NetTest(BitcoinTestFramework):
         # Get out of IBD for the minfeefilter and getpeerinfo tests.
         self.nodes[0].generate(101)
         # Connect nodes both ways.
-        connect_nodes(self.nodes[0], 1)
-        connect_nodes(self.nodes[1], 0)
+        self.connect_nodes(0, 1)
+        self.connect_nodes(1, 0)
+        self.sync_all()
 
         self.test_connection_count()
         self.test_getpeerinfo()
@@ -117,8 +117,8 @@ class NetTest(BitcoinTestFramework):
         with self.nodes[0].assert_debug_log(expected_msgs=['SetNetworkActive: true\n']):
             self.nodes[0].setnetworkactive(state=True)
         # Connect nodes both ways.
-        connect_nodes(self.nodes[0], 1)
-        connect_nodes(self.nodes[1], 0)
+        self.connect_nodes(0, 1)
+        self.connect_nodes(1, 0)
 
         info = self.nodes[0].getnetworkinfo()
         assert_equal(info['networkactive'], True)
