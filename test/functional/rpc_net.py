@@ -51,9 +51,12 @@ class NetTest(BitcoinTestFramework):
     def run_test(self):
         # Get out of IBD for the minfeefilter and getpeerinfo tests.
         self.nodes[0].generate(101)
-        # Connect nodes both ways.
+
+        # By default, the test framework sets up an addnode connection from
+        # node 1 --> node0. By connecting node0 --> node 1, we're left with
+        # the two nodes being connected both ways.
+        # Topology will look like: node0 <--> node1
         self.connect_nodes(0, 1)
-        self.connect_nodes(1, 0)
         self.sync_all()
 
         self.test_connection_count()
@@ -69,34 +72,50 @@ class NetTest(BitcoinTestFramework):
         # After using `connect_nodes` to connect nodes 0 and 1 to each other.
         assert_equal(self.nodes[0].getconnectioncount(), 2)
 
+    def test_getpeerinfo(self):
+        self.log.info("Test getpeerinfo")
+        # Create a few getpeerinfo last_block/last_transaction values.
+        if self.is_wallet_compiled():
+            self.nodes[0].sendtoaddress(self.nodes[1].getnewaddress(), 1)
+        self.nodes[1].generate(1)
+        self.sync_all()
+        time_now = int(time.time())
+        peer_info = [x.getpeerinfo() for x in self.nodes]
+        # Verify last_block and last_transaction keys/values.
+        for node, peer, field in product(range(self.num_nodes), range(2), ['last_block', 'last_transaction']):
+            assert field in peer_info[node][peer].keys()
+            if peer_info[node][peer][field] != 0:
+                assert_approx(peer_info[node][peer][field], time_now, vspan=60)
+        # check both sides of bidirectional connection between nodes
+        # the address bound to on one side will be the source address for the other node
+        assert_equal(peer_info[0][0]['addrbind'], peer_info[1][0]['addr'])
+        assert_equal(peer_info[1][0]['addrbind'], peer_info[0][0]['addr'])
+        assert_equal(peer_info[0][0]['minfeefilter'], Decimal("0.00000500"))
+        assert_equal(peer_info[1][0]['minfeefilter'], Decimal("0.00001000"))
+        # check the `servicesnames` field
+        for info in peer_info:
+            assert_net_servicesnames(int(info[0]["services"], 0x10), info[0]["servicesnames"])
+
+        assert_equal(peer_info[0][0]['connection_type'], 'inbound')
+        assert_equal(peer_info[0][1]['connection_type'], 'manual')
+
+        assert_equal(peer_info[1][0]['connection_type'], 'manual')
+        assert_equal(peer_info[1][1]['connection_type'], 'inbound')
+
     def test_getnettotals(self):
         self.log.info("Test getnettotals")
-        # getnettotals totalbytesrecv and totalbytessent should be
-        # consistent with getpeerinfo. Since the RPC calls are not atomic,
-        # and messages might have been recvd or sent between RPC calls, call
-        # getnettotals before and after and verify that the returned values
-        # from getpeerinfo are bounded by those values.
+        # Test getnettotals and getpeerinfo by doing a ping. The bytes
+        # sent/received should increase by at least the size of one ping (32
+        # bytes) and one pong (32 bytes).
         net_totals_before = self.nodes[0].getnettotals()
-        peer_info = self.nodes[0].getpeerinfo()
-        net_totals_after = self.nodes[0].getnettotals()
-        assert_equal(len(peer_info), 2)
-        peers_recv = sum([peer['bytesrecv'] for peer in peer_info])
-        peers_sent = sum([peer['bytessent'] for peer in peer_info])
+        peer_info_before = self.nodes[0].getpeerinfo()
 
-        assert_greater_than_or_equal(peers_recv, net_totals_before['totalbytesrecv'])
-        assert_greater_than_or_equal(net_totals_after['totalbytesrecv'], peers_recv)
-        assert_greater_than_or_equal(peers_sent, net_totals_before['totalbytessent'])
-        assert_greater_than_or_equal(net_totals_after['totalbytessent'], peers_sent)
-
-        # test getnettotals and getpeerinfo by doing a ping
-        # the bytes sent/received should change
-        # note ping and pong are 32 bytes each
         self.nodes[0].ping()
-        self.wait_until(lambda: (self.nodes[0].getnettotals()['totalbytessent'] >= net_totals_after['totalbytessent'] + 32 * 2), timeout=1)
-        self.wait_until(lambda: (self.nodes[0].getnettotals()['totalbytesrecv'] >= net_totals_after['totalbytesrecv'] + 32 * 2), timeout=1)
+        self.wait_until(lambda: (self.nodes[0].getnettotals()['totalbytessent'] >= net_totals_before['totalbytessent'] + 32 * 2), timeout=1)
+        self.wait_until(lambda: (self.nodes[0].getnettotals()['totalbytesrecv'] >= net_totals_before['totalbytesrecv'] + 32 * 2), timeout=1)
 
-        peer_info_after_ping = self.nodes[0].getpeerinfo()
-        for before, after in zip(peer_info, peer_info_after_ping):
+        peer_info_after = self.nodes[0].getpeerinfo()
+        for before, after in zip(peer_info_before, peer_info_after):
             assert_greater_than_or_equal(after['bytesrecv_per_msg'].get('pong', 0), before['bytesrecv_per_msg'].get('pong', 0) + 32)
             assert_greater_than_or_equal(after['bytessent_per_msg'].get('ping', 0), before['bytessent_per_msg'].get('ping', 0) + 32)
 
@@ -150,36 +169,6 @@ class NetTest(BitcoinTestFramework):
         assert_raises_rpc_error(-24, "Node could not be removed", self.nodes[0].addnode, node=ip_port, command='remove')
         # check that a non-existent node returns an error
         assert_raises_rpc_error(-24, "Node has not been added", self.nodes[0].getaddednodeinfo, '1.1.1.1')
-
-    def test_getpeerinfo(self):
-        self.log.info("Test getpeerinfo")
-        # Create a few getpeerinfo last_block/last_transaction values.
-        if self.is_wallet_compiled():
-            self.nodes[0].sendtoaddress(self.nodes[1].getnewaddress(), 1)
-        self.nodes[1].generate(1)
-        self.sync_all()
-        time_now = int(time.time())
-        peer_info = [x.getpeerinfo() for x in self.nodes]
-        # Verify last_block and last_transaction keys/values.
-        for node, peer, field in product(range(self.num_nodes), range(2), ['last_block', 'last_transaction']):
-            assert field in peer_info[node][peer].keys()
-            if peer_info[node][peer][field] != 0:
-                assert_approx(peer_info[node][peer][field], time_now, vspan=60)
-        # check both sides of bidirectional connection between nodes
-        # the address bound to on one side will be the source address for the other node
-        assert_equal(peer_info[0][0]['addrbind'], peer_info[1][0]['addr'])
-        assert_equal(peer_info[1][0]['addrbind'], peer_info[0][0]['addr'])
-        assert_equal(peer_info[0][0]['minfeefilter'], Decimal("0.00000500"))
-        assert_equal(peer_info[1][0]['minfeefilter'], Decimal("0.00001000"))
-        # check the `servicesnames` field
-        for info in peer_info:
-            assert_net_servicesnames(int(info[0]["services"], 0x10), info[0]["servicesnames"])
-
-        assert_equal(peer_info[0][0]['connection_type'], 'inbound')
-        assert_equal(peer_info[0][1]['connection_type'], 'manual')
-
-        assert_equal(peer_info[1][0]['connection_type'], 'manual')
-        assert_equal(peer_info[1][1]['connection_type'], 'inbound')
 
     def test_service_flags(self):
         self.log.info("Test service flags")
