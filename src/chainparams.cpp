@@ -193,12 +193,12 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Xaya mainnet chain at height
-        // 1'730'000, with best block hash:
-        // 1d7b45e30aaa261f63f638d26e78ed198bd8e9f5311b8d68458fb26685714098
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000c211132e9dd1d3ddaba8c2");
+        // 2'300'000, with best block hash:
+        // 97ab9dc4f83b8aecc050162b185409ff90988b3b8d5163fe996d54ddbba0d855
+        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000001598e1cf0ec4b254784c950");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x1d7b45e30aaa261f63f638d26e78ed198bd8e9f5311b8d68458fb26685714098"); // 1'730'000
+        consensus.defaultAssumeValid = uint256S("0x97ab9dc4f83b8aecc050162b185409ff90988b3b8d5163fe996d54ddbba0d855"); // 2'300'000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -215,7 +215,7 @@ public:
         pchMessageStart[3] = 0xfe;
         nDefaultPort = 8394;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 2;
+        m_assumed_blockchain_size = 4;
         m_assumed_chain_state_size = 1;
 
         genesis = CreateGenesisBlock (1531470713, 482087, 0x1e0ffff0,
@@ -253,10 +253,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 1d7b45e30aaa261f63f638d26e78ed198bd8e9f5311b8d68458fb26685714098
-            /* nTime    */ 1586055506,
-            /* nTxCount */ 2743196,
-            /* dTxRate  */ 0.03584309840404947,
+            // Data from RPC: getchaintxstats 4096 97ab9dc4f83b8aecc050162b185409ff90988b3b8d5163fe996d54ddbba0d855
+            /* nTime    */ 1604028972,
+            /* nTxCount */ 3660164,
+            /* dTxRate  */ 0.0356996179745678,
         };
     }
 
@@ -384,15 +384,15 @@ public:
             bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
             //vSeeds.emplace_back("178.128.221.177");
 
-            consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000d145533ce");
-            consensus.defaultAssumeValid = uint256S("0x00000128807d9175c494e24d805fc7854f7d79aa965cbb128342ad8b70cecfa5"); // 5348
+            consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000019fd16269a");
+            consensus.defaultAssumeValid = uint256S("0x0000002a1de0f46379358c1fd09906f7ac59adf3712323ed90eb59e4c183c020"); // 9434
             m_assumed_blockchain_size = 1;
             m_assumed_chain_state_size = 0;
             chainTxData = ChainTxData{
-                // Data from RPC: getchaintxstats 4096 00000128807d9175c494e24d805fc7854f7d79aa965cbb128342ad8b70cecfa5
-                /* nTime    */ 1601382000,
-                /* nTxCount */ 5435,
-                /* dTxRate  */ 0.001898346323372538,
+                // Data from RPC: getchaintxstats 4096 0000002a1de0f46379358c1fd09906f7ac59adf3712323ed90eb59e4c183c020
+                /* nTime    */ 1603986000,
+                /* nTxCount */ 9582,
+                /* dTxRate  */ 0.00159272030651341,
             };
         } else {
             const auto signet_challenge = args.GetArgs("-signetchallenge");
