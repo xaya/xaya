@@ -1778,7 +1778,11 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
     double progress_current = progress_begin;
     int block_height = start_height;
     while (!fAbortRescan && !chain().shutdownRequested()) {
-        m_scanning_progress = (progress_current - progress_begin) / (progress_end - progress_begin);
+        if (progress_end - progress_begin > 0.0) {
+            m_scanning_progress = (progress_current - progress_begin) / (progress_end - progress_begin);
+        } else { // avoid divide-by-zero for single block scan range (i.e. start and stop hashes are equal)
+            m_scanning_progress = 0;
+        }
         if (block_height % 100 == 0 && progress_end - progress_begin > 0.0) {
             ShowProgress(strprintf("%s " + _("Rescanning...").translated, GetDisplayName()), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
         }
@@ -3106,10 +3110,10 @@ bool CWallet::CreateTransactionInternal(
     WalletLogPrintf("Fee Calculation: Fee:%d Bytes:%u Needed:%d Tgt:%d (requested %d) Reason:\"%s\" Decay %.5f: Estimation: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out) Fail: (%g - %g) %.2f%% %.1f/(%.1f %d mem %.1f out)\n",
               nFeeRet, nBytes, nFeeNeeded, feeCalc.returnedTarget, feeCalc.desiredTarget, StringForFeeReason(feeCalc.reason), feeCalc.est.decay,
               feeCalc.est.pass.start, feeCalc.est.pass.end,
-              100 * feeCalc.est.pass.withinTarget / (feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool),
+              (feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool) > 0.0 ? 100 * feeCalc.est.pass.withinTarget / (feeCalc.est.pass.totalConfirmed + feeCalc.est.pass.inMempool + feeCalc.est.pass.leftMempool) : 0.0,
               feeCalc.est.pass.withinTarget, feeCalc.est.pass.totalConfirmed, feeCalc.est.pass.inMempool, feeCalc.est.pass.leftMempool,
               feeCalc.est.fail.start, feeCalc.est.fail.end,
-              100 * feeCalc.est.fail.withinTarget / (feeCalc.est.fail.totalConfirmed + feeCalc.est.fail.inMempool + feeCalc.est.fail.leftMempool),
+              (feeCalc.est.fail.totalConfirmed + feeCalc.est.fail.inMempool + feeCalc.est.fail.leftMempool) > 0.0 ? 100 * feeCalc.est.fail.withinTarget / (feeCalc.est.fail.totalConfirmed + feeCalc.est.fail.inMempool + feeCalc.est.fail.leftMempool) : 0.0,
               feeCalc.est.fail.withinTarget, feeCalc.est.fail.totalConfirmed, feeCalc.est.fail.inMempool, feeCalc.est.fail.leftMempool);
     return true;
 }
@@ -4511,7 +4515,7 @@ DescriptorScriptPubKeyMan* CWallet::GetDescriptorScriptPubKeyMan(const WalletDes
     return nullptr;
 }
 
-ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label)
+ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label, bool internal)
 {
     if (!IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
         WalletLogPrintf("Cannot add WalletDescriptor to a non-descriptor wallet\n");
@@ -4556,7 +4560,10 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
     }
 
     // Top up key pool, the manager will generate new scriptPubKeys internally
-    new_spk_man->TopUp();
+    if (!new_spk_man->TopUp()) {
+        WalletLogPrintf("Could not top up scriptPubKeys\n");
+        return nullptr;
+    }
 
     // Apply the label if necessary
     // Note: we disable labels for ranged descriptors
@@ -4568,7 +4575,7 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
         }
 
         CTxDestination dest;
-        if (ExtractDestination(script_pub_keys.at(0), dest)) {
+        if (!internal && ExtractDestination(script_pub_keys.at(0), dest)) {
             SetAddressBook(dest, label, "receive");
         }
     }
