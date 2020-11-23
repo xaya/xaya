@@ -1,5 +1,5 @@
 ---
-name: "namecoin-core-win-0.21"
+name: "namecoin-core-win-22"
 enable_cache: true
 distro: "ubuntu"
 suites:

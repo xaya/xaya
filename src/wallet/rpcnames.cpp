@@ -430,8 +430,8 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
 
 }  // anonymous namespace
 
-UniValue
-name_firstupdate (const JSONRPCRequest& request)
+RPCHelpMan
+name_firstupdate ()
 {
   /* There is an undocumented sixth argument that can be used to disable
      the check for already existing names here (it will still be checked
@@ -445,11 +445,7 @@ name_firstupdate (const JSONRPCRequest& request)
       .withValueEncoding ()
       .withWriteOptions ();
 
-  /* We can not use RPCHelpMan::Check here, as we have that "hidden" sixth
-     argument for "allow active" names (in tests).  */
-  if (request.fHelp || request.params.size () < 3 || request.params.size () > 6)
-    throw std::runtime_error (
-        RPCHelpMan ("name_firstupdate",
+  return RPCHelpMan ("name_firstupdate",
             "\nFinishes the registration of a name.  Depends on name_new being already issued."
                 + HELP_REQUIRING_PASSPHRASE,
             {
@@ -458,14 +454,15 @@ name_firstupdate (const JSONRPCRequest& request)
                 {"tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The name_new txid"},
                 {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
                 optHelp.buildRpcArg (),
+                {"allow_active", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED_NAMED_ARG, "Disable check for the name being active"},
             },
             RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
             RPCExamples {
                 HelpExampleCli ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
               + HelpExampleRpc ("name_firstupdate", "\"myname\", \"555844f2db9c7f4b25da6cb8277596de45021ef2\" \"a77ceb22aa03304b7de64ec43328974aeaca211c37dd29dcce4ae461bb80ca84\", \"my-value\"")
-            }
-        ).ToString ());
-
+            },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet)
     return NullUniValue;
@@ -553,6 +550,8 @@ name_firstupdate (const JSONRPCRequest& request)
   destHelper.finalise ();
 
   return txidVal;
+}
+  );
 }
 
 /* ************************************************************************** */

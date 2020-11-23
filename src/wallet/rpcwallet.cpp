@@ -31,7 +31,6 @@
 #include <util/translation.h>
 #include <util/url.h>
 #include <util/vector.h>
-#include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/context.h>
 #include <wallet/feebumper.h>
@@ -221,14 +220,8 @@ static void SetFeeEstimateMode(const CWallet* pwallet, CCoinControl& cc, const U
         if (!estimate_mode.isNull() && !estimate_mode.get_str().empty()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot specify both estimate_mode and fee_rate");
         }
-        CFeeRate fee_rate_in_sat_vb{CFeeRate(AmountFromValue(fee_rate), COIN)};
-        if (override_min_fee) {
-            if (fee_rate_in_sat_vb <= CFeeRate(0)) {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid fee_rate %s (must be greater than 0)", fee_rate_in_sat_vb.ToString(FeeEstimateMode::SAT_VB)));
-            }
-            cc.fOverrideFeeRate = true;
-        }
-        cc.m_feerate = fee_rate_in_sat_vb;
+        cc.m_feerate = CFeeRate(AmountFromValue(fee_rate), COIN);
+        if (override_min_fee) cc.fOverrideFeeRate = true;
         // Default RBF to true for explicit fee_rate, if unset.
         if (cc.m_signal_bip125_rbf == nullopt) cc.m_signal_bip125_rbf = true;
         return;
@@ -3190,11 +3183,7 @@ void FundTransaction(CWallet* const pwallet, CMutableTransaction& tx, CAmount& f
             if (options.exists("estimate_mode")) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot specify both estimate_mode and feeRate");
             }
-            CFeeRate fee_rate(AmountFromValue(options["feeRate"]));
-            if (fee_rate <= CFeeRate(0)) {
-                throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid feeRate %s (must be greater than 0)", fee_rate.ToString(FeeEstimateMode::BTC_KVB)));
-            }
-            coinControl.m_feerate = fee_rate;
+            coinControl.m_feerate = CFeeRate(AmountFromValue(options["feeRate"]));
             coinControl.fOverrideFeeRate = true;
         }
 
@@ -3433,7 +3422,7 @@ RPCHelpMan signrawtransactionwithwallet()
 static RPCHelpMan bumpfee_helper(std::string method_name)
 {
     bool want_psbt = method_name == "psbtbumpfee";
-    const std::string incremental_fee{CFeeRate(DEFAULT_MIN_RELAY_TX_FEE).ToString(FeeEstimateMode::SAT_VB)};
+    const std::string incremental_fee{CFeeRate(DEFAULT_INCREMENTAL_RELAY_FEE).ToString(FeeEstimateMode::SAT_VB)};
 
     return RPCHelpMan{method_name,
         "\nBumps the fee of an opt-in-RBF transaction T, replacing it with a new transaction B.\n"
@@ -3456,7 +3445,7 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
                     {"conf_target", RPCArg::Type::NUM, /* default */ "wallet -txconfirmtarget", "Confirmation target in blocks\n"},
                     {"fee_rate", RPCArg::Type::AMOUNT, /* default */ "not set, fall back to wallet fee estimation",
                              "\nSpecify a fee rate in " + CURRENCY_ATOM + "/vB instead of relying on the built-in fee estimator.\n"
-                             "Must be at least " + incremental_fee + " " + CURRENCY_ATOM + "/vB higher than the current transaction fee rate.\n"
+                             "Must be at least " + incremental_fee + " higher than the current transaction fee rate.\n"
                              "WARNING: before version 0.21, fee_rate was in " + CURRENCY_UNIT + "/kvB. As of 0.21, fee_rate is in " + CURRENCY_ATOM + "/vB.\n"},
                     {"replaceable", RPCArg::Type::BOOL, /* default */ "true", "Whether the new transaction should still be\n"
                              "marked bip-125 replaceable. If true, the sequence numbers in the transaction will\n"
@@ -4669,14 +4658,9 @@ ReservedKeysForMining g_mining_keys;
 
 } // anonymous namespace
 
-static UniValue getauxblock(const JSONRPCRequest& request)
+static RPCHelpMan getauxblock()
 {
-    /* RPCHelpMan::Check is not applicable here since we have the
-       custom check for exactly zero or two arguments.  */
-    if (request.fHelp
-          || (request.params.size() != 0 && request.params.size() != 2))
-        throw std::runtime_error(
-            RPCHelpMan{"getauxblock",
+    return RPCHelpMan{"getauxblock",
                 "\nCreates or submits a merge-mined block.\n"
                 "\nWithout arguments, creates a new block and returns information\n"
                 "required to merge-mine it.  With arguments, submits a solved\n"
@@ -4707,7 +4691,10 @@ static UniValue getauxblock(const JSONRPCRequest& request)
                     + HelpExampleCli("getauxblock", "\"hash\" \"serialised auxpow\"")
                     + HelpExampleRpc("getauxblock", "")
                 },
-            }.ToString());
+                [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+    if (request.params.size() != 0 && request.params.size() != 2)
+        throw std::runtime_error(self.ToString());
 
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     if (!wallet) return NullUniValue;
@@ -4736,6 +4723,8 @@ static UniValue getauxblock(const JSONRPCRequest& request)
         g_mining_keys.MarkBlockSubmitted(pwallet, hash);
 
     return fAccepted;
+},
+    };
 }
 
 RPCHelpMan abortrescan();
@@ -4752,7 +4741,7 @@ RPCHelpMan importdescriptors();
 
 extern RPCHelpMan name_list(); // in rpcnames.cpp
 extern RPCHelpMan name_new();
-extern UniValue name_firstupdate(const JSONRPCRequest& request);
+extern RPCHelpMan name_firstupdate();
 extern RPCHelpMan name_update();
 extern RPCHelpMan sendtoname();
 
