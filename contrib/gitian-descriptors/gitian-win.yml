@@ -1,5 +1,5 @@
 ---
-name: "xaya-core-win-1.5"
+name: "xaya-core-win-1.6"
 enable_cache: true
 distro: "ubuntu"
 suites:

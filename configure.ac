@@ -1,6 +1,6 @@
 AC_PREREQ([2.69])
 define(_CLIENT_VERSION_MAJOR, 1)
-define(_CLIENT_VERSION_MINOR, 4)
+define(_CLIENT_VERSION_MINOR, 5)
 define(_CLIENT_VERSION_REVISION, 99)
 define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_RC, 0)
@@ -69,18 +69,8 @@ case $host in
   ;;
 esac
 
-AC_ARG_ENABLE([c++17],
-  [AS_HELP_STRING([--enable-c++17],
-  [enable compilation in c++17 mode (disabled by default)])],
-  [use_cxx17=$enableval],
-  [use_cxx17=no])
-
-dnl Require C++11 or C++17 compiler (no GNU extensions)
-if test "x$use_cxx17" = xyes -o "x$enable_fuzz" = xyes ; then
-  AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
-else
-  AX_CXX_COMPILE_STDCXX([11], [noext], [mandatory])
-fi
+dnl Require C++17 compiler (no GNU extensions)
+AX_CXX_COMPILE_STDCXX([17], [noext], [mandatory])
 
 dnl Check if -latomic is required for <std::atomic>
 CHECK_ATOMIC
@@ -108,8 +98,8 @@ AC_PATH_TOOL(STRIP, strip)
 AC_PATH_TOOL(GCOV, gcov)
 AC_PATH_TOOL(LLVM_COV, llvm-cov)
 AC_PATH_PROG(LCOV, lcov)
-dnl Python 3.5 is specified in .python-version and should be used if available, see doc/dependencies.md
-AC_PATH_PROGS([PYTHON], [python3.5 python3.6 python3.7 python3.8 python3 python])
+dnl Python 3.6 is specified in .python-version and should be used if available, see doc/dependencies.md
+AC_PATH_PROGS([PYTHON], [python3.6 python3.7 python3.8 python3.9 python3 python])
 AC_PATH_PROG(GENHTML, genhtml)
 AC_PATH_PROG([GIT], [git])
 AC_PATH_PROG(CCACHE,ccache)

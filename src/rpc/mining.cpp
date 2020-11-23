@@ -302,12 +302,7 @@ static RPCHelpMan generatetodescriptor()
 static RPCHelpMan generate()
 {
     return RPCHelpMan{"generate", "has been replaced by the -generate cli option. Refer to -help for more information.", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
-
-    if (request.fHelp) {
-        throw std::runtime_error(self.ToString());
-    } else {
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, self.ToString());
-    }
     }};
 }
 
@@ -1390,39 +1385,39 @@ static RPCHelpMan creatework()
     };
 }
 
-static UniValue submitwork(const JSONRPCRequest& request)
+static RPCHelpMan submitwork()
 {
-    /* We cannot use RPCHelpMan::Check because of the somewhat exceptional
-       format of arguments (with the first being optional).  */
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
-        throw std::runtime_error(
-            RPCHelpMan{"submitwork",
-                "\nSubmits a solved PoW for a block that was previously created by 'creatework'.\n"
-                "\nDEPRECATED: If no hash is given, it will be deduced from the data.  Prefer to add an explicit hash.\n",
-                {
-                    {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Hash of the block to submit"},
-                    {"data", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Solved block header data"},
-                },
-                RPCResult{
-                    RPCResult::Type::BOOL, "", "whether the submitted block was correct"
-                },
-                RPCExamples{
-                    HelpExampleCli("submitwork", "\"hash\" \"solved data\"")
-                  + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
-                },
-            }.ToString());
-
+    return RPCHelpMan{"submitwork",
+        "\nSubmits a solved PoW for a block that was previously created by 'creatework'.\n"
+        "\nDEPRECATED: If no hash is given, it will be deduced from the data.  Prefer to add an explicit hash.\n",
+        {
+            {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Hash of the block to submit"},
+            {"data", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Solved block header data"},
+        },
+        RPCResult{
+            RPCResult::Type::BOOL, "", "whether the submitted block was correct"
+        },
+        RPCExamples{
+            HelpExampleCli("submitwork", "\"hash\" \"solved data\"")
+          + HelpExampleRpc("submitwork", "\"hash\" \"solved data\"")
+        },
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
     std::string hashHex;
     std::string dataHex;
     if (request.params.size() == 1)
       dataHex = request.params[0].get_str();
-    else
+    else if (request.params.size() == 2)
       {
         hashHex = request.params[0].get_str();
         dataHex = request.params[1].get_str();
       }
+    else
+      throw std::runtime_error(self.ToString ());
 
-    return AuxpowMiner::get ().submitWork(request, hashHex, dataHex);
+    return AuxpowMiner::get().submitWork(request, hashHex, dataHex);
+},
+    };
 }
 
 /* ************************************************************************** */

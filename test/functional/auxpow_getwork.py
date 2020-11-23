@@ -158,5 +158,10 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     work2 = self.nodes[0].creatework (self.nodes[0].getnewaddress ())
     assert work1['hash'] != work2['hash']
 
+    # Test that submitwork works also with just one argument.
+    def submitOnlyData (hash, data):
+      return self.nodes[0].submitwork (data)
+    mineWorkBlockWithMethods (self.nodes[0], create, submitOnlyData)
+
 if __name__ == '__main__':
   AuxpowGetworkTest ().main ()

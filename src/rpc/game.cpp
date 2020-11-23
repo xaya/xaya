@@ -347,37 +347,35 @@ game_sendupdates ()
 namespace
 {
 
-UniValue
-trackedgames (const JSONRPCRequest& request)
+RPCHelpMan
+trackedgames ()
 {
-  /* We cannot use RPCHelpMan::Check here, as we have a special case where
-     we need exactly zero or two arguments.  */
-  if (request.fHelp
-        || (request.params.size () != 0 && request.params.size () != 2))
-    throw std::runtime_error (
-        RPCHelpMan ("trackedgames",
-            "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
-            "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
+  return RPCHelpMan ("trackedgames",
+      "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
+      "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
+      {
+          {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Can be \"add\" or \"remove\""},
+          {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "The game ID to add or remove"},
+      },
+      RPCResults {
+        RPCResult{"if called without arguments", RPCResult::Type::ARR, "", "",
             {
-                {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Can be \"add\" or \"remove\""},
-                {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "The game ID to add or remove"},
-            },
-            RPCResults {
-              RPCResult{"if called without arguments", RPCResult::Type::ARR, "", "",
-                  {
-                      {RPCResult::Type::STR, "game", "currently tracked game ID"},
-                  }
-              },
-            },
-            RPCExamples {
-                HelpExampleCli ("trackedgames", "")
-              + HelpExampleCli ("trackedgames", "\"add\" \"huc\"")
-              + HelpExampleCli ("trackedgames", "\"remove\" \"huc\"")
-              + HelpExampleRpc ("trackedgames", "")
+                {RPCResult::Type::STR, "game", "currently tracked game ID"},
             }
-        ).ToString ());
-
+        },
+      },
+      RPCExamples {
+          HelpExampleCli ("trackedgames", "")
+        + HelpExampleCli ("trackedgames", "\"add\" \"huc\"")
+        + HelpExampleCli ("trackedgames", "\"remove\" \"huc\"")
+        + HelpExampleRpc ("trackedgames", "")
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
 #if ENABLE_ZMQ
+  if (request.params.size () != 0 && request.params.size () != 2)
+    throw std::runtime_error (self.ToString ());
+
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VSTR});
 
   auto* tracked = GetTrackedGames ();
@@ -400,6 +398,8 @@ trackedgames (const JSONRPCRequest& request)
 #else // ENABLE_ZMQ
   throw JSONRPCError (RPC_MISC_ERROR, "ZMQ is not built into Xaya");
 #endif // ENABLE_ZMQ
+}
+  );
 }
 
 } // anonymous namespace
