@@ -12,6 +12,7 @@
 #include <key.h>
 #include <script/standard.h>
 
+#include <names/common.h>
 #include <qt/walletmodeltransaction.h>
 
 #include <interfaces/wallet.h>
@@ -28,6 +29,7 @@ class ClientModel;
 class OptionsModel;
 class PlatformStyle;
 class RecentRequestsTableModel;
+class NameTableModel;
 class SendCoinsRecipient;
 class TransactionTableModel;
 class WalletModelTransaction;
@@ -79,6 +81,7 @@ public:
     OptionsModel *getOptionsModel();
     AddressTableModel *getAddressTableModel();
     TransactionTableModel *getTransactionTableModel();
+    NameTableModel *getNameTableModel();
     RecentRequestsTableModel *getRecentRequestsTableModel();
 
     EncryptionStatus getEncryptionStatus() const;
@@ -179,6 +182,7 @@ private:
 
     AddressTableModel *addressTableModel;
     TransactionTableModel *transactionTableModel;
+    NameTableModel *nameTableModel;
     RecentRequestsTableModel *recentRequestsTableModel;
 
     // Cache some values to be able to detect changes

@@ -15,6 +15,7 @@ class PlatformStyle;
 class ReceiveCoinsDialog;
 class SendCoinsDialog;
 class SendCoinsRecipient;
+class ManageNamesPage;
 class TransactionView;
 class WalletModel;
 class AddressBookPage;
@@ -61,6 +62,7 @@ private:
     QWidget *transactionsPage;
     ReceiveCoinsDialog *receiveCoinsPage;
     SendCoinsDialog *sendCoinsPage;
+    ManageNamesPage *manageNamesPage;
     AddressBookPage *usedSendingAddressesPage;
     AddressBookPage *usedReceivingAddressesPage;
 
@@ -83,6 +85,8 @@ public Q_SLOTS:
     void gotoSignMessageTab(QString addr = "");
     /** Show Sign/Verify Message dialog and switch to verify message tab */
     void gotoVerifyMessageTab(QString addr = "");
+    /** Show Namecoin manage names page */
+    void gotoManageNamesPage();
     /** Load Partially Signed Bitcoin Transaction */
     void gotoLoadPSBT(bool from_clipboard = false);
 
