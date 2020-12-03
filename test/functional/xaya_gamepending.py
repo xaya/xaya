@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 The Xaya developers
+# Copyright (c) 2019-2020 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,11 +28,11 @@ def assertMove (obj, txid, name, move):
   assert_equal (obj["name"], name)
   assert_equal (obj["move"], move)
 
-  # Inputs and outputs should be reported, but we do not care about the
+  # These fields should be reported, but we do not care about the
   # exact form for this test (this is verified in xaya_gameblocks.py in
   # more detail).
-  assert "inputs" in obj
-  assert "out" in obj
+  for key in ["inputs", "out", "btxid"]:
+    assert key in obj
 
 
 class GamePendingTest (XayaZmqTest):

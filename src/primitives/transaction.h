@@ -311,6 +311,15 @@ public:
     const uint256& GetHash() const { return hash; }
     const uint256& GetWitnessHash() const { return m_witness_hash; };
 
+    /**
+     * Returns the "bare txid" of this transaction.  This is a hash similar
+     * to GetHash, except it cleans out all scriptSig's and witness data
+     * before computing.  In other words, it is a hash that commits to the
+     * transaction details in general, but is not malleable independent of
+     * whether or not segwit is used by the inputs.
+     */
+    uint256 GetBareHash() const;
+
     // Return sum of txouts.
     CAmount GetValueOut(bool fExclueNames = false) const;
 
