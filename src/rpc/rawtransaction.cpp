@@ -98,6 +98,7 @@ static RPCHelpMan getrawtransaction()
                              {RPCResult::Type::BOOL, "in_active_chain", "Whether specified block is in the active chain or not (only present with explicit \"blockhash\" argument)"},
                              {RPCResult::Type::STR_HEX, "hex", "The serialized, hex-encoded data for 'txid'"},
                              {RPCResult::Type::STR_HEX, "txid", "The transaction id (same as provided)"},
+                             {RPCResult::Type::STR_HEX, "btxid", "The bare transaction hash"},
                              {RPCResult::Type::STR_HEX, "hash", "The transaction hash (differs from txid for witness transactions)"},
                              {RPCResult::Type::NUM, "size", "The serialized transaction size"},
                              {RPCResult::Type::NUM, "vsize", "The virtual transaction size (differs from size for witness transactions)"},
@@ -452,6 +453,7 @@ static RPCHelpMan decoderawtransaction()
                     RPCResult::Type::OBJ, "", "",
                     {
                         {RPCResult::Type::STR_HEX, "txid", "The transaction id"},
+                        {RPCResult::Type::STR_HEX, "btxid", "The bare transaction hash"},
                         {RPCResult::Type::STR_HEX, "hash", "The transaction hash (differs from txid for witness transactions)"},
                         {RPCResult::Type::NUM, "size", "The transaction size"},
                         {RPCResult::Type::NUM, "vsize", "The virtual transaction size (differs from size for witness transactions)"},

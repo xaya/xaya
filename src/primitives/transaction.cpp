@@ -78,6 +78,14 @@ uint256 CTransaction::ComputeWitnessHash() const
     return SerializeHash(*this, SER_GETHASH, 0);
 }
 
+uint256 CTransaction::GetBareHash() const
+{
+    CMutableTransaction withoutSigs(*this);
+    for (auto& in : withoutSigs.vin)
+      in.scriptSig.clear();
+    return withoutSigs.GetHash();
+}
+
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), hash{}, m_witness_hash{} {}
 CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}

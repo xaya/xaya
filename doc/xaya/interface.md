@@ -74,6 +74,7 @@ The `DATA` part, finally, is a JSON object with the relevant information:
         [
           {
             "txid": TXID,
+            "btxid": BTXID,
             "name": UPDATED-NAME,
             "move": MOVE,
             "inputs":
@@ -109,6 +110,12 @@ The placeholders have the following meaning:
   The Xaya transaction ID of the transaction that performed the given move.
   This is mostly useful as a key and to correlate a single transaction
   through different endpoints of the API (if necessary).
+* **`BTXID`:**
+  The *bare hash* of this transaction.  This is a hex string similar to
+  `TXID`, but does not take any signature data into account.  It is thus
+  not malleable, independent of whether or not the inputs use segwit.  Because
+  of this it can be useful for tracking transactions e.g. involving
+  atomic trades.
 * **`UPDATED-NAME`:**
   The account name that performed a move, without the `p/` prefix.
 * **`MOVE`:**

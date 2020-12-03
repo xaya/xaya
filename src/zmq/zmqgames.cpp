@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Xaya developers
+// Copyright (c) 2018-2020 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -211,6 +211,7 @@ TransactionData::TransactionData (const CTransaction& tx)
   /* Prepare a template object that is the same for all games.  */
   UniValue tmpl(UniValue::VOBJ);
   tmpl.pushKV ("txid", tx.GetHash ().GetHex ());
+  tmpl.pushKV ("btxid", tx.GetBareHash ().GetHex ());
   tmpl.pushKV ("name", name.substr (2));
 
   UniValue inputs(UniValue::VARR);

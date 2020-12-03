@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 The Xaya developers
+# Copyright (c) 2018-2020 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -79,6 +79,7 @@ class GameBlocksTest (XayaZmqTest):
     self._test_blockData ()
     self._test_multipleUpdates ()
     self._test_duplicateKeys ()
+    self._test_btxid ()
     self._test_inputs ()
     self._test_moveWithCurrency ()
     self._test_burn ()
@@ -253,6 +254,25 @@ class GameBlocksTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assert_equal (len (data["moves"]), 1)
     assertMove (data["moves"][0], txid, "x", "b2")
+
+  def _test_btxid (self):
+    """
+    Tests that the bare hash of a transaction is passed correctly to the
+    ZMQ notifications.
+    """
+
+    self.log.info ("Testing for the bare hash (btxid)...")
+    txid = self.node.name_update ("p/x", json.dumps ({"g": {"a": "foo"}}))
+    btxid = self.node.getrawtransaction (txid, True)["btxid"]
+    self.node.generate (1)
+
+    _, data = self.games["a"].receive ()
+    assert_equal (len (data["moves"]), 1)
+    assert_equal (data["moves"][0]["txid"], txid)
+    assert_equal (data["moves"][0]["btxid"], btxid)
+
+    _, data = self.games["b"].receive ()
+    assert_equal (data["moves"], [])
 
   def _test_inputs (self):
     """
