@@ -450,7 +450,7 @@ namespace {
 class MemPoolAccept
 {
 public:
-    MemPoolAccept(CTxMemPool& mempool) : m_pool(mempool), m_view(&m_dummy), m_viewmempool(&::ChainstateActive().CoinsTip(), m_pool),
+    explicit MemPoolAccept(CTxMemPool& mempool) : m_pool(mempool), m_view(&m_dummy), m_viewmempool(&::ChainstateActive().CoinsTip(), m_pool),
         m_limit_ancestors(gArgs.GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT)),
         m_limit_ancestor_size(gArgs.GetArg("-limitancestorsize", DEFAULT_ANCESTOR_SIZE_LIMIT)*1000),
         m_limit_descendants(gArgs.GetArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT)),
@@ -483,7 +483,7 @@ private:
     // All the intermediate state that gets passed between the various levels
     // of checking a given transaction.
     struct Workspace {
-        Workspace(const CTransactionRef& ptx) : m_ptx(ptx), m_hash(ptx->GetHash()) {}
+        explicit Workspace(const CTransactionRef& ptx) : m_ptx(ptx), m_hash(ptx->GetHash()) {}
         std::set<uint256> m_conflicts;
         CTxMemPool::setEntries m_all_conflicting;
         CTxMemPool::setEntries m_ancestors;
@@ -506,13 +506,13 @@ private:
 
     // Run the script checks using our policy flags. As this can be slow, we should
     // only invoke this on transactions that have otherwise passed policy checks.
-    bool PolicyScriptChecks(ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+    bool PolicyScriptChecks(ATMPArgs& args, const Workspace& ws, PrecomputedTransactionData& txdata) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     // Re-run the script checks, using consensus flags, and try to cache the
     // result in the scriptcache. This should be done after
     // PolicyScriptChecks(). This requires that all inputs either be in our
     // utxo set or in the mempool.
-    bool ConsensusScriptChecks(ATMPArgs& args, Workspace& ws, PrecomputedTransactionData &txdata) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+    bool ConsensusScriptChecks(ATMPArgs& args, const Workspace& ws, PrecomputedTransactionData &txdata) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     // Try to add the transaction to the mempool, removing any conflicts first.
     // Returns true if the transaction is in the mempool after any size
@@ -697,7 +697,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs");
     }
 
-    // Check for non-standard witness in P2WSH
+    // Check for non-standard witnesses.
     if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, m_view))
         return state.Invalid(TxValidationResult::TX_WITNESS_MUTATED, "bad-witness-nonstandard");
 
@@ -922,7 +922,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     return true;
 }
 
-bool MemPoolAccept::PolicyScriptChecks(ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata)
+bool MemPoolAccept::PolicyScriptChecks(ATMPArgs& args, const Workspace& ws, PrecomputedTransactionData& txdata)
 {
     const CTransaction& tx = *ws.m_ptx;
 
@@ -949,7 +949,7 @@ bool MemPoolAccept::PolicyScriptChecks(ATMPArgs& args, Workspace& ws, Precompute
     return true;
 }
 
-bool MemPoolAccept::ConsensusScriptChecks(ATMPArgs& args, Workspace& ws, PrecomputedTransactionData& txdata)
+bool MemPoolAccept::ConsensusScriptChecks(ATMPArgs& args, const Workspace& ws, PrecomputedTransactionData& txdata)
 {
     const CTransaction& tx = *ws.m_ptx;
     const uint256& hash = ws.m_hash;
@@ -5153,7 +5153,9 @@ bool DumpMempool(const CTxMemPool& pool)
         if (!FileCommit(file.Get()))
             throw std::runtime_error("FileCommit failed");
         file.fclose();
-        RenameOver(GetDataDir() / "mempool.dat.new", GetDataDir() / "mempool.dat");
+        if (!RenameOver(GetDataDir() / "mempool.dat.new", GetDataDir() / "mempool.dat")) {
+            throw std::runtime_error("Rename failed");
+        }
         int64_t last = GetTimeMicros();
         LogPrintf("Dumped mempool: %gs to copy, %gs to dump\n", (mid-start)*MICRO, (last-mid)*MICRO);
     } catch (const std::exception& e) {

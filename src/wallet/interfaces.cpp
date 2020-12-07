@@ -32,9 +32,22 @@
 #include <utility>
 #include <vector>
 
-namespace interfaces {
-namespace {
+using interfaces::Chain;
+using interfaces::FoundBlock;
+using interfaces::Handler;
+using interfaces::MakeHandler;
+using interfaces::Wallet;
+using interfaces::WalletAddress;
+using interfaces::WalletBalances;
+using interfaces::WalletClient;
+using interfaces::WalletOrderForm;
+using interfaces::WalletTx;
+using interfaces::WalletTxOut;
+using interfaces::WalletTxStatus;
+using interfaces::WalletValueMap;
 
+namespace wallet {
+namespace {
 //! Construct wallet tx struct.
 WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 {
@@ -65,7 +78,7 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 }
 
 //! Construct wallet tx status struct.
-WalletTxStatus MakeWalletTxStatus(CWallet& wallet, const CWalletTx& wtx)
+WalletTxStatus MakeWalletTxStatus(const CWallet& wallet, const CWalletTx& wtx)
 {
     WalletTxStatus result;
     result.block_height = wtx.m_confirm.block_height > 0 ? wtx.m_confirm.block_height : std::numeric_limits<int>::max();
@@ -82,7 +95,7 @@ WalletTxStatus MakeWalletTxStatus(CWallet& wallet, const CWalletTx& wtx)
 }
 
 //! Construct wallet TxOut struct.
-WalletTxOut MakeWalletTxOut(CWallet& wallet,
+WalletTxOut MakeWalletTxOut(const CWallet& wallet,
     const CWalletTx& wtx,
     int n,
     int depth) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
@@ -568,14 +581,14 @@ public:
     std::vector<std::unique_ptr<Handler>> m_rpc_handlers;
     std::list<CRPCCommand> m_rpc_commands;
 };
-
 } // namespace
+} // namespace wallet
 
-std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet) { return wallet ? MakeUnique<WalletImpl>(wallet) : nullptr; }
+namespace interfaces {
+std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet) { return wallet ? MakeUnique<wallet::WalletImpl>(wallet) : nullptr; }
 
 std::unique_ptr<WalletClient> MakeWalletClient(Chain& chain, ArgsManager& args)
 {
-    return MakeUnique<WalletClientImpl>(chain, args);
+    return MakeUnique<wallet::WalletClientImpl>(chain, args);
 }
-
 } // namespace interfaces
