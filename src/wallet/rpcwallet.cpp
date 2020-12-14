@@ -2545,7 +2545,7 @@ static RPCHelpMan listwalletdir()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     UniValue wallets(UniValue::VARR);
-    for (const auto& path : ListWalletDir()) {
+    for (const auto& path : ListDatabases(GetWalletDir())) {
         UniValue wallet(UniValue::VOBJ);
         wallet.pushKV("name", path.string());
         wallets.push_back(wallet);
@@ -4129,7 +4129,7 @@ static RPCHelpMan send()
                 UniValueType(), // outputs (ARR or OBJ, checked later)
                 UniValue::VNUM, // conf_target
                 UniValue::VSTR, // estimate_mode
-                UniValue::VNUM, // fee_rate
+                UniValueType(), // fee_rate, will be checked by AmountFromValue() in SetFeeEstimateMode()
                 UniValue::VOBJ, // options
                 }, true
             );
