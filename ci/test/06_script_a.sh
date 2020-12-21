@@ -31,7 +31,7 @@ BEGIN_FOLD distdir
 DOCKER_EXEC make distdir VERSION=$HOST
 END_FOLD
 
-export P_CI_DIR="${BASE_BUILD_DIR}/bitcoin-$HOST"
+export P_CI_DIR="${BASE_BUILD_DIR}/namecoin-$HOST"
 
 BEGIN_FOLD configure
 DOCKER_EXEC ./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( (DOCKER_EXEC cat config.log) && false)
