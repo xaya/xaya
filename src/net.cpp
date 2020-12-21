@@ -16,6 +16,7 @@
 #include <net_permissions.h>
 #include <netbase.h>
 #include <node/ui_interface.h>
+#include <optional.h>
 #include <protocol.h>
 #include <random.h>
 #include <scheduler.h>
@@ -71,6 +72,9 @@ static constexpr int DNSSEEDS_TO_QUERY_AT_ONCE = 3;
 static constexpr std::chrono::seconds DNSSEEDS_DELAY_FEW_PEERS{11};
 static constexpr std::chrono::minutes DNSSEEDS_DELAY_MANY_PEERS{5};
 static constexpr int DNSSEEDS_DELAY_PEER_THRESHOLD = 1000; // "many" vs "few" peers
+
+/** The default timeframe for -maxuploadtarget. 1 day. */
+static constexpr std::chrono::seconds MAX_UPLOAD_TIMEFRAME{60 * 60 * 24};
 
 // We add a random period time (0 to 1 seconds) to feeler connections to prevent synchronization.
 #define FEELER_SLEEP_WINDOW 1
@@ -841,21 +845,6 @@ size_t CConnman::SocketSendData(CNode *pnode) const EXCLUSIVE_LOCKS_REQUIRED(pno
     return nSentSize;
 }
 
-struct NodeEvictionCandidate
-{
-    NodeId id;
-    int64_t nTimeConnected;
-    int64_t nMinPingUsecTime;
-    int64_t nLastBlockTime;
-    int64_t nLastTXTime;
-    bool fRelevantServices;
-    bool fRelayTxes;
-    bool fBloomFilter;
-    uint64_t nKeyedNetGroup;
-    bool prefer_evict;
-    bool m_is_local;
-};
-
 static bool ReverseCompareNodeMinPingTime(const NodeEvictionCandidate &a, const NodeEvictionCandidate &b)
 {
     return a.nMinPingUsecTime > b.nMinPingUsecTime;
@@ -911,43 +900,8 @@ static void EraseLastKElements(std::vector<T> &elements, Comparator comparator, 
     elements.erase(elements.end() - eraseSize, elements.end());
 }
 
-/** Try to find a connection to evict when the node is full.
- *  Extreme care must be taken to avoid opening the node to attacker
- *   triggered network partitioning.
- *  The strategy used here is to protect a small number of peers
- *   for each of several distinct characteristics which are difficult
- *   to forge.  In order to partition a node the attacker must be
- *   simultaneously better at all of them than honest peers.
- */
-bool CConnman::AttemptToEvictConnection()
+[[nodiscard]] Optional<NodeId> SelectNodeToEvict(std::vector<NodeEvictionCandidate>&& vEvictionCandidates)
 {
-    std::vector<NodeEvictionCandidate> vEvictionCandidates;
-    {
-        LOCK(cs_vNodes);
-
-        for (const CNode* node : vNodes) {
-            if (node->HasPermission(PF_NOBAN))
-                continue;
-            if (!node->IsInboundConn())
-                continue;
-            if (node->fDisconnect)
-                continue;
-            bool peer_relay_txes = false;
-            bool peer_filter_not_null = false;
-            if (node->m_tx_relay != nullptr) {
-                LOCK(node->m_tx_relay->cs_filter);
-                peer_relay_txes = node->m_tx_relay->fRelayTxes;
-                peer_filter_not_null = node->m_tx_relay->pfilter != nullptr;
-            }
-            NodeEvictionCandidate candidate = {node->GetId(), node->nTimeConnected, node->nMinPingUsecTime,
-                                               node->nLastBlockTime, node->nLastTXTime,
-                                               HasAllDesirableServiceFlags(node->nServices),
-                                               peer_relay_txes, peer_filter_not_null, node->nKeyedNetGroup,
-                                               node->m_prefer_evict, node->addr.IsLocal()};
-            vEvictionCandidates.push_back(candidate);
-        }
-    }
-
     // Protect connections with certain characteristics
 
     // Deterministically select 4 peers to protect by netgroup.
@@ -985,7 +939,7 @@ bool CConnman::AttemptToEvictConnection()
     total_protect_size -= initial_size - vEvictionCandidates.size();
     EraseLastKElements(vEvictionCandidates, ReverseCompareNodeTimeConnected, total_protect_size);
 
-    if (vEvictionCandidates.empty()) return false;
+    if (vEvictionCandidates.empty()) return nullopt;
 
     // If any remaining peers are preferred for eviction consider only them.
     // This happens after the other preferences since if a peer is really the best by other criteria (esp relaying blocks)
@@ -1017,10 +971,52 @@ bool CConnman::AttemptToEvictConnection()
     vEvictionCandidates = std::move(mapNetGroupNodes[naMostConnections]);
 
     // Disconnect from the network group with the most connections
-    NodeId evicted = vEvictionCandidates.front().id;
+    return vEvictionCandidates.front().id;
+}
+
+/** Try to find a connection to evict when the node is full.
+ *  Extreme care must be taken to avoid opening the node to attacker
+ *   triggered network partitioning.
+ *  The strategy used here is to protect a small number of peers
+ *   for each of several distinct characteristics which are difficult
+ *   to forge.  In order to partition a node the attacker must be
+ *   simultaneously better at all of them than honest peers.
+ */
+bool CConnman::AttemptToEvictConnection()
+{
+    std::vector<NodeEvictionCandidate> vEvictionCandidates;
+    {
+
+        LOCK(cs_vNodes);
+        for (const CNode* node : vNodes) {
+            if (node->HasPermission(PF_NOBAN))
+                continue;
+            if (!node->IsInboundConn())
+                continue;
+            if (node->fDisconnect)
+                continue;
+            bool peer_relay_txes = false;
+            bool peer_filter_not_null = false;
+            if (node->m_tx_relay != nullptr) {
+                LOCK(node->m_tx_relay->cs_filter);
+                peer_relay_txes = node->m_tx_relay->fRelayTxes;
+                peer_filter_not_null = node->m_tx_relay->pfilter != nullptr;
+            }
+            NodeEvictionCandidate candidate = {node->GetId(), node->nTimeConnected, node->nMinPingUsecTime,
+                                               node->nLastBlockTime, node->nLastTXTime,
+                                               HasAllDesirableServiceFlags(node->nServices),
+                                               peer_relay_txes, peer_filter_not_null, node->nKeyedNetGroup,
+                                               node->m_prefer_evict, node->addr.IsLocal()};
+            vEvictionCandidates.push_back(candidate);
+        }
+    }
+    const Optional<NodeId> node_id_to_evict = SelectNodeToEvict(std::move(vEvictionCandidates));
+    if (!node_id_to_evict) {
+        return false;
+    }
     LOCK(cs_vNodes);
     for (CNode* pnode : vNodes) {
-        if (pnode->GetId() == evicted) {
+        if (pnode->GetId() == *node_id_to_evict) {
             pnode->fDisconnect = true;
             return true;
         }
@@ -1232,7 +1228,7 @@ void CConnman::InactivityCheck(CNode *pnode)
             LogPrintf("socket sending timeout: %is\n", nTime - pnode->nLastSend);
             pnode->fDisconnect = true;
         }
-        else if (nTime - pnode->nLastRecv > (pnode->GetCommonVersion() > BIP0031_VERSION ? TIMEOUT_INTERVAL : 90*60))
+        else if (nTime - pnode->nLastRecv > TIMEOUT_INTERVAL)
         {
             LogPrintf("socket receive timeout: %is\n", nTime - pnode->nLastRecv);
             pnode->fDisconnect = true;
@@ -2078,7 +2074,11 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 continue;
             }
 
-            // do not allow non-default ports, unless after 50 invalid addresses selected already
+            // Do not allow non-default ports, unless after 50 invalid
+            // addresses selected already. This is to prevent malicious peers
+            // from advertising themselves as a service on another host and
+            // port, causing a DoS attack as nodes around the network attempt
+            // to connect to it fruitlessly.
             if (addr.GetPort() != Params().GetDefaultPort() && nTries < 50)
                 continue;
 
@@ -2847,8 +2847,8 @@ void CConnman::RecordBytesSent(uint64_t bytes)
     LOCK(cs_totalBytesSent);
     nTotalBytesSent += bytes;
 
-    uint64_t now = GetTime();
-    if (nMaxOutboundCycleStartTime + nMaxOutboundTimeframe < now)
+    const auto now = GetTime<std::chrono::seconds>();
+    if (nMaxOutboundCycleStartTime + MAX_UPLOAD_TIMEFRAME < now)
     {
         // timeframe expired, reset cycle
         nMaxOutboundCycleStartTime = now;
@@ -2859,48 +2859,29 @@ void CConnman::RecordBytesSent(uint64_t bytes)
     nMaxOutboundTotalBytesSentInCycle += bytes;
 }
 
-void CConnman::SetMaxOutboundTarget(uint64_t limit)
-{
-    LOCK(cs_totalBytesSent);
-    nMaxOutboundLimit = limit;
-}
-
 uint64_t CConnman::GetMaxOutboundTarget()
 {
     LOCK(cs_totalBytesSent);
     return nMaxOutboundLimit;
 }
 
-uint64_t CConnman::GetMaxOutboundTimeframe()
+std::chrono::seconds CConnman::GetMaxOutboundTimeframe()
 {
-    LOCK(cs_totalBytesSent);
-    return nMaxOutboundTimeframe;
+    return MAX_UPLOAD_TIMEFRAME;
 }
 
-uint64_t CConnman::GetMaxOutboundTimeLeftInCycle()
+std::chrono::seconds CConnman::GetMaxOutboundTimeLeftInCycle()
 {
     LOCK(cs_totalBytesSent);
     if (nMaxOutboundLimit == 0)
-        return 0;
+        return 0s;
 
-    if (nMaxOutboundCycleStartTime == 0)
-        return nMaxOutboundTimeframe;
+    if (nMaxOutboundCycleStartTime.count() == 0)
+        return MAX_UPLOAD_TIMEFRAME;
 
-    uint64_t cycleEndTime = nMaxOutboundCycleStartTime + nMaxOutboundTimeframe;
-    uint64_t now = GetTime();
-    return (cycleEndTime < now) ? 0 : cycleEndTime - GetTime();
-}
-
-void CConnman::SetMaxOutboundTimeframe(uint64_t timeframe)
-{
-    LOCK(cs_totalBytesSent);
-    if (nMaxOutboundTimeframe != timeframe)
-    {
-        // reset measure-cycle in case of changing
-        // the timeframe
-        nMaxOutboundCycleStartTime = GetTime();
-    }
-    nMaxOutboundTimeframe = timeframe;
+    const std::chrono::seconds cycleEndTime = nMaxOutboundCycleStartTime + MAX_UPLOAD_TIMEFRAME;
+    const auto now = GetTime<std::chrono::seconds>();
+    return (cycleEndTime < now) ? 0s : cycleEndTime - now;
 }
 
 bool CConnman::OutboundTargetReached(bool historicalBlockServingLimit)
@@ -2912,8 +2893,8 @@ bool CConnman::OutboundTargetReached(bool historicalBlockServingLimit)
     if (historicalBlockServingLimit)
     {
         // keep a large enough buffer to at least relay each block once
-        uint64_t timeLeftInCycle = GetMaxOutboundTimeLeftInCycle();
-        uint64_t buffer = timeLeftInCycle / 600 * MAX_BLOCK_SERIALIZED_SIZE;
+        const std::chrono::seconds timeLeftInCycle = GetMaxOutboundTimeLeftInCycle();
+        const uint64_t buffer = timeLeftInCycle / std::chrono::minutes{10} * MAX_BLOCK_SERIALIZED_SIZE;
         if (buffer >= nMaxOutboundLimit || nMaxOutboundTotalBytesSentInCycle >= nMaxOutboundLimit - buffer)
             return true;
     }
@@ -2963,18 +2944,15 @@ unsigned int CConnman::GetReceiveFloodSize() const { return nReceiveFloodSize; }
 
 CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion)
     : nTimeConnected(GetSystemTimeInSeconds()),
-    addr(addrIn),
-    addrBind(addrBindIn),
-    nKeyedNetGroup(nKeyedNetGroupIn),
-    // Don't relay addr messages to peers that we connect to as block-relay-only
-    // peers (to prevent adversaries from inferring these links from addr
-    // traffic).
-    id(idIn),
-    nLocalHostNonce(nLocalHostNonceIn),
-    m_conn_type(conn_type_in),
-    nLocalServices(nLocalServicesIn),
-    nMyStartingHeight(nMyStartingHeightIn),
-    m_inbound_onion(inbound_onion)
+      addr(addrIn),
+      addrBind(addrBindIn),
+      nKeyedNetGroup(nKeyedNetGroupIn),
+      id(idIn),
+      nLocalHostNonce(nLocalHostNonceIn),
+      m_conn_type(conn_type_in),
+      nLocalServices(nLocalServicesIn),
+      nMyStartingHeight(nMyStartingHeightIn),
+      m_inbound_onion(inbound_onion)
 {
     hSocket = hSocketIn;
     addrName = addrNameIn == "" ? addr.ToStringIPPort() : addrNameIn;

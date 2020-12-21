@@ -1306,34 +1306,33 @@ void PeerManager::NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_
  * in ::ChainActive() to our peers.
  */
 void PeerManager::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) {
-    const int nNewHeight = pindexNew->nHeight;
-    m_connman.SetBestHeight(nNewHeight);
-
+    m_connman.SetBestHeight(pindexNew->nHeight);
     SetServiceFlagsIBDCache(!fInitialDownload);
-    if (!fInitialDownload) {
-        // Find the hashes of all blocks that weren't previously in the best chain.
-        std::vector<uint256> vHashes;
-        const CBlockIndex *pindexToAnnounce = pindexNew;
-        while (pindexToAnnounce != pindexFork) {
-            vHashes.push_back(pindexToAnnounce->GetBlockHash());
-            pindexToAnnounce = pindexToAnnounce->pprev;
-            if (vHashes.size() == MAX_BLOCKS_TO_ANNOUNCE) {
-                // Limit announcements in case of a huge reorganization.
-                // Rely on the peer's synchronization mechanism in that case.
-                break;
-            }
+
+    // Don't relay inventory during initial block download.
+    if (fInitialDownload) return;
+
+    // Find the hashes of all blocks that weren't previously in the best chain.
+    std::vector<uint256> vHashes;
+    const CBlockIndex *pindexToAnnounce = pindexNew;
+    while (pindexToAnnounce != pindexFork) {
+        vHashes.push_back(pindexToAnnounce->GetBlockHash());
+        pindexToAnnounce = pindexToAnnounce->pprev;
+        if (vHashes.size() == MAX_BLOCKS_TO_ANNOUNCE) {
+            // Limit announcements in case of a huge reorganization.
+            // Rely on the peer's synchronization mechanism in that case.
+            break;
         }
-        // Relay inventory, but don't relay old inventory during initial block download.
-        m_connman.ForEachNode([nNewHeight, &vHashes](CNode* pnode) {
-            LOCK(pnode->cs_inventory);
-            if (nNewHeight > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : 0)) {
-                for (const uint256& hash : reverse_iterate(vHashes)) {
-                    pnode->vBlockHashesToAnnounce.push_back(hash);
-                }
-            }
-        });
-        m_connman.WakeMessageHandler();
     }
+
+    // Relay to all peers
+    m_connman.ForEachNode([&vHashes](CNode* pnode) {
+        LOCK(pnode->cs_inventory);
+        for (const uint256& hash : reverse_iterate(vHashes)) {
+            pnode->vBlockHashesToAnnounce.push_back(hash);
+        }
+    });
+    m_connman.WakeMessageHandler();
 }
 
 /**
@@ -1427,7 +1426,23 @@ void RelayTransaction(const uint256& txid, const uint256& wtxid, const CConnman&
     });
 }
 
-static void RelayAddress(const CAddress& addr, bool fReachable, const CConnman& connman)
+/**
+ * Relay (gossip) an address to a few randomly chosen nodes.
+ * We choose the same nodes within a given 24h window (if the list of connected
+ * nodes does not change) and we don't relay to nodes that already know an
+ * address. So within 24h we will likely relay a given address once. This is to
+ * prevent a peer from unjustly giving their address better propagation by sending
+ * it to us repeatedly.
+ * @param[in] originator The peer that sent us the address. We don't want to relay it back.
+ * @param[in] addr Address to relay.
+ * @param[in] fReachable Whether the address' network is reachable. We relay unreachable
+ * addresses less.
+ * @param[in] connman Connection manager to choose nodes to relay to.
+ */
+static void RelayAddress(const CNode& originator,
+                         const CAddress& addr,
+                         bool fReachable,
+                         const CConnman& connman)
 {
     if (!fReachable && !addr.IsRelayable()) return;
 
@@ -1444,8 +1459,8 @@ static void RelayAddress(const CAddress& addr, bool fReachable, const CConnman& 
     std::array<std::pair<uint64_t, CNode*>,2> best{{{0, nullptr}, {0, nullptr}}};
     assert(nRelayNodes <= best.size());
 
-    auto sortfunc = [&best, &hasher, nRelayNodes](CNode* pnode) {
-        if (pnode->RelayAddrsWithConn()) {
+    auto sortfunc = [&best, &hasher, nRelayNodes, &originator, &addr](CNode* pnode) {
+        if (pnode->RelayAddrsWithConn() && pnode != &originator && pnode->IsAddrCompatible(addr)) {
             uint64_t hashKey = CSipHasher(hasher).Write(pnode->GetId()).Finalize();
             for (unsigned int i = 0; i < nRelayNodes; i++) {
                  if (hashKey > best[i].first) {
@@ -2413,8 +2428,8 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
             // empty and no one will know who we are, so these mechanisms are
             // important to help us connect to the network.
             //
-            // We skip this for BLOCK_RELAY peers to avoid potentially leaking
-            // information about our BLOCK_RELAY connections via address relay.
+            // We skip this for block-relay-only peers to avoid potentially leaking
+            // information about our block-relay-only connections via address relay.
             if (fListen && !::ChainstateActive().IsInitialBlockDownload())
             {
                 CAddress addr = GetLocalAddress(&pfrom.addr, pfrom.GetLocalServices());
@@ -2495,7 +2510,7 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
             LogPrintf("New outbound peer connected: version: %d, blocks=%d, peer=%d%s (%s)\n",
                       pfrom.nVersion.load(), pfrom.nStartingHeight,
                       pfrom.GetId(), (fLogIPs ? strprintf(", peeraddr=%s", pfrom.addr.ToString()) : ""),
-                      pfrom.IsBlockOnlyConn() ? "block-relay" : "full-relay");
+                      pfrom.ConnectionTypeAsString());
         }
 
         if (pfrom.GetCommonVersion() >= SENDHEADERS_VERSION) {
@@ -2522,8 +2537,41 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
         return;
     }
 
-    // Feature negotiation of wtxidrelay should happen between VERSION and
-    // VERACK, to avoid relay problems from switching after a connection is up
+    if (msg_type == NetMsgType::SENDHEADERS) {
+        LOCK(cs_main);
+        State(pfrom.GetId())->fPreferHeaders = true;
+        return;
+    }
+
+    if (msg_type == NetMsgType::SENDCMPCT) {
+        bool fAnnounceUsingCMPCTBLOCK = false;
+        uint64_t nCMPCTBLOCKVersion = 0;
+        vRecv >> fAnnounceUsingCMPCTBLOCK >> nCMPCTBLOCKVersion;
+        if (nCMPCTBLOCKVersion == 1 || ((pfrom.GetLocalServices() & NODE_WITNESS) && nCMPCTBLOCKVersion == 2)) {
+            LOCK(cs_main);
+            // fProvidesHeaderAndIDs is used to "lock in" version of compact blocks we send (fWantsCmpctWitness)
+            if (!State(pfrom.GetId())->fProvidesHeaderAndIDs) {
+                State(pfrom.GetId())->fProvidesHeaderAndIDs = true;
+                State(pfrom.GetId())->fWantsCmpctWitness = nCMPCTBLOCKVersion == 2;
+            }
+            if (State(pfrom.GetId())->fWantsCmpctWitness == (nCMPCTBLOCKVersion == 2)) { // ignore later version announces
+                State(pfrom.GetId())->fPreferHeaderAndIDs = fAnnounceUsingCMPCTBLOCK;
+                // save whether peer selects us as BIP152 high-bandwidth peer
+                // (receiving sendcmpct(1) signals high-bandwidth, sendcmpct(0) low-bandwidth)
+                pfrom.m_bip152_highbandwidth_from = fAnnounceUsingCMPCTBLOCK;
+            }
+            if (!State(pfrom.GetId())->fSupportsDesiredCmpctVersion) {
+                if (pfrom.GetLocalServices() & NODE_WITNESS)
+                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 2);
+                else
+                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 1);
+            }
+        }
+        return;
+    }
+
+    // Feature negotiation of wtxidrelay must happen between VERSION and VERACK
+    // to avoid relay problems from switching after a connection is up.
     if (msg_type == NetMsgType::WTXIDRELAY) {
         if (pfrom.fSuccessfullyConnected) {
             // Disconnect peers that send wtxidrelay message after VERACK; this
@@ -2605,7 +2653,7 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
             if (addr.nTime > nSince && !pfrom.fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
             {
                 // Relay to a limited number of other nodes
-                RelayAddress(addr, fReachable, m_connman);
+                RelayAddress(pfrom, addr, fReachable, m_connman);
             }
             // Do not store addresses outside our network
             if (fReachable)
@@ -2616,39 +2664,6 @@ void PeerManager::ProcessMessage(CNode& pfrom, const std::string& msg_type, CDat
             pfrom.fGetAddr = false;
         if (pfrom.IsAddrFetchConn())
             pfrom.fDisconnect = true;
-        return;
-    }
-
-    if (msg_type == NetMsgType::SENDHEADERS) {
-        LOCK(cs_main);
-        State(pfrom.GetId())->fPreferHeaders = true;
-        return;
-    }
-
-    if (msg_type == NetMsgType::SENDCMPCT) {
-        bool fAnnounceUsingCMPCTBLOCK = false;
-        uint64_t nCMPCTBLOCKVersion = 0;
-        vRecv >> fAnnounceUsingCMPCTBLOCK >> nCMPCTBLOCKVersion;
-        if (nCMPCTBLOCKVersion == 1 || ((pfrom.GetLocalServices() & NODE_WITNESS) && nCMPCTBLOCKVersion == 2)) {
-            LOCK(cs_main);
-            // fProvidesHeaderAndIDs is used to "lock in" version of compact blocks we send (fWantsCmpctWitness)
-            if (!State(pfrom.GetId())->fProvidesHeaderAndIDs) {
-                State(pfrom.GetId())->fProvidesHeaderAndIDs = true;
-                State(pfrom.GetId())->fWantsCmpctWitness = nCMPCTBLOCKVersion == 2;
-            }
-            if (State(pfrom.GetId())->fWantsCmpctWitness == (nCMPCTBLOCKVersion == 2)) { // ignore later version announces
-                State(pfrom.GetId())->fPreferHeaderAndIDs = fAnnounceUsingCMPCTBLOCK;
-                // save whether peer selects us as BIP152 high-bandwidth peer
-                // (receiving sendcmpct(1) signals high-bandwidth, sendcmpct(0) low-bandwidth)
-                pfrom.m_bip152_highbandwidth_from = fAnnounceUsingCMPCTBLOCK;
-            }
-            if (!State(pfrom.GetId())->fSupportsDesiredCmpctVersion) {
-                if (pfrom.GetLocalServices() & NODE_WITNESS)
-                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 2);
-                else
-                    State(pfrom.GetId())->fSupportsDesiredCmpctVersion = (nCMPCTBLOCKVersion == 1);
-            }
-        }
         return;
     }
 
@@ -4004,10 +4019,10 @@ void PeerManager::EvictExtraOutboundPeers(int64_t time_in_seconds)
         });
     }
 
-    // Check whether we have too many OUTBOUND_FULL_RELAY peers
+    // Check whether we have too many outbound-full-relay peers
     if (m_connman.GetExtraFullOutboundCount() > 0) {
-        // If we have more OUTBOUND_FULL_RELAY peers than we target, disconnect one.
-        // Pick the OUTBOUND_FULL_RELAY peer that least recently announced
+        // If we have more outbound-full-relay peers than we target, disconnect one.
+        // Pick the outbound-full-relay peer that least recently announced
         // us a new block, with ties broken by choosing the more recent
         // connection (higher node id)
         NodeId worst_peer = -1;
@@ -4016,7 +4031,7 @@ void PeerManager::EvictExtraOutboundPeers(int64_t time_in_seconds)
         m_connman.ForEachNode([&](CNode* pnode) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
             AssertLockHeld(::cs_main);
 
-            // Only consider OUTBOUND_FULL_RELAY peers that are not already
+            // Only consider outbound-full-relay peers that are not already
             // marked for disconnection
             if (!pnode->IsFullOutboundConn() || pnode->fDisconnect) return;
             CNodeState *state = State(pnode->GetId());
