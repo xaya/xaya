@@ -198,7 +198,7 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   res.nChainIndex = auxpowChainIndex;
   res.parentBlock = parentBlock;
 
-  return res;
+  return std::move (res);
 }
 
 valtype
@@ -441,7 +441,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
   CMutableTransaction mtx;
   mtx.vout.emplace_back (1234, scriptPubKey);
   {
-    LOCK (mempool.cs);
+    LOCK2 (cs_main, mempool.cs);
     mempool.addUnchecked (entry.FromTx (mtx));
   }
 
