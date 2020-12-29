@@ -30,37 +30,25 @@ class NameAntWorkflowTest (NameTestFramework):
 
     # fundrawtransaction and friends does not support non-wallet provided
     # inputs.  Thus we have to first build up the funded transaction without
-    # the name input and a slightly higher fee, and then combine it with the
-    # name input to obtain the final raw transaction.
-    addrNm = self.nodes[1].getnewaddress ()
+    # the name coins and a slightly higher fee, and then combine it with the
+    # name input/output to obtain the final raw transaction.
     addrPayment = self.nodes[0].getnewaddress ()
-    outs = [{addrNm: 0.01}, {addrPayment: 10}]
-    part1 = self.nodes[1].createrawtransaction ([], outs)
+    outs = [{addrPayment: 10}]
     options = {
-      "feeRate": 0.001,
-      "changePosition": 2,
+      "fee_rate": 100,
     }
-    part1 = self.nodes[1].fundrawtransaction (part1, options)["hex"]
+    part1 = self.nodes[1].walletcreatefundedpsbt ([], outs, 0, options)["psbt"]
 
+    addrNm = self.nodes[1].getnewaddress ()
     nmData = self.nodes[0].name_show ("x/name")
-    part2 = self.nodes[0].createrawtransaction ([nmData], [])
-
-    fullIns = []
-    fullOuts = []
-    for p in [part1, part2]:
-      data = self.nodes[0].decoderawtransaction (p)
-      fullIns.extend (data["vin"])
-      for vout in data["vout"]:
-        fullOuts.append ({vout["scriptPubKey"]["addresses"][0]: vout["value"]})
-    combined = self.nodes[1].createrawtransaction (fullIns, fullOuts)
-    combined = self.nodes[1].converttopsbt (combined)
-
+    part2 = self.nodes[0].createpsbt ([nmData], [{addrNm: 0.01}])
     nameOp = {
       "op": "name_update",
       "name": "x/name",
       "value": "updated",
     }
-    combined = self.nodes[1].namepsbt (combined, 0, nameOp)["psbt"]
+    part2 = self.nodes[1].namepsbt (part2, 0, nameOp)["psbt"]
+    combined = self.nodes[1].joinpsbts ([part1, part2])
 
     # Sign and broadcast the partial tx.
     sign1 = self.nodes[0].walletprocesspsbt (combined)
