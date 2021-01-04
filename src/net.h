@@ -206,7 +206,6 @@ public:
         int m_max_outbound_block_relay = 0;
         int nMaxAddnode = 0;
         int nMaxFeeler = 0;
-        int nBestHeight = 0;
         CClientUIInterface* uiInterface = nullptr;
         NetEventsInterface* m_msgproc = nullptr;
         BanMan* m_banman = nullptr;
@@ -234,7 +233,6 @@ public:
         nMaxAddnode = connOptions.nMaxAddnode;
         nMaxFeeler = connOptions.nMaxFeeler;
         m_max_outbound = m_max_outbound_full_relay + m_max_outbound_block_relay + nMaxFeeler;
-        nBestHeight = connOptions.nBestHeight;
         clientInterface = connOptions.uiInterface;
         m_banman = connOptions.m_banman;
         m_msgproc = connOptions.m_msgproc;
@@ -387,9 +385,6 @@ public:
 
     uint64_t GetTotalBytesRecv();
     uint64_t GetTotalBytesSent();
-
-    void SetBestHeight(int height);
-    int GetBestHeight() const;
 
     /** Get a unique deterministic randomizer. */
     CSipHasher GetDeterministicRandomizer(uint64_t id) const;
@@ -565,7 +560,6 @@ private:
     int nMaxFeeler;
     int m_max_outbound;
     bool m_use_addrman_outgoing;
-    std::atomic<int> nBestHeight;
     CClientUIInterface* clientInterface;
     NetEventsInterface* m_msgproc;
     /** Pointer to this node's banman. May be nullptr - check existence before dereferencing. */
@@ -708,7 +702,6 @@ public:
     int nVersion;
     std::string cleanSubVer;
     bool fInbound;
-    bool m_manual_connection;
     bool m_bip152_highbandwidth_to;
     bool m_bip152_highbandwidth_from;
     int m_starting_height;
@@ -717,7 +710,6 @@ public:
     uint64_t nRecvBytes;
     mapMsgCmdSize mapRecvBytesPerMsgCmd;
     NetPermissionFlags m_permissionFlags;
-    bool m_legacyWhitelisted;
     int64_t m_ping_usec;
     int64_t m_ping_wait_usec;
     int64_t m_min_ping_usec;
@@ -728,8 +720,8 @@ public:
     CAddress addr;
     // Bind address of our side of the connection
     CAddress addrBind;
-    // Name of the network the peer connected through
-    std::string m_network;
+    // Network the peer connected through
+    Network m_network;
     uint32_t m_mapped_as;
     std::string m_conn_type_string;
 };
@@ -898,8 +890,6 @@ public:
     bool HasPermission(NetPermissionFlags permission) const {
         return NetPermissions::HasFlag(m_permissionFlags, permission);
     }
-    // This boolean is unusued in actual processing, only present for backward compatibility at RPC/QT level
-    bool m_legacyWhitelisted{false};
     bool fClient{false}; // set by version message
     bool m_limited_node{false}; //after BIP159, set by version message
     /**
@@ -1066,7 +1056,7 @@ public:
     // Whether a ping is requested.
     std::atomic<bool> fPingQueued{false};
 
-    CNode(NodeId id, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress &addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress &addrBindIn, const std::string &addrNameIn, ConnectionType conn_type_in, bool inbound_onion = false);
+    CNode(NodeId id, ServiceFlags nLocalServicesIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion = false);
     ~CNode();
     CNode(const CNode&) = delete;
     CNode& operator=(const CNode&) = delete;
@@ -1094,7 +1084,6 @@ private:
     //! service advertisements.
     const ServiceFlags nLocalServices;
 
-    const int nMyStartingHeight;
     NetPermissionFlags m_permissionFlags{ PF_NONE };
     std::list<CNetMessage> vRecvMsg;  // Used only by SocketHandler thread
 
@@ -1105,7 +1094,7 @@ private:
     CService addrLocal GUARDED_BY(cs_addrLocal);
     mutable RecursiveMutex cs_addrLocal;
 
-    //! Whether this peer connected via our Tor onion service.
+    //! Whether this peer is an inbound onion, e.g. connected via our Tor onion service.
     const bool m_inbound_onion{false};
 
 public:
@@ -1116,10 +1105,6 @@ public:
 
     uint64_t GetLocalNonce() const {
         return nLocalHostNonce;
-    }
-
-    int GetMyStartingHeight() const {
-        return nMyStartingHeight;
     }
 
     int GetRefCount() const
@@ -1229,6 +1214,9 @@ public:
     void MaybeSetAddrName(const std::string& addrNameIn);
 
     std::string ConnectionTypeAsString() const;
+
+    /** Whether this peer is an inbound onion, e.g. connected via our Tor onion service. */
+    bool IsInboundOnion() const { return m_inbound_onion; }
 };
 
 /** Return a timestamp in the future (in microseconds) for exponentially distributed events. */

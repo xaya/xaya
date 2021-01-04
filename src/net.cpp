@@ -481,7 +481,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
     CAddress addr_bind = GetBindAddress(hSocket);
-    CNode* pnode = new CNode(id, nLocalServices, GetBestHeight(), hSocket, addrConnect, CalculateKeyedNetGroup(addrConnect), nonce, addr_bind, pszDest ? pszDest : "", conn_type);
+    CNode* pnode = new CNode(id, nLocalServices, hSocket, addrConnect, CalculateKeyedNetGroup(addrConnect), nonce, addr_bind, pszDest ? pszDest : "", conn_type);
     pnode->AddRef();
 
     // We're making a new connection, harvest entropy from the time (and our peer count)
@@ -555,7 +555,7 @@ void CNode::SetAddrLocal(const CService& addrLocalIn) {
 
 Network CNode::ConnectedThroughNetwork() const
 {
-    return IsInboundConn() && m_inbound_onion ? NET_ONION : addr.GetNetClass();
+    return m_inbound_onion ? NET_ONION : addr.GetNetClass();
 }
 
 #undef X
@@ -566,7 +566,7 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
     X(nServices);
     X(addr);
     X(addrBind);
-    stats.m_network = GetNetworkName(ConnectedThroughNetwork());
+    stats.m_network = ConnectedThroughNetwork();
     stats.m_mapped_as = addr.GetMappedAS(m_asmap);
     if (m_tx_relay != nullptr) {
         LOCK(m_tx_relay->cs_filter);
@@ -587,7 +587,6 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
         X(cleanSubVer);
     }
     stats.fInbound = IsInboundConn();
-    stats.m_manual_connection = IsManualConn();
     X(m_bip152_highbandwidth_to);
     X(m_bip152_highbandwidth_from);
     {
@@ -600,7 +599,6 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
         X(mapRecvBytesPerMsgCmd);
         X(nRecvBytes);
     }
-    X(m_legacyWhitelisted);
     X(m_permissionFlags);
     if (m_tx_relay != nullptr) {
         LOCK(m_tx_relay->cs_feeFilter);
@@ -1040,14 +1038,12 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     NetPermissionFlags permissionFlags = NetPermissionFlags::PF_NONE;
     hListenSocket.AddSocketPermissionFlags(permissionFlags);
     AddWhitelistPermissionFlags(permissionFlags, addr);
-    bool legacyWhitelisted = false;
     if (NetPermissions::HasFlag(permissionFlags, NetPermissionFlags::PF_ISIMPLICIT)) {
         NetPermissions::ClearFlag(permissionFlags, PF_ISIMPLICIT);
         if (gArgs.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) NetPermissions::AddFlag(permissionFlags, PF_FORCERELAY);
         if (gArgs.GetBoolArg("-whitelistrelay", DEFAULT_WHITELISTRELAY)) NetPermissions::AddFlag(permissionFlags, PF_RELAY);
         NetPermissions::AddFlag(permissionFlags, PF_MEMPOOL);
         NetPermissions::AddFlag(permissionFlags, PF_NOBAN);
-        legacyWhitelisted = true;
     }
 
     {
@@ -1120,11 +1116,9 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     }
 
     const bool inbound_onion = std::find(m_onion_binds.begin(), m_onion_binds.end(), addr_bind) != m_onion_binds.end();
-    CNode* pnode = new CNode(id, nodeServices, GetBestHeight(), hSocket, addr, CalculateKeyedNetGroup(addr), nonce, addr_bind, "", ConnectionType::INBOUND, inbound_onion);
+    CNode* pnode = new CNode(id, nodeServices, hSocket, addr, CalculateKeyedNetGroup(addr), nonce, addr_bind, "", ConnectionType::INBOUND, inbound_onion);
     pnode->AddRef();
     pnode->m_permissionFlags = permissionFlags;
-    // If this flag is present, the user probably expect that RPC and QT report it as whitelisted (backward compatibility)
-    pnode->m_legacyWhitelisted = legacyWhitelisted;
     pnode->m_prefer_evict = discouraged;
     m_msgproc->InitializeNode(pnode);
 
@@ -2929,19 +2923,9 @@ ServiceFlags CConnman::GetLocalServices() const
     return nLocalServices;
 }
 
-void CConnman::SetBestHeight(int height)
-{
-    nBestHeight.store(height, std::memory_order_release);
-}
-
-int CConnman::GetBestHeight() const
-{
-    return nBestHeight.load(std::memory_order_acquire);
-}
-
 unsigned int CConnman::GetReceiveFloodSize() const { return nReceiveFloodSize; }
 
-CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion)
+CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion)
     : nTimeConnected(GetSystemTimeInSeconds()),
       addr(addrIn),
       addrBind(addrBindIn),
@@ -2950,9 +2934,9 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
       nLocalHostNonce(nLocalHostNonceIn),
       m_conn_type(conn_type_in),
       nLocalServices(nLocalServicesIn),
-      nMyStartingHeight(nMyStartingHeightIn),
       m_inbound_onion(inbound_onion)
 {
+    if (inbound_onion) assert(conn_type_in == ConnectionType::INBOUND);
     hSocket = hSocketIn;
     addrName = addrNameIn == "" ? addr.ToStringIPPort() : addrNameIn;
     if (conn_type_in != ConnectionType::BLOCK_RELAY) {
