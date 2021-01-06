@@ -63,7 +63,7 @@ To combine the best of both worlds (merged and stand-alone mining), we propose
 the two extremes:
 
 **Xaya blocks can be either merge-mined with SHA-256d (Bitcoin), or they
-can be mined stand-alone with Neoscrypt.**
+can be mined stand-alone with a modified Neoscrypt.**
 The *chain ID* for merge mining Xaya is `1829`.
 There are no particular rules enforcing a certain sequence of blocks for each
 algorithm (unlike some existing multi-algorithm projects), but the difficulty
@@ -204,3 +204,57 @@ For out-of-the-box stand-alone mining, Xaya provides the
 used in Bitcoin.  It constructs the PoW data as described above internally and
 returns the "fake block header" data that needs to be hashed, such that
 existing mining tools can readily process it.
+
+### Integration with Stratum
+
+[Stratum](https://en.bitcoin.it/wiki/Stratum_mining_protocol) is a widely
+used protocol for mining hardware, software and pools.  It defines a way
+for miners to receive and submit work.
+
+Instead of just receiving the data to hash, they receive the fields necessary
+to construct the final block header and coinbase transaction, and just submit
+their nonces back.  This allows for efficient data transfer and also
+gives miners the power to roll an extra nonce value (that is normally
+part of the coinbase transaction) and thus increase the search space before
+they have to communicate again with the server.
+
+It is possible to "fit" Xaya's stand-alone mining format into the
+Stratum protocol (even though Xaya modifies the format of block headers
+with the [PoW data](#pow-data)).  With the following changes done
+*server side*, Stratum clients can just work out of the box (if they
+implement Xaya's Neoscrypt variant as hashing algorithm):
+
+In Stratum, the miner themselves builds up the final coinbase transaction
+from a template, hashes it to compute the Merkle root, and then uses
+this to construct the actual block header.  It then computes PoW on that
+constructed block header.  To make this work with Xaya's PoW data and
+the "fake block header", the Stratum client receives the real Xaya block
+header as "coinbase template", together with an empty Merkle branch.
+The client will then put its hash into the "Merkle root" of the
+fake block header and solve PoW on it.
+
+The real block header's `nNonce` field can be chosen arbitrarily.
+We use these four bytes as the place where the Stratum miner will place
+the "extra nonce 1" and "extra nonce 2" when constructing the final "coinbase"
+(which is the real block header in Xaya).  We can use two bytes for each of
+them.
+
+Thus, the full server-side Stratum implementation for Xaya works like this:
+
+- When a client requests work, the Stratum server sends the real Xaya block
+  header except the `nNonce` field as "coinbase part 1", an empty string as
+  "coinbase part 2" and an empty Merkle branch.  `nTime` and `nBits` is sent
+  as usual; `nVersion` and the previous block header (which the client will
+  use inside the fake block header) can be chosen e.g. as all zeros.
+
+- The client constructs what it believes to be the "coinbase", which in fact
+  will be the completed Xaya block header.  It hashes it with SHA-256d and
+  puts the hash into the "Merkle root" field of the fake block header (which
+  it believes to be the actual block header), as required.
+
+- When the client has found a valid PoW for the fake block header, it submits
+  the nonces for it back to the server.
+
+- The server can then use all the data to build the actual Xaya block,
+  including the real block header with the client's extra nonces, and
+  the PoW data based on the other fields and the client's nonce.
