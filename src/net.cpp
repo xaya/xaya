@@ -33,15 +33,6 @@
 #include <poll.h>
 #endif
 
-#ifdef USE_UPNP
-#include <miniupnpc/miniupnpc.h>
-#include <miniupnpc/upnpcommands.h>
-#include <miniupnpc/upnperrors.h>
-// The minimum supported miniUPnPc API version is set to 10. This keeps compatibility
-// with Ubuntu 16.04 LTS and Debian 8 libminiupnpc-dev packages.
-static_assert(MINIUPNPC_API_VERSION >= 10, "miniUPnPc API version >= 10 assumed");
-#endif
-
 #include <algorithm>
 #include <cstdint>
 #include <unordered_map>
@@ -507,9 +498,9 @@ void CConnman::AddWhitelistPermissionFlags(NetPermissionFlags& flags, const CNet
     }
 }
 
-std::string CNode::ConnectionTypeAsString() const
+std::string ConnectionTypeAsString(ConnectionType conn_type)
 {
-    switch (m_conn_type) {
+    switch (conn_type) {
     case ConnectionType::INBOUND:
         return "inbound";
     case ConnectionType::MANUAL:
@@ -601,7 +592,6 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
     }
     X(m_permissionFlags);
     if (m_tx_relay != nullptr) {
-        LOCK(m_tx_relay->cs_feeFilter);
         stats.minFeeFilter = m_tx_relay->minFeeFilter;
     } else {
         stats.minFeeFilter = 0;
@@ -627,7 +617,7 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
     CService addrLocalUnlocked = GetAddrLocal();
     stats.addrLocal = addrLocalUnlocked.IsValid() ? addrLocalUnlocked.ToString() : "";
 
-    stats.m_conn_type_string = ConnectionTypeAsString();
+    X(m_conn_type);
 }
 #undef X
 
@@ -790,30 +780,30 @@ void V1TransportSerializer::prepareForTransport(CSerializedNetMsg& msg, std::vec
     CVectorWriter{SER_NETWORK, INIT_PROTO_VERSION, header, 0, hdr};
 }
 
-size_t CConnman::SocketSendData(CNode *pnode) const EXCLUSIVE_LOCKS_REQUIRED(pnode->cs_vSend)
+size_t CConnman::SocketSendData(CNode& node) const
 {
-    auto it = pnode->vSendMsg.begin();
+    auto it = node.vSendMsg.begin();
     size_t nSentSize = 0;
 
-    while (it != pnode->vSendMsg.end()) {
-        const auto &data = *it;
-        assert(data.size() > pnode->nSendOffset);
+    while (it != node.vSendMsg.end()) {
+        const auto& data = *it;
+        assert(data.size() > node.nSendOffset);
         int nBytes = 0;
         {
-            LOCK(pnode->cs_hSocket);
-            if (pnode->hSocket == INVALID_SOCKET)
+            LOCK(node.cs_hSocket);
+            if (node.hSocket == INVALID_SOCKET)
                 break;
-            nBytes = send(pnode->hSocket, reinterpret_cast<const char*>(data.data()) + pnode->nSendOffset, data.size() - pnode->nSendOffset, MSG_NOSIGNAL | MSG_DONTWAIT);
+            nBytes = send(node.hSocket, reinterpret_cast<const char*>(data.data()) + node.nSendOffset, data.size() - node.nSendOffset, MSG_NOSIGNAL | MSG_DONTWAIT);
         }
         if (nBytes > 0) {
-            pnode->nLastSend = GetSystemTimeInSeconds();
-            pnode->nSendBytes += nBytes;
-            pnode->nSendOffset += nBytes;
+            node.nLastSend = GetSystemTimeInSeconds();
+            node.nSendBytes += nBytes;
+            node.nSendOffset += nBytes;
             nSentSize += nBytes;
-            if (pnode->nSendOffset == data.size()) {
-                pnode->nSendOffset = 0;
-                pnode->nSendSize -= data.size();
-                pnode->fPauseSend = pnode->nSendSize > nSendBufferMaxSize;
+            if (node.nSendOffset == data.size()) {
+                node.nSendOffset = 0;
+                node.nSendSize -= data.size();
+                node.fPauseSend = node.nSendSize > nSendBufferMaxSize;
                 it++;
             } else {
                 // could not send full message; stop sending more
@@ -823,10 +813,9 @@ size_t CConnman::SocketSendData(CNode *pnode) const EXCLUSIVE_LOCKS_REQUIRED(pno
             if (nBytes < 0) {
                 // error
                 int nErr = WSAGetLastError();
-                if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
-                {
+                if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS) {
                     LogPrintf("socket send error %s\n", NetworkErrorString(nErr));
-                    pnode->CloseSocketDisconnect();
+                    node.CloseSocketDisconnect();
                 }
             }
             // couldn't send anything at all
@@ -834,11 +823,11 @@ size_t CConnman::SocketSendData(CNode *pnode) const EXCLUSIVE_LOCKS_REQUIRED(pno
         }
     }
 
-    if (it == pnode->vSendMsg.end()) {
-        assert(pnode->nSendOffset == 0);
-        assert(pnode->nSendSize == 0);
+    if (it == node.vSendMsg.end()) {
+        assert(node.nSendOffset == 0);
+        assert(node.nSendSize == 0);
     }
-    pnode->vSendMsg.erase(pnode->vSendMsg.begin(), it);
+    node.vSendMsg.erase(node.vSendMsg.begin(), it);
     return nSentSize;
 }
 
@@ -1206,7 +1195,7 @@ void CConnman::NotifyNumConnectionsChanged()
     }
 }
 
-void CConnman::InactivityCheck(CNode *pnode)
+void CConnman::InactivityCheck(CNode *pnode) const
 {
     int64_t nTime = GetSystemTimeInSeconds();
     if (nTime - pnode->nTimeConnected > m_peer_connect_timeout)
@@ -1506,16 +1495,10 @@ void CConnman::SocketHandler()
             }
         }
 
-        //
-        // Send
-        //
-        if (sendSet)
-        {
-            LOCK(pnode->cs_vSend);
-            size_t nBytes = SocketSendData(pnode);
-            if (nBytes) {
-                RecordBytesSent(nBytes);
-            }
+        if (sendSet) {
+            // Send data
+            size_t bytes_sent = WITH_LOCK(pnode->cs_vSend, return SocketSendData(*pnode));
+            if (bytes_sent) RecordBytesSent(bytes_sent);
         }
 
         InactivityCheck(pnode);
@@ -1545,121 +1528,6 @@ void CConnman::WakeMessageHandler()
     }
     condMsgProc.notify_one();
 }
-
-
-
-
-
-
-#ifdef USE_UPNP
-static CThreadInterrupt g_upnp_interrupt;
-static std::thread g_upnp_thread;
-static void ThreadMapPort()
-{
-    std::string port = strprintf("%u", GetListenPort());
-    const char * multicastif = nullptr;
-    const char * minissdpdpath = nullptr;
-    struct UPNPDev * devlist = nullptr;
-    char lanaddr[64];
-
-    int error = 0;
-#if MINIUPNPC_API_VERSION < 14
-    devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, 0, &error);
-#else
-    devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, 0, 2, &error);
-#endif
-
-    struct UPNPUrls urls;
-    struct IGDdatas data;
-    int r;
-
-    r = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
-    if (r == 1)
-    {
-        if (fDiscover) {
-            char externalIPAddress[40];
-            r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, externalIPAddress);
-            if (r != UPNPCOMMAND_SUCCESS) {
-                LogPrintf("UPnP: GetExternalIPAddress() returned %d\n", r);
-            } else {
-                if (externalIPAddress[0]) {
-                    CNetAddr resolved;
-                    if (LookupHost(externalIPAddress, resolved, false)) {
-                        LogPrintf("UPnP: ExternalIPAddress = %s\n", resolved.ToString());
-                        AddLocal(resolved, LOCAL_UPNP);
-                    }
-                } else {
-                    LogPrintf("UPnP: GetExternalIPAddress failed.\n");
-                }
-            }
-        }
-
-        std::string strDesc = PACKAGE_NAME " " + FormatFullVersion();
-
-        do {
-            r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port.c_str(), port.c_str(), lanaddr, strDesc.c_str(), "TCP", 0, "0");
-
-            if (r != UPNPCOMMAND_SUCCESS) {
-                LogPrintf("AddPortMapping(%s, %s, %s) failed with code %d (%s)\n", port, port, lanaddr, r, strupnperror(r));
-            } else {
-                LogPrintf("UPnP Port Mapping successful.\n");
-            }
-        } while (g_upnp_interrupt.sleep_for(std::chrono::minutes(20)));
-
-        r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.c_str(), "TCP", 0);
-        LogPrintf("UPNP_DeletePortMapping() returned: %d\n", r);
-        freeUPNPDevlist(devlist); devlist = nullptr;
-        FreeUPNPUrls(&urls);
-    } else {
-        LogPrintf("No valid UPnP IGDs found\n");
-        freeUPNPDevlist(devlist); devlist = nullptr;
-        if (r != 0)
-            FreeUPNPUrls(&urls);
-    }
-}
-
-void StartMapPort()
-{
-    if (!g_upnp_thread.joinable()) {
-        assert(!g_upnp_interrupt);
-        g_upnp_thread = std::thread((std::bind(&TraceThread<void (*)()>, "upnp", &ThreadMapPort)));
-    }
-}
-
-void InterruptMapPort()
-{
-    if(g_upnp_thread.joinable()) {
-        g_upnp_interrupt();
-    }
-}
-
-void StopMapPort()
-{
-    if(g_upnp_thread.joinable()) {
-        g_upnp_thread.join();
-        g_upnp_interrupt.reset();
-    }
-}
-
-#else
-void StartMapPort()
-{
-    // Intentionally left blank.
-}
-void InterruptMapPort()
-{
-    // Intentionally left blank.
-}
-void StopMapPort()
-{
-    // Intentionally left blank.
-}
-#endif
-
-
-
-
-
 
 void CConnman::ThreadDNSAddressSeed()
 {
@@ -2998,7 +2866,7 @@ void CConnman::PushMessage(CNode* pnode, CSerializedNetMsg&& msg)
 
         // If write queue empty, attempt "optimistic write"
         if (optimisticSend == true)
-            nBytesSent = SocketSendData(pnode);
+            nBytesSent = SocketSendData(*pnode);
     }
     if (nBytesSent)
         RecordBytesSent(nBytesSent);

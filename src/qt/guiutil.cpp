@@ -655,7 +655,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
 #elif defined(Q_OS_LINUX)
 
 // Follow the Desktop Application Autostart Spec:
-// http://standards.freedesktop.org/autostart-spec/autostart-spec-latest.html
+// https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html
 
 fs::path static GetAutostartDir()
 {
@@ -760,6 +760,19 @@ QString NetworkToQString(Network net)
     case NET_CJDNS: return "CJDNS";
     case NET_INTERNAL: return QObject::tr("Internal");
     case NET_MAX: assert(false);
+    } // no default case, so the compiler can warn about missing cases
+    assert(false);
+}
+
+QString ConnectionTypeToQString(ConnectionType conn_type)
+{
+    switch (conn_type) {
+    case ConnectionType::INBOUND: return QObject::tr("Inbound");
+    case ConnectionType::OUTBOUND_FULL_RELAY: return QObject::tr("Outbound Full Relay");
+    case ConnectionType::BLOCK_RELAY: return QObject::tr("Outbound Block Relay");
+    case ConnectionType::MANUAL: return QObject::tr("Outbound Manual");
+    case ConnectionType::FEELER: return QObject::tr("Outbound Feeler");
+    case ConnectionType::ADDR_FETCH: return QObject::tr("Outbound Address Fetch");
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
