@@ -19,7 +19,7 @@ Then install [Homebrew](https://brew.sh).
 
 ## Dependencies
 ```shell
-brew install automake libtool boost miniupnpc pkg-config python qt libevent qrencode
+brew install automake libtool boost miniupnpc libnatpmp pkg-config python qt libevent qrencode
 ```
 
 If you run into issues, check [Homebrew's troubleshooting page](https://docs.brew.sh/Troubleshooting).
@@ -28,6 +28,11 @@ See [dependencies.md](dependencies.md) for a complete overview.
 If you want to build the disk image with `make deploy` (.dmg / optional), you need RSVG:
 ```shell
 brew install librsvg
+```
+
+and [`macdeployqtplus`](../contrib/macdeploy/README.md) dependencies:
+```shell
+pip3 install ds_store mac_alias
 ```
 
 The wallet support requires one or both of the dependencies ([*SQLite*](#sqlite) and [*Berkeley DB*](#berkeley-db)) in the sections below.
