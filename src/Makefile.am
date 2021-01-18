@@ -92,13 +92,19 @@ endif
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += namecoin-cli
 endif
+
 if BUILD_BITCOIN_TX
   bin_PROGRAMS += namecoin-tx
 endif
+
 if ENABLE_WALLET
 if BUILD_BITCOIN_WALLET
   bin_PROGRAMS += namecoin-wallet
 endif
+endif
+
+if BUILD_BITCOIN_UTIL
+  bin_PROGRAMS += namecoin-util
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -233,6 +239,7 @@ BITCOIN_CORE_H = \
   util/error.h \
   util/fees.h \
   util/golombrice.h \
+  util/hasher.h \
   util/macros.h \
   util/memory.h \
   util/message.h \
@@ -566,6 +573,7 @@ libbitcoin_util_a_SOURCES = \
   util/bytevectorhash.cpp \
   util/error.cpp \
   util/fees.cpp \
+  util/hasher.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \
@@ -689,6 +697,27 @@ namecoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
 if TARGET_WINDOWS
 namecoin_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
+#
+
+# bitcoin-util binary #
+namecoin_util_SOURCES = bitcoin-util.cpp
+namecoin_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+namecoin_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+namecoin_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+if TARGET_WINDOWS
+namecoin_util_SOURCES += bitcoin-util-res.rc
+endif
+
+namecoin_util_LDADD = \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBSECP256K1)
+
+namecoin_util_LDADD += $(BOOST_LIBS)
 #
 
 # bitcoinconsensus library #
