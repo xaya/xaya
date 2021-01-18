@@ -1,7 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 Vince Durham
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -118,7 +118,8 @@ CAuxPow::check (const uint256& hashAuxBlock, int nChainId,
 }
 
 int
-CAuxPow::getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h)
+CAuxPow::getExpectedIndex (const uint32_t nNonce, const int nChainId,
+                           const unsigned h)
 {
   // Choose a pseudo-random slot in the chain merkle tree
   // but have it be fixed for a size/nonce/chain combination.
@@ -127,20 +128,19 @@ CAuxPow::getExpectedIndex (uint32_t nNonce, int nChainId, unsigned h)
   // same chain while reducing the chance that two chains clash
   // for the same slot.
 
-  /* This computation can overflow the uint32 used.  This is not an issue,
-     though, since we take the mod against a power-of-two in the end anyway.
-     This also ensures that the computation is, actually, consistent
-     even if done in 64 bits as it was in the past on some systems.
+  /* Note that h is always <= 30 (enforced by the maximum allowed chain
+     merkle branch length), so that 32 bits are enough for the result.  */
 
-     Note that h is always <= 30 (enforced by the maximum allowed chain
-     merkle branch length), so that 32 bits are enough for the computation.  */
+  const uint32_t mod = (1u << h);
 
-  uint32_t rand = nNonce;
+  uint64_t rand = nNonce;
   rand = rand * 1103515245 + 12345;
+  rand %= mod;
   rand += nChainId;
   rand = rand * 1103515245 + 12345;
+  rand %= mod;
 
-  return rand % (1u << h);
+  return rand;
 }
 
 uint256
