@@ -92,13 +92,19 @@ endif
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += xaya-cli
 endif
+
 if BUILD_BITCOIN_TX
   bin_PROGRAMS += xaya-tx
 endif
+
 if ENABLE_WALLET
 if BUILD_BITCOIN_WALLET
   bin_PROGRAMS += xaya-wallet
 endif
+endif
+
+if BUILD_BITCOIN_UTIL
+  bin_PROGRAMS += xaya-util
 endif
 
 .PHONY: FORCE check-symbols check-security
@@ -235,6 +241,7 @@ BITCOIN_CORE_H = \
   util/error.h \
   util/fees.h \
   util/golombrice.h \
+  util/hasher.h \
   util/macros.h \
   util/memory.h \
   util/message.h \
@@ -577,6 +584,7 @@ libbitcoin_util_a_SOURCES = \
   util/bytevectorhash.cpp \
   util/error.cpp \
   util/fees.cpp \
+  util/hasher.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \
@@ -716,6 +724,27 @@ xaya_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
 if TARGET_WINDOWS
 xaya_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
+#
+
+# bitcoin-util binary #
+xaya_util_SOURCES = bitcoin-util.cpp
+xaya_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+xaya_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+xaya_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+if TARGET_WINDOWS
+xaya_util_SOURCES += bitcoin-util-res.rc
+endif
+
+xaya_util_LDADD = \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBUNIVALUE) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBSECP256K1)
+
+xaya_util_LDADD += $(BOOST_LIBS)
 #
 
 # bitcoinconsensus library #

@@ -39,8 +39,6 @@ CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 bool CCoinsViewBacked::ValidateNameDB(ChainstateManager& chainman, const std::function<void()>& interruption_point) const { return base->ValidateNameDB(chainman, interruption_point); }
 
-SaltedOutpointHasher::SaltedOutpointHasher() : k0(GetRand(std::numeric_limits<uint64_t>::max())), k1(GetRand(std::numeric_limits<uint64_t>::max())) {}
-
 CCoinsViewCache::CCoinsViewCache(CCoinsView *baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0) {}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {

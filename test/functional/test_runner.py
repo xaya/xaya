@@ -261,6 +261,7 @@ BASE_SCRIPTS = [
     'feature_loadblock.py',
     # FIXME: Reenable with data created for Namecoin.
     #'p2p_dos_header_tree.py',
+    'p2p_add_connections.py',
     'p2p_unrequested_blocks.py',
     'p2p_blockfilters.py',
     'feature_includeconf.py',
