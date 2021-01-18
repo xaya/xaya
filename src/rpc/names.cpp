@@ -848,7 +848,7 @@ namespace
  * into the JSON output "result" already.
  */
 void
-PerformNameRawtx (const int nOut, const UniValue& nameOp,
+PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
                   CMutableTransaction& mtx, UniValue& result)
 {
   mtx.SetNamecoin ();
@@ -1043,7 +1043,6 @@ namepsbt ()
 
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << psbtx;
-  const auto* data = reinterpret_cast<const unsigned char*> (ssTx.data ());
   result.pushKV ("psbt", EncodeBase64 (MakeUCharSpan (ssTx)));
 
   return result;
