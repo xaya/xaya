@@ -638,7 +638,7 @@ public:
      * check does nothing.
      */
     void check(ChainstateManager& chainman,
-               const CCoinsViewCache *pcoins) const;
+               const CCoinsViewCache *pcoins) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
     void checkNames(ChainstateManager& chainman,
                     const CCoinsViewCache *pcoins) const;
 

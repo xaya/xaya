@@ -644,6 +644,7 @@ void CTxMemPool::check(ChainstateManager& chainman,
 
     if (GetRand(m_check_ratio) >= 1) return;
 
+    AssertLockHeld(::cs_main);
     LOCK(cs);
     LogPrint(BCLog::MEMPOOL, "Checking mempool with %u transactions and %u inputs\n", (unsigned int)mapTx.size(), (unsigned int)mapNextTx.size());
 
