@@ -86,6 +86,11 @@ struct NameTableEntry
     static const std::string NAME_STATUS_CONFIRMED;
     static const std::string NAME_STATUS_EXPIRED;
     static const std::string NAME_STATUS_TRANSFERRED_OUT;
+    static const std::string NAME_STATUS_REGISTRATION_PENDING;
+    static const std::string NAME_STATUS_INCOMING_TRANSFER_PENDING;
+    static const std::string NAME_STATUS_OUTGOING_TRANSFER_PENDING;
+    static const std::string NAME_STATUS_RENEWAL_PENDING;
+    static const std::string NAME_STATUS_UPDATE_PENDING;
 
     // NOTE: making this const throws warning indicating it will not be const
     bool HeightValid() { return nHeight >= 0; }
