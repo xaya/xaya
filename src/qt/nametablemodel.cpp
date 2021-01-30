@@ -19,6 +19,10 @@ namespace {
     };
 }
 
+const std::string NameTableEntry::NAME_STATUS_CONFIRMED = "Confirmed";
+const std::string NameTableEntry::NAME_STATUS_EXPIRED = "Expired";
+const std::string NameTableEntry::NAME_STATUS_TRANSFERRED_OUT = "Transferred out";
+
 // Returns true if new height is better
 bool NameTableEntry::CompareHeight(int nOldHeight, int nNewHeight)
 {
@@ -63,8 +67,6 @@ public:
         // confirmed names (name_list)
         // TODO: Add unconfirmed names once support for this is added to
         // name_list.
-        // TODO: Filter out expired=true and ismine=false once support for this
-        // is added to name_list.
         // TODO: Set name and value encoding to hex, so that nonstandard
         // encodings don't cause errors.
 
@@ -94,11 +96,26 @@ public:
                     continue;
                 }
 
-                std::string name = maybeName.get_str();
-                std::string data = maybeData.get_str();
-                int height = find_value ( v, "height").get_int();
-                int expiresIn = find_value ( v, "expires_in").get_int();
-                vNamesO[name] = NameTableEntry(name, data, height, expiresIn, "confirmed");
+                const std::string name = maybeName.get_str();
+                const std::string data = maybeData.get_str();
+                const int height = find_value ( v, "height").get_int();
+                const int expiresIn = find_value ( v, "expires_in").get_int();
+
+                const bool isMine = find_value ( v, "ismine").get_bool();
+                const bool isExpired = find_value ( v, "expired").get_bool();
+                // TODO: Check "op" field
+
+                std::string status = NameTableEntry::NAME_STATUS_CONFIRMED;
+                if (isExpired)
+                {
+                    status = NameTableEntry::NAME_STATUS_EXPIRED;
+                }
+                if (!isMine)
+                {
+                    status = NameTableEntry::NAME_STATUS_TRANSFERRED_OUT;
+                }
+
+                vNamesO[name] = NameTableEntry(name, data, height, expiresIn, status);
             }
         }
 
