@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 The Xaya developers
+// Copyright (c) 2018-2021 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -408,10 +408,10 @@ trackedgames ()
 void RegisterGameRPCCommands (CRPCTable& t)
 {
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         argNames
-  //  --------------------- ------------------------  -----------------------  ----------
-    { "game",               "game_sendupdates",       &game_sendupdates,       {"gameid","fromblock","toblock"} },
-    { "game",               "trackedgames",           &trackedgames,           {"command","gameid"} },
+{ //  category               actor (function)
+  //  ---------------------  -----------------------
+  { "game",                  &game_sendupdates,        },
+  { "game",                  &trackedgames,            },
 };
 
   for (const auto& c : commands)

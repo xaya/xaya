@@ -978,15 +978,15 @@ name_checkdb ()
 void RegisterNameRPCCommands(CRPCTable &t)
 {
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         argNames
-  //  --------------------- ------------------------  -----------------------  ----------
-    { "names",              "name_show",              &name_show,              {"name", "options"} },
-    { "names",              "name_history",           &name_history,           {"name", "options"} },
-    { "names",              "name_scan",              &name_scan,              {"start", "count", "options"} },
-    { "names",              "name_pending",           &name_pending,           {"name", "options"} },
-    { "names",              "name_checkdb",           &name_checkdb,           {} },
-    { "rawtransactions",    "namerawtransaction",     &namerawtransaction,     {"hexstring", "vout", "nameop"} },
-    { "rawtransactions",    "namepsbt",               &namepsbt,               {"psbt", "vout", "nameop"} },
+{ //  category               actor (function)
+  //  ---------------------  -----------------------
+    { "names",               &name_show,               },
+    { "names",               &name_history,            },
+    { "names",               &name_scan,               },
+    { "names",               &name_pending,            },
+    { "names",               &name_checkdb,            },
+    { "rawtransactions",     &namerawtransaction,      },
+    { "rawtransactions",     &namepsbt,                },
 };
 
     for (unsigned int vcidx = 0; vcidx < ARRAYLEN(commands); vcidx++)

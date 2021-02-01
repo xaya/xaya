@@ -1450,28 +1450,28 @@ void RegisterMiningRPCCommands(CRPCTable &t)
 {
 // clang-format off
 static const CRPCCommand commands[] =
-{ //  category              name                      actor (function)         argNames
-  //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getnetworkhashps",       &getnetworkhashps,       {"nblocks","height"} },
-    { "mining",             "getmininginfo",          &getmininginfo,          {} },
-    { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
-    { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
-    { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "submitheader",           &submitheader,           {"hexdata"} },
+{ //  category               actor (function)
+  //  ---------------------  -----------------------
+    { "mining",              &getnetworkhashps,        },
+    { "mining",              &getmininginfo,           },
+    { "mining",              &prioritisetransaction,   },
+    { "mining",              &getblocktemplate,        },
+    { "mining",              &submitblock,             },
+    { "mining",              &submitheader,            },
 
-    { "mining",             "createauxblock",         &createauxblock,         {"address"} },
-    { "mining",             "submitauxblock",         &submitauxblock,         {"hash", "auxpow"} },
-    { "mining",             "creatework",             &creatework,             {"address"} },
-    { "mining",             "submitwork",             &submitwork,             {"hash","data"} },
+    { "mining",              &createauxblock,          },
+    { "mining",              &submitauxblock,          },
+    { "mining",              &creatework,              },
+    { "mining",              &submitwork,              },
 
-    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries","algo"} },
-    { "generating",         "generatetodescriptor",   &generatetodescriptor,   {"num_blocks","descriptor","maxtries","algo"} },
-    { "generating",         "generateblock",          &generateblock,          {"output","transactions"} },
+    { "generating",          &generatetoaddress,       },
+    { "generating",          &generatetodescriptor,    },
+    { "generating",          &generateblock,           },
 
-    { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
+    { "util",                &estimatesmartfee,        },
 
-    { "hidden",             "estimaterawfee",         &estimaterawfee,         {"conf_target", "threshold"} },
-    { "hidden",             "generate",               &generate,               {} },
+    { "hidden",              &estimaterawfee,          },
+    { "hidden",              &generate,                },
 };
 // clang-format on
     for (const auto& c : commands) {
