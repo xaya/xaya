@@ -156,7 +156,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "setban", 2, "bantime" },
     { "setban", 3, "absolute" },
     { "setnetworkactive", 0, "state" },
-    { "setwalletflag", 1, "value" },
+    { "setwalletflag", 1, "newvalue" },
     { "getmempoolancestors", 1, "verbose" },
     { "getmempooldescendants", 1, "verbose" },
     { "bumpfee", 1, "options" },
@@ -182,6 +182,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "namepsbt", 2, "nameop" },
     { "sendtoname", 1, "amount" },
     { "sendtoname", 4, "subtractfeefromamount" },
+    { "sendtoname", 5, "replaceable" },
 
     // Echo with conversion (For testing only)
     { "echojson", 0, "arg0" },
@@ -228,14 +229,9 @@ public:
 
 CRPCConvertTable::CRPCConvertTable()
 {
-    const unsigned int n_elem =
-        (sizeof(vRPCConvertParams) / sizeof(vRPCConvertParams[0]));
-
-    for (unsigned int i = 0; i < n_elem; i++) {
-        members.insert(std::make_pair(vRPCConvertParams[i].methodName,
-                                      vRPCConvertParams[i].paramIdx));
-        membersByName.insert(std::make_pair(vRPCConvertParams[i].methodName,
-                                            vRPCConvertParams[i].paramName));
+    for (const auto& cp : vRPCConvertParams) {
+        members.emplace(cp.methodName, cp.paramIdx);
+        membersByName.emplace(cp.methodName, cp.paramName);
     }
 }
 

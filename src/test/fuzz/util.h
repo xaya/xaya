@@ -196,7 +196,7 @@ template <typename WeakEnumType, size_t size>
         },
         [&] {
             WitnessUnknown witness_unknown{};
-            witness_unknown.version = fuzzed_data_provider.ConsumeIntegral<int>();
+            witness_unknown.version = fuzzed_data_provider.ConsumeIntegral<uint32_t>();
             const std::vector<uint8_t> witness_unknown_program_1 = fuzzed_data_provider.ConsumeBytes<uint8_t>(40);
             witness_unknown.length = witness_unknown_program_1.size();
             std::copy(witness_unknown_program_1.begin(), witness_unknown_program_1.end(), witness_unknown.program);
@@ -269,8 +269,8 @@ inline CNetAddr ConsumeNetAddr(FuzzedDataProvider& fuzzed_data_provider) noexcep
     const Network network = fuzzed_data_provider.PickValueInArray({Network::NET_IPV4, Network::NET_IPV6, Network::NET_INTERNAL, Network::NET_ONION});
     CNetAddr net_addr;
     if (network == Network::NET_IPV4) {
-        const in_addr v4_addr = {
-            .s_addr = fuzzed_data_provider.ConsumeIntegral<uint32_t>()};
+        in_addr v4_addr = {};
+        v4_addr.s_addr = fuzzed_data_provider.ConsumeIntegral<uint32_t>();
         net_addr = CNetAddr{v4_addr};
     } else if (network == Network::NET_IPV6) {
         if (fuzzed_data_provider.remaining_bytes() >= 16) {
@@ -320,24 +320,9 @@ auto ConsumeNode(FuzzedDataProvider& fuzzed_data_provider, const std::optional<N
         return CNode{node_id, local_services, socket, address, keyed_net_group, local_host_nonce, addr_bind, addr_name, conn_type, inbound_onion};
     }
 }
-inline std::unique_ptr<CNode> ConsumeNodeAsUniquePtr(FuzzedDataProvider& fdp, const std::optional<NodeId>& node_id_in = nullopt) { return ConsumeNode<true>(fdp, node_id_in); }
+inline std::unique_ptr<CNode> ConsumeNodeAsUniquePtr(FuzzedDataProvider& fdp, const std::optional<NodeId>& node_id_in = std::nullopt) { return ConsumeNode<true>(fdp, node_id_in); }
 
-inline void FillNode(FuzzedDataProvider& fuzzed_data_provider, CNode& node, const std::optional<int32_t>& version_in = std::nullopt) noexcept
-{
-    const ServiceFlags remote_services = ConsumeWeakEnum(fuzzed_data_provider, ALL_SERVICE_FLAGS);
-    const NetPermissionFlags permission_flags = ConsumeWeakEnum(fuzzed_data_provider, ALL_NET_PERMISSION_FLAGS);
-    const int32_t version = version_in.value_or(fuzzed_data_provider.ConsumeIntegral<int32_t>());
-    const bool filter_txs = fuzzed_data_provider.ConsumeBool();
-
-    node.nServices = remote_services;
-    node.m_permissionFlags = permission_flags;
-    node.nVersion = version;
-    node.SetCommonVersion(version);
-    if (node.m_tx_relay != nullptr) {
-        LOCK(node.m_tx_relay->cs_filter);
-        node.m_tx_relay->fRelayTxes = filter_txs;
-    }
-}
+void FillNode(FuzzedDataProvider& fuzzed_data_provider, CNode& node, bool init_version) noexcept;
 
 template <class T = const BasicTestingSetup>
 std::unique_ptr<T> MakeFuzzingContext(const std::string& chain_name = CBaseChainParams::REGTEST, const std::vector<const char*>& extra_args = {})

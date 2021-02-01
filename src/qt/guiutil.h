@@ -45,6 +45,9 @@ QT_END_NAMESPACE
  */
 namespace GUIUtil
 {
+    // Use this flags to prevent a "What's This" button in the title bar of the dialog on Windows.
+    constexpr auto dialog_flags = Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint;
+
     // Create human-readable string from date
     QString dateTimeStr(const QDateTime &datetime);
     QString dateTimeStr(qint64 nTime);
@@ -230,7 +233,7 @@ namespace GUIUtil
     QString NetworkToQString(Network net);
 
     /** Convert enum ConnectionType to QString */
-    QString ConnectionTypeToQString(ConnectionType conn_type);
+    QString ConnectionTypeToQString(ConnectionType conn_type, bool relay_txes);
 
     /** Convert seconds into a QString with days, hours, mins, secs */
     QString formatDurationStr(int secs);
