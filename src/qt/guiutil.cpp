@@ -40,12 +40,14 @@
 #include <QFontDatabase>
 #include <QFontMetrics>
 #include <QGuiApplication>
+#include <QJsonObject>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QList>
 #include <QLocale>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPluginLoader>
 #include <QProgressDialog>
 #include <QScreen>
 #include <QSettings>
@@ -764,10 +766,10 @@ QString NetworkToQString(Network net)
     assert(false);
 }
 
-QString ConnectionTypeToQString(ConnectionType conn_type)
+QString ConnectionTypeToQString(ConnectionType conn_type, bool relay_txes)
 {
     switch (conn_type) {
-    case ConnectionType::INBOUND: return QObject::tr("Inbound");
+    case ConnectionType::INBOUND: return relay_txes ? QObject::tr("Inbound Full Relay") : QObject::tr("Inbound Block Relay");
     case ConnectionType::OUTBOUND_FULL_RELAY: return QObject::tr("Outbound Full Relay");
     case ConnectionType::BLOCK_RELAY: return QObject::tr("Outbound Block Relay");
     case ConnectionType::MANUAL: return QObject::tr("Outbound Manual");
@@ -936,6 +938,20 @@ void LogQtInfo()
     const std::string plugin_link{"dynamic"};
 #endif
     LogPrintf("Qt %s (%s), plugin=%s (%s)\n", qVersion(), qt_link, QGuiApplication::platformName().toStdString(), plugin_link);
+    const auto static_plugins = QPluginLoader::staticPlugins();
+    if (static_plugins.empty()) {
+        LogPrintf("No static plugins.\n");
+    } else {
+        LogPrintf("Static plugins:\n");
+        for (const QStaticPlugin& p : static_plugins) {
+            QJsonObject meta_data = p.metaData();
+            const std::string plugin_class = meta_data.take(QString("className")).toString().toStdString();
+            const int plugin_version = meta_data.take(QString("version")).toInt();
+            LogPrintf(" %s, version %d\n", plugin_class, plugin_version);
+        }
+    }
+
+    LogPrintf("Style: %s / %s\n", QApplication::style()->objectName().toStdString(), QApplication::style()->metaObject()->className());
     LogPrintf("System: %s, %s\n", QSysInfo::prettyProductName().toStdString(), QSysInfo::buildAbi().toStdString());
     for (const QScreen* s : QGuiApplication::screens()) {
         LogPrintf("Screen: %s %dx%d, pixel ratio=%.1f\n", s->name().toStdString(), s->size().width(), s->size().height(), s->devicePixelRatio());
