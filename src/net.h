@@ -20,6 +20,7 @@
 #include <policy/feerate.h>
 #include <protocol.h>
 #include <random.h>
+#include <span.h>
 #include <streams.h>
 #include <sync.h>
 #include <threadinterrupt.h>
@@ -81,6 +82,8 @@ static constexpr uint64_t DEFAULT_MAX_UPLOAD_TARGET = 0;
 static const bool DEFAULT_BLOCKSONLY = false;
 /** -peertimeout default */
 static const int64_t DEFAULT_PEER_CONNECT_TIMEOUT = 60;
+/** Number of file descriptors required for message capture **/
+static const int NUM_FDS_MESSAGE_CAPTURE = 1;
 
 static const bool DEFAULT_FORCEDNSSEED = false;
 static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
@@ -448,6 +451,7 @@ public:
      * messages, implying a preference to receive ADDRv2 instead of ADDR ones.
      */
     std::atomic_bool m_wants_addrv2{false};
+    /** fSuccessfullyConnected is set to true on receiving VERACK from the peer. */
     std::atomic_bool fSuccessfullyConnected{false};
     // Setting fDisconnect to true will cause the node to be disconnected the
     // next time DisconnectNodes() runs
@@ -1246,6 +1250,9 @@ inline std::chrono::microseconds PoissonNextSend(std::chrono::microseconds now, 
 {
     return std::chrono::microseconds{PoissonNextSend(now.count(), average_interval.count())};
 }
+
+/** Dump binary message to file, with timestamp */
+void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming);
 
 struct NodeEvictionCandidate
 {

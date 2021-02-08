@@ -889,7 +889,7 @@ static RPCHelpMan getblockheader()
     const CBlockIndex* tip;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         tip = ::ChainActive().Tip();
     }
 
@@ -1025,7 +1025,7 @@ static RPCHelpMan getblock()
     const CBlockIndex* tip;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         tip = ::ChainActive().Tip();
 
         if (!pblockindex) {
@@ -1222,7 +1222,7 @@ static RPCHelpMan gettxout()
         }
     }
 
-    const CBlockIndex* pindex = LookupBlockIndex(coins_view->GetBestBlock());
+    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(coins_view->GetBestBlock());
     ret.pushKV("bestblock", pindex->GetBlockHash().GetHex());
     if (coin.nHeight == MEMPOOL_HEIGHT) {
         ret.pushKV("confirmations", 0);
@@ -1617,7 +1617,7 @@ static RPCHelpMan preciousblock()
 
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1655,7 +1655,7 @@ static RPCHelpMan invalidateblock()
     CBlockIndex* pblockindex;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1663,7 +1663,7 @@ static RPCHelpMan invalidateblock()
     InvalidateBlock(state, Params(), pblockindex);
 
     if (state.IsValid()) {
-        ActivateBestChain(state, Params());
+        ::ChainstateActive().ActivateBestChain(state, Params());
     }
 
     if (!state.IsValid()) {
@@ -1694,7 +1694,7 @@ static RPCHelpMan reconsiderblock()
 
     {
         LOCK(cs_main);
-        CBlockIndex* pblockindex = LookupBlockIndex(hash);
+        CBlockIndex* pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1703,7 +1703,7 @@ static RPCHelpMan reconsiderblock()
     }
 
     BlockValidationState state;
-    ActivateBestChain(state, Params());
+    ::ChainstateActive().ActivateBestChain(state, Params());
 
     if (!state.IsValid()) {
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
@@ -1749,7 +1749,7 @@ static RPCHelpMan getchaintxstats()
     } else {
         uint256 hash(ParseHashV(request.params[1], "blockhash"));
         LOCK(cs_main);
-        pindex = LookupBlockIndex(hash);
+        pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1927,7 +1927,7 @@ static RPCHelpMan getblockstats()
         pindex = ::ChainActive()[height];
     } else {
         const uint256 hash(ParseHashV(request.params[0], "hash_or_height"));
-        pindex = LookupBlockIndex(hash);
+        pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -2390,7 +2390,7 @@ static RPCHelpMan getblockfilter()
     bool block_was_connected;
     {
         LOCK(cs_main);
-        block_index = LookupBlockIndex(block_hash);
+        block_index = g_chainman.m_blockman.LookupBlockIndex(block_hash);
         if (!block_index) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -2500,7 +2500,7 @@ static RPCHelpMan dumptxoutset()
         }
 
         pcursor = std::unique_ptr<CCoinsViewCursor>(::ChainstateActive().CoinsDB().Cursor());
-        tip = LookupBlockIndex(stats.hashBlock);
+        tip = g_chainman.m_blockman.LookupBlockIndex(stats.hashBlock);
         CHECK_NONFATAL(tip);
     }
 
