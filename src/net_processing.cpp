@@ -692,7 +692,7 @@ static void ProcessBlockAvailability(NodeId nodeid) EXCLUSIVE_LOCKS_REQUIRED(cs_
     assert(state != nullptr);
 
     if (!state->hashLastUnknownBlock.IsNull()) {
-        const CBlockIndex* pindex = LookupBlockIndex(state->hashLastUnknownBlock);
+        const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(state->hashLastUnknownBlock);
         if (pindex && pindex->nChainWork > 0) {
             if (state->pindexBestKnownBlock == nullptr || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork) {
                 state->pindexBestKnownBlock = pindex;
@@ -709,7 +709,7 @@ static void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) EXCLUSIV
 
     ProcessBlockAvailability(nodeid);
 
-    const CBlockIndex* pindex = LookupBlockIndex(hash);
+    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
     if (pindex && pindex->nChainWork > 0) {
         // An actually better block was announced.
         if (state->pindexBestKnownBlock == nullptr || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork) {
@@ -1612,7 +1612,7 @@ bool static AlreadyHaveTx(const GenTxid& gtxid, const CTxMemPool& mempool) EXCLU
 
 bool static AlreadyHaveBlock(const uint256& block_hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    return LookupBlockIndex(block_hash) != nullptr;
+    return g_chainman.m_blockman.LookupBlockIndex(block_hash) != nullptr;
 }
 
 void RelayTransaction(const uint256& txid, const uint256& wtxid, const CConnman& connman)
@@ -1702,7 +1702,7 @@ void static ProcessGetBlockData(CNode& pfrom, Peer& peer, const CChainParams& ch
     bool need_activate_chain = false;
     {
         LOCK(cs_main);
-        const CBlockIndex* pindex = LookupBlockIndex(inv.hash);
+        const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(inv.hash);
         if (pindex) {
             if (pindex->HaveTxsDownloaded() && !pindex->IsValid(BLOCK_VALID_SCRIPTS) &&
                     pindex->IsValid(BLOCK_VALID_TREE)) {
@@ -1717,13 +1717,13 @@ void static ProcessGetBlockData(CNode& pfrom, Peer& peer, const CChainParams& ch
     } // release cs_main before calling ActivateBestChain
     if (need_activate_chain) {
         BlockValidationState state;
-        if (!ActivateBestChain(state, chainparams, a_recent_block)) {
+        if (!::ChainstateActive().ActivateBestChain(state, chainparams, a_recent_block)) {
             LogPrint(BCLog::NET, "failed to activate chain (%s)\n", state.ToString());
         }
     }
 
     LOCK(cs_main);
-    const CBlockIndex* pindex = LookupBlockIndex(inv.hash);
+    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(inv.hash);
     if (pindex) {
         send = BlockRequestAllowed(pindex, consensusParams);
         if (!send) {
@@ -2024,7 +2024,7 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, const Peer& peer,
         //   don't connect before giving DoS points
         // - Once a headers message is received that is valid and does connect,
         //   nUnconnectingHeaders gets reset back to 0.
-        if (!LookupBlockIndex(headers[0].hashPrevBlock) && nCount < MAX_BLOCKS_TO_ANNOUNCE) {
+        if (!g_chainman.m_blockman.LookupBlockIndex(headers[0].hashPrevBlock) && nCount < MAX_BLOCKS_TO_ANNOUNCE) {
             nodestate->nUnconnectingHeaders++;
             m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::GETHEADERS, ::ChainActive().GetLocator(pindexBestHeader), uint256()));
             LogPrint(BCLog::NET, "received header %s: missing prev block %s, sending getheaders (%d) to end (peer=%d, nUnconnectingHeaders=%d)\n",
@@ -2054,7 +2054,7 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, const Peer& peer,
 
         // If we don't have the last header, then they'll have given us
         // something new (if these headers are valid).
-        if (!LookupBlockIndex(hashLastBlock)) {
+        if (!g_chainman.m_blockman.LookupBlockIndex(hashLastBlock)) {
             received_new_header = true;
         }
     }
@@ -2313,7 +2313,7 @@ static bool PrepareBlockFilterRequest(CNode& peer, const CChainParams& chain_par
 
     {
         LOCK(cs_main);
-        stop_index = LookupBlockIndex(stop_hash);
+        stop_index = g_chainman.m_blockman.LookupBlockIndex(stop_hash);
 
         // Check that the stop block exists and the peer would be allowed to fetch it.
         if (!stop_index || !BlockRequestAllowed(stop_index, chain_params.GetConsensus())) {
@@ -2779,12 +2779,11 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         return;
     }
 
-    // Feature negotiation of wtxidrelay must happen between VERSION and VERACK
-    // to avoid relay problems from switching after a connection is up.
+    // BIP339 defines feature negotiation of wtxidrelay, which must happen between
+    // VERSION and VERACK to avoid relay problems from switching after a connection is up.
     if (msg_type == NetMsgType::WTXIDRELAY) {
         if (pfrom.fSuccessfullyConnected) {
-            // Disconnect peers that send wtxidrelay message after VERACK; this
-            // must be negotiated between VERSION and VERACK.
+            // Disconnect peers that send a wtxidrelay message after VERACK.
             LogPrint(BCLog::NET, "wtxidrelay received after verack from peer=%d; disconnecting\n", pfrom.GetId());
             pfrom.fDisconnect = true;
             return;
@@ -2803,10 +2802,11 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         return;
     }
 
+    // BIP155 defines feature negotiation of addrv2 and sendaddrv2, which must happen
+    // between VERSION and VERACK.
     if (msg_type == NetMsgType::SENDADDRV2) {
         if (pfrom.fSuccessfullyConnected) {
-            // Disconnect peers that send SENDADDRV2 message after VERACK; this
-            // must be negotiated between VERSION and VERACK.
+            // Disconnect peers that send a SENDADDRV2 message after VERACK.
             LogPrint(BCLog::NET, "sendaddrv2 received after verack from peer=%d; disconnecting\n", pfrom.GetId());
             pfrom.fDisconnect = true;
             return;
@@ -3008,7 +3008,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 a_recent_block = most_recent_block;
             }
             BlockValidationState state;
-            if (!ActivateBestChain(state, m_chainparams, a_recent_block)) {
+            if (!::ChainstateActive().ActivateBestChain(state, m_chainparams, a_recent_block)) {
                 LogPrint(BCLog::NET, "failed to activate chain (%s)\n", state.ToString());
             }
         }
@@ -3016,7 +3016,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         LOCK(cs_main);
 
         // Find the last block the caller has in the main chain
-        const CBlockIndex* pindex = FindForkInGlobalIndex(::ChainActive(), locator);
+        const CBlockIndex* pindex = g_chainman.m_blockman.FindForkInGlobalIndex(::ChainActive(), locator);
 
         // Send the rest of the chain
         if (pindex)
@@ -3069,7 +3069,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         {
             LOCK(cs_main);
 
-            const CBlockIndex* pindex = LookupBlockIndex(req.blockhash);
+            const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(req.blockhash);
             if (!pindex || !(pindex->nStatus & BLOCK_HAVE_DATA)) {
                 LogPrint(BCLog::NET, "Peer %d sent us a getblocktxn for a block we don't have\n", pfrom.GetId());
                 return;
@@ -3123,7 +3123,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         if (locator.IsNull())
         {
             // If locator is null, return the hashStop block
-            pindex = LookupBlockIndex(hashStop);
+            pindex = g_chainman.m_blockman.LookupBlockIndex(hashStop);
             if (!pindex) {
                 return;
             }
@@ -3136,7 +3136,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         else
         {
             // Find the last block the caller has in the main chain
-            pindex = FindForkInGlobalIndex(::ChainActive(), locator);
+            pindex = g_chainman.m_blockman.FindForkInGlobalIndex(::ChainActive(), locator);
             if (pindex)
                 pindex = ::ChainActive().Next(pindex);
         }
@@ -3422,14 +3422,14 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         {
         LOCK(cs_main);
 
-        if (!LookupBlockIndex(cmpctblock.header.hashPrevBlock)) {
+        if (!g_chainman.m_blockman.LookupBlockIndex(cmpctblock.header.hashPrevBlock)) {
             // Doesn't connect (or is genesis), instead of DoSing in AcceptBlockHeader, request deeper headers
             if (!::ChainstateActive().IsInitialBlockDownload())
                 m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::GETHEADERS, ::ChainActive().GetLocator(pindexBestHeader), uint256()));
             return;
         }
 
-        if (!LookupBlockIndex(cmpctblock.header.GetHash())) {
+        if (!g_chainman.m_blockman.LookupBlockIndex(cmpctblock.header.GetHash())) {
             received_new_header = true;
         }
         }
@@ -4101,14 +4101,12 @@ bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt
     }
 
     // Don't bother if send buffer is too full to respond anyway
-    if (pfrom->fPauseSend)
-        return false;
+    if (pfrom->fPauseSend) return false;
 
     std::list<CNetMessage> msgs;
     {
         LOCK(pfrom->cs_vProcessMsg);
-        if (pfrom->vProcessMsg.empty())
-            return false;
+        if (pfrom->vProcessMsg.empty()) return false;
         // Just take one message
         msgs.splice(msgs.begin(), pfrom->vProcessMsg, pfrom->vProcessMsg.begin());
         pfrom->nProcessQueueSize -= msgs.front().m_raw_message_size;
@@ -4116,6 +4114,10 @@ bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt
         fMoreWork = !pfrom->vProcessMsg.empty();
     }
     CNetMessage& msg(msgs.front());
+
+    if (gArgs.GetBoolArg("-capturemessages", false)) {
+        CaptureMessage(pfrom->addr, msg.m_command, MakeUCharSpan(msg.m_recv), /* incoming */ true);
+    }
 
     msg.SetVersion(pfrom->GetCommonVersion());
     const std::string& msg_type = msg.m_command;
@@ -4498,7 +4500,7 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
                 // then send all headers past that one.  If we come across any
                 // headers that aren't on ::ChainActive(), give up.
                 for (const uint256& hash : peer->m_blocks_for_headers_relay) {
-                    const CBlockIndex* pindex = LookupBlockIndex(hash);
+                    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
                     assert(pindex);
                     if (::ChainActive()[pindex->nHeight] != pindex) {
                         // Bail out if we reorged away from this block
@@ -4590,7 +4592,7 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
                 // in the past.
                 if (!peer->m_blocks_for_headers_relay.empty()) {
                     const uint256& hashToAnnounce = peer->m_blocks_for_headers_relay.back();
-                    const CBlockIndex* pindex = LookupBlockIndex(hashToAnnounce);
+                    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(hashToAnnounce);
                     assert(pindex);
 
                     // Warn if we're announcing a block that is not on the main chain.
