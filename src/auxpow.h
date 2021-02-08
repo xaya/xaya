@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -73,7 +73,7 @@ private:
                                     int nIndex);
 
   friend class PowData;
-  friend UniValue AuxpowToJSON(const CAuxPow& auxpow);
+  friend UniValue AuxpowToJSON(const CAuxPow& auxpow, bool verbose);
   friend class auxpow_tests::CAuxPowForTest;
   friend class powdata_tests::CAuxPowForTest;
 

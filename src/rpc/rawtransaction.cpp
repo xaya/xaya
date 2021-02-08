@@ -54,7 +54,7 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
         LOCK(cs_main);
 
         entry.pushKV("blockhash", hashBlock.GetHex());
-        CBlockIndex* pindex = LookupBlockIndex(hashBlock);
+        CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(hashBlock);
         if (pindex) {
             if (::ChainActive().Contains(pindex)) {
                 entry.pushKV("confirmations", 1 + ::ChainActive().Height() - pindex->nHeight);
@@ -174,7 +174,7 @@ static RPCHelpMan getrawtransaction()
         LOCK(cs_main);
 
         uint256 blockhash = ParseHashV(request.params[2], "parameter 3");
-        blockindex = LookupBlockIndex(blockhash);
+        blockindex = g_chainman.m_blockman.LookupBlockIndex(blockhash);
         if (!blockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block hash not found");
         }
@@ -256,7 +256,7 @@ static RPCHelpMan gettxoutproof()
     if (!request.params[1].isNull()) {
         LOCK(cs_main);
         hashBlock = ParseHashV(request.params[1], "blockhash");
-        pblockindex = LookupBlockIndex(hashBlock);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hashBlock);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -286,7 +286,7 @@ static RPCHelpMan gettxoutproof()
         if (!tx || hashBlock.IsNull()) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction not yet in block");
         }
-        pblockindex = LookupBlockIndex(hashBlock);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hashBlock);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Transaction index corrupt");
         }
@@ -346,7 +346,7 @@ static RPCHelpMan verifytxoutproof()
 
     LOCK(cs_main);
 
-    const CBlockIndex* pindex = LookupBlockIndex(merkleBlock.header.GetHash());
+    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(merkleBlock.header.GetHash());
     if (!pindex || !::ChainActive().Contains(pindex) || pindex->nTx == 0) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found in chain");
     }
@@ -813,10 +813,11 @@ static RPCHelpMan sendrawtransaction()
 {
     return RPCHelpMan{"sendrawtransaction",
                 "\nSubmit a raw transaction (serialized, hex-encoded) to local node and network.\n"
-                "\nNote that the transaction will be sent unconditionally to all peers, so using this\n"
+                "\nThe transaction will be sent unconditionally to all peers, so using sendrawtransaction\n"
                 "for manual rebroadcast may degrade privacy by leaking the transaction's origin, as\n"
                 "nodes will normally not rebroadcast non-wallet transactions already in their mempool.\n"
-                "\nAlso see createrawtransaction and signrawtransactionwithkey calls.\n",
+                "\nA specific exception, RPC_TRANSACTION_ALREADY_IN_CHAIN, may throw if the transaction cannot be added to the mempool.\n"
+                "\nRelated RPCs: createrawtransaction, signrawtransactionwithkey\n",
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
                     {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(DEFAULT_MAX_RAW_TX_FEE_RATE.GetFeePerK()),
@@ -1341,7 +1342,7 @@ static RPCHelpMan combinepsbt()
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << merged_psbt;
-    return EncodeBase64(MakeUCharSpan(ssTx));
+    return EncodeBase64(ssTx);
 },
     };
 }
@@ -1480,7 +1481,7 @@ static RPCHelpMan createpsbt()
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << psbtx;
 
-    return EncodeBase64(MakeUCharSpan(ssTx));
+    return EncodeBase64(ssTx);
 },
     };
 }
@@ -1549,7 +1550,7 @@ static RPCHelpMan converttopsbt()
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << psbtx;
 
-    return EncodeBase64(MakeUCharSpan(ssTx));
+    return EncodeBase64(ssTx);
 },
     };
 }
@@ -1640,7 +1641,7 @@ static RPCHelpMan utxoupdatepsbt()
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << psbtx;
-    return EncodeBase64(MakeUCharSpan(ssTx));
+    return EncodeBase64(ssTx);
 },
     };
 }
@@ -1736,7 +1737,7 @@ static RPCHelpMan joinpsbts()
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << shuffled_psbt;
-    return EncodeBase64(MakeUCharSpan(ssTx));
+    return EncodeBase64(ssTx);
 },
     };
 }

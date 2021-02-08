@@ -29,7 +29,10 @@ class JSONRPCRequest;
 static constexpr int NUM_GETBLOCKSTATS_PERCENTILES = 5;
 
 /**
- * Returns the numeric difficulty for the given nBits.
+ * Get the difficulty of the net wrt to the given bits.
+ *
+ * @return A floating point number that is a multiple of the main net minimum
+ * difficulty (4295032833 hashes).
  */
 double GetDifficultyForBits(uint32_t nBits);
 

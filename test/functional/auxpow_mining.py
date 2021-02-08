@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,6 +26,9 @@ class AuxpowMiningTest (BitcoinTestFramework):
 
   def set_test_params (self):
     self.num_nodes = 2
+
+  def skip_test_if_missing_module (self):
+    self.skip_if_no_wallet ()
 
   def add_options (self, parser):
     parser.add_argument ("--segwit", dest="segwit", default=False,
@@ -76,7 +79,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     # Invalidate the block again, send a transaction and query for the
     # auxblock to solve that contains the transaction.
     self.nodes[0].generate (1)
-    addr = self.nodes[1].getnewaddress ()
+    addr = self.nodes[1].get_deterministic_priv_key ().address
     txid = self.nodes[0].sendtoaddress (addr, 1)
     self.sync_all ()
     assert_equal (self.nodes[1].getrawmempool (), [txid])
@@ -113,7 +116,11 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (auxJson['chainindex'], 0)
     assert_equal (auxJson['merklebranch'], [])
     assert_equal (auxJson['chainmerklebranch'], [])
-    assert_equal (auxJson['parentblock'], apow[-160:])
+    assert_equal (type (auxJson['parentblock']), dict)
+
+    # The non-verbose block header RPC should contain the auxpow at the end.
+    data = self.nodes[1].getblockheader (auxblock['hash'], False)
+    assert_equal (data[-160:], apow[-160:])
 
     # Check that it paid correctly to the first node.
     t = self.nodes[0].listtransactions ("*", 1)
@@ -170,9 +177,9 @@ class AuxpowMiningTest (BitcoinTestFramework):
                              "this_an_invalid_address")
 
     # Fix a coinbase address and construct methods for it.
-    coinbaseAddr = self.nodes[0].getnewaddress ()
+    addr1 = self.nodes[0].get_deterministic_priv_key ().address
     def create ():
-      return self.nodes[0].createauxblock (coinbaseAddr)
+      return self.nodes[0].createauxblock (addr1)
     submit = self.nodes[0].submitauxblock
 
     # Run common tests.
@@ -182,14 +189,15 @@ class AuxpowMiningTest (BitcoinTestFramework):
     hash1 = mineAuxpowBlockWithMethods (create, submit)
     hash2 = mineAuxpowBlockWithMethods (create, submit)
     self.sync_all ()
-    addr1 = getCoinbaseAddr (self.nodes[1], hash1)
-    addr2 = getCoinbaseAddr (self.nodes[1], hash2)
-    assert_equal (addr1, coinbaseAddr)
-    assert_equal (addr2, coinbaseAddr)
+    actual1 = getCoinbaseAddr (self.nodes[1], hash1)
+    actual2 = getCoinbaseAddr (self.nodes[1], hash2)
+    assert_equal (actual1, addr1)
+    assert_equal (actual2, addr1)
 
     # Ensure that different payout addresses will generate different auxblocks
-    auxblock1 = self.nodes[0].createauxblock(self.nodes[0].getnewaddress ())
-    auxblock2 = self.nodes[0].createauxblock(self.nodes[0].getnewaddress ())
+    addr2 = self.nodes[1].get_deterministic_priv_key ().address
+    auxblock1 = self.nodes[0].createauxblock(addr1)
+    auxblock2 = self.nodes[0].createauxblock(addr2)
     assert auxblock1['hash'] != auxblock2['hash']
 
 if __name__ == '__main__':

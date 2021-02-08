@@ -24,6 +24,9 @@ def val (text):
 
 class NameTestFramework (BitcoinTestFramework):
 
+  def skip_test_if_missing_module(self):
+    self.skip_if_no_wallet()
+
   def setup_name_test (self, args = [[]] * 4):
     self.num_nodes = len (args)
     self.extra_args = args

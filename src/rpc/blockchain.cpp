@@ -102,11 +102,16 @@ CBlockPolicyEstimator& EnsureFeeEstimator(const util::Ref& context)
     return *node.fee_estimator;
 }
 
+/* Calculate the difficulty for the given bits.
+ */
 double GetDifficultyForBits(const uint32_t nBits)
 {
+    const uint32_t mantissa = nBits & 0x00ffffff;
+    if (mantissa == 0)
+        return 0.0;
+
     int nShift = (nBits >> 24) & 0xff;
-    double dDiff =
-        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+    double dDiff = (double)0x0000ffff / (double)mantissa;
 
     while (nShift < 29)
     {
@@ -132,7 +137,108 @@ static int ComputeNextBlockAndDepth(const CBlockIndex* tip, const CBlockIndex* b
     return blockindex == tip ? 1 : -1;
 }
 
-UniValue AuxpowToJSON(const CAuxPow& auxpow)
+/** Converts the base data, excluding any contextual information,
+ * in a block header to JSON.  */
+static UniValue blockheaderToJSON(const CPureBlockHeader& header)
+{
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("hash", header.GetHash().GetHex());
+    result.pushKV("version", header.nVersion);
+    result.pushKV("versionHex", strprintf("%08x", header.nVersion));
+    result.pushKV("merkleroot", header.hashMerkleRoot.GetHex());
+    result.pushKV("time", (int64_t)header.nTime);
+    result.pushKV("nonce", (uint64_t)header.nNonce);
+    result.pushKV("bits", strprintf("%08x", header.nBits));
+    result.pushKV("difficulty", GetDifficultyForBits(header.nBits));
+
+    if (!header.hashPrevBlock.IsNull())
+        result.pushKV("previousblockhash", header.hashPrevBlock.GetHex());
+
+    return result;
+}
+
+namespace
+{
+
+UniValue
+PowDataToJSON (const PowData& pow, const bool verbose)
+{
+  UniValue result(UniValue::VOBJ);
+  result.pushKV ("algo", PowAlgoToString (pow.getCoreAlgo ()));
+  result.pushKV ("mergemined", pow.isMergeMined ());
+  result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
+  result.pushKV ("difficulty", GetDifficultyForBits (pow.getBits ()));
+
+  if (pow.isMergeMined ())
+    result.pushKV ("auxpow", AuxpowToJSON (pow.getAuxpow (), verbose));
+  else
+    {
+      CDataStream ss(SER_GETHASH, PROTOCOL_VERSION);
+      ss << pow.getFakeHeader ();
+      result.pushKV ("fakeheader", HexStr (ss));
+    }
+
+  return result;
+}
+
+} // anonymous namespace
+
+UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex)
+{
+    // Serialize passed information without accessing chain state of the active chain!
+    AssertLockNotHeld(cs_main); // For performance reasons
+
+    auto result = blockheaderToJSON(blockindex->GetBlockHeader(Params().GetConsensus()));
+
+    const CBlockIndex* pnext;
+    int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
+    result.pushKV("confirmations", confirmations);
+    result.pushKV("height", blockindex->nHeight);
+    result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
+    result.pushKV("nonce", (uint64_t)blockindex->nNonce);
+    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
+    result.pushKV("nTx", (uint64_t)blockindex->nTx);
+
+    if (pnext)
+        result.pushKV("nextblockhash", pnext->GetBlockHash().GetHex());
+    return result;
+}
+
+UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, bool txDetails)
+{
+    // Serialize passed information without accessing chain state of the active chain!
+    AssertLockNotHeld(cs_main); // For performance reasons
+
+    auto result = blockheaderToJSON(tip, blockindex);
+
+    result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
+    result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
+    result.pushKV("weight", (int)::GetBlockWeight(block));
+    UniValue txs(UniValue::VARR);
+    if (txDetails) {
+        CBlockUndo blockUndo;
+        const bool have_undo = !IsBlockPruned(blockindex) && UndoReadFromDisk(blockUndo, blockindex);
+        for (size_t i = 0; i < block.vtx.size(); ++i) {
+            const CTransactionRef& tx = block.vtx.at(i);
+            // coinbase transaction (i == 0) doesn't have undo data
+            const CTxUndo* txundo = (have_undo && i) ? &blockUndo.vtxundo.at(i - 1) : nullptr;
+            UniValue objTx(UniValue::VOBJ);
+            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), txundo);
+            txs.push_back(objTx);
+        }
+    } else {
+        for (const CTransactionRef& tx : block.vtx) {
+            txs.push_back(tx->GetHash().GetHex());
+        }
+    }
+    result.pushKV("tx", txs);
+
+    result.pushKV("rngseed", block.GetRngSeed().GetHex());
+
+    return result;
+}
+
+UniValue AuxpowToJSON(const CAuxPow& auxpow, const bool verbose)
 {
     UniValue result(UniValue::VOBJ);
 
@@ -159,115 +265,16 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow)
         result.pushKV("chainmerklebranch", branch);
     }
 
-    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
-    ssParent << auxpow.parentBlock;
-    const std::string strHex = HexStr(ssParent);
-    result.pushKV("parentblock", strHex);
-
-    return result;
-}
-
-namespace
-{
-
-UniValue
-PowDataToJSON (const PowData& pow)
-{
-  UniValue result(UniValue::VOBJ);
-  result.pushKV ("algo", PowAlgoToString (pow.getCoreAlgo ()));
-  result.pushKV ("mergemined", pow.isMergeMined ());
-  result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
-  result.pushKV ("difficulty", GetDifficultyForBits (pow.getBits ()));
-
-  if (pow.isMergeMined ())
-    result.pushKV ("auxpow", AuxpowToJSON (pow.getAuxpow ()));
-  else
+    if (verbose)
+        result.pushKV("parentblock", blockheaderToJSON(auxpow.parentBlock));
+    else
     {
-      CDataStream ss(SER_GETHASH, PROTOCOL_VERSION);
-      ss << pow.getFakeHeader ();
-      result.pushKV ("fakeheader", HexStr (ss));
+        CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
+        ssParent << auxpow.parentBlock;
+        const std::string strHex = HexStr(ssParent);
+        result.pushKV("parentblock", strHex);
     }
 
-  return result;
-}
-
-} // anonymous namespace
-
-UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex)
-{
-    // Serialize passed information without accessing chain state of the active chain!
-    AssertLockNotHeld(cs_main); // For performance reasons
-
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("hash", blockindex->GetBlockHash().GetHex());
-    const CBlockIndex* pnext;
-    int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
-    result.pushKV("confirmations", confirmations);
-    result.pushKV("height", blockindex->nHeight);
-    result.pushKV("version", blockindex->nVersion);
-    result.pushKV("versionHex", strprintf("%08x", blockindex->nVersion));
-    result.pushKV("merkleroot", blockindex->hashMerkleRoot.GetHex());
-    result.pushKV("time", (int64_t)blockindex->nTime);
-    result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
-    result.pushKV("nonce", (uint64_t)blockindex->nNonce);
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
-    result.pushKV("nTx", (uint64_t)blockindex->nTx);
-
-    if (blockindex->pprev)
-        result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
-    if (pnext)
-        result.pushKV("nextblockhash", pnext->GetBlockHash().GetHex());
-    return result;
-}
-
-UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, bool txDetails)
-{
-    // Serialize passed information without accessing chain state of the active chain!
-    AssertLockNotHeld(cs_main); // For performance reasons
-
-    UniValue result(UniValue::VOBJ);
-    result.pushKV("hash", blockindex->GetBlockHash().GetHex());
-    const CBlockIndex* pnext;
-    int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
-    result.pushKV("confirmations", confirmations);
-    result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
-    result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
-    result.pushKV("weight", (int)::GetBlockWeight(block));
-    result.pushKV("height", blockindex->nHeight);
-    result.pushKV("version", block.nVersion);
-    result.pushKV("versionHex", strprintf("%08x", block.nVersion));
-    result.pushKV("merkleroot", block.hashMerkleRoot.GetHex());
-    UniValue txs(UniValue::VARR);
-    if (txDetails) {
-        CBlockUndo blockUndo;
-        const bool have_undo = !IsBlockPruned(blockindex) && UndoReadFromDisk(blockUndo, blockindex);
-        for (size_t i = 0; i < block.vtx.size(); ++i) {
-            const CTransactionRef& tx = block.vtx.at(i);
-            // coinbase transaction (i == 0) doesn't have undo data
-            const CTxUndo* txundo = (have_undo && i) ? &blockUndo.vtxundo.at(i - 1) : nullptr;
-            UniValue objTx(UniValue::VOBJ);
-            TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), txundo);
-            txs.push_back(objTx);
-        }
-    } else {
-        for (const CTransactionRef& tx : block.vtx) {
-            txs.push_back(tx->GetHash().GetHex());
-        }
-    }
-    result.pushKV("tx", txs);
-    result.pushKV("time", block.GetBlockTime());
-    result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
-    result.pushKV("nonce", (uint64_t)block.nNonce);
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
-    result.pushKV("nTx", (uint64_t)blockindex->nTx);
-
-    result.pushKV("powdata", PowDataToJSON(block.pow));
-    result.pushKV("rngseed", block.GetRngSeed().GetHex());
-
-    if (blockindex->pprev)
-        result.pushKV("previousblockhash", blockindex->pprev->GetBlockHash().GetHex());
-    if (pnext)
-        result.pushKV("nextblockhash", pnext->GetBlockHash().GetHex());
     return result;
 }
 
@@ -928,7 +935,7 @@ static RPCHelpMan getblockheader()
     const CBlockIndex* tip;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         tip = ::ChainActive().Tip();
     }
 
@@ -936,13 +943,18 @@ static RPCHelpMan getblockheader()
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
 
+    const auto header = pblockindex->GetBlockHeader(Params().GetConsensus());
+
     if (!fVerbose)
     {
         CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION);
-        ssBlock << pblockindex->GetBlockHeader(Params().GetConsensus());
+        ssBlock << header;
         std::string strHex = HexStr(ssBlock);
         return strHex;
     }
+
+    auto result = blockheaderToJSON(tip, pblockindex);
+    result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose));
 
     return blockheaderToJSON(tip, pblockindex);
 },
@@ -1071,7 +1083,7 @@ static RPCHelpMan getblock()
     const CBlockIndex* tip;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         tip = ::ChainActive().Tip();
 
         if (!pblockindex) {
@@ -1089,7 +1101,10 @@ static RPCHelpMan getblock()
         return strHex;
     }
 
-    return blockToJSON(block, tip, pblockindex, verbosity >= 2);
+    auto result = blockToJSON(block, tip, pblockindex, verbosity >= 2);
+    result.pushKV("powdata", PowDataToJSON(block.pow, verbosity >= 1));
+
+    return result;
 },
     };
 }
@@ -1280,7 +1295,7 @@ static RPCHelpMan gettxout()
         }
     }
 
-    const CBlockIndex* pindex = LookupBlockIndex(coins_view->GetBestBlock());
+    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex(coins_view->GetBestBlock());
     ret.pushKV("bestblock", pindex->GetBlockHash().GetHex());
     if (coin.nHeight == MEMPOOL_HEIGHT) {
         ret.pushKV("confirmations", 0);
@@ -1674,7 +1689,7 @@ static RPCHelpMan preciousblock()
 
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1712,7 +1727,7 @@ static RPCHelpMan invalidateblock()
     CBlockIndex* pblockindex;
     {
         LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
+        pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1720,7 +1735,7 @@ static RPCHelpMan invalidateblock()
     InvalidateBlock(state, Params(), pblockindex);
 
     if (state.IsValid()) {
-        ActivateBestChain(state, Params());
+        ::ChainstateActive().ActivateBestChain(state, Params());
     }
 
     if (!state.IsValid()) {
@@ -1751,7 +1766,7 @@ static RPCHelpMan reconsiderblock()
 
     {
         LOCK(cs_main);
-        CBlockIndex* pblockindex = LookupBlockIndex(hash);
+        CBlockIndex* pblockindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pblockindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1760,7 +1775,7 @@ static RPCHelpMan reconsiderblock()
     }
 
     BlockValidationState state;
-    ActivateBestChain(state, Params());
+    ::ChainstateActive().ActivateBestChain(state, Params());
 
     if (!state.IsValid()) {
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
@@ -1804,7 +1819,7 @@ static RPCHelpMan getchaintxstats()
     } else {
         uint256 hash(ParseHashV(request.params[1], "blockhash"));
         LOCK(cs_main);
-        pindex = LookupBlockIndex(hash);
+        pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -1984,7 +1999,7 @@ static RPCHelpMan getblockstats()
         pindex = ::ChainActive()[height];
     } else {
         const uint256 hash(ParseHashV(request.params[0], "hash_or_height"));
-        pindex = LookupBlockIndex(hash);
+        pindex = g_chainman.m_blockman.LookupBlockIndex(hash);
         if (!pindex) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -2447,7 +2462,7 @@ static RPCHelpMan getblockfilter()
     bool block_was_connected;
     {
         LOCK(cs_main);
-        block_index = LookupBlockIndex(block_hash);
+        block_index = g_chainman.m_blockman.LookupBlockIndex(block_hash);
         if (!block_index) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
@@ -2557,7 +2572,7 @@ static RPCHelpMan dumptxoutset()
         }
 
         pcursor = std::unique_ptr<CCoinsViewCursor>(::ChainstateActive().CoinsDB().Cursor());
-        tip = LookupBlockIndex(stats.hashBlock);
+        tip = g_chainman.m_blockman.LookupBlockIndex(stats.hashBlock);
         CHECK_NONFATAL(tip);
     }
 

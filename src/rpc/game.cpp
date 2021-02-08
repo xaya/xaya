@@ -278,8 +278,8 @@ game_sendupdates ()
   {
     LOCK (cs_main);
 
-    fromIndex = LookupBlockIndex (fromBlock);
-    toIndex = LookupBlockIndex (toBlock);
+    fromIndex = g_chainman.m_blockman.LookupBlockIndex (fromBlock);
+    toIndex = g_chainman.m_blockman.LookupBlockIndex (toBlock);
 
     if (fromIndex == nullptr)
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "fromblock not found");

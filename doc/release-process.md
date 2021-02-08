@@ -5,8 +5,7 @@ Release Process
 
 ### Before every release candidate
 
-* Update manpages, see [gen-manpages.sh](https://github.com/xaya/xaya/blob/master/contrib/devtools/README.md#gen-manpagessh).
-* ( **Not in Namecoin yet.** ) Update translations (ping wumpus on IRC) see [translation_process.md](https://github.com/bitcoin/bitcoin/blob/master/doc/translation_process.md#synchronising-translations).
+* Update manpages, see [gen-manpages.sh](https://github.com/namecoin/namecoin/blob/master/contrib/devtools/README.md#gen-manpagessh).
 * Update release candidate version in `configure.ac` (`CLIENT_VERSION_RC`).
 
 ### Before every major and minor release
@@ -52,6 +51,13 @@ Release Process
 - Merge the release notes from the wiki into the branch.
 - Ensure the "Needs release note" label is removed from all relevant pull requests and issues.
 
+#### Tagging a release (candidate)
+
+To tag the version (or release candidate) in git, use the `make-tag.py` script from [bitcoin-maintainer-tools](https://github.com/bitcoin-core/bitcoin-maintainer-tools). From the root of the repository run:
+
+    ../bitcoin-maintainer-tools/make-tag.py v(new version, e.g. 0.20.0)
+
+This will perform a few last-minute consistency checks in the build system files, and if they pass, create a signed tag.
 
 ## Building
 
