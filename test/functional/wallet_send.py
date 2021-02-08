@@ -22,8 +22,8 @@ class WalletSendTest(BitcoinTestFramework):
         self.num_nodes = 2
         # whitelist all peers to speed up tx relay / mempool sync
         self.extra_args = [
-            ["-whitelist=127.0.0.1","-walletrbf=1"],
-            ["-whitelist=127.0.0.1","-walletrbf=1"],
+            ["-whitelist=127.0.0.1","-walletrbf=1","-addresstype=bech32"],
+            ["-whitelist=127.0.0.1","-walletrbf=1","-addresstype=bech32"],
         ]
         getcontext().prec = 8 # Satoshi precision for Decimal
 
