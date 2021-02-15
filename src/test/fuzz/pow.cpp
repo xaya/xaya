@@ -20,6 +20,9 @@ void initialize_pow()
     SelectParams(CBaseChainParams::MAIN);
 }
 
+#if 0
+FIXME: Update and re-enable for Xayas dual-algo changes.
+
 FUZZ_TARGET_INIT(pow, initialize_pow)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
@@ -82,3 +85,4 @@ FUZZ_TARGET_INIT(pow, initialize_pow)
         }
     }
 }
+#endif // disabled on Xaya for now

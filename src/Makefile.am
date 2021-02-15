@@ -244,6 +244,7 @@ BITCOIN_CORE_H = \
   util/check.h \
   util/error.h \
   util/fees.h \
+  util/getuniquepath.h \
   util/golombrice.h \
   util/hasher.h \
   util/macros.h \
@@ -253,6 +254,7 @@ BITCOIN_CORE_H = \
   util/rbf.h \
   util/ref.h \
   util/settings.h \
+  util/sock.h \
   util/spanparsing.h \
   util/string.h \
   util/system.h \
@@ -589,7 +591,9 @@ libbitcoin_util_a_SOURCES = \
   util/bytevectorhash.cpp \
   util/error.cpp \
   util/fees.cpp \
+  util/getuniquepath.cpp \
   util/hasher.cpp \
+  util/sock.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \
@@ -735,7 +739,7 @@ endif
 xaya_util_SOURCES = bitcoin-util.cpp
 xaya_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 xaya_util_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xaya_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+xaya_util_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
 
 if TARGET_WINDOWS
 xaya_util_SOURCES += bitcoin-util-res.rc

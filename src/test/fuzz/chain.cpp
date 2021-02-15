@@ -31,7 +31,7 @@ FUZZ_TARGET(chain)
     (void)disk_block_index->IsValid();
     (void)disk_block_index->ToString();
 
-    const CBlockHeader block_header = disk_block_index->GetBlockHeader();
+    const CBlockHeader block_header = disk_block_index->GetBlockHeader(Params().GetConsensus());
     (void)CDiskBlockIndex{*disk_block_index};
     (void)disk_block_index->BuildSkip();
 

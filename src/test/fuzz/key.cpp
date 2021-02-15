@@ -123,16 +123,16 @@ FUZZ_TARGET_INIT(key, initialize_key)
 
     {
         const CScript tx_pubkey_script = GetScriptForRawPubKey(pubkey);
-        assert(!tx_pubkey_script.IsPayToScriptHash());
-        assert(!tx_pubkey_script.IsPayToWitnessScriptHash());
+        assert(!tx_pubkey_script.IsPayToScriptHash(false));
+        assert(!tx_pubkey_script.IsPayToWitnessScriptHash(false));
         assert(!tx_pubkey_script.IsPushOnly());
         assert(!tx_pubkey_script.IsUnspendable());
         assert(tx_pubkey_script.HasValidOps());
         assert(tx_pubkey_script.size() == 35);
 
         const CScript tx_multisig_script = GetScriptForMultisig(1, {pubkey});
-        assert(!tx_multisig_script.IsPayToScriptHash());
-        assert(!tx_multisig_script.IsPayToWitnessScriptHash());
+        assert(!tx_multisig_script.IsPayToScriptHash(false));
+        assert(!tx_multisig_script.IsPayToWitnessScriptHash(false));
         assert(!tx_multisig_script.IsPushOnly());
         assert(!tx_multisig_script.IsUnspendable());
         assert(tx_multisig_script.HasValidOps());

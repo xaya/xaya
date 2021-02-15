@@ -35,13 +35,15 @@ FUZZ_TARGET_INIT(message, initialize_message)
         const bool message_signed = MessageSign(private_key, random_message, signature);
         if (private_key.IsValid()) {
             assert(message_signed);
-            const MessageVerificationResult verification_result = MessageVerify(EncodeDestination(PKHash(private_key.GetPubKey().GetID())), signature, random_message);
+            std::string address = EncodeDestination(PKHash(private_key.GetPubKey().GetID()));
+            const MessageVerificationResult verification_result = MessageVerify(address, signature, random_message);
             assert(verification_result == MessageVerificationResult::OK);
         }
     }
     {
         (void)MessageHash(random_message);
-        (void)MessageVerify(fuzzed_data_provider.ConsumeRandomLengthString(1024), fuzzed_data_provider.ConsumeRandomLengthString(1024), random_message);
+        std::string address = fuzzed_data_provider.ConsumeRandomLengthString(1024);
+        (void)MessageVerify(address, fuzzed_data_provider.ConsumeRandomLengthString(1024), random_message);
         (void)SigningResultString(fuzzed_data_provider.PickValueInArray({SigningResult::OK, SigningResult::PRIVATE_KEY_NOT_AVAILABLE, SigningResult::SIGNING_FAILED}));
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Xaya developers
+// Copyright (c) 2018-2021 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -168,23 +168,28 @@ bool
 PowData::checkProofOfWork (const CPureBlockHeader& hdr,
                            const Consensus::Params& params) const
 {
-  const PowAlgo coreAlgo = getCoreAlgo ();
+  const PowAlgo algo = getCoreAlgo ();
+  return checkProofOfWork (algo, hdr.GetPowHash (algo), getBits (), params);
+}
 
-  /* The code below is CheckProofOfWork from upstream's pow.cpp.  It has been
-     moved here so that powdata.cpp does not depend on pow.cpp, which is
-     in the "server" library.  */
-
-  bool fNegative, fOverflow;
+bool
+PowData::checkProofOfWork (const PowAlgo algo,
+                           const uint256& hash, const unsigned nBits,
+                           const Consensus::Params& params)
+{
+  bool fNegative;
+  bool fOverflow;
   arith_uint256 bnTarget;
-  bnTarget.SetCompact (getBits (), &fNegative, &fOverflow);
+
+  bnTarget.SetCompact (nBits, &fNegative, &fOverflow);
 
   // Check range
   if (fNegative || bnTarget == 0 || fOverflow
-        || bnTarget > UintToArith256 (powLimitForAlgo (coreAlgo, params)))
+          || bnTarget > UintToArith256 (powLimitForAlgo (algo, params)))
     return false;
 
   // Check proof of work matches claimed amount
-  if (UintToArith256 (hdr.GetPowHash (coreAlgo)) > bnTarget)
+  if (UintToArith256 (hash) > bnTarget)
     return false;
 
   return true;

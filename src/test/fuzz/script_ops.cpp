@@ -46,8 +46,8 @@ FUZZ_TARGET(script_ops)
                 (void)script.GetSigOpCount(true);
                 (void)script.GetSigOpCount(script);
                 (void)script.HasValidOps();
-                (void)script.IsPayToScriptHash();
-                (void)script.IsPayToWitnessScriptHash();
+                (void)script.IsPayToScriptHash(false);
+                (void)script.IsPayToWitnessScriptHash(false);
                 (void)script.IsPushOnly();
                 (void)script.IsUnspendable();
                 {
@@ -61,7 +61,7 @@ FUZZ_TARGET(script_ops)
                 {
                     int version;
                     std::vector<uint8_t> program;
-                    (void)script.IsWitnessProgram(version, program);
+                    (void)script.IsWitnessProgram(false, version, program);
                 }
             });
     }

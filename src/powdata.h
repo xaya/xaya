@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 The Xaya developers
+// Copyright (c) 2018-2021 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -204,6 +204,15 @@ public:
    */
   bool checkProofOfWork (const CPureBlockHeader& hdr,
                          const Consensus::Params& params) const;
+
+  /**
+   * Checks whether a given hash matches the target bits.  This is moved
+   * from upstream's pow.cpp file here, so that powdata.cpp does not
+   * depend on pow.cpp from the "server" library.
+   */
+  static bool checkProofOfWork (PowAlgo algo,
+                                const uint256& hash, unsigned nBits,
+                                const Consensus::Params& params);
 
 };
 
