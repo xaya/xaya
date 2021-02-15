@@ -17,8 +17,8 @@
 #include <node/coinstats.h>
 #include <node/context.h>
 #include <node/utxo_snapshot.h>
-#include <policy/fees.h>
 #include <policy/feerate.h>
+#include <policy/fees.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
@@ -176,10 +176,7 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
 
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, bool txDetails)
 {
-    // Serialize passed information without accessing chain state of the active chain!
-    AssertLockNotHeld(cs_main); // For performance reasons
-
-    auto result = blockheaderToJSON(tip, blockindex);
+    UniValue result = blockheaderToJSON(tip, blockindex);
 
     result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
     result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
@@ -1112,13 +1109,26 @@ static RPCHelpMan pruneblockchain()
     };
 }
 
+CoinStatsHashType ParseHashType(const std::string& hash_type_input)
+{
+    if (hash_type_input == "hash_serialized_2") {
+        return CoinStatsHashType::HASH_SERIALIZED;
+    } else if (hash_type_input == "muhash") {
+        return CoinStatsHashType::MUHASH;
+    } else if (hash_type_input == "none") {
+        return CoinStatsHashType::NONE;
+    } else {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("%s is not a valid hash_type", hash_type_input));
+    }
+}
+
 static RPCHelpMan gettxoutsetinfo()
 {
     return RPCHelpMan{"gettxoutsetinfo",
                 "\nReturns statistics about the unspent transaction output set.\n"
                 "Note this call may take some time.\n",
                 {
-                    {"hash_type", RPCArg::Type::STR, /* default */ "hash_serialized_2", "Which UTXO set hash should be calculated. Options: 'hash_serialized_2' (the legacy algorithm), 'none'."},
+                    {"hash_type", RPCArg::Type::STR, /* default */ "hash_serialized_2", "Which UTXO set hash should be calculated. Options: 'hash_serialized_2' (the legacy algorithm), 'muhash', 'none'."},
                 },
                 RPCResult{
                     RPCResult::Type::OBJ, "", "",
@@ -1128,7 +1138,8 @@ static RPCHelpMan gettxoutsetinfo()
                         {RPCResult::Type::NUM, "transactions", "The number of transactions with unspent outputs"},
                         {RPCResult::Type::NUM, "txouts", "The number of unspent transaction outputs"},
                         {RPCResult::Type::NUM, "bogosize", "A meaningless metric for UTXO set size"},
-                        {RPCResult::Type::STR_HEX, "hash_serialized_2", "The serialized hash (only present if 'hash_serialized_2' hash_type is chosen)"},
+                        {RPCResult::Type::STR_HEX, "hash_serialized_2", /* optional */ true, "The serialized hash (only present if 'hash_serialized_2' hash_type is chosen)"},
+                        {RPCResult::Type::STR_HEX, "muhash", /* optional */ true, "The serialized hash (only present if 'muhash' hash_type is chosen)"},
                         {RPCResult::Type::NUM, "disk_size", "The estimated size of the chainstate on disk"},
                         {RPCResult::Type::STR_AMOUNT, "total_amount", "The total amount"},
                     }},
@@ -1143,7 +1154,7 @@ static RPCHelpMan gettxoutsetinfo()
     CCoinsStats stats;
     ::ChainstateActive().ForceFlushStateToDisk();
 
-    const CoinStatsHashType hash_type = ParseHashType(request.params[0], CoinStatsHashType::HASH_SERIALIZED);
+    const CoinStatsHashType hash_type{request.params[0].isNull() ? CoinStatsHashType::HASH_SERIALIZED : ParseHashType(request.params[0].get_str())};
 
     CCoinsView* coins_view = WITH_LOCK(cs_main, return &ChainstateActive().CoinsDB());
     NodeContext& node = EnsureNodeContext(request.context);
@@ -1155,6 +1166,9 @@ static RPCHelpMan gettxoutsetinfo()
         ret.pushKV("bogosize", (int64_t)stats.nBogoSize);
         if (hash_type == CoinStatsHashType::HASH_SERIALIZED) {
             ret.pushKV("hash_serialized_2", stats.hashSerialized.GetHex());
+        }
+        if (hash_type == CoinStatsHashType::MUHASH) {
+              ret.pushKV("muhash", stats.hashSerialized.GetHex());
         }
         ret.pushKV("disk_size", stats.nDiskSize);
         ret.pushKV("total_amount", ValueFromAmount(stats.nTotalAmount));
@@ -1567,6 +1581,7 @@ UniValue MempoolInfoToJSON(const CTxMemPool& pool)
     ret.pushKV("size", (int64_t)pool.size());
     ret.pushKV("bytes", (int64_t)pool.GetTotalTxSize());
     ret.pushKV("usage", (int64_t)pool.DynamicMemoryUsage());
+    ret.pushKV("total_fee", ValueFromAmount(pool.GetTotalFee()));
     size_t maxmempool = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     ret.pushKV("maxmempool", (int64_t) maxmempool);
     ret.pushKV("mempoolminfee", ValueFromAmount(std::max(pool.GetMinFee(maxmempool), ::minRelayTxFee).GetFeePerK()));
@@ -1587,6 +1602,7 @@ static RPCHelpMan getmempoolinfo()
                         {RPCResult::Type::NUM, "size", "Current tx count"},
                         {RPCResult::Type::NUM, "bytes", "Sum of all virtual transaction sizes as defined in BIP 141. Differs from actual serialized size because witness data is discounted"},
                         {RPCResult::Type::NUM, "usage", "Total memory usage for the mempool"},
+                        {RPCResult::Type::STR_AMOUNT, "total_fee", "Total fees for the mempool in " + CURRENCY_UNIT + ", ignoring modified fees through prioritizetransaction"},
                         {RPCResult::Type::NUM, "maxmempool", "Maximum memory usage for the mempool"},
                         {RPCResult::Type::STR_AMOUNT, "mempoolminfee", "Minimum fee rate in " + CURRENCY_UNIT + "/kB for tx to be accepted. Is the maximum of minrelaytxfee and minimum mempool fee"},
                         {RPCResult::Type::STR_AMOUNT, "minrelaytxfee", "Current minimum relay fee for transactions"},
