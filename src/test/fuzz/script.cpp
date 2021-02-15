@@ -94,8 +94,8 @@ FUZZ_TARGET_INIT(script, initialize_script)
     (void)Solver(script, solutions);
 
     (void)script.HasValidOps();
-    (void)script.IsPayToScriptHash();
-    (void)script.IsPayToWitnessScriptHash();
+    (void)script.IsPayToScriptHash(false);
+    (void)script.IsPayToWitnessScriptHash(false);
     (void)script.IsPushOnly();
     (void)script.GetSigOpCount(/* fAccurate= */ false);
 
