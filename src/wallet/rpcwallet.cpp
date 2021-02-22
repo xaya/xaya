@@ -404,6 +404,12 @@ UniValue SendMoney(CWallet* const pwallet, const CCoinControl &coin_control,
 {
     EnsureWalletIsUnlocked(pwallet);
 
+    // This function is only used by sendtoaddress and sendmany.
+    // This should always try to sign, if we don't have private keys, don't try to do anything here.
+    if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error: Private keys are disabled for this wallet");
+    }
+
     // Shuffle recipient list
     std::shuffle(recipients.begin(), recipients.end(), FastRandomContext());
 
@@ -413,7 +419,7 @@ UniValue SendMoney(CWallet* const pwallet, const CCoinControl &coin_control,
     bilingual_str error;
     CTransactionRef tx;
     FeeCalculation fee_calc_out;
-    bool fCreated = pwallet->CreateTransaction(recipients, withInput, tx, nFeeRequired, nChangePosRet, error, coin_control, fee_calc_out, !pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
+    const bool fCreated = pwallet->CreateTransaction(recipients, withInput, tx, nFeeRequired, nChangePosRet, error, coin_control, fee_calc_out, true);
     if (!fCreated) {
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, error.original);
     }
@@ -3827,6 +3833,7 @@ RPCHelpMan getaddressinfo()
                         {RPCResult::Type::BOOL, "iswatchonly", "If the address is watchonly."},
                         {RPCResult::Type::BOOL, "solvable", "If we know how to spend coins sent to this address, ignoring the possible lack of private keys."},
                         {RPCResult::Type::STR, "desc", /* optional */ true, "A descriptor for spending coins sent to this address (only when solvable)."},
+                        {RPCResult::Type::STR, "parent_desc", /* optional */ true, "The descriptor used to derive this address if this is a descriptor wallet"},
                         {RPCResult::Type::BOOL, "isscript", "If the key is a script."},
                         {RPCResult::Type::BOOL, "ischange", "If the address was used for change output."},
                         {RPCResult::Type::BOOL, "iswitness", "If the address is a witness address."},
@@ -3900,6 +3907,14 @@ RPCHelpMan getaddressinfo()
 
     if (solvable) {
        ret.pushKV("desc", InferDescriptor(scriptPubKey, *provider)->ToString());
+    }
+
+    DescriptorScriptPubKeyMan* desc_spk_man = dynamic_cast<DescriptorScriptPubKeyMan*>(pwallet->GetScriptPubKeyMan(scriptPubKey));
+    if (desc_spk_man) {
+        std::string desc_str;
+        if (desc_spk_man->GetDescriptorString(desc_str, false)) {
+            ret.pushKV("parent_desc", desc_str);
+        }
     }
 
     ret.pushKV("iswatchonly", bool(mine & ISMINE_WATCH_ONLY));

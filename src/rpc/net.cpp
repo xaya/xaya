@@ -77,13 +77,12 @@ static RPCHelpMan ping()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     NodeContext& node = EnsureNodeContext(request.context);
-    if(!node.connman)
+    if (!node.peerman) {
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
 
     // Request that each node send a ping during next message processing pass
-    node.connman->ForEachNode([](CNode* pnode) {
-        pnode->fPingQueued = true;
-    });
+    node.peerman->SendPings();
     return NullUniValue;
 },
     };
@@ -104,7 +103,7 @@ static RPCHelpMan getpeerinfo()
                             {RPCResult::Type::STR, "addr", "(host:port) The IP address and port of the peer"},
                             {RPCResult::Type::STR, "addrbind", "(ip:port) Bind address of the connection to the peer"},
                             {RPCResult::Type::STR, "addrlocal", "(ip:port) Local address as reported by the peer"},
-                            {RPCResult::Type::STR, "network", "Network (ipv4, ipv6, or onion) the peer connected through"},
+                            {RPCResult::Type::STR, "network", "Network (" + Join(GetNetworkNames(/* append_unroutable */ true), ", ") + ")"},
                             {RPCResult::Type::NUM, "mapped_as", "The AS in the BGP route to the peer used for diversifying\n"
                                                                 "peer selection (only available if the asmap config flag is set)"},
                             {RPCResult::Type::STR_HEX, "services", "The services offered"},
@@ -209,8 +208,8 @@ static RPCHelpMan getpeerinfo()
         if (stats.m_min_ping_usec < std::numeric_limits<int64_t>::max()) {
             obj.pushKV("minping", ((double)stats.m_min_ping_usec) / 1e6);
         }
-        if (stats.m_ping_wait_usec > 0) {
-            obj.pushKV("pingwait", ((double)stats.m_ping_wait_usec) / 1e6);
+        if (fStateStats && statestats.m_ping_wait_usec > 0) {
+            obj.pushKV("pingwait", ((double)statestats.m_ping_wait_usec) / 1e6);
         }
         obj.pushKV("version", stats.nVersion);
         // Use the sanitized form of subver here, to avoid tricksy remote peers from
@@ -587,7 +586,7 @@ static RPCHelpMan getnetworkinfo()
                         {
                             {RPCResult::Type::OBJ, "", "",
                             {
-                                {RPCResult::Type::STR, "name", "network (ipv4, ipv6 or onion)"},
+                                {RPCResult::Type::STR, "name", "network (" + Join(GetNetworkNames(), ", ") + ")"},
                                 {RPCResult::Type::BOOL, "limited", "is the network limited using -onlynet?"},
                                 {RPCResult::Type::BOOL, "reachable", "is the network reachable?"},
                                 {RPCResult::Type::STR, "proxy", "(\"host:port\") the proxy that is used for this network, or empty if none"},
