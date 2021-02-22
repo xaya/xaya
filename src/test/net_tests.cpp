@@ -192,14 +192,15 @@ BOOST_AUTO_TEST_CASE(cnode_simple_test)
         id++, NODE_NETWORK, hSocket, addr,
         /* nKeyedNetGroupIn = */ 0,
         /* nLocalHostNonceIn = */ 0,
-        CAddress(), pszDest, ConnectionType::OUTBOUND_FULL_RELAY);
+        CAddress(), pszDest, ConnectionType::OUTBOUND_FULL_RELAY,
+        /* inbound_onion = */ false);
     BOOST_CHECK(pnode1->IsFullOutboundConn() == true);
     BOOST_CHECK(pnode1->IsManualConn() == false);
     BOOST_CHECK(pnode1->IsBlockOnlyConn() == false);
     BOOST_CHECK(pnode1->IsFeelerConn() == false);
     BOOST_CHECK(pnode1->IsAddrFetchConn() == false);
     BOOST_CHECK(pnode1->IsInboundConn() == false);
-    BOOST_CHECK(pnode1->IsInboundOnion() == false);
+    BOOST_CHECK(pnode1->m_inbound_onion == false);
     BOOST_CHECK_EQUAL(pnode1->ConnectedThroughNetwork(), Network::NET_IPV4);
 
     std::unique_ptr<CNode> pnode2 = MakeUnique<CNode>(
@@ -214,7 +215,7 @@ BOOST_AUTO_TEST_CASE(cnode_simple_test)
     BOOST_CHECK(pnode2->IsFeelerConn() == false);
     BOOST_CHECK(pnode2->IsAddrFetchConn() == false);
     BOOST_CHECK(pnode2->IsInboundConn() == true);
-    BOOST_CHECK(pnode2->IsInboundOnion() == false);
+    BOOST_CHECK(pnode2->m_inbound_onion == false);
     BOOST_CHECK_EQUAL(pnode2->ConnectedThroughNetwork(), Network::NET_IPV4);
 
     std::unique_ptr<CNode> pnode3 = MakeUnique<CNode>(
@@ -229,7 +230,7 @@ BOOST_AUTO_TEST_CASE(cnode_simple_test)
     BOOST_CHECK(pnode3->IsFeelerConn() == false);
     BOOST_CHECK(pnode3->IsAddrFetchConn() == false);
     BOOST_CHECK(pnode3->IsInboundConn() == false);
-    BOOST_CHECK(pnode3->IsInboundOnion() == false);
+    BOOST_CHECK(pnode3->m_inbound_onion == false);
     BOOST_CHECK_EQUAL(pnode3->ConnectedThroughNetwork(), Network::NET_IPV4);
 
     std::unique_ptr<CNode> pnode4 = MakeUnique<CNode>(
@@ -244,7 +245,7 @@ BOOST_AUTO_TEST_CASE(cnode_simple_test)
     BOOST_CHECK(pnode4->IsFeelerConn() == false);
     BOOST_CHECK(pnode4->IsAddrFetchConn() == false);
     BOOST_CHECK(pnode4->IsInboundConn() == true);
-    BOOST_CHECK(pnode4->IsInboundOnion() == true);
+    BOOST_CHECK(pnode4->m_inbound_onion == true);
     BOOST_CHECK_EQUAL(pnode4->ConnectedThroughNetwork(), Network::NET_ONION);
 }
 
@@ -679,7 +680,7 @@ BOOST_AUTO_TEST_CASE(ipv4_peer_with_ipv6_addrMe_test)
     in_addr ipv4AddrPeer;
     ipv4AddrPeer.s_addr = 0xa0b0c001;
     CAddress addr = CAddress(CService(ipv4AddrPeer, 7777), NODE_NETWORK);
-    std::unique_ptr<CNode> pnode = MakeUnique<CNode>(0, NODE_NETWORK, INVALID_SOCKET, addr, 0, 0, CAddress{}, std::string{}, ConnectionType::OUTBOUND_FULL_RELAY);
+    std::unique_ptr<CNode> pnode = MakeUnique<CNode>(0, NODE_NETWORK, INVALID_SOCKET, addr, /* nKeyedNetGroupIn */ 0, /* nLocalHostNonceIn */ 0, CAddress{}, /* pszDest */ std::string{}, ConnectionType::OUTBOUND_FULL_RELAY, /* inbound_onion */ false);
     pnode->fSuccessfullyConnected.store(true);
 
     // the peer claims to be reaching us via IPv6
@@ -690,7 +691,7 @@ BOOST_AUTO_TEST_CASE(ipv4_peer_with_ipv6_addrMe_test)
     pnode->SetAddrLocal(addrLocal);
 
     // before patch, this causes undefined behavior detectable with clang's -fsanitize=memory
-    AdvertiseLocal(&*pnode);
+    GetLocalAddrForPeer(&*pnode);
 
     // suppress no-checks-run warning; if this test fails, it's by triggering a sanitizer
     BOOST_CHECK(1);
@@ -793,7 +794,7 @@ std::vector<NodeEvictionCandidate> GetRandomNodeEvictionCandidates(const int n_c
         candidates.push_back({
             /* id */ id,
             /* nTimeConnected */ static_cast<int64_t>(random_context.randrange(100)),
-            /* nMinPingUsecTime */ static_cast<int64_t>(random_context.randrange(100)),
+            /* m_min_ping_time */ static_cast<int64_t>(random_context.randrange(100)),
             /* nLastBlockTime */ static_cast<int64_t>(random_context.randrange(100)),
             /* nLastTXTime */ static_cast<int64_t>(random_context.randrange(100)),
             /* fRelevantServices */ random_context.randbool(),
@@ -853,7 +854,7 @@ BOOST_AUTO_TEST_CASE(node_eviction_test)
             // from eviction.
             BOOST_CHECK(!IsEvicted(
                 number_of_nodes, [](NodeEvictionCandidate& candidate) {
-                    candidate.nMinPingUsecTime = candidate.id;
+                    candidate.m_min_ping_time = candidate.id;
                 },
                 {0, 1, 2, 3, 4, 5, 6, 7}, random_context));
 
@@ -900,7 +901,7 @@ BOOST_AUTO_TEST_CASE(node_eviction_test)
             BOOST_CHECK(!IsEvicted(
                 number_of_nodes, [number_of_nodes](NodeEvictionCandidate& candidate) {
                     candidate.nKeyedNetGroup = number_of_nodes - candidate.id; // 4 protected
-                    candidate.nMinPingUsecTime = candidate.id;                 // 8 protected
+                    candidate.m_min_ping_time = candidate.id;                 // 8 protected
                     candidate.nLastTXTime = number_of_nodes - candidate.id;    // 4 protected
                     candidate.nLastBlockTime = number_of_nodes - candidate.id; // 4 protected
                 },

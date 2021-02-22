@@ -148,8 +148,9 @@ SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log --format=%at -1)}"
 time-machine() {
     # shellcheck disable=SC2086
     guix time-machine --url=https://github.com/dongcarl/guix.git \
-                      --commit=b066c25026f21fb57677aa34692a5034338e7ee3 \
+                      --commit=7d6bd44da57926e0d4af25eba723a61c82beef98 \
                       --max-jobs="$MAX_JOBS" \
+                      --keep-failed \
                       ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"} \
                       ${ADDITIONAL_GUIX_COMMON_FLAGS} ${ADDITIONAL_GUIX_TIMEMACHINE_FLAGS} \
                       -- "$@"
@@ -179,6 +180,11 @@ excluding the SDK directory. Practically speaking, this means that all ignored
 and untracked files and directories will be wiped, allowing you to start anew.
 EOF
 }
+
+# Create SOURCES_PATH and BASE_CACHE if they are non-empty so that we can map
+# them into the container
+[ -z "$SOURCES_PATH" ] || mkdir -p "$SOURCES_PATH"
+[ -z "$BASE_CACHE" ]   || mkdir -p "$BASE_CACHE"
 
 # Deterministically build Bitcoin Core
 # shellcheck disable=SC2153
@@ -254,6 +260,12 @@ EOF
         #     make the downloaded depends sources available to it. The sources
         #     should have been downloaded prior to this invocation.
         #
+        #   --keep-failed     keep build tree of failed builds
+        #
+        #     When builds of the Guix environment itself (not Bitcoin Core)
+        #     fail, it is useful for the build tree to be kept for debugging
+        #     purposes.
+        #
         #  ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"}
         #
         #                     fetch substitute from SUBSTITUTE_URLS if they are
@@ -274,7 +286,9 @@ EOF
                                  --share="$OUTDIR"=/outdir \
                                  --expose="$(git rev-parse --git-common-dir)" \
                                  ${SOURCES_PATH:+--share="$SOURCES_PATH"} \
+                                 ${BASE_CACHE:+--share="$BASE_CACHE"} \
                                  --max-jobs="$MAX_JOBS" \
+                                 --keep-failed \
                                  ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"} \
                                  ${ADDITIONAL_GUIX_COMMON_FLAGS} ${ADDITIONAL_GUIX_ENVIRONMENT_FLAGS} \
                                  -- env HOST="$host" \
@@ -282,6 +296,7 @@ EOF
                                         SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:?unable to determine value}" \
                                         ${V:+V=1} \
                                         ${SOURCES_PATH:+SOURCES_PATH="$SOURCES_PATH"} \
+                                        ${BASE_CACHE:+BASE_CACHE="$BASE_CACHE"} \
                                         DISTSRC="$(DISTSRC_BASE=/distsrc-base && distsrc_for_host "$HOST")" \
                                         OUTDIR=/outdir \
                                       bash -c "cd /bitcoin && bash contrib/guix/libexec/build.sh"

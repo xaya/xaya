@@ -8,11 +8,8 @@
 #include <chainparamsseeds.h>
 #include <consensus/merkle.h>
 #include <hash.h> // for signet block challenge hash
-#include <pow.h>
 #include <powdata.h>
-#include <tinyformat.h>
 #include <util/system.h>
-#include <util/strencodings.h>
 #include <versionbitsinfo.h>
 
 #include <algorithm>
@@ -237,7 +234,7 @@ public:
 
         bech32_hrp = "chi";
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
+        vFixedSeeds = std::vector<SeedSpec6>(std::begin(pnSeed6_main), std::end(pnSeed6_main));
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
@@ -250,6 +247,10 @@ public:
                 { 340000, uint256S("e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47")},
                 {1234000, uint256S("a853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897")},
             }
+        };
+
+        m_assumeutxo_data = MapAssumeutxo{
+         // TODO to be specified in a future patch.
         };
 
         chainTxData = ChainTxData{
@@ -340,7 +341,10 @@ public:
 
         bech32_hrp = "chitn";
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
+        // FIXME: Namecoin has no fixed seeds for testnet, so that the line
+        // below errors out.  Use it once we have testnet seeds.
+        //vFixedSeeds = std::vector<SeedSpec6>(std::begin(pnSeed6_test), std::end(pnSeed6_test));
+        vFixedSeeds.clear();
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
@@ -353,6 +357,10 @@ public:
                 { 11000, uint256S("57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4")},
                 { 70000, uint256S("e2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1")},
             }
+        };
+
+        m_assumeutxo_data = MapAssumeutxo{
+            // TODO to be specified in a future patch.
         };
 
         chainTxData = ChainTxData{
@@ -526,7 +534,7 @@ public:
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
         nDefaultPort = 18495;
-        nPruneAfterHeight = 1000;
+        nPruneAfterHeight = gArgs.GetBoolArg("-fastprune", false) ? 100 : 1000;
         m_assumed_blockchain_size = 0;
         m_assumed_chain_state_size = 0;
 
@@ -551,6 +559,17 @@ public:
             {
                 {0, uint256S("18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619")},
             }
+        };
+
+        m_assumeutxo_data = MapAssumeutxo{
+            {
+                110,
+                {uint256S("0xeae8514d05e697ce60a588456a6733b6663e12c6de1b5b65f9541beb524a8f97"), 110},
+            },
+            {
+                210,
+                {uint256S("0x9c5ed99ef98544b34f8920b6d1802f72ac28ae6e2bd2bd4c316ff10c230df3f2"), 210},
+            },
         };
 
         chainTxData = ChainTxData{
@@ -662,6 +681,12 @@ void SelectParams(const std::string& network)
 {
     SelectBaseParams(network);
     globalChainParams = CreateChainParams(gArgs, network);
+}
+
+std::ostream& operator<<(std::ostream& o, const AssumeutxoData& aud)
+{
+    o << strprintf("AssumeutxoData(%s, %s)", aud.hash_serialized.ToString(), aud.nChainTx);
+    return o;
 }
 
 int64_t
