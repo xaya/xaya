@@ -43,10 +43,19 @@ int64_t GetTimeMicros();
 /** Returns the system time (not mockable) */
 int64_t GetSystemTimeInSeconds(); // Like GetTime(), but not mockable
 
-/** For testing. Set e.g. with the setmocktime rpc, or -mocktime argument */
+/**
+ * DEPRECATED
+ * Use SetMockTime with chrono type
+ *
+ * @param[in] nMockTimeIn Time in seconds.
+ */
 void SetMockTime(int64_t nMockTimeIn);
+
+/** For testing. Set e.g. with the setmocktime rpc, or -mocktime argument */
+void SetMockTime(std::chrono::seconds mock_time_in);
+
 /** For testing */
-int64_t GetMockTime();
+std::chrono::seconds GetMockTime();
 
 /** Return system time (or mocked time, if set) */
 template <typename T>
@@ -69,5 +78,8 @@ struct timeval MillisToTimeval(int64_t nTimeout);
  * Convert milliseconds to a struct timeval for e.g. select.
  */
 struct timeval MillisToTimeval(std::chrono::milliseconds ms);
+
+/** Sanity check epoch match normal Unix epoch */
+bool ChronoSanityCheck();
 
 #endif // BITCOIN_UTIL_TIME_H
