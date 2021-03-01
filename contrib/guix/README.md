@@ -13,11 +13,9 @@ We achieve bootstrappability by using Guix as a functional package manager.
 
 Conservatively, a x86_64 machine with:
 
-- 4GB of free disk space on the partition that /gnu/store will reside in
-- 24GB of free disk space on the partition that the Bitcoin Core git repository
-  resides in
-
-> Note: these requirements are slightly less onerous than those of Gitian builds
+- 16GB of free disk space on the partition that /gnu/store will reside in
+- 8GB of free disk space per platform triple you're planning on building (see
+  the `HOSTS` environment variable description)
 
 ## Setup
 
@@ -119,6 +117,13 @@ find output/ -type f -print0 | sort -z | xargs -r0 sha256sum
   Set the depends tree cache for built packages. This is passed through to the
   depends tree. Setting this to the same directory across multiple builds of the
   depends tree can eliminate unnecessary building of packages.
+
+* _**SDK_PATH**_
+
+  Set the path where _extracted_ SDKs can be found. This is passed through to
+  the depends tree. Note that this is should be set to the _parent_ directory of
+  the actual SDK (e.g. SDK_PATH=$HOME/Downloads/macOS-SDKs instead of
+  $HOME/Downloads/macOS-SDKs/Xcode-11.3.1-11C505-extracted-SDK-with-libcxx-headers).
 
 * _**MAX_JOBS**_
 
