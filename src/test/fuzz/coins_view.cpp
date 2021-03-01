@@ -1,4 +1,4 @@
-// Copyright (c) 2020 The Bitcoin Core developers
+// Copyright (c) 2020-2021 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,7 +30,7 @@ const Coin EMPTY_COIN{};
 
 void initialize_coins_view()
 {
-    static const auto testing_setup = MakeFuzzingContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
 }
 
 FUZZ_TARGET_INIT(coins_view, initialize_coins_view)

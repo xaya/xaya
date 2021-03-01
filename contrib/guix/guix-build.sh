@@ -69,7 +69,7 @@ fi
 ################
 
 # Default to building for all supported HOSTs (overridable by environment)
-export HOSTS="${HOSTS:-x86_64-linux-gnu arm-linux-gnueabihf aarch64-linux-gnu riscv64-linux-gnu
+export HOSTS="${HOSTS:-x86_64-linux-gnu arm-linux-gnueabihf aarch64-linux-gnu riscv64-linux-gnu powerpc64-linux-gnu powerpc64le-linux-gnu
                        x86_64-w64-mingw32
                        x86_64-apple-darwin18}"
 
@@ -136,9 +136,24 @@ done
 # environment)
 MAX_JOBS="${MAX_JOBS:-$(nproc)}"
 
+# Usage: host_to_commonname HOST
+#
+#   HOST: The current platform triple we're building for
+#
+host_to_commonname() {
+    case "$1" in
+        *darwin*) echo osx ;;
+        *mingw*)  echo win ;;
+        *linux*)  echo linux ;;
+        *)        exit 1 ;;
+    esac
+}
+
 # Download the depends sources now as we won't have internet access in the build
 # container
-make -C "${PWD}/depends" -j"$MAX_JOBS" download ${V:+V=1} ${SOURCES_PATH:+SOURCES_PATH="$SOURCES_PATH"}
+for host in $HOSTS; do
+  make -C "${PWD}/depends" -j"$MAX_JOBS" download-"$(host_to_commonname "$host")" ${V:+V=1} ${SOURCES_PATH:+SOURCES_PATH="$SOURCES_PATH"}
+done
 
 # Determine the reference time used for determinism (overridable by environment)
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log --format=%at -1)}"
@@ -148,7 +163,7 @@ SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log --format=%at -1)}"
 time-machine() {
     # shellcheck disable=SC2086
     guix time-machine --url=https://github.com/dongcarl/guix.git \
-                      --commit=7d6bd44da57926e0d4af25eba723a61c82beef98 \
+                      --commit=6c9d16db962a6f7155571b36eced681fd2889e23 \
                       --max-jobs="$MAX_JOBS" \
                       --keep-failed \
                       ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"} \
@@ -181,10 +196,11 @@ and untracked files and directories will be wiped, allowing you to start anew.
 EOF
 }
 
-# Create SOURCES_PATH and BASE_CACHE if they are non-empty so that we can map
-# them into the container
+# Create SOURCES_PATH, BASE_CACHE, and SDK_PATH if they are non-empty so that we
+# can map them into the container
 [ -z "$SOURCES_PATH" ] || mkdir -p "$SOURCES_PATH"
 [ -z "$BASE_CACHE" ]   || mkdir -p "$BASE_CACHE"
+[ -z "$SDK_PATH" ]     || mkdir -p "$SDK_PATH"
 
 # Deterministically build Bitcoin Core
 # shellcheck disable=SC2153
@@ -287,6 +303,7 @@ EOF
                                  --expose="$(git rev-parse --git-common-dir)" \
                                  ${SOURCES_PATH:+--share="$SOURCES_PATH"} \
                                  ${BASE_CACHE:+--share="$BASE_CACHE"} \
+                                 ${SDK_PATH:+--share="$SDK_PATH"} \
                                  --max-jobs="$MAX_JOBS" \
                                  --keep-failed \
                                  ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"} \
@@ -297,6 +314,7 @@ EOF
                                         ${V:+V=1} \
                                         ${SOURCES_PATH:+SOURCES_PATH="$SOURCES_PATH"} \
                                         ${BASE_CACHE:+BASE_CACHE="$BASE_CACHE"} \
+                                        ${SDK_PATH:+SDK_PATH="$SDK_PATH"} \
                                         DISTSRC="$(DISTSRC_BASE=/distsrc-base && distsrc_for_host "$HOST")" \
                                         OUTDIR=/outdir \
                                       bash -c "cd /bitcoin && bash contrib/guix/libexec/build.sh"

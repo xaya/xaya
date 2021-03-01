@@ -3,6 +3,16 @@ export LC_ALL=C
 set -e -o pipefail
 export TZ=UTC
 
+# Althought Guix _does_ set umask when building its own packages (in our case,
+# this is all packages in manifest.scm), it does not set it for `guix
+# environment`. It does make sense for at least `guix environment --container`
+# to set umask, so if that change gets merged upstream and we bump the
+# time-machine to a commit which includes the aforementioned change, we can
+# remove this line.
+#
+# This line should be placed before any commands which creates files.
+umask 0022
+
 if [ -n "$V" ]; then
     # Print both unexpanded (-v) and expanded (-x) forms of commands as they are
     # read from this file.
@@ -136,12 +146,14 @@ case "$HOST" in
     *linux*)
         glibc_dynamic_linker=$(
             case "$HOST" in
-                i686-linux-gnu)      echo /lib/ld-linux.so.2 ;;
-                x86_64-linux-gnu)    echo /lib64/ld-linux-x86-64.so.2 ;;
-                arm-linux-gnueabihf) echo /lib/ld-linux-armhf.so.3 ;;
-                aarch64-linux-gnu)   echo /lib/ld-linux-aarch64.so.1 ;;
-                riscv64-linux-gnu)   echo /lib/ld-linux-riscv64-lp64d.so.1 ;;
-                *)                   exit 1 ;;
+                i686-linux-gnu)        echo /lib/ld-linux.so.2 ;;
+                x86_64-linux-gnu)      echo /lib64/ld-linux-x86-64.so.2 ;;
+                arm-linux-gnueabihf)   echo /lib/ld-linux-armhf.so.3 ;;
+                aarch64-linux-gnu)     echo /lib/ld-linux-aarch64.so.1 ;;
+                riscv64-linux-gnu)     echo /lib/ld-linux-riscv64-lp64d.so.1 ;;
+                powerpc64-linux-gnu)   echo /lib/ld64.so.1;;
+                powerpc64le-linux-gnu) echo /lib/ld64.so.2;;
+                *)                     exit 1 ;;
             esac
         )
         ;;
@@ -172,6 +184,7 @@ make -C depends --jobs="$MAX_JOBS" HOST="$HOST" \
                                    ${V:+V=1} \
                                    ${SOURCES_PATH+SOURCES_PATH="$SOURCES_PATH"} \
                                    ${BASE_CACHE+BASE_CACHE="$BASE_CACHE"} \
+                                   ${SDK_PATH+SDK_PATH="$SDK_PATH"} \
                                    i686_linux_CC=i686-linux-gnu-gcc \
                                    i686_linux_CXX=i686-linux-gnu-g++ \
                                    i686_linux_AR=i686-linux-gnu-ar \
@@ -229,6 +242,10 @@ HOST_CXXFLAGS="$HOST_CFLAGS"
 case "$HOST" in
     *linux*)  HOST_LDFLAGS="-Wl,--as-needed -Wl,--dynamic-linker=$glibc_dynamic_linker -static-libstdc++ -Wl,-O2" ;;
     *mingw*)  HOST_LDFLAGS="-Wl,--no-insert-timestamp" ;;
+esac
+
+case "$HOST" in
+    powerpc64-linux-*) HOST_LDFLAGS="${HOST_LDFLAGS} -Wl,-z,noexecstack" ;;
 esac
 
 # Make $HOST-specific native binaries from depends available in $PATH
