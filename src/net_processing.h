@@ -15,7 +15,6 @@ class CTxMemPool;
 class ChainstateManager;
 
 extern RecursiveMutex cs_main;
-extern RecursiveMutex g_cs_orphans;
 
 /** Default for -maxorphantx, maximum number of orphan transactions kept in memory */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS = 100;
@@ -30,7 +29,7 @@ struct CNodeStateStats {
     int nSyncHeight = -1;
     int nCommonHeight = -1;
     int m_starting_height = -1;
-    int64_t m_ping_wait_usec;
+    std::chrono::microseconds m_ping_wait;
     std::vector<int> vHeightInFlight;
 };
 

@@ -10,6 +10,7 @@
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
 #include <test/fuzz/util.h>
+#include <test/util/setup_common.h>
 #include <util/translation.h>
 
 #include <cstdint>
@@ -94,7 +95,7 @@ FUZZ_TARGET_INIT(connman, initialize_connman)
                 (void)connman.GetDeterministicRandomizer(fuzzed_data_provider.ConsumeIntegral<uint64_t>());
             },
             [&] {
-                (void)connman.GetNodeCount(fuzzed_data_provider.PickValueInArray({CConnman::CONNECTIONS_NONE, CConnman::CONNECTIONS_IN, CConnman::CONNECTIONS_OUT, CConnman::CONNECTIONS_ALL}));
+                (void)connman.GetNodeCount(fuzzed_data_provider.PickValueInArray({ConnectionDirection::None, ConnectionDirection::In, ConnectionDirection::Out, ConnectionDirection::Both}));
             },
             [&] {
                 connman.MarkAddressGood(random_address);
@@ -104,7 +105,9 @@ FUZZ_TARGET_INIT(connman, initialize_connman)
             },
             [&] {
                 // Limit now to int32_t to avoid signed integer overflow
-                (void)connman.PoissonNextSendInbound(fuzzed_data_provider.ConsumeIntegral<int32_t>(), fuzzed_data_provider.ConsumeIntegral<int>());
+                (void)connman.PoissonNextSendInbound(
+                        std::chrono::microseconds{fuzzed_data_provider.ConsumeIntegral<int32_t>()},
+                        std::chrono::seconds{fuzzed_data_provider.ConsumeIntegral<int>()});
             },
             [&] {
                 CSerializedNetMsg serialized_net_msg;
