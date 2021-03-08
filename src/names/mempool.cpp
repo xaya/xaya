@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -238,10 +238,11 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 }
 
 void
-CNameMemPool::check (ChainstateManager& chainman, const CCoinsView& coins) const
+CNameMemPool::check (ChainstateManager& chainman, CChainState& active_chainstate) const
 {
   AssertLockHeld (pool.cs);
 
+  const auto& coins = active_chainstate.CoinsTip ();
   const uint256 blockHash = coins.GetBestBlock ();
   int nHeight;
   if (blockHash.IsNull())

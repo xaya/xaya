@@ -57,7 +57,8 @@ namespace BCLog {
         QT          = (1 << 19),
         LEVELDB     = (1 << 20),
         VALIDATION  = (1 << 21),
-        NAMES       = (1 << 22),
+        I2P         = (1 << 22),
+        NAMES       = (1 << 23),
         ALL         = ~(uint32_t)0,
     };
 

@@ -149,6 +149,7 @@ BITCOIN_CORE_H = \
   fs.h \
   httprpc.h \
   httpserver.h \
+  i2p.h \
   index/base.h \
   index/blockfilterindex.h \
   index/disktxpos.h \
@@ -233,8 +234,9 @@ BITCOIN_CORE_H = \
   timedata.h \
   torcontrol.h \
   txdb.h \
-  txrequest.h \
   txmempool.h \
+  txorphanage.h \
+  txrequest.h \
   undo.h \
   util/asmap.h \
   util/bip32.h \
@@ -251,6 +253,7 @@ BITCOIN_CORE_H = \
   util/message.h \
   util/moneystr.h \
   util/rbf.h \
+  util/readwritefile.h \
   util/ref.h \
   util/settings.h \
   util/sock.h \
@@ -309,7 +312,7 @@ libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 # Contains code accessing mempool and chain state that is meant to be separated
 # from wallet and gui code (see node/README.md). Shared code should go in
 # libbitcoin_common or libbitcoin_util libraries, instead.
-libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(NATPMP_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
   addrdb.cpp \
@@ -323,6 +326,7 @@ libbitcoin_server_a_SOURCES = \
   flatfile.cpp \
   httprpc.cpp \
   httpserver.cpp \
+  i2p.cpp \
   index/base.cpp \
   index/blockfilterindex.cpp \
   index/namehash.cpp \
@@ -361,8 +365,9 @@ libbitcoin_server_a_SOURCES = \
   timedata.cpp \
   torcontrol.cpp \
   txdb.cpp \
-  txrequest.cpp \
   txmempool.cpp \
+  txorphanage.cpp \
+  txrequest.cpp \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
@@ -594,6 +599,7 @@ libbitcoin_util_a_SOURCES = \
   util/message.cpp \
   util/moneystr.cpp \
   util/rbf.cpp \
+  util/readwritefile.cpp \
   util/settings.cpp \
   util/threadnames.cpp \
   util/spanparsing.cpp \

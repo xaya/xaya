@@ -9,7 +9,7 @@ set -e -o pipefail
 ################
 # Check 1: Make sure that we can invoke required tools
 ################
-for cmd in git make guix cat mkdir; do
+for cmd in git make guix cat mkdir curl; do
     if ! command -v "$cmd" > /dev/null 2>&1; then
         echo "ERR: This script requires that '$cmd' is installed and available in your \$PATH"
         exit 1
@@ -163,7 +163,7 @@ SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git log --format=%at -1)}"
 time-machine() {
     # shellcheck disable=SC2086
     guix time-machine --url=https://github.com/dongcarl/guix.git \
-                      --commit=6c9d16db962a6f7155571b36eced681fd2889e23 \
+                      --commit=490e39ff303f4f6873a04bfb8253755bdae1b29c \
                       --max-jobs="$MAX_JOBS" \
                       --keep-failed \
                       ${SUBSTITUTE_URLS:+--substitute-urls="$SUBSTITUTE_URLS"} \

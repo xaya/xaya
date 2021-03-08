@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -323,14 +323,14 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
   ChainstateManager& chainman = g_chainman;
-  CCoinsViewCache view(&chainman.ActiveChainstate ().CoinsTip ());
+  auto& view = chainman.ActiveChainstate ().CoinsTip ();
 
   const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);
 
-  mempool.checkNames (chainman, &view);
+  mempool.checkNames (chainman, chainman.ActiveChainstate ());
 }
 
 namespace

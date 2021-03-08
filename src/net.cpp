@@ -11,8 +11,10 @@
 
 #include <banman.h>
 #include <clientversion.h>
+#include <compat.h>
 #include <consensus/consensus.h>
 #include <crypto/sha256.h>
+#include <i2p.h>
 #include <net_permissions.h>
 #include <netbase.h>
 #include <node/ui_interface.h>
@@ -71,16 +73,6 @@ static constexpr std::chrono::seconds MAX_UPLOAD_TIMEFRAME{60 * 60 * 24};
 
 // We add a random period time (0 to 1 seconds) to feeler connections to prevent synchronization.
 #define FEELER_SLEEP_WINDOW 1
-
-// MSG_NOSIGNAL is not available on some platforms, if it doesn't exist define it as 0
-#if !defined(MSG_NOSIGNAL)
-#define MSG_NOSIGNAL 0
-#endif
-
-// MSG_DONTWAIT is not available on some platforms, if it doesn't exist define it as 0
-#if !defined(MSG_DONTWAIT)
-#define MSG_DONTWAIT 0
-#endif
 
 /** Used to pass flags to the Bind() function */
 enum BindFlags {
@@ -430,10 +422,20 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     bool connected = false;
     std::unique_ptr<Sock> sock;
     proxyType proxy;
+    CAddress addr_bind;
+    assert(!addr_bind.IsValid());
+
     if (addrConnect.IsValid()) {
         bool proxyConnectionFailed = false;
 
-        if (GetProxy(addrConnect.GetNetwork(), proxy)) {
+        if (addrConnect.GetNetwork() == NET_I2P && m_i2p_sam_session.get() != nullptr) {
+            i2p::Connection conn;
+            if (m_i2p_sam_session->Connect(addrConnect, conn, proxyConnectionFailed)) {
+                connected = true;
+                sock = std::make_unique<Sock>(std::move(conn.sock));
+                addr_bind = CAddress{conn.me, NODE_NONE};
+            }
+        } else if (GetProxy(addrConnect.GetNetwork(), proxy)) {
             sock = CreateSock(proxy.proxy);
             if (!sock) {
                 return nullptr;
@@ -473,7 +475,9 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     // Add node
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
-    CAddress addr_bind = GetBindAddress(sock->Get());
+    if (!addr_bind.IsValid()) {
+        addr_bind = GetBindAddress(sock->Get());
+    }
     CNode* pnode = new CNode(id, nLocalServices, sock->Release(), addrConnect, CalculateKeyedNetGroup(addrConnect), nonce, addr_bind, pszDest ? pszDest : "", conn_type, /* inbound_onion */ false);
     pnode->AddRef();
 
@@ -599,8 +603,8 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
         stats.minFeeFilter = 0;
     }
 
-    stats.m_ping_usec = m_last_ping_time;
-    stats.m_min_ping_usec = m_min_ping_time;
+    X(m_last_ping_time);
+    X(m_min_ping_time);
 
     // Leave string empty if addrLocal invalid (not filled in yet)
     CService addrLocalUnlocked = GetAddrLocal();
@@ -1005,17 +1009,35 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     socklen_t len = sizeof(sockaddr);
     SOCKET hSocket = accept(hListenSocket.socket, (struct sockaddr*)&sockaddr, &len);
     CAddress addr;
-    int nInbound = 0;
-    int nMaxInbound = nMaxConnections - m_max_outbound;
 
-    if (hSocket != INVALID_SOCKET) {
-        if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr)) {
-            LogPrintf("Warning: Unknown socket family\n");
+    if (hSocket == INVALID_SOCKET) {
+        const int nErr = WSAGetLastError();
+        if (nErr != WSAEWOULDBLOCK) {
+            LogPrintf("socket error accept failed: %s\n", NetworkErrorString(nErr));
         }
+        return;
     }
+
+    if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr)) {
+        LogPrintf("Warning: Unknown socket family\n");
+    }
+
+    const CAddress addr_bind = GetBindAddress(hSocket);
 
     NetPermissionFlags permissionFlags = NetPermissionFlags::PF_NONE;
     hListenSocket.AddSocketPermissionFlags(permissionFlags);
+
+    CreateNodeFromAcceptedSocket(hSocket, permissionFlags, addr_bind, addr);
+}
+
+void CConnman::CreateNodeFromAcceptedSocket(SOCKET hSocket,
+                                            NetPermissionFlags permissionFlags,
+                                            const CAddress& addr_bind,
+                                            const CAddress& addr)
+{
+    int nInbound = 0;
+    int nMaxInbound = nMaxConnections - m_max_outbound;
+
     AddWhitelistPermissionFlags(permissionFlags, addr);
     if (NetPermissions::HasFlag(permissionFlags, NetPermissionFlags::PF_ISIMPLICIT)) {
         NetPermissions::ClearFlag(permissionFlags, PF_ISIMPLICIT);
@@ -1030,14 +1052,6 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
         for (const CNode* pnode : vNodes) {
             if (pnode->IsInboundConn()) nInbound++;
         }
-    }
-
-    if (hSocket == INVALID_SOCKET)
-    {
-        int nErr = WSAGetLastError();
-        if (nErr != WSAEWOULDBLOCK)
-            LogPrintf("socket error accept failed: %s\n", NetworkErrorString(nErr));
-        return;
     }
 
     if (!fNetworkActive) {
@@ -1087,7 +1101,6 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
 
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
-    CAddress addr_bind = GetBindAddress(hSocket);
 
     ServiceFlags nodeServices = nLocalServices;
     if (NetPermissions::HasFlag(permissionFlags, PF_BLOOMFILTER)) {
@@ -1748,12 +1761,11 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
     }
 
     // Initiate network connections
-    auto start = GetTime<std::chrono::seconds>();
+    auto start = GetTime<std::chrono::microseconds>();
 
     // Minimum time before next feeler connection (in microseconds).
-
-    int64_t nNextFeeler = PoissonNextSend(count_microseconds(start), FEELER_INTERVAL);
-    int64_t nNextExtraBlockRelay = PoissonNextSend(count_microseconds(start), EXTRA_BLOCK_RELAY_ONLY_PEER_INTERVAL);
+    auto next_feeler = PoissonNextSend(start, FEELER_INTERVAL);
+    auto next_extra_block_relay = PoissonNextSend(start, EXTRA_BLOCK_RELAY_ONLY_PEER_INTERVAL);
     const bool dnsseed = gArgs.GetBoolArg("-dnsseed", DEFAULT_DNSSEED);
     bool add_fixed_seeds = gArgs.GetBoolArg("-fixedseeds", DEFAULT_FIXEDSEEDS);
 
@@ -1836,7 +1848,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         }
 
         ConnectionType conn_type = ConnectionType::OUTBOUND_FULL_RELAY;
-        int64_t nTime = GetTimeMicros();
+        auto now = GetTime<std::chrono::microseconds>();
         bool anchor = false;
         bool fFeeler = false;
 
@@ -1848,7 +1860,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         // GetTryNewOutboundPeer() gets set when a stale tip is detected, so we
         // try opening an additional OUTBOUND_FULL_RELAY connection. If none of
         // these conditions are met, check to see if it's time to try an extra
-        // block-relay-only peer (to confirm our tip is current, see below) or the nNextFeeler
+        // block-relay-only peer (to confirm our tip is current, see below) or the next_feeler
         // timer to decide if we should open a FEELER.
 
         if (!m_anchors.empty() && (nOutboundBlockRelay < m_max_outbound_block_relay)) {
@@ -1860,7 +1872,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             conn_type = ConnectionType::BLOCK_RELAY;
         } else if (GetTryNewOutboundPeer()) {
             // OUTBOUND_FULL_RELAY
-        } else if (nTime > nNextExtraBlockRelay && m_start_extra_block_relay_peers) {
+        } else if (now > next_extra_block_relay && m_start_extra_block_relay_peers) {
             // Periodically connect to a peer (using regular outbound selection
             // methodology from addrman) and stay connected long enough to sync
             // headers, but not much else.
@@ -1882,10 +1894,10 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             // Because we can promote these connections to block-relay-only
             // connections, they do not get their own ConnectionType enum
             // (similar to how we deal with extra outbound peers).
-            nNextExtraBlockRelay = PoissonNextSend(nTime, EXTRA_BLOCK_RELAY_ONLY_PEER_INTERVAL);
+            next_extra_block_relay = PoissonNextSend(now, EXTRA_BLOCK_RELAY_ONLY_PEER_INTERVAL);
             conn_type = ConnectionType::BLOCK_RELAY;
-        } else if (nTime > nNextFeeler) {
-            nNextFeeler = PoissonNextSend(nTime, FEELER_INTERVAL);
+        } else if (now > next_feeler) {
+            next_feeler = PoissonNextSend(now, FEELER_INTERVAL);
             conn_type = ConnectionType::FEELER;
             fFeeler = true;
         } else {
@@ -2175,6 +2187,45 @@ void CConnman::ThreadMessageHandler()
     }
 }
 
+void CConnman::ThreadI2PAcceptIncoming()
+{
+    static constexpr auto err_wait_begin = 1s;
+    static constexpr auto err_wait_cap = 5min;
+    auto err_wait = err_wait_begin;
+
+    bool advertising_listen_addr = false;
+    i2p::Connection conn;
+
+    while (!interruptNet) {
+
+        if (!m_i2p_sam_session->Listen(conn)) {
+            if (advertising_listen_addr && conn.me.IsValid()) {
+                RemoveLocal(conn.me);
+                advertising_listen_addr = false;
+            }
+
+            interruptNet.sleep_for(err_wait);
+            if (err_wait < err_wait_cap) {
+                err_wait *= 2;
+            }
+
+            continue;
+        }
+
+        if (!advertising_listen_addr) {
+            AddLocal(conn.me, LOCAL_BIND);
+            advertising_listen_addr = true;
+        }
+
+        if (!m_i2p_sam_session->Accept(conn)) {
+            continue;
+        }
+
+        CreateNodeFromAcceptedSocket(conn.sock.Release(), NetPermissionFlags::PF_NONE,
+                                     CAddress{conn.me, NODE_NONE}, CAddress{conn.peer, NODE_NONE});
+    }
+}
+
 bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError, NetPermissionFlags permissions)
 {
     int nOne = 1;
@@ -2374,6 +2425,12 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         return false;
     }
 
+    proxyType i2p_sam;
+    if (GetProxy(NET_I2P, i2p_sam)) {
+        m_i2p_sam_session = std::make_unique<i2p::sam::Session>(GetDataDir() / "i2p_private_key",
+                                                                i2p_sam.proxy, &interruptNet);
+    }
+
     for (const auto& strDest : connOptions.vSeedNodes) {
         AddAddrFetch(strDest);
     }
@@ -2454,6 +2511,12 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     // Process messages
     threadMessageHandler = std::thread(&TraceThread<std::function<void()> >, "msghand", std::function<void()>(std::bind(&CConnman::ThreadMessageHandler, this)));
 
+    if (connOptions.m_i2p_accept_incoming && m_i2p_sam_session.get() != nullptr) {
+        threadI2PAcceptIncoming =
+            std::thread(&TraceThread<std::function<void()>>, "i2paccept",
+                        std::function<void()>(std::bind(&CConnman::ThreadI2PAcceptIncoming, this)));
+    }
+
     // Dump network addresses
     scheduler.scheduleEvery([this] { DumpAddresses(); }, DUMP_PEERS_INTERVAL);
 
@@ -2501,6 +2564,9 @@ void CConnman::Interrupt()
 
 void CConnman::StopThreads()
 {
+    if (threadI2PAcceptIncoming.joinable()) {
+        threadI2PAcceptIncoming.join();
+    }
     if (threadMessageHandler.joinable())
         threadMessageHandler.join();
     if (threadOpenConnections.joinable())
@@ -2597,9 +2663,7 @@ std::vector<CAddress> CConnman::GetAddresses(size_t max_addresses, size_t max_pc
 
 std::vector<CAddress> CConnman::GetAddresses(CNode& requestor, size_t max_addresses, size_t max_pct)
 {
-    SOCKET socket;
-    WITH_LOCK(requestor.cs_hSocket, socket = requestor.hSocket);
-    auto local_socket_bytes = GetBindAddress(socket).GetAddrBytes();
+    auto local_socket_bytes = requestor.addrBind.GetAddrBytes();
     uint64_t cache_id = GetDeterministicRandomizer(RANDOMIZER_ID_ADDRCACHE)
         .Write(requestor.addr.GetNetwork())
         .Write(local_socket_bytes.data(), local_socket_bytes.size())
@@ -2661,15 +2725,15 @@ bool CConnman::RemoveAddedNode(const std::string& strNode)
     return false;
 }
 
-size_t CConnman::GetNodeCount(NumConnections flags)
+size_t CConnman::GetNodeCount(ConnectionDirection flags)
 {
     LOCK(cs_vNodes);
-    if (flags == CConnman::CONNECTIONS_ALL) // Shortcut if we want total
+    if (flags == ConnectionDirection::Both) // Shortcut if we want total
         return vNodes.size();
 
     int nNum = 0;
     for (const auto& pnode : vNodes) {
-        if (flags & (pnode->IsInboundConn() ? CONNECTIONS_IN : CONNECTIONS_OUT)) {
+        if (flags & (pnode->IsInboundConn() ? ConnectionDirection::In : ConnectionDirection::Out)) {
             nNum++;
         }
     }
@@ -2918,20 +2982,21 @@ bool CConnman::ForNode(NodeId id, std::function<bool(CNode* pnode)> func)
     return found != nullptr && NodeFullyConnected(found) && func(found);
 }
 
-int64_t CConnman::PoissonNextSendInbound(int64_t now, int average_interval_seconds)
+std::chrono::microseconds CConnman::PoissonNextSendInbound(std::chrono::microseconds now, std::chrono::seconds average_interval)
 {
-    if (m_next_send_inv_to_incoming < now) {
+    if (m_next_send_inv_to_incoming.load() < now) {
         // If this function were called from multiple threads simultaneously
         // it would possible that both update the next send variable, and return a different result to their caller.
         // This is not possible in practice as only the net processing thread invokes this function.
-        m_next_send_inv_to_incoming = PoissonNextSend(now, average_interval_seconds);
+        m_next_send_inv_to_incoming = PoissonNextSend(now, average_interval);
     }
     return m_next_send_inv_to_incoming;
 }
 
-int64_t PoissonNextSend(int64_t now, int average_interval_seconds)
+std::chrono::microseconds PoissonNextSend(std::chrono::microseconds now, std::chrono::seconds average_interval)
 {
-    return now + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);
+    double unscaled = -log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */);
+    return now + std::chrono::duration_cast<std::chrono::microseconds>(unscaled * average_interval + 0.5us);
 }
 
 CSipHasher CConnman::GetDeterministicRandomizer(uint64_t id) const
