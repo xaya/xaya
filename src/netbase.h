@@ -18,6 +18,7 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 extern int nConnectTimeout;
@@ -27,6 +28,22 @@ extern bool fNameLookup;
 static const int DEFAULT_CONNECT_TIMEOUT = 5000;
 //! -dns default
 static const int DEFAULT_NAME_LOOKUP = true;
+
+enum class ConnectionDirection {
+    None = 0,
+    In = (1U << 0),
+    Out = (1U << 1),
+    Both = (In | Out),
+};
+static inline ConnectionDirection& operator|=(ConnectionDirection& a, ConnectionDirection b) {
+    using underlying = typename std::underlying_type<ConnectionDirection>::type;
+    a = ConnectionDirection(underlying(a) | underlying(b));
+    return a;
+}
+static inline bool operator&(ConnectionDirection a, ConnectionDirection b) {
+    using underlying = typename std::underlying_type<ConnectionDirection>::type;
+    return (underlying(a) & underlying(b));
+}
 
 class proxyType
 {
@@ -38,6 +55,13 @@ public:
 
     CService proxy;
     bool randomize_credentials;
+};
+
+/** Credentials for proxy authentication */
+struct ProxyCredentials
+{
+    std::string username;
+    std::string password;
 };
 
 enum Network ParseNetwork(const std::string& net);
@@ -76,5 +100,7 @@ bool SetSocketNonBlocking(const SOCKET& hSocket, bool fNonBlocking);
 /** Set the TCP_NODELAY flag on a socket */
 bool SetSocketNoDelay(const SOCKET& hSocket);
 void InterruptSocks5(bool interrupt);
+
+bool Socks5(const std::string& strDest, int port, const ProxyCredentials* auth, const Sock& socket);
 
 #endif // BITCOIN_NETBASE_H

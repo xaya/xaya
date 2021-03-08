@@ -322,6 +322,7 @@ BOOST_AUTO_TEST_CASE(cnetaddr_basic)
     BOOST_REQUIRE(addr.IsValid());
     BOOST_REQUIRE(addr.IsTor());
 
+    BOOST_CHECK(!addr.IsI2P());
     BOOST_CHECK(!addr.IsBindAny());
     BOOST_CHECK(addr.IsAddrV1Compatible());
     BOOST_CHECK_EQUAL(addr.ToString(), "6hzph5hv6337r6p2.onion");
@@ -332,6 +333,7 @@ BOOST_AUTO_TEST_CASE(cnetaddr_basic)
     BOOST_REQUIRE(addr.IsValid());
     BOOST_REQUIRE(addr.IsTor());
 
+    BOOST_CHECK(!addr.IsI2P());
     BOOST_CHECK(!addr.IsBindAny());
     BOOST_CHECK(!addr.IsAddrV1Compatible());
     BOOST_CHECK_EQUAL(addr.ToString(), torv3_addr);
@@ -351,6 +353,35 @@ BOOST_AUTO_TEST_CASE(cnetaddr_basic)
 
     // TOR, invalid base32
     BOOST_CHECK(!addr.SetSpecial(std::string{"mf*g zak.onion"}));
+
+    // I2P
+    const char* i2p_addr = "UDHDrtrcetjm5sxzskjyr5ztpeszydbh4dpl3pl4utgqqw2v4jna.b32.I2P";
+    BOOST_REQUIRE(addr.SetSpecial(i2p_addr));
+    BOOST_REQUIRE(addr.IsValid());
+    BOOST_REQUIRE(addr.IsI2P());
+
+    BOOST_CHECK(!addr.IsTor());
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK(!addr.IsAddrV1Compatible());
+    BOOST_CHECK_EQUAL(addr.ToString(), ToLower(i2p_addr));
+
+    // I2P, correct length, but decodes to less than the expected number of bytes.
+    BOOST_CHECK(!addr.SetSpecial("udhdrtrcetjm5sxzskjyr5ztpeszydbh4dpl3pl4utgqqw2v4jn=.b32.i2p"));
+
+    // I2P, extra unnecessary padding
+    BOOST_CHECK(!addr.SetSpecial("udhdrtrcetjm5sxzskjyr5ztpeszydbh4dpl3pl4utgqqw2v4jna=.b32.i2p"));
+
+    // I2P, malicious
+    BOOST_CHECK(!addr.SetSpecial("udhdrtrcetjm5sxzskjyr5ztpeszydbh4dpl3pl4utgqqw2v\0wtf.b32.i2p"s));
+
+    // I2P, valid but unsupported (56 Base32 characters)
+    // See "Encrypted LS with Base 32 Addresses" in
+    // https://geti2p.net/spec/encryptedleaseset.txt
+    BOOST_CHECK(
+        !addr.SetSpecial("pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscsad.b32.i2p"));
+
+    // I2P, invalid base32
+    BOOST_CHECK(!addr.SetSpecial(std::string{"tp*szydbh4dp.b32.i2p"}));
 
     // Internal
     addr.SetInternal("esffpp");
@@ -772,21 +803,6 @@ BOOST_AUTO_TEST_CASE(LocalAddress_BasicLifecycle)
     BOOST_CHECK_EQUAL(IsLocal(addr), false);
 }
 
-BOOST_AUTO_TEST_CASE(PoissonNextSend)
-{
-    g_mock_deterministic_tests = true;
-
-    int64_t now = 5000;
-    int average_interval_seconds = 600;
-
-    auto poisson = ::PoissonNextSend(now, average_interval_seconds);
-    std::chrono::microseconds poisson_chrono = ::PoissonNextSend(std::chrono::microseconds{now}, std::chrono::seconds{average_interval_seconds});
-
-    BOOST_CHECK_EQUAL(poisson, poisson_chrono.count());
-
-    g_mock_deterministic_tests = false;
-}
-
 std::vector<NodeEvictionCandidate> GetRandomNodeEvictionCandidates(const int n_candidates, FastRandomContext& random_context)
 {
     std::vector<NodeEvictionCandidate> candidates;
@@ -794,7 +810,7 @@ std::vector<NodeEvictionCandidate> GetRandomNodeEvictionCandidates(const int n_c
         candidates.push_back({
             /* id */ id,
             /* nTimeConnected */ static_cast<int64_t>(random_context.randrange(100)),
-            /* m_min_ping_time */ static_cast<int64_t>(random_context.randrange(100)),
+            /* m_min_ping_time */ std::chrono::microseconds{random_context.randrange(100)},
             /* nLastBlockTime */ static_cast<int64_t>(random_context.randrange(100)),
             /* nLastTXTime */ static_cast<int64_t>(random_context.randrange(100)),
             /* fRelevantServices */ random_context.randbool(),
@@ -854,7 +870,7 @@ BOOST_AUTO_TEST_CASE(node_eviction_test)
             // from eviction.
             BOOST_CHECK(!IsEvicted(
                 number_of_nodes, [](NodeEvictionCandidate& candidate) {
-                    candidate.m_min_ping_time = candidate.id;
+                    candidate.m_min_ping_time = std::chrono::microseconds{candidate.id};
                 },
                 {0, 1, 2, 3, 4, 5, 6, 7}, random_context));
 
@@ -900,10 +916,10 @@ BOOST_AUTO_TEST_CASE(node_eviction_test)
             // Combination of all tests above.
             BOOST_CHECK(!IsEvicted(
                 number_of_nodes, [number_of_nodes](NodeEvictionCandidate& candidate) {
-                    candidate.nKeyedNetGroup = number_of_nodes - candidate.id; // 4 protected
-                    candidate.m_min_ping_time = candidate.id;                 // 8 protected
-                    candidate.nLastTXTime = number_of_nodes - candidate.id;    // 4 protected
-                    candidate.nLastBlockTime = number_of_nodes - candidate.id; // 4 protected
+                    candidate.nKeyedNetGroup = number_of_nodes - candidate.id;           // 4 protected
+                    candidate.m_min_ping_time = std::chrono::microseconds{candidate.id}; // 8 protected
+                    candidate.nLastTXTime = number_of_nodes - candidate.id;              // 4 protected
+                    candidate.nLastBlockTime = number_of_nodes - candidate.id;           // 4 protected
                 },
                 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}, random_context));
 

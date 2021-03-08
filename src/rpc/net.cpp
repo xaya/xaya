@@ -57,7 +57,7 @@ static RPCHelpMan getconnectioncount()
     if(!node.connman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
-    return (int)node.connman->GetNodeCount(CConnman::CONNECTIONS_ALL);
+    return (int)node.connman->GetNodeCount(ConnectionDirection::Both);
 },
     };
 }
@@ -202,14 +202,14 @@ static RPCHelpMan getpeerinfo()
         obj.pushKV("bytesrecv", stats.nRecvBytes);
         obj.pushKV("conntime", stats.nTimeConnected);
         obj.pushKV("timeoffset", stats.nTimeOffset);
-        if (stats.m_ping_usec > 0) {
-            obj.pushKV("pingtime", ((double)stats.m_ping_usec) / 1e6);
+        if (stats.m_last_ping_time > 0us) {
+            obj.pushKV("pingtime", CountSecondsDouble(stats.m_last_ping_time));
         }
-        if (stats.m_min_ping_usec < std::numeric_limits<int64_t>::max()) {
-            obj.pushKV("minping", ((double)stats.m_min_ping_usec) / 1e6);
+        if (stats.m_min_ping_time < std::chrono::microseconds::max()) {
+            obj.pushKV("minping", CountSecondsDouble(stats.m_min_ping_time));
         }
-        if (fStateStats && statestats.m_ping_wait_usec > 0) {
-            obj.pushKV("pingwait", ((double)statestats.m_ping_wait_usec) / 1e6);
+        if (fStateStats && statestats.m_ping_wait > 0s) {
+            obj.pushKV("pingwait", CountSecondsDouble(statestats.m_ping_wait));
         }
         obj.pushKV("version", stats.nVersion);
         // Use the sanitized form of subver here, to avoid tricksy remote peers from
@@ -546,7 +546,7 @@ static UniValue GetNetworksInfo()
     UniValue networks(UniValue::VARR);
     for (int n = 0; n < NET_MAX; ++n) {
         enum Network network = static_cast<enum Network>(n);
-        if (network == NET_UNROUTABLE || network == NET_I2P || network == NET_CJDNS || network == NET_INTERNAL) continue;
+        if (network == NET_UNROUTABLE || network == NET_CJDNS || network == NET_INTERNAL) continue;
         proxyType proxy;
         UniValue obj(UniValue::VOBJ);
         GetProxy(network, proxy);
@@ -630,9 +630,9 @@ static RPCHelpMan getnetworkinfo()
     obj.pushKV("timeoffset",    GetTimeOffset());
     if (node.connman) {
         obj.pushKV("networkactive", node.connman->GetNetworkActive());
-        obj.pushKV("connections", (int)node.connman->GetNodeCount(CConnman::CONNECTIONS_ALL));
-        obj.pushKV("connections_in", (int)node.connman->GetNodeCount(CConnman::CONNECTIONS_IN));
-        obj.pushKV("connections_out", (int)node.connman->GetNodeCount(CConnman::CONNECTIONS_OUT));
+        obj.pushKV("connections", (int)node.connman->GetNodeCount(ConnectionDirection::Both));
+        obj.pushKV("connections_in", (int)node.connman->GetNodeCount(ConnectionDirection::In));
+        obj.pushKV("connections_out", (int)node.connman->GetNodeCount(ConnectionDirection::Out));
     }
     obj.pushKV("networks",      GetNetworksInfo());
     obj.pushKV("relayfee",      ValueFromAmount(::minRelayTxFee.GetFeePerK()));

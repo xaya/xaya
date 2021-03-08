@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 Daniel Kraft
+// Copyright (c) 2018-2021 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -31,7 +31,7 @@ void auxMiningCheck(const JSONRPCRequest& request)
                         "Error: Peer-to-peer functionality missing or"
                         " disabled");
 
-  if (node.connman->GetNodeCount (CConnman::CONNECTIONS_ALL) == 0
+  if (node.connman->GetNodeCount (ConnectionDirection::Both) == 0
         && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
                         "Xaya is not connected!");

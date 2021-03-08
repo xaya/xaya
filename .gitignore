@@ -6,13 +6,12 @@ src/xaya
 src/xayad
 src/xaya-cli
 src/xaya-gui
+src/xaya-hash
 src/xaya-node
 src/xaya-tx
 src/xaya-util
 src/xaya-wallet
-src/xaya-hash
-src/test/fuzz/*
-!src/test/fuzz/*.*
+src/test/fuzz/fuzz
 src/test/test_xaya
 src/qt/test/test_xaya-qt
 
