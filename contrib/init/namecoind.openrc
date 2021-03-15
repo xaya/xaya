@@ -60,9 +60,9 @@ start_pre() {
 	"${NAMECOIND_PIDDIR}"
 
 	checkpath -f \
-	-o ${NAMECOIND_USER}:${NAMECOIND_GROUP} \
+	-o "${NAMECOIND_USER}:${NAMECOIND_GROUP}" \
 	-m 0660 \
-	${NAMECOIND_CONFIGFILE}
+	"${NAMECOIND_CONFIGFILE}"
 
 	checkconfig || return 1
 }

@@ -74,7 +74,7 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
             = BlockAssembler (mempool, Params ())
-                  .CreateNewBlock (algo, scriptPubKey);
+                  .CreateNewBlock (algo, ::ChainstateActive (), scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 

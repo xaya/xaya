@@ -611,8 +611,9 @@ void SetupServerArgs(NodeContext& node)
 
     gArgs.AddArg("-maxgameblockattaches=<n>", strprintf("Sets the maximum number of attach steps sent for a single game_sendupdates request (default: %d)", DEFAULT_MAX_GAME_BLOCK_ATTACHES), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
 
-#if HAVE_DECL_DAEMON
-    argsman.AddArg("-daemon", "Run in the background as a daemon and accept commands", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+#if HAVE_DECL_FORK
+    argsman.AddArg("-daemon", strprintf("Run in the background as a daemon and accept commands (default: %d)", DEFAULT_DAEMON), ArgsManager::ALLOW_BOOL, OptionsCategory::OPTIONS);
+    argsman.AddArg("-daemonwait", strprintf("Wait for initialization to be finished before exiting. This implies -daemon (default: %d)", DEFAULT_DAEMONWAIT), ArgsManager::ALLOW_BOOL, OptionsCategory::OPTIONS);
 #else
     hidden_args.emplace_back("-daemon");
 #endif
@@ -1382,7 +1383,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     }
 
     assert(!node.scheduler);
-    node.scheduler = MakeUnique<CScheduler>();
+    node.scheduler = std::make_unique<CScheduler>();
 
     // Start the lightweight task scheduler thread
     node.scheduler->m_service_thread = std::thread([&] { TraceThread("scheduler", [&] { node.scheduler->serviceQueue(); }); });
@@ -1434,9 +1435,9 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     const bool ignores_incoming_txs{args.GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY)};
 
     assert(!node.banman);
-    node.banman = MakeUnique<BanMan>(GetDataDir() / "banlist.dat", &uiInterface, args.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME));
+    node.banman = std::make_unique<BanMan>(GetDataDir() / "banlist.dat", &uiInterface, args.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME));
     assert(!node.connman);
-    node.connman = MakeUnique<CConnman>(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max()), args.GetBoolArg("-networkactive", true));
+    node.connman = std::make_unique<CConnman>(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max()), args.GetBoolArg("-networkactive", true));
 
     assert(!node.fee_estimator);
     // Don't initialize fee estimation with old data if we don't relay transactions,
@@ -1843,12 +1844,12 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
 
     // ********************************************************* Step 8: start indexers
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
+        g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
         g_txindex->Start();
     }
 
     if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX)) {
-        g_name_hash_index = MakeUnique<NameHashIndex>(nNameHashIndexCache, false, fReindex);
+        g_name_hash_index = std::make_unique<NameHashIndex>(nNameHashIndexCache, false, fReindex);
         g_name_hash_index->Start();
     }
 

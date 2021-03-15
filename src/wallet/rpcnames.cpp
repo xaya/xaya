@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -185,7 +185,7 @@ SendNameOutput (const JSONRPCRequest& request,
       }
 
   CCoinControl coinControl;
-  return SendMoney (&wallet, coinControl, nameInput, vecSend, {}, false);
+  return SendMoney (wallet, coinControl, nameInput, vecSend, {}, false);
 }
 
 } // anonymous namespace
@@ -382,7 +382,7 @@ name_register ()
 
   LOCK (pwallet->cs_wallet);
 
-  EnsureWalletIsUnlocked (pwallet);
+  EnsureWalletIsUnlocked (*pwallet);
 
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
@@ -504,7 +504,7 @@ name_update ()
 
   LOCK (pwallet->cs_wallet);
 
-  EnsureWalletIsUnlocked (pwallet);
+  EnsureWalletIsUnlocked (*pwallet);
 
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
@@ -604,13 +604,13 @@ sendtoname ()
       coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
   }
 
-  EnsureWalletIsUnlocked(pwallet);
+  EnsureWalletIsUnlocked(*pwallet);
 
   std::vector<CRecipient> recipients;
   const CAmount amount = AmountFromValue (request.params[1]);
   recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
 
-  return SendMoney(pwallet, coin_control, nullptr, recipients, mapValue, false);
+  return SendMoney(*pwallet, coin_control, nullptr, recipients, mapValue, false);
 }
   };
 }

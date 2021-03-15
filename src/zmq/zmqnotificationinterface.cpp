@@ -45,13 +45,13 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
     factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier]() {
         assert (gameBlocksNotifier == nullptr);
-        auto res = MakeUnique<ZMQGameBlocksNotifier>(*trackedGames);
+        auto res = std::make_unique<ZMQGameBlocksNotifier>(*trackedGames);
         gameBlocksNotifier = res.get();
         return res;
     };
 
     factories["pubgamepending"] = [&trackedGames]() {
-        return MakeUnique<ZMQGamePendingNotifier>(*trackedGames);
+        return std::make_unique<ZMQGamePendingNotifier>(*trackedGames);
     };
 
     std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
