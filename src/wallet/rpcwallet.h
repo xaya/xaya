@@ -36,13 +36,13 @@ Span<const CRPCCommand> GetWalletRPCCommands();
  */
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
 
-void EnsureWalletIsUnlocked(const CWallet*);
+void EnsureWalletIsUnlocked(const CWallet&);
 WalletContext& EnsureWalletContext(const util::Ref& context);
 LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
 
 /* These are private to rpcwallet.cpp upstream, but are used also from
    rpcnames.cpp in Namecoin.  */
-UniValue SendMoney(CWallet* pwallet, const CCoinControl& coin_control,
+UniValue SendMoney(CWallet& wallet, const CCoinControl& coin_control,
                    const CTxIn* withInput,
                    std::vector<CRecipient>& recipients, mapValue_t map_value, bool verbose);
 
