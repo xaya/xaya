@@ -12,8 +12,12 @@ from test_framework.util import (
 )
 
 BECH32_VALID = 'ncrt1qtmp74ayg7p24uslctssvjm06q5phz4yrvy646e'
-BECH32_INVALID_SIZE = 'ncrt1sqqmkuwsm'
-BECH32_INVALID_PREFIX = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'
+BECH32_INVALID_BECH32 = 'ncrt1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqsqfwjg'
+BECH32_INVALID_BECH32M = 'ncrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kmve7tc'
+BECH32_INVALID_VERSION = 'ncrt130xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqegrqzx'
+BECH32_INVALID_SIZE = 'ncrt1s0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7v8n0nx0muaewav254vs3uv'
+BECH32_INVALID_V0_SIZE = 'ncrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kqq53wzvl'
+BECH32_INVALID_PREFIX = 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx'
 
 BASE58_VALID = 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn'
 BASE58_INVALID_PREFIX = '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem'
@@ -39,6 +43,18 @@ class InvalidAddressErrorMessageTest(BitcoinTestFramework):
         info = node.validateaddress(BECH32_INVALID_PREFIX)
         assert not info['isvalid']
         assert_equal(info['error'], 'Invalid prefix for Bech32 address')
+
+        info = node.validateaddress(BECH32_INVALID_BECH32)
+        assert not info['isvalid']
+        assert_equal(info['error'], 'Version 1+ witness address must use Bech32m checksum')
+
+        info = node.validateaddress(BECH32_INVALID_BECH32M)
+        assert not info['isvalid']
+        assert_equal(info['error'], 'Version 0 witness address must use Bech32 checksum')
+
+        info = node.validateaddress(BECH32_INVALID_V0_SIZE)
+        assert not info['isvalid']
+        assert_equal(info['error'], 'Invalid Bech32 v0 address data size')
 
         info = node.validateaddress(BECH32_VALID)
         assert info['isvalid']

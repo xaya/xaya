@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #   Convert Address - convert Bitcoin to Namecoin bech32 addresses
-#   Copyright (C) 2018  Daniel Kraft <d@domob.eu>
+#   Copyright (C) 2018-2021  Daniel Kraft <d@domob.eu>
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ if len (sys.argv) >= 3:
 else:
   hrp = "nc"
 
-oldHrp, data = segwit_addr.bech32_decode (addr)
-print ("Old HRP: %s" % oldHrp)
-newAddr = segwit_addr.bech32_encode (hrp, data)
+enc, oldHrp, data = segwit_addr.bech32_decode (addr)
+print ("Encoding %s, old HRP: %s" % (enc, oldHrp))
+newAddr = segwit_addr.bech32_encode (enc, hrp, data)
 print (newAddr)
