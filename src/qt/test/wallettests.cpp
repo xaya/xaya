@@ -172,7 +172,7 @@ void TestGUI(interfaces::Node& node)
     ClientModel clientModel(node, &optionsModel);
     AddWallet(wallet);
     WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
-    RemoveWallet(wallet, nullopt);
+    RemoveWallet(wallet, std::nullopt);
     sendCoinsDialog.setClientModel(&clientModel);
     sendCoinsDialog.setModel(&walletModel);
     transactionView.setModel(&walletModel);

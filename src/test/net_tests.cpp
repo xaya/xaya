@@ -8,8 +8,8 @@
 #include <clientversion.h>
 #include <cstdint>
 #include <net.h>
+#include <netaddress.h>
 #include <netbase.h>
-#include <optional.h>
 #include <serialize.h>
 #include <span.h>
 #include <streams.h>
@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <ios>
 #include <memory>
+#include <optional>
 #include <string>
 
 using namespace std::literals;
@@ -91,7 +92,7 @@ BOOST_FIXTURE_TEST_SUITE(net_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(cnode_listen_port)
 {
     // test default
-    uint16_t port = GetListenPort();
+    uint16_t port{GetListenPort()};
     BOOST_CHECK(port == Params().GetDefaultPort());
     // test set port
     uint16_t altPort = 12345;
@@ -827,7 +828,7 @@ std::vector<NodeEvictionCandidate> GetRandomNodeEvictionCandidates(const int n_c
 bool IsEvicted(std::vector<NodeEvictionCandidate> candidates, const std::vector<NodeId>& node_ids, FastRandomContext& random_context)
 {
     Shuffle(candidates.begin(), candidates.end(), random_context);
-    const Optional<NodeId> evicted_node_id = SelectNodeToEvict(std::move(candidates));
+    const std::optional<NodeId> evicted_node_id = SelectNodeToEvict(std::move(candidates));
     if (!evicted_node_id) {
         return false;
     }
