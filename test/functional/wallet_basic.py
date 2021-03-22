@@ -23,6 +23,7 @@ class WalletTest(BitcoinTestFramework):
         self.num_nodes = 4
         self.extra_args = [[
             "-acceptnonstdtxn=1",
+            "-addresstype=bech32",
         ]] * self.num_nodes
         self.setup_clean_chain = True
         self.supports_cli = False
