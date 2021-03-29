@@ -1189,8 +1189,8 @@ static RPCHelpMan gettxoutsetinfo()
                 RPCResult{
                     RPCResult::Type::OBJ, "", "",
                     {
-                        {RPCResult::Type::NUM, "height", "The current block height (index)"},
-                        {RPCResult::Type::STR_HEX, "bestblock", "The hash of the block at the tip of the chain"},
+                        {RPCResult::Type::NUM, "height", "The block height (index) of the returned statistics"},
+                        {RPCResult::Type::STR_HEX, "bestblock", "The hash of the block at which these statistics are calculated"},
                         {RPCResult::Type::NUM, "transactions", "The number of transactions with unspent outputs"},
                         {RPCResult::Type::NUM, "txouts", "The number of unspent transaction outputs"},
                         {RPCResult::Type::NUM, "bogosize", "A meaningless metric for UTXO set size"},
@@ -1200,7 +1200,7 @@ static RPCHelpMan gettxoutsetinfo()
                         {
                             RPCResult::Type::OBJ, "total_amount", "Data about the money supply",
                             {
-                                {RPCResult::Type::STR_AMOUNT, "coins", "Total amount of coins"},
+                                {RPCResult::Type::STR_AMOUNT, "coins", "Total amount of coins in the UTXO set"},
                                 {RPCResult::Type::STR_AMOUNT, "names", "Amount locked in active names"},
                                 {RPCResult::Type::STR_AMOUNT, "total", "Total amount in coins and names"},
                             }
