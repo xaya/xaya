@@ -7,3 +7,5 @@ check: FORCE
 	$(MAKE) -C .. test_namecoin_qt_check
 namecoin-qt namecoin-qt.exe: FORCE
 	 $(MAKE) -C .. namecoin_qt
+apk: FORCE
+	$(MAKE) -C .. namecoin_qt_apk

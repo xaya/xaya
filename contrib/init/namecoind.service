@@ -18,7 +18,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/bin/namecoind -daemon \
+ExecStart=/usr/bin/namecoind -daemonwait \
                             -pid=/run/namecoind/namecoind.pid \
                             -conf=/etc/namecoin/namecoin.conf \
                             -datadir=/var/lib/namecoind
@@ -33,6 +33,7 @@ ExecStartPre=/bin/chgrp namecoin /etc/namecoin
 Type=forking
 PIDFile=/run/namecoind/namecoind.pid
 Restart=on-failure
+TimeoutStartSec=infinity
 TimeoutStopSec=600
 
 # Directory creation and permissions
