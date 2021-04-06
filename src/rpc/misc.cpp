@@ -17,7 +17,6 @@
 #include <script/descriptor.h>
 #include <util/check.h>
 #include <util/message.h> // For MessageSign(), MessageVerify()
-#include <util/ref.h>
 #include <util/strencodings.h>
 #include <util/system.h>
 
@@ -391,8 +390,9 @@ static RPCHelpMan setmocktime()
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Mocktime can not be negative: %s.", time));
     }
     SetMockTime(time);
-    if (request.context.Has<NodeContext>()) {
-        for (const auto& chain_client : request.context.Get<NodeContext>().chain_clients) {
+    auto node_context = util::AnyPtr<NodeContext>(request.context);
+    if (node_context) {
+        for (const auto& chain_client : node_context->chain_clients) {
             chain_client->setMockTime(time);
         }
     }
@@ -424,11 +424,11 @@ static RPCHelpMan mockscheduler()
         throw std::runtime_error("delta_time must be between 1 and 3600 seconds (1 hr)");
     }
 
+    auto node_context = util::AnyPtr<NodeContext>(request.context);
     // protect against null pointer dereference
-    CHECK_NONFATAL(request.context.Has<NodeContext>());
-    NodeContext& node = request.context.Get<NodeContext>();
-    CHECK_NONFATAL(node.scheduler);
-    node.scheduler->MockForward(std::chrono::seconds(delta_seconds));
+    CHECK_NONFATAL(node_context);
+    CHECK_NONFATAL(node_context->scheduler);
+    node_context->scheduler->MockForward(std::chrono::seconds(delta_seconds));
 
     return NullUniValue;
 },
@@ -628,7 +628,7 @@ static RPCHelpMan echo(const std::string& name)
                     {"arg8", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, ""},
                     {"arg9", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, ""},
                 },
-                RPCResult{RPCResult::Type::NONE, "", "Returns whatever was passed in"},
+                RPCResult{RPCResult::Type::ANY, "", "Returns whatever was passed in"},
                 RPCExamples{""},
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
