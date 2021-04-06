@@ -225,6 +225,7 @@ name_list ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
+  const auto& chainman = EnsureChainman (request.context);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
@@ -244,7 +245,7 @@ name_list ()
   {
   LOCK2 (pwallet->cs_wallet, cs_main);
 
-  const int tipHeight = ::ChainActive ().Height ();
+  const int tipHeight = chainman.ActiveHeight ();
   for (const auto& item : pwallet->mapWallet)
     {
       const CWalletTx& tx = item.second;
@@ -338,6 +339,7 @@ name_register ()
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ},
                 true);
+  const auto& chainman = EnsureChainman (request.context);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -371,7 +373,7 @@ name_register ()
   {
     LOCK (cs_main);
     CNameData data;
-    if (::ChainstateActive ().CoinsTip ().GetName (name, data))
+    if (chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
                           "this name exists already");
   }
@@ -432,6 +434,7 @@ name_update ()
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
+  const auto& chainman = EnsureChainman (request.context);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -487,7 +490,7 @@ name_update ()
       LOCK (cs_main);
 
       CNameData oldData;
-      const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+      const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
       if (!coinsTip.GetName (name, oldData))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
@@ -555,8 +558,9 @@ sendtoname ()
   if (!wallet)
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
+  const auto& chainman = EnsureChainman (request.context);
 
-  if (::ChainstateActive ().IsInitialBlockDownload ())
+  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 

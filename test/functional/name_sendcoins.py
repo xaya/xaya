@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2020 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """RPC test for the "sendCoins" option with name operations."""
@@ -29,9 +29,7 @@ class NameSendCoinsTest (NameTestFramework):
     for out in vout:
       if 'nameOp' in out['scriptPubKey']:
         continue
-      addr = out['scriptPubKey']['addresses']
-      assert_equal (len (addr), 1)
-      addr = addr[0]
+      addr = out['scriptPubKey']['address']
       if not addr in expected:
         # This must be the change address.  Through the assertion above about
         # the expected sizes, we make sure that the test fails if there is

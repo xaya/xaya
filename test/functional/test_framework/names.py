@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -80,7 +80,7 @@ class NameTestFramework (BitcoinTestFramework):
 
     tx = self.nodes[ind].decoderawtransaction (txhex)
     for i, vout in enumerate (tx['vout']):
-      if addr in vout['scriptPubKey']['addresses']:
+      if addr == vout['scriptPubKey']['address']:
         return i
 
     return None

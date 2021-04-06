@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -380,9 +380,15 @@ class AuxpowMinerForTest : public AuxpowMiner
 public:
 
   using AuxpowMiner::cs;
-
-  using AuxpowMiner::getCurrentBlock;
   using AuxpowMiner::lookupSavedBlock;
+
+  const CBlock*
+  getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
+                   const CScript& scriptPubKey, uint256& target)
+  {
+    return AuxpowMiner::getCurrentBlock (g_chainman, mempool, algo,
+                                         scriptPubKey, target);
+  }
 
 };
 

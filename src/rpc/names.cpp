@@ -310,7 +310,7 @@ addOwnershipInfo (const CScript& addr, const MaybeWalletForRequest& wallet,
  * This is the most common call for methods in this file.
  */
 UniValue
-getNameInfo (const UniValue& options,
+getNameInfo (const ChainstateManager& chainman, const UniValue& options,
              const valtype& name, const CNameData& data,
              const MaybeWalletForRequest& wallet)
 {
@@ -451,8 +451,9 @@ name_show ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
+  auto& chainman = EnsureChainman (request.context);
 
-  if (::ChainstateActive ().IsInitialBlockDownload ())
+  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
@@ -475,7 +476,7 @@ name_show ()
 
   MaybeWalletForRequest wallet(request);
   LOCK2 (wallet.getLock (), cs_main);
-  return getNameInfo (options, name, data, wallet);
+  return getNameInfo (chainman, options, name, data, wallet);
 }
   );
 }
@@ -511,11 +512,12 @@ name_history ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
+  auto& chainman = EnsureChainman (request.context);
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
 
-  if (::ChainstateActive ().IsInitialBlockDownload ())
+  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
@@ -531,7 +533,7 @@ name_history ()
   {
     LOCK (cs_main);
 
-    const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+    const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
     if (!coinsTip.GetName (name, data))
       {
         std::ostringstream msg;
@@ -548,8 +550,8 @@ name_history ()
 
   UniValue res(UniValue::VARR);
   for (const auto& entry : history.getData ())
-    res.push_back (getNameInfo (options, name, entry, wallet));
-  res.push_back (getNameInfo (options, name, data, wallet));
+    res.push_back (getNameInfo (chainman, options, name, entry, wallet));
+  res.push_back (getNameInfo (chainman, options, name, data, wallet));
 
   return res;
 }
@@ -598,8 +600,9 @@ name_scan ()
 {
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
+  auto& chainman = EnsureChainman (request.context);
 
-  if (::ChainstateActive ().IsInitialBlockDownload ())
+  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Xaya is downloading blocks...");
 
@@ -660,14 +663,14 @@ name_scan ()
   MaybeWalletForRequest wallet(request);
   LOCK2 (wallet.getLock (), cs_main);
 
-  const int maxHeight = ::ChainActive ().Height () - minConf + 1;
+  const int maxHeight = chainman.ActiveHeight () - minConf + 1;
   int minHeight = -1;
   if (maxConf >= 0)
-    minHeight = ::ChainActive ().Height () - maxConf + 1;
+    minHeight = chainman.ActiveHeight () - maxConf + 1;
 
   valtype name;
   CNameData data;
-  const auto& coinsTip = ::ChainstateActive ().CoinsTip ();
+  const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   std::unique_ptr<CNameIterator> iter(coinsTip.IterateNames ());
   for (iter->seek (start); count > 0 && iter->next (name, data); )
     {
@@ -697,7 +700,7 @@ name_scan ()
             }
         }
 
-      res.push_back (getNameInfo (options, name, data, wallet));
+      res.push_back (getNameInfo (chainman, options, name, data, wallet));
       --count;
     }
 

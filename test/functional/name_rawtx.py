@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -124,10 +124,9 @@ class NameRawTxTest (NameTestFramework):
         res = out['scriptPubKey']['nameOp']
 
         # Extra check:  Verify that the address is decoded correctly.
-        addr = out['scriptPubKey']['addresses']
+        addr = out['scriptPubKey']['address']
         assert_equal (out['scriptPubKey']['type'], "pubkeyhash")
-        assert_equal (len (addr), 1)
-        validation = self.nodes[ind].validateaddress (addr[0])
+        validation = self.nodes[ind].validateaddress (addr)
         assert validation['isvalid']
 
     assert res is not None

@@ -23,11 +23,8 @@
                 },
                 "asm": "OP_NAME_UPDATE 642f00ff 76616c7565 OP_2DROP OP_DROP OP_DUP OP_HASH160 1fc11f39be1729bf973a7ab6a615ca4729d64574 OP_EQUALVERIFY OP_CHECKSIG",
                 "hex": "5204642f00ff0576616c75656d7576a9141fc11f39be1729bf973a7ab6a615ca4729d6457488ac",
-                "reqSigs": 1,
-                "type": "pubkeyhash",
-                "addresses": [
-                    "CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8"
-                ]
+                "address": "CKMnsLZUuUehkub6bqdNBxFtGhvQbAKAU8",
+                "type": "pubkeyhash"
             }
         }
     ],

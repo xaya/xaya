@@ -39,7 +39,7 @@ class PremineTest(BitcoinTestFramework):
     assert_equal (len (tx['vout']), 1)
     out = tx['vout'][0]
     assert_equal (out['value'], PREMINE_VALUE)
-    assert_equal (out['scriptPubKey']['addresses'], [PREMINE_ADDRESS])
+    assert_equal (out['scriptPubKey']['address'], PREMINE_ADDRESS)
 
     # Accessing it should work normally (upstream Bitcoin/Namecoin have a
     # special check that disallows the genesis coinbase with getrawtransaction,

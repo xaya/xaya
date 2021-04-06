@@ -157,7 +157,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     nameData = node.name_show (name)
     addr = nameData["address"]
     namePrevOut = node.gettxout (nameData["txid"], nameData["vout"])
-    assert_equal (namePrevOut["scriptPubKey"]["addresses"], [addr])
+    assert_equal (namePrevOut["scriptPubKey"]["address"], addr)
     nameValue = namePrevOut["value"]
 
     tx = CTransaction ()

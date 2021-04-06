@@ -45,7 +45,9 @@ void auxMiningCheck(const JSONRPCRequest& request)
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
+AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
+                              const CTxMemPool& mempool,
+                              const PowAlgo algo,
                               const CScript& scriptPubKey, uint256& target)
 {
   AssertLockHeld (cs);
@@ -73,14 +75,14 @@ AuxpowMiner::getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
-            = BlockAssembler (mempool, Params ())
-                  .CreateNewBlock (algo, ::ChainstateActive (), scriptPubKey);
+            = BlockAssembler (chainman.ActiveChainstate (), mempool, Params ())
+                .CreateNewBlock (algo, scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
         /* Update state only when CreateNewBlock succeeded.  */
         txUpdatedLast = mempool.GetTransactionsUpdated ();
-        pindexPrev = ::ChainActive ().Tip ();
+        pindexPrev = chainman.ActiveTip ();
         startTime = GetTime ();
 
         /* Finalise it by building the merkle root.  */
@@ -134,9 +136,11 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
   LOCK (cs);
 
   const auto& mempool = EnsureMemPool (request.context);
+  const auto& chainman = EnsureChainman (request.context);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (PowAlgo::SHA256D, mempool,
+  const CBlock* pblock = getCurrentBlock (chainman, mempool,
+                                          PowAlgo::SHA256D,
                                           scriptPubKey, target);
 
   UniValue result(UniValue::VOBJ);
@@ -180,12 +184,14 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
                          const CScript& scriptPubKey)
 {
   auxMiningCheck (request);
+  auto& chainman = EnsureChainman (request.context);
   LOCK (cs);
 
   const auto& mempool = EnsureMemPool (request.context);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (PowAlgo::NEOSCRYPT, mempool,
+  const CBlock* pblock = getCurrentBlock (chainman, mempool,
+                                          PowAlgo::NEOSCRYPT,
                                           scriptPubKey, target);
 
   CPureBlockHeader fakeHeader;

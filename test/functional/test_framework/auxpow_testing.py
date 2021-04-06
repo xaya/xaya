@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -74,9 +74,7 @@ def getCoinbaseAddr (node, blockHash):
     assert len (txData['vout']) >= 1 and len (txData['vin']) == 1
     assert 'coinbase' in txData['vin'][0]
 
-    addr = txData['vout'][0]['scriptPubKey']['addresses']
-    assert len (addr) == 1
-    return addr[0]
+    return txData['vout'][0]['scriptPubKey']['address']
 
 def mineBlock (header, target, ok, hashFcn=auxpow.doubleHashHex):
   """

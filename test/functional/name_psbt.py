@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020 Daniel Kraft
+# Copyright (c) 2020-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -67,10 +67,9 @@ class NamePsbtTest (NameTestFramework):
         res = out["scriptPubKey"]["nameOp"]
 
         # Extra check:  Verify that the address is decoded correctly.
-        addr = out["scriptPubKey"]["addresses"]
+        addr = out["scriptPubKey"]["address"]
         assert_equal (out["scriptPubKey"]["type"], "pubkeyhash")
-        assert_equal (len (addr), 1)
-        validation = node.validateaddress (addr[0])
+        validation = node.validateaddress (addr)
         assert_equal (validation["isvalid"], True)
 
     assert res is not None

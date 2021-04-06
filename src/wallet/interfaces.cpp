@@ -16,7 +16,6 @@
 #include <sync.h>
 #include <uint256.h>
 #include <util/check.h>
-#include <util/ref.h>
 #include <util/system.h>
 #include <util/ui_change_type.h>
 #include <wallet/context.h>
@@ -520,9 +519,10 @@ public:
                    getauxblock.  Thus we construct a new context that
                    contains both and use that.  */
                 WalletContext extendedCtx = m_context;
-                if (request.context.Has<NodeContext>())
-                    extendedCtx.nodeContext = &request.context.Get<NodeContext>();
-                return command.actor({request, extendedCtx}, result, last_handler);
+                auto node_context = util::AnyPtr<NodeContext>(request.context);
+                if (node_context)
+                    extendedCtx.nodeContext = node_context;
+                return command.actor({request, &extendedCtx}, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }

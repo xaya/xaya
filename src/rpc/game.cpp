@@ -8,6 +8,7 @@
 #include <chainparams.h>
 #include <logging.h>
 #include <random.h>
+#include <rpc/blockchain.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/script.h>
@@ -252,6 +253,7 @@ game_sendupdates ()
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
+  const auto& chainman = EnsureChainman (request.context);
 
   SendUpdatesWorker::Work w;
 
@@ -270,7 +272,7 @@ game_sendupdates ()
   else
     {
       LOCK (cs_main);
-      toBlock = ::ChainActive ().Tip ()->GetBlockHash ();
+      toBlock = chainman.ActiveTip ()->GetBlockHash ();
     }
 
   const CBlockIndex* fromIndex;
@@ -278,8 +280,8 @@ game_sendupdates ()
   {
     LOCK (cs_main);
 
-    fromIndex = g_chainman.m_blockman.LookupBlockIndex (fromBlock);
-    toIndex = g_chainman.m_blockman.LookupBlockIndex (toBlock);
+    fromIndex = chainman.m_blockman.LookupBlockIndex (fromBlock);
+    toIndex = chainman.m_blockman.LookupBlockIndex (toBlock);
 
     if (fromIndex == nullptr)
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "fromblock not found");
@@ -363,6 +365,7 @@ trackedgames ()
                 {RPCResult::Type::STR, "game", "currently tracked game ID"},
             }
         },
+        RPCResult{"if called with arguments", RPCResult::Type::NONE, "", ""},
       },
       RPCExamples {
           HelpExampleCli ("trackedgames", "")
