@@ -759,7 +759,7 @@ static bool rest_name(const std::any& context, HTTPRequest* req, const std::stri
     case RetFormat::JSON:
     {
         const UniValue NO_OPTIONS(UniValue::VOBJ);
-        const UniValue obj = getNameInfo(NO_OPTIONS, plainName, data);
+        const UniValue obj = getNameInfo(g_chainman, NO_OPTIONS, plainName, data);
         const std::string strJSON = obj.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
         req->WriteReply(HTTP_OK, strJSON);

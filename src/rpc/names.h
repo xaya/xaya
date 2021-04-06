@@ -16,6 +16,7 @@
 /** Default value for the -allowexpired argument.  */
 static constexpr bool DEFAULT_ALLOWEXPIRED = false;
 
+class ChainstateManager;
 class CNameData;
 class COutPoint;
 class CScript;
@@ -24,9 +25,11 @@ class UniValue;
 UniValue getNameInfo (const UniValue& options,
                       const valtype& name, const valtype& value,
                       const COutPoint& outp, const CScript& addr);
-UniValue getNameInfo (const UniValue& options,
+UniValue getNameInfo (const ChainstateManager& chainman,
+                      const UniValue& options,
                       const valtype& name, const CNameData& data);
-void addExpirationInfo (int height, UniValue& data);
+void addExpirationInfo (const ChainstateManager& chainman,
+                        int height, UniValue& data);
 
 #ifdef ENABLE_WALLET
 class CWallet;
