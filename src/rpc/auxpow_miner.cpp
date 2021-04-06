@@ -52,7 +52,8 @@ void auxMiningCheck(const JSONRPCRequest& request)
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const CTxMemPool& mempool,
+AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
+                              const CTxMemPool& mempool,
                               const CScript& scriptPubKey, uint256& target)
 {
   AssertLockHeld (cs);
@@ -80,14 +81,14 @@ AuxpowMiner::getCurrentBlock (const CTxMemPool& mempool,
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<CBlockTemplate> newBlock
-            = BlockAssembler (mempool, Params ())
-                .CreateNewBlock (::ChainstateActive (), scriptPubKey);
+            = BlockAssembler (chainman.ActiveChainstate (), mempool, Params ())
+                .CreateNewBlock (scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
         /* Update state only when CreateNewBlock succeeded.  */
         txUpdatedLast = mempool.GetTransactionsUpdated ();
-        pindexPrev = ::ChainActive ().Tip ();
+        pindexPrev = chainman.ActiveTip ();
         startTime = GetTime ();
 
         /* Finalise it by setting the version and building the merkle root.  */
@@ -142,9 +143,10 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
   LOCK (cs);
 
   const auto& mempool = EnsureMemPool (request.context);
+  const auto& chainman = EnsureChainman (request.context);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (mempool, scriptPubKey, target);
+  const CBlock* pblock = getCurrentBlock (chainman, mempool, scriptPubKey, target);
 
   UniValue result(UniValue::VOBJ);
   result.pushKV ("hash", pblock->GetHash ().GetHex ());

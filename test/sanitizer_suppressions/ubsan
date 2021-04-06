@@ -1,6 +1,6 @@
 # -fsanitize=undefined suppressions
 # =================================
-# No suppressions at the moment. Hooray!
+signed-integer-overflow:CTxMemPool::PrioritiseTransaction
 
 # -fsanitize=integer suppressions
 # ===============================

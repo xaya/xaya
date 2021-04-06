@@ -440,14 +440,12 @@ namespace
 RPCHelpMan
 name_show ()
 {
-  const bool allow_expired_default = gArgs.GetBoolArg("-allowexpired", DEFAULT_ALLOWEXPIRED);
-
   NameOptionsHelp optHelp;
   optHelp
       .withNameEncoding ()
       .withValueEncoding ()
       .withByHash ()
-      .withArg ("allowExpired", RPCArg::Type::BOOL, allow_expired_default ? "true" : "false",
+      .withArg ("allowExpired", RPCArg::Type::BOOL, "depends on -allowexpired",
                 "Whether to throw error for expired names");
 
   return RPCHelpMan ("name_show",
@@ -483,7 +481,7 @@ name_show ()
     },
     true, false);
 
-  bool allow_expired = allow_expired_default;
+  bool allow_expired = gArgs.GetBoolArg("-allowexpired", DEFAULT_ALLOWEXPIRED);
   if (options.exists("allowExpired"))
     allow_expired = options["allowExpired"].get_bool();
 

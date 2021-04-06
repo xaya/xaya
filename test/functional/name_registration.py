@@ -49,7 +49,7 @@ class NameRegistrationTest (NameTestFramework):
       if 'nameOp' in out['scriptPubKey']:
         assert not found
         found = True
-        assert_equal (out['scriptPubKey']['addresses'], [addr])
+        assert_equal (out['scriptPubKey']['address'], addr)
     assert found
 
     # Check for exception with name_history and without -namehistory.
