@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+class ChainstateManager;
+
 namespace auxpow_tests
 {
 class AuxpowMinerForTest;
@@ -60,7 +62,8 @@ private:
    * that should be returned to a miner for working on at the moment.  Also
    * fills in the difficulty target value.
    */
-  const CBlock* getCurrentBlock (const CTxMemPool& mempool,
+  const CBlock* getCurrentBlock (const ChainstateManager& chainman,
+                                 const CTxMemPool& mempool,
                                  const CScript& scriptPubKey, uint256& target)
       EXCLUSIVE_LOCKS_REQUIRED (cs);
 
