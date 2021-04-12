@@ -234,7 +234,7 @@ public:
 
         bech32_hrp = "chi";
 
-        vFixedSeeds = std::vector<SeedSpec6>(std::begin(pnSeed6_main), std::end(pnSeed6_main));
+        vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
@@ -343,7 +343,7 @@ public:
 
         // FIXME: Namecoin has no fixed seeds for testnet, so that the line
         // below errors out.  Use it once we have testnet seeds.
-        //vFixedSeeds = std::vector<SeedSpec6>(std::begin(pnSeed6_test), std::end(pnSeed6_test));
+        //vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_test), std::end(chainparams_seed_test));
         vFixedSeeds.clear();
 
         fDefaultConsistencyChecks = false;
@@ -565,7 +565,7 @@ public:
         m_assumeutxo_data = MapAssumeutxo{
             {
                 110,
-                {uint256S("0xeae8514d05e697ce60a588456a6733b6663e12c6de1b5b65f9541beb524a8f97"), 110},
+                {uint256S("0xdc81af66a58085fe977c6aab56b49630d87b84521fc5a8a5c53f2f4b23c8d6d5"), 110},
             },
             {
                 210,
