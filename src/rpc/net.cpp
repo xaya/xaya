@@ -749,9 +749,11 @@ static RPCHelpMan listbanned()
             {
                 {RPCResult::Type::OBJ, "", "",
                     {
-                        {RPCResult::Type::STR, "address", ""},
-                        {RPCResult::Type::NUM_TIME, "banned_until", ""},
-                        {RPCResult::Type::NUM_TIME, "ban_created", ""},
+                        {RPCResult::Type::STR, "address", "The IP/Subnet of the banned node"},
+                        {RPCResult::Type::NUM_TIME, "ban_created", "The " + UNIX_EPOCH_TIME + " the ban was created"},
+                        {RPCResult::Type::NUM_TIME, "banned_until", "The " + UNIX_EPOCH_TIME + " the ban expires"},
+                        {RPCResult::Type::NUM_TIME, "ban_duration", "The ban duration, in seconds"},
+                        {RPCResult::Type::NUM_TIME, "time_remaining", "The time remaining until the ban expires, in seconds"},
                     }},
             }},
                 RPCExamples{
@@ -767,6 +769,7 @@ static RPCHelpMan listbanned()
 
     banmap_t banMap;
     node.banman->GetBanned(banMap);
+    const int64_t current_time{GetTime()};
 
     UniValue bannedAddresses(UniValue::VARR);
     for (const auto& entry : banMap)
@@ -774,8 +777,10 @@ static RPCHelpMan listbanned()
         const CBanEntry& banEntry = entry.second;
         UniValue rec(UniValue::VOBJ);
         rec.pushKV("address", entry.first.ToString());
-        rec.pushKV("banned_until", banEntry.nBanUntil);
         rec.pushKV("ban_created", banEntry.nCreateTime);
+        rec.pushKV("banned_until", banEntry.nBanUntil);
+        rec.pushKV("ban_duration", (banEntry.nBanUntil - banEntry.nCreateTime));
+        rec.pushKV("time_remaining", (banEntry.nBanUntil - current_time));
 
         bannedAddresses.push_back(rec);
     }
@@ -835,7 +840,7 @@ static RPCHelpMan setnetworkactive()
 static RPCHelpMan getnodeaddresses()
 {
     return RPCHelpMan{"getnodeaddresses",
-                "\nReturn known addresses which can potentially be used to find new nodes in the network\n",
+                "\nReturn known addresses, which can potentially be used to find new nodes in the network.\n",
                 {
                     {"count", RPCArg::Type::NUM, /* default */ "1", "The maximum number of addresses to return. Specify 0 to return all known addresses."},
                 },
@@ -844,10 +849,11 @@ static RPCHelpMan getnodeaddresses()
                     {
                         {RPCResult::Type::OBJ, "", "",
                         {
-                            {RPCResult::Type::NUM_TIME, "time", "The " + UNIX_EPOCH_TIME + " of when the node was last seen"},
-                            {RPCResult::Type::NUM, "services", "The services offered"},
+                            {RPCResult::Type::NUM_TIME, "time", "The " + UNIX_EPOCH_TIME + " when the node was last seen"},
+                            {RPCResult::Type::NUM, "services", "The services offered by the node"},
                             {RPCResult::Type::STR, "address", "The address of the node"},
-                            {RPCResult::Type::NUM, "port", "The port of the node"},
+                            {RPCResult::Type::NUM, "port", "The port number of the node"},
+                            {RPCResult::Type::STR, "network", "The network (" + Join(GetNetworkNames(), ", ") + ") the node connected through"},
                         }},
                     }
                 },
@@ -862,15 +868,11 @@ static RPCHelpMan getnodeaddresses()
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
     }
 
-    int count = 1;
-    if (!request.params[0].isNull()) {
-        count = request.params[0].get_int();
-        if (count < 0) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "Address count out of range");
-        }
-    }
+    const int count{request.params[0].isNull() ? 1 : request.params[0].get_int()};
+    if (count < 0) throw JSONRPCError(RPC_INVALID_PARAMETER, "Address count out of range");
+
     // returns a shuffled list of CAddress
-    std::vector<CAddress> vAddr = node.connman->GetAddresses(count, /* max_pct */ 0);
+    const std::vector<CAddress> vAddr{node.connman->GetAddresses(count, /* max_pct */ 0)};
     UniValue ret(UniValue::VARR);
 
     for (const CAddress& addr : vAddr) {
@@ -879,6 +881,7 @@ static RPCHelpMan getnodeaddresses()
         obj.pushKV("services", (uint64_t)addr.nServices);
         obj.pushKV("address", addr.ToStringIP());
         obj.pushKV("port", addr.GetPort());
+        obj.pushKV("network", GetNetworkName(addr.GetNetClass()));
         ret.push_back(obj);
     }
     return ret;
