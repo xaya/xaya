@@ -522,7 +522,10 @@ public:
                 auto node_context = util::AnyPtr<NodeContext>(request.context);
                 if (node_context)
                     extendedCtx.nodeContext = node_context;
-                return command.actor({request, &extendedCtx}, result, last_handler);
+
+                JSONRPCRequest wallet_request = request;
+                wallet_request.context = &extendedCtx;
+                return command.actor(wallet_request, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
@@ -530,7 +533,9 @@ public:
 #ifdef ENABLE_EXTERNAL_SIGNER
         for (const CRPCCommand& command : GetSignerRPCCommands()) {
             m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
-                return command.actor({request, m_context}, result, last_handler);
+                JSONRPCRequest wallet_request = request;
+                wallet_request.context = &m_context;
+                return command.actor(wallet_request, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
