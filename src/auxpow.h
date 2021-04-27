@@ -20,6 +20,7 @@
 class CBlock;
 class CBlockHeader;
 class CBlockIndex;
+class CChainState;
 class CValidationState;
 class UniValue;
 
@@ -64,7 +65,8 @@ private:
                                     const std::vector<uint256>& vMerkleBranch,
                                     int nIndex);
 
-  friend UniValue AuxpowToJSON(const CAuxPow& auxpow, bool verbose);
+  friend UniValue AuxpowToJSON(const CAuxPow& auxpow, bool verbose,
+                               CChainState& active_chainstate);
   friend class auxpow_tests::CAuxPowForTest;
 
 public:
