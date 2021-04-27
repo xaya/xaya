@@ -6,11 +6,12 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <node/blockstorage.h>
 #include <rpc/server.h>
 #include <streams.h>
 #include <sync.h>
 #include <util/system.h>
-#include <validation.h>
+#include <validation.h> // For cs_main
 #include <zmq/zmqutil.h>
 
 #include <zmq.h>

@@ -142,7 +142,7 @@ SendNameOutput (const JSONRPCRequest& request,
     },
     true, false);
 
-  auto& node = EnsureNodeContext (request.context);
+  auto& node = EnsureAnyNodeContext (request.context);
   if (wallet.GetBroadcastTransactions () && !node.connman)
     throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
                         "Error: Peer-to-peer functionality missing"
@@ -225,7 +225,7 @@ name_list ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
-  const auto& chainman = EnsureChainman (request.context);
+  const auto& chainman = EnsureAnyChainman (request.context);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
@@ -339,7 +339,8 @@ name_register ()
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ},
                 true);
-  const auto& chainman = EnsureChainman (request.context);
+  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& chainman = EnsureChainman (node);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -362,7 +363,7 @@ name_register ()
      a pending registration.  This is not a hard rule enforced by network
      rules, but it is necessary with the current mempool implementation.  */
   {
-    auto& mempool = EnsureMemPool (request.context);
+    auto& mempool = EnsureMemPool (node);
     LOCK (mempool.cs);
     if (mempool.registersName (name))
       throw JSONRPCError (RPC_TRANSACTION_ERROR,
@@ -434,7 +435,8 @@ name_update ()
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
-  const auto& chainman = EnsureChainman (request.context);
+  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& chainman = EnsureChainman (node);
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 3)
@@ -465,7 +467,7 @@ name_update ()
                                             DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
-    auto& mempool = EnsureMemPool (request.context);
+    auto& mempool = EnsureMemPool (node);
     LOCK (mempool.cs);
 
     const unsigned pendingOps = mempool.pendingNameChainLength (name);
@@ -558,7 +560,7 @@ sendtoname ()
   if (!wallet)
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
-  const auto& chainman = EnsureChainman (request.context);
+  const auto& chainman = EnsureAnyChainman (request.context);
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,

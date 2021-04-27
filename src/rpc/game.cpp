@@ -7,6 +7,7 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <logging.h>
+#include <node/blockstorage.h>
 #include <random.h>
 #include <rpc/blockchain.h>
 #include <rpc/server.h>
@@ -253,7 +254,7 @@ game_sendupdates ()
 #if ENABLE_ZMQ
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
-  const auto& chainman = EnsureChainman (request.context);
+  const auto& chainman = EnsureAnyChainman (request.context);
 
   SendUpdatesWorker::Work w;
 

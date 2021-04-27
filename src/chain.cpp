@@ -5,7 +5,7 @@
 
 #include <chain.h>
 
-#include <validation.h>
+#include <node/blockstorage.h>
 
 CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
 {

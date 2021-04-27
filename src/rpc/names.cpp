@@ -451,7 +451,7 @@ name_show ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
-  auto& chainman = EnsureChainman (request.context);
+  auto& chainman = EnsureAnyChainman (request.context);
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -512,7 +512,7 @@ name_history ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
-  auto& chainman = EnsureChainman (request.context);
+  auto& chainman = EnsureAnyChainman (request.context);
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
@@ -600,7 +600,7 @@ name_scan ()
 {
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
-  auto& chainman = EnsureChainman (request.context);
+  auto& chainman = EnsureAnyChainman (request.context);
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -744,7 +744,7 @@ name_pending ()
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
   MaybeWalletForRequest wallet(request);
-  auto& mempool = EnsureMemPool (request.context);
+  auto& mempool = EnsureAnyMemPool (request.context);
   LOCK2 (wallet.getLock (), mempool.cs);
 
   UniValue options(UniValue::VOBJ);
@@ -964,8 +964,8 @@ name_checkdb ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  ChainstateManager& chainman = EnsureChainman (request.context);
-  NodeContext& node = EnsureNodeContext (request.context);
+  NodeContext& node = EnsureAnyNodeContext (request.context);
+  ChainstateManager& chainman = EnsureChainman (node);
 
   LOCK (cs_main);
   auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
