@@ -120,6 +120,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
 
 BasicTestingSetup::~BasicTestingSetup()
 {
+    SetMockTime(0s); // Reset mocktime for following tests
     LogInstance().DisconnectTestLogger();
     fs::remove_all(m_path_root);
     gArgs.ClearArgs();
@@ -241,7 +242,8 @@ CBlock TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransa
     for (const CMutableTransaction& tx : txns) {
         block.vtx.push_back(MakeTransactionRef(tx));
     }
-    RegenerateCommitments(block, WITH_LOCK(::cs_main, return std::ref(g_chainman.m_blockman)));
+    CBlockIndex* prev_block = WITH_LOCK(::cs_main, return g_chainman.m_blockman.LookupBlockIndex(block.hashPrevBlock));
+    RegenerateCommitments(block, prev_block);
 
     while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
 
@@ -303,7 +305,6 @@ CMutableTransaction TestChain100Setup::CreateValidMempoolTransaction(CTransactio
 TestChain100Setup::~TestChain100Setup()
 {
     gArgs.ForceSetArg("-segwitheight", "0");
-    SetMockTime(0);
 }
 
 CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CMutableTransaction& tx) const
