@@ -579,8 +579,8 @@ name_scan ()
   return RPCHelpMan ("name_scan",
       "\nLists names in the database.\n",
       {
-          {"start", RPCArg::Type::STR, "", "Skip initially to this name"},
-          {"count", RPCArg::Type::NUM, "500", "Stop after this many names"},
+          {"start", RPCArg::Type::STR, RPCArg::Default{""}, "Skip initially to this name"},
+          {"count", RPCArg::Type::NUM, RPCArg::Default{500}, "Stop after this many names"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::ARR, "", "",
@@ -611,11 +611,11 @@ name_scan ()
     options = request.params[2].get_obj ();
 
   valtype start;
-  if (request.params.size () >= 1)
+  if (!request.params[0].isNull ())
     start = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   int count = 500;
-  if (request.params.size () >= 2)
+  if (!request.params[1].isNull ())
     count = request.params[1].get_int ();
 
   /* Parse and interpret the name_scan-specific options.  */
