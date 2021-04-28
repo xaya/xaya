@@ -10,6 +10,7 @@
 #include <net.h>
 #include <node/context.h>
 #include <rpc/blockchain.h>
+#include <rpc/net.h>
 #include <rpc/protocol.h>
 #include <rpc/request.h>
 #include <util/strencodings.h>
@@ -23,18 +24,16 @@ namespace
 
 void auxMiningCheck(const JSONRPCRequest& request)
 {
-  NodeContext& node = EnsureAnyNodeContext (request.context);
-  if (!node.connman)
-    throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
-                        "Error: Peer-to-peer functionality missing or"
-                        " disabled");
+  const NodeContext& node = EnsureAnyNodeContext (request.context);
+  const auto& connman = EnsureConnman (node);
+  const auto& chainman = EnsureChainman (node);
 
-  if (node.connman->GetNodeCount (ConnectionDirection::Both) == 0
+  if (connman.GetNodeCount (ConnectionDirection::Both) == 0
         && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
                         "Namecoin is not connected!");
 
-  if (::ChainstateActive ().IsInitialBlockDownload ()
+  if (chainman.ActiveChainstate ().IsInitialBlockDownload ()
         && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                         "Namecoin is downloading blocks...");
@@ -44,7 +43,7 @@ void auxMiningCheck(const JSONRPCRequest& request)
   {
     LOCK (cs_main);
     const auto auxpowStart = Params ().GetConsensus ().nAuxpowStartHeight;
-    if (::ChainActive ().Height () + 1 < auxpowStart)
+    if (chainman.ActiveHeight () + 1 < auxpowStart)
       throw std::runtime_error ("mining auxblock method is not yet available");
   }
 }
