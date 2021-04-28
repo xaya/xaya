@@ -286,6 +286,7 @@ BITCOIN_CORE_H = \
   wallet/ismine.h \
   wallet/load.h \
   wallet/rpcwallet.h \
+  wallet/rpcnames.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
   wallet/sqlite.h \
