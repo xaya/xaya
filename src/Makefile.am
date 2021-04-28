@@ -158,6 +158,7 @@ BITCOIN_CORE_H = \
   index/txindex.h \
   indirectmap.h \
   init.h \
+  init/common.h \
   interfaces/chain.h \
   interfaces/handler.h \
   interfaces/node.h \
@@ -207,6 +208,7 @@ BITCOIN_CORE_H = \
   rpc/client.h \
   rpc/mining.h \
   rpc/names.h \
+  rpc/net.h \
   rpc/protocol.h \
   rpc/rawtransaction.h \
   rpc/rawtransaction_util.h \
@@ -540,6 +542,7 @@ libbitcoin_common_a_SOURCES = \
   core_read.cpp \
   core_write.cpp \
   external_signer.cpp \
+  init/common.cpp \
   key.cpp \
   key_io.cpp \
   merkleblock.cpp \

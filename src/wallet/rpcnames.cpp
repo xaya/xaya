@@ -18,6 +18,7 @@
 #include <random.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
+#include <rpc/net.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/names.h>
@@ -141,10 +142,8 @@ SendNameOutput (const JSONRPCRequest& request,
     true, false);
 
   auto& node = EnsureAnyNodeContext (request.context);
-  if (wallet.GetBroadcastTransactions () && !node.connman)
-    throw JSONRPCError (RPC_CLIENT_P2P_DISABLED,
-                        "Error: Peer-to-peer functionality missing"
-                        " or disabled");
+  if (wallet.GetBroadcastTransactions ())
+    EnsureConnman (node);
 
   std::vector<CRecipient> vecSend;
   vecSend.push_back ({nameOutScript, NAME_LOCKED_AMOUNT, false});
@@ -698,9 +697,9 @@ sendtoname ()
           {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment to store the name of the person or organization\n"
   "                             to which you're sending the transaction. This is not part of the \n"
   "                             transaction, just kept in your wallet."},
-          {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
+          {"subtractfeefromamount", RPCArg::Type::BOOL, RPCArg::Default{false}, "The fee will be deducted from the amount being sent.\n"
   "                             The recipient will receive less coins than you enter in the amount field."},
-          {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
+          {"replaceable", RPCArg::Type::BOOL, RPCArg::DefaultHint{"fallback to wallet's default"}, "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
       },
           RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
           RPCExamples{
