@@ -103,7 +103,6 @@ public:
 
     /**
      * Set the chain ID.  This is used for the test suite.
-     * @param ch The chain ID to set.
      */
     inline void SetChainId(int32_t chainId)
     {

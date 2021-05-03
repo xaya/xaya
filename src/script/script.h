@@ -532,7 +532,7 @@ public:
     /**
      * Check if the script is P2SH.  Optionally, strip a possible
      * name prefix before performing the strict check from Bitcoin.
-     * @param allowName Strip name scripts before checking?
+     * @param allowNames Strip name scripts before checking?
      */
     bool IsPayToScriptHash(bool allowNames) const;
     bool IsPayToWitnessScriptHash(bool allowNames) const;
