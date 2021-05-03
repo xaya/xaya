@@ -74,6 +74,7 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
+  $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL) \
   $(LIBBITCOIN_ZMQ)
@@ -153,13 +154,17 @@ BITCOIN_CORE_H = \
   i2p.h \
   index/base.h \
   index/blockfilterindex.h \
+  index/coinstatsindex.h \
   index/disktxpos.h \
   index/txindex.h \
   indirectmap.h \
   init.h \
   init/common.h \
   interfaces/chain.h \
+  interfaces/echo.h \
   interfaces/handler.h \
+  interfaces/init.h \
+  interfaces/ipc.h \
   interfaces/node.h \
   interfaces/wallet.h \
   key.h \
@@ -302,6 +307,8 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+ipc/capnp/libbitcoin_ipc_a-ipc.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+
 # server: shared between bitcoind and bitcoin-qt
 # Contains code accessing mempool and chain state that is meant to be separated
 # from wallet and gui code (see node/README.md). Shared code should go in
@@ -323,6 +330,7 @@ libbitcoin_server_a_SOURCES = \
   i2p.cpp \
   index/base.cpp \
   index/blockfilterindex.cpp \
+  index/coinstatsindex.cpp \
   index/txindex.cpp \
   init.cpp \
   mapport.cpp \
@@ -565,7 +573,9 @@ libbitcoin_util_a_SOURCES = \
   compat/glibcxx_sanity.cpp \
   compat/strnlen.cpp \
   fs.cpp \
+  interfaces/echo.cpp \
   interfaces/handler.cpp \
+  interfaces/init.cpp \
   logging.cpp \
   random.cpp \
   randomenv.cpp \
@@ -644,17 +654,17 @@ bitcoin_bin_ldadd = \
 
 bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(SQLITE_LIBS)
 
-bitcoind_SOURCES = $(bitcoin_daemon_sources)
+bitcoind_SOURCES = $(bitcoin_daemon_sources) init/bitcoind.cpp
 bitcoind_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoind_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoind_LDFLAGS = $(bitcoin_bin_ldflags)
 bitcoind_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
 
-bitcoin_node_SOURCES = $(bitcoin_daemon_sources)
+bitcoin_node_SOURCES = $(bitcoin_daemon_sources) init/bitcoin-node.cpp
 bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
+bitcoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
 
 # bitcoin-cli binary #
 bitcoin_cli_SOURCES = bitcoin-cli.cpp
@@ -816,6 +826,39 @@ check-security: $(bin_PROGRAMS)
 if HARDEN
 	@echo "Checking binary security..."
 	$(AM_V_at) OBJDUMP=$(OBJDUMP) OTOOL=$(OTOOL) $(PYTHON) $(top_srcdir)/contrib/devtools/security-check.py $(bin_PROGRAMS)
+endif
+
+libbitcoin_ipc_mpgen_input = \
+  ipc/capnp/echo.capnp \
+  ipc/capnp/init.capnp
+EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
+%.capnp:
+
+if BUILD_MULTIPROCESS
+LIBBITCOIN_IPC=libbitcoin_ipc.a
+libbitcoin_ipc_a_SOURCES = \
+  ipc/capnp/init-types.h \
+  ipc/capnp/protocol.cpp \
+  ipc/capnp/protocol.h \
+  ipc/exception.h \
+  ipc/interfaces.cpp \
+  ipc/process.cpp \
+  ipc/process.h \
+  ipc/protocol.h
+libbitcoin_ipc_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_ipc_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(LIBMULTIPROCESS_CFLAGS)
+
+include $(MPGEN_PREFIX)/include/mpgen.mk
+libbitcoin_ipc_mpgen_output = \
+  $(libbitcoin_ipc_mpgen_input:=.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.h) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-client.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-server.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-types.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-types.h) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy.h)
+nodist_libbitcoin_ipc_a_SOURCES = $(libbitcoin_ipc_mpgen_output)
+CLEANFILES += $(libbitcoin_ipc_mpgen_output)
 endif
 
 if EMBEDDED_LEVELDB
