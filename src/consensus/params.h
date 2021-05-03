@@ -37,7 +37,7 @@ class MainNetConsensus : public ConsensusRules
 {
 public:
 
-    unsigned NameExpirationDepth(unsigned nHeight) const
+    unsigned NameExpirationDepth(unsigned nHeight) const override
     {
         /* Important:  It is assumed (in ExpireNames) that
            "n - expirationDepth(n)" is increasing!  (This is
@@ -51,7 +51,7 @@ public:
         return 36000;
     }
 
-    CAmount MinNameCoinAmount(unsigned nHeight) const
+    CAmount MinNameCoinAmount(unsigned nHeight) const override
     {
         if (nHeight < 212500)
             return 0;
@@ -65,7 +65,7 @@ class TestNetConsensus : public MainNetConsensus
 {
 public:
 
-    CAmount MinNameCoinAmount(unsigned) const
+    CAmount MinNameCoinAmount(unsigned) const override
     {
         return COIN / 100;
     }
@@ -76,7 +76,7 @@ class RegTestConsensus : public TestNetConsensus
 {
 public:
 
-    unsigned NameExpirationDepth (unsigned nHeight) const
+    unsigned NameExpirationDepth (unsigned nHeight) const override
     {
         return 30;
     }
