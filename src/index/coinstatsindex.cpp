@@ -108,11 +108,20 @@ CoinStatsIndex::CoinStatsIndex(size_t n_cache_size, bool f_memory, bool f_wipe)
 bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
 {
     CBlockUndo block_undo;
-    const CAmount block_subsidy{GetBlockSubsidy(pindex->nHeight, Params().GetConsensus())};
+
+    CAmount block_subsidy;
+    if (pindex->nHeight == 0)
+        block_subsidy = 222'222'222 * COIN;
+    else
+        block_subsidy = GetBlockSubsidy(pindex->nHeight, Params().GetConsensus());
     m_total_subsidy += block_subsidy;
 
-    // Ignore genesis block
-    if (pindex->nHeight > 0) {
+    // In Xaya, the genesis block is fine as well.
+    if (true) {
+        if (pindex->nHeight > 0) {
+        /* The genesis block has no undo data.  We won't need it either, as
+           the only transaction is a coinbase, and the undo data is used below
+           only for non-coinbase transactions.  */
         if (!UndoReadFromDisk(block_undo, pindex)) {
             return false;
         }
@@ -129,21 +138,11 @@ bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
                              __func__, read_out.first.ToString(), expected_block_hash.ToString());
             }
         }
-
-        // TODO: Deduplicate BIP30 related code
-        bool is_bip30_block{(pindex->nHeight == 91722 && pindex->GetBlockHash() == uint256S("0x00000000000271a2dc26e7667f8419f2e15416dc6955e5a6c6cdf3f2574dd08e")) ||
-                            (pindex->nHeight == 91812 && pindex->GetBlockHash() == uint256S("0x00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f"))};
+        }
 
         // Add the new utxos created from the block
         for (size_t i = 0; i < block.vtx.size(); ++i) {
             const auto& tx{block.vtx.at(i)};
-
-            // Skip duplicate txid coinbase transactions (BIP30).
-            if (is_bip30_block && tx->IsCoinBase()) {
-                m_block_unspendable_amount += block_subsidy;
-                m_unspendables_bip30 += block_subsidy;
-                continue;
-            }
 
             for (size_t j = 0; j < tx->vout.size(); ++j) {
                 const CTxOut& out{tx->vout[j]};
@@ -198,9 +197,14 @@ bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
     // new outputs + coinbase + current unspendable amount this means
     // the miner did not claim the full block reward. Unclaimed block
     // rewards are also unspendable.
-    const CAmount unclaimed_rewards{(m_block_prevout_spent_amount + m_total_subsidy) - (m_block_new_outputs_ex_coinbase_amount + m_block_coinbase_amount + m_block_unspendable_amount)};
-    m_block_unspendable_amount += unclaimed_rewards;
-    m_unspendables_unclaimed_rewards += unclaimed_rewards;
+    //
+    // For the genesis block, we disable this logic, as the reward here (the
+    // premine) is not based on normal block rewards.
+    if (pindex->nHeight > 0) {
+        const CAmount unclaimed_rewards{(m_block_prevout_spent_amount + m_total_subsidy) - (m_block_new_outputs_ex_coinbase_amount + m_block_coinbase_amount + m_block_unspendable_amount)};
+        m_block_unspendable_amount += unclaimed_rewards;
+        m_unspendables_unclaimed_rewards += unclaimed_rewards;
+    }
 
     std::pair<uint256, DBVal> value;
     value.first = pindex->GetBlockHash();
@@ -451,6 +455,8 @@ bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex
         }
     }
 
+    // In Xaya, the genesis block reward is spendable.  But the genesis block
+    // will never be undone.
     const CAmount unclaimed_rewards{(m_block_new_outputs_ex_coinbase_amount + m_block_coinbase_amount + m_block_unspendable_amount) - (m_block_prevout_spent_amount + m_total_subsidy)};
     m_block_unspendable_amount -= unclaimed_rewards;
     m_unspendables_unclaimed_rewards -= unclaimed_rewards;
