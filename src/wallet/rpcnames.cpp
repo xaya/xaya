@@ -1,10 +1,12 @@
 // Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2021 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <base58.h>
 #include <coins.h>
 #include <consensus/validation.h>
+#include <crypto/hkdf_sha256_32.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <key_io.h>
@@ -30,6 +32,7 @@
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
+#include <wallet/scriptpubkeyman.h>
 #include <wallet/wallet.h>
 
 #include <univalue.h>
@@ -286,6 +289,65 @@ name_list ()
   );
 }
 
+/**
+ * Generate a salt using HKDF for a given name + private key combination.
+ * Indirectly used in name_new and name_firstupdate.
+ * Refactored out to make testing easier.
+ * @return True on success, false otherwise
+ */
+bool
+getNameSalt(const CKey& key, const valtype& name, valtype& rand)
+{
+    const valtype ikm(key.begin(), key.end());
+    const std::string salt(reinterpret_cast<const char*>(name.data()), name.size());
+    const std::string info("Namecoin Registration Salt");
+    CHKDF_HMAC_SHA256_L32 hkdf32(ikm.data(), ikm.size(), salt);
+    unsigned char tmp[32];
+    hkdf32.Expand32(info, tmp);
+
+    rand = valtype(tmp, tmp + 20);
+    return true;
+}
+
+namespace
+{
+
+/**
+ * Generate a salt using HKDF for a given name + txout combination.
+ * Used in name_new and name_firstupdate.
+ * @return True on success, false otherwise
+ */
+bool
+getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, valtype& rand)
+{
+    AssertLockHeld(pwallet->cs_wallet);
+
+    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet);
+    LOCK (spk_man.cs_KeyStore);
+
+    CTxDestination dest;
+    CKeyID keyid;
+    CKey key;
+    if (!ExtractDestination(output, dest))
+        return false; // If multisig.
+    assert(IsValidDestination(dest)); // We should never get a null destination.
+    keyid = GetKeyForDestination(spk_man, dest);
+    spk_man.GetKey(keyid, key);
+
+    return getNameSalt(key, name, rand);
+}
+
+bool
+saltMatchesHash(const valtype& name, const valtype& rand, const valtype& expectedHash)
+{
+    valtype toHash(rand);
+    toHash.insert (toHash.end(), name.begin(), name.end());
+
+    return (Hash160(toHash) == uint160(expectedHash));
+}
+
+} // anonymous namespace
+
 /* ************************************************************************** */
 
 RPCHelpMan
@@ -347,9 +409,6 @@ name_new ()
         throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name exists already");
     }
 
-  valtype rand(20);
-  GetRandBytes (&rand[0], rand.size ());
-
   /* Make sure the results are valid at least up to the most recent block
      the user could have gotten from another RPC command prior to now.  */
   pwallet->BlockUntilSyncedToCurrentChain ();
@@ -361,8 +420,14 @@ name_new ()
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
 
+  const CScript output = destHelper.getScript ();
+
+  valtype rand(20);
+  if (!getNameSalt (pwallet, name, output, rand))
+      GetRandBytes (&rand[0], rand.size ());
+
   const CScript newScript
-      = CNameScript::buildNameNew (destHelper.getScript (), name, rand);
+      = CNameScript::buildNameNew (output, name, rand);
 
   const UniValue txidVal
       = SendNameOutput (request, *pwallet, newScript, nullptr, options);
@@ -451,8 +516,8 @@ name_firstupdate ()
                 + HELP_REQUIRING_PASSPHRASE,
             {
                 {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
-                {"rand", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The rand value of name_new"},
-                {"tx", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The name_new txid"},
+                {"rand", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "The rand value of name_new"},
+                {"tx", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "The name_new txid"},
                 {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
                 optHelp.buildRpcArg (),
                 {"allow_active", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED_NAMED_ARG, "Disable check for the name being active"},
@@ -483,11 +548,15 @@ name_firstupdate ()
   if (name.size () > MAX_NAME_LENGTH)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "the name is too long");
 
-  const valtype rand = ParseHexV (request.params[1], "rand");
-  if (rand.size () > 20)
-    throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid rand value");
-
-  const uint256 prevTxid = ParseHashV (request.params[2], "txid");
+  const bool fixedRand = (request.params.size () >= 2 && !request.params[1].isNull ());
+  const bool fixedTxid = (request.params.size () >= 3 && !request.params[2].isNull ());
+  valtype rand(20);
+  if (fixedRand)
+    {
+      rand = ParseHexV (request.params[1], "rand");
+      if (rand.size () > 20)
+        throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid rand value");
+    }
 
   const bool isDefaultVal = (request.params.size () < 4 || request.params[3].isNull ());
   const valtype value = isDefaultVal ?
@@ -515,6 +584,69 @@ name_firstupdate ()
                             "this name is already active");
     }
 
+  uint256 prevTxid = uint256::ZERO; // if it can't find a txid, force an error
+  if (fixedTxid)
+    {
+      prevTxid = ParseHashV (request.params[2], "txid");
+    }
+  else
+    {
+      // Code slightly duplicates name_scan, but not enough to be able to refactor.
+      /* Make sure the results are valid at least up to the most recent block
+         the user could have gotten from another RPC command prior to now.  */
+      pwallet->BlockUntilSyncedToCurrentChain ();
+
+      LOCK (cs_main);
+
+      for (const auto& item : pwallet->mapWallet)
+        {
+          const CWalletTx& tx = item.second;
+          if (!tx.tx->IsNamecoin ())
+            continue;
+
+          CScript output;
+          CNameScript nameOp;
+          bool found = false;
+          for (CTxOut curOutput : tx.tx->vout)
+            {
+              CScript curScript = curOutput.scriptPubKey;
+              const CNameScript cur(curScript);
+              if (!cur.isNameOp ())
+                continue;
+              if (cur.getNameOp () != OP_NAME_NEW)
+                continue;
+              if (found) {
+                LogPrintf ("ERROR: wallet contains tx with multiple"
+                           " name outputs");
+                continue;
+              }
+              nameOp = cur;
+              found = true;
+              output = curScript;
+            }
+
+          if (!found)
+            continue; // no name outputs found
+
+          if (!fixedRand)
+            {
+              if (!getNameSalt (pwallet, name, output, rand)) // we don't have the private key for that output
+                continue;
+            }
+
+          if (!saltMatchesHash (name, rand, nameOp.getOpHash ()))
+            continue;
+
+          // found it
+          prevTxid = tx.GetHash ();
+
+          break; // if there be more than one match, the behavior is undefined
+        }
+    }
+
+  if (prevTxid == uint256::ZERO)
+    throw JSONRPCError (RPC_TRANSACTION_ERROR, "scan for previous txid failed");
+
   CTxOut prevOut;
   CTxIn txIn;
   {
@@ -524,13 +656,21 @@ name_firstupdate ()
   }
 
   const CNameScript prevNameOp(prevOut.scriptPubKey);
+
+  if (!fixedRand)
+    {
+      bool saltOK = getNameSalt (pwallet, name, prevOut.scriptPubKey, rand);
+      if (!saltOK)
+          throw JSONRPCError (RPC_TRANSACTION_ERROR, "could not generate rand for txid");
+      if (!saltMatchesHash (name, rand, prevNameOp.getOpHash ()))
+        throw JSONRPCError (RPC_TRANSACTION_ERROR, "generated rand for txid does not match");
+    }
+
   assert (prevNameOp.isNameOp ());
   if (prevNameOp.getNameOp () != OP_NAME_NEW)
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous tx is not name_new");
 
-  valtype toHash(rand);
-  toHash.insert (toHash.end (), name.begin (), name.end ());
-  if (uint160 (prevNameOp.getOpHash ()) != Hash160 (toHash))
+  if (!saltMatchesHash (name, rand, prevNameOp.getOpHash ()))
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "rand value is wrong");
 
   /* Make sure the results are valid at least up to the most recent block
