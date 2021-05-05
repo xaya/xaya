@@ -1,10 +1,12 @@
 // Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2021 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <base58.h>
 #include <coins.h>
 #include <consensus/validation.h>
+#include <crypto/hkdf_sha256_32.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <key_io.h>
@@ -31,6 +33,7 @@
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
+#include <wallet/scriptpubkeyman.h>
 #include <wallet/wallet.h>
 
 #include <univalue.h>
@@ -303,6 +306,65 @@ name_list ()
 }
   );
 }
+
+/**
+ * Generate a salt using HKDF for a given name + private key combination.
+ * Indirectly used in name_new and name_firstupdate.
+ * Refactored out to make testing easier.
+ * @return True on success, false otherwise
+ */
+bool
+getNameSalt(const CKey& key, const valtype& name, valtype& rand)
+{
+    const valtype ikm(key.begin(), key.end());
+    const std::string salt(reinterpret_cast<const char*>(name.data()), name.size());
+    const std::string info("Namecoin Registration Salt");
+    CHKDF_HMAC_SHA256_L32 hkdf32(ikm.data(), ikm.size(), salt);
+    unsigned char tmp[32];
+    hkdf32.Expand32(info, tmp);
+
+    rand = valtype(tmp, tmp + 20);
+    return true;
+}
+
+namespace
+{
+
+/**
+ * Generate a salt using HKDF for a given name + txout combination.
+ * Used in name_new and name_firstupdate.
+ * @return True on success, false otherwise
+ */
+bool
+getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, valtype& rand)
+{
+    AssertLockHeld(pwallet->cs_wallet);
+
+    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet);
+    LOCK (spk_man.cs_KeyStore);
+
+    CTxDestination dest;
+    CKeyID keyid;
+    CKey key;
+    if (!ExtractDestination(output, dest))
+        return false; // If multisig.
+    assert(IsValidDestination(dest)); // We should never get a null destination.
+    keyid = GetKeyForDestination(spk_man, dest);
+    spk_man.GetKey(keyid, key);
+
+    return getNameSalt(key, name, rand);
+}
+
+bool
+saltMatchesHash(const valtype& name, const valtype& rand, const valtype& expectedHash)
+{
+    valtype toHash(rand);
+    toHash.insert (toHash.end(), name.begin(), name.end());
+
+    return (Hash160(toHash) == uint160(expectedHash));
+}
+
+} // anonymous namespace
 
 /* ************************************************************************** */
 
