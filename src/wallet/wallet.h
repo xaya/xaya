@@ -769,6 +769,8 @@ private:
      */
     static bool AttachChain(const std::shared_ptr<CWallet>& wallet, interfaces::Chain& chain, bilingual_str& error, std::vector<bilingual_str>& warnings);
 
+    void EffectTransactionQueue();
+
 public:
     /**
      * Main wallet lock.
