@@ -596,7 +596,7 @@ name_firstupdate ()
          the user could have gotten from another RPC command prior to now.  */
       pwallet->BlockUntilSyncedToCurrentChain ();
 
-      LOCK (cs_main);
+      LOCK2 (pwallet->cs_wallet, cs_main);
 
       for (const auto& item : pwallet->mapWallet)
         {
@@ -659,6 +659,7 @@ name_firstupdate ()
 
   if (!fixedRand)
     {
+      LOCK (pwallet->cs_wallet);
       bool saltOK = getNameSalt (pwallet, name, prevOut.scriptPubKey, rand);
       if (!saltOK)
           throw JSONRPCError (RPC_TRANSACTION_ERROR, "could not generate rand for txid");
