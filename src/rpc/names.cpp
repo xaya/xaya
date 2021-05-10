@@ -815,7 +815,7 @@ void
 PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
                   CMutableTransaction& mtx)
 {
-  if (nOut < 0 || nOut >= mtx.vout.size ())
+  if (nOut >= mtx.vout.size ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
   auto& script = mtx.vout[nOut].scriptPubKey;
 

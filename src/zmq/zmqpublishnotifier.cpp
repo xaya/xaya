@@ -181,7 +181,7 @@ bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const void
 
     /* send three parts, command & data & a LE 4byte sequence number */
     unsigned char msgseq[sizeof(uint32_t)];
-    WriteLE32(&msgseq[0], sequenceNumbers[command]);
+    WriteLE32(msgseq, sequenceNumbers[command]);
     int rc = zmq_send_multipart(psocket, command, strlen(command), data, size, msgseq, (size_t)sizeof(uint32_t), nullptr);
     if (rc == -1)
         return false;
