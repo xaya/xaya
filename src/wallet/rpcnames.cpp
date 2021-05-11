@@ -905,6 +905,43 @@ queuerawtransaction ()
 /* ************************************************************************** */
 
 RPCHelpMan
+dequeuetransaction ()
+{
+  return RPCHelpMan ("dequeuetransaction",
+      "\nRemove a transaction from the queue.",
+      {
+          {"txid", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction ID of the transaction to be dequeued"},
+      },
+      RPCResult {RPCResult::Type::NONE, "", ""},
+      RPCExamples {
+          HelpExampleCli("dequeuetransaction", "txid") +
+          HelpExampleRpc("dequeuetransaction", "txid")
+      },
+      [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
+  if (!wallet) return NullUniValue;
+
+  RPCTypeCheck (request.params,
+                {UniValue::VSTR});
+
+  const uint256& txid = ParseHashV (request.params[0], "txid");
+
+  LOCK (wallet->cs_wallet);
+
+  if (!wallet->EraseQueuedTransaction(txid))
+  {
+    throw JSONRPCError (RPC_WALLET_ERROR, "Error dequeueing transaction");
+  }
+
+  return NullUniValue;
+}
+  );
+}
+
+/* ************************************************************************** */
+
+RPCHelpMan
 listqueuedtransactions ()
 {
   return RPCHelpMan{"listqueuedtransactions",

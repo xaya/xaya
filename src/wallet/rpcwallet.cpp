@@ -4826,6 +4826,7 @@ extern RPCHelpMan name_new();
 extern RPCHelpMan name_firstupdate();
 extern RPCHelpMan name_update();
 extern RPCHelpMan queuerawtransaction();
+extern RPCHelpMan dequeuetransaction();
 extern RPCHelpMan listqueuedtransactions();
 extern RPCHelpMan sendtoname();
 
@@ -4909,6 +4910,7 @@ static const CRPCCommand commands[] =
     { "names",              &name_firstupdate,               },
     { "names",              &name_update,                    },
     { "names",              &queuerawtransaction             },
+    { "names",              &dequeuetransaction              },
     { "names",              &listqueuedtransactions,         },
     { "names",              &sendtoname,                     },
 };
