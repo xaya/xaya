@@ -472,7 +472,7 @@ NameTableModel::emitDataChanged(int idx)
     dataChanged(index(idx, 0), index(idx, columns.length()-1));
 }
 
-QString NameTableModel::update(const QString &name, const Optional<QString> &value, const Optional<QString> &transferTo) const
+QString NameTableModel::update(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
 {
     std::string strName = name.toStdString();
     LogPrintf ("wallet attempting name_update: name=%s\n", strName);

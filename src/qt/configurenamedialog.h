@@ -1,10 +1,11 @@
 #ifndef CONFIGURENAMEDIALOG_H
 #define CONFIGURENAMEDIALOG_H
 
-#include <optional.h>
 #include <qt/platformstyle.h>
 
 #include <QDialog>
+
+#include <optional>
 
 namespace Ui {
     class ConfigureNameDialog;
@@ -27,7 +28,7 @@ public:
 
     void setModel(WalletModel *walletModel);
     const QString &getReturnData() const { return returnData; }
-    const Optional<QString> getTransferTo() const
+    const std::optional<QString> getTransferTo() const
     {
         if (returnTransferTo == "")
         {

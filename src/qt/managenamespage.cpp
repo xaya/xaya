@@ -1,7 +1,6 @@
 #include <qt/managenamespage.h>
 #include <qt/forms/ui_managenamespage.h>
 
-#include <optional.h>
 #include <qt/configurenamedialog.h>
 #include <qt/csvmodelwriter.h>
 #include <qt/guiutil.h>
@@ -12,6 +11,8 @@
 #include <QMessageBox>
 #include <QMenu>
 #include <QSortFilterProxyModel>
+
+#include <optional>
 
 ManageNamesPage::ManageNamesPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
@@ -163,7 +164,7 @@ void ManageNamesPage::onConfigureNameAction()
         return;
 
     const QString &newValue = dlg.getReturnData();
-    const Optional<QString> transferToAddress = dlg.getTransferTo();
+    const std::optional<QString> transferToAddress = dlg.getTransferTo();
 
     const QString err_msg = model->update(name, newValue, transferToAddress);
     if (!err_msg.isEmpty() && err_msg != "ABORTED")
