@@ -8,6 +8,7 @@
 #include <QStringList>
 
 #include <memory>
+#include <optional>
 #include <sync.h>
 
 namespace interfaces {
@@ -48,6 +49,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
     /*@}*/
 
+    QString update(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const;
     QString renew(const QString &name) const;
 
 private:
