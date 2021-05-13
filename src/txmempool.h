@@ -794,28 +794,29 @@ public:
     bool exists(const uint256& txid) const { return exists(GenTxid{false, txid}); }
 
     bool
-    registersName(const valtype& name) const
+    registersName(const valtype& name) const EXCLUSIVE_LOCKS_REQUIRED(cs)
+
     {
         AssertLockHeld(cs);
         return names.registersName(name);
     }
 
     bool
-    updatesName(const valtype& name) const
+    updatesName(const valtype& name) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
         AssertLockHeld(cs);
         return names.updatesName(name);
     }
 
     unsigned
-    pendingNameChainLength (const valtype& name) const
+    pendingNameChainLength (const valtype& name) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
         AssertLockHeld(cs);
         return names.pendingChainLength(name);
     }
 
     COutPoint
-    lastNameOutput(const valtype& name) const
+    lastNameOutput(const valtype& name) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
         AssertLockHeld(cs);
         return names.lastNameOutput(name);
@@ -829,7 +830,7 @@ public:
      * @return True if it doesn't conflict.
      */
     inline bool
-    checkNameOps (const CTransaction& tx) const
+    checkNameOps (const CTransaction& tx) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
         AssertLockHeld(cs);
         return names.checkTx (tx);
