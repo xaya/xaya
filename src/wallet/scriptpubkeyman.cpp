@@ -6,6 +6,7 @@
 #include <logging.h>
 #include <outputtype.h>
 #include <script/descriptor.h>
+#include <script/names.h>
 #include <script/sign.h>
 #include <util/bip32.h>
 #include <util/strencodings.h>
@@ -1650,8 +1651,14 @@ bool DescriptorScriptPubKeyMan::GetNewDestination(const OutputType type, CTxDest
 
 isminetype DescriptorScriptPubKeyMan::IsMine(const CScript& script) const
 {
+    // If we have a name script, strip the prefix.  Typically this is handled
+    // by Solver, but here we don't go through the Solver so need to manage
+    // name prefixes separately.
+    const CNameScript nameOp(script);
+    const CScript& baseScript = nameOp.getAddress();
+
     LOCK(cs_desc_man);
-    if (m_map_script_pub_keys.count(script) > 0) {
+    if (m_map_script_pub_keys.count(baseScript) > 0) {
         return ISMINE_SPENDABLE;
     }
     return ISMINE_NO;
@@ -2002,10 +2009,16 @@ int64_t DescriptorScriptPubKeyMan::GetTimeFirstKey() const
 
 std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvider(const CScript& script, bool include_private) const
 {
+    // If we have a name script, strip the prefix.  Typically this is handled
+    // by Solver, but here we don't go through the Solver so need to manage
+    // name prefixes separately.
+    const CNameScript nameOp(script);
+    const CScript& baseScript = nameOp.getAddress();
+
     LOCK(cs_desc_man);
 
     // Find the index of the script
-    auto it = m_map_script_pub_keys.find(script);
+    auto it = m_map_script_pub_keys.find(baseScript);
     if (it == m_map_script_pub_keys.end()) {
         return nullptr;
     }
