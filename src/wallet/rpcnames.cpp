@@ -322,8 +322,13 @@ getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, 
 {
     AssertLockHeld(pwallet->cs_wallet);
 
-    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*pwallet);
-    LOCK (spk_man.cs_KeyStore);
+    const auto* spk = pwallet->GetScriptPubKeyMan (output);
+    if (spk == nullptr)
+        return false;
+
+    auto provider = spk->GetSigningProviderWithKeys (output);
+    if (provider == nullptr)
+        return false;
 
     CTxDestination dest;
     CKeyID keyid;
@@ -331,8 +336,9 @@ getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, 
     if (!ExtractDestination(output, dest))
         return false; // If multisig.
     assert(IsValidDestination(dest)); // We should never get a null destination.
-    keyid = GetKeyForDestination(spk_man, dest);
-    spk_man.GetKey(keyid, key);
+
+    keyid = GetKeyForDestination(*provider, dest);
+    provider->GetKey(keyid, key);
 
     return getNameSalt(key, name, rand);
 }

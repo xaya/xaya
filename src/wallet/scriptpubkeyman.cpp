@@ -556,6 +556,11 @@ std::unique_ptr<SigningProvider> LegacyScriptPubKeyMan::GetSolvingProvider(const
     return std::make_unique<LegacySigningProvider>(*this);
 }
 
+std::unique_ptr<SigningProvider> LegacyScriptPubKeyMan::GetSigningProviderWithKeys(const CScript& script) const
+{
+    return std::make_unique<LegacySigningProvider>(*this);
+}
+
 bool LegacyScriptPubKeyMan::CanProvide(const CScript& script, SignatureData& sigdata)
 {
     IsMineResult ismine = IsMineInner(*this, script, IsMineSigVersion::TOP, /* recurse_scripthash= */ false);
@@ -2039,6 +2044,11 @@ std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvid
     }
 
     return out_keys;
+}
+
+std::unique_ptr<SigningProvider> DescriptorScriptPubKeyMan::GetSigningProviderWithKeys(const CScript& output) const
+{
+    return std::unique_ptr<SigningProvider>(GetSigningProvider(output, true).release());
 }
 
 std::unique_ptr<SigningProvider> DescriptorScriptPubKeyMan::GetSolvingProvider(const CScript& script) const
