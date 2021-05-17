@@ -1588,7 +1588,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX)) {
         g_name_hash_index = std::make_unique<NameHashIndex>(nNameHashIndexCache, false, fReindex);
-        g_name_hash_index->Start();
+        if (!g_name_hash_index->Start()) {
+            return false;
+        }
     }
 
     for (const auto& filter_type : g_enabled_filter_types) {
