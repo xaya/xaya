@@ -10,6 +10,7 @@
 #include <consensus/params.h>
 #include <primitives/block.h>
 #include <protocol.h>
+#include <util/hash_type.h>
 
 #include <map>
 #include <memory>
@@ -27,6 +28,10 @@ struct CCheckpointData {
     }
 };
 
+struct AssumeutxoHash : public BaseHash<uint256> {
+    explicit AssumeutxoHash(const uint256& hash) : BaseHash(hash) {}
+};
+
 /**
  * Holds configuration for use during UTXO snapshot load and validation. The contents
  * here are security critical, since they dictate which UTXO snapshots are recognized
@@ -34,7 +39,7 @@ struct CCheckpointData {
  */
 struct AssumeutxoData {
     //! The expected hash of the deserialized UTXO set.
-    const uint256 hash_serialized;
+    const AssumeutxoHash hash_serialized;
 
     //! Used to populate the nChainTx value, which is used during BlockManager::LoadBlockIndex().
     //!
@@ -42,8 +47,6 @@ struct AssumeutxoData {
     //! which we do not necessarily have at the time of snapshot load.
     const unsigned int nChainTx;
 };
-
-std::ostream& operator<<(std::ostream& o, const AssumeutxoData& aud);
 
 using MapAssumeutxo = std::map<int, const AssumeutxoData>;
 
