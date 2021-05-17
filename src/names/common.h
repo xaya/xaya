@@ -201,14 +201,11 @@ public:
 
   /**
    * Seek to a given lower bound.
-   * @param start The name to seek to.
    */
   virtual void seek (const valtype& name) = 0;
 
   /**
    * Get the next name.  Returns false if no more names are available.
-   * @param name Put the name here.
-   * @param data Put the name's data here.
    * @return True if successful, false if no more names.
    */
   virtual bool next (valtype& name, CNameData& data) = 0;
