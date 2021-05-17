@@ -123,6 +123,7 @@ class NameRegistrationTest (NameTestFramework):
 
     # Check for "stealing" of the name after expiry.
     self.generateToOther (1)
+    assert newSteal[1] != newSteal2[1]
     self.firstupdateName (0, "name-0", newSteal, "stolen")
     self.checkName (0, "name-0", "value-0", 0, True)
     self.generateToOther (1)
