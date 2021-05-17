@@ -358,7 +358,15 @@ NameOptionsHelp&
 NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
                           const std::string& doc)
 {
-  return withArg (name, type, "", doc);
+  return withArg (name, type, "", doc, {});
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
+                          const std::string& doc,
+                          const std::vector<RPCArg> inner)
+{
+  return withArg (name, type, "", doc, std::move (inner));
 }
 
 NameOptionsHelp&
@@ -366,10 +374,25 @@ NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
                           const std::string& defaultValue,
                           const std::string& doc)
 {
+  return withArg (name, type, defaultValue, doc, {});
+}
+
+NameOptionsHelp&
+NameOptionsHelp::withArg (const std::string& name, const RPCArg::Type type,
+                          const std::string& defaultValue,
+                          const std::string& doc,
+                          const std::vector<RPCArg> inner)
+{
+  RPCArg::Fallback fb;
   if (defaultValue.empty ())
-    innerArgs.push_back (RPCArg (name, type, RPCArg::Optional::OMITTED, doc));
+    fb = RPCArg::Optional::OMITTED;
   else
-    innerArgs.push_back (RPCArg (name, type, defaultValue, doc));
+    fb = defaultValue;
+
+  if (inner.empty ())
+    innerArgs.emplace_back (name, type, fb, doc);
+  else
+    innerArgs.emplace_back (name, type, fb, doc, std::move (inner));
 
   return *this;
 }
@@ -381,10 +404,20 @@ NameOptionsHelp::withWriteOptions ()
            "The address to send the name output to");
 
   withArg ("sendCoins", RPCArg::Type::OBJ_USER_KEYS,
-           "Addresses to which coins should be sent additionally");
+           "Addresses to which coins should be sent additionally",
+           {
+              {"address", RPCArg::Type::AMOUNT, RPCArg::Optional::NO,
+               "A key-value pair. The key (string) is the address,"
+               " the value (float or string) is the amount in " + CURRENCY_UNIT}
+           });
 
   withArg ("burn", RPCArg::Type::OBJ_USER_KEYS,
-           "Data and amounts of CHI to burn in the transaction");
+           "Data and amounts of CHI to burn in the transaction",
+           {
+              {"data", RPCArg::Type::AMOUNT, RPCArg::Optional::NO,
+               "A key-value pair. The key (string) is the burn data,"
+               " the value (float or string) is the amount in " + CURRENCY_UNIT}
+           });
 
   return *this;
 }

@@ -1199,7 +1199,7 @@ void CoinsViews::InitCache()
     m_cacheview = std::make_unique<CCoinsViewCache>(&m_catcherview);
 }
 
-CChainState::CChainState(CTxMemPool& mempool, BlockManager& blockman, uint256 from_snapshot_blockhash)
+CChainState::CChainState(CTxMemPool& mempool, BlockManager& blockman, std::optional<uint256> from_snapshot_blockhash)
     : m_mempool(mempool),
       m_blockman(blockman),
       m_from_snapshot_blockhash(from_snapshot_blockhash) {}
@@ -1210,8 +1210,8 @@ void CChainState::InitCoinsDB(
     bool should_wipe,
     std::string leveldb_name)
 {
-    if (!m_from_snapshot_blockhash.IsNull()) {
-        leveldb_name += "_" + m_from_snapshot_blockhash.ToString();
+    if (m_from_snapshot_blockhash) {
+        leveldb_name += "_" + m_from_snapshot_blockhash->ToString();
     }
 
     m_coins_views = std::make_unique<CoinsViews>(
@@ -3790,7 +3790,7 @@ bool CChainState::LoadChainTip(const CChainParams& chainparams)
 
 CVerifyDB::CVerifyDB()
 {
-    uiInterface.ShowProgress(_("Verifying blocks...").translated, 0, false);
+    uiInterface.ShowProgress(_("Verifying blocks…").translated, 0, false);
 }
 
 CVerifyDB::~CVerifyDB()
@@ -3823,7 +3823,7 @@ bool CVerifyDB::VerifyDB(
     int reportDone = 0;
     LogPrintf("[0%%]..."); /* Continued */
 
-    bool is_snapshot_cs = !chainstate.m_from_snapshot_blockhash.IsNull();
+    const bool is_snapshot_cs{!chainstate.m_from_snapshot_blockhash};
 
     for (pindex = chainstate.m_chain.Tip(); pindex && pindex->pprev; pindex = pindex->pprev) {
         const int percentageDone = std::max(1, std::min(99, (int)(((double)(chainstate.m_chain.Height() - pindex->nHeight)) / (double)nCheckDepth * (nCheckLevel >= 4 ? 50 : 100))));
@@ -3832,7 +3832,7 @@ bool CVerifyDB::VerifyDB(
             LogPrintf("[%d%%]...", percentageDone); /* Continued */
             reportDone = percentageDone/10;
         }
-        uiInterface.ShowProgress(_("Verifying blocks...").translated, percentageDone, false);
+        uiInterface.ShowProgress(_("Verifying blocks…").translated, percentageDone, false);
         if (pindex->nHeight <= chainstate.m_chain.Height()-nCheckDepth)
             break;
         if ((fPruneMode || is_snapshot_cs) && !(pindex->nStatus & BLOCK_HAVE_DATA)) {
@@ -3891,7 +3891,7 @@ bool CVerifyDB::VerifyDB(
                 LogPrintf("[%d%%]...", percentageDone); /* Continued */
                 reportDone = percentageDone/10;
             }
-            uiInterface.ShowProgress(_("Verifying blocks...").translated, percentageDone, false);
+            uiInterface.ShowProgress(_("Verifying blocks…").translated, percentageDone, false);
             pindex = chainstate.m_chain.Next(pindex);
             CBlock block;
             if (!ReadBlockFromDisk(block, pindex, chainparams.GetConsensus()))
@@ -3940,7 +3940,7 @@ bool CChainState::ReplayBlocks(const CChainParams& params)
     if (hashHeads.empty()) return true; // We're already in a consistent state.
     if (hashHeads.size() != 2) return error("ReplayBlocks(): unknown inconsistent state");
 
-    uiInterface.ShowProgress(_("Replaying blocks...").translated, 0, false);
+    uiInterface.ShowProgress(_("Replaying blocks…").translated, 0, false);
     LogPrintf("Replaying blocks\n");
 
     const CBlockIndex* pindexOld = nullptr;  // Old tip during the interrupted flush.
@@ -3986,7 +3986,7 @@ bool CChainState::ReplayBlocks(const CChainParams& params)
     for (int nHeight = nForkHeight + 1; nHeight <= pindexNew->nHeight; ++nHeight) {
         const CBlockIndex* pindex = pindexNew->GetAncestor(nHeight);
         LogPrintf("Rolling forward %s (%i)\n", pindex->GetBlockHash().ToString(), nHeight);
-        uiInterface.ShowProgress(_("Replaying blocks...").translated, (int) ((nHeight - nForkHeight) * 100.0 / (pindexNew->nHeight - nForkHeight)) , false);
+        uiInterface.ShowProgress(_("Replaying blocks…").translated, (int) ((nHeight - nForkHeight) * 100.0 / (pindexNew->nHeight - nForkHeight)) , false);
         if (!RollforwardBlock(pindex, cache, params)) return false;
     }
 
@@ -4406,8 +4406,8 @@ std::string CChainState::ToString()
 {
     CBlockIndex* tip = m_chain.Tip();
     return strprintf("Chainstate [%s] @ height %d (%s)",
-        m_from_snapshot_blockhash.IsNull() ? "ibd" : "snapshot",
-        tip ? tip->nHeight : -1, tip ? tip->GetBlockHash().ToString() : "null");
+                     m_from_snapshot_blockhash ? "snapshot" : "ibd",
+                     tip ? tip->nHeight : -1, tip ? tip->GetBlockHash().ToString() : "null");
 }
 
 bool CChainState::ResizeCoinsCaches(size_t coinstip_size, size_t coinsdb_size)
@@ -4610,10 +4610,10 @@ double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex *pin
     return std::min<double>(pindex->nChainTx / fTxTotal, 1.0);
 }
 
-std::optional<uint256> ChainstateManager::SnapshotBlockhash() const {
+std::optional<uint256> ChainstateManager::SnapshotBlockhash() const
+{
     LOCK(::cs_main);
-    if (m_active_chainstate != nullptr &&
-            !m_active_chainstate->m_from_snapshot_blockhash.IsNull()) {
+    if (m_active_chainstate && m_active_chainstate->m_from_snapshot_blockhash) {
         // If a snapshot chainstate exists, it will always be our active.
         return m_active_chainstate->m_from_snapshot_blockhash;
     }
@@ -4636,9 +4636,9 @@ std::vector<CChainState*> ChainstateManager::GetAll()
     return out;
 }
 
-CChainState& ChainstateManager::InitializeChainstate(CTxMemPool& mempool, const uint256& snapshot_blockhash)
+CChainState& ChainstateManager::InitializeChainstate(CTxMemPool& mempool, const std::optional<uint256>& snapshot_blockhash)
 {
-    bool is_snapshot = !snapshot_blockhash.IsNull();
+    bool is_snapshot = snapshot_blockhash.has_value();
     std::unique_ptr<CChainState>& to_modify =
         is_snapshot ? m_snapshot_chainstate : m_ibd_chainstate;
 
@@ -4763,6 +4763,26 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 
     uint256 base_blockhash = metadata.m_base_blockhash;
 
+    CBlockIndex* snapshot_start_block = WITH_LOCK(::cs_main, return m_blockman.LookupBlockIndex(base_blockhash));
+
+    if (!snapshot_start_block) {
+        // Needed for GetUTXOStats and ExpectedAssumeutxo to determine the height and to avoid a crash when base_blockhash.IsNull()
+        LogPrintf("[snapshot] Did not find snapshot start blockheader %s\n",
+                  base_blockhash.ToString());
+        return false;
+    }
+
+    int base_height = snapshot_start_block->nHeight;
+    auto maybe_au_data = ExpectedAssumeutxo(base_height, ::Params());
+
+    if (!maybe_au_data) {
+        LogPrintf("[snapshot] assumeutxo height in snapshot metadata not recognized " /* Continued */
+                  "(%d) - refusing to load snapshot\n", base_height);
+        return false;
+    }
+
+    const AssumeutxoData& au_data = *maybe_au_data;
+
     COutPoint outpoint;
     Coin coin;
     const uint64_t coins_count = metadata.m_coins_count;
@@ -4853,15 +4873,6 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 
     assert(coins_cache.GetBestBlock() == base_blockhash);
 
-    CBlockIndex* snapshot_start_block = WITH_LOCK(::cs_main, return m_blockman.LookupBlockIndex(base_blockhash));
-
-    if (!snapshot_start_block) {
-        // Needed for GetUTXOStats to determine the height
-        LogPrintf("[snapshot] Did not find snapshot start blockheader %s\n",
-                  base_blockhash.ToString());
-        return false;
-    }
-
     CCoinsStats stats{CoinStatsHashType::HASH_SERIALIZED};
     auto breakpoint_fnc = [] { /* TODO insert breakpoint here? */ };
 
@@ -4875,19 +4886,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
     }
 
     // Assert that the deserialized chainstate contents match the expected assumeutxo value.
-
-    int base_height = snapshot_start_block->nHeight;
-    auto maybe_au_data = ExpectedAssumeutxo(base_height, ::Params());
-
-    if (!maybe_au_data) {
-        LogPrintf("[snapshot] assumeutxo height in snapshot metadata not recognized " /* Continued */
-            "(%d) - refusing to load snapshot\n", base_height);
-        return false;
-    }
-
-    const AssumeutxoData& au_data = *maybe_au_data;
-
-    if (stats.hashSerialized != au_data.hash_serialized) {
+    if (AssumeutxoHash{stats.hashSerialized} != au_data.hash_serialized) {
         LogPrintf("[snapshot] bad snapshot content hash: expected %s, got %s\n",
             au_data.hash_serialized.ToString(), stats.hashSerialized.ToString());
         return false;

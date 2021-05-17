@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -121,11 +121,27 @@ public:
                             const std::string& doc);
 
   /**
+   * Variant of withField that adds inner arguments inside.
+   */
+  NameOptionsHelp& withArg (const std::string& name, RPCArg::Type type,
+                            const std::string& doc,
+                            const std::vector<RPCArg> inner);
+
+  /**
    * Adds a new inner argument with a default value.
    */
   NameOptionsHelp& withArg (const std::string& name, RPCArg::Type type,
                             const std::string& defaultValue,
                             const std::string& doc);
+
+  /**
+   * Adds a new inner argument with a default value and also inner
+   * arguments inside the argument itself.
+   */
+  NameOptionsHelp& withArg (const std::string& name, RPCArg::Type type,
+                            const std::string& defaultValue,
+                            const std::string& doc,
+                            const std::vector<RPCArg> inner);
 
   /**
    * Constructs the RPCArg object for the options argument described by this

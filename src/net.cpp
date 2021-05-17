@@ -23,6 +23,7 @@
 #include <scheduler.h>
 #include <util/sock.h>
 #include <util/strencodings.h>
+#include <util/thread.h>
 #include <util/translation.h>
 
 #ifdef WIN32
@@ -2244,7 +2245,7 @@ void CConnman::ThreadI2PAcceptIncoming()
         }
 
         if (!advertising_listen_addr) {
-            AddLocal(conn.me, LOCAL_BIND);
+            AddLocal(conn.me, LOCAL_MANUAL);
             advertising_listen_addr = true;
         }
 
@@ -2399,8 +2400,9 @@ NodeId CConnman::GetNewNodeId()
 
 
 bool CConnman::Bind(const CService &addr, unsigned int flags, NetPermissionFlags permissions) {
-    if (!(flags & BF_EXPLICIT) && !IsReachable(addr))
+    if (!(flags & BF_EXPLICIT) && !IsReachable(addr)) {
         return false;
+    }
     bilingual_str strError;
     if (!BindListenPort(addr, strError, permissions)) {
         if ((flags & BF_REPORT_ERROR) && clientInterface) {
@@ -2409,7 +2411,7 @@ bool CConnman::Bind(const CService &addr, unsigned int flags, NetPermissionFlags
         return false;
     }
 
-    if (addr.IsRoutable() && fDiscover && !(flags & BF_DONT_ADVERTISE) && !(permissions & PF_NOBAN)) {
+    if (addr.IsRoutable() && fDiscover && !(flags & BF_DONT_ADVERTISE) && !NetPermissions::HasFlag(permissions, NetPermissionFlags::PF_NOBAN)) {
         AddLocal(addr, LOCAL_BIND);
     }
 
@@ -2467,7 +2469,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     }
 
     if (clientInterface) {
-        clientInterface->InitMessage(_("Loading P2P addresses...").translated);
+        clientInterface->InitMessage(_("Loading P2P addresses…").translated);
     }
     // Load addresses from peers.dat
     int64_t nStart = GetTimeMillis();
@@ -2491,7 +2493,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         LogPrintf("%i block-relay-only anchors will be tried for connections.\n", m_anchors.size());
     }
 
-    uiInterface.InitMessage(_("Starting network threads...").translated);
+    uiInterface.InitMessage(_("Starting network threads…").translated);
 
     fAddressesInitialized = true;
 
@@ -2518,15 +2520,15 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     }
 
     // Send and receive from sockets, accept connections
-    threadSocketHandler = std::thread(&TraceThread<std::function<void()> >, "net", std::function<void()>(std::bind(&CConnman::ThreadSocketHandler, this)));
+    threadSocketHandler = std::thread(&util::TraceThread, "net", [this] { ThreadSocketHandler(); });
 
     if (!gArgs.GetBoolArg("-dnsseed", DEFAULT_DNSSEED))
         LogPrintf("DNS seeding disabled\n");
     else
-        threadDNSAddressSeed = std::thread(&TraceThread<std::function<void()> >, "dnsseed", std::function<void()>(std::bind(&CConnman::ThreadDNSAddressSeed, this)));
+        threadDNSAddressSeed = std::thread(&util::TraceThread, "dnsseed", [this] { ThreadDNSAddressSeed(); });
 
     // Initiate manual connections
-    threadOpenAddedConnections = std::thread(&TraceThread<std::function<void()> >, "addcon", std::function<void()>(std::bind(&CConnman::ThreadOpenAddedConnections, this)));
+    threadOpenAddedConnections = std::thread(&util::TraceThread, "addcon", [this] { ThreadOpenAddedConnections(); });
 
     if (connOptions.m_use_addrman_outgoing && !connOptions.m_specified_outgoing.empty()) {
         if (clientInterface) {
@@ -2536,16 +2538,18 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         }
         return false;
     }
-    if (connOptions.m_use_addrman_outgoing || !connOptions.m_specified_outgoing.empty())
-        threadOpenConnections = std::thread(&TraceThread<std::function<void()> >, "opencon", std::function<void()>(std::bind(&CConnman::ThreadOpenConnections, this, connOptions.m_specified_outgoing)));
+    if (connOptions.m_use_addrman_outgoing || !connOptions.m_specified_outgoing.empty()) {
+        threadOpenConnections = std::thread(
+            &util::TraceThread, "opencon",
+            [this, connect = connOptions.m_specified_outgoing] { ThreadOpenConnections(connect); });
+    }
 
     // Process messages
-    threadMessageHandler = std::thread(&TraceThread<std::function<void()> >, "msghand", std::function<void()>(std::bind(&CConnman::ThreadMessageHandler, this)));
+    threadMessageHandler = std::thread(&util::TraceThread, "msghand", [this] { ThreadMessageHandler(); });
 
     if (connOptions.m_i2p_accept_incoming && m_i2p_sam_session.get() != nullptr) {
         threadI2PAcceptIncoming =
-            std::thread(&TraceThread<std::function<void()>>, "i2paccept",
-                        std::function<void()>(std::bind(&CConnman::ThreadI2PAcceptIncoming, this)));
+            std::thread(&util::TraceThread, "i2paccept", [this] { ThreadI2PAcceptIncoming(); });
     }
 
     // Dump network addresses

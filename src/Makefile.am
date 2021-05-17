@@ -257,6 +257,7 @@ BITCOIN_CORE_H = \
   util/fees.h \
   util/getuniquepath.h \
   util/golombrice.h \
+  util/hash_type.h \
   util/hasher.h \
   util/macros.h \
   util/message.h \
@@ -268,6 +269,7 @@ BITCOIN_CORE_H = \
   util/spanparsing.h \
   util/string.h \
   util/system.h \
+  util/thread.h \
   util/threadnames.h \
   util/time.h \
   util/tokenpipe.h \
@@ -624,6 +626,7 @@ libbitcoin_util_a_SOURCES = \
   util/rbf.cpp \
   util/readwritefile.cpp \
   util/settings.cpp \
+  util/thread.cpp \
   util/threadnames.cpp \
   util/spanparsing.cpp \
   util/strencodings.cpp \

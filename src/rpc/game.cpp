@@ -16,6 +16,7 @@
 #include <uint256.h>
 #include <util/strencodings.h>
 #include <util/system.h>
+#include <util/thread.h>
 #include <validation.h>
 #include <zmq/zmqgames.h>
 #include <zmq/zmqnotificationinterface.h>
@@ -86,7 +87,7 @@ SendUpdatesWorker::SendUpdatesWorker ()
 {
   runner.reset (new std::thread ([this] ()
     {
-      TraceThread ("sendupdates", [this] () { run (*this); });
+      util::TraceThread ("sendupdates", [this] () { run (*this); });
     }));
 }
 
