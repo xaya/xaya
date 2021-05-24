@@ -408,7 +408,7 @@ public:
     std::unique_ptr<TransportDeserializer> m_deserializer;
     std::unique_ptr<TransportSerializer> m_serializer;
 
-    NetPermissionFlags m_permissionFlags{PF_NONE};
+    NetPermissionFlags m_permissionFlags{NetPermissionFlags::None};
     std::atomic<ServiceFlags> nServices{NODE_NONE};
     SOCKET hSocket GUARDED_BY(cs_hSocket);
     /** Total size of all vSendMsg entries */
@@ -929,7 +929,14 @@ public:
     };
 
     // Addrman functions
-    std::vector<CAddress> GetAddresses(size_t max_addresses, size_t max_pct) const;
+    /**
+     * Return all or many randomly selected addresses, optionally by network.
+     *
+     * @param[in] max_addresses  Maximum number of addresses to return (0 = all).
+     * @param[in] max_pct        Maximum percentage of addresses to return (0 = all).
+     * @param[in] network        Select only addresses of this network (nullopt = all).
+     */
+    std::vector<CAddress> GetAddresses(size_t max_addresses, size_t max_pct, std::optional<Network> network) const;
     /**
      * Cache is used to minimize topology leaks, so it should
      * be used for all non-trusted calls, for example, p2p.
