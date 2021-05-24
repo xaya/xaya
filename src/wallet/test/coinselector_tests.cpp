@@ -297,8 +297,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
     empty_wallet();
     {
         std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(m_node.chain.get(), "", CreateMockWalletDatabase());
-        bool firstRun;
-        wallet->LoadWallet(firstRun);
+        wallet->LoadWallet();
         wallet->SetupLegacyScriptPubKeyMan();
 
         /* In Xaya, the minimum / default wallet version already supports HD,
