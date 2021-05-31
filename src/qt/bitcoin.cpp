@@ -50,7 +50,6 @@
 #include <QLocale>
 #include <QMessageBox>
 #include <QSettings>
-#include <QStringBuilder>
 #include <QThread>
 #include <QTimer>
 #include <QTranslator>
@@ -419,8 +418,8 @@ void BitcoinApplication::handleRunawayException(const QString &message)
 {
     QMessageBox::critical(
         nullptr, tr("Runaway exception"),
-        tr("A fatal error occurred. %1 can no longer continue safely and will quit.").arg(PACKAGE_NAME) %
-        QLatin1String("<br><br>") % GUIUtil::MakeHtmlLink(message, PACKAGE_BUGREPORT));
+        tr("A fatal error occurred. %1 can no longer continue safely and will quit.").arg(PACKAGE_NAME) +
+        QLatin1String("<br><br>") + GUIUtil::MakeHtmlLink(message, PACKAGE_BUGREPORT));
     ::exit(EXIT_FAILURE);
 }
 
@@ -430,8 +429,8 @@ void BitcoinApplication::handleNonFatalException(const QString& message)
     QMessageBox::warning(
         nullptr, tr("Internal error"),
         tr("An internal error occurred. %1 will attempt to continue safely. This is "
-           "an unexpected bug which can be reported as described below.").arg(PACKAGE_NAME) %
-        QLatin1String("<br><br>") % GUIUtil::MakeHtmlLink(message, PACKAGE_BUGREPORT));
+           "an unexpected bug which can be reported as described below.").arg(PACKAGE_NAME) +
+        QLatin1String("<br><br>") + GUIUtil::MakeHtmlLink(message, PACKAGE_BUGREPORT));
 }
 
 WId BitcoinApplication::getMainWinId() const
@@ -536,7 +535,7 @@ int GuiMain(int argc, char* argv[])
     if (!Intro::showIfNeeded(did_show_intro, prune_MiB)) return EXIT_SUCCESS;
 
     /// 6. Determine availability of data directory and parse bitcoin.conf
-    /// - Do not call GetDataDir(true) before this step finishes
+    /// - Do not call gArgs.GetDataDirNet() before this step finishes
     if (!CheckDataDirOption()) {
         InitError(strprintf(Untranslated("Specified data directory \"%s\" does not exist.\n"), gArgs.GetArg("-datadir", "")));
         QMessageBox::critical(nullptr, PACKAGE_NAME,

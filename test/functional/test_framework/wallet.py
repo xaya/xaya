@@ -5,7 +5,9 @@
 """A limited-functionality wallet, which may replace a real wallet in tests"""
 
 from decimal import Decimal
+from enum import Enum
 from test_framework.address import ADDRESS_BCRT1_P2WSH_OP_TRUE
+from test_framework.key import ECKey
 from test_framework.messages import (
     COIN,
     COutPoint,
@@ -16,8 +18,11 @@ from test_framework.messages import (
 )
 from test_framework.script import (
     CScript,
+    LegacySignatureHash,
+    OP_CHECKSIG,
     OP_TRUE,
     OP_NOP,
+    SIGHASH_ALL,
 )
 from test_framework.util import (
     assert_equal,
@@ -26,14 +31,46 @@ from test_framework.util import (
 )
 
 
+class MiniWalletMode(Enum):
+    """Determines the transaction type the MiniWallet is creating and spending.
+
+    For most purposes, the default mode ADDRESS_OP_TRUE should be sufficient;
+    it simply uses a fixed bech32 P2WSH address whose coins are spent with a
+    witness stack of OP_TRUE, i.e. following an anyone-can-spend policy.
+    However, if the transactions need to be modified by the user (e.g. prepending
+    scriptSig for testing opcodes that are activated by a soft-fork), or the txs
+    should contain an actual signature, the raw modes RAW_OP_TRUE and RAW_P2PK
+    can be useful. Summary of modes:
+
+                    |      output       |           |  tx is   | can modify |  needs
+         mode       |    description    |  address  | standard | scriptSig  | signing
+    ----------------+-------------------+-----------+----------+------------+----------
+    ADDRESS_OP_TRUE | anyone-can-spend  |  bech32   |   yes    |    no      |   no
+    RAW_OP_TRUE     | anyone-can-spend  |  - (raw)  |   no     |    yes     |   no
+    RAW_P2PK        | pay-to-public-key |  - (raw)  |   yes    |    yes     |   yes
+    """
+    ADDRESS_OP_TRUE = 1
+    RAW_OP_TRUE = 2
+    RAW_P2PK = 3
+
+
 class MiniWallet:
-    def __init__(self, test_node, *, raw_script=False):
+    def __init__(self, test_node, *, mode=MiniWalletMode.ADDRESS_OP_TRUE):
         self._test_node = test_node
         self._utxos = []
-        if raw_script:
-            self._address = None
+        self._priv_key = None
+        self._address = None
+
+        assert isinstance(mode, MiniWalletMode)
+        if mode == MiniWalletMode.RAW_OP_TRUE:
             self._scriptPubKey = bytes(CScript([OP_TRUE]))
-        else:
+        elif mode == MiniWalletMode.RAW_P2PK:
+            # use simple deterministic private key (k=1)
+            self._priv_key = ECKey()
+            self._priv_key.set((1).to_bytes(32, 'big'), True)
+            pub_key = self._priv_key.get_pubkey()
+            self._scriptPubKey = bytes(CScript([pub_key.get_bytes(), OP_CHECKSIG]))
+        elif mode == MiniWalletMode.ADDRESS_OP_TRUE:
             self._address = ADDRESS_BCRT1_P2WSH_OP_TRUE
             self._scriptPubKey = hex_str_to_bytes(self._test_node.validateaddress(self._address)['scriptPubKey'])
 
@@ -49,6 +86,13 @@ class MiniWallet:
         for out in tx['vout']:
             if out['scriptPubKey']['hex'] == self._scriptPubKey.hex():
                 self._utxos.append({'txid': tx['txid'], 'vout': out['n'], 'value': out['value']})
+
+    def sign_tx(self, tx):
+        """Sign tx that has been created by MiniWallet in P2PK mode"""
+        assert self._priv_key is not None
+        (sighash, err) = LegacySignatureHash(CScript(self._scriptPubKey), tx, 0, SIGHASH_ALL)
+        assert err is None
+        tx.vin[0].scriptSig = CScript([self._priv_key.sign_ecdsa(sighash) + bytes(bytearray([SIGHASH_ALL]))])
 
     def generate(self, num_blocks):
         """Generate blocks with coinbase outputs to the internal address, and append the outputs to the internal list"""
@@ -99,7 +143,12 @@ class MiniWallet:
         tx.vout = [CTxOut(int(send_value * COIN), self._scriptPubKey)]
         if not self._address:
             # raw script
-            tx.vin[0].scriptSig = CScript([OP_NOP] * 35)  # pad to identical size
+            if self._priv_key is not None:
+                # P2PK, need to sign
+                self.sign_tx(tx)
+            else:
+                # anyone-can-spend
+                tx.vin[0].scriptSig = CScript([OP_NOP] * 35)  # pad to identical size
         else:
             tx.wit.vtxinwit = [CTxInWitness()]
             tx.wit.vtxinwit[0].scriptWitness.stack = [CScript([OP_TRUE])]
@@ -108,7 +157,10 @@ class MiniWallet:
         tx_info = from_node.testmempoolaccept([tx_hex])[0]
         assert_equal(mempool_valid, tx_info['allowed'])
         if mempool_valid:
-            assert_equal(tx_info['vsize'], vsize)
+            # TODO: for P2PK, vsize is not constant due to varying scriptSig length,
+            # so only check this for anyone-can-spend outputs right now
+            if self._priv_key is None:
+                assert_equal(tx_info['vsize'], vsize)
             assert_equal(tx_info['fees']['base'], fee)
         return {'txid': tx_info['txid'], 'wtxid': tx_info['wtxid'], 'hex': tx_hex, 'tx': tx}
 

@@ -448,7 +448,7 @@ static RPCHelpMan sendtoaddress()
                     {"estimate_mode", RPCArg::Type::STR, RPCArg::Default{"unset"}, std::string() + "The fee estimate mode, must be one of (case insensitive):\n"
             "       \"" + FeeModes("\"\n\"") + "\""},
                     {"avoid_reuse", RPCArg::Type::BOOL, RPCArg::Default{true}, "(only available if avoid_reuse wallet flag is set) Avoid spending from dirty addresses; addresses are considered\n"
-                                         "dirty if they have previously been used in a transaction."},
+                                         "dirty if they have previously been used in a transaction. If true, this also activates avoidpartialspends, grouping outputs by their addresses."},
                     {"fee_rate", RPCArg::Type::AMOUNT, RPCArg::DefaultHint{"not set, fall back to wallet fee estimation"}, "Specify a fee rate in " + CURRENCY_ATOM + "/vB."},
                     {"verbose", RPCArg::Type::BOOL, RPCArg::Default{false}, "If true, return extra information about the transaction."},
                 },
@@ -3431,12 +3431,10 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
                 "options"},
         },
         RPCResult{
-            RPCResult::Type::OBJ, "", "", Cat(Cat<std::vector<RPCResult>>(
-            {
-                {RPCResult::Type::STR, "psbt", "The base64-encoded unsigned PSBT of the new transaction."},
-            },
-            want_psbt ? std::vector<RPCResult>{} : std::vector<RPCResult>{{RPCResult::Type::STR_HEX, "txid", "The id of the new transaction. Only returned when wallet private keys are enabled."}}
-            ),
+            RPCResult::Type::OBJ, "", "", Cat(
+                want_psbt ?
+                std::vector<RPCResult>{{RPCResult::Type::STR, "psbt", "The base64-encoded unsigned PSBT of the new transaction."}} :
+                std::vector<RPCResult>{{RPCResult::Type::STR_HEX, "txid", "The id of the new transaction."}},
             {
                 {RPCResult::Type::STR_AMOUNT, "origfee", "The fee of the replaced transaction."},
                 {RPCResult::Type::STR_AMOUNT, "fee", "The fee of the new transaction."},
@@ -3447,7 +3445,7 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
             })
         },
         RPCExamples{
-    "\nBump the fee, get the new transaction\'s" + std::string(want_psbt ? "psbt" : "txid") + "\n" +
+    "\nBump the fee, get the new transaction\'s " + std::string(want_psbt ? "psbt" : "txid") + "\n" +
             HelpExampleCli(method_name, "<txid>")
         },
         [want_psbt](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
@@ -3529,8 +3527,8 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
 
     UniValue result(UniValue::VOBJ);
 
-    // If wallet private keys are enabled, return the new transaction id,
-    // otherwise return the base64-encoded unsigned PSBT of the new transaction.
+    // For bumpfee, return the new transaction id.
+    // For psbtbumpfee, return the base64-encoded unsigned PSBT of the new transaction.
     if (!want_psbt) {
         if (!feebumper::SignTransaction(*pwallet, mtx)) {
             throw JSONRPCError(RPC_WALLET_ERROR, "Can't sign transaction.");
