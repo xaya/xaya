@@ -7,10 +7,9 @@
 
 #include <tinyformat.h>
 
-CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
+CFeeRate::CFeeRate(const CAmount& nFeePaid, uint32_t num_bytes)
 {
-    assert(nBytes_ <= uint64_t(std::numeric_limits<int64_t>::max()));
-    int64_t nSize = int64_t(nBytes_);
+    const int64_t nSize{num_bytes};
 
     if (nSize > 0) {
         /* Xaya's MAX_MONEY is so large that 1000 * MAX_MONEY overflows
@@ -26,22 +25,20 @@ CFeeRate::CFeeRate(const CAmount& nFeePaid, size_t nBytes_)
         } else {
             nSatoshisPerK = nFeePaid * 1000 / nSize;
         }
-    } else
+    } else {
         nSatoshisPerK = 0;
+    }
 }
 
-CAmount CFeeRate::GetFee(size_t nBytes_) const
+CAmount CFeeRate::GetFee(uint32_t num_bytes) const
 {
-    assert(nBytes_ <= uint64_t(std::numeric_limits<int64_t>::max()));
-    int64_t nSize = int64_t(nBytes_);
+    const int64_t nSize{num_bytes};
 
     CAmount nFee = nSatoshisPerK * nSize / 1000;
 
     if (nFee == 0 && nSize != 0) {
-        if (nSatoshisPerK > 0)
-            nFee = CAmount(1);
-        if (nSatoshisPerK < 0)
-            nFee = CAmount(-1);
+        if (nSatoshisPerK > 0) nFee = CAmount(1);
+        if (nSatoshisPerK < 0) nFee = CAmount(-1);
     }
 
     return nFee;

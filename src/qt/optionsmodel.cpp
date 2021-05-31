@@ -21,6 +21,7 @@
 #include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 
 #include <QDebug>
+#include <QLatin1Char>
 #include <QSettings>
 #include <QStringList>
 
@@ -195,7 +196,7 @@ void OptionsModel::Reset()
     QSettings settings;
 
     // Backup old settings to chain-specific datadir for troubleshooting
-    BackupSettings(GetDataDir(true) / "guisettings.ini.bak", settings);
+    BackupSettings(gArgs.GetDataDirNet() / "guisettings.ini.bak", settings);
 
     // Save the strDataDir setting
     QString dataDir = GUIUtil::getDefaultDataDirectory();
@@ -244,7 +245,7 @@ static ProxySetting GetProxySetting(QSettings &settings, const QString &name)
 
 static void SetProxySetting(QSettings &settings, const QString &name, const ProxySetting &ip_port)
 {
-    settings.setValue(name, ip_port.ip + ":" + ip_port.port);
+    settings.setValue(name, QString{ip_port.ip + QLatin1Char(':') + ip_port.port});
 }
 
 static const QString GetDefaultProxyAddress()

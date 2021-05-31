@@ -71,7 +71,7 @@ public:
         // TODO: Set name and value encoding to hex, so that nonstandard
         // encodings don't cause errors.
 
-        std::string walletURI = ("/wallet/" + parent.walletModel->getWalletName()).toStdString();
+        std::string walletURI = "/wallet/" + parent.walletModel->getWalletName().toStdString();
 
         UniValue confirmedNames;
         try {
@@ -474,7 +474,7 @@ QString NameTableModel::update(const QString &name, const std::optional<QString>
         params.pushKV ("options", options);
     }
 
-    std::string walletURI = ("/wallet/" + walletModel->getWalletName()).toStdString();
+    std::string walletURI = "/wallet/" + walletModel->getWalletName().toStdString();
 
     UniValue res;
     try {

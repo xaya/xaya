@@ -199,6 +199,7 @@ BITCOIN_CORE_H = \
   outputtype.h \
   policy/feerate.h \
   policy/fees.h \
+  policy/packages.h \
   policy/policy.h \
   policy/rbf.h \
   policy/settings.h \
@@ -264,6 +265,7 @@ BITCOIN_CORE_H = \
   util/moneystr.h \
   util/rbf.h \
   util/readwritefile.h \
+  util/serfloat.h \
   util/settings.h \
   util/sock.h \
   util/spanparsing.h \
@@ -294,11 +296,14 @@ BITCOIN_CORE_H = \
   wallet/fees.h \
   wallet/ismine.h \
   wallet/load.h \
+  wallet/receive.h \
   wallet/rpcwallet.h \
   wallet/rpcnames.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
+  wallet/spend.h \
   wallet/sqlite.h \
+  wallet/transaction.h \
   wallet/wallet.h \
   wallet/walletdb.h \
   wallet/wallettool.h \
@@ -424,10 +429,13 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/fees.cpp \
   wallet/interfaces.cpp \
   wallet/load.cpp \
+  wallet/receive.cpp \
   wallet/rpcdump.cpp \
   wallet/rpcnames.cpp \
   wallet/rpcwallet.cpp \
   wallet/scriptpubkeyman.cpp \
+  wallet/spend.cpp \
+  wallet/transaction.cpp \
   wallet/wallet.cpp \
   wallet/walletdb.cpp \
   wallet/walletutil.cpp \
@@ -628,6 +636,7 @@ libbitcoin_util_a_SOURCES = \
   util/settings.cpp \
   util/thread.cpp \
   util/threadnames.cpp \
+  util/serfloat.cpp \
   util/spanparsing.cpp \
   util/strencodings.cpp \
   util/string.cpp \

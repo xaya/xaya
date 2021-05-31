@@ -19,7 +19,7 @@ class NameHashIndex::DB : public BaseIndex::DB
 public:
 
   explicit DB (const size_t cache_size, const bool memory, const bool wipe)
-    : BaseIndex::DB (GetDataDir () / "indexes" / "namehash",
+    : BaseIndex::DB (gArgs.GetDataDirNet () / "indexes" / "namehash",
                      cache_size, memory, wipe)
   {}
 
