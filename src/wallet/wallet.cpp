@@ -1253,6 +1253,7 @@ void CWallet::blockConnected(const CBlock& block, int height)
         SyncTransaction(block.vtx[index], {CWalletTx::Status::CONFIRMED, height, block_hash, (int)index});
         transactionRemovedFromMempool(block.vtx[index], MemPoolRemovalReason::BLOCK, 0 /* mempool_sequence */);
     }
+    EffectTransactionQueue();
 }
 
 void CWallet::blockDisconnected(const CBlock& block, int height)
@@ -4330,6 +4331,73 @@ void CWallet::postInitProcess()
 bool CWallet::BackupWallet(const std::string& strDest) const
 {
     return GetDatabase().Backup(strDest);
+}
+
+bool CWallet::QueuedTransactionExists(const uint256& txid) const
+{
+    AssertLockHeld(cs_wallet);
+    return queuedTransactionMap.count(txid) > 0;
+}
+
+bool CWallet::WriteQueuedTransaction(const uint256 &txid, const CMutableTransaction &tx)
+{
+    AssertLockHeld(cs_wallet);
+
+    const bool success = WalletBatch(GetDatabase()).WriteQueuedTransaction(txid, tx);
+    if(success)
+        queuedTransactionMap[txid] = tx;
+
+    return success;
+}
+
+bool CWallet::EraseQueuedTransaction(const uint256& txid)
+{
+    AssertLockHeld(cs_wallet);
+    const bool success = WalletBatch(GetDatabase()).EraseQueuedTransaction(txid);
+    if(success)
+        queuedTransactionMap.erase(txid);
+    return success;
+}
+
+bool CWallet::GetQueuedTransaction(const uint256 &txid, CMutableTransaction *data) const
+{
+    AssertLockHeld(cs_wallet);
+    auto it = queuedTransactionMap.find(txid);
+    if (it == queuedTransactionMap.end())
+        return false;
+    if (data != nullptr)
+        (*data) = it->second;
+    return true;
+}
+
+void CWallet::EffectTransactionQueue()
+{
+    // This is called when we get a new block to deal with queued transactions.
+    if (chain().isInitialBlockDownload())
+        return;
+    // We only do this for fresh blocks. Otherwise, we might trigger way too early.
+    std::set<uint256> to_dequeue;
+    // Kludge; we can't remove items in a map while iterating over it.
+    AssertLockHeld(cs_wallet);
+    for (const auto& i : queuedTransactionMap)
+    // For each transaction in the queue...
+    {
+        const uint256& txid = i.first;
+        const CMutableTransaction& tx = i.second;
+
+        std::string unused_err_string;
+        if (chain().broadcastTransaction(MakeTransactionRef(tx), m_default_max_tx_fee, /* relay */ true, unused_err_string))
+        // attempt to broadcast
+        {
+            to_dequeue.emplace(txid);
+            WalletLogPrintf("Broadcast queued transaction with txid %s, %s", txid.GetHex(), CTransaction(tx).ToString().c_str());
+            // No newline here, since tx's ToString contains one.
+        }
+        // If the transaction isn't yet valid, there's nothing to do.
+    }
+
+    for (const auto& i : to_dequeue)
+        queuedTransactionMap.erase(i);
 }
 
 CKeyPool::CKeyPool()

@@ -7,6 +7,7 @@
 
 #include <fs.h>
 #include <key_io.h>
+#include <names/common.h>
 #include <protocol.h>
 #include <serialize.h>
 #include <sync.h>
@@ -47,6 +48,7 @@ const std::string OLD_KEY{"wkey"};
 const std::string ORDERPOSNEXT{"orderposnext"};
 const std::string POOL{"pool"};
 const std::string PURPOSE{"purpose"};
+const std::string QUEUED_TX{"queued_tx"};
 const std::string SETTINGS{"settings"};
 const std::string TX{"tx"};
 const std::string VERSION{"version"};
@@ -246,6 +248,16 @@ bool WalletBatch::WriteDescriptorParentCache(const CExtPubKey& xpub, const uint2
     std::vector<unsigned char> ser_xpub(BIP32_EXTKEY_SIZE);
     xpub.Encode(ser_xpub.data());
     return WriteIC(std::make_pair(std::make_pair(DBKeys::WALLETDESCRIPTORCACHE, desc_id), key_exp_index), ser_xpub);
+}
+
+bool WalletBatch::WriteQueuedTransaction(const uint256& txid, const CMutableTransaction& tx)
+{
+    return WriteIC(std::make_pair(DBKeys::QUEUED_TX, txid), tx);
+}
+
+bool WalletBatch::EraseQueuedTransaction(const uint256& txid)
+{
+    return EraseIC(std::make_pair(DBKeys::QUEUED_TX, txid));
 }
 
 class CWalletScanState {
@@ -530,6 +542,15 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssValue >> keypool;
 
             pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadKeyPool(nIndex, keypool);
+        } else if (strType == DBKeys::QUEUED_TX) {
+            std::string strTxid;
+            ssKey >> strTxid;
+            uint256 u256Txid = uint256S(strTxid);
+
+            CMutableTransaction pending;
+            ssValue >> pending;
+
+            pwallet->queuedTransactionMap[u256Txid] = pending;
         } else if (strType == DBKeys::CSCRIPT) {
             uint160 hash;
             ssKey >> hash;

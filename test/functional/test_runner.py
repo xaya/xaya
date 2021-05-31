@@ -330,6 +330,8 @@ BASE_SCRIPTS = [
     'name_segwit.py',
     'name_segwit.py --descriptors',
     'name_sendcoins.py',
+    'name_txnqueue.py --legacy-wallet',
+    'name_txnqueue.py --descriptors',
     'name_utxo.py',
     'name_wallet.py',
     'name_wallet.py --descriptors',

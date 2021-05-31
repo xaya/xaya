@@ -7,6 +7,7 @@
 #define BITCOIN_WALLET_WALLETDB_H
 
 #include <amount.h>
+#include <names/common.h>
 #include <script/sign.h>
 #include <wallet/db.h>
 #include <wallet/walletutil.h>
@@ -253,6 +254,9 @@ public:
     bool EraseDestData(const std::string &address, const std::string &key);
 
     bool WriteActiveScriptPubKeyMan(uint8_t type, const uint256& id, bool internal);
+
+    bool WriteQueuedTransaction(const uint256& txid, const CMutableTransaction& tx);
+    bool EraseQueuedTransaction(const uint256& txid);
 
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::list<CWalletTx>& vWtx);

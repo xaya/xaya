@@ -9,6 +9,7 @@
 #include <amount.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <names/common.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <psbt.h>
@@ -768,6 +769,8 @@ private:
      */
     static bool AttachChain(const std::shared_ptr<CWallet>& wallet, interfaces::Chain& chain, bilingual_str& error, std::vector<bilingual_str>& warnings);
 
+    void EffectTransactionQueue();
+
 public:
     /**
      * Main wallet lock.
@@ -1352,6 +1355,15 @@ public:
 
     //! Add a descriptor to the wallet, return a ScriptPubKeyMan & associated output type
     ScriptPubKeyMan* AddWalletDescriptor(WalletDescriptor& desc, const FlatSigningProvider& signing_provider, const std::string& label, bool internal);
+
+    std::map<uint256, CMutableTransaction> queuedTransactionMap;
+
+    bool QueuedTransactionExists(const uint256 &txid) const;
+    bool WriteQueuedTransaction(
+            const uint256 &txid,
+            const CMutableTransaction &tx);
+    bool EraseQueuedTransaction(const uint256 &txid);
+    bool GetQueuedTransaction(const uint256 &txid, CMutableTransaction *data=nullptr) const;
 };
 
 /**
