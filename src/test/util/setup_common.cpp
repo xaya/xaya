@@ -195,7 +195,7 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
     }
 
     m_node.addrman = std::make_unique<CAddrMan>();
-    m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirPath() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
+    m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
     m_node.connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman); // Deterministic randomness for tests.
     m_node.peerman = PeerManager::make(chainparams, *m_node.connman, *m_node.addrman,
                                        m_node.banman.get(), *m_node.scheduler, *m_node.chainman,
@@ -269,7 +269,8 @@ CMutableTransaction TestChain100Setup::CreateValidMempoolTransaction(CTransactio
                                                                      int input_height,
                                                                      CKey input_signing_key,
                                                                      CScript output_destination,
-                                                                     CAmount output_amount)
+                                                                     CAmount output_amount,
+                                                                     bool submit)
 {
     // Transaction we will submit to the mempool
     CMutableTransaction mempool_txn;
@@ -302,8 +303,8 @@ CMutableTransaction TestChain100Setup::CreateValidMempoolTransaction(CTransactio
     std::map<int, std::string> input_errors;
     assert(SignTransaction(mempool_txn, &keystore, input_coins, nHashType, input_errors));
 
-    // Add transaction to the mempool
-    {
+    // If submit=true, add transaction to the mempool.
+    if (submit) {
         LOCK(cs_main);
         const MempoolAcceptResult result = AcceptToMemoryPool(::ChainstateActive(), *m_node.mempool.get(), MakeTransactionRef(mempool_txn), /* bypass_limits */ false);
         assert(result.m_result_type == MempoolAcceptResult::ResultType::VALID);

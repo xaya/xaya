@@ -211,6 +211,7 @@ BASE_SCRIPTS = [
     'mempool_package_onemore.py',
     'rpc_createmultisig.py --legacy-wallet',
     'rpc_createmultisig.py --descriptors',
+    'rpc_packages.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'feature_versionbits_warning.py',
     'rpc_preciousblock.py',
