@@ -5,6 +5,7 @@
 # Test Taproot softfork (BIPs 340-342)
 
 from test_framework.blocktools import (
+    COINBASE_MATURITY,
     create_coinbase,
     create_block,
     add_witness_commitment,
@@ -1442,7 +1443,7 @@ class TaprootTest(BitcoinTestFramework):
         self.log.info("Post-activation tests...")
         self.nodes[0].generate (50)
         self.sync_blocks()
-        self.nodes[1].generate (101)
+        self.nodes[1].generate(COINBASE_MATURITY + 1)
         self.test_spenders(self.nodes[1], spenders_taproot_active(), input_counts=[1, 2, 2, 2, 2, 3])
 
         # Upstream Bitcoin explicitly sends funds from node 1 to node 0 here,
