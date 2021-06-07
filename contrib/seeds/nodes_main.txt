@@ -30,9 +30,3 @@
 198.15.127.242:8334
 198.27.81.24:8334
 [2a02:2528:ff00:81a6:21e:c5ff:fe8d:f9a5]:8334
-
-# Known .onion addresses of nodes:
-
-fp7k2dennh52dzql.onion
-nww7uwo4diginmcm.onion:8443
-s5pknqnnt4qji33p.onion:8334

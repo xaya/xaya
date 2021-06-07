@@ -105,7 +105,7 @@ void ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
 /**
  * Expire all names at the given height.  This removes their coins
  * from the UTXO set.
- * @param height The new block height.
+ * @param nHeight The new block height.
  * @param view The coins view to update.
  * @param undo The block undo object to record undo information.
  * @param names List all expired names here.
