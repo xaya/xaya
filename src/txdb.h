@@ -65,7 +65,7 @@ public:
     CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     CCoinsViewCursor *Cursor() const override;
-    bool ValidateNameDB(ChainstateManager& chainman, const std::function<void()>& interruption_point) const override;
+    bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
     bool Upgrade();

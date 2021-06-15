@@ -532,7 +532,7 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
     if (create_psbt) {
         PartiallySignedTransaction psbtx(mtx);
         bool complete = false;
-        const TransactionError err = wallet().fillPSBT(SIGHASH_ALL, false /* sign */, true /* bip32derivs */, psbtx, complete, nullptr);
+        const TransactionError err = wallet().fillPSBT(SIGHASH_ALL, false /* sign */, true /* bip32derivs */, nullptr, psbtx, complete);
         if (err != TransactionError::OK || complete) {
             QMessageBox::critical(nullptr, tr("Fee bump error"), tr("Can't draft transaction."));
             return false;
@@ -557,6 +557,18 @@ bool WalletModel::bumpFee(uint256 hash, uint256& new_hash)
         return false;
     }
     return true;
+}
+
+bool WalletModel::displayAddress(std::string sAddress)
+{
+    CTxDestination dest = DecodeDestination(sAddress);
+    bool res = false;
+    try {
+        res = m_wallet->displayAddress(dest);
+    } catch (const std::runtime_error& e) {
+        QMessageBox::critical(nullptr, tr("Can't display address"), e.what());
+    }
+    return res;
 }
 
 bool WalletModel::isWalletEnabled()

@@ -116,7 +116,6 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock& block, uint64_t& 
 
     {
         LOCK(cs_main);
-        CHECK_NONFATAL(std::addressof(::ChainActive()) == std::addressof(chainman.ActiveChain()));
         IncrementExtraNonce(&block, chainman.ActiveChain().Tip(), extra_nonce);
     }
 
@@ -148,7 +147,6 @@ static UniValue generateBlocks(ChainstateManager& chainman, const CTxMemPool& me
 
     {   // Don't keep cs_main locked
         LOCK(cs_main);
-        CHECK_NONFATAL(std::addressof(::ChainActive()) == std::addressof(chainman.ActiveChain()));
         nHeight = chainman.ActiveChain().Height();
         nHeightEnd = nHeight+nGenerate;
     }
@@ -384,7 +382,7 @@ static RPCHelpMan generateblock()
         LOCK(cs_main);
 
         BlockValidationState state;
-        if (!TestBlockValidity(state, Params(), chainman.ActiveChainstate(), block, g_chainman.m_blockman.LookupBlockIndex(block.hashPrevBlock), false, false)) {
+        if (!TestBlockValidity(state, Params(), chainman.ActiveChainstate(), block, chainman.m_blockman.LookupBlockIndex(block.hashPrevBlock), false, false)) {
             throw JSONRPCError(RPC_VERIFY_ERROR, strprintf("TestBlockValidity failed: %s", state.ToString()));
         }
     }

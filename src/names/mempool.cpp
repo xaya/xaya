@@ -238,7 +238,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 }
 
 void
-CNameMemPool::check (ChainstateManager& chainman, CChainState& active_chainstate) const
+CNameMemPool::check (CChainState& active_chainstate) const
 {
   AssertLockHeld (pool.cs);
 
@@ -248,7 +248,8 @@ CNameMemPool::check (ChainstateManager& chainman, CChainState& active_chainstate
   if (blockHash.IsNull())
     nHeight = 0;
   else
-    nHeight = chainman.BlockIndex ().find (blockHash)->second->nHeight;
+    nHeight = active_chainstate.m_blockman.m_block_index
+                .find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   std::map<valtype, unsigned> nameUpdates;

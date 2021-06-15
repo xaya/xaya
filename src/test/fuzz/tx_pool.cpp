@@ -82,7 +82,7 @@ void SetMempoolConstraints(ArgsManager& args, FuzzedDataProvider& fuzzed_data_pr
 void Finish(FuzzedDataProvider& fuzzed_data_provider, MockedTxPool& tx_pool, ChainstateManager& chainman)
 {
     auto& chainstate = chainman.ActiveChainstate();
-    WITH_LOCK(::cs_main, tx_pool.check(chainman, chainstate));
+    WITH_LOCK(::cs_main, tx_pool.check(chainstate));
     {
         BlockAssembler::Options options;
         options.nBlockMaxWeight = fuzzed_data_provider.ConsumeIntegralInRange(0U, MAX_BLOCK_WEIGHT);
@@ -98,7 +98,7 @@ void Finish(FuzzedDataProvider& fuzzed_data_provider, MockedTxPool& tx_pool, Cha
         std::vector<uint256> all_txids;
         tx_pool.queryHashes(all_txids);
         assert(all_txids.size() < info_all.size());
-        WITH_LOCK(::cs_main, tx_pool.check(chainman, chainstate));
+        WITH_LOCK(::cs_main, tx_pool.check(chainstate));
     }
     SyncWithValidationInterfaceQueue();
 }

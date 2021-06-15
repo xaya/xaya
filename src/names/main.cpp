@@ -50,12 +50,6 @@ isExpired (unsigned nPrevHeight, unsigned nHeight)
 /* CNameData.  */
 
 bool
-CNameData::isExpired () const
-{
-  return isExpired (::ChainActive ().Height ());
-}
-
-bool
 CNameData::isExpired (unsigned h) const
 {
   return ::isExpired (nHeight, h);
@@ -467,7 +461,7 @@ UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
 }
 
 void
-CheckNameDB (ChainstateManager& chainman, bool disconnect)
+CheckNameDB (CChainState& chainState, bool disconnect)
 {
   const int option
     = gArgs.GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
@@ -478,13 +472,13 @@ CheckNameDB (ChainstateManager& chainman, bool disconnect)
   assert (option >= 0);
   if (option != 0)
     {
-      if (disconnect || chainman.ActiveChain ().Height () % option != 0)
+      if (disconnect || chainState.m_chain.Height () % option != 0)
         return;
     }
 
-  auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
+  auto& coinsTip = chainState.CoinsTip ();
   coinsTip.Flush ();
-  const bool ok = coinsTip.ValidateNameDB (chainman, [] () {});
+  const bool ok = coinsTip.ValidateNameDB (chainState, [] () {});
 
   /* The DB is inconsistent (mismatch between UTXO set and names DB) between
      (roughly) blocks 139,000 and 180,000.  This is caused by libcoin's
@@ -493,7 +487,7 @@ CheckNameDB (ChainstateManager& chainman, bool disconnect)
      names), but it remains in the name DB until it expires.  */
   if (!ok)
     {
-      const unsigned nHeight = ::ChainActive ().Height ();
+      const unsigned nHeight = chainState.m_chain.Height ();
       LogPrintf ("ERROR: %s : name database is inconsistent\n", __func__);
       if (nHeight >= 139000 && nHeight <= 180000)
         LogPrintf ("This is expected due to 'name stealing'.\n");

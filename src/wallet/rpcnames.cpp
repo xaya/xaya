@@ -413,7 +413,8 @@ name_new ()
       LOCK (cs_main);
       CNameData oldData;
       const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
-      if (coinsTip.GetName (name, oldData) && !oldData.isExpired ())
+      if (coinsTip.GetName (name, oldData)
+            && !oldData.isExpired (chainman.ActiveHeight ()))
         throw JSONRPCError (RPC_TRANSACTION_ERROR, "this name exists already");
     }
 
@@ -469,7 +470,8 @@ namespace
  * @return True if the output could be found.
  */
 bool
-getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
+getNamePrevout (CChainState& chainState, const uint256& txid,
+                CTxOut& txOut, CTxIn& txIn)
 {
   AssertLockHeld (cs_main);
 
@@ -487,7 +489,7 @@ getNamePrevout (const uint256& txid, CTxOut& txOut, CTxIn& txIn)
       const COutPoint outp(txid, i);
 
       Coin coin;
-      if (!::ChainstateActive ().CoinsTip ().GetCoin (outp, coin))
+      if (!chainState.CoinsTip ().GetCoin (outp, coin))
         continue;
 
       if (!coin.out.IsNull ()
@@ -587,7 +589,8 @@ name_firstupdate ()
       LOCK (cs_main);
       CNameData oldData;
       const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
-      if (coinsTip.GetName (name, oldData) && !oldData.isExpired ())
+      if (coinsTip.GetName (name, oldData)
+            && !oldData.isExpired (chainman.ActiveHeight ()))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name is already active");
     }
@@ -659,7 +662,7 @@ name_firstupdate ()
   CTxIn txIn;
   {
     LOCK (cs_main);
-    if (!getNamePrevout (prevTxid, prevOut, txIn))
+    if (!getNamePrevout (chainman.ActiveChainstate (), prevTxid, prevOut, txIn))
       throw JSONRPCError (RPC_TRANSACTION_ERROR, "previous txid not found");
   }
 
@@ -796,7 +799,8 @@ name_update ()
 
       CNameData oldData;
       const auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
-      if (!coinsTip.GetName (name, oldData) || oldData.isExpired ())
+      if (!coinsTip.GetName (name, oldData)
+            || oldData.isExpired (chainman.ActiveHeight ()))
         throw JSONRPCError (RPC_TRANSACTION_ERROR,
                             "this name can not be updated");
       if (isDefaultVal)
@@ -1044,13 +1048,13 @@ sendtoname ()
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
-  if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
+  if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
     {
       std::ostringstream msg;
       msg << "name not found: " << EncodeNameForMessage (name);
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
-  if (data.isExpired ())
+  if (data.isExpired (chainman.ActiveHeight ()))
     throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "the name is expired");
 
   /* The code below is strongly based on sendtoaddress.  Make sure to

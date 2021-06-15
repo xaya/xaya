@@ -520,7 +520,7 @@ name_show ()
   CNameData data;
   {
     LOCK (cs_main);
-    if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
+    if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
       {
         std::ostringstream msg;
         msg << "name not found: " << EncodeNameForMessage (name);
@@ -1102,7 +1102,8 @@ name_checkdb ()
   LOCK (cs_main);
   auto& coinsTip = chainman.ActiveChainstate ().CoinsTip ();
   coinsTip.Flush ();
-  return coinsTip.ValidateNameDB (chainman, node.rpc_interruption_point);
+  return coinsTip.ValidateNameDB (chainman.ActiveChainstate (),
+                                  node.rpc_interruption_point);
 }
   );
 }

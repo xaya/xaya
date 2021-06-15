@@ -640,8 +640,8 @@ public:
      * all inputs are in the mapNextTx array). If sanity-checking is turned off,
      * check does nothing.
      */
-    void check(ChainstateManager& chainman, CChainState& active_chainstate) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-    void checkNames(ChainstateManager& chainman, CChainState& active_chainstate) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    void check(CChainState& active_chainstate) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    void checkNames(CChainState& active_chainstate) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     // addUnchecked must updated state for all ancestors of a given transaction,
     // to track size/count of descendant transactions.  First version of
@@ -967,7 +967,8 @@ protected:
 public:
     CCoinsViewMemPool(CCoinsView* baseIn, const CTxMemPool& mempoolIn);
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
-    /** Add the coins created by this transaction. */
+    /** Add the coins created by this transaction. These coins are only temporarily stored in
+     * m_temp_added and cannot be flushed to the back end. Only used for package validation. */
     void PackageAddTransaction(const CTransactionRef& tx);
 };
 
