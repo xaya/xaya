@@ -66,11 +66,11 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
       pblockCur = iter->second;
 
     if (pblockCur == nullptr
-        || pindexPrev != ::ChainActive ().Tip ()
+        || pindexPrev != chainman.ActiveChain ().Tip ()
         || (mempool.GetTransactionsUpdated () != txUpdatedLast
             && GetTime () - startTime > 60))
       {
-        if (pindexPrev != ::ChainActive ().Tip ())
+        if (pindexPrev != chainman.ActiveChain ().Tip ())
           {
             /* Clear old blocks since they're obsolete now.  */
             blocks.clear ();
