@@ -810,7 +810,7 @@ sendtoname ()
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
-  if (!::ChainstateActive ().CoinsTip ().GetName (name, data))
+  if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
     {
       std::ostringstream msg;
       msg << "name not found: " << EncodeNameForMessage (name);

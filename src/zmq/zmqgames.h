@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+class BlockManager;
 class CBlock;
 class CBlockIndex;
 class CTransaction;
@@ -87,12 +88,22 @@ public:
 class ZMQGameBlocksNotifier : public ZMQGameNotifier
 {
 
+private:
+
+  /**
+   * Block manager with the block map we use to get context information
+   * like median time for blocks.
+   */
+  const BlockManager& blockman;
+
 public:
 
   static const char* PREFIX_ATTACH;
   static const char* PREFIX_DETACH;
 
-  using ZMQGameNotifier::ZMQGameNotifier;
+  explicit ZMQGameBlocksNotifier (const BlockManager& b, const TrackedGames& tg)
+    : ZMQGameNotifier(tg), blockman(b)
+  {}
 
   /**
    * Sends the block attach or detach notifications.  They are essentially the

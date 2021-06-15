@@ -377,16 +377,25 @@ BOOST_FIXTURE_TEST_CASE (check_auxpow, BasicTestingSetup)
 class AuxpowMinerForTest : public AuxpowMiner
 {
 
+private:
+
+  /** Node (with chainman and mempool) used for the test.  */
+  const NodeContext& node;
+
 public:
+
+  explicit AuxpowMinerForTest (const NodeContext& n)
+    : node(n)
+  {}
 
   using AuxpowMiner::cs;
   using AuxpowMiner::lookupSavedBlock;
 
   const CBlock*
-  getCurrentBlock (const PowAlgo algo, const CTxMemPool& mempool,
-                   const CScript& scriptPubKey, uint256& target)
+  getCurrentBlock (const PowAlgo algo, const CScript& scriptPubKey,
+                   uint256& target)
   {
-    return AuxpowMiner::getCurrentBlock (g_chainman, mempool, algo,
+    return AuxpowMiner::getCurrentBlock (*node.chainman, *node.mempool, algo,
                                          scriptPubKey, target);
   }
 
@@ -394,20 +403,20 @@ public:
 
 BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
 {
-  CTxMemPool mempool;
-  AuxpowMinerForTest miner;
+  AuxpowMinerForTest miner(m_node);
   LOCK (miner.cs);
 
   /* We use mocktime so that we can control GetTime() as it is used in the
      logic that determines whether or not to reconstruct a block.  The "base"
      time is set such that the blocks we have from the fixture are fresh.  */
-  const int64_t baseTime = ::ChainActive ().Tip ()->GetMedianTimePast () + 1;
+  const int64_t baseTime
+      = m_node.chainman->ActiveChain ().Tip ()->GetMedianTimePast () + 1;
   SetMockTime (baseTime);
 
   /* Construct a first block.  */
   CScript scriptPubKey;
   uint256 target;
-  const CBlock* pblock1 = miner.getCurrentBlock (PowAlgo::NEOSCRYPT, mempool,
+  const CBlock* pblock1 = miner.getCurrentBlock (PowAlgo::NEOSCRYPT,
                                                  scriptPubKey, target);
   BOOST_CHECK (pblock1 != nullptr);
   const uint256 hash1 = pblock1->GetHash ();
@@ -421,12 +430,12 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
      time (even if we advance the clock, since there are no new
      transactions).  */
   SetMockTime (baseTime + 100);
-  const CBlock* pblock = miner.getCurrentBlock (PowAlgo::NEOSCRYPT, mempool,
+  const CBlock* pblock = miner.getCurrentBlock (PowAlgo::NEOSCRYPT,
                                                 scriptPubKey, target);
   BOOST_CHECK (pblock == pblock1 && pblock->GetHash () == hash1);
 
   /* Changing the algo should give us a new block, though.  */
-  const CBlock* pblock2 = miner.getCurrentBlock (PowAlgo::SHA256D, mempool,
+  const CBlock* pblock2 = miner.getCurrentBlock (PowAlgo::SHA256D,
                                                  scriptPubKey, target);
   BOOST_CHECK (pblock2 != nullptr);
   const uint256 hash2 = pblock2->GetHash ();
@@ -436,7 +445,7 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
      it can be the same *pointer* if the memory was reused after clearing it,
      so we can only verify that the hash is different.  */
   CreateAndProcessBlock ({}, scriptPubKey);
-  const CBlock* pblock3 = miner.getCurrentBlock (PowAlgo::SHA256D, mempool,
+  const CBlock* pblock3 = miner.getCurrentBlock (PowAlgo::SHA256D,
                                                  scriptPubKey, target);
   BOOST_CHECK (pblock3 != nullptr);
   const uint256 hash3 = pblock3->GetHash ();
@@ -447,13 +456,13 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
   CMutableTransaction mtx;
   mtx.vout.emplace_back (1234, scriptPubKey);
   {
-    LOCK2 (cs_main, mempool.cs);
-    mempool.addUnchecked (entry.FromTx (mtx));
+    LOCK2 (cs_main, m_node.mempool->cs);
+    m_node.mempool->addUnchecked (entry.FromTx (mtx));
   }
 
   /* We should still get back the cached block, for now.  */
   SetMockTime (baseTime + 160);
-  pblock = miner.getCurrentBlock (PowAlgo::SHA256D, mempool,
+  pblock = miner.getCurrentBlock (PowAlgo::SHA256D,
                                   scriptPubKey, target);
   BOOST_CHECK (pblock == pblock3 && pblock->GetHash () == hash3);
 
@@ -461,20 +470,19 @@ BOOST_FIXTURE_TEST_CASE (auxpow_miner_blockRegeneration, TestChain100Setup)
      definitely get a different pointer, as there is no clearing.  The old
      blocks are freed only after a new tip is found.  */
   SetMockTime (baseTime + 161);
-  const CBlock* pblock4 = miner.getCurrentBlock (PowAlgo::SHA256D, mempool,
+  const CBlock* pblock4 = miner.getCurrentBlock (PowAlgo::SHA256D,
                                                  scriptPubKey, target);
   BOOST_CHECK (pblock4 != pblock3 && pblock4->GetHash () != hash3);
 }
 
 BOOST_FIXTURE_TEST_CASE (auxpow_miner_createAndLookupBlock, TestChain100Setup)
 {
-  CTxMemPool mempool;
-  AuxpowMinerForTest miner;
+  AuxpowMinerForTest miner(m_node);
   LOCK (miner.cs);
 
   CScript scriptPubKey;
   uint256 target;
-  const CBlock* pblock = miner.getCurrentBlock (PowAlgo::NEOSCRYPT, mempool,
+  const CBlock* pblock = miner.getCurrentBlock (PowAlgo::NEOSCRYPT,
                                                 scriptPubKey, target);
   BOOST_CHECK (pblock != nullptr);
 

@@ -128,7 +128,7 @@ static ChainstateManager* GetChainman(const std::any& context, HTTPRequest* req)
                           __FILE__, __LINE__, __func__, PACKAGE_BUGREPORT));
         return nullptr;
     }
-    return node_context->chainman;
+    return node_context->chainman.get();
 }
 
 static RetFormat ParseDataFormat(std::string& param, const std::string& strReq)
@@ -770,8 +770,12 @@ static bool rest_name(const std::any& context, HTTPRequest* req, const std::stri
         return RESTERR(req, HTTP_BAD_REQUEST,
                        "Invalid encoded name: " + encodedName);
 
+    ChainstateManager* maybe_chainman = GetChainman(context, req);
+    if (!maybe_chainman) return false;
+    ChainstateManager& chainman = *maybe_chainman;
+
     CNameData data;
-    if (!::ChainstateActive ().CoinsTip ().GetName(plainName, data))
+    if (!chainman.ActiveChainstate ().CoinsTip ().GetName(plainName, data))
         return RESTERR(req, HTTP_NOT_FOUND,
                        EncodeNameForMessage (plainName) + " not found");
 

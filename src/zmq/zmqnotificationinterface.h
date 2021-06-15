@@ -22,7 +22,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static CZMQNotificationInterface* Create();
+    static CZMQNotificationInterface* Create(const BlockManager& b);
 
     inline TrackedGames* GetTrackedGames() {
         return trackedGames.get();

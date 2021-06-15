@@ -139,7 +139,7 @@ public:
   /**
    * Performs sanity checks.  Throws if it fails.
    */
-  void check (ChainstateManager& chainman, CChainState& active_chainstate) const;
+  void check (CChainState& active_chainstate) const;
 
   /**
    * Checks if a tx can be added (based on name criteria) without

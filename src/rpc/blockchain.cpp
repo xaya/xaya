@@ -95,7 +95,6 @@ ChainstateManager& EnsureChainman(const NodeContext& node)
     if (!node.chainman) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Node chainman not found");
     }
-    WITH_LOCK(::cs_main, CHECK_NONFATAL(std::addressof(g_chainman) == std::addressof(*node.chainman)));
     return *node.chainman;
 }
 
@@ -520,7 +519,7 @@ static RPCHelpMan syncwithvalidationinterfacequeue()
     };
 }
 
-UniValue GetDifficultyJson()
+UniValue GetDifficultyJson(const CChain& chain)
 {
     LOCK(cs_main);
 
@@ -528,7 +527,7 @@ UniValue GetDifficultyJson()
     for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
       {
         const uint32_t nextWork
-            = GetNextWorkRequired (algo, ::ChainActive().Tip (),
+            = GetNextWorkRequired (algo, chain.Tip (),
                                    Params ().GetConsensus ());
         result.pushKV (PowAlgoToString (algo), GetDifficultyForBits (nextWork));
       }
@@ -554,7 +553,11 @@ static RPCHelpMan getdifficulty()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    return GetDifficultyJson ();
+    ChainstateManager& chainman = EnsureAnyChainman(request.context);
+    LOCK(cs_main);
+    const CChain& active_chain = chainman.ActiveChain();
+
+    return GetDifficultyJson (active_chain);
 },
     };
 }

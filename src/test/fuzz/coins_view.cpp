@@ -27,12 +27,14 @@
 #include <vector>
 
 namespace {
+const TestingSetup* g_setup;
 const Coin EMPTY_COIN{};
 } // namespace
 
 void initialize_coins_view()
 {
     static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    g_setup = testing_setup.get();
 }
 
 FUZZ_TARGET_INIT(coins_view, initialize_coins_view)
@@ -263,7 +265,7 @@ FUZZ_TARGET_INIT(coins_view, initialize_coins_view)
                 CCoinsStats stats{CoinStatsHashType::HASH_SERIALIZED};
                 bool expected_code_path = false;
                 try {
-                    (void)GetUTXOStats(&coins_view_cache, WITH_LOCK(::cs_main, return std::ref(g_chainman.m_blockman)), stats);
+                    (void)GetUTXOStats(&coins_view_cache, WITH_LOCK(::cs_main, return std::ref(g_setup->m_node.chainman->m_blockman)), stats);
                 } catch (const std::logic_error&) {
                     expected_code_path = true;
                 }

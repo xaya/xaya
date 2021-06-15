@@ -30,7 +30,7 @@ std::list<const CZMQAbstractNotifier*> CZMQNotificationInterface::GetActiveNotif
     return result;
 }
 
-CZMQNotificationInterface* CZMQNotificationInterface::Create()
+CZMQNotificationInterface* CZMQNotificationInterface::Create(const BlockManager& blockman)
 {
     std::map<std::string, CZMQNotifierFactory> factories;
     factories["pubhashblock"] = CZMQAbstractNotifier::Create<CZMQPublishHashBlockNotifier>;
@@ -43,9 +43,9 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     std::unique_ptr<TrackedGames> trackedGames(new TrackedGames(vTrackedGames));
 
     ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
-    factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier]() {
+    factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier, &blockman]() {
         assert (gameBlocksNotifier == nullptr);
-        auto res = std::make_unique<ZMQGameBlocksNotifier>(*trackedGames);
+        auto res = std::make_unique<ZMQGameBlocksNotifier>(blockman, *trackedGames);
         gameBlocksNotifier = res.get();
         return res;
     };

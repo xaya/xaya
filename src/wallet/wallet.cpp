@@ -2957,7 +2957,7 @@ int CWalletTx::GetBlocksToMaturity() const
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
 
     /* Special rule:  The genesis premine is spendable immediately.  */
-    if (chain_depth == ::ChainActive().Height() + 1)
+    if (m_confirm.block_height == 0)
         return 0;
 
     return std::max(0, (COINBASE_MATURITY+1) - chain_depth);

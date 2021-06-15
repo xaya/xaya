@@ -14,6 +14,7 @@
 #include <policy/policy.h>
 #include <policy/rbf.h>
 #include <rpc/auxpow_miner.h>
+#include <rpc/blockchain.h>
 #include <rpc/rawtransaction_util.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
@@ -2903,6 +2904,8 @@ static RPCHelpMan listunspent()
 {
     std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest(request);
     if (!pwallet) return NullUniValue;
+
+    const auto& chainman = EnsureAnyChainman (request.context);
 
     int nMinDepth = 1;
     if (!request.params[0].isNull()) {

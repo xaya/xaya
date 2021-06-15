@@ -349,7 +349,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 
   {
     LOCK (cs_main);
-    const CBlockIndex* pindex = g_chainman.m_blockman.LookupBlockIndex (blkHash);
+    const CBlockIndex* pindex = blockman.LookupBlockIndex (blkHash);
     assert (pindex != nullptr);
     blockData.pushKV ("height", pindex->nHeight);
     blockData.pushKV ("mediantime", pindex->GetMedianTimePast ());

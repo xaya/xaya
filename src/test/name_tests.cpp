@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2019 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE (name_database)
   dataHeight1.fromScript (height1, COutPoint (uint256 (), 0), nameOp);
   dataHeight2.fromScript (height2, COutPoint (uint256 (), 0), nameOp);
 
-  CCoinsViewCache& view = ::ChainstateActive ().CoinsTip ();
+  CCoinsViewCache& view = m_node.chainman->ActiveChainstate ().CoinsTip ();
 
   BOOST_CHECK (!view.GetName (name1, data2));
   view.SetName (name1, dataHeight2, false);
@@ -454,7 +454,7 @@ NameIterationTester::remove (const std::string& n)
 
 BOOST_AUTO_TEST_CASE (name_iteration)
 {
-  NameIterationTester tester(::ChainstateActive ().CoinsDB ());
+  NameIterationTester tester(m_node.chainman->ActiveChainstate ().CoinsDB ());
 
   tester.verify ();
 

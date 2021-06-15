@@ -303,7 +303,7 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CCoinsViewDB::ValidateNameDB(ChainstateManager& chainman, const std::function<void()>& interruption_point) const
+bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const
 {
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around

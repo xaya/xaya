@@ -19,6 +19,7 @@ extern RecursiveMutex cs_main;
 class CBlock;
 class CBlockIndex;
 class CBlockPolicyEstimator;
+class CChain;
 class CChainState;
 class CTxMemPool;
 class ChainstateManager;
@@ -72,6 +73,6 @@ CBlockPolicyEstimator& EnsureAnyFeeEstimator(const std::any& context);
  */
 UniValue CreateUTXOSnapshot(NodeContext& node, CChainState& chainstate, CAutoFile& afile);
 
-UniValue GetDifficultyJson();
+UniValue GetDifficultyJson(const CChain& chain);
 
 #endif
