@@ -30,7 +30,7 @@ class WalletSignerTest(BitcoinTestFramework):
 
         self.extra_args = [
             [],
-            [f"-signer={self.mock_signer_path()}", '-keypool=10'],
+            [f"-signer={self.mock_signer_path()}", '-keypool=10', '-addresstype=bech32'],
         ]
 
     def skip_test_if_missing_module(self):
@@ -75,21 +75,21 @@ class WalletSignerTest(BitcoinTestFramework):
         assert_equal(hww.getwalletinfo()["keypoolsize"], 30)
 
         address1 = hww.getnewaddress(address_type="bech32")
-        assert_equal(address1, "bcrt1qm90ugl4d48jv8n6e5t9ln6t9zlpm5th68x4f8g")
+        assert_equal(address1, "chirt1qm90ugl4d48jv8n6e5t9ln6t9zlpm5th6k2mksh")
         address_info = hww.getaddressinfo(address1)
         assert_equal(address_info['solvable'], True)
         assert_equal(address_info['ismine'], True)
         assert_equal(address_info['hdkeypath'], "m/84'/1'/0'/0/0")
 
         address2 = hww.getnewaddress(address_type="p2sh-segwit")
-        assert_equal(address2, "2N2gQKzjUe47gM8p1JZxaAkTcoHPXV6YyVp")
+        assert_equal(address2, "dNrTxV8wNvzofC2pi6enmTcE5p5Y8tTpm6")
         address_info = hww.getaddressinfo(address2)
         assert_equal(address_info['solvable'], True)
         assert_equal(address_info['ismine'], True)
         assert_equal(address_info['hdkeypath'], "m/49'/1'/0'/0/0")
 
         address3 = hww.getnewaddress(address_type="legacy")
-        assert_equal(address3, "n1LKejAadN6hg2FrBXoU1KrwX4uK16mco9")
+        assert_equal(address3, "ckZT1EJxJDSYs43rct98rSbr3TycaaEAQT")
         address_info = hww.getaddressinfo(address3)
         assert_equal(address_info['solvable'], True)
         assert_equal(address_info['ismine'], True)

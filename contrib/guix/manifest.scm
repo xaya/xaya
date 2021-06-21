@@ -22,6 +22,7 @@
              (gnu packages linux)
              (gnu packages llvm)
              (gnu packages mingw)
+             (gnu packages moreutils)
              (gnu packages perl)
              (gnu packages pkg-config)
              (gnu packages python)
@@ -205,7 +206,7 @@ chain for " target " development."))
 (define-public lief
   (package
    (name "python-lief")
-   (version "0.11.4")
+   (version "0.11.5")
    (source
     (origin
      (method git-fetch)
@@ -215,7 +216,7 @@ chain for " target " development."))
      (file-name (git-file-name name version))
      (sha256
       (base32
-       "0h4kcwr9z478almjqhmils8imfpflzk0r7d05g4xbkdyknn162qf"))))
+       "0qahjfg1n0x76ps2mbyljvws1l3qhkqvmxqbahps4qgywl2hbdkj"))))
    (build-system python-build-system)
    (native-inputs
     `(("cmake" ,cmake)))
@@ -572,6 +573,7 @@ inspecting signatures in Mach-O binaries.")
         patch
         gawk
         sed
+        moreutils
         ;; Compression and archiving
         tar
         bzip2
