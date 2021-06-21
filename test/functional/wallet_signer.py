@@ -30,7 +30,7 @@ class WalletSignerTest(BitcoinTestFramework):
 
         self.extra_args = [
             [],
-            [f"-signer={self.mock_signer_path()}", '-keypool=10'],
+            [f"-signer={self.mock_signer_path()}", '-keypool=10', '-addresstype=bech32'],
         ]
 
     def skip_test_if_missing_module(self):
