@@ -16,7 +16,7 @@ bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return fa
 bool CCoinsView::GetNameHistory(const valtype &name, CNameHistory &data) const { return false; }
 CNameIterator* CCoinsView::IterateNames() const { assert (false); }
 bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
-CCoinsViewCursor *CCoinsView::Cursor() const { return nullptr; }
+std::unique_ptr<CCoinsViewCursor> CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const { return false; }
 
 bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
@@ -35,7 +35,7 @@ bool CCoinsViewBacked::GetNameHistory(const valtype &name, CNameHistory &data) c
 CNameIterator* CCoinsViewBacked::IterateNames() const { return base->IterateNames(); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
 bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return base->BatchWrite(mapCoins, hashBlock, names); }
-CCoinsViewCursor *CCoinsViewBacked::Cursor() const { return base->Cursor(); }
+std::unique_ptr<CCoinsViewCursor> CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 bool CCoinsViewBacked::ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const { return base->ValidateNameDB(chainState, interruption_point); }
 

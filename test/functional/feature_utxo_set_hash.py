@@ -9,7 +9,7 @@ import struct
 from test_framework.messages import (
     CBlock,
     COutPoint,
-    FromHex,
+    from_hex,
 )
 from test_framework.muhash import MuHash3072
 from test_framework.test_framework import BitcoinTestFramework
@@ -32,17 +32,17 @@ class UTXOSetHashTest(BitcoinTestFramework):
         # Generate 100 blocks and remove the first since we plan to spend its
         # coinbase
         block_hashes = wallet.generate(1) + node.generate(99)
-        blocks = list(map(lambda block: FromHex(CBlock(), node.getblock(block, False)), block_hashes))
+        blocks = list(map(lambda block: from_hex(CBlock(), node.getblock(block, False)), block_hashes))
         blocks.pop(0)
 
         # Create a spending transaction and mine a block which includes it
         txid = wallet.send_self_transfer(from_node=node)['txid']
         tx_block = node.generateblock(output=wallet.get_address(), transactions=[txid])
-        blocks.append(FromHex(CBlock(), node.getblock(tx_block['hash'], False)))
+        blocks.append(from_hex(CBlock(), node.getblock(tx_block['hash'], False)))
 
         # Unlike upstream, Xaya allows spending the genesis block's coinbase,
         # so we have to include that into the UTXO set.
-        genesis = FromHex(CBlock(), node.getblock(node.getblockhash(0), False))
+        genesis = from_hex(CBlock(), node.getblock(node.getblockhash(0), False))
         blocks = [genesis] + blocks
 
         # Serialize the outputs that should be in the UTXO set and add them to

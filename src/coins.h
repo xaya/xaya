@@ -192,7 +192,7 @@ public:
     virtual bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names);
 
     //! Get a cursor to iterate over the whole state
-    virtual CCoinsViewCursor *Cursor() const;
+    virtual std::unique_ptr<CCoinsViewCursor> Cursor() const;
 
     // Validate the name database.
     virtual bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const;
@@ -222,7 +222,7 @@ public:
     CNameIterator* IterateNames() const override;
     void SetBackend(CCoinsView &viewIn);
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
-    CCoinsViewCursor *Cursor() const override;
+    std::unique_ptr<CCoinsViewCursor> Cursor() const override;
     size_t EstimateSize() const override;
     bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const override;
 };
@@ -263,7 +263,7 @@ public:
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
     CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
-    CCoinsViewCursor* Cursor() const override {
+    std::unique_ptr<CCoinsViewCursor> Cursor() const override {
         throw std::logic_error("CCoinsViewCache cursor iteration not supported.");
     }
 

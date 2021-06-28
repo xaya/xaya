@@ -23,12 +23,11 @@ from .messages import (
     CTxIn,
     CTxInWitness,
     CTxOut,
-    FromHex,
-    ToHex,
     hash256,
     hex_str_to_bytes,
     ser_uint256,
     sha256,
+    tx_from_hex,
     uint256_from_str,
 )
 from .script import (
@@ -79,7 +78,7 @@ def create_block(hashprev=None, coinbase=None, ntime=None, *, version=None, tmpl
     if txlist:
         for tx in txlist:
             if not hasattr(tx, 'calc_sha256'):
-                tx = FromHex(CTransaction(), tx)
+                tx = tx_from_hex(tx)
             block.vtx.append(tx)
     block.hashMerkleRoot = block.calc_merkle_root()
     block.calc_sha256()
@@ -166,7 +165,7 @@ def create_transaction(node, txid, to_address, *, amount):
         sign for the output that is being spent.
     """
     raw_tx = create_raw_transaction(node, txid, to_address, amount=amount)
-    tx = FromHex(CTransaction(), raw_tx)
+    tx = tx_from_hex(raw_tx)
     return tx
 
 def create_raw_transaction(node, txid, to_address, *, amount):
@@ -181,11 +180,6 @@ def create_raw_transaction(node, txid, to_address, *, amount):
             signed_psbt = wrpc.walletprocesspsbt(psbt)
             psbt = signed_psbt['psbt']
     final_psbt = node.finalizepsbt(psbt)
-    if not final_psbt["complete"]:
-        node.log.info(f'final_psbt={final_psbt}')
-        for w in node.listwallets():
-            wrpc = node.get_wallet_rpc(w)
-            node.log.info(f'listunspent={wrpc.listunspent()}')
     assert_equal(final_psbt["complete"], True)
     return final_psbt['hex']
 
@@ -248,9 +242,9 @@ def send_to_witness(use_p2wsh, node, utxo, pubkey, encode_p2sh, amount, sign=Tru
         return node.sendrawtransaction(signed["hex"])
     else:
         if (insert_redeem_script):
-            tx = FromHex(CTransaction(), tx_to_witness)
+            tx = tx_from_hex(tx_to_witness)
             tx.vin[0].scriptSig += CScript([hex_str_to_bytes(insert_redeem_script)])
-            tx_to_witness = ToHex(tx)
+            tx_to_witness = tx.serialize().hex()
 
     return node.sendrawtransaction(tx_to_witness)
 

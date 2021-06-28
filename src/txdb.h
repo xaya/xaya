@@ -63,7 +63,7 @@ public:
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
     CNameIterator* IterateNames() const override;
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
-    CCoinsViewCursor *Cursor() const override;
+    std::unique_ptr<CCoinsViewCursor> Cursor() const override;
     bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const override;
 
     //! Attempt to update from an older database format. Returns whether an error occurred.
@@ -72,28 +72,6 @@ public:
 
     //! Dynamically alter the underlying leveldb cache size.
     void ResizeCache(size_t new_cache_size) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-};
-
-/** Specialization of CCoinsViewCursor to iterate over a CCoinsViewDB */
-class CCoinsViewDBCursor: public CCoinsViewCursor
-{
-public:
-    ~CCoinsViewDBCursor() {}
-
-    bool GetKey(COutPoint &key) const override;
-    bool GetValue(Coin &coin) const override;
-    unsigned int GetValueSize() const override;
-
-    bool Valid() const override;
-    void Next() override;
-
-private:
-    CCoinsViewDBCursor(CDBIterator* pcursorIn, const uint256 &hashBlockIn):
-        CCoinsViewCursor(hashBlockIn), pcursor(pcursorIn) {}
-    std::unique_ptr<CDBIterator> pcursor;
-    std::pair<char, COutPoint> keyTmp;
-
-    friend class CCoinsViewDB;
 };
 
 /** Access to the block database (blocks/index/) */

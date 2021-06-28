@@ -82,10 +82,9 @@ class PremineTest(BitcoinTestFramework):
     # Prepend script size, so that it will correctly push the script hash
     # to the stack.
     redeemScript = ("%02x" % (len (redeemScript) // 2)) + redeemScript
-    forgedTx = CTransaction ()
-    FromHex (forgedTx, rawTx)
+    forgedTx = tx_from_hex (rawTx)
     forgedTx.vin[0].scriptSig = codecs.decode (redeemScript, 'hex_codec')
-    forgedTx = ToHex (forgedTx)
+    forgedTx = forgedTx.serialize ().hex ()
     assert_raises_rpc_error (-26, "not valid",
                              node.sendrawtransaction, forgedTx, 0)
 
