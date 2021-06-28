@@ -135,31 +135,33 @@ class WalletLabelsTest(BitcoinTestFramework):
         # in the label. This is a no-op.
         change_label(node, labels[2].addresses[0], labels[2], labels[2])
 
-        self.log.info('Check watchonly labels')
-        node.createwallet(wallet_name='watch_only', disable_private_keys=True)
-        wallet_watch_only = node.get_wallet_rpc('watch_only')
-        BECH32_VALID = {
-            '✔️_VER15_PROG40': 'ncrt10qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6m505y',
-            '✔️_VER16_PROG03': 'ncrt1sqqqqqd94n53',
-            '✔️_VER16_PROB02': 'ncrt1sqqqq5ela00',
-        }
-        BECH32_INVALID = {
-            '❌_VER15_PROG41': 'ncrt1sqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqa0qv9g',
-            '❌_VER16_PROB01': 'ncrt1sqqw2vz4e',
-        }
-        for l in BECH32_VALID:
-            ad = BECH32_VALID[l]
-            wallet_watch_only.importaddress(label=l, rescan=False, address=ad)
-            node.generatetoaddress(1, ad)
-            assert_equal(wallet_watch_only.getaddressesbylabel(label=l), {ad: {'purpose': 'receive'}})
-            assert_equal(wallet_watch_only.getreceivedbylabel(label=l), 0)
-        for l in BECH32_INVALID:
-            ad = BECH32_INVALID[l]
-            assert_raises_rpc_error(
-                -5,
-                "Address is not valid" if self.options.descriptors else "Invalid address or script",
-                lambda: wallet_watch_only.importaddress(label=l, rescan=False, address=ad),
-            )
+        if self.options.descriptors:
+            # This is a descriptor wallet test because of segwit v1+ addresses
+            self.log.info('Check watchonly labels')
+            node.createwallet(wallet_name='watch_only', disable_private_keys=True)
+            wallet_watch_only = node.get_wallet_rpc('watch_only')
+            BECH32_VALID = {
+                '✔️_VER15_PROG40': 'ncrt10qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6m505y',
+                '✔️_VER16_PROG03': 'ncrt1sqqqqqd94n53',
+                '✔️_VER16_PROB02': 'ncrt1sqqqq5ela00',
+            }
+            BECH32_INVALID = {
+                '❌_VER15_PROG41': 'ncrt1sqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqa0qv9g',
+                '❌_VER16_PROB01': 'ncrt1sqqw2vz4e',
+            }
+            for l in BECH32_VALID:
+                ad = BECH32_VALID[l]
+                wallet_watch_only.importaddress(label=l, rescan=False, address=ad)
+                node.generatetoaddress(1, ad)
+                assert_equal(wallet_watch_only.getaddressesbylabel(label=l), {ad: {'purpose': 'receive'}})
+                assert_equal(wallet_watch_only.getreceivedbylabel(label=l), 0)
+            for l in BECH32_INVALID:
+                ad = BECH32_INVALID[l]
+                assert_raises_rpc_error(
+                    -5,
+                    "Address is not valid" if self.options.descriptors else "Invalid Bitcoin address or script",
+                    lambda: wallet_watch_only.importaddress(label=l, rescan=False, address=ad),
+                )
 
 
 class Label:

@@ -2360,6 +2360,7 @@ public:
         if (g_scan_in_progress.exchange(true)) {
             return false;
         }
+        CHECK_NONFATAL(g_scan_progress == 0);
         m_could_reserve = true;
         return true;
     }
@@ -2367,6 +2368,7 @@ public:
     ~CoinsViewScanReserver() {
         if (m_could_reserve) {
             g_scan_in_progress = false;
+            g_scan_progress = 0;
         }
     }
 };
@@ -2483,7 +2485,6 @@ static RPCHelpMan scantxoutset()
         std::vector<CTxOut> input_txos;
         std::map<COutPoint, Coin> coins;
         g_should_abort_scan = false;
-        g_scan_progress = 0;
         int64_t count = 0;
         std::unique_ptr<CCoinsViewCursor> pcursor;
         CBlockIndex* tip;
@@ -2493,7 +2494,7 @@ static RPCHelpMan scantxoutset()
             LOCK(cs_main);
             CChainState& active_chainstate = chainman.ActiveChainstate();
             active_chainstate.ForceFlushStateToDisk();
-            pcursor = std::unique_ptr<CCoinsViewCursor>(active_chainstate.CoinsDB().Cursor());
+            pcursor = active_chainstate.CoinsDB().Cursor();
             CHECK_NONFATAL(pcursor);
             tip = active_chainstate.m_chain.Tip();
             CHECK_NONFATAL(tip);
@@ -2692,7 +2693,7 @@ UniValue CreateUTXOSnapshot(NodeContext& node, CChainState& chainstate, CAutoFil
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to read UTXO set");
         }
 
-        pcursor = std::unique_ptr<CCoinsViewCursor>(chainstate.CoinsDB().Cursor());
+        pcursor = chainstate.CoinsDB().Cursor();
         tip = chainstate.m_blockman.LookupBlockIndex(stats.hashBlock);
         CHECK_NONFATAL(tip);
     }

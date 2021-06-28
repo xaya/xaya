@@ -74,12 +74,13 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [bitcoin.conf Configuration File](bitcoin-conf.md)
 - [Files](files.md)
 - [Fuzz-testing](fuzzing.md)
+- [I2P Support](i2p.md)
+- [Init Scripts (systemd/upstart/openrc)](init.md)
+- [PSBT support](psbt.md)
 - [Reduce Memory](reduce-memory.md)
 - [Reduce Traffic](reduce-traffic.md)
 - [Tor Support](tor.md)
-- [Init Scripts (systemd/upstart/openrc)](init.md)
 - [ZMQ](zmq.md)
-- [PSBT support](psbt.md)
 
 License
 ---------------------
