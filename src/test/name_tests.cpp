@@ -538,6 +538,11 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
 
   /* Invalid due to not being valid UTF-8.  */
   BOOST_CHECK (!IsNameValid (DecodeName ("782fff", NameEncoding::HEX), state));
+  /* Overlong UTF-8 sequences:  */
+  BOOST_CHECK (!IsNameValid (DecodeName ("782fc080", NameEncoding::HEX), state));
+  BOOST_CHECK (!IsNameValid (DecodeName ("782fc181", NameEncoding::HEX), state));
+  /* UTF-16 surrogate pair:  */
+  BOOST_CHECK (!IsNameValid (DecodeName ("782fEDA18CEDBEB4", NameEncoding::HEX), state));
 }
 
 BOOST_AUTO_TEST_CASE (is_value_valid)
