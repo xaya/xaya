@@ -247,5 +247,10 @@ bool IsValidUtf8String(const std::string& str)
     JSONUTF8StringFilter writer(valStr);
     for (size_t i = 0; i < str.size (); ++i)
         writer.push_back(str[i]);
-    return writer.finalize();
+    /* The JSONUTF8StringFilter does not do full validation as per the
+       UTF-8 spec (RFC 3629), and also handles UTF-16 collation, which we
+       do not want to allow in validating pure UTF-8 strings.  Thus make sure
+       that the "filtered" (re-encoded) UTF-8 string equals the input, which
+       filters out those situations.  */
+    return writer.finalize() && valStr == str;
 }
