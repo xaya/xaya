@@ -483,7 +483,7 @@ private:
     bool IsBlockRequested(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     /** Remove this block from our tracked requested blocks. Called if:
-     *  - the block has been recieved from a peer
+     *  - the block has been received from a peer
      *  - the request for the block has timed out
      */
     void RemoveBlockRequest(const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -852,11 +852,26 @@ void PeerManagerImpl::MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid)
         return;
     }
     if (nodestate->fProvidesHeaderAndIDs) {
+        int num_outbound_hb_peers = 0;
         for (std::list<NodeId>::iterator it = lNodesAnnouncingHeaderAndIDs.begin(); it != lNodesAnnouncingHeaderAndIDs.end(); it++) {
             if (*it == nodeid) {
                 lNodesAnnouncingHeaderAndIDs.erase(it);
                 lNodesAnnouncingHeaderAndIDs.push_back(nodeid);
                 return;
+            }
+            CNodeState *state = State(*it);
+            if (state != nullptr && !state->m_is_inbound) ++num_outbound_hb_peers;
+        }
+        if (nodestate->m_is_inbound) {
+            // If we're adding an inbound HB peer, make sure we're not removing
+            // our last outbound HB peer in the process.
+            if (lNodesAnnouncingHeaderAndIDs.size() >= 3 && num_outbound_hb_peers == 1) {
+                CNodeState *remove_node = State(lNodesAnnouncingHeaderAndIDs.front());
+                if (remove_node != nullptr && !remove_node->m_is_inbound) {
+                    // Put the HB outbound peer in the second slot, so that it
+                    // doesn't get removed.
+                    std::swap(lNodesAnnouncingHeaderAndIDs.front(), *std::next(lNodesAnnouncingHeaderAndIDs.begin()));
+                }
             }
         }
         m_connman.ForNode(nodeid, [this](CNode* pfrom) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
