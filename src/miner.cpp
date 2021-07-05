@@ -13,6 +13,7 @@
 #include <consensus/merkle.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+#include <deploymentstatus.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
 #include <pow.h>
@@ -121,10 +122,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nHeight = pindexPrev->nHeight + 1;
 
     const int32_t nChainId = chainparams.GetConsensus ().nAuxpowChainId;
-    // FIXME: Active version bits after the always-auxpow fork!
-    //const int32_t nVersion = ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
     const int32_t nVersion = 4;
-    pblock->SetBaseVersion(nVersion, nChainId);
+    pblock->SetBaseVersion(4, nChainId);
+    // FIXME: Active version bits after the always-auxpow fork!
+    //pblock->nVersion = g_versionbitscache.ComputeBlockVersion(pindexPrev, chainparams.GetConsensus());
+
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
     if (chainparams.MineBlocksOnDemand())
@@ -141,12 +143,12 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // This is only needed in case the witness softfork activation is reverted
     // (which would require a very deep reorganization).
     // Note that the mempool would accept transactions with witness data before
-    // IsWitnessEnabled, but we would only ever mine blocks after IsWitnessEnabled
+    // the deployment is active, but we would only ever mine blocks after activation
     // unless there is a massive block reorganization with the witness softfork
     // not activated.
     // TODO: replace this with a call to main to assess validity of a mempool
     // transaction (which in most cases can be a no-op).
-    fIncludeWitness = IsWitnessEnabled(pindexPrev, chainparams.GetConsensus());
+    fIncludeWitness = DeploymentActiveAfter(pindexPrev, chainparams.GetConsensus(), Consensus::DEPLOYMENT_SEGWIT);
 
     int nPackagesSelected = 0;
     int nDescendantsUpdated = 0;
