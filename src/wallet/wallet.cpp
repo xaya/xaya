@@ -377,6 +377,19 @@ void CWallet::UpgradeKeyMetadata()
     SetWalletFlag(WALLET_FLAG_KEY_ORIGIN_METADATA);
 }
 
+void CWallet::UpgradeDescriptorCache()
+{
+    if (!IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS) || IsLocked() || IsWalletFlagSet(WALLET_FLAG_LAST_HARDENED_XPUB_CACHED)) {
+        return;
+    }
+
+    for (ScriptPubKeyMan* spkm : GetAllScriptPubKeyMans()) {
+        DescriptorScriptPubKeyMan* desc_spkm = dynamic_cast<DescriptorScriptPubKeyMan*>(spkm);
+        desc_spkm->UpgradeDescriptorCache();
+    }
+    SetWalletFlag(WALLET_FLAG_LAST_HARDENED_XPUB_CACHED);
+}
+
 bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool accept_no_keys)
 {
     CCrypter crypter;
@@ -393,6 +406,8 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool accept_no_key
             if (Unlock(_vMasterKey, accept_no_keys)) {
                 // Now that we've unlocked, upgrade the key metadata
                 UpgradeKeyMetadata();
+                // Now that we've unlocked, upgrade the descriptor cache
+                UpgradeDescriptorCache();
                 return true;
             }
         }
@@ -804,7 +819,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
         success = false;
     }
 
-    NotifyTransactionChanged(this, originalHash, CT_UPDATED);
+    NotifyTransactionChanged(originalHash, CT_UPDATED);
 
     return success;
 }
@@ -933,7 +948,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const CWalletTx::Confirmatio
     wtx.MarkDirty();
 
     // Notify UI of new or updated transaction
-    NotifyTransactionChanged(this, hash, fInsertedNew ? CT_NEW : CT_UPDATED);
+    NotifyTransactionChanged(hash, fInsertedNew ? CT_NEW : CT_UPDATED);
 
 #if HAVE_SYSTEM
     // notify an external script when a wallet transaction comes in or is updated
@@ -1107,7 +1122,7 @@ bool CWallet::AbandonTransaction(const uint256& hashTx)
             wtx.setAbandoned();
             wtx.MarkDirty();
             batch.WriteTx(wtx);
-            NotifyTransactionChanged(this, wtx.GetHash(), CT_UPDATED);
+            NotifyTransactionChanged(wtx.GetHash(), CT_UPDATED);
             // Iterate over all its outputs, and mark transactions in the wallet that spend them abandoned too
             TxSpends::const_iterator iter = mapTxSpends.lower_bound(COutPoint(now, 0));
             while (iter != mapTxSpends.end() && iter->first.hash == now) {
@@ -1954,7 +1969,7 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     for (const CTxIn& txin : tx->vin) {
         CWalletTx &coin = mapWallet.at(txin.prevout.hash);
         coin.MarkDirty();
-        NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+        NotifyTransactionChanged(coin.GetHash(), CT_UPDATED);
     }
 
     // Get the inserted-CWalletTx from mapWallet so that the
@@ -2009,7 +2024,7 @@ DBErrors CWallet::ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256
         for (const auto& txin : it->second.tx->vin)
             mapTxSpends.erase(txin.prevout);
         mapWallet.erase(it);
-        NotifyTransactionChanged(this, hash, CT_DELETED);
+        NotifyTransactionChanged(hash, CT_DELETED);
     }
 
     if (nZapSelectTxRet == DBErrors::NEED_REWRITE)
@@ -2043,8 +2058,8 @@ bool CWallet::SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
             m_address_book[address].purpose = strPurpose;
         is_mine = IsMine(address) != ISMINE_NO;
     }
-    NotifyAddressBookChanged(this, address, strName, is_mine,
-                             strPurpose, (fUpdated ? CT_UPDATED : CT_NEW) );
+    NotifyAddressBookChanged(address, strName, is_mine,
+                             strPurpose, (fUpdated ? CT_UPDATED : CT_NEW));
     if (!strPurpose.empty() && !batch.WritePurpose(EncodeDestination(address), strPurpose))
         return false;
     return batch.WriteName(EncodeDestination(address), strName);
@@ -2079,7 +2094,7 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
         is_mine = IsMine(address) != ISMINE_NO;
     }
 
-    NotifyAddressBookChanged(this, address, "", is_mine, "", CT_DELETED);
+    NotifyAddressBookChanged(address, "", is_mine, "", CT_DELETED);
 
     batch.ErasePurpose(EncodeDestination(address));
     return batch.EraseName(EncodeDestination(address));
@@ -2089,9 +2104,14 @@ size_t CWallet::KeypoolCountExternalKeys() const
 {
     AssertLockHeld(cs_wallet);
 
+    auto legacy_spk_man = GetLegacyScriptPubKeyMan();
+    if (legacy_spk_man) {
+        return legacy_spk_man->KeypoolCountExternalKeys();
+    }
+
     unsigned int count = 0;
-    for (auto spk_man : GetActiveScriptPubKeyMans()) {
-        count += spk_man->KeypoolCountExternalKeys();
+    for (auto spk_man : m_external_spk_managers) {
+        count += spk_man.second->GetKeyPoolSize();
     }
 
     return count;
@@ -3044,7 +3064,6 @@ ScriptPubKeyMan* CWallet::GetScriptPubKeyMan(const OutputType& type, bool intern
     const std::map<OutputType, ScriptPubKeyMan*>& spk_managers = internal ? m_internal_spk_managers : m_external_spk_managers;
     std::map<OutputType, ScriptPubKeyMan*>::const_iterator it = spk_managers.find(type);
     if (it == spk_managers.end()) {
-        WalletLogPrintf("%s scriptPubKey Manager for output type %d does not exist\n", internal ? "Internal" : "External", static_cast<int>(type));
         return nullptr;
     }
     return it->second;
@@ -3179,7 +3198,7 @@ void CWallet::SetupDescriptorScriptPubKeyMans()
                     // TODO: Setup taproot (bech32m) descriptors by default
                     continue;
                 }
-                auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this, internal));
+                auto spk_manager = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this));
                 if (IsCrypted()) {
                     if (IsLocked()) {
                         throw std::runtime_error(std::string(__func__) + ": Wallet is locked, cannot setup new descriptors");
@@ -3188,7 +3207,7 @@ void CWallet::SetupDescriptorScriptPubKeyMans()
                         throw std::runtime_error(std::string(__func__) + ": Could not encrypt new descriptors");
                     }
                 }
-                spk_manager->SetupDescriptorGeneration(master_key, t);
+                spk_manager->SetupDescriptorGeneration(master_key, t, internal);
                 uint256 id = spk_manager->GetID();
                 m_spk_managers[id] = std::move(spk_manager);
                 AddActiveScriptPubKeyMan(id, t, internal);
@@ -3214,7 +3233,7 @@ void CWallet::SetupDescriptorScriptPubKeyMans()
                     continue;
                 }
                 OutputType t =  *desc->GetOutputType();
-                auto spk_manager = std::unique_ptr<ExternalSignerScriptPubKeyMan>(new ExternalSignerScriptPubKeyMan(*this, internal));
+                auto spk_manager = std::unique_ptr<ExternalSignerScriptPubKeyMan>(new ExternalSignerScriptPubKeyMan(*this));
                 spk_manager->SetupDescriptor(std::move(desc));
                 uint256 id = spk_manager->GetID();
                 m_spk_managers[id] = std::move(spk_manager);
@@ -3235,11 +3254,36 @@ void CWallet::AddActiveScriptPubKeyMan(uint256 id, OutputType type, bool interna
 
 void CWallet::LoadActiveScriptPubKeyMan(uint256 id, OutputType type, bool internal)
 {
+    // Activating ScriptPubKeyManager for a given output and change type is incompatible with legacy wallets.
+    // Legacy wallets have only one ScriptPubKeyManager and it's active for all output and change types.
+    Assert(IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
+
     WalletLogPrintf("Setting spkMan to active: id = %s, type = %d, internal = %d\n", id.ToString(), static_cast<int>(type), static_cast<int>(internal));
     auto& spk_mans = internal ? m_internal_spk_managers : m_external_spk_managers;
+    auto& spk_mans_other = internal ? m_external_spk_managers : m_internal_spk_managers;
     auto spk_man = m_spk_managers.at(id).get();
-    spk_man->SetInternal(internal);
     spk_mans[type] = spk_man;
+
+    if (spk_mans_other[type] == spk_man) {
+        spk_mans_other.erase(type);
+    }
+
+    NotifyCanGetAddressesChanged();
+}
+
+void CWallet::DeactivateScriptPubKeyMan(uint256 id, OutputType type, bool internal)
+{
+    auto spk_man = GetScriptPubKeyMan(type, internal);
+    if (spk_man != nullptr && spk_man->GetID() == id) {
+        WalletLogPrintf("Deactivate spkMan: id = %s, type = %d, internal = %d\n", id.ToString(), static_cast<int>(type), static_cast<int>(internal));
+        WalletBatch batch(GetDatabase());
+        if (!batch.EraseActiveScriptPubKeyMan(static_cast<uint8_t>(type), internal)) {
+            throw std::runtime_error(std::string(__func__) + ": erasing active ScriptPubKeyMan id failed");
+        }
+
+        auto& spk_mans = internal ? m_internal_spk_managers : m_external_spk_managers;
+        spk_mans.erase(type);
+    }
 
     NotifyCanGetAddressesChanged();
 }
@@ -3274,44 +3318,26 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
     }
 
     LOCK(cs_wallet);
-    auto new_spk_man = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this, desc));
-
-    // If we already have this descriptor, remove it from the maps but add the existing cache to desc
-    auto old_spk_man = GetDescriptorScriptPubKeyMan(desc);
-    if (old_spk_man) {
+    auto spk_man = GetDescriptorScriptPubKeyMan(desc);
+    if (spk_man) {
         WalletLogPrintf("Update existing descriptor: %s\n", desc.descriptor->ToString());
+        spk_man->UpdateWalletDescriptor(desc);
+    } else {
+        auto new_spk_man = std::unique_ptr<DescriptorScriptPubKeyMan>(new DescriptorScriptPubKeyMan(*this, desc));
+        spk_man = new_spk_man.get();
 
-        {
-            LOCK(old_spk_man->cs_desc_man);
-            new_spk_man->SetCache(old_spk_man->GetWalletDescriptor().cache);
-        }
-
-        // Remove from maps of active spkMans
-        auto old_spk_man_id = old_spk_man->GetID();
-        for (bool internal : {false, true}) {
-            for (OutputType t : OUTPUT_TYPES) {
-                auto active_spk_man = GetScriptPubKeyMan(t, internal);
-                if (active_spk_man && active_spk_man->GetID() == old_spk_man_id) {
-                    if (internal) {
-                        m_internal_spk_managers.erase(t);
-                    } else {
-                        m_external_spk_managers.erase(t);
-                    }
-                    break;
-                }
-            }
-        }
-        m_spk_managers.erase(old_spk_man_id);
+        // Save the descriptor to memory
+        m_spk_managers[new_spk_man->GetID()] = std::move(new_spk_man);
     }
 
     // Add the private keys to the descriptor
     for (const auto& entry : signing_provider.keys) {
         const CKey& key = entry.second;
-        new_spk_man->AddDescriptorKey(key, key.GetPubKey());
+        spk_man->AddDescriptorKey(key, key.GetPubKey());
     }
 
     // Top up key pool, the manager will generate new scriptPubKeys internally
-    if (!new_spk_man->TopUp()) {
+    if (!spk_man->TopUp()) {
         WalletLogPrintf("Could not top up scriptPubKeys\n");
         return nullptr;
     }
@@ -3319,7 +3345,7 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
     // Apply the label if necessary
     // Note: we disable labels for ranged descriptors
     if (!desc.descriptor->IsRange()) {
-        auto script_pub_keys = new_spk_man->GetScriptPubKeys();
+        auto script_pub_keys = spk_man->GetScriptPubKeys();
         if (script_pub_keys.empty()) {
             WalletLogPrintf("Could not generate scriptPubKeys (cache is empty)\n");
             return nullptr;
@@ -3331,12 +3357,8 @@ ScriptPubKeyMan* CWallet::AddWalletDescriptor(WalletDescriptor& desc, const Flat
         }
     }
 
-    // Save the descriptor to memory
-    auto ret = new_spk_man.get();
-    m_spk_managers[new_spk_man->GetID()] = std::move(new_spk_man);
-
     // Save the descriptor to DB
-    ret->WriteDescriptor();
+    spk_man->WriteDescriptor();
 
-    return ret;
+    return spk_man;
 }
