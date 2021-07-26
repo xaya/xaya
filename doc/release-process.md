@@ -43,10 +43,6 @@ Release Process
     - Make an announcement that translators can start translating for the new version. You can use one of the [previous announcements](https://www.transifex.com/bitcoin/bitcoin/announcements/) as a template.
     - Change the auto-update URL for the resource to `master`, e.g. `https://raw.githubusercontent.com/bitcoin/bitcoin/master/src/qt/locale/bitcoin_en.xlf`. (Do this only after the previous steps, to prevent an auto-update from interfering.)
 
-#### After branch-off (on master)
-
-- Update the version of `contrib/gitian-descriptors/*.yml`.
-
 #### After branch-off (on the major release branch)
 
 - Update the versions.
@@ -71,12 +67,13 @@ This will perform a few last-minute consistency checks in the build system files
 
 ### First time / New builders
 
-If you're using the automated script (found in [contrib/gitian-build.py](/contrib/gitian-build.py)), then at this point you should run it with the "--setup" command. Otherwise ignore this.
+Install Guix using one of the installation methods detailed in
+[contrib/guix/INSTALL.md](/contrib/guix/INSTALL.md).
 
 Check out the source code in the following directory hierarchy.
 
     cd /path/to/your/toplevel/build
-    git clone https://github.com/namecoin/gitian.sigs.git
+    git clone https://github.com/namecoin/guix.sigs.git
     #git clone https://github.com/namecoin/namecoin-detached-sigs.git # Namecoin doesn't use detached sigs yet, so don't do this.
     git clone https://github.com/devrandom/gitian-builder.git
     git clone https://github.com/xaya/xaya.git
@@ -156,7 +153,7 @@ NOTE: Offline builds must use the --url flag to ensure Gitian fetches only from 
     ./bin/gbuild --url namecoin=/path/to/namecoin,signature=/path/to/sigs {rest of arguments}
     popd
 
-The gbuild invocations below <b>DO NOT DO THIS</b> by default.
+Checkout the Bitcoin Core version you'd like to build:
 
 ### Build and sign Xaya for Linux, Windows, and macOS:
 
@@ -176,7 +173,9 @@ The gbuild invocations below <b>DO NOT DO THIS</b> by default.
     mv build/out/namecoin-*.tar.gz build/out/namecoin-*.dmg ../
     popd
 
-Build output expected:
+Create the macOS SDK tarball, see the [macdeploy
+instructions](/contrib/macdeploy/README.md#deterministic-macos-dmg-notes) for
+details.
 
   1. source tarball (`namecoin-${VERSION}.tar.gz`)
   2. linux 32-bit and 64-bit dist tarballs (`namecoin-${VERSION}-linux[32|64].tar.gz`)
@@ -184,11 +183,13 @@ Build output expected:
   4. macOS unsigned installer and dist tarball (`namecoin-${VERSION}-osx-unsigned.dmg`, `namecoin-${VERSION}-osx64.tar.gz`)
   5. Gitian signatures (in `gitian.sigs/${VERSION}-<linux|{win,osx}-unsigned>/(your Gitian key)/`)
 
-### Verify other gitian builders signatures to your own. (Optional)
+Follow the relevant Guix README.md sections:
+- [Performing a build](/contrib/guix/README.md#performing-a-build)
+- [Attesting to build outputs](/contrib/guix/README.md#attesting-to-build-outputs)
 
 Add other gitian builders keys to your gpg keyring, and/or refresh keys: See `../namecoin/contrib/gitian-keys/README.md`.
 
-Verify the signatures
+Add other builders keys to your gpg keyring, and/or refresh keys: See `../bitcoin/contrib/builder-keys/README.md`.
 
     pushd ./gitian-builder
     ./bin/gverify -v -d ../gitian.sigs/ -r ${VERSION}-linux ../namecoin-core/contrib/gitian-descriptors/gitian-linux.yml
@@ -198,15 +199,15 @@ Verify the signatures
 
 ### Next steps:
 
-Commit your signature to gitian.sigs:
+Commit your signature to guix.sigs:
 
-    pushd gitian.sigs
-    git add ${VERSION}-linux/"${SIGNER}"
-    git add ${VERSION}-win-unsigned/"${SIGNER}"
-    git add ${VERSION}-osx-unsigned/"${SIGNER}"
-    git commit -m "Add ${VERSION} unsigned sigs for ${SIGNER}"
-    git push  # Assuming you can push to the gitian.sigs tree
-    popd
+```sh
+pushd ./guix.sigs
+git add "${VERSION}/${SIGNER}"/noncodesigned.SHA256SUMS{,.asc}
+git commit -m "Add ${VERSION} unsigned sigs for ${SIGNER}"
+git push  # Assuming you can push to the guix.sigs tree
+popd
+```
 
 ( **Not in Namecoin yet.** )
 
@@ -220,7 +221,7 @@ Codesigner only: Sign the macOS binary:
     tar xf bitcoin-osx-unsigned.tar.gz
     ./detached-sig-create.sh -s "Key ID"
     Enter the keychain password and authorize the signature
-    Move signature-osx.tar.gz back to the gitian host
+    Move signature-osx.tar.gz back to the guix-build host
 
 Codesigner only: Sign the windows binaries:
 
@@ -266,22 +267,24 @@ Non-codesigners: wait for Windows/macOS detached signatures:
 
 ( **Not in Namecoin yet.** ) Commit your signature for the signed macOS/Windows binaries:
 
-    pushd gitian.sigs
-    git add ${VERSION}-osx-signed/"${SIGNER}"
-    git add ${VERSION}-win-signed/"${SIGNER}"
-    git commit -m "Add ${SIGNER} ${VERSION} signed binaries signatures"
-    git push  # Assuming you can push to the gitian.sigs tree
-    popd
+Combine `all.SHA256SUMS` and `all.SHA256SUMS.asc` into a clear-signed
+`SHA256SUMS.asc` message:
 
-### After 3 or more people have gitian-built and their results match:
-
-- Create `SHA256SUMS.asc` for the builds, and GPG-sign it:
-
-```bash
-sha256sum * > SHA256SUMS
+```sh
+echo -e "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\n$(cat all.SHA256SUMS)\n$(cat filename.txt.asc)" > SHA256SUMS.asc
 ```
 
-The list of files should be:
+Here's an equivalent, more readable command if you're confident that you won't
+mess up whitespaces when copy-pasting:
+
+```bash
+cat << EOF > SHA256SUMS.asc
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+$(cat all.SHA256SUMS)
+$(cat all.SHA256SUMS.asc)
+EOF
 ```
 namecoin-${VERSION}-aarch64-linux-gnu.tar.gz
 namecoin-${VERSION}-arm-linux-gnueabihf.tar.gz
@@ -299,27 +302,32 @@ in debugging can run gitian to generate the files for themselves. To avoid
 end-user confusion about which file to pick, as well as save storage
 space *do not upload these to the bitcoincore.org server, nor put them in the torrent*.
 
-- GPG-sign it, delete the unsigned file:
-```
-gpg --digest-algo sha256 --clearsign SHA256SUMS # outputs SHA256SUMS.asc
-rm SHA256SUMS
-```
-(the digest algorithm is forced to sha256 to avoid confusion of the `Hash:` header that GPG adds with the SHA256 used for the files)
-Note: check that SHA256SUMS itself doesn't end up in SHA256SUMS, which is a spurious/nonsensical entry.
+- Upload to the bitcoincore.org server (`/var/www/bin/bitcoin-core-${VERSION}`):
+    1. The contents of `./bitcoin/guix-build-${VERSION}/output`, except for
+       `*-debug*` files.
 
 ( **The following is not in Namecoin yet.** )
 
 - Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the bitcoincore.org server
   into `/var/www/bin/bitcoin-core-${VERSION}`
 
-- A `.torrent` will appear in the directory after a few minutes. Optionally help seed this torrent. To get the `magnet:` URI use:
-```bash
-transmission-show -m <torrent file>
-```
-Insert the magnet URI into the announcement sent to mailing lists. This permits
-people without access to `bitcoincore.org` to download the binary distribution.
-Also put it into the `optional_magnetlink:` slot in the YAML file for
-bitcoincore.org.
+    2. The combined clear-signed message you just created `SHA256SUMS.asc`
+
+- Create a torrent of the `/var/www/bin/bitcoin-core-${VERSION}` directory such
+  that at the top level there is only one file: the `bitcoin-core-${VERSION}`
+  directory containing everything else. Name the torrent
+  `bitcoin-${VERSION}.torrent` (note that there is no `-core-` in this name).
+
+  Optionally help seed this torrent. To get the `magnet:` URI use:
+
+  ```sh
+  transmission-show -m <torrent file>
+  ```
+
+  Insert the magnet URI into the announcement sent to mailing lists. This permits
+  people without access to `bitcoincore.org` to download the binary distribution.
+  Also put it into the `optional_magnetlink:` slot in the YAML file for
+  bitcoincore.org.
 
 - Update other repositories and websites for new version
 
@@ -357,14 +365,14 @@ bitcoincore.org.
         - https://code.launchpad.net/~bitcoin-core/bitcoin-core-snap/+git/packaging/+ref/0.xx (Click "Create snap package")
         - Name it "bitcoin-core-snap-0.xx"
         - Leave owner and series as-is
-        - Select architectures that are compiled via gitian
+        - Select architectures that are compiled via guix
         - Leave "automatically build when branch changes" unticked
         - Tick "automatically upload to store"
         - Put "bitcoin-core" in the registered store package name field
         - Tick the "edge" box
         - Put "0.xx" in the track field
         - Click "create snap package"
-        - Click "Request builds" for every new release on this branch (after updating the snapcraft.yml in the branch to reflect the latest gitian results)
+        - Click "Request builds" for every new release on this branch (after updating the snapcraft.yml in the branch to reflect the latest guix results)
         - Promote release on https://snapcraft.io/bitcoin-core/releases if it passes sanity checks
 
   - This repo

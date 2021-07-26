@@ -334,12 +334,18 @@ public:
             nUBuckets ^= (1 << 30);
         }
 
-        if (nNew > ADDRMAN_NEW_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE) {
-            throw std::ios_base::failure("Corrupt CAddrMan serialization, nNew exceeds limit.");
+        if (nNew > ADDRMAN_NEW_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE || nNew < 0) {
+            throw std::ios_base::failure(
+                strprintf("Corrupt CAddrMan serialization: nNew=%d, should be in [0, %u]",
+                          nNew,
+                          ADDRMAN_NEW_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE));
         }
 
-        if (nTried > ADDRMAN_TRIED_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE) {
-            throw std::ios_base::failure("Corrupt CAddrMan serialization, nTried exceeds limit.");
+        if (nTried > ADDRMAN_TRIED_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE || nTried < 0) {
+            throw std::ios_base::failure(
+                strprintf("Corrupt CAddrMan serialization: nTried=%d, should be in [0, %u]",
+                          nTried,
+                          ADDRMAN_TRIED_BUCKET_COUNT * ADDRMAN_BUCKET_SIZE));
         }
 
         // Deserialize entries from the new table.
@@ -451,8 +457,6 @@ public:
         }
 
         RemoveInvalid();
-
-        ResetI2PPorts();
 
         Check();
     }
@@ -768,14 +772,6 @@ private:
 
     //! Remove invalid addresses.
     void RemoveInvalid() EXCLUSIVE_LOCKS_REQUIRED(cs);
-
-    /**
-     * Reset the ports of I2P peers to 0.
-     * This is needed as a temporary measure because now we enforce port 0 and
-     * only connect to I2P hosts if the port is 0, but in the early days some
-     * I2P addresses with port 8333 were rumoured and persisted into addrmans.
-     */
-    void ResetI2PPorts() EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     friend class CAddrManTest;
 };
