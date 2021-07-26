@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2020 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -42,7 +42,7 @@ class NameMultisigTest (NameTestFramework):
     # options).  If --bip16-active is false, we restart the node later on.
     # Since Segwit assumes that BIP16 is active and we do not need Segwit
     # for this test at all, just disable it always.
-    self.node_args = ["-acceptnonstdtxn=1", "-segwitheight=-1"]
+    self.node_args = ["-acceptnonstdtxn=1", "-segwitheight=1000000"]
     self.setup_name_test ([self.node_args] * 2)
 
   def add_options (self, parser):

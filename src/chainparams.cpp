@@ -632,21 +632,15 @@ void CRegTestParams::UpdateActivationParametersFromArgs(const ArgsManager& args)
 {
     if (args.IsArgSet("-bip16height")) {
         int64_t height = args.GetArg("-bip16height", consensus.BIP16Height);
-        if (height < -1 || height >= std::numeric_limits<int>::max()) {
-            throw std::runtime_error(strprintf("Activation height %ld for BIP16 is out of valid range. Use -1 to disable BIP16.", height));
-        } else if (height == -1) {
-            LogPrintf("BIP16 disabled for testing\n");
-            height = std::numeric_limits<int>::max();
+        if (height < 0 || height >= std::numeric_limits<int>::max()) {
+            throw std::runtime_error(strprintf("Activation height %ld for BIP16 is out of valid range.", height));
         }
         consensus.BIP16Height = static_cast<int>(height);
     }
     if (args.IsArgSet("-segwitheight")) {
         int64_t height = args.GetArg("-segwitheight", consensus.SegwitHeight);
-        if (height < -1 || height >= std::numeric_limits<int>::max()) {
-            throw std::runtime_error(strprintf("Activation height %ld for segwit is out of valid range. Use -1 to disable segwit.", height));
-        } else if (height == -1) {
-            LogPrintf("Segwit disabled for testing\n");
-            height = std::numeric_limits<int>::max();
+        if (height < 0 || height >= std::numeric_limits<int>::max()) {
+            throw std::runtime_error(strprintf("Activation height %ld for segwit is out of valid range.", height));
         }
         consensus.SegwitHeight = static_cast<int>(height);
     }
