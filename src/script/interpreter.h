@@ -39,8 +39,7 @@ enum
  *  All flags are intended to be soft forks: the set of acceptable scripts under
  *  flags (A | B) is a subset of the acceptable scripts under flag (A).
  */
-enum
-{
+enum : uint32_t {
     SCRIPT_VERIFY_NONE      = 0,
 
     // Evaluate P2SH subscripts (BIP16).
@@ -144,6 +143,10 @@ enum
     // Perform name checks in "mempool" mode.  This allows / disallows
     // certain stuff (e. g., it allows immature spending of name_new's).
     SCRIPT_VERIFY_NAMES_MEMPOOL = (1U << 24),
+
+    // Constants to point to the highest flag in use. Add new flags above this line.
+    //
+    SCRIPT_VERIFY_END_MARKER
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
