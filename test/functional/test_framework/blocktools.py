@@ -55,6 +55,10 @@ TIME_GENESIS_BLOCK = 1300000000
 # Coinbase transaction outputs can only be spent after this number of new blocks (network rule)
 COINBASE_MATURITY = 100
 
+# Soft-fork activation heights
+CLTV_HEIGHT = 1351
+CSV_ACTIVATION_HEIGHT = 432
+
 # From BIP141
 WITNESS_COMMITMENT_HEADER = b"\xaa\x21\xa9\xed"
 
@@ -210,8 +214,8 @@ def witness_script(use_p2wsh, pubkey):
         pkscript = key_to_p2wpkh_script(pubkey)
     else:
         # 1-of-1 multisig
-        witness_program = CScript([OP_1, hex_str_to_bytes(pubkey), OP_1, OP_CHECKMULTISIG])
-        pkscript = script_to_p2wsh_script(witness_program)
+        witness_script = CScript([OP_1, hex_str_to_bytes(pubkey), OP_1, OP_CHECKMULTISIG])
+        pkscript = script_to_p2wsh_script(witness_script)
     return pkscript.hex()
 
 def create_witness_tx(node, use_p2wsh, utxo, pubkey, encode_p2sh, amount):
