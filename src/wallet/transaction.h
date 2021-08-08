@@ -276,6 +276,7 @@ public:
     CAmount GetAvailableCredit(bool fUseCache = true, const isminefilter& filter = ISMINE_SPENDABLE) const NO_THREAD_SAFETY_ANALYSIS;
     CAmount GetImmatureWatchOnlyCredit(const bool fUseCache = true) const;
     CAmount GetChange() const;
+    std::optional<CNameScript> GetNameDebit(const isminefilter& filter) const;
     std::optional<CNameScript> GetNameCredit(const isminefilter& filter) const;
 
     /** Get the marginal bytes if spending the specified output from this transaction */

@@ -182,6 +182,12 @@ CAmount CWalletTx::GetDebit(const isminefilter& filter) const
     return debit;
 }
 
+std::optional<CNameScript> CWalletTx::GetNameDebit(const isminefilter& filter) const
+{
+    // TODO: Caching like what GetDebit does.
+    return pwallet->GetNameDebit(*tx, filter);
+}
+
 CAmount CWalletTx::GetChange() const
 {
     if (fChangeCached)
