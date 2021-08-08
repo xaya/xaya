@@ -391,7 +391,20 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
     case TransactionRecord::Generated:
         return tr("Mined");
     case TransactionRecord::NameOp:
-        return tr("Name operation");
+        switch(wtx->nameOpType)
+        {
+        case TransactionRecord::NameOpType::New:
+            return tr("Name pre-registration");
+        case TransactionRecord::NameOpType::FirstUpdate:
+            return tr("Name registration");
+        case TransactionRecord::NameOpType::Update:
+            return tr("Name update");
+        case TransactionRecord::NameOpType::Renew:
+            return tr("Name renewal");
+        case TransactionRecord::NameOpType::Other:
+            return tr("Unknown name operation");
+        } // no default case, so the compiler can warn about missing cases
+        assert(false);
     default:
         return QString();
     }
@@ -410,6 +423,7 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
     case TransactionRecord::SendToOther:
         return QIcon(":/icons/tx_output");
     case TransactionRecord::NameOp:
+        // TODO: Use nameOpType here
         return QIcon(":/icons/bitcoin_transparent_letter");
     default:
         return QIcon(":/icons/tx_inout");
