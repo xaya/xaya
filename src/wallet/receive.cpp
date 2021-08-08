@@ -65,6 +65,27 @@ CAmount CWallet::GetCredit(const CTransaction& tx, const isminefilter& filter) c
     return nCredit;
 }
 
+std::optional<CNameScript> CWallet::GetNameCredit(const CTxOut& txout, const isminefilter& filter) const
+{
+    CNameScript op(txout.scriptPubKey);
+    if (!op.isNameOp ())
+        return {};
+    LOCK(cs_wallet);
+    return ((IsMine(txout) & filter) ? std::optional<CNameScript>{op} : std::nullopt);
+}
+
+std::optional<CNameScript> CWallet::GetNameCredit(const CTransaction& tx, const isminefilter& filter) const
+{
+    std::optional<CNameScript> nCredit;
+    for (const CTxOut& txout : tx.vout)
+    {
+        nCredit = GetNameCredit(txout, filter);
+        if (nCredit)
+            break;
+    }
+    return nCredit;
+}
+
 bool CWallet::IsChange(const CScript& script) const
 {
     // TODO: fix handling of 'change' outputs. The assumption is that any
@@ -138,6 +159,12 @@ CAmount CWalletTx::GetCredit(const isminefilter& filter) const
         credit += GetCachableAmount(CREDIT, ISMINE_WATCH_ONLY);
     }
     return credit;
+}
+
+std::optional<CNameScript> CWalletTx::GetNameCredit(const isminefilter& filter) const
+{
+    // TODO: Caching like what GetCredit does.
+    return pwallet->GetNameCredit(*tx, filter);
 }
 
 CAmount CWalletTx::GetDebit(const isminefilter& filter) const

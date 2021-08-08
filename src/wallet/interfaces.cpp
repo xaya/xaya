@@ -70,6 +70,7 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
     result.credit = wtx.GetCredit(ISMINE_ALL);
     result.debit = wtx.GetDebit(ISMINE_ALL);
     result.change = wtx.GetChange();
+    result.name_credit = wtx.GetNameCredit(ISMINE_ALL);
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;
     result.is_coinbase = wtx.IsCoinBase();

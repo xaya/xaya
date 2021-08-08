@@ -7,6 +7,7 @@
 
 #include <amount.h>
 #include <primitives/transaction.h>
+#include <script/names.h>
 #include <serialize.h>
 #include <wallet/ismine.h>
 #include <threadsafety.h>
@@ -275,6 +276,7 @@ public:
     CAmount GetAvailableCredit(bool fUseCache = true, const isminefilter& filter = ISMINE_SPENDABLE) const NO_THREAD_SAFETY_ANALYSIS;
     CAmount GetImmatureWatchOnlyCredit(const bool fUseCache = true) const;
     CAmount GetChange() const;
+    std::optional<CNameScript> GetNameCredit(const isminefilter& filter) const;
 
     /** Get the marginal bytes if spending the specified output from this transaction */
     int GetSpendSize(unsigned int out, bool use_max_sig = false) const

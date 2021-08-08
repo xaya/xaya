@@ -8,6 +8,7 @@
 #include <amount.h>                    // For CAmount
 #include <interfaces/chain.h>          // For ChainClient
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
+#include <script/names.h>              // For CNameScript
 #include <script/standard.h>           // For CTxDestination
 #include <support/allocators/secure.h> // For SecureString
 #include <util/message.h>
@@ -379,6 +380,7 @@ struct WalletTx
     CAmount credit;
     CAmount debit;
     CAmount change;
+    std::optional<CNameScript> name_credit;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;

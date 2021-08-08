@@ -102,34 +102,18 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
 
             CAmount nChange = wtx.change;
 
-            // If we find a name script, we put it here.
-            bool foundNameOp = false;
-            CNameScript nameScript;
+            std::optional<CNameScript> nNameCredit = wtx.name_credit;
 
-            // TODO: Maybe move this loop into a convenience function.
-            for (const CTxOut& txout : wtx.tx->vout)
-            {
-                // check txout for nameop
-                const CNameScript maybeNameScript(txout.scriptPubKey);
-                if(maybeNameScript.isNameOp())
-                {
-                    foundNameOp = true;
-                    nameScript = maybeNameScript;
-
-                    break;
-                }
-            }
-
-            if(foundNameOp)
+            if(nNameCredit)
             {
                 // TODO: Use "Pre-Registration" / "Registration" / "Update" strings
-                std::string opName = GetOpName(nameScript.getNameOp());
+                std::string opName = GetOpName(nNameCredit.value().getNameOp());
                 std::string description = opName.substr(3);
 
                 // TODO: Use friendly names based on namespaces
-                if(nameScript.isAnyUpdate())
+                if(nNameCredit.value().isAnyUpdate())
                 {
-                    description += " " + EncodeNameForMessage(nameScript.getOpName());
+                    description += " " + EncodeNameForMessage(nNameCredit.value().getOpName());
                 }
 
                 parts.append(TransactionRecord(hash, nTime, TransactionRecord::NameOp, description, -(nDebit - nChange), nCredit - nChange));
