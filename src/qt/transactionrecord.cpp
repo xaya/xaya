@@ -103,6 +103,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             CAmount nChange = wtx.change;
 
             std::optional<CNameScript> nNameCredit = wtx.name_credit;
+            std::optional<CNameScript> nNameDebit = wtx.name_debit;
 
             if(nNameCredit)
             {
@@ -113,6 +114,12 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                 // TODO: Use friendly names based on namespaces
                 if(nNameCredit.value().isAnyUpdate())
                 {
+                    // Check if renewal (previous value is unchanged)
+                    if(nNameDebit && nNameDebit.value().isAnyUpdate() && nNameDebit.value().getOpValue() == nNameCredit.value().getOpValue())
+                    {
+                        description = "NAME_RENEW";
+                    }
+
                     description += " " + EncodeNameForMessage(nNameCredit.value().getOpName());
                 }
 
