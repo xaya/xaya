@@ -116,11 +116,11 @@ CScript DestinationAddressHelper::getScript ()
 
   rdest.reset (new ReserveDestination (&wallet, wallet.m_default_address_type));
   CTxDestination dest;
-  std::string dest_err;
+  bilingual_str dest_err;
   if (!rdest->GetReservedDestination (dest, false, dest_err))
     throw JSONRPCError (RPC_WALLET_KEYPOOL_RAN_OUT,
                         strprintf ("Failed to generate mining address: %s",
-                                   dest_err));
+                                   dest_err.original));
 
   return GetScriptForDestination (dest);
 }

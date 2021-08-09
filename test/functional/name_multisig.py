@@ -26,7 +26,6 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
-  hex_str_to_bytes,
   softfork_active,
 )
 
@@ -98,7 +97,7 @@ class NameMultisigTest (NameTestFramework):
     """
 
     tx = CTransaction ()
-    tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
+    tx.deserialize (io.BytesIO (bytes.fromhex (txHex)))
     tx.vin[ind].scriptSig = CScript (scriptSigOps)
 
     return tx.serialize ().hex ()
@@ -186,7 +185,7 @@ class NameMultisigTest (NameTestFramework):
     # Manipulate the signature to invalidate it.  This checks whether or
     # not the OP_MULTISIG is actually verified (vs just the script hash
     # compared to the redeem script).
-    txData = bytearray (hex_str_to_bytes (tx))
+    txData = bytearray (bytes.fromhex (tx))
     txData[44] = (txData[44] + 10) % 256
     txManipulated = txData.hex ()
 

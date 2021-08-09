@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 Daniel Kraft
+# Copyright (c) 2019-2021 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,10 +18,7 @@ from test_framework.messages import (
   uint256_from_compact,
 )
 from test_framework.p2p import P2PDataStore
-from test_framework.util import (
-  assert_equal,
-  hex_str_to_bytes,
-)
+from test_framework.util import assert_equal
 
 from test_framework.auxpow_testing import computeAuxpow
 
@@ -93,7 +90,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     target = b"%064x" % uint256_from_compact (block.nBits)
     auxpowHex = computeAuxpow (blkHash, target, ok)
     block.auxpow = CAuxPow ()
-    block.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
+    block.auxpow.deserialize (BytesIO (bytes.fromhex (auxpowHex)))
 
     return block
 

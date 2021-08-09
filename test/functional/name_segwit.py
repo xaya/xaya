@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,7 +22,6 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
-  hex_str_to_bytes,
   softfork_active,
 )
 
@@ -81,7 +80,7 @@ class NameSegwitTest (NameTestFramework):
     txHex = self.node.signrawtransactionwithwallet (txHex)['hex']
 
     tx = CTransaction ()
-    tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
+    tx.deserialize (io.BytesIO (bytes.fromhex (txHex)))
     tx.wit = CTxWitness ()
     tx.wit.vtxinwit.append (CTxInWitness ())
     tx.wit.vtxinwit[0].scriptWitness = CScriptWitness ()
@@ -106,7 +105,7 @@ class NameSegwitTest (NameTestFramework):
 
     txHex = self.buildDummySegwitNameUpdate (name, value, addr)
     tx = CTransaction ()
-    tx.deserialize (io.BytesIO (hex_str_to_bytes (txHex)))
+    tx.deserialize (io.BytesIO (bytes.fromhex (txHex)))
 
     tip = self.node.getbestblockhash ()
     height = self.node.getblockcount () + 1
