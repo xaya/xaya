@@ -21,7 +21,6 @@ from test_framework.script import (
 from test_framework.util import (
   assert_equal,
   assert_greater_than,
-  hex_str_to_bytes,
 )
 
 from decimal import Decimal
@@ -58,7 +57,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     """
 
     addrData = self.nodes[0].validateaddress (addr)
-    addrScript = hex_str_to_bytes (addrData["scriptPubKey"])
+    addrScript = bytes.fromhex (addrData["scriptPubKey"])
 
     return CTxOut (int (amount * COIN), addrScript)
 
@@ -68,7 +67,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     """
 
     addrData = self.nodes[0].validateaddress (addr)
-    addrScript = hex_str_to_bytes (addrData["scriptPubKey"])
+    addrScript = bytes.fromhex (addrData["scriptPubKey"])
 
     bname = name.encode ("utf-8")
     bvalue = value.encode ("utf-8")
@@ -99,7 +98,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     Converts a transaction in hex format to a CTransaction instance.
     """
 
-    data = hex_str_to_bytes (txHex)
+    data = bytes.fromhex (txHex)
 
     tx = CTransaction ()
     tx.deserialize (io.BytesIO (data))

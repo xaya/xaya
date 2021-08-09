@@ -269,18 +269,19 @@ static RPCHelpMan getnewaddress()
 
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[1].isNull()) {
-        if (!ParseOutputType(request.params[1].get_str(), output_type)) {
+        std::optional<OutputType> parsed = ParseOutputType(request.params[1].get_str());
+        if (!parsed) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[1].get_str()));
-        }
-        if (output_type == OutputType::BECH32M && pwallet->GetLegacyScriptPubKeyMan()) {
+        } else if (parsed.value() == OutputType::BECH32M && pwallet->GetLegacyScriptPubKeyMan()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Legacy wallets cannot provide bech32m addresses");
         }
+        output_type = parsed.value();
     }
 
     CTxDestination dest;
-    std::string error;
+    bilingual_str error;
     if (!pwallet->GetNewDestination(output_type, label, dest, error)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, error);
+        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, error.original);
     }
 
     return EncodeDestination(dest);
@@ -316,18 +317,19 @@ static RPCHelpMan getrawchangeaddress()
 
     OutputType output_type = pwallet->m_default_change_type.value_or(pwallet->m_default_address_type);
     if (!request.params[0].isNull()) {
-        if (!ParseOutputType(request.params[0].get_str(), output_type)) {
+        std::optional<OutputType> parsed = ParseOutputType(request.params[0].get_str());
+        if (!parsed) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[0].get_str()));
-        }
-        if (output_type == OutputType::BECH32M && pwallet->GetLegacyScriptPubKeyMan()) {
+        } else if (parsed.value() == OutputType::BECH32M && pwallet->GetLegacyScriptPubKeyMan()) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Legacy wallets cannot provide bech32m addresses");
         }
+        output_type = parsed.value();
     }
 
     CTxDestination dest;
-    std::string error;
+    bilingual_str error;
     if (!pwallet->GetNewChangeDestination(output_type, dest, error)) {
-        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, error);
+        throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, error.original);
     }
     return EncodeDestination(dest);
 },
@@ -1012,12 +1014,13 @@ static RPCHelpMan addmultisigaddress()
 
     OutputType output_type = pwallet->m_default_address_type;
     if (!request.params[3].isNull()) {
-        if (!ParseOutputType(request.params[3].get_str(), output_type)) {
+        std::optional<OutputType> parsed = ParseOutputType(request.params[3].get_str());
+        if (!parsed) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown address type '%s'", request.params[3].get_str()));
-        }
-        if (output_type == OutputType::BECH32M) {
+        } else if (parsed.value() == OutputType::BECH32M) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Bech32m multisig addresses cannot be created with legacy wallets");
         }
+        output_type = parsed.value();
     }
 
     // Construct using pay-to-script-hash:
@@ -3165,11 +3168,11 @@ void FundTransaction(CWallet& wallet, CMutableTransaction& tx, CAmount& fee_out,
             if (options.exists("changeAddress") || options.exists("change_address")) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot specify both change address and address type options");
             }
-            OutputType out_type;
-            if (!ParseOutputType(options["change_type"].get_str(), out_type)) {
+            if (std::optional<OutputType> parsed = ParseOutputType(options["change_type"].get_str())) {
+                coinControl.m_change_type.emplace(parsed.value());
+            } else {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Unknown change type '%s'", options["change_type"].get_str()));
             }
-            coinControl.m_change_type.emplace(out_type);
         }
 
         const UniValue include_watching_option = options.exists("include_watching") ? options["include_watching"] : options["includeWatching"];
@@ -3421,7 +3424,7 @@ RPCHelpMan signrawtransactionwithwallet()
     int nHashType = ParseSighashString(request.params[2]);
 
     // Script verification errors
-    std::map<int, std::string> input_errors;
+    std::map<int, bilingual_str> input_errors;
 
     bool complete = pwallet->SignTransaction(mtx, coins, nHashType, input_errors);
     UniValue result(UniValue::VOBJ);
@@ -3904,7 +3907,7 @@ RPCHelpMan getaddressinfo()
     DescriptorScriptPubKeyMan* desc_spk_man = dynamic_cast<DescriptorScriptPubKeyMan*>(pwallet->GetScriptPubKeyMan(scriptPubKey));
     if (desc_spk_man) {
         std::string desc_str;
-        if (desc_spk_man->GetDescriptorString(desc_str)) {
+        if (desc_spk_man->GetDescriptorString(desc_str, /* priv */ false)) {
             ret.pushKV("parent_desc", desc_str);
         }
     }
@@ -4709,11 +4712,11 @@ public:
 
     ReserveDestination rdest(pwallet, pwallet->m_default_address_type);
     CTxDestination dest;
-    std::string dest_err;
+    bilingual_str dest_err;
     if (!rdest.GetReservedDestination (dest, false, dest_err))
       throw JSONRPCError (RPC_WALLET_KEYPOOL_RAN_OUT,
                           strprintf ("Failed to generate mining address: %s",
-                                     dest_err));
+                                     dest_err.original));
     rdest.KeepDestination ();
 
     const CScript res = GetScriptForDestination (dest);

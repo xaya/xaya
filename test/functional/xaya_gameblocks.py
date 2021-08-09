@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2020 The Xaya developers
+# Copyright (c) 2018-2021 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -16,7 +16,6 @@ from test_framework.util import (
   assert_equal,
   assert_greater_than,
   assert_raises_rpc_error,
-  hex_str_to_bytes,
   zmq_port,
 )
 from test_framework.script import (
@@ -316,8 +315,8 @@ class GameBlocksTest (XayaZmqTest):
 
     hex1 = self.node.getaddressinfo (addr1)["scriptPubKey"]
     hex2 = self.node.getaddressinfo (addr2)["scriptPubKey"]
-    scr1 = CScript (hex_str_to_bytes (hex1))
-    scr2 = CScript (hex_str_to_bytes (hex2))
+    scr1 = CScript (bytes.fromhex (hex1))
+    scr2 = CScript (bytes.fromhex (hex2))
 
     tx = CTransaction ()
     name = self.node.name_show ("p/x")
