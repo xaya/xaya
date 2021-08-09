@@ -94,6 +94,16 @@ static void UpdateWalletSetting(interfaces::Chain& chain,
     }
 }
 
+/**
+ * Refresh mempool status so the wallet is in an internally consistent state and
+ * immediately knows the transaction's status: Whether it can be considered
+ * trusted and is eligible to be abandoned ...
+ */
+static void RefreshMempoolStatus(CWalletTx& tx, interfaces::Chain& chain)
+{
+    tx.fInMempool = chain.isInMempool(tx.GetHash());
+}
+
 bool AddWallet(const std::shared_ptr<CWallet>& wallet)
 {
     LOCK(cs_wallets);
@@ -803,10 +813,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
     wtx.mapValue["replaced_by_txid"] = newHash.ToString();
 
     // Refresh mempool status without waiting for transactionRemovedFromMempool
-    // notification so the wallet is in an internally consistent state and
-    // immediately knows the old transaction should not be considered trusted
-    // and is eligible to be abandoned
-    wtx.fInMempool = chain().isInMempool(originalHash);
+    RefreshMempoolStatus(wtx, chain());
 
     WalletBatch batch(GetDatabase());
 
@@ -1206,7 +1213,7 @@ void CWallet::transactionAddedToMempool(const CTransactionRef& tx, uint64_t memp
 
     auto it = mapWallet.find(tx->GetHash());
     if (it != mapWallet.end()) {
-        it->second.fInMempool = true;
+        RefreshMempoolStatus(it->second, chain());
     }
 }
 
@@ -1214,7 +1221,7 @@ void CWallet::transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRe
     LOCK(cs_wallet);
     auto it = mapWallet.find(tx->GetHash());
     if (it != mapWallet.end()) {
-        it->second.fInMempool = false;
+        RefreshMempoolStatus(it->second, chain());
     }
     // Handle transactions that were removed from the mempool because they
     // conflict with transactions in a newly connected block.
@@ -1822,11 +1829,11 @@ bool CWallet::SignTransaction(CMutableTransaction& tx) const
         const CWalletTx& wtx = mi->second;
         coins[input.prevout] = Coin(wtx.tx->vout[input.prevout.n], wtx.m_confirm.block_height, wtx.IsCoinBase());
     }
-    std::map<int, std::string> input_errors;
+    std::map<int, bilingual_str> input_errors;
     return SignTransaction(tx, coins, SIGHASH_DEFAULT, input_errors);
 }
 
-bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, std::string>& input_errors) const
+bool CWallet::SignTransaction(CMutableTransaction& tx, const std::map<COutPoint, Coin>& coins, int sighash, std::map<int, bilingual_str>& input_errors) const
 {
     // Try to sign with all ScriptPubKeyMans
     for (ScriptPubKeyMan* spk_man : GetAllScriptPubKeyMans()) {
@@ -2128,7 +2135,7 @@ bool CWallet::TopUpKeyPool(unsigned int kpSize)
     return res;
 }
 
-bool CWallet::GetNewDestination(const OutputType type, const std::string label, CTxDestination& dest, std::string& error)
+bool CWallet::GetNewDestination(const OutputType type, const std::string label, CTxDestination& dest, bilingual_str& error)
 {
     LOCK(cs_wallet);
     error.clear();
@@ -2138,7 +2145,7 @@ bool CWallet::GetNewDestination(const OutputType type, const std::string label, 
         spk_man->TopUp();
         result = spk_man->GetNewDestination(type, dest, error);
     } else {
-        error = strprintf(_("Error: No %s addresses available."), FormatOutputType(type)).translated;
+        error = strprintf(_("Error: No %s addresses available."), FormatOutputType(type));
     }
     if (result) {
         SetAddressBook(dest, label, "receive");
@@ -2147,7 +2154,7 @@ bool CWallet::GetNewDestination(const OutputType type, const std::string label, 
     return result;
 }
 
-bool CWallet::GetNewChangeDestination(const OutputType type, CTxDestination& dest, std::string& error)
+bool CWallet::GetNewChangeDestination(const OutputType type, CTxDestination& dest, bilingual_str& error)
 {
     LOCK(cs_wallet);
     error.clear();
@@ -2200,11 +2207,11 @@ std::set<CTxDestination> CWallet::GetLabelAddresses(const std::string& label) co
     return result;
 }
 
-bool ReserveDestination::GetReservedDestination(CTxDestination& dest, bool internal, std::string& error)
+bool ReserveDestination::GetReservedDestination(CTxDestination& dest, bool internal, bilingual_str& error)
 {
     m_spk_man = pwallet->GetScriptPubKeyMan(type, internal);
     if (!m_spk_man) {
-        error = strprintf(_("Error: No %s addresses available."), FormatOutputType(type)).translated;
+        error = strprintf(_("Error: No %s addresses available."), FormatOutputType(type));
         return false;
     }
 
@@ -2586,19 +2593,21 @@ std::shared_ptr<CWallet> CWallet::Create(interfaces::Chain* chain, const std::st
     }
 
     if (!gArgs.GetArg("-addresstype", "").empty()) {
-        if (!ParseOutputType(gArgs.GetArg("-addresstype", ""), walletInstance->m_default_address_type)) {
+        std::optional<OutputType> parsed = ParseOutputType(gArgs.GetArg("-addresstype", ""));
+        if (!parsed) {
             error = strprintf(_("Unknown address type '%s'"), gArgs.GetArg("-addresstype", ""));
             return nullptr;
         }
+        walletInstance->m_default_address_type = parsed.value();
     }
 
     if (!gArgs.GetArg("-changetype", "").empty()) {
-        OutputType out_type;
-        if (!ParseOutputType(gArgs.GetArg("-changetype", ""), out_type)) {
+        std::optional<OutputType> parsed = ParseOutputType(gArgs.GetArg("-changetype", ""));
+        if (!parsed) {
             error = strprintf(_("Unknown change type '%s'"), gArgs.GetArg("-changetype", ""));
             return nullptr;
         }
-        walletInstance->m_default_change_type = out_type;
+        walletInstance->m_default_change_type = parsed.value();
     }
 
     if (gArgs.IsArgSet("-mintxfee")) {

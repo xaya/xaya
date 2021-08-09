@@ -25,10 +25,7 @@ from test_framework.p2p import (
   P2PDataStore,
   P2PInterface,
 )
-from test_framework.util import (
-  assert_equal,
-  hex_str_to_bytes,
-)
+from test_framework.util import assert_equal
 
 from test_framework.auxpow_testing import computeAuxpow
 
@@ -76,7 +73,7 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     gotHex = node.getblock (blkHash, 0)
     assert gotHex != blkHex
     gotBlk = CBlock ()
-    gotBlk.deserialize (BytesIO (hex_str_to_bytes (gotHex)))
+    gotBlk.deserialize (BytesIO (bytes.fromhex (gotHex)))
     assert_equal (gotBlk.auxpow.hashBlock, 0)
 
     self.log.info ("Retrieving block through P2P...")
@@ -126,7 +123,7 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     target = b"%064x" % uint256_from_compact (block.nBits)
     auxpowHex = computeAuxpow (newHash, target, True)
     block.auxpow = CAuxPow ()
-    block.auxpow.deserialize (BytesIO (hex_str_to_bytes (auxpowHex)))
+    block.auxpow.deserialize (BytesIO (bytes.fromhex (auxpowHex)))
 
     return block, newHash
 
