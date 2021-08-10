@@ -1325,6 +1325,31 @@ CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter) const
     return 0;
 }
 
+std::optional<CNameScript> CWallet::GetNameDebit(const CTxIn &txin, const isminefilter& filter) const
+{
+    {
+        LOCK(cs_wallet);
+        std::map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+        if (mi != mapWallet.end())
+        {
+            const CWalletTx& prev = (*mi).second;
+            if (txin.prevout.n < prev.tx->vout.size())
+            {
+                const CTxOut& prevout = prev.tx->vout[txin.prevout.n];
+
+                CNameScript op(prevout.scriptPubKey);
+
+                if (!op.isNameOp ())
+                    return {};
+
+                if (IsMine(prevout) & filter)
+                    return op;
+            }
+        }
+    }
+    return {};
+}
+
 isminetype CWallet::IsMine(const CTxOut& txout) const
 {
     AssertLockHeld(cs_wallet);
@@ -1369,6 +1394,18 @@ CAmount CWallet::GetDebit(const CTransaction& tx, const isminefilter& filter) co
         nDebit += GetDebit(txin, filter);
         if (!MoneyRange(nDebit))
             throw std::runtime_error(std::string(__func__) + ": value out of range");
+    }
+    return nDebit;
+}
+
+std::optional<CNameScript> CWallet::GetNameDebit(const CTransaction& tx, const isminefilter& filter) const
+{
+    std::optional<CNameScript> nDebit;
+    for (const CTxIn& txin : tx.vin)
+    {
+        nDebit = GetNameDebit(txin, filter);
+        if (nDebit)
+            break;
     }
     return nDebit;
 }
