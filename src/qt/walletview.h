@@ -87,8 +87,6 @@ public Q_SLOTS:
     void gotoVerifyMessageTab(QString addr = "");
     /** Show Namecoin manage names page */
     void gotoManageNamesPage();
-    /** Load Partially Signed Bitcoin Transaction */
-    void gotoLoadPSBT(bool from_clipboard = false);
 
     /** Show incoming transaction notification for new transactions.
 
