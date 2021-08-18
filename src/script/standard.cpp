@@ -62,6 +62,20 @@ std::string GetTxnOutputType(TxoutType t)
     assert(false);
 }
 
+bool IsBurn(const CScript& script, valtype& data)
+{
+    std::vector<valtype> solutions;
+    if (Solver(script, solutions) != TxoutType::NULL_DATA)
+        return false;
+
+    auto pc = script.begin() + 1;
+    opcodetype op;
+    if (!script.GetOp(pc, op, data))
+        return false;
+
+    return op <= OP_PUSHDATA4;
+}
+
 static bool MatchPayToPubkey(const CScript& script, valtype& pubkey)
 {
     if (script.size() == CPubKey::SIZE + 2 && script[0] == CPubKey::SIZE && script.back() == OP_CHECKSIG) {
