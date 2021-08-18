@@ -163,6 +163,12 @@ bool IsValidDestination(const CTxDestination& dest);
 std::string GetTxnOutputType(TxoutType t);
 
 /**
+ * Checks if the given script is a burn (OP_RETURN) and returns the first
+ * operand as data if it is.
+ */
+bool IsBurn(const CScript& script, valtype& data);
+
+/**
  * Parse a scriptPubKey and identify script type for standard scripts. If
  * successful, returns script type and parsed pubkeys or hashes, depending on
  * the type. For example, for a P2SH script, vSolutionsRet will contain the
