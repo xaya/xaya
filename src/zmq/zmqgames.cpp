@@ -67,25 +67,6 @@ namespace
 {
 
 /**
- * Checks if the given script is a burn (OP_RETURN) and returns the first
- * operand as data if it is.
- */
-bool
-IsBurn (const CScript& script, valtype& data)
-{
-  std::vector<valtype> solutions;
-  if (Solver (script, solutions) != TxoutType::NULL_DATA)
-    return false;
-
-  auto pc = script.begin () + 1;
-  opcodetype op;
-  if (!script.GetOp (pc, op, data))
-    return false;
-
-  return op <= OP_PUSHDATA4;
-}
-
-/**
  * Helper class that analyses a single transaction and extracts the data
  * from it that is relevant for the ZMQ game notifications.
  */
