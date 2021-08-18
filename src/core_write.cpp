@@ -180,6 +180,10 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey,
     if (nameOp.isNameOp ())
         out.pushKV ("nameOp", NameOpToUniv (nameOp));
 
+    valtype burnData;
+    if (IsBurn(scriptPubKey, burnData))
+        out.pushKV("burn", HexStr(burnData));
+
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
     if (fIncludeHex)
         out.pushKV("hex", HexStr(scriptPubKey));

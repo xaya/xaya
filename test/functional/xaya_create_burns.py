@@ -32,17 +32,10 @@ class XayaCreateBurnsTest (NameTestFramework):
 
     actual = {}
     for out in vout:
-      if out["scriptPubKey"]["type"] != "nulldata":
+      if not "burn" in out["scriptPubKey"]:
         continue
 
-      prefix = "OP_RETURN "
-      asm = out["scriptPubKey"]["asm"]
-      assert asm.startswith (prefix)
-
-      # Small data may be encoded as integer in the asm string (rather than
-      # hex), but we assume this never happens.
-      hexNum = asm[len (prefix):]
-      data = codecs.decode (hexNum, "hex")
+      data = codecs.decode (out["scriptPubKey"]["burn"], "hex")
       data = codecs.decode (data, "ascii")
 
       actual[data] = out["value"]
