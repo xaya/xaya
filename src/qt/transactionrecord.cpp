@@ -107,23 +107,34 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
 
             if(nNameCredit)
             {
-                // TODO: Use "Pre-Registration" / "Registration" / "Update" strings
-                std::string opName = GetOpName(nNameCredit.value().getNameOp());
-                std::string description = opName.substr(3);
+                TransactionRecord sub(hash, nTime, TransactionRecord::NameOp, "", -(nDebit - nChange), nCredit - nChange);
 
                 // TODO: Use friendly names based on namespaces
                 if(nNameCredit.value().isAnyUpdate())
                 {
-                    // Check if renewal (previous value is unchanged)
-                    if(nNameDebit && nNameDebit.value().isAnyUpdate() && nNameDebit.value().getOpValue() == nNameCredit.value().getOpValue())
+                    if(nNameCredit.value().getNameOp() == OP_NAME_REGISTER)
                     {
-                        description = "NAME_RENEW";
+                        sub.nameOpType = TransactionRecord::NameOpType::Register;
+                    }
+                    else
+                    {
+                        // OP_NAME_UPDATE
+
+                        // Check if renewal (previous value is unchanged)
+                        if(nNameDebit && nNameDebit.value().isAnyUpdate() && nNameDebit.value().getOpValue() == nNameCredit.value().getOpValue())
+                        {
+                            sub.nameOpType = TransactionRecord::NameOpType::Renew;
+                        }
+                        else
+                        {
+                            sub.nameOpType = TransactionRecord::NameOpType::Update;
+                        }
                     }
 
-                    description += " " + EncodeNameForMessage(nNameCredit.value().getOpName());
+                    sub.address = EncodeNameForMessage(nNameCredit.value().getOpName());
                 }
 
-                parts.append(TransactionRecord(hash, nTime, TransactionRecord::NameOp, description, -(nDebit - nChange), nCredit - nChange));
+                parts.append(sub);
             }
             else
             {
