@@ -39,7 +39,7 @@ NameEncoding ConfiguredValueEncoding ();
 
 /* The options defaults for the encodings.  */
 static constexpr NameEncoding DEFAULT_NAME_ENCODING = NameEncoding::UTF8;
-static constexpr NameEncoding DEFAULT_VALUE_ENCODING = NameEncoding::ASCII;
+static constexpr NameEncoding DEFAULT_VALUE_ENCODING = NameEncoding::UTF8;
 
 /* Utility functions to convert encodings to/from the enum.  They throw
    std::invalid_argument if the conversion fails.  */
