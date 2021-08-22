@@ -401,6 +401,8 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
             return tr("Name update");
         case TransactionRecord::NameOpType::Renew:
             return tr("Name renewal");
+        case TransactionRecord::NameOpType::Recv:
+            return tr("Received name");
         case TransactionRecord::NameOpType::Other:
             return tr("Unknown name operation");
         } // no default case, so the compiler can warn about missing cases
