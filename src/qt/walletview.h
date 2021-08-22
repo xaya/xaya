@@ -15,6 +15,7 @@ class PlatformStyle;
 class ReceiveCoinsDialog;
 class SendCoinsDialog;
 class SendCoinsRecipient;
+class BuyNamesPage;
 class ManageNamesPage;
 class TransactionView;
 class WalletModel;
@@ -62,6 +63,7 @@ private:
     QWidget *transactionsPage;
     ReceiveCoinsDialog *receiveCoinsPage;
     SendCoinsDialog *sendCoinsPage;
+    BuyNamesPage *buyNamesPage;
     ManageNamesPage *manageNamesPage;
     AddressBookPage *usedSendingAddressesPage;
     AddressBookPage *usedReceivingAddressesPage;
@@ -85,6 +87,8 @@ public Q_SLOTS:
     void gotoSignMessageTab(QString addr = "");
     /** Show Sign/Verify Message dialog and switch to verify message tab */
     void gotoVerifyMessageTab(QString addr = "");
+    /** Show Namecoin buy names page */
+    void gotoBuyNamesPage();
     /** Show Namecoin manage names page */
     void gotoManageNamesPage();
 
