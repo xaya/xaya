@@ -90,6 +90,7 @@ public:
         Register,
         Update,
         Renew,
+        Recv,
     };
 
     /** Number of confirmation recommended for accepting a transaction */
