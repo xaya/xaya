@@ -22,24 +22,9 @@
 namespace
 {
 
-/**
- * Auxpow code may have both a wallet and a node context, which we need
- * to handle when looking for the context.
- */
-NodeContext& EnsureNodeContextForAuxpow(const JSONRPCRequest& request)
-{
-  auto nodePtr = util::AnyPtr<NodeContext> (request.context);
-  /* The auxpow methods may have both a wallet and a node context.  */
-  if (!nodePtr)
-      nodePtr = util::AnyPtr<NodeContext> (request.context2);
-  if (!nodePtr)
-      throw JSONRPCError(RPC_INTERNAL_ERROR, "Node context not found");
-  return *nodePtr;
-}
-
 void auxMiningCheck(const JSONRPCRequest& request)
 {
-  const NodeContext& node = EnsureNodeContextForAuxpow(request);
+  const NodeContext& node = EnsureAnyNodeContext (request);
   const auto& connman = EnsureConnman (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -156,7 +141,7 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
   auxMiningCheck (request);
   LOCK (cs);
 
-  const auto& node = EnsureNodeContextForAuxpow(request);
+  const auto& node = EnsureAnyNodeContext (request);
   const auto& mempool = EnsureMemPool (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -182,7 +167,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
                              const std::string& auxpowHex) const
 {
   auxMiningCheck (request);
-  const auto& node = EnsureNodeContextForAuxpow(request);
+  const auto& node = EnsureAnyNodeContext (request);
   auto& chainman = EnsureChainman (node);
 
   std::shared_ptr<CBlock> shared_block;
