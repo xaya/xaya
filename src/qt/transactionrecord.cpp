@@ -91,6 +91,50 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
             if(fAllToMe > mine) fAllToMe = mine;
         }
 
+        std::optional<CNameScript> nNameCredit = wtx.name_credit;
+        std::optional<CNameScript> nNameDebit = wtx.name_debit;
+
+        TransactionRecord nameSub(hash, nTime, TransactionRecord::NameOp, "", 0, 0);
+
+        if(nNameCredit)
+        {
+            // TODO: Use friendly names based on namespaces
+            if(nNameCredit.value().isAnyUpdate())
+            {
+                if(nNameDebit)
+                {
+                    if(nNameCredit.value().getNameOp() == OP_NAME_FIRSTUPDATE)
+                    {
+                        nameSub.nameOpType = TransactionRecord::NameOpType::FirstUpdate;
+                    }
+                    else
+                    {
+                        // OP_NAME_UPDATE
+
+                        // Check if renewal (previous value is unchanged)
+                        if(nNameDebit.value().isAnyUpdate() && nNameDebit.value().getOpValue() == nNameCredit.value().getOpValue())
+                        {
+                            nameSub.nameOpType = TransactionRecord::NameOpType::Renew;
+                        }
+                        else
+                        {
+                            nameSub.nameOpType = TransactionRecord::NameOpType::Update;
+                        }
+                    }
+                }
+                else
+                {
+                    nameSub.nameOpType = TransactionRecord::NameOpType::Recv;
+                }
+
+                nameSub.address = EncodeNameForMessage(nNameCredit.value().getOpName());
+            }
+            else
+            {
+                nameSub.nameOpType = TransactionRecord::NameOpType::New;
+            }
+        }
+
         if (fAllFromMe && fAllToMe)
         {
             // Payment to self
@@ -102,43 +146,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
 
             CAmount nChange = wtx.change;
 
-            std::optional<CNameScript> nNameCredit = wtx.name_credit;
-            std::optional<CNameScript> nNameDebit = wtx.name_debit;
-
             if(nNameCredit)
             {
-                TransactionRecord sub(hash, nTime, TransactionRecord::NameOp, "", -(nDebit - nChange), nCredit - nChange);
-
-                // TODO: Use friendly names based on namespaces
-                if(nNameCredit.value().isAnyUpdate())
-                {
-                    if(nNameCredit.value().getNameOp() == OP_NAME_FIRSTUPDATE)
-                    {
-                        sub.nameOpType = TransactionRecord::NameOpType::FirstUpdate;
-                    }
-                    else
-                    {
-                        // OP_NAME_UPDATE
-
-                        // Check if renewal (previous value is unchanged)
-                        if(nNameDebit && nNameDebit.value().isAnyUpdate() && nNameDebit.value().getOpValue() == nNameCredit.value().getOpValue())
-                        {
-                            sub.nameOpType = TransactionRecord::NameOpType::Renew;
-                        }
-                        else
-                        {
-                            sub.nameOpType = TransactionRecord::NameOpType::Update;
-                        }
-                    }
-
-                    sub.address = EncodeNameForMessage(nNameCredit.value().getOpName());
-                }
-                else
-                {
-                    sub.nameOpType = TransactionRecord::NameOpType::New;
-                }
-
-                parts.append(sub);
+                nameSub.debit = -(nDebit - nChange);
+                nameSub.credit = nCredit - nChange;
+                parts.append(nameSub);
             }
             else
             {
@@ -195,10 +207,18 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         }
         else
         {
-            //
             // Mixed debit transaction, can't break down payees
-            //
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
+
+            if(nNameCredit)
+            {
+                nameSub.debit = nNet;
+                parts.append(nameSub);
+            }
+            else
+            {
+                parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
+            }
+
             parts.last().involvesWatchAddress = involvesWatchAddress;
         }
     }
