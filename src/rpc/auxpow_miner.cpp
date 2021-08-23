@@ -24,7 +24,7 @@ namespace
 
 void auxMiningCheck(const JSONRPCRequest& request)
 {
-  const NodeContext& node = EnsureAnyNodeContext (request.context);
+  const NodeContext& node = EnsureAnyNodeContext (request);
   const auto& connman = EnsureConnman (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -141,7 +141,7 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
   auxMiningCheck (request);
   LOCK (cs);
 
-  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& node = EnsureAnyNodeContext (request);
   const auto& mempool = EnsureMemPool (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -167,7 +167,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
                              const std::string& auxpowHex) const
 {
   auxMiningCheck (request);
-  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& node = EnsureAnyNodeContext (request);
   auto& chainman = EnsureChainman (node);
 
   std::shared_ptr<CBlock> shared_block;

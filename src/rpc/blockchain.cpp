@@ -28,6 +28,7 @@
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
 #include <rpc/rawtransaction.h>
+#include <rpc/request.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
 #include <script/descriptor.h>
@@ -67,17 +68,26 @@ static CUpdatedBlock latestblock GUARDED_BY(cs_blockchange);
 
 NodeContext& EnsureAnyNodeContext(const std::any& context)
 {
-    auto wallet_context = util::AnyPtr<WalletContext>(context);
-    if (wallet_context) {
-        if (wallet_context->nodeContext != nullptr)
-            return *wallet_context->nodeContext;
-    }
-
     auto node_context = util::AnyPtr<NodeContext>(context);
     if (!node_context) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Node context not found");
     }
     return *node_context;
+}
+
+/**
+ * Auxpow code may have both a wallet and a node context, which we need
+ * to handle when looking for the context.
+ */
+NodeContext& EnsureAnyNodeContext(const JSONRPCRequest& request)
+{
+  auto nodePtr = util::AnyPtr<NodeContext> (request.context);
+  /* The auxpow methods may have both a wallet and a node context.  */
+  if (!nodePtr)
+      nodePtr = util::AnyPtr<NodeContext> (request.context2);
+  if (!nodePtr)
+      throw JSONRPCError(RPC_INTERNAL_ERROR, "Node context not found");
+  return *nodePtr;
 }
 
 CTxMemPool& EnsureMemPool(const NodeContext& node)

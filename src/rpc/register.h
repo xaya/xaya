@@ -34,7 +34,6 @@ static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
 #ifdef ENABLE_EXTERNAL_SIGNER
     RegisterSignerRPCCommands(t);
 #endif // ENABLE_EXTERNAL_SIGNER
-    RegisterNameRPCCommands(t);
 }
 
 #endif // BITCOIN_RPC_REGISTER_H

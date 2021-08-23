@@ -147,7 +147,7 @@ SendNameOutput (const JSONRPCRequest& request,
     },
     true, false);
 
-  auto& node = EnsureAnyNodeContext (request.context);
+  auto& node = EnsureAnyNodeContext (request);
   if (wallet.GetBroadcastTransactions ())
     EnsureConnman (node);
 
@@ -210,7 +210,7 @@ name_list ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
-  const auto& chainman = EnsureAnyChainman (request.context);
+  const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
@@ -394,7 +394,7 @@ name_new ()
   CWallet* const pwallet = wallet.get ();
 
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
-  const auto& chainman = EnsureAnyChainman (request.context);
+  const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
@@ -548,7 +548,7 @@ name_firstupdate ()
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
                  UniValue::VOBJ}, true);
-  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& node = EnsureAnyNodeContext (request);
   const auto& chainman = EnsureChainman (node);
 
   UniValue options(UniValue::VOBJ);
@@ -743,7 +743,7 @@ name_update ()
 
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
-  const auto& node = EnsureAnyNodeContext (request.context);
+  const auto& node = EnsureAnyNodeContext (request);
   const auto& chainman = EnsureChainman (node);
 
   UniValue options(UniValue::VOBJ);
@@ -865,7 +865,7 @@ queuerawtransaction ()
   const uint256& hashTx = txParsed->GetHash();
 
   // Validate transaction
-  NodeContext& node = EnsureAnyNodeContext(request.context);
+  NodeContext& node = EnsureAnyNodeContext(request);
   ChainstateManager& chainman = EnsureChainman(node);
   CTxMemPool& mempool = EnsureMemPool(node);
 
@@ -1027,7 +1027,7 @@ sendtoname ()
   if (!wallet)
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
-  const auto& chainman = EnsureAnyChainman (request.context);
+  const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,

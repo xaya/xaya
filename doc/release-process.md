@@ -293,14 +293,18 @@ end-user confusion about which file to pick, as well as save storage
 space *do not upload these to the bitcoincore.org server, nor put them in the torrent*.
 
 
-- Upload to the bitcoincore.org server (`/var/www/bin/bitcoin-core-${VERSION}`):
-    1. The contents of `./bitcoin/guix-build-${VERSION}/output`, except for
+- Upload to the bitcoincore.org server (`/var/www/bin/bitcoin-core-${VERSION}/`):
+    1. The contents of each `./bitcoin/guix-build-${VERSION}/output/${HOST}/` directory, except for
        `*-debug*` files.
 
 ( **The following is not in Namecoin yet.** )
 
 - Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the bitcoincore.org server
   into `/var/www/bin/bitcoin-core-${VERSION}`
+
+       ```sh
+       find guix-build-${VERSION}/output/ -maxdepth 2 -type f -not -name "SHA256SUMS.part" -and -not -name "*debug*" -exec scp {} user@bitcoincore.org:/var/www/bin/bitcoin-core-${VERSION} \;
+       ```
 
     2. The `SHA256SUMS` file
 

@@ -9,6 +9,7 @@
 
 #include <names/encoding.h>
 #include <rpc/util.h>
+#include <span.h>
 
 #include <string>
 #include <vector>
@@ -19,6 +20,7 @@ static constexpr bool DEFAULT_ALLOWEXPIRED = false;
 class ChainstateManager;
 class CNameData;
 class COutPoint;
+class CRPCCommand;
 class CScript;
 class UniValue;
 
@@ -30,6 +32,8 @@ UniValue getNameInfo (const ChainstateManager& chainman,
                       const valtype& name, const CNameData& data);
 void addExpirationInfo (const ChainstateManager& chainman,
                         int height, UniValue& data);
+
+Span<const CRPCCommand> GetNameRPCCommands ();
 
 #ifdef ENABLE_WALLET
 class CWallet;

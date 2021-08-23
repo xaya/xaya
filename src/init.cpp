@@ -1155,6 +1155,11 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 #if ENABLE_ZMQ
     RegisterZMQRPCCommands(tableRPC);
 #endif
+    /* A wallet, if available, also installs handlers for the name RPC commands
+       with a wallet context set (for "ismine").  The first matching handler
+       is used, so we want the name RPCs without wallet installed last as
+       fallback only.  */
+    RegisterNameRPCCommands(tableRPC);
 
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections
@@ -1187,6 +1192,20 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     assert(!node.addrman);
     auto check_addrman = std::clamp<int32_t>(args.GetArg("-checkaddrman", DEFAULT_ADDRMAN_CONSISTENCY_CHECKS), 0, 1000000);
     node.addrman = std::make_unique<CAddrMan>(/* deterministic */ false, /* consistency_check_ratio */ check_addrman);
+    {
+        // Load addresses from peers.dat
+        uiInterface.InitMessage(_("Loading P2P addresses…").translated);
+        int64_t nStart = GetTimeMillis();
+        CAddrDB adb;
+        if (adb.Read(*node.addrman)) {
+            LogPrintf("Loaded %i addresses from peers.dat  %dms\n", node.addrman->size(), GetTimeMillis() - nStart);
+        } else {
+            // Addrman can be in an inconsistent state after failure, reset it
+            node.addrman = std::make_unique<CAddrMan>(/* deterministic */ false, /* consistency_check_ratio */ check_addrman);
+            LogPrintf("Recreating peers.dat\n");
+            adb.Write(*node.addrman);
+        }
+    }
     assert(!node.banman);
     node.banman = std::make_unique<BanMan>(gArgs.GetDataDirNet() / "banlist", &uiInterface, args.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME));
     assert(!node.connman);
