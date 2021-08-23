@@ -23,6 +23,7 @@ class CChain;
 class CChainState;
 class CTxMemPool;
 class ChainstateManager;
+class JSONRPCRequest;
 class UniValue;
 struct NodeContext;
 
@@ -59,6 +60,7 @@ void CalculatePercentilesByWeight(CAmount result[NUM_GETBLOCKSTATS_PERCENTILES],
 void ScriptPubKeyToUniv(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex);
 void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry, bool include_hex = true, int serialize_flags = 0, const CTxUndo* txundo = nullptr);
 
+NodeContext& EnsureAnyNodeContext(const JSONRPCRequest& request);
 NodeContext& EnsureAnyNodeContext(const std::any& context);
 CTxMemPool& EnsureMemPool(const NodeContext& node);
 CTxMemPool& EnsureAnyMemPool(const std::any& context);

@@ -10,6 +10,7 @@
 #include <node/context.h>
 #include <policy/fees.h>
 #include <primitives/transaction.h>
+#include <rpc/names.h>
 #include <rpc/server.h>
 #include <script/standard.h>
 #include <support/allocators/secure.h>
@@ -113,7 +114,7 @@ WalletTxOut MakeWalletTxOut(const CWallet& wallet,
 class WalletImpl : public Wallet
 {
 public:
-    explicit WalletImpl(const std::shared_ptr<CWallet>& wallet) : m_wallet(wallet) {}
+    explicit WalletImpl(WalletContext& context, const std::shared_ptr<CWallet>& wallet) : m_context(context), m_wallet(wallet) {}
 
     bool encryptWallet(const SecureString& wallet_passphrase) override
     {
@@ -461,7 +462,7 @@ public:
     CAmount getDefaultMaxTxFee() override { return m_wallet->m_default_max_tx_fee; }
     void remove() override
     {
-        RemoveWallet(m_wallet, false /* load_on_start */);
+        RemoveWallet(m_context, m_wallet, false /* load_on_start */);
     }
     bool isLegacy() override { return m_wallet->IsLegacy(); }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
@@ -497,6 +498,7 @@ public:
     }
     CWallet* wallet() override { return m_wallet.get(); }
 
+    WalletContext& m_context;
     std::shared_ptr<CWallet> m_wallet;
 };
 
@@ -508,33 +510,36 @@ public:
         m_context.chain = &chain;
         m_context.args = &args;
     }
-    ~WalletClientImpl() override { UnloadWallets(); }
+    ~WalletClientImpl() override { UnloadWallets(m_context); }
 
     //! ChainClient methods
-    void registerRpcs() override
+    void registerRpcs(Span<const CRPCCommand> commands)
     {
-        for (const CRPCCommand& command : GetWalletRPCCommands()) {
+        for (const CRPCCommand& command : commands) {
             m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
-                /* Unlike upstream Bitcoin, we need the NodeContext for
-                   getauxblock.  Thus we construct a new context that
-                   contains both and use that.  */
-                WalletContext extendedCtx = m_context;
-                auto node_context = util::AnyPtr<NodeContext>(request.context);
-                if (node_context)
-                    extendedCtx.nodeContext = node_context;
-
                 JSONRPCRequest wallet_request = request;
-                wallet_request.context = &extendedCtx;
+                wallet_request.context = &m_context;
+                /* Unlike upstream Bitcoin, we need the NodeContext for
+                   getauxblock.  */
+                wallet_request.context2 = util::AnyPtr<NodeContext>(request.context);
                 return command.actor(wallet_request, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
     }
-    bool verify() override { return VerifyWallets(*m_context.chain); }
-    bool load() override { return LoadWallets(*m_context.chain); }
-    void start(CScheduler& scheduler) override { return StartWallets(scheduler, *Assert(m_context.args)); }
-    void flush() override { return FlushWallets(); }
-    void stop() override { return StopWallets(); }
+    void registerRpcs() override
+    {
+        registerRpcs(GetWalletRPCCommands());
+        /* Many of the non-wallet Namecoin RPCs can use a wallet optionally,
+           for the "ismine" field.  Thus if a wallet is available, we register
+           handlers for them with the wallet context.  */
+        registerRpcs(GetNameRPCCommands());
+    }
+    bool verify() override { return VerifyWallets(m_context); }
+    bool load() override { return LoadWallets(m_context); }
+    void start(CScheduler& scheduler) override { return StartWallets(m_context, scheduler); }
+    void flush() override { return FlushWallets(m_context); }
+    void stop() override { return StopWallets(m_context); }
     void setMockTime(int64_t time) override { return SetMockTime(time); }
 
     //! WalletClient methods
@@ -546,14 +551,14 @@ public:
         options.require_create = true;
         options.create_flags = wallet_creation_flags;
         options.create_passphrase = passphrase;
-        return MakeWallet(CreateWallet(*m_context.chain, name, true /* load_on_start */, options, status, error, warnings));
+        return MakeWallet(m_context, CreateWallet(m_context, name, true /* load_on_start */, options, status, error, warnings));
     }
     std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
         DatabaseOptions options;
         DatabaseStatus status;
         options.require_existing = true;
-        return MakeWallet(LoadWallet(*m_context.chain, name, true /* load_on_start */, options, status, error, warnings));
+        return MakeWallet(m_context, LoadWallet(m_context, name, true /* load_on_start */, options, status, error, warnings));
     }
     std::string getWalletDir() override
     {
@@ -570,15 +575,16 @@ public:
     std::vector<std::unique_ptr<Wallet>> getWallets() override
     {
         std::vector<std::unique_ptr<Wallet>> wallets;
-        for (const auto& wallet : GetWallets()) {
-            wallets.emplace_back(MakeWallet(wallet));
+        for (const auto& wallet : GetWallets(m_context)) {
+            wallets.emplace_back(MakeWallet(m_context, wallet));
         }
         return wallets;
     }
     std::unique_ptr<Handler> handleLoadWallet(LoadWalletFn fn) override
     {
-        return HandleLoadWallet(std::move(fn));
+        return HandleLoadWallet(m_context, std::move(fn));
     }
+    WalletContext* context() override  { return &m_context; }
 
     WalletContext m_context;
     const std::vector<std::string> m_wallet_filenames;
@@ -589,7 +595,7 @@ public:
 } // namespace wallet
 
 namespace interfaces {
-std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(wallet) : nullptr; }
+std::unique_ptr<Wallet> MakeWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(context, wallet) : nullptr; }
 
 std::unique_ptr<WalletClient> MakeWalletClient(Chain& chain, ArgsManager& args)
 {

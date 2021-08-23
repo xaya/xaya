@@ -9,12 +9,14 @@
 
 #include <names/encoding.h>
 #include <rpc/util.h>
+#include <span.h>
 
 #include <string>
 #include <vector>
 
 class CNameData;
 class COutPoint;
+class CRPCCommand;
 class CScript;
 class UniValue;
 
@@ -24,6 +26,8 @@ UniValue getNameInfo (const UniValue& options,
 UniValue getNameInfo (const UniValue& options,
                       const valtype& name, const CNameData& data);
 void addHeightInfo (int height, UniValue& data);
+
+Span<const CRPCCommand> GetNameRPCCommands ();
 
 #ifdef ENABLE_WALLET
 class CWallet;

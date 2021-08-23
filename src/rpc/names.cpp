@@ -251,7 +251,14 @@ public:
 #ifdef ENABLE_WALLET
     try
       {
-        wallet = GetWalletForJSONRPCRequest (request);
+        /* GetWalletForJSONRPCRequest throws an internal error if there
+           is no wallet context.  We want to handle this situation gracefully
+           and just fall back to not having a wallet in this case.  */
+        if (util::AnyPtr<WalletContext> (request.context))
+          {
+            wallet = GetWalletForJSONRPCRequest (request);
+            return;
+          }
       }
     catch (const UniValue& exc)
       {
@@ -259,10 +266,11 @@ public:
         if (!code.isNum () || code.get_int () != RPC_WALLET_NOT_SPECIFIED)
           throw;
 
-        /* If the wallet is not set, that's fine, and we just indicate it to
-           other code (by having a null wallet).  */
-        wallet = nullptr;
       }
+
+    /* If the wallet is not set, that's fine, and we just indicate it to
+       other code (by having a null wallet).  */
+    wallet = nullptr;
 #endif
   }
 
@@ -484,7 +492,7 @@ name_show ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
-  auto& chainman = EnsureAnyChainman (request.context);
+  auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -545,7 +553,7 @@ name_history ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
-  auto& chainman = EnsureAnyChainman (request.context);
+  auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
@@ -633,7 +641,7 @@ name_scan ()
 {
   RPCTypeCheck (request.params,
                 {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
-  auto& chainman = EnsureAnyChainman (request.context);
+  auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
@@ -777,7 +785,7 @@ name_pending ()
   RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
 
   MaybeWalletForRequest wallet(request);
-  auto& mempool = EnsureAnyMemPool (request.context);
+  auto& mempool = EnsureMemPool (EnsureAnyNodeContext (request));
   LOCK2 (wallet.getLock (), mempool.cs);
 
   UniValue options(UniValue::VOBJ);
@@ -997,7 +1005,7 @@ name_checkdb ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  NodeContext& node = EnsureAnyNodeContext (request.context);
+  NodeContext& node = EnsureAnyNodeContext (request);
   ChainstateManager& chainman = EnsureChainman (node);
 
   LOCK (cs_main);
@@ -1012,7 +1020,7 @@ name_checkdb ()
 } // namespace
 /* ************************************************************************** */
 
-void RegisterNameRPCCommands(CRPCTable &t)
+Span<const CRPCCommand> GetNameRPCCommands()
 {
 static const CRPCCommand commands[] =
 { //  category               actor (function)
@@ -1026,6 +1034,11 @@ static const CRPCCommand commands[] =
     { "rawtransactions",     &namepsbt,                },
 };
 
-    for (const auto& c : commands)
-        t.appendCommand(c.name, &c);
+  return MakeSpan (commands);
+}
+
+void RegisterNameRPCCommands(CRPCTable &t)
+{
+  for (const auto& c : GetNameRPCCommands ())
+    t.appendCommand(c.name, &c);
 }
