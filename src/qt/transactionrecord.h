@@ -90,6 +90,7 @@ public:
         Register,
         Update,
         Renew,
+        Send,
         Recv,
     };
 
