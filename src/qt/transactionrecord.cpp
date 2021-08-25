@@ -5,6 +5,7 @@
 #include <qt/transactionrecord.h>
 
 #include <chain.h>
+#include <chainparams.h>
 #include <interfaces/wallet.h>
 #include <key_io.h>
 #include <names/encoding.h>
@@ -134,6 +135,15 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                 nameSub.nameOpType = TransactionRecord::NameOpType::New;
             }
         }
+        else if(nNameDebit)
+        {
+            nameSub.nameOpType = TransactionRecord::NameOpType::Send;
+
+            if(nNameDebit.value().isAnyUpdate())
+            {
+                nameSub.address = EncodeNameForMessage(nNameDebit.value().getOpName());
+            }
+        }
 
         if (fAllFromMe && fAllToMe)
         {
@@ -180,7 +190,13 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                     continue;
                 }
 
-                if (!std::get_if<CNoDestination>(&wtx.txout_address[nOut]))
+                if(nNameDebit && CNameScript::isNameScript(txout.scriptPubKey))
+                {
+                    nameSub.idx = sub.idx;
+                    nameSub.involvesWatchAddress = sub.involvesWatchAddress;
+                    sub = nameSub;
+                }
+                else if (!std::get_if<CNoDestination>(&wtx.txout_address[nOut]))
                 {
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
@@ -194,6 +210,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
                 }
 
                 CAmount nValue = txout.nValue;
+                if (sub.type == TransactionRecord::NameOp)
+                {
+                    // 300k is just a "sufficiently high" height
+                    nValue -= Params().GetConsensus().rules->MinNameCoinAmount(300000);
+                }
                 /* Add fee to first output */
                 if (nTxFee > 0)
                 {

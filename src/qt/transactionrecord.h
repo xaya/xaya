@@ -91,6 +91,7 @@ public:
         FirstUpdate,
         Update,
         Renew,
+        Send,
         Recv,
     };
 
