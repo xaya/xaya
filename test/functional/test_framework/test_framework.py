@@ -410,7 +410,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             # To ensure that all nodes are out of IBD, the most recent block
             # must have a timestamp not too old (see IsInitialBlockDownload()).
             self.log.debug('Generate a block with current time')
-            block_hash = self.nodes[0].generate(1)[0]
+            block_hash = self.generate(self.nodes[0], 1)[0]
             block = self.nodes[0].getblock(blockhash=block_hash, verbosity=0)
             for n in self.nodes:
                 n.submitblock(block)
@@ -622,6 +622,22 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         # might conflict.
         self.sync_blocks()
 
+    def generate(self, generator, *args, **kwargs):
+        blocks = generator.generate(*args, **kwargs)
+        return blocks
+
+    def generateblock(self, generator, *args, **kwargs):
+        blocks = generator.generateblock(*args, **kwargs)
+        return blocks
+
+    def generatetoaddress(self, generator, *args, **kwargs):
+        blocks = generator.generatetoaddress(*args, **kwargs)
+        return blocks
+
+    def generatetodescriptor(self, generator, *args, **kwargs):
+        blocks = generator.generatetodescriptor(*args, **kwargs)
+        return blocks
+
     def sync_blocks(self, nodes=None, wait=1, timeout=60):
         """
         Wait until everybody has the same tip.
@@ -752,7 +768,8 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             gen_addresses = [k.address for k in TestNode.PRIV_KEYS][:3] + [ADDRESS_BCRT1_P2WSH_OP_TRUE]
             assert_equal(len(gen_addresses), 4)
             for i in range(8):
-                cache_node.generatetoaddress(
+                self.generatetoaddress(
+                    cache_node,
                     nblocks=25 if i != 7 else 24,
                     address=gen_addresses[i % len(gen_addresses)],
                 )
