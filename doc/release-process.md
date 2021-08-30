@@ -270,24 +270,10 @@ Non-codesigners: wait for Windows/macOS detached signatures:
 
 ( **Not in Namecoin yet.** ) Commit your signature for the signed macOS/Windows binaries:
 
-Combine `all.SHA256SUMS` and `all.SHA256SUMS.asc` into a clear-signed
-`SHA256SUMS.asc` message:
-
-```sh
-echo -e "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\n$(cat all.SHA256SUMS)\n$(cat filename.txt.asc)" > SHA256SUMS.asc
-```
-
-Here's an equivalent, more readable command if you're confident that you won't
-mess up whitespaces when copy-pasting:
+Combine the `all.SHA256SUMS.asc` file from all signers into `SHA256SUMS.asc`:
 
 ```bash
-cat << EOF > SHA256SUMS.asc
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
-
-$(cat all.SHA256SUMS)
-$(cat all.SHA256SUMS.asc)
-EOF
+cat "$VERSION"/*/all.SHA256SUMS.asc > SHA256SUMS.asc
 ```
 namecoin-${VERSION}-aarch64-linux-gnu.tar.gz
 namecoin-${VERSION}-arm-linux-gnueabihf.tar.gz
@@ -305,8 +291,9 @@ in debugging can run gitian to generate the files for themselves. To avoid
 end-user confusion about which file to pick, as well as save storage
 space *do not upload these to the bitcoincore.org server, nor put them in the torrent*.
 
-- Upload to the bitcoincore.org server (`/var/www/bin/bitcoin-core-${VERSION}`):
-    1. The contents of `./bitcoin/guix-build-${VERSION}/output`, except for
+
+- Upload to the bitcoincore.org server (`/var/www/bin/bitcoin-core-${VERSION}/`):
+    1. The contents of each `./bitcoin/guix-build-${VERSION}/output/${HOST}/` directory, except for
        `*-debug*` files.
 
 ( **The following is not in Namecoin yet.** )
@@ -314,7 +301,13 @@ space *do not upload these to the bitcoincore.org server, nor put them in the to
 - Upload zips and installers, as well as `SHA256SUMS.asc` from last step, to the bitcoincore.org server
   into `/var/www/bin/bitcoin-core-${VERSION}`
 
-    2. The combined clear-signed message you just created `SHA256SUMS.asc`
+       ```sh
+       find guix-build-${VERSION}/output/ -maxdepth 2 -type f -not -name "SHA256SUMS.part" -and -not -name "*debug*" -exec scp {} user@bitcoincore.org:/var/www/bin/bitcoin-core-${VERSION} \;
+       ```
+
+    2. The `SHA256SUMS` file
+
+    3. The `SHA256SUMS.asc` combined signature file you just created
 
 - Create a torrent of the `/var/www/bin/bitcoin-core-${VERSION}` directory such
   that at the top level there is only one file: the `bitcoin-core-${VERSION}`
