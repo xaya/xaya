@@ -140,6 +140,8 @@ private:
     QAction* sendCoinsMenuAction = nullptr;
     QAction* usedSendingAddressesAction = nullptr;
     QAction* usedReceivingAddressesAction = nullptr;
+    QAction* buyNamesAction = nullptr;
+    QAction* buyNamesMenuAction = nullptr;
     QAction* manageNamesAction = nullptr;
     QAction* manageNamesMenuAction = nullptr;
     QAction* signMessageAction = nullptr;
@@ -282,6 +284,8 @@ public Q_SLOTS:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
+    /** Switch to buy names page */
+    void gotoBuyNamesPage();
     /** Switch to manage names page */
     void gotoManageNamesPage();
 

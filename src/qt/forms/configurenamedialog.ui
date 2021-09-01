@@ -173,7 +173,7 @@
           <string>Enter JSON string that will be associated with the name</string>
          </property>
          <property name="maxLength">
-          <number>520</number>
+          <number>2048</number>
          </property>
         </widget>
        </item>
