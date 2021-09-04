@@ -194,7 +194,7 @@ to the network and creates a pending name_firstupdate transaction.</string>
            <string>Configure name and submit update operation</string>
           </property>
           <property name="text">
-           <string>&amp;Configure Name...</string>
+           <string>&amp;Configure Name&#8230;</string>
           </property>
           <property name="default">
            <bool>false</bool>
