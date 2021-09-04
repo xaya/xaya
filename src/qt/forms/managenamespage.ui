@@ -196,6 +196,10 @@ to the network and creates a pending name_firstupdate transaction.</string>
           <property name="text">
            <string>&amp;Configure Name...</string>
           </property>
+          <property name="icon">
+           <iconset resource="../bitcoin.qrc">
+            <normaloff>:/icons/edit</normaloff>:/icons/edit</iconset>
+          </property>
           <property name="default">
            <bool>false</bool>
           </property>
