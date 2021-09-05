@@ -6,6 +6,7 @@
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
+#include <rpc/protocol.h>
 
 #include <QMessageBox>
 
@@ -19,6 +20,9 @@ BuyNamesPage::BuyNamesPage(const PlatformStyle *platformStyle, QWidget *parent) 
 {
     ui->setupUi(this);
 
+    ui->registerNameButton->hide();
+
+    connect(ui->registerName, &QLineEdit::textEdited, this, &BuyNamesPage::onNameEdited);
     connect(ui->registerNameButton, &QPushButton::clicked, this, &BuyNamesPage::onRegisterNameAction);
 
     ui->registerName->installEventFilter(this);
@@ -44,6 +48,25 @@ bool BuyNamesPage::eventFilter(QObject *object, QEvent *event)
         }
     }
     return QWidget::eventFilter(object, event);
+}
+
+void BuyNamesPage::onNameEdited(const QString &name)
+{
+    if (!walletModel)
+        return;
+
+    const QString availableError = name_available(name);
+
+    if (availableError == "")
+    {
+        ui->statusLabel->setText(tr("%1 is available to register!").arg(name));
+        ui->registerNameButton->show();
+    }
+    else
+    {
+        ui->statusLabel->setText(availableError);
+        ui->registerNameButton->hide();
+    }
 }
 
 void BuyNamesPage::onRegisterNameAction()
@@ -76,6 +99,41 @@ void BuyNamesPage::onRegisterNameAction()
     // reset UI text
     ui->registerName->setText("d/");
     ui->registerNameButton->setDefault(true);
+}
+
+// Returns empty string if available, otherwise a description of why it is not
+// available.
+QString BuyNamesPage::name_available(const QString &name) const
+{
+    const std::string strName = name.toStdString();
+    LogPrint(BCLog::QT, "wallet attempting name_show: name=%s\n", strName);
+
+    UniValue params(UniValue::VOBJ);
+    params.pushKV ("name", strName);
+
+    const std::string walletURI = "/wallet/" + walletModel->getWalletName().toStdString();
+
+    try
+    {
+        walletModel->node().executeRpc("name_show", params, walletURI);
+    }
+    catch (const UniValue& e)
+    {
+        const UniValue code = find_value(e, "code");
+        const int codeInt = code.get_int();
+        if (codeInt == RPC_WALLET_ERROR)
+        {
+            // Name doesn't exist, so it's available.
+            return QString("");
+        }
+
+        const UniValue message = find_value(e, "message");
+        const std::string errorStr = message.get_str();
+        LogPrint(BCLog::QT, "name_show error: %s\n", errorStr);
+        return QString::fromStdString(errorStr);
+    }
+
+    return tr("%1 is already registered, sorry!").arg(name);
 }
 
 QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
