@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2020 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -72,7 +72,7 @@ class NameRegistrationTest (NameTestFramework):
     
     # Check that the name appears when the name_new is ripe.
     self.generateToOther (7)
-    assert_raises_rpc_error (-4, 'name not found',
+    assert_raises_rpc_error (-4, 'name never existed',
                              node.name_show, "name-0")
     assert_raises_rpc_error (-4, 'name not found',
                              node.name_history, "name-0")

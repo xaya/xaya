@@ -58,7 +58,7 @@ class NameExpirationTest(NameTestFramework):
         self.log.info("Check default behaviors.")
         self.sync_blocks(self.nodes)
         self.checkName(idx_allow, "d/expired", "value", -1, True)
-        assert_raises_rpc_error(-4, 'name not found',
+        assert_raises_rpc_error(-4, 'name expired',
             node_disallow.name_show, "d/expired")
 
         self.log.info("Check positive JSON overrides.")
@@ -71,9 +71,9 @@ class NameExpirationTest(NameTestFramework):
             "d/expired", "value", -1, True)
 
         self.log.info("Check negative JSON overrides.")
-        assert_raises_rpc_error(-4, 'name not found',
+        assert_raises_rpc_error(-4, 'name expired',
             node.name_show, "d/expired", {"allowExpired": False})
-        assert_raises_rpc_error(-4, 'name not found',
+        assert_raises_rpc_error(-4, 'name expired',
             node_disallow.name_show, "d/expired", {"allowExpired": False})
 
 if __name__ == '__main__':

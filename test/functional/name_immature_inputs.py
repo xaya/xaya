@@ -41,7 +41,7 @@ class NameImmatureInputsTest (NameTestFramework):
     self.nodes[0].generate (1)
     first = self.firstupdateName (0, "a", new, "value")
     self.nodes[0].generate (11)
-    assert_raises_rpc_error (-4, 'name not found',
+    assert_raises_rpc_error (-4, 'name never existed',
                              self.nodes[0].name_show, "a")
     self.nodes[0].generate (1)
     self.checkName (0, "a", "value", 30, False)
@@ -74,7 +74,7 @@ class NameImmatureInputsTest (NameTestFramework):
     self.nodes[0].generate (1)
     assert_equal ([first], self.nodes[0].getrawmempool ())
     self.nodes[0].generate (11)
-    assert_raises_rpc_error (-4, 'name not found',
+    assert_raises_rpc_error (-4, 'name never existed',
                              self.nodes[0].name_show, "b")
     self.nodes[0].generate (1)
     self.checkName (0, "b", "value", 30, False)
