@@ -280,7 +280,7 @@ name_list ()
       if (!nameFilter.empty () && nameFilter != name)
         continue;
 
-      const int depth = tx.GetDepthInMainChain ();
+      const int depth = pwallet->GetTxDepthInMainChain(tx);
       if (depth <= 0)
         continue;
       const int height = tipHeight - depth + 1;
