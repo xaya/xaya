@@ -510,7 +510,7 @@ name_show ()
     if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
       {
         std::ostringstream msg;
-        msg << "name not found: " << EncodeNameForMessage (name);
+        msg << "name never existed: " << EncodeNameForMessage (name);
         throw JSONRPCError (RPC_WALLET_ERROR, msg.str ());
       }
   }

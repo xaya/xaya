@@ -66,7 +66,7 @@ class NameRegistrationTest (NameTestFramework):
                              "x/name-0", val ("foo"))
     
     # Check that the name data appears when the tx are mined.
-    assert_raises_rpc_error (-4, 'name not found',
+    assert_raises_rpc_error (-4, 'name never existed',
                              node.name_show, "x/name-0")
     assert_raises_rpc_error (-4, 'name not found',
                              node.name_history, "x/name-0")

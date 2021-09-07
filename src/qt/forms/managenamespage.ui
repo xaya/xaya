@@ -177,6 +177,19 @@ to the network and creates a pending name_firstupdate transaction.</string>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
+         <spacer name="countConfigureSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="QPushButton" name="configureNameButton">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -194,12 +207,25 @@ to the network and creates a pending name_firstupdate transaction.</string>
            <string>Configure name and submit update operation</string>
           </property>
           <property name="text">
-           <string>&amp;Configure Name...</string>
+           <string>&amp;Configure Name&#8230;</string>
           </property>
           <property name="default">
            <bool>false</bool>
           </property>
          </widget>
+        </item>
+        <item>
+         <spacer name="configureRenewSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item>
          <widget class="QPushButton" name="renewNameButton">
@@ -222,6 +248,36 @@ to the network and creates a pending name_firstupdate transaction.</string>
            <string>&amp;Renew Names</string>
           </property>
           <property name="default">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="renewExportSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exportButton">
+          <property name="toolTip">
+           <string>Export the data in the current tab to a file</string>
+          </property>
+          <property name="text">
+           <string>&amp;Export</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../bitcoin.qrc">
+            <normaloff>:/icons/export</normaloff>:/icons/export</iconset>
+          </property>
+          <property name="autoDefault">
            <bool>false</bool>
           </property>
          </widget>

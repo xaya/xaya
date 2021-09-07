@@ -54,7 +54,7 @@ class NameReorgTest (NameTestFramework):
     self.checkName (0, "x/b", val ("b long"))
     self.checkNameHistory (0, "x/a", val (["initial value"]))
     self.checkNameHistory (0, "x/b", val (["b long"]))
-    assert_raises_rpc_error (-4, 'name not found', node.name_show, "x/c")
+    assert_raises_rpc_error (-4, 'name never existed', node.name_show, "x/c")
     assert_raises_rpc_error (-4, 'name not found', node.name_history, "x/c")
 
     # Mine another block.  This should at least perform the

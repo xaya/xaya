@@ -43,9 +43,6 @@ private:
     QAction *configureNameAction;
     QAction *renewNameAction;
 
-public Q_SLOTS:
-    void exportClicked();
-
 private Q_SLOTS:
     bool eventFilter(QObject *object, QEvent *event);
     void selectionChanged();
@@ -57,6 +54,11 @@ private Q_SLOTS:
     void onCopyValueAction();
     void onConfigureNameAction();
     void onRenewNameAction();
+    void onExport();
+
+Q_SIGNALS:
+    /**  Fired when a message should be reported to the user */
+    void message(const QString &title, const QString &message, unsigned int style);
 };
 
 #endif // MANAGENAMESPAGE_H
