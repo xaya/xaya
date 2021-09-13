@@ -1461,9 +1461,9 @@ class TaprootTest(BitcoinTestFramework):
     def run_test(self):
         # Post-taproot activation tests go first (pre-taproot tests' blocks are invalid post-taproot).
         self.log.info("Post-activation tests...")
-        self.nodes[0].generate (50)
+        self.generate(self.nodes[0], 50)
         self.sync_blocks()
-        self.nodes[1].generate(COINBASE_MATURITY + 1)
+        self.generate(self.nodes[1], COINBASE_MATURITY + 1)
         self.test_spenders(self.nodes[1], spenders_taproot_active(), input_counts=[1, 2, 2, 2, 2, 3])
 
         # Upstream Bitcoin explicitly sends funds from node 1 to node 0 here,

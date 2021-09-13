@@ -59,8 +59,9 @@ namespace BCLog {
         VALIDATION  = (1 << 21),
         I2P         = (1 << 22),
         IPC         = (1 << 23),
-        NAMES       = (1 << 24),
-        GAME        = (1 << 25),
+        LOCK        = (1 << 24),
+        NAMES       = (1 << 25),
+        GAME        = (1 << 26),
         ALL         = ~(uint32_t)0,
     };
 

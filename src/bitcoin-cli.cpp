@@ -93,9 +93,6 @@ static void SetupCliArgs(ArgsManager& argsman)
 /** libevent event log callback */
 static void libevent_log_cb(int severity, const char *msg)
 {
-#ifndef EVENT_LOG_ERR // EVENT_LOG_ERR was added in 2.0.19; but before then _EVENT_LOG_ERR existed.
-# define EVENT_LOG_ERR _EVENT_LOG_ERR
-#endif
     // Ignore everything other than errors
     if (severity >= EVENT_LOG_ERR) {
         throw std::runtime_error(strprintf("libevent error: %s", msg));
@@ -519,7 +516,7 @@ public:
         }
 
         // Generate report header.
-        std::string result{strprintf("%s %s%s - %i%s\n\n", PACKAGE_NAME, FormatFullVersion(), ChainToString(), networkinfo["protocolversion"].get_int(), networkinfo["subversion"].get_str())};
+        std::string result{strprintf("%s client %s%s - server %i%s\n\n", PACKAGE_NAME, FormatFullVersion(), ChainToString(), networkinfo["protocolversion"].get_int(), networkinfo["subversion"].get_str())};
 
         // Report detailed peer connections list sorted by direction and minimum ping time.
         if (DetailsRequested() && !m_peers.empty()) {
