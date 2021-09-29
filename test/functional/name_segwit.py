@@ -37,7 +37,7 @@ class NameSegwitTest (NameTestFramework):
     self.setup_name_test ([[
       "-debug",
       "-par=1",
-      f"-segwitheight={SEGWIT_ACTIVATION_HEIGHT}"
+      f"-testactivationheight=segwit@{SEGWIT_ACTIVATION_HEIGHT}"
     ]] * 1)
 
   def checkNameValueAddr (self, name, value, addr):
