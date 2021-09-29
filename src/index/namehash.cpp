@@ -5,6 +5,7 @@
 #include <index/namehash.h>
 
 #include <hash.h>
+#include <primitives/block.h>
 #include <script/names.h>
 
 #include <utility>
