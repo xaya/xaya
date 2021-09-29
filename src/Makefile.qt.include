@@ -353,14 +353,14 @@ bitcoin_qt_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
 
 qt_namecoin_qt_CPPFLAGS = $(bitcoin_qt_cppflags)
 qt_namecoin_qt_CXXFLAGS = $(bitcoin_qt_cxxflags)
-qt_namecoin_qt_SOURCES = $(bitcoin_qt_sources)
+qt_namecoin_qt_SOURCES = $(bitcoin_qt_sources) init/bitcoind.cpp
 qt_namecoin_qt_LDADD = $(bitcoin_qt_ldadd)
 qt_namecoin_qt_LDFLAGS = $(bitcoin_qt_ldflags)
 qt_namecoin_qt_LIBTOOLFLAGS = $(bitcoin_qt_libtoolflags)
 
 namecoin_gui_CPPFLAGS = $(bitcoin_qt_cppflags)
 namecoin_gui_CXXFLAGS = $(bitcoin_qt_cxxflags)
-namecoin_gui_SOURCES = $(bitcoin_qt_sources)
+namecoin_gui_SOURCES = $(bitcoin_qt_sources) init/bitcoind.cpp
 namecoin_gui_LDADD = $(bitcoin_qt_ldadd)
 namecoin_gui_LDFLAGS = $(bitcoin_qt_ldflags)
 namecoin_gui_LIBTOOLFLAGS = $(bitcoin_qt_libtoolflags)
