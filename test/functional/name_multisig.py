@@ -41,7 +41,7 @@ class NameMultisigTest (NameTestFramework):
     # options).  If --bip16-active is false, we restart the node later on.
     # Since Segwit assumes that BIP16 is active and we do not need Segwit
     # for this test at all, just disable it always.
-    self.node_args = ["-acceptnonstdtxn=1", "-segwitheight=1000000"]
+    self.node_args = ["-acceptnonstdtxn=1", "-testactivationheight=segwit@1000000"]
     self.setup_name_test ([self.node_args] * 2)
 
   def add_options (self, parser):
@@ -305,7 +305,7 @@ class NameMultisigTest (NameTestFramework):
   def run_test (self):
     if not self.options.activated:
       self.log.info ("Disabling BIP16 for the test")
-      self.node_args.append ("-bip16height=1000000")
+      self.node_args.append ("-testactivationheight=bip16@1000000")
       for i in range (2):
         self.restart_node (i, extra_args=self.node_args)
       self.connect_nodes (0, 1)

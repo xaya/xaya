@@ -205,7 +205,8 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
     }
 }
 
-TestChain100Setup::TestChain100Setup()
+TestChain100Setup::TestChain100Setup(const std::vector<const char*>& extra_args)
+    : TestingSetup{CBaseChainParams::REGTEST, extra_args}
 {
     /* Turn off automatic name DB checks for Namecoin.  They flush the
        coin cache, which messes up some of the upstream tests.  We test
@@ -240,11 +241,14 @@ void TestChain100Setup::mineBlocks(int num_blocks)
     }
 }
 
-CBlock TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
+CBlock TestChain100Setup::CreateBlock(
+    const std::vector<CMutableTransaction>& txns,
+    const CScript& scriptPubKey,
+    CChainState& chainstate)
 {
     const CChainParams& chainparams = Params();
     CTxMemPool empty_pool;
-    CBlock block = BlockAssembler(m_node.chainman->ActiveChainstate(), empty_pool, chainparams).CreateNewBlock(scriptPubKey)->block;
+    CBlock block = BlockAssembler(chainstate, empty_pool, chainparams).CreateNewBlock(scriptPubKey)->block;
 
     Assert(block.vtx.size() == 1);
     for (const CMutableTransaction& tx : txns) {
@@ -254,6 +258,20 @@ CBlock TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransa
 
     while (!CheckProofOfWork(block.GetHash(), block.nBits, chainparams.GetConsensus())) ++block.nNonce;
 
+    return block;
+}
+
+CBlock TestChain100Setup::CreateAndProcessBlock(
+    const std::vector<CMutableTransaction>& txns,
+    const CScript& scriptPubKey,
+    CChainState* chainstate)
+{
+    if (!chainstate) {
+        chainstate = &Assert(m_node.chainman)->ActiveChainstate();
+    }
+
+    const CChainParams& chainparams = Params();
+    const CBlock block = this->CreateBlock(txns, scriptPubKey, *chainstate);
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
     Assert(m_node.chainman)->ProcessNewBlock(chainparams, shared_pblock, true, nullptr);
 
@@ -308,11 +326,6 @@ CMutableTransaction TestChain100Setup::CreateValidMempoolTransaction(CTransactio
     }
 
     return mempool_txn;
-}
-
-TestChain100Setup::~TestChain100Setup()
-{
-    gArgs.ForceSetArg("-segwitheight", "0");
 }
 
 CTxMemPoolEntry TestMemPoolEntryHelper::FromTx(const CMutableTransaction& tx) const
