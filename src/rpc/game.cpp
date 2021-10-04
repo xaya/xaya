@@ -303,8 +303,8 @@ game_sendupdates ()
   w.attach = GetDetachSequence (toIndex, ancestor);
   std::reverse (w.attach.begin (), w.attach.end ());
 
-  const int maxAttaches = gArgs.GetArg ("-maxgameblockattaches",
-                                        DEFAULT_MAX_GAME_BLOCK_ATTACHES);
+  const int maxAttaches = gArgs.GetIntArg ("-maxgameblockattaches",
+                                           DEFAULT_MAX_GAME_BLOCK_ATTACHES);
   if (maxAttaches <= 0)
     {
       /* If the limit is set to a non-positive number, we do not enforce any
