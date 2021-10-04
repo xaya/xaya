@@ -464,7 +464,7 @@ void
 CheckNameDB (CChainState& chainState, bool disconnect)
 {
   const int option
-    = gArgs.GetArg ("-checknamedb", Params ().DefaultCheckNameDB ());
+    = gArgs.GetIntArg ("-checknamedb", Params ().DefaultCheckNameDB ());
 
   if (option == -1)
     return;

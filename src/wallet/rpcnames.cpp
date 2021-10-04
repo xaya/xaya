@@ -770,8 +770,8 @@ name_update ()
      instead. */
   // TODO: Use name_show for this instead.
 
-  const unsigned chainLimit = gArgs.GetArg ("-limitnamechains",
-                                            DEFAULT_NAME_CHAIN_LIMIT);
+  const unsigned chainLimit = gArgs.GetIntArg ("-limitnamechains",
+                                               DEFAULT_NAME_CHAIN_LIMIT);
   COutPoint outp;
   {
     auto& mempool = EnsureMemPool (node);

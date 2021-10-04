@@ -1771,7 +1771,7 @@ static RPCHelpMan gettransaction()
 
     if (verbose) {
         UniValue decoded(UniValue::VOBJ);
-        TxToUniv(*wtx.tx, uint256(), pwallet->chain().rpcEnableDeprecated("addresses"), decoded, false);
+        TxToUniv(*wtx.tx, uint256(), decoded, false);
         entry.pushKV("decoded", decoded);
     }
 
@@ -2641,7 +2641,7 @@ static RPCHelpMan loadwallet()
     return RPCHelpMan{"loadwallet",
                 "\nLoads a wallet from a wallet file or directory."
                 "\nNote that all wallet command-line options used when starting namecoind will be"
-                "\napplied to the new wallet (eg -rescan, etc).\n",
+                "\napplied to the new wallet.\n",
                 {
                     {"filename", RPCArg::Type::STR, RPCArg::Optional::NO, "The wallet directory or .dat file."},
                     {"load_on_startup", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED_NAMED_ARG, "Save wallet name to persistent settings and load on startup. True to add wallet to startup list, false to remove, null to leave unchanged."},
@@ -3842,7 +3842,6 @@ public:
             obj.pushKV("embedded", std::move(subobj));
         } else if (which_type == TxoutType::MULTISIG) {
             // Also report some information on multisig scripts (which do not have a corresponding address).
-            // TODO: abstract out the common functionality between this logic and ExtractDestinations.
             obj.pushKV("sigsrequired", solutions_data[0][0]);
             UniValue pubkeys(UniValue::VARR);
             for (size_t i = 1; i < solutions_data.size() - 1; ++i) {
@@ -4463,7 +4462,7 @@ static RPCHelpMan walletprocesspsbt()
         HELP_REQUIRING_PASSPHRASE,
                 {
                     {"psbt", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction base64 string"},
-                    {"sign", RPCArg::Type::BOOL, RPCArg::Default{true}, "Also sign the transaction when updating"},
+                    {"sign", RPCArg::Type::BOOL, RPCArg::Default{true}, "Also sign the transaction when updating (requires wallet to be unlocked)"},
                     {"sighashtype", RPCArg::Type::STR, RPCArg::Default{"DEFAULT"}, "The signature hash type to sign with if not specified by the PSBT. Must be one of\n"
             "       \"DEFAULT\"\n"
             "       \"ALL\"\n"
@@ -4510,6 +4509,9 @@ static RPCHelpMan walletprocesspsbt()
     bool sign = request.params[1].isNull() ? true : request.params[1].get_bool();
     bool bip32derivs = request.params[3].isNull() ? true : request.params[3].get_bool();
     bool complete = true;
+
+    if (sign) EnsureWalletIsUnlocked(*pwallet);
+
     const TransactionError err{wallet.FillPSBT(psbtx, complete, nHashType, sign, bip32derivs)};
     if (err != TransactionError::OK) {
         throw JSONRPCTransactionError(err);
