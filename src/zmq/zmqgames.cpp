@@ -1,11 +1,11 @@
-// Copyright (c) 2018-2020 The Xaya developers
+// Copyright (c) 2018-2021 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <zmq/zmqgames.h>
 
-#include <amount.h>
 #include <chain.h>
+#include <consensus/amount.h>
 #include <core_io.h>
 #include <key_io.h>
 #include <logging.h>

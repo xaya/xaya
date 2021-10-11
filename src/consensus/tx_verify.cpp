@@ -4,6 +4,7 @@
 
 #include <consensus/tx_verify.h>
 
+#include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <names/main.h>
 #include <primitives/transaction.h>

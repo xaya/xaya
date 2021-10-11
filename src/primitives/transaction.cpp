@@ -5,6 +5,7 @@
 
 #include <primitives/transaction.h>
 
+#include <consensus/amount.h>
 #include <hash.h>
 #include <script/names.h>
 #include <tinyformat.h>

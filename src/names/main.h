@@ -1,11 +1,11 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef H_BITCOIN_NAMES_MAIN
 #define H_BITCOIN_NAMES_MAIN
 
-#include <amount.h>
+#include <consensus/amount.h>
 #include <names/common.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
