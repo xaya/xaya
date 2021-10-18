@@ -61,8 +61,9 @@ namespace BCLog {
         IPC         = (1 << 23),
         LOCK        = (1 << 24),
         UTIL        = (1 << 25),
-        NAMES       = (1 << 26),
-        GAME        = (1 << 27),
+        BLOCKSTORE  = (1 << 26),
+        NAMES       = (1 << 27),
+        GAME        = (1 << 28),
         ALL         = ~(uint32_t)0,
     };
 

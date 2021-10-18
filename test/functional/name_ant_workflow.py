@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020 Daniel Kraft
+# Copyright (c) 2020-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,31 +26,43 @@ class NameAntWorkflowTest (NameTestFramework):
     self.sync_blocks ()
     self.checkName (0, "x/name", val ("value"))
 
-    # fundrawtransaction and friends does not support non-wallet provided
-    # inputs.  Thus we have to first build up the funded transaction without
-    # the name coins and a slightly higher fee, and then combine it with the
-    # name input/output to obtain the final raw transaction.
-    addrPayment = self.nodes[0].getnewaddress ()
-    outs = [{addrPayment: 10}]
-    options = {
-      "fee_rate": 100,
-    }
-    part1 = self.nodes[1].walletcreatefundedpsbt ([], outs, 0, options)["psbt"]
+    # We construct the base transaction first, with just the name input,
+    # name output (including the operation) and the payment output.
+    # We then apply fundrawtransaction to add the necessary input and change
+    # for the payment; this needs solving data for the non-wallet input
+    # (the name) to be passed in, which in this case is the pubkey for the
+    # name input address.
 
+    addrPayment = self.nodes[0].getnewaddress ()
     addrNm = self.nodes[1].getnewaddress ()
+
     nmData = self.nodes[0].name_show ("x/name")
-    part2 = self.nodes[0].createpsbt ([nmData], [{addrNm: 0.01}])
+    addrNmOld = nmData["address"]
+    pubKey = self.nodes[0].getaddressinfo (addrNmOld)["pubkey"]
+
+    tx = self.nodes[1].createrawtransaction ([nmData], {
+      addrPayment: 10,
+      addrNm: 0.01,
+    })
+    vout = self.rawtxOutputIndex (1, tx, addrNm)
     nameOp = {
       "op": "name_update",
       "name": "x/name",
       "value": val ("updated"),
     }
-    part2 = self.nodes[1].namepsbt (part2, 0, nameOp)["psbt"]
-    combined = self.nodes[1].joinpsbts ([part1, part2])
+    tx = self.nodes[1].namerawtransaction (tx, vout, nameOp)["hex"]
+
+    options = {
+      "solving_data": {
+        "pubkeys": [pubKey],
+      },
+    }
+    tx = self.nodes[1].fundrawtransaction (tx, options)["hex"]
+    psbt = self.nodes[1].converttopsbt (tx)
 
     # Sign and broadcast the partial tx.
-    sign1 = self.nodes[0].walletprocesspsbt (combined)
-    sign2 = self.nodes[1].walletprocesspsbt (combined)
+    sign1 = self.nodes[0].walletprocesspsbt (psbt)
+    sign2 = self.nodes[1].walletprocesspsbt (psbt)
     combined = self.nodes[1].combinepsbt ([sign1["psbt"], sign2["psbt"]])
     tx = self.nodes[1].finalizepsbt (combined)
     assert_equal (tx["complete"], True)
