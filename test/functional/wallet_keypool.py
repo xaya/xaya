@@ -228,7 +228,7 @@ class KeyPoolTest(BitcoinTestFramework):
 
         nodes[0].getauxblock()
         assert_equal (nodes[0].getwalletinfo()['keypoolsize'], extraKeys)
-        nodes[0].generate(1)
+        self.generate (self.nodes[0], 1)
         assert_equal (nodes[0].getwalletinfo()['keypoolsize'], extraKeys)
         auxblock = nodes[0].getauxblock()
         assert_equal (nodes[0].getwalletinfo()['keypoolsize'], extraKeys)

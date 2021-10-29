@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -74,7 +74,7 @@ class NameListUnspentTest (NameTestFramework):
 
     # Name new's don't expire.  Verify that we get it after confirmation
     # correctly as well.
-    self.nodes[0].generate (50)
+    self.generate (self.nodes[0], 50)
     unspent = self.lookup (0, txid, vout, includeNames=True)
     assert unspent is not None
     assert_equal (unspent['confirmations'], 50)
@@ -82,7 +82,7 @@ class NameListUnspentTest (NameTestFramework):
 
     # Firstupdate the name and check that briefly.
     self.firstupdateName (0, "testname", new, "value")
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     unspent = self.lookupName (0, "testname", includeNames=True)
     assert unspent is not None
     assert 'nameOp' in unspent
@@ -116,7 +116,7 @@ class NameListUnspentTest (NameTestFramework):
     assert_equal (unspent['nameOp']['name'], 'testname')
 
     # Mine blocks and verify node 1 seeing the name correctly.
-    self.nodes[1].generate (30)
+    self.generate (self.nodes[1], 30)
     assert_equal (self.nodes[1].name_show ("testname")['expired'], False)
     assert_equal (self.nodes[1].name_show ("testname")['expires_in'], 1)
     assert self.lookupName (1, "testname") is None
@@ -131,7 +131,7 @@ class NameListUnspentTest (NameTestFramework):
     assert_equal (unspent['nameOp']['name'], 'testname')
 
     # One more block and the name expires.  Then it should no longer show up.
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     assert_equal (self.nodes[1].name_show ("testname")['expired'], True)
     assert self.lookupName (1, "testname", includeNames=True) is None
 

@@ -18,14 +18,14 @@ class NameRawTxTest (NameTestFramework):
   def run_test (self):
     # Decode name_new.
     new = self.nodes[0].name_new ("my-name")
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
     data = self.decodeNameTx (0, new[0])
     assert_equal (data['op'], "name_new")
     assert 'hash' in data
 
     # Decode name_firstupdate.
     first = self.firstupdateName (0, "my-name", new, "initial value")
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
     data = self.decodeNameTx (0, first)
     assert_equal (data['op'], "name_firstupdate")
     assert_equal (data['name'], "my-name")
@@ -34,7 +34,7 @@ class NameRawTxTest (NameTestFramework):
 
     # Decode name_update.
     upd = self.nodes[0].name_update ("my-name", "new value")
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     data = self.decodeNameTx (0, upd)
     assert_equal (data['op'], "name_update")
     assert_equal (data['name'], "my-name")
@@ -45,19 +45,19 @@ class NameRawTxTest (NameTestFramework):
     newOp = {"op": "name_new", "name": "raw-test-name"}
     newAddr = self.nodes[0].getnewaddress ()
     newOutp, newData = self.rawNameOp (0, None, newAddr, newOp)
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
 
     firstOp = {"op": "name_firstupdate", "rand": newData["rand"],
                "name": "raw-test-name", "value": "first value"}
     firstAddr = self.nodes[0].getnewaddress ()
     firstOutp, _ = self.rawNameOp (0, newOutp, firstAddr, firstOp)
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
     self.checkName (0, "raw-test-name", "first value", None, False)
 
     updOp = {"op": "name_update", "name": "raw-test-name", "value": "new value"}
     updAddr = self.nodes[0].getnewaddress ()
     self.rawNameOp (0, firstOutp, updAddr, updOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "raw-test-name", "new value", None, False)
 
     # Verify range check of vout in namerawtransaction.
@@ -77,7 +77,7 @@ class NameRawTxTest (NameTestFramework):
     fee = Decimal ("0.01")
 
     self.atomicTrade ("my-name", "enjoy", price, fee, 0, 1)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.sync_blocks ()
 
     data = self.checkName (0, "my-name", "enjoy", None, False)
@@ -102,10 +102,10 @@ class NameRawTxTest (NameTestFramework):
     # a transaction is invalid), but not a crash.
     newA = self.nodes[0].name_new ("a")
     newB = self.nodes[0].name_new ("b")
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
     self.firstupdateName (0, "a", newA, "value a")
     self.firstupdateName (0, "b", newB, "value b")
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
 
     inA, outA = self.constructUpdateTx (0, "a", "new value a")
     inB, outB = self.constructUpdateTx (0, "b", "new value b")

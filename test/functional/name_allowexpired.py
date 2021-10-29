@@ -21,7 +21,7 @@ class NameExpirationTest(NameTestFramework):
         idx_disallow = 1
         node = self.nodes[idx_allow]
         node_disallow = self.nodes[idx_disallow]
-        node.generate(200)
+        self.generate (node, 200)
 
         self.log.info("Begin registration of two names.")
         # "d/active" and (2) "d/expired".
@@ -34,25 +34,25 @@ class NameExpirationTest(NameTestFramework):
         # Looking up "d/active" should always succeed regardless.
         new_active = node.name_new("d/active")
         new_expired = node.name_new("d/expired")
-        node.generate(12)
+        self.generate (node, 12)
 
         self.log.info("Register the names.")
         self.firstupdateName(0, "d/active", new_active, "value")
         self.firstupdateName(0, "d/expired", new_expired, "value")
-        node.generate(1)
+        self.generate (node, 1)
         # names on regtest expire after 30 blocks
         self.log.info("Wait 1 block, make sure domains registered.")
         self.checkName(0, "d/active", "value", 30, False)
         self.checkName(0, "d/expired", "value", 30, False)
         
         self.log.info("Let half a registration interval pass.")
-        node.generate(15)
+        self.generate (node, 15)
         
         self.log.info("Renew d/active.")
         node.name_update("d/active", "renewed")
         # Don't renew d/expired. 
         self.log.info("Let d/expired lapse.")
-        node.generate(16)
+        self.generate (node, 16)
         # 30 - 15 = 15
 
         self.log.info("Check default behaviors.")

@@ -141,9 +141,9 @@ class NameMultisigTest (NameTestFramework):
 
     # Register a new name to that address.
     new = self.nodes[0].name_new ("name")
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
     self.firstupdateName (0, "name", new, "value", {"destAddress": p2sh})
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
     self.sync_blocks ()
     data = self.checkName (0, "name", "value", None, False)
     assert_equal (data['address'], p2sh)
@@ -195,13 +195,13 @@ class NameMultisigTest (NameTestFramework):
     assert_raises_rpc_error (-26, None,
                              self.nodes[0].sendrawtransaction, txManipulated)
     self.nodes[0].sendrawtransaction (tx)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.sync_blocks ()
 
     # Check that it was transferred correctly.
     self.checkName (1, "name", "it worked", None, False)
     self.nodes[1].name_update ("name", "changed")
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     self.checkName (1, "name", "changed", None, False)
 
   def test_namescript_p2sh (self):
@@ -217,9 +217,9 @@ class NameMultisigTest (NameTestFramework):
     name = "d/p2sh"
     value = "value"
     new = node.name_new (name)
-    node.generate (12)
+    self.generate (node, 12)
     self.firstupdateName (0, name, new, value)
-    node.generate (1)
+    self.generate (node, 1)
     baseHeight = node.getblockcount ()
     self.checkNameWithHeight (0, name, value, baseHeight)
 
@@ -254,13 +254,13 @@ class NameMultisigTest (NameTestFramework):
     assert signed['complete']
     node.sendrawtransaction (signed['hex'])
 
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, value, baseHeight + 1)
 
     # Send the name to the anyone-can-spend P2SH address.  This should just
     # work fine and update the name.
     self.updateAnyoneCanSpendName (0, name, "value2", anyoneAddr, [])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, "value2", baseHeight + 2)
 
     # Send a coin to the P2SH address with name prefix.  This should just
@@ -270,7 +270,7 @@ class NameMultisigTest (NameTestFramework):
     txid = node.sendtoaddress (updAndAnyoneAddr, 2)
     tx = node.getrawtransaction (txid)
     ind = self.rawtxOutputIndex (0, tx, updAndAnyoneAddr)
-    node.generate (1)
+    self.generate (node, 1)
 
     ins = [{"txid": txid, "vout": ind}]
     addr = node.getnewaddress ()
@@ -279,7 +279,7 @@ class NameMultisigTest (NameTestFramework):
     tx = self.setScriptSigOps (tx, 0, [updAndAnyoneScript])
 
     node.sendrawtransaction (tx, 0)
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, "value2", baseHeight + 2)
 
     found = False
@@ -295,11 +295,11 @@ class NameMultisigTest (NameTestFramework):
     # ordinarily; the name prefix of the redeem script should have no effect.
     self.updateAnyoneCanSpendName (0, name, "value3", updAndAnyoneAddr,
                                    [anyoneScript])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, "value3", baseHeight + 5)
     self.updateAnyoneCanSpendName (0, name, "value4", anyoneAddr,
                                    [updAndAnyoneScript])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, "value4", baseHeight + 6)
 
   def run_test (self):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -38,12 +38,12 @@ class NameImmatureInputsTest (NameTestFramework):
     new = self.nodes[0].name_new ("a")
     assert_raises_rpc_error (-25, '', self.firstupdateName,
                              0, "a", new, "value")
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     first = self.firstupdateName (0, "a", new, "value")
-    self.nodes[0].generate (11)
+    self.generate (self.nodes[0], 11)
     assert_raises_rpc_error (-4, 'name never existed',
                              self.nodes[0].name_show, "a")
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "a", "value", 30, False)
 
     # Next, we want to make sure that things still work fine even if we relay
@@ -71,12 +71,12 @@ class NameImmatureInputsTest (NameTestFramework):
 
     assert_equal (set ([new[0], first]), set (self.nodes[0].getrawmempool ()))
     self.nodes[0].getblocktemplate ({'rules': ['segwit']})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     assert_equal ([first], self.nodes[0].getrawmempool ())
-    self.nodes[0].generate (11)
+    self.generate (self.nodes[0], 11)
     assert_raises_rpc_error (-4, 'name never existed',
                              self.nodes[0].name_show, "b")
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "b", "value", 30, False)
 
     # It should be possible to use unconfirmed *currency* outputs in a name
@@ -85,7 +85,7 @@ class NameImmatureInputsTest (NameTestFramework):
 
     newC = self.nodes[0].name_new ("c")
     newD = self.nodes[0].name_new ("d")
-    self.nodes[0].generate (12)
+    self.generate (self.nodes[0], 12)
 
     balance = self.nodes[0].getbalance ()
     self.nodes[0].sendtoaddress (addr, balance, None, None, True)
@@ -93,7 +93,7 @@ class NameImmatureInputsTest (NameTestFramework):
     firstC = self.firstupdateName (0, "c", newC, "value")
     firstD = self.firstupdateName (0, "d", newD, "value")
     assert self.dependsOn (0, firstD, firstC)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "c", "value", 30, False)
     self.checkName (0, "d", "value", 30, False)
 
@@ -101,7 +101,7 @@ class NameImmatureInputsTest (NameTestFramework):
     updC = self.nodes[0].name_update ("c", "new value")
     updD = self.nodes[0].name_update ("d", "new value")
     assert self.dependsOn (0, updD, updC)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "c", "new value", 30, False)
     self.checkName (0, "d", "new value", 30, False)
 

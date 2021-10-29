@@ -23,11 +23,11 @@ class NameRegistrationTest (NameTestFramework):
     """
 
     addr = self.nodes[1].getnewaddress ()
-    self.nodes[0].generatetoaddress (n, addr)
+    self.generatetoaddress (self.nodes[0], n, addr)
 
   def run_test (self):
     node = self.nodes[0]
-    node.generate (50)
+    self.generate (node, 50)
     self.generateToOther (150)
 
     # Perform name_new's.  Check for too long names exception.
@@ -154,7 +154,7 @@ class NameRegistrationTest (NameTestFramework):
     data = self.checkName (0, "test-name", "sent", 30, False)
     assert_equal (data['address'], addrOther)
     self.nodes[1].name_update ("test-name", "updated")
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     self.sync_blocks ()
     data = self.checkName (1, "test-name", "updated", 30, False)
     self.checkNameHistory (0, "test-name",

@@ -2994,16 +2994,17 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                     best_block = &inv.hash;
                 }
             } else if (inv.IsGenTxMsg()) {
+                if (reject_tx_invs) {
+                    LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol, disconnecting peer=%d\n", inv.hash.ToString(), pfrom.GetId());
+                    pfrom.fDisconnect = true;
+                    return;
+                }
                 const GenTxid gtxid = ToGenTxid(inv);
                 const bool fAlreadyHave = AlreadyHaveTx(gtxid);
                 LogPrint(BCLog::NET, "got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom.GetId());
 
                 pfrom.AddKnownTx(inv.hash);
-                if (reject_tx_invs) {
-                    LogPrint(BCLog::NET, "transaction (%s) inv sent in violation of protocol, disconnecting peer=%d\n", inv.hash.ToString(), pfrom.GetId());
-                    pfrom.fDisconnect = true;
-                    return;
-                } else if (!fAlreadyHave && !m_chainman.ActiveChainstate().IsInitialBlockDownload()) {
+                if (!fAlreadyHave && !m_chainman.ActiveChainstate().IsInitialBlockDownload()) {
                     AddTxAnnouncement(pfrom, gtxid, current_time);
                 }
             } else {
@@ -3298,12 +3299,12 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         // already; and an adversary can already relay us old transactions
         // (older than our recency filter) if trying to DoS us, without any need
         // for witness malleation.
-        if (AlreadyHaveTx(GenTxid(/* is_wtxid=*/true, wtxid))) {
+        if (AlreadyHaveTx(GenTxid::Wtxid(wtxid))) {
             if (pfrom.HasPermission(NetPermissionFlags::ForceRelay)) {
                 // Always relay transactions received from peers with forcerelay
                 // permission, even if they were already in the mempool, allowing
                 // the node to function as a gateway for nodes hidden behind it.
-                if (!m_mempool.exists(tx.GetHash())) {
+                if (!m_mempool.exists(GenTxid::Txid(tx.GetHash()))) {
                     LogPrintf("Not relaying non-mempool transaction %s from forcerelay peer=%d\n", tx.GetHash().ToString(), pfrom.GetId());
                 } else {
                     LogPrintf("Force relaying tx %s from peer=%d\n", tx.GetHash().ToString(), pfrom.GetId());
@@ -3368,7 +3369,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                     // wtxidrelay peers.
                     // Eventually we should replace this with an improved
                     // protocol for getting all unconfirmed parents.
-                    const GenTxid gtxid{/* is_wtxid=*/false, parent_txid};
+                    const auto gtxid{GenTxid::Txid(parent_txid)};
                     pfrom.AddKnownTx(parent_txid);
                     if (!AlreadyHaveTx(gtxid)) AddTxAnnouncement(pfrom, gtxid, current_time);
                 }
@@ -4368,8 +4369,11 @@ void PeerManagerImpl::CheckForStaleTipAndEvictPeers()
 
 void PeerManagerImpl::MaybeSendPing(CNode& node_to, Peer& peer, std::chrono::microseconds now)
 {
-    if (m_connman.ShouldRunInactivityChecks(node_to) && peer.m_ping_nonce_sent &&
+    if (m_connman.ShouldRunInactivityChecks(node_to, std::chrono::duration_cast<std::chrono::seconds>(now).count()) &&
+        peer.m_ping_nonce_sent &&
         now > peer.m_ping_start.load() + std::chrono::seconds{TIMEOUT_INTERVAL}) {
+        // The ping timeout is using mocktime. To disable the check during
+        // testing, increase -peertimeout.
         LogPrint(BCLog::NET, "ping timeout: %fs peer=%d\n", 0.000001 * count_microseconds(now - peer.m_ping_start.load()), peer.m_id);
         node_to.fDisconnect = true;
         return;

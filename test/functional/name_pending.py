@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2019 Daniel Kraft
+# Copyright (c) 2015-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,13 +18,13 @@ class NamePendingTest (NameTestFramework):
 
     # Register a name that can then be update'd in the mempool.
     newData = node.name_new ("a")
-    node.generate (10)
+    self.generate (node, 10)
     self.firstupdateName (0, "a", newData, "old-value-a")
-    node.generate (10)
+    self.generate (node, 10)
 
     # Start a new name registration so we can first_update it.
     newData = node.name_new ("b")
-    node.generate (15)
+    self.generate (node, 15)
 
     # Perform the unconfirmed updates.  Include a currency transaction
     # and a name_new to check that those are not shown.
@@ -73,7 +73,7 @@ class NamePendingTest (NameTestFramework):
     assert 'vout' in pending
 
     # Mine a block and check that all mempool is cleared.
-    node.generate (1)
+    self.generate (node, 1)
     assert_equal (node.getrawmempool (), [])
     assert_equal (node.name_pending (), [])
 

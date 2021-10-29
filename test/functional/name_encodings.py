@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -112,7 +112,7 @@ class NameEncodingsTest (NameTestFramework):
     assert_equal (data[0]['value'], value)
     assert_equal (data[0]['txid'], txid)
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
     data = self.node.name_show (name)
     assert_equal (data['name_encoding'], self.nameEncoding)
     assert_equal (data['name'], name)
@@ -134,9 +134,9 @@ class NameEncodingsTest (NameTestFramework):
 
     name = self.uniqueName (baseName, encoding)
     new = self.node.name_new (name)
-    self.node.generate (1)
+    self.generate (self.node, 1)
     txid = self.firstupdateName (0, name, new, self.value)
-    self.node.generate (11)
+    self.generate (self.node, 11)
     self.verifyAndMinePendingUpdate (name, self.value, txid)
 
     txid = self.node.name_update (name, self.value)
@@ -152,14 +152,14 @@ class NameEncodingsTest (NameTestFramework):
       "op": "name_new",
       "name": name,
     })
-    self.node.generate (1)
+    self.generate (self.node, 1)
     first = self.nameRawTx (new, {
       "op": "name_firstupdate",
       "name": name,
       "value": self.value,
       "rand": new['rand'],
     })
-    self.node.generate (11)
+    self.generate (self.node, 11)
     self.verifyAndMinePendingUpdate (name, self.value, first['txid'])
 
     upd = self.nameRawTx (first, {
@@ -179,9 +179,9 @@ class NameEncodingsTest (NameTestFramework):
 
     name = self.uniqueName (self.name, encoding)
     new = self.node.name_new (name)
-    self.node.generate (1)
+    self.generate (self.node, 1)
     txid = self.firstupdateName (0, name, new, value)
-    self.node.generate (11)
+    self.generate (self.node, 11)
     self.verifyAndMinePendingUpdate (name, value, txid)
 
     txid = self.node.name_update (name, value)
@@ -195,14 +195,14 @@ class NameEncodingsTest (NameTestFramework):
       "op": "name_new",
       "name": name,
     })
-    self.node.generate (1)
+    self.generate (self.node, 1)
     first = self.nameRawTx (new, {
       "op": "name_firstupdate",
       "name": name,
       "value": value,
       "rand": new['rand'],
     })
-    self.node.generate (11)
+    self.generate (self.node, 11)
     self.verifyAndMinePendingUpdate (name, value, first['txid'])
 
     upd = self.nameRawTx (first, {
@@ -296,7 +296,7 @@ class NameEncodingsTest (NameTestFramework):
 
   def run_test (self):
     self.node = self.nodes[0]
-    self.node.generate (110)
+    self.generate (self.node, 110)
 
     # Note:  The tests here are mainly important to verify that strings
     # are encoded/decoded at all.  The different possibilities for valid
@@ -353,11 +353,11 @@ class NameEncodingsTest (NameTestFramework):
     self.setEncodings (nameEnc="hex", valueEnc="hex")
     newAscii = self.node.name_new (strToHex (nameAscii))
     newHex = self.node.name_new (nameHex)
-    self.node.generate (10)
+    self.generate (self.node, 10)
     txidAscii = self.firstupdateName (0, strToHex (nameAscii), newAscii,
                                       valueHex)
     txidHex = self.firstupdateName (0, nameHex, newHex, strToHex (valueAscii))
-    self.node.generate (5)
+    self.generate (self.node, 5)
 
     # Test name_show with ASCII encoding.
     self.setEncodings (nameEnc="ascii", valueEnc="ascii")
@@ -424,9 +424,9 @@ class NameEncodingsTest (NameTestFramework):
     updMsg = msgFmt % name
 
     new = self.node.name_new (name)
-    self.node.generate (12)
+    self.generate (self.node, 12)
     txid = self.firstupdateName (0, name, new, self.value)
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     data = self.node.gettransaction (txid)
     assert_equal (len (data['details']), 1)
@@ -572,7 +572,7 @@ class NameEncodingsTest (NameTestFramework):
     assert_raises_rpc_error (-1000, "Name/value is invalid",
                              self.node.name_new, nameUtf8)
     newUtf8 = self.node.name_new (nameUtf8, {"nameEncoding": "utf8"})
-    self.node.generate (12)
+    self.generate (self.node, 12)
 
     # firstupdate the names and verify expected behaviour.
     assert_raises_rpc_error (-1000, "Name/value is invalid",
@@ -585,7 +585,7 @@ class NameEncodingsTest (NameTestFramework):
                              0, nameUtf8, newUtf8, valueAscii)
     self.firstupdateName (0, nameUtf8, newUtf8, valueAscii,
                           {"nameEncoding": "utf8"})
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     # update the names and verify also that.
     assert_raises_rpc_error (-1000, "Name/value is invalid",
@@ -594,7 +594,7 @@ class NameEncodingsTest (NameTestFramework):
     assert_raises_rpc_error (-1000, "Name/value is invalid",
                              self.node.name_update, nameUtf8, valueAscii)
     self.node.name_update (nameUtf8, valueAscii, {"nameEncoding": "utf8"})
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     # Verify using name_show just to make sure all worked as expected and did
     # not silently just do something wrong.  For this, we change the configured

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,11 +28,11 @@ class NameUtxoTest (NameTestFramework):
 
     newExpired = node.name_new ("d/expired")
     newActive = node.name_new ("d/active")
-    node.generate (10)
+    self.generate (node, 10)
     self.firstupdateName (0, "d/expired", newExpired, "{}")
-    node.generate (20)
+    self.generate (node, 20)
     self.firstupdateName (0, "d/active", newActive, "{}")
-    node.generate (20)
+    self.generate (node, 20)
 
     # The never used name_new should be in the UTXO set.
     txo = node.gettxout (txidStale, voutStale)

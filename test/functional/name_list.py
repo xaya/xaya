@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,9 +18,9 @@ class NameListTest (NameTestFramework):
     assert_equal (self.nodes[1].name_list (), [])
 
     newA = self.nodes[0].name_new ("name")
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
     self.firstupdateName (0, "name", newA, "value")
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
 
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
@@ -36,7 +36,7 @@ class NameListTest (NameTestFramework):
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "name", "value", False, True)
 
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "name", "enjoy", False, False)
@@ -49,7 +49,7 @@ class NameListTest (NameTestFramework):
     # Updating the name in the new wallet shouldn't change the
     # old wallet's name_list entry.
     self.nodes[1].name_update ("name", "new value")
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     arr = self.nodes[1].name_list ("name")
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "name", "new value", False, True)
@@ -62,7 +62,7 @@ class NameListTest (NameTestFramework):
     # Transfer it back and see that it updates in wallet A.
     addrA = self.nodes[0].getnewaddress ()
     self.nodes[1].name_update ("name", "sent", {"destAddress": addrA})
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
 
     self.sync_blocks ()
     arr = self.nodes[0].name_list ()
@@ -70,7 +70,7 @@ class NameListTest (NameTestFramework):
     self.checkNameStatus (arr[0], "name", "sent", False, True)
 
     # Let the name expire.
-    self.nodes[0].generate (40)
+    self.generate (self.nodes[0], 40)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "name", "sent", True, True)

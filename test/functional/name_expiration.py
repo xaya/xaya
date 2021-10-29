@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -32,7 +32,7 @@ class NameExpirationTest (NameTestFramework):
 
   def run_test (self):
     self.node = self.nodes[0]
-    self.node.generate (200)
+    self.generate (self.node, 200)
 
     # Start the registration of two names which will be used.  name-long
     # will expire and be reregistered on a "long chain".  name-short will
@@ -45,14 +45,14 @@ class NameExpirationTest (NameTestFramework):
     newLong = self.node.name_new ("name-long")
     newLong2 = self.node.name_new ("name-long")
     newShort = self.node.name_new ("name-short")
-    self.node.generate (12)
+    self.generate (self.node, 12)
 
     # Register the names.  name-long should expire one block before
     # name-short, so that the situation described above works out.
     updLong = self.firstupdateName (0, "name-long", newLong, "value")
-    self.node.generate (2)
+    self.generate (self.node, 2)
     updShort = self.firstupdateName (0, "name-short", newShort, "value")
-    self.node.generate (27)
+    self.generate (self.node, 27)
     self.checkName (0, "name-long", "value", 2, False)
     self.checkName (0, "name-short", "value", 4, False)
 
@@ -63,19 +63,19 @@ class NameExpirationTest (NameTestFramework):
     # Create the "long" chain.  Let name-short expire there but renew
     # name-long instead.
     self.node.name_update ("name-long", "renewed")
-    undoBlk = self.node.generate (5)[0]
+    undoBlk = self.generate (self.node, 5)[0]
     self.checkName (0, "name-long", "renewed", 26, False)
     self.checkName (0, "name-short", "value", -1, True)
     self.checkNameHistory (0, "name-long", ["value", "renewed"])
     self.checkNameHistory (0, "name-short", ["value"])
     self.checkUTXO ("name-long", True)
     self.checkUTXO ("name-short", False)
-    self.node.generate (10)
+    self.generate (self.node, 10)
     self.node.invalidateblock (undoBlk)
 
     # Let name-long expire on the "short" chain.
     assert_equal (self.node.getrawmempool (), [])
-    self.node.generate (2)[0]
+    self.generate (self.node, 2)
     self.checkName (0, "name-long", "value", 0, True)
     self.checkName (0, "name-short", "value", 2, False)
     self.checkUTXO ("name-long", False)
@@ -86,7 +86,7 @@ class NameExpirationTest (NameTestFramework):
     # it will be "expires_in == 1" already!
     updLong2 = self.firstupdateName (0, "name-long", newLong2, "value 2")
     renewShort = self.node.name_update ("name-short", "renewed")
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkName (0, "name-long", "value 2", 30, False)
     self.checkName (0, "name-short", "renewed", 30, False)
     self.checkNameHistory (0, "name-long", ["value", "value 2"])
@@ -122,18 +122,18 @@ class NameExpirationTest (NameTestFramework):
     newUnexpired = self.node.name_new ("name-unexpired")
     newExpired = self.node.name_new ("name-expired")
     newSnatch = self.node.name_new ("name-unexpired")
-    self.node.generate (12)
+    self.generate (self.node, 12)
 
     self.firstupdateName (0, "name-unexpired", newUnexpired, "value")
-    self.node.generate (2)
+    self.generate (self.node, 2)
     self.firstupdateName (0, "name-expired", newExpired, "value")
-    self.node.generate (27)
+    self.generate (self.node, 27)
     self.checkName (0, "name-unexpired", "value", 2, False)
     self.checkName (0, "name-expired", "value", 4, False)
 
     # Build the "long chain".
     self.node.name_update ("name-unexpired", "renewed")
-    undoBlk = self.node.generate (20)[0]
+    undoBlk = self.generate (self.node, 20)[0]
     self.checkName (0, "name-unexpired", "renewed", 11, False)
     self.checkName (0, "name-expired", "value", -16, True)
     self.node.invalidateblock (undoBlk)
@@ -142,7 +142,7 @@ class NameExpirationTest (NameTestFramework):
     # contain the renewal transaction from before (it should not, because the
     # reorg is too long to keep transactions in the mempool).
     assert_equal (self.node.getrawmempool (), [])
-    self.node.generate (2)[0]
+    self.generate (self.node, 2)
     self.checkName (0, "name-unexpired", "value", 0, True)
     self.checkName (0, "name-expired", "value", 2, False)
 

@@ -16,29 +16,29 @@ class NameNovalueTest(NameTestFramework):
 
     def run_test(self):
         node = self.nodes[0]
-        node.generate(200)
+        self.generate (node, 200)
 
         new_name = node.name_new("d/name")
-        node.generate(12)
+        self.generate (node, 12)
         self.log.info("Began registration of name.")
 
         # use node.name_firstupdate - we're not testing the framework
         node.name_firstupdate ("d/name", new_name[1], new_name[0])
-        node.generate(1)
+        self.generate (node, 1)
         self.log.info("Name registered; no value provided.")
 
         self.checkName(0, "d/name", "", 30, False)
         self.log.info("Value equals empty string.")
 
         node.name_update("d/name", "1")
-        node.generate(1)
+        self.generate (node, 1)
         self.log.info('Value changed to "1"; change is in chain.')
 
         self.checkName(0, "d/name", "1", 30, False)
         self.log.info('Value equals "1".')
 
         node.name_update("d/name")
-        node.generate(1)
+        self.generate (node, 1)
         self.log.info("Updated; no value specified.")
 
         self.checkName(0, "d/name", "1", 30, False)
@@ -47,7 +47,7 @@ class NameNovalueTest(NameTestFramework):
         node.name_update("d/name", "2")
         node.name_update("d/name")
         node.name_update("d/name", "3")
-        node.generate(1)
+        self.generate (node, 1)
         self.log.info('Stack of 3 registrations performed.')
 
         history = node.name_history("d/name")

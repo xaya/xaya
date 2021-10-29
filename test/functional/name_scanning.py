@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,7 @@ class NameScanningTest (NameTestFramework):
     self.node = self.nodes[0]
 
     # Mine a block so that we're no longer in initial download.
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     # Initially, all should be empty.
     assert_equal (self.node.name_scan (), [])
@@ -30,15 +30,15 @@ class NameScanningTest (NameTestFramework):
     newAA = self.node.name_new ("d/aa")
     newB = self.node.name_new ("d/b")
     newC = self.node.name_new ("d/c")
-    self.node.generate (15)
+    self.generate (self.node, 15)
 
     self.firstupdateName (0, "d/a", newA, "wrong value")
     self.firstupdateName (0, "d/aa", newAA, "value aa")
     self.firstupdateName (0, "d/b", newB, "value b")
-    self.node.generate (15)
+    self.generate (self.node, 15)
     self.firstupdateName (0, "d/c", newC, "value c")
     self.node.name_update ("d/a", "value a")
-    self.node.generate (20)
+    self.generate (self.node, 20)
 
     # Check the expected name_scan data values.
     scan = self.node.name_scan ()
@@ -116,9 +116,9 @@ class NameScanningTest (NameTestFramework):
     self.restart_node (0, extra_args=["-nameencoding=hex"])
     hexName = "642f00ff"
     new = self.node.name_new (hexName)
-    self.node.generate (10)
+    self.generate (self.node, 10)
     self.firstupdateName (0, hexName, new, "{}")
-    self.node.generate (5)
+    self.generate (self.node, 5)
     fullHexList = ['642f61', '642f62', '642f63', hexName, '642f6161']
     self.checkList (self.node.name_scan (), fullHexList)
     self.checkList (self.node.name_scan ("", 100, {"regexp": "a"}),

@@ -13,7 +13,7 @@ class NameTransactionQueueTest(NameTestFramework):
 
     def run_test(self):
         node = self.nodes[0] # alias
-        node.generate(200) # get out of IBD
+        self.generate (node, 200) # get out of IBD
 
         self.log.info("Begin registering a name.")
         # cribbed from name_immature_inputs.py by Daniel Kraft
@@ -23,7 +23,7 @@ class NameTransactionQueueTest(NameTestFramework):
         nameInd = self.rawtxOutputIndex(0, newTx, addr)
 
         self.log.info("Mine that transaction.")
-        node.generate(1)
+        self.generate (node, 1)
 
         self.log.info("Create a NAME_FIRSTUPDATE with sequence=12...")
         nameAmount = Decimal('0.01')
@@ -54,19 +54,19 @@ class NameTransactionQueueTest(NameTestFramework):
         assert txid in node.listqueuedtransactions()
 
         self.log.info("Wait 11 blocks...")
-        node.generate(11)
+        self.generate (node, 11)
 
         self.log.info("Make sure it hasn't been broadcast yet.")
         assert txid in node.listqueuedtransactions()
 
         self.log.info("Wait one block more.")
-        node.generate(1)
+        self.generate (node, 1)
 
         self.log.info("Make sure it's been dequeued.")
         assert txid not in node.listqueuedtransactions()
 
         self.log.info("Wait one block for the transaction to be confirmed.")
-        node.generate(1)
+        self.generate (node, 1)
 
         self.log.info("Check name is registered.")
         self.checkName(0, "d/name", "value", 30, False)

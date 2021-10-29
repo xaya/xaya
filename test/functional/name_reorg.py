@@ -17,7 +17,7 @@ class NameReorgTest (NameTestFramework):
 
   def run_test (self):
     node = self.nodes[0]
-    node.generate (200)
+    self.generate (node, 200)
 
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
@@ -25,14 +25,14 @@ class NameReorgTest (NameTestFramework):
     newBshort = node.name_new ("b")
     newBlong = node.name_new ("b")
     newC = node.name_new ("c")
-    node.generate (10)
+    self.generate (node, 10)
     self.firstupdateName (0, "a", newA, "initial value")
-    node.generate (5)
+    self.generate (node, 5)
 
     # Build a long chain that registers "b" (to clash with
     # the same registration on the short chain).
     self.firstupdateName (0, "b", newBlong, "b long")
-    undoBlk = node.generate (20)[0]
+    undoBlk = self.generate (node, 20)[0]
     self.checkName (0, "a", "initial value", None, False)
     self.checkName (0, "b", "b long", None, False)
     self.checkNameHistory (0, "a", ["initial value"])
@@ -41,11 +41,11 @@ class NameReorgTest (NameTestFramework):
 
     # Build a short chain with an update to "a" and registrations.
     assert_equal (node.getrawmempool (), [])
-    node.generate (1)
+    self.generate (node, 1)
     txidA = node.name_update ("a", "changed value")
     txidB = self.firstupdateName (0, "b", newBshort, "b short")
     txidC = self.firstupdateName (0, "c", newC, "c registered")
-    node.generate (1)
+    self.generate (node, 1)
     self.checkName (0, "a", "changed value", None, False)
     self.checkName (0, "b", "b short", None, False)
     self.checkName (0, "c", "c registered", None, False)
@@ -65,7 +65,7 @@ class NameReorgTest (NameTestFramework):
     # Mine another block.  This should at least perform the
     # non-conflicting transactions.
     assert_equal (set (node.getrawmempool ()), set ([txidA, txidC]))
-    node.generate (1)
+    self.generate (node, 1)
     self.checkName (0, "a", "changed value", None, False)
     self.checkName (0, "b", "b long", None, False)
     self.checkName (0, "c", "c registered", None, False)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 Daniel Kraft
+# Copyright (c) 2019-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,19 +21,19 @@ class NameMultiUpdateTest (NameTestFramework):
 
   def run_test (self):
     self.node = self.nodes[0]
-    self.node.generate (110)
+    self.generate (self.node, 110)
 
     # Register a test name.
     name = "d/test"
     new = self.node.name_new (name)
-    self.node.generate (12)
+    self.generate (self.node, 12)
     self.firstupdateName (0, name, new, "first")
 
     # Building an update on top of a pending registration.
     self.node.name_update (name, "second")
 
     # Finalise the registration.
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkName (0, name, "second", None, False)
     assert_equal (self.node.name_pending (), [])
 
@@ -49,7 +49,7 @@ class NameMultiUpdateTest (NameTestFramework):
     assert_equal (pendingNameVal, [(name, "third"), (name, "fourth")])
 
     # Mine transactions and verify the effect.
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkName (0, name, "fourth", None, False)
     values = [h["value"] for h in self.node.name_history (name)]
     assert_equal (values, ["first", "second", "third", "fourth"])

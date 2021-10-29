@@ -22,19 +22,19 @@ class NamePsbtTest (NameTestFramework):
     newOp = {"op": "name_new", "name": "d/my-name"}
     newAddr = self.nodes[0].getnewaddress ()
     newOutp, newData = self.rawNameOp (0, None, newAddr, newOp)
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
 
     firstOp = {"op": "name_firstupdate", "rand": newData["rand"],
                "name": "d/my-name", "value": "first value"}
     firstAddr = self.nodes[0].getnewaddress ()
     firstOutp, firstData = self.rawNameOp (0, newOutp, firstAddr, firstOp)
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
     self.checkName (0, "d/my-name", "first value", None, False)
 
     updOp = {"op": "name_update", "name": "d/my-name", "value": "new value"}
     updAddr = self.nodes[0].getnewaddress ()
     _, updData = self.rawNameOp (0, firstOutp, updAddr, updOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "d/my-name", "new value", None, False)
 
     # Decode the name_new.
