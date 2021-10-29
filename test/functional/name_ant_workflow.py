@@ -17,12 +17,12 @@ class NameAntWorkflowTest (NameTestFramework):
     self.setup_name_test ([[]] * 2)
 
   def run_test (self):
-    self.nodes[1].generate (10)
+    self.generate (self.nodes[1], 10)
     self.sync_blocks ()
-    self.nodes[0].generate (150)
+    self.generate (self.nodes[0], 150)
 
     self.nodes[0].name_register ("x/name", val ("value"))
-    self.nodes[0].generate (5)
+    self.generate (self.nodes[0], 5)
     self.sync_blocks ()
     self.checkName (0, "x/name", val ("value"))
 
@@ -67,7 +67,7 @@ class NameAntWorkflowTest (NameTestFramework):
     tx = self.nodes[1].finalizepsbt (combined)
     assert_equal (tx["complete"], True)
     self.nodes[0].sendrawtransaction (tx["hex"])
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     data = self.checkName (0, "x/name", val ("updated"))
     assert_equal (data["address"], addrNm)
 

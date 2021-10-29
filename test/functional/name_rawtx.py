@@ -18,7 +18,7 @@ class NameRawTxTest (NameTestFramework):
   def run_test (self):
     # Decode name_register.
     reg = self.nodes[0].name_register ("x/my-name", val ("initial value"))
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     data = self.decodeNameTx (0, reg)
     assert_equal (data['op'], "name_register")
     assert_equal (data['name'], "x/my-name")
@@ -26,7 +26,7 @@ class NameRawTxTest (NameTestFramework):
 
     # Decode name_update.
     upd = self.nodes[0].name_update ("x/my-name", val ("new value"))
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     data = self.decodeNameTx (0, upd)
     assert_equal (data['op'], "name_update")
     assert_equal (data['name'], "x/my-name")
@@ -38,14 +38,14 @@ class NameRawTxTest (NameTestFramework):
              "value": val ("first value")}
     regAddr = self.nodes[0].getnewaddress ()
     regOutp, _ = self.rawNameOp (0, None, regAddr, regOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "x/raw-test-name", val ("first value"))
 
     updOp = {"op": "name_update", "name": "x/raw-test-name",
              "value": val ("new value")}
     updAddr = self.nodes[0].getnewaddress ()
     self.rawNameOp (0, regOutp, updAddr, updOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "x/raw-test-name", val ("new value"))
 
     # Verify range check of vout in namerawtransaction.
@@ -65,7 +65,7 @@ class NameRawTxTest (NameTestFramework):
     fee = Decimal ("0.01")
 
     self.atomicTrade ("x/my-name", val ("enjoy"), price, fee, 0, 1)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.sync_blocks ()
 
     data = self.checkName (0, "x/my-name", val ("enjoy"))
@@ -90,7 +90,7 @@ class NameRawTxTest (NameTestFramework):
     # a transaction is invalid), but not a crash.
     self.nodes[0].name_register ("x/a", val ("value a"))
     self.nodes[0].name_register ("x/b", val ("value b"))
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
 
     inA, outA = self.constructUpdateTx (0, "x/a", val ("new value a"))
     inB, outB = self.constructUpdateTx (0, "x/b", val ("new value b"))

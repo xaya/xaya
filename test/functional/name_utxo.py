@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,7 +20,7 @@ class NameUtxoTest (NameTestFramework):
     # Unlike Namecoin which has stale name_new's and expired names,
     # we just need an active name for Xaya.
     node.name_register ("d/active", "{}")
-    node.generate (1)
+    self.generate (node, 1)
 
     # The active name should be there.
     data = node.name_show ("d/active")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2020 The Xaya developers
+# Copyright (c) 2019-2021 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -87,7 +87,7 @@ class GamePendingTest (XayaZmqTest):
     for _, sub in self.games.items ():
       sub.assertNoMessage ()
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_register (self):
     self.log.info ("Registering names...")
@@ -98,7 +98,7 @@ class GamePendingTest (XayaZmqTest):
     _, data = self.games["a"].receive ()
     assertMove (data, txid, "x", 42)
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_notWhenMined (self):
     self.log.info ("Verifying no notification when transactions are mined...")
@@ -108,7 +108,7 @@ class GamePendingTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "z", 100)
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.games["b"].assertNoMessage ()
 
   def _test_update (self):
@@ -120,7 +120,7 @@ class GamePendingTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "x", "foo")
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_sendAndBurn (self):
     self.log.info ("Sending and burning CHI...")
@@ -139,7 +139,7 @@ class GamePendingTest (XayaZmqTest):
     assert_equal (data["out"][addr], 1)
     assert_equal (data["burnt"], 2)
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_multipleGames (self):
     self.log.info ("Testing multiple games in one move...")
@@ -159,7 +159,7 @@ class GamePendingTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "y", 2)
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_duplicateKeys (self):
     self.log.info ("Testing duplicate JSON keys...")
@@ -189,7 +189,7 @@ class GamePendingTest (XayaZmqTest):
     _, data = self.games["b"].receive ()
     assertMove (data, txid, "x", "b2")
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
   def _test_blockDetach (self, ctx):
     self.log.info ("Testing block detach...")
@@ -207,7 +207,7 @@ class GamePendingTest (XayaZmqTest):
     notifier.subscribe ("game-pending-move")
     notifier.subscribe ("game-block-detach")
 
-    self.node.generate (1)
+    self.generate (self.node, 1)
     txid = self.node.name_update ("p/x", json.dumps ({
       "g": {"detach": "detached"}
     }))
@@ -216,7 +216,7 @@ class GamePendingTest (XayaZmqTest):
     assert_equal (topic, "game-pending-move json detach")
     assertMove (data, txid, "x", "detached")
 
-    blk = self.node.generate (1)[0]
+    blk = self.generate (self.node, 1)[0]
     self.node.invalidateblock (blk)
 
     topic, data = notifier.receive ()

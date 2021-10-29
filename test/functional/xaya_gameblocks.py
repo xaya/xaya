@@ -105,7 +105,7 @@ class GameBlocksTest (XayaZmqTest):
 
     addr = self.node.getnewaddress ()
     self.node.sendtoaddress (addr, 1.5)
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     for g in ["a", "b"]:
       _, data = self.games[g].receive ()
@@ -121,7 +121,7 @@ class GameBlocksTest (XayaZmqTest):
 
     txid = self.node.name_register ("p/x", json.dumps ({"g":{"a":42}}))
     self.node.name_register ("p/y", json.dumps ({"g":{"other":False}}))
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -139,7 +139,7 @@ class GameBlocksTest (XayaZmqTest):
     self.log.info ("Verifying block data...")
 
     parent = self.node.getbestblockhash ()
-    blkHash = self.node.generate (1)[0]
+    blkHash = self.generate (self.node, 1)[0]
     data = self.node.getblock (blkHash)
     expected = {
       "block":
@@ -176,7 +176,7 @@ class GameBlocksTest (XayaZmqTest):
         },
     }))
     txidY = self.node.name_update ("p/y", json.dumps ({"g":{"b":6.25}}))
-    blk = self.node.generate (1)[0]
+    blk = self.generate (self.node, 1)[0]
 
     # Get the order of our two transactions in the block, so that we can check
     # that the order in the notification matches it.
@@ -198,7 +198,7 @@ class GameBlocksTest (XayaZmqTest):
     # edge case is also handled correctly.
     id1 = self.node.name_update ("p/x", json.dumps ({"g": {"a": 1, "b": 2}}))
     id2 = self.node.name_update ("p/x", json.dumps ({"g": {"a": 3}}))
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 2)
@@ -244,7 +244,7 @@ class GameBlocksTest (XayaZmqTest):
     # We need to specify the value encoding, since the default ASCII
     # does not allow newlines.
     txid = self.node.name_update ("p/x", mv, {"valueEncoding": "utf8"})
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -263,7 +263,7 @@ class GameBlocksTest (XayaZmqTest):
     self.log.info ("Testing for the bare hash (btxid)...")
     txid = self.node.name_update ("p/x", json.dumps ({"g": {"a": "foo"}}))
     btxid = self.node.getrawtransaction (txid, True)["btxid"]
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -282,7 +282,7 @@ class GameBlocksTest (XayaZmqTest):
     self.log.info ("Testing for spent inputs...")
     txid = self.node.name_update ("p/x", json.dumps ({"g": {"a": "foo"}}))
     txData = self.node.getrawtransaction (txid, True)
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     inputs = []
     for txin in txData["vin"]:
@@ -339,7 +339,7 @@ class GameBlocksTest (XayaZmqTest):
     signed = self.node.signrawtransactionwithwallet (rawtx)
     assert signed["complete"]
     txid = self.node.sendrawtransaction (signed["hex"])
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -395,7 +395,7 @@ class GameBlocksTest (XayaZmqTest):
     signed = self.node.signrawtransactionwithwallet (rawtx["hex"])
     assert signed["complete"]
     txid = self.node.sendrawtransaction (signed["hex"])
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -419,7 +419,7 @@ class GameBlocksTest (XayaZmqTest):
     # Register one of the game names already, but in a way that should
     # not trigger any admin command notifications.
     self.node.name_register ("g/a", json.dumps ({"foo": "bar"}))
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     for g in ["a", "b"]:
       _, data = self.games[g].receive ()
@@ -440,7 +440,7 @@ class GameBlocksTest (XayaZmqTest):
       "cmd": "this game is not tracked",
     }))
     txidMvA = self.node.name_update ("p/x", json.dumps ({"g":{"a":True}}))
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (len (data["moves"]), 1)
@@ -456,7 +456,7 @@ class GameBlocksTest (XayaZmqTest):
     # if a block is constructed directly, though.
     id1 = self.node.name_update ("g/a", json.dumps ({"cmd": "first"}))
     id2 = self.node.name_update ("g/a", json.dumps ({"cmd": "second"}))
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (data["moves"], [])
@@ -491,7 +491,7 @@ class GameBlocksTest (XayaZmqTest):
     # We need to specify the value encoding, since the default ASCII
     # does not allow newlines.
     txid = self.node.name_update ("g/a", cmds, {"valueEncoding": "utf8"})
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()
     assert_equal (data["admin"], [
@@ -518,7 +518,7 @@ class GameBlocksTest (XayaZmqTest):
     attachA = []
     attachB = []
     for i in range (n):
-      blks.extend (self.node.generatetoaddress (1, addr))
+      blks.extend (self.generatetoaddress (self.node, 1, addr))
       topic, data = self.games["a"].receive ()
       assert_equal (topic, "game-block-attach json a")
       if len (attachA) > 0:

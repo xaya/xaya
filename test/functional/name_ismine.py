@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,7 +33,7 @@ class NameIsMineTest (NameTestFramework):
 
   def run_test (self):
     self.node = self.nodes[1]
-    self.node.generate (110)
+    self.generate (self.node, 110)
 
     # Register two names.  One of them is then sent to an address not owned
     # by the node and one is updated into a pending operation.  That then
@@ -41,10 +41,10 @@ class NameIsMineTest (NameTestFramework):
     # circumstances.
     self.node.name_register ("d/a", val ("value"))
     self.node.name_register ("d/b", val ("value"))
-    self.node.generate (1)
+    self.generate (self.node, 1)
     otherAddr = self.nodes[0].getnewaddress ()
     self.node.name_update ("d/b", val ("new value"), {"destAddress": otherAddr})
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.node.name_update ("d/a", val ("new value"))
 
     # name_show

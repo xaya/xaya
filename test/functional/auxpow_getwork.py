@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,7 +33,7 @@ class AuxpowGetworkTest (BitcoinTestFramework):
   def run_test (self):
     # Activate segwit if requested.
     if self.options.segwit:
-      self.nodes[0].generate (500)
+      self.generate (self.nodes[0], 500)
 
     # Test with getwork and creatework/submitwork.
     self.test_getwork ()

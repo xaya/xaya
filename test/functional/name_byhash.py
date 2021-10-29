@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 Daniel Kraft
+# Copyright (c) 2019-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@ class NameByHashTest (NameTestFramework):
 
   def run_test (self):
     node = self.nodes[0]
-    node.generate (200)
+    self.generate (node, 200)
 
     name = "x/testname"
     nameHex = name.encode ("ascii").hex ()
@@ -31,7 +31,7 @@ class NameByHashTest (NameTestFramework):
 
     # Start by setting up a test name.
     node.name_register (name, val ("value"))
-    node.generate (1)
+    self.generate (node, 1)
 
     # Check looking up "direct".
     res = node.name_show (name, {"byHash": "direct"})

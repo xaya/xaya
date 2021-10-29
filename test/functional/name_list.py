@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,7 +18,7 @@ class NameListTest (NameTestFramework):
     assert_equal (self.nodes[1].name_list (), [])
 
     self.nodes[0].name_register ("x/name", val ("value"))
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
 
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
@@ -34,7 +34,7 @@ class NameListTest (NameTestFramework):
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "x/name", val ("value"), True)
 
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     arr = self.nodes[0].name_list ()
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "x/name", val ("enjoy"), False)
@@ -47,7 +47,7 @@ class NameListTest (NameTestFramework):
     # Updating the name in the new wallet shouldn't change the
     # old wallet's name_list entry.
     self.nodes[1].name_update ("x/name", val ("new value"))
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     arr = self.nodes[1].name_list ("x/name")
     assert_equal (len (arr), 1)
     self.checkNameStatus (arr[0], "x/name", val ("new value"), True)
@@ -60,7 +60,7 @@ class NameListTest (NameTestFramework):
     # Transfer it back and see that it updates in wallet A.
     addrA = self.nodes[0].getnewaddress ()
     self.nodes[1].name_update ("x/name", val ("sent"), {"destAddress": addrA})
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
 
     self.sync_blocks ()
     arr = self.nodes[0].name_list ()

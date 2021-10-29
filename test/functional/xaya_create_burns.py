@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2020 The Xaya developers
+# Copyright (c) 2019-2021 The Xaya developers
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """RPC test for the "burn" option of name operations."""
@@ -48,7 +48,7 @@ class XayaCreateBurnsTest (NameTestFramework):
     burn = {"foobar": 1, "baz baz baz": 2}
     txid = self.nodes[0].name_register ("x/testname", val ("value"),
                                         {"burn": burn})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.verifyTx (txid, burn)
 
     # Test different variations (numbers of burns) with name_update.
@@ -56,14 +56,14 @@ class XayaCreateBurnsTest (NameTestFramework):
       burn = {"foo %d" % i: 42 + i for i in range (n)}
       txid = self.nodes[0].name_update ("x/testname", val ("value"),
                                        {"burn": burn})
-      self.nodes[0].generate (1)
+      self.generate (self.nodes[0], 1)
       self.verifyTx (txid, burn)
 
     # Test maximum length.
     burn = {"a" * MAX_DATA_LEN: 1, "b" * MAX_DATA_LEN: 2}
     txid = self.nodes[0].name_update ("x/testname", val ("value"),
                                      {"burn": burn})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.verifyTx (txid, burn)
 
     # Verify the range check for amount and the data length verification.
@@ -95,7 +95,7 @@ class XayaCreateBurnsTest (NameTestFramework):
     burn = {"some burn data": balance - keep}
     txid = self.nodes[0].name_update ("x/testname", val ("value"),
                                       {"burn": burn})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.verifyTx (txid, burn)
 
 

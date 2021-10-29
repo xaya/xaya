@@ -128,7 +128,7 @@ class NameSegwitTest (NameTestFramework):
     name = "d/test"
     value = "{}"
     self.node.name_register (name, value, {"destAddress": addr})
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkNameValueAddr (name, value, addr)
 
     # Before segwit activation, the script should behave as anyone-can-spend.
@@ -138,7 +138,7 @@ class NameSegwitTest (NameTestFramework):
     assert_raises_rpc_error (-26, 'Script failed an OP_EQUALVERIFY operation',
                              self.tryUpdateSegwitName,
                              name, val ("wrong value"), addr)
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkNameValueAddr (name, value, addr)
 
     # But directly in a block, the update should work with a dummy witness.
@@ -148,9 +148,9 @@ class NameSegwitTest (NameTestFramework):
     self.checkNameValueAddr (name, val ("stolen"), addr)
 
     # Activate segwit.  Restore original value for name.
-    self.node.generate (100)
+    self.generate (self.node, 100)
     self.node.name_update (name, value, {"destAddress": addr})
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkNameValueAddr (name, value, addr)
 
     # Verify that now trying to update the name without a proper signature
@@ -167,10 +167,10 @@ class NameSegwitTest (NameTestFramework):
     # should work fine.
     addrP2SH = self.node.getnewaddress ("test", "p2sh-segwit")
     self.node.name_update (name, val ("value 2"), {"destAddress": addrP2SH})
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkNameValueAddr (name, val ("value 2"), addrP2SH)
     self.node.name_update (name, val ("value 3"), {"destAddress": addr})
-    self.node.generate (1)
+    self.generate (self.node, 1)
     self.checkNameValueAddr (name, val ("value 3"), addr)
 
 

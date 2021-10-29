@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -31,7 +31,7 @@ class NameWalletTest (NameTestFramework):
     """
 
     addr = "cmUcickA9iRQpTTnwoXrrxCpb73ggpQiAn"
-    self.nodes[ind].generatetoaddress (n, addr)
+    self.generatetoaddress (self.nodes[ind], n, addr)
 
   def getFee (self, ind, txid, extra=zero):
     """
@@ -118,9 +118,9 @@ class NameWalletTest (NameTestFramework):
     assert_equal (detailsGot, details)
 
   def run_test (self):
-    self.nodes[0].generate (50)
+    self.generate (self.nodes[0], 50)
     self.sync_blocks ()
-    self.nodes[1].generate (50)
+    self.generate (self.nodes[1], 50)
     self.generateToOther (1, 150)
     self.sync_blocks ()
     self.checkBalances ()

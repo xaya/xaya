@@ -47,7 +47,7 @@ class NameSendCoinsTest (NameTestFramework):
     sendCoins = {addr1: 1, addr2: 2}
     txid = self.nodes[0].name_register ("x/testname", val ("value"),
                                         {"sendCoins": sendCoins})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.verifyTx (txid, sendCoins)
 
     # Test different variations (numbers of target addresses) with name_update.
@@ -55,7 +55,7 @@ class NameSendCoinsTest (NameTestFramework):
       sendCoins = {self.nodes[0].getnewaddress (): 42 + i for i in range (n)}
       txid = self.nodes[0].name_update ("x/testname", val ("value"),
                                         {"sendCoins": sendCoins})
-      self.nodes[0].generate (1)
+      self.generate (self.nodes[0], 1)
       self.verifyTx (txid, sendCoins)
 
     # Verify the range check for amount and the address validation.
@@ -87,7 +87,7 @@ class NameSendCoinsTest (NameTestFramework):
     sendCoins = {addr1: balance - keep}
     txid = self.nodes[0].name_update ("x/testname", val ("value"),
                                       {"sendCoins": sendCoins})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.verifyTx (txid, sendCoins)
 
 

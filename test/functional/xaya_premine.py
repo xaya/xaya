@@ -93,7 +93,7 @@ class PremineTest(BitcoinTestFramework):
     assert signed['complete']
     signedTx = signed['hex']
     sendId = node.sendrawtransaction (signedTx, 0)
-    node.generate (1)
+    self.generate (node, 1)
     assert_equal (node.gettransaction (sendId)['confirmations'], 1)
 
 if __name__ == '__main__':

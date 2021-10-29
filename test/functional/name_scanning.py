@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2018 Daniel Kraft
+# Copyright (c) 2014-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,7 @@ class NameScanningTest (NameTestFramework):
     self.node = self.nodes[0]
 
     # Mine a block so that we're no longer in initial download.
-    self.node.generate (1)
+    self.generate (self.node, 1)
 
     # Initially, all should be empty.
     assert_equal (self.node.name_scan (), [])
@@ -29,10 +29,10 @@ class NameScanningTest (NameTestFramework):
     self.node.name_register ("d/a", val ("wrong value"))
     self.node.name_register ("d/aa", val ("value aa"))
     self.node.name_register ("d/b", val ("value b"))
-    self.node.generate (15)
+    self.generate (self.node, 15)
     self.node.name_register ("d/c", val ("value c"))
     self.node.name_update ("d/a", val ("value a"))
-    self.node.generate (20)
+    self.generate (self.node, 20)
 
     # Check the expected name_scan data values.
     scan = self.node.name_scan ()

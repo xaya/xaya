@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020 The Xaya developers
+# Copyright (c) 2020-2021 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -76,10 +76,10 @@ class BtxidTest (BitcoinTestFramework):
     self.nodes[0].createwallet ("")
     self.nodes[1].createwallet ("")
     addr1 = self.nodes[0].getnewaddress ()
-    self.nodes[0].generatetoaddress (20, addr1)
+    self.generatetoaddress (self.nodes[0], 20, addr1)
     self.sync_blocks ()
     addr2 = self.nodes[1].getnewaddress ()
-    self.nodes[1].generatetoaddress (120, addr2)
+    self.generatetoaddress (self.nodes[1], 120, addr2)
     self.sync_blocks ()
 
     # We perform an atomic name trade between our two nodes, and make sure
@@ -87,7 +87,7 @@ class BtxidTest (BitcoinTestFramework):
     # parties sign the transaction.
 
     self.nodes[0].name_register ("p/test", val ("0"))
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     data = self.nodes[0].name_show ("p/test")
     assert_equal (data["address"][0], "c")
     assert not data["address"].startswith ("chirt")

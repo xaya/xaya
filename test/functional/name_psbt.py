@@ -23,14 +23,14 @@ class NamePsbtTest (NameTestFramework):
              "value": val ("first value")}
     regAddr = self.nodes[0].getnewaddress ()
     regOutp, regData = self.rawNameOp (0, None, regAddr, regOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "d/my-name", val ("first value"))
 
     updOp = {"op": "name_update", "name": "d/my-name",
              "value": val ("new value")}
     updAddr = self.nodes[0].getnewaddress ()
     _, updData = self.rawNameOp (0, regOutp, updAddr, updOp)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.checkName (0, "d/my-name", val ("new value"))
 
     # Decode name_register.

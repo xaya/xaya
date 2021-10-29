@@ -17,17 +17,17 @@ class NameReorgTest (NameTestFramework):
 
   def run_test (self):
     node = self.nodes[0]
-    node.generate (200)
+    self.generate (node, 200)
 
     # Register a name prior to forking the chain.  This is used
     # to test unrolling of updates (as opposed to registrations).
     node.name_register ("x/a", val ("initial value"))
-    node.generate (1)
+    self.generate (node, 1)
 
     # Build a long chain that registers "b" (to clash with
     # the same registration on the short chain).
     node.name_register ("x/b", val ("b long"))
-    undoBlk = node.generate (20)[0]
+    undoBlk = self.generate (node, 20)[0]
     self.checkName (0, "x/a", val ("initial value"))
     self.checkName (0, "x/b", val ("b long"))
     self.checkNameHistory (0, "x/a", val (["initial value"]))
@@ -36,11 +36,11 @@ class NameReorgTest (NameTestFramework):
 
     # Build a short chain with an update to "a" and registrations.
     assert_equal (node.getrawmempool (), [])
-    node.generate (1)
+    self.generate (node, 1)
     txidA = node.name_update ("x/a", val ("changed value"))
     txidB = node.name_register ("x/b", val ("b short"))
     txidC = node.name_register ("x/c", val ("c registered"))
-    node.generate (1)
+    self.generate (node, 1)
     self.checkName (0, "x/a", val ("changed value"))
     self.checkName (0, "x/b", val ("b short"))
     self.checkName (0, "x/c", val ("c registered"))
@@ -60,7 +60,7 @@ class NameReorgTest (NameTestFramework):
     # Mine another block.  This should at least perform the
     # non-conflicting transactions.
     assert_equal (set (node.getrawmempool ()), set ([txidA, txidC]))
-    node.generate (1)
+    self.generate (node, 1)
     self.checkName (0, "x/a", val ("changed value"))
     self.checkName (0, "x/b", val ("b long"))
     self.checkName (0, "x/c", val ("c registered"))

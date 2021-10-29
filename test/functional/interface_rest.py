@@ -204,7 +204,7 @@ class RESTTest (BitcoinTestFramework):
         long_uri = '/'.join([f'{txid}-{n_}' for n_ in range(15)])
         self.test_rest_request(f"/getutxos/checkmempool/{long_uri}", http_method='POST', status=200)
 
-        self.nodes[0].generate(1) # generate block to not affect upcoming tests
+        self.generate(self.nodes[0], 1) # generate block to not affect upcoming tests
         self.sync_all()
 
         self.log.info("Test the /block, /blockhashbyheight and /headers URIs")
@@ -321,6 +321,15 @@ class RESTTest (BitcoinTestFramework):
                             if 'coinbase' not in tx['vin'][0]}
         assert_equal(non_coinbase_txs, set(txs))
 
+        # Verify that the non-coinbase tx has "prevout" key set
+        for tx_obj in json_obj["tx"]:
+            for vin in tx_obj["vin"]:
+                if "coinbase" not in vin:
+                    assert "prevout" in vin
+                    assert_equal(vin["prevout"]["generated"], False)
+                else:
+                    assert "prevout" not in vin
+
         # Check the same but without tx details
         json_obj = self.test_rest_request(f"/block/notxdetails/{newblockhash[0]}")
         for tx in txs:
@@ -347,7 +356,7 @@ class RESTTest (BitcoinTestFramework):
         value = names.val (u"correct value\nwith newlines\nand utf-8: äöü")
         hexValue = value.encode ('ascii').hex ()
         self.nodes[0].name_register(name, hexValue)
-        self.nodes[0].generate(1)
+        self.generate (self.nodes[0], 1)
         nameData = self.nodes[0].name_show(name)
         assert_equal(nameData['name_encoding'], 'utf8')
         assert_equal(nameData['name'], name)

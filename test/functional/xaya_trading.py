@@ -48,7 +48,7 @@ class AtomicTradingTest (BitcoinTestFramework):
     """
 
     addr = "chirt1qcmdxwpu35mqlzxz3alc9u9ztp22edsuc5s7zzk"
-    self.nodes[ind].generatetoaddress (n, addr)
+    self.generatetoaddress (self.nodes[ind], n, addr)
 
   def buildTxOut (self, addr, amount):
     """
@@ -218,8 +218,8 @@ class AtomicTradingTest (BitcoinTestFramework):
   def run_test (self):
     # Mine initial blocks so that both nodes have matured coins and no
     # more are mined for them in the future (so we can check balances).
-    self.nodes[0].generate (10)
-    self.nodes[1].generate (10)
+    super ().generate (self.nodes[0], 10)
+    super ().generate (self.nodes[1], 10)
     self.generate (110, ind=0)
 
     # Register a name for testing.

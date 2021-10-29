@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Daniel Kraft
+# Copyright (c) 2018-2021 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -51,7 +51,7 @@ class NameListUnspentTest (NameTestFramework):
     addrA = self.nodes[0].getnewaddress ()
     self.nodes[0].name_register ('x/testname', val ('value'),
                                  {"destAddress": addrA})
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     unspent = self.lookupName (0, "x/testname", includeNames=True)
     assert unspent is not None
     assert 'nameOp' in unspent
@@ -86,7 +86,7 @@ class NameListUnspentTest (NameTestFramework):
     assert_equal (unspent['nameOp']['name'], 'x/testname')
 
     # Mine blocks and verify node 1 seeing the name correctly.
-    self.nodes[1].generate (30)
+    self.generate (self.nodes[1], 30)
     assert self.lookupName (1, "x/testname") is None
     assert self.lookupName (1, "x/testname",
                             addressFilter=[addrA],

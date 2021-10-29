@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 The Xaya developers
+# Copyright (c) 2018-2021 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,7 +58,7 @@ class TrackedGamesTest (XayaZmqTest):
                   set (["a", "ignored", "other"]))
 
     # Trigger an update to make sure the modified list is taken into account.
-    self.node.generate (1)
+    self.generate (self.node, 1)
     topic, _ = games["a"].receive ()
     assert_equal (topic, "game-block-attach json a")
     topic, _ = games["ignored"].receive ()
@@ -85,7 +85,7 @@ class TrackedGamesTest (XayaZmqTest):
     assert_equal (set (self.node.trackedgames ()), set (["a", "b"]))
     game = ZmqSubscriber (ctx, self.address, "a")
     game.subscribe ("game-block-attach")
-    self.node.generate (1)
+    self.generate (self.node, 1)
     game.assertNoMessage ()
 
 

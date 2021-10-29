@@ -46,16 +46,17 @@ class DualAlgoTest (BitcoinTestFramework):
 
     # Error for invalid pow algo.
     assert_raises_rpc_error (-8, 'invalid PowAlgo',
-                             self.node.generatetoaddress, 1, addr1, None, 'foo')
+                             self.generatetoaddress,
+                             self.node, 1, addr1, None, 'foo')
 
     # Mine blocks with Neoscrypt and verify that.
-    blks = self.node.generatetoaddress (1, addr1, None, 'neoscrypt')
-    blks.extend (self.node.generatetoaddress (1, addr1))
+    blks = self.generatetoaddress (self.node, 1, addr1, None, 'neoscrypt')
+    blks.extend (self.generatetoaddress (self.node, 1, addr1))
     assert_equal (len (blks), 2)
     self.assertBlocksNeoscrypt (blks)
 
     # Mine blocks with SHA256D and verify that.
-    blks = self.node.generatetoaddress (1, addr1, None, 'sha256d')
+    blks = self.generatetoaddress (self.node, 1, addr1, None, 'sha256d')
     assert_equal (len (blks), 1)
     self.assertBlocksSha256d (blks)
 
@@ -70,12 +71,13 @@ class DualAlgoTest (BitcoinTestFramework):
     # coinbase address.  Otherwise they might actually be identical and thus
     # also "invalid"!
 
-    neoscryptBlks = self.node.generatetoaddress (10, addr1, None, 'neoscrypt')
+    neoscryptBlks = self.generatetoaddress (self.node, 10, addr1,
+                                            None, 'neoscrypt')
     neoscryptData = self.node.getblock (neoscryptBlks[-1])
     assert_equal (self.node.getbestblockhash (), neoscryptBlks[-1])
 
     self.node.invalidateblock (neoscryptBlks[0])
-    shaBlks = self.node.generatetoaddress (20, addr2, None, 'sha256d')
+    shaBlks = self.generatetoaddress (self.node, 20, addr2, None, 'sha256d')
     shaData = self.node.getblock (shaBlks[-1])
     assert_equal (self.node.getbestblockhash (), shaBlks[-1])
 
@@ -90,7 +92,7 @@ class DualAlgoTest (BitcoinTestFramework):
     for algo in ['sha256d', 'neoscrypt']:
       found = False
       for trial in range (100):
-        blk = self.node.generatetoaddress (1, addr1, None, algo)[0]
+        blk = self.generatetoaddress (self.node, 1, addr1, None, algo)[0]
         data = self.node.getblock (blk)
         assert 'rngseed' in data
         if data['rngseed'][0] == 'f':

@@ -140,7 +140,7 @@ class NameMultisigTest (NameTestFramework):
 
     # Register a new name to that address.
     self.nodes[0].name_register ("x/name", val ("value"), {"destAddress": p2sh})
-    self.nodes[0].generate (10)
+    self.generate (self.nodes[0], 10)
     data = self.checkName (0, "x/name", val ("value"))
     assert_equal (data['address'], p2sh)
 
@@ -193,13 +193,13 @@ class NameMultisigTest (NameTestFramework):
     assert_raises_rpc_error (-26, None,
                              self.nodes[0].sendrawtransaction, txManipulated)
     self.nodes[0].sendrawtransaction (tx)
-    self.nodes[0].generate (1)
+    self.generate (self.nodes[0], 1)
     self.sync_blocks ()
 
     # Check that it was transferred correctly.
     self.checkName (1, "x/name", val ("it worked"))
     self.nodes[1].name_update ("x/name", val ("changed"))
-    self.nodes[1].generate (1)
+    self.generate (self.nodes[1], 1)
     self.checkName (1, "x/name", val ("changed"))
 
   def test_namescript_p2sh (self):
@@ -215,7 +215,7 @@ class NameMultisigTest (NameTestFramework):
     name = "d/p2sh"
     value = val ("value")
     node.name_register (name, value)
-    node.generate (1)
+    self.generate (node, 1)
     baseHeight = node.getblockcount ()
     self.checkNameWithHeight (0, name, value, baseHeight)
 
@@ -249,13 +249,13 @@ class NameMultisigTest (NameTestFramework):
     assert signed['complete']
     node.sendrawtransaction (signed['hex'])
 
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, value, baseHeight + 1)
 
     # Send the name to the anyone-can-spend P2SH address.  This should just
     # work fine and update the name.
     self.updateAnyoneCanSpendName (0, name, val ("value2"), anyoneAddr, [])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, val ("value2"), baseHeight + 2)
 
     # Send a coin to the P2SH address with name prefix.  This should just
@@ -265,7 +265,7 @@ class NameMultisigTest (NameTestFramework):
     txid = node.sendtoaddress (updAndAnyoneAddr, 2)
     tx = node.getrawtransaction (txid)
     ind = self.rawtxOutputIndex (0, tx, updAndAnyoneAddr)
-    node.generate (1)
+    self.generate (node, 1)
 
     ins = [{"txid": txid, "vout": ind}]
     addr = node.getnewaddress ()
@@ -274,7 +274,7 @@ class NameMultisigTest (NameTestFramework):
     tx = self.setScriptSigOps (tx, 0, [updAndAnyoneScript])
 
     node.sendrawtransaction (tx, 0)
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, val ("value2"), baseHeight + 2)
 
     found = False
@@ -290,11 +290,11 @@ class NameMultisigTest (NameTestFramework):
     # ordinarily; the name prefix of the redeem script should have no effect.
     self.updateAnyoneCanSpendName (0, name, val ("value3"), updAndAnyoneAddr,
                                    [anyoneScript])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, val ("value3"), baseHeight + 5)
     self.updateAnyoneCanSpendName (0, name, val ("value4"), anyoneAddr,
                                    [updAndAnyoneScript])
-    node.generate (1)
+    self.generate (node, 1)
     self.checkNameWithHeight (0, name, val ("value4"), baseHeight + 6)
 
   def run_test (self):
