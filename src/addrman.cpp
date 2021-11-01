@@ -171,7 +171,7 @@ void AddrManImpl::Serialize(Stream& s_) const
 
     // Increment `lowest_compatible` iff a newly introduced format is incompatible with
     // the previous one.
-    static constexpr uint8_t lowest_compatible = Format::V3_BIP155;
+    static constexpr uint8_t lowest_compatible = Format::V4_MULTIPORT;
     s << static_cast<uint8_t>(INCOMPATIBILITY_BASE + lowest_compatible);
 
     s << nKey;
@@ -395,7 +395,7 @@ void AddrManImpl::Unserialize(Stream& s_)
     }
 }
 
-AddrInfo* AddrManImpl::Find(const CNetAddr& addr, int* pnId)
+AddrInfo* AddrManImpl::Find(const CService& addr, int* pnId)
 {
     AssertLockHeld(cs);
 
@@ -537,73 +537,13 @@ void AddrManImpl::MakeTried(AddrInfo& info, int nId)
     info.fInTried = true;
 }
 
-void AddrManImpl::Good_(const CService& addr, bool test_before_evict, int64_t nTime)
-{
-    AssertLockHeld(cs);
-
-    int nId;
-
-    nLastGood = nTime;
-
-    AddrInfo* pinfo = Find(addr, &nId);
-
-    // if not found, bail out
-    if (!pinfo)
-        return;
-
-    AddrInfo& info = *pinfo;
-
-    // check whether we are talking about the exact same CService (including same port)
-    if (info != addr)
-        return;
-
-    // update info
-    info.nLastSuccess = nTime;
-    info.nLastTry = nTime;
-    info.nAttempts = 0;
-    // nTime is not updated here, to avoid leaking information about
-    // currently-connected peers.
-
-    // if it is already in the tried set, don't do anything else
-    if (info.fInTried)
-        return;
-
-    // if it is not in new, something bad happened
-    if (!Assume(info.nRefCount > 0)) {
-        return;
-    }
-
-    // which tried bucket to move the entry to
-    int tried_bucket = info.GetTriedBucket(nKey, m_asmap);
-    int tried_bucket_pos = info.GetBucketPosition(nKey, false, tried_bucket);
-
-    // Will moving this address into tried evict another entry?
-    if (test_before_evict && (vvTried[tried_bucket][tried_bucket_pos] != -1)) {
-        if (m_tried_collisions.size() < ADDRMAN_SET_TRIED_COLLISION_SIZE) {
-            m_tried_collisions.insert(nId);
-        }
-        // Output the entry we'd be colliding with, for debugging purposes
-        auto colliding_entry = mapInfo.find(vvTried[tried_bucket][tried_bucket_pos]);
-        LogPrint(BCLog::ADDRMAN, "Collision with %s while attempting to move %s to tried table. Collisions=%d\n",
-                 colliding_entry != mapInfo.end() ? colliding_entry->second.ToString() : "",
-                 addr.ToString(),
-                 m_tried_collisions.size());
-    } else {
-        // move nId to the tried tables
-        MakeTried(info, nId);
-        LogPrint(BCLog::ADDRMAN, "Moved %s mapped to AS%i to tried[%i][%i]\n",
-                 addr.ToString(), addr.GetMappedAS(m_asmap), tried_bucket, tried_bucket_pos);
-    }
-}
-
-bool AddrManImpl::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty)
+bool AddrManImpl::AddSingle(const CAddress& addr, const CNetAddr& source, int64_t nTimePenalty)
 {
     AssertLockHeld(cs);
 
     if (!addr.IsRoutable())
         return false;
 
-    bool fNew = false;
     int nId;
     AddrInfo* pinfo = Find(addr, &nId);
 
@@ -644,13 +584,12 @@ bool AddrManImpl::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTi
         pinfo = Create(addr, source, &nId);
         pinfo->nTime = std::max((int64_t)0, (int64_t)pinfo->nTime - nTimePenalty);
         nNew++;
-        fNew = true;
     }
 
     int nUBucket = pinfo->GetNewBucket(nKey, source, m_asmap);
     int nUBucketPos = pinfo->GetBucketPosition(nKey, true, nUBucket);
+    bool fInsert = vvNew[nUBucket][nUBucketPos] == -1;
     if (vvNew[nUBucket][nUBucketPos] != nId) {
-        bool fInsert = vvNew[nUBucket][nUBucketPos] == -1;
         if (!fInsert) {
             AddrInfo& infoExisting = mapInfo[vvNew[nUBucket][nUBucketPos]];
             if (infoExisting.IsTerrible() || (infoExisting.nRefCount > 1 && pinfo->nRefCount == 0)) {
@@ -670,7 +609,74 @@ bool AddrManImpl::Add_(const CAddress& addr, const CNetAddr& source, int64_t nTi
             }
         }
     }
-    return fNew;
+    return fInsert;
+}
+
+void AddrManImpl::Good_(const CService& addr, bool test_before_evict, int64_t nTime)
+{
+    AssertLockHeld(cs);
+
+    int nId;
+
+    nLastGood = nTime;
+
+    AddrInfo* pinfo = Find(addr, &nId);
+
+    // if not found, bail out
+    if (!pinfo)
+        return;
+
+    AddrInfo& info = *pinfo;
+
+    // update info
+    info.nLastSuccess = nTime;
+    info.nLastTry = nTime;
+    info.nAttempts = 0;
+    // nTime is not updated here, to avoid leaking information about
+    // currently-connected peers.
+
+    // if it is already in the tried set, don't do anything else
+    if (info.fInTried)
+        return;
+
+    // if it is not in new, something bad happened
+    if (!Assume(info.nRefCount > 0)) {
+        return;
+    }
+
+    // which tried bucket to move the entry to
+    int tried_bucket = info.GetTriedBucket(nKey, m_asmap);
+    int tried_bucket_pos = info.GetBucketPosition(nKey, false, tried_bucket);
+
+    // Will moving this address into tried evict another entry?
+    if (test_before_evict && (vvTried[tried_bucket][tried_bucket_pos] != -1)) {
+        if (m_tried_collisions.size() < ADDRMAN_SET_TRIED_COLLISION_SIZE) {
+            m_tried_collisions.insert(nId);
+        }
+        // Output the entry we'd be colliding with, for debugging purposes
+        auto colliding_entry = mapInfo.find(vvTried[tried_bucket][tried_bucket_pos]);
+        LogPrint(BCLog::ADDRMAN, "Collision with %s while attempting to move %s to tried table. Collisions=%d\n",
+                 colliding_entry != mapInfo.end() ? colliding_entry->second.ToString() : "",
+                 addr.ToString(),
+                 m_tried_collisions.size());
+    } else {
+        // move nId to the tried tables
+        MakeTried(info, nId);
+        LogPrint(BCLog::ADDRMAN, "Moved %s mapped to AS%i to tried[%i][%i]\n",
+                 addr.ToString(), addr.GetMappedAS(m_asmap), tried_bucket, tried_bucket_pos);
+    }
+}
+
+bool AddrManImpl::Add_(const std::vector<CAddress> &vAddr, const CNetAddr& source, int64_t nTimePenalty)
+{
+    int added{0};
+    for (std::vector<CAddress>::const_iterator it = vAddr.begin(); it != vAddr.end(); it++) {
+        added += AddSingle(*it, source, nTimePenalty) ? 1 : 0;
+    }
+    if (added > 0) {
+        LogPrint(BCLog::ADDRMAN, "Added %i addresses (of %i) from %s: %i tried, %i new\n", added, vAddr.size(), source.ToString(), nTried, nNew);
+    }
+    return added > 0;
 }
 
 void AddrManImpl::Attempt_(const CService& addr, bool fCountFailure, int64_t nTime)
@@ -684,10 +690,6 @@ void AddrManImpl::Attempt_(const CService& addr, bool fCountFailure, int64_t nTi
         return;
 
     AddrInfo& info = *pinfo;
-
-    // check whether we are talking about the exact same CService (including same port)
-    if (info != addr)
-        return;
 
     // update info
     info.nLastTry = nTime;
@@ -816,10 +818,6 @@ void AddrManImpl::Connected_(const CService& addr, int64_t nTime)
 
     AddrInfo& info = *pinfo;
 
-    // check whether we are talking about the exact same CService (including same port)
-    if (info != addr)
-        return;
-
     // update info
     int64_t nUpdateInterval = 20 * 60;
     if (nTime - info.nTime > nUpdateInterval)
@@ -837,10 +835,6 @@ void AddrManImpl::SetServices_(const CService& addr, ServiceFlags nServices)
         return;
 
     AddrInfo& info = *pinfo;
-
-    // check whether we are talking about the exact same CService (including same port)
-    if (info != addr)
-        return;
 
     // update info
     info.nServices = nServices;
@@ -1047,15 +1041,10 @@ size_t AddrManImpl::size() const
 bool AddrManImpl::Add(const std::vector<CAddress>& vAddr, const CNetAddr& source, int64_t nTimePenalty)
 {
     LOCK(cs);
-    int nAdd = 0;
     Check();
-    for (std::vector<CAddress>::const_iterator it = vAddr.begin(); it != vAddr.end(); it++)
-        nAdd += Add_(*it, source, nTimePenalty) ? 1 : 0;
+    auto ret = Add_(vAddr, source, nTimePenalty);
     Check();
-    if (nAdd) {
-        LogPrint(BCLog::ADDRMAN, "Added %i addresses from %s: %i tried, %i new\n", nAdd, source.ToString(), nTried, nNew);
-    }
-    return nAdd > 0;
+    return ret;
 }
 
 void AddrManImpl::Good(const CService& addr, int64_t nTime)
