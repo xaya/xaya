@@ -13,8 +13,7 @@
 #include <memory>
 #include <set>
 
-class CChainState;
-class ChainstateManager;
+class CCoinsViewCache;
 class CTxMemPool;
 class CTxMemPoolEntry;
 
@@ -161,7 +160,7 @@ public:
   /**
    * Performs sanity checks.  Throws if it fails.
    */
-  void check (CChainState& active_chainstate) const;
+  void check (const CCoinsViewCache& tip, int64_t spendheight) const;
 
   /**
    * Checks if a tx can be added (based on name criteria) without

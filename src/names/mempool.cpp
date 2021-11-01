@@ -238,18 +238,10 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 }
 
 void
-CNameMemPool::check (CChainState& active_chainstate) const
+CNameMemPool::check (const CCoinsViewCache& tip,
+                     const int64_t spendheight) const
 {
   AssertLockHeld (pool.cs);
-
-  const auto& coins = active_chainstate.CoinsTip ();
-  const uint256 blockHash = coins.GetBestBlock ();
-  int nHeight;
-  if (blockHash.IsNull())
-    nHeight = 0;
-  else
-    nHeight = active_chainstate.m_blockman.m_block_index
-                .find (blockHash)->second->nHeight;
 
   std::set<valtype> nameRegs;
   std::map<valtype, unsigned> nameUpdates;
@@ -276,12 +268,10 @@ CNameMemPool::check (CChainState& active_chainstate) const
           assert (nameRegs.count (name) == 0);
           nameRegs.insert (name);
 
-          /* The old name should be expired already.  Note that we use
-             nHeight+1 for the check, because that's the height at which
-             the mempool tx will actually be mined.  */
+          /* The old name should be expired already.  */
           CNameData data;
-          if (coins.GetName (name, data))
-            assert (data.isExpired (nHeight + 1));
+          if (tip.GetName (name, data))
+            assert (data.isExpired (spendheight));
         }
 
       if (entry.isNameUpdate ())
@@ -294,10 +284,9 @@ CNameMemPool::check (CChainState& active_chainstate) const
 
           ++nameUpdates[name];
 
-          /* As above, use nHeight+1 for the expiration check.  */
           CNameData data;
-          if (coins.GetName (name, data))
-            assert (!data.isExpired (nHeight + 1));
+          if (tip.GetName (name, data))
+            assert (!data.isExpired (spendheight));
           else
             assert (registersName (name));
         }

@@ -729,6 +729,7 @@ namecoin_tx_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 namecoin_wallet_SOURCES = bitcoin-wallet.cpp
+namecoin_wallet_SOURCES += init/bitcoin-wallet.cpp
 namecoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 namecoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 namecoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
