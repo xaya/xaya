@@ -8,8 +8,14 @@ from decimal import Decimal
 
 from test_framework.authproxy import JSONRPCException
 from test_framework.blocktools import COINBASE_MATURITY
+from test_framework.messages import COIN
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, assert_greater_than, assert_raises_rpc_error, gen_return_txouts
+from test_framework.util import (
+    assert_equal,
+    assert_greater_than,
+    assert_raises_rpc_error,
+    gen_return_txouts,
+)
 from test_framework.wallet import MiniWallet
 
 
@@ -25,16 +31,19 @@ class MempoolLimitTest(BitcoinTestFramework):
         ]]
         self.supports_cli = False
 
-    def send_large_txs(self, node, miniwallet, txouts, fee_rate, tx_batch_size):
+    def send_large_txs(self, node, miniwallet, txouts, fee, tx_batch_size):
         for _ in range(tx_batch_size):
-            tx = miniwallet.create_self_transfer(from_node=node, fee_rate=fee_rate)['tx']
+            tx = miniwallet.create_self_transfer(from_node=node, fee_rate=0, mempool_valid=False)['tx']
             for txout in txouts:
                 tx.vout.append(txout)
+            tx.vout[0].nValue -= int(fee * COIN)
+            res = node.testmempoolaccept([tx.serialize().hex()])[0]
+            assert_equal(res['fees']['base'], fee)
             miniwallet.sendrawtransaction(from_node=node, tx_hex=tx.serialize().hex())
 
     def run_test(self):
         txouts = gen_return_txouts()
-        node=self.nodes[0]
+        node = self.nodes[0]
         miniwallet = MiniWallet(node)
         relayfee = node.getnetworkinfo()['relayfee']
 
@@ -56,14 +65,16 @@ class MempoolLimitTest(BitcoinTestFramework):
         self.log.info('Create a mempool tx that will be evicted')
         tx_to_be_evicted_id = miniwallet.send_self_transfer(from_node=node, fee_rate=relayfee)["txid"]
 
-        # Increase the tx fee rate massively to give the subsequent transactions a higher priority in the mempool
-        base_fee = relayfee * 1000
+        # Increase the tx fee rate to give the subsequent transactions a higher priority in the mempool
+        # The tx has an approx. vsize of 65k, i.e. multiplying the previous fee rate (in sats/kvB)
+        # by 130 should result in a fee that corresponds to 2x of that fee rate
+        base_fee = relayfee * 130
 
         self.log.info("Fill up the mempool with txs with higher fee rate")
         for batch_of_txid in range(num_of_batches):
-            fee_rate=(batch_of_txid + 1) * base_fee
+            fee = (batch_of_txid + 1) * base_fee
             try:
-                self.send_large_txs(node, miniwallet, txouts, fee_rate, tx_batch_size)
+                self.send_large_txs(node, miniwallet, txouts, fee, tx_batch_size)
             except JSONRPCException as exc:
                 # If we run into a "memool full" error, just stop producing
                 # more transactions.

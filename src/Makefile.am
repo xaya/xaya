@@ -755,6 +755,7 @@ xaya_hash_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 xaya_wallet_SOURCES = bitcoin-wallet.cpp
+xaya_wallet_SOURCES += init/bitcoin-wallet.cpp
 xaya_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 xaya_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 xaya_wallet_LDFLAGS = $(bitcoin_bin_ldflags)

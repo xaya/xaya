@@ -261,7 +261,7 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
   data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);
 
-  mempool.checkNames (chainState);
+  mempool.checkNames (view);
 }
 
 namespace

@@ -353,15 +353,15 @@ bitcoin_qt_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
 
 qt_xaya_qt_CPPFLAGS = $(bitcoin_qt_cppflags)
 qt_xaya_qt_CXXFLAGS = $(bitcoin_qt_cxxflags)
-qt_xaya_qt_SOURCES = $(bitcoin_qt_sources) init/bitcoind.cpp
+qt_xaya_qt_SOURCES = $(bitcoin_qt_sources) init/bitcoin-qt.cpp
 qt_xaya_qt_LDADD = $(bitcoin_qt_ldadd)
 qt_xaya_qt_LDFLAGS = $(bitcoin_qt_ldflags)
 qt_xaya_qt_LIBTOOLFLAGS = $(bitcoin_qt_libtoolflags)
 
 xaya_gui_CPPFLAGS = $(bitcoin_qt_cppflags)
 xaya_gui_CXXFLAGS = $(bitcoin_qt_cxxflags)
-xaya_gui_SOURCES = $(bitcoin_qt_sources) init/bitcoind.cpp
-xaya_gui_LDADD = $(bitcoin_qt_ldadd)
+xaya_gui_SOURCES = $(bitcoin_qt_sources) init/bitcoin-gui.cpp
+xaya_gui_LDADD = $(bitcoin_qt_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_UTIL) $(LIBMULTIPROCESS_LIBS)
 xaya_gui_LDFLAGS = $(bitcoin_qt_ldflags)
 xaya_gui_LIBTOOLFLAGS = $(bitcoin_qt_libtoolflags)
 

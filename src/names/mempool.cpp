@@ -175,11 +175,9 @@ CNameMemPool::removeConflicts (const CTransaction& tx)
 }
 
 void
-CNameMemPool::check (CChainState& active_chainstate) const
+CNameMemPool::check (const CCoinsViewCache& tip) const
 {
   AssertLockHeld (pool.cs);
-
-  const auto& coins = active_chainstate.CoinsTip ();
 
   std::set<valtype> nameRegs;
   std::map<valtype, unsigned> nameUpdates;
@@ -199,7 +197,7 @@ CNameMemPool::check (CChainState& active_chainstate) const
 
           /* There should be no existing name.  */
           CNameData data;
-          assert (!coins.GetName (name, data));
+          assert (!tip.GetName (name, data));
         }
 
       if (entry.isNameUpdate ())
@@ -213,7 +211,7 @@ CNameMemPool::check (CChainState& active_chainstate) const
           ++nameUpdates[name];
 
           CNameData data;
-          if (!coins.GetName (name, data))
+          if (!tip.GetName (name, data))
             assert (registersName (name));
         }
     }
