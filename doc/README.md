@@ -64,6 +64,7 @@ The Xaya repo's [root README](https://github.com/xaya/xaya/blob/master/README.md
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)
+- [Assumeutxo design](assumeutxo.md)
 - [bitcoin.conf Configuration File](bitcoin-conf.md)
 - [Files](files.md)
 - [Fuzz-testing](fuzzing.md)

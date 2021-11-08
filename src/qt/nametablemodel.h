@@ -61,11 +61,13 @@ private:
     const PlatformStyle *platformStyle;
     int cachedNumBlocks;
     RecursiveMutex cs_model;
+    bool initDone;
 
     /** Notify listeners that data changed. */
     void emitDataChanged(int index);
 
 public Q_SLOTS:
+    void init();
     void processNewTransaction(const QModelIndex& parent, int start, int /*end*/);
 
     friend class NameTablePriv;
