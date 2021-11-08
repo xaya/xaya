@@ -785,8 +785,15 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (!CheckSequenceLocks(m_active_chainstate.m_chain.Tip(), m_view, tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
         return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "non-BIP68-final");
 
+    /* PolicyScriptChecks uses CheckInputScripts, while the namecoin-specific
+       transaction checking is part of CheckTxInputs called here.  Thus we need
+       to make sure all standard flags relevant for Namecoin checks are
+       set already here (in contrast to upstream).  */
+    unsigned flags = STANDARD_SCRIPT_VERIFY_FLAGS;
+    flags |= SCRIPT_VERIFY_NAMES_MEMPOOL;
+
     // The mempool holds txs for the next block, so pass height+1 to CheckTxInputs
-    if (!Consensus::CheckTxInputs(tx, state, m_view, m_active_chainstate.m_chain.Height() + 1, SCRIPT_VERIFY_NAMES_MEMPOOL, ws.m_base_fees)) {
+    if (!Consensus::CheckTxInputs(tx, state, m_view, m_active_chainstate.m_chain.Height() + 1, flags, ws.m_base_fees)) {
         return false; // state filled in by CheckTxInputs
     }
 
@@ -799,7 +806,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, m_view))
         return state.Invalid(TxValidationResult::TX_WITNESS_MUTATED, "bad-witness-nonstandard");
 
-    int64_t nSigOpsCost = GetTransactionSigOpCost(tx, m_view, STANDARD_SCRIPT_VERIFY_FLAGS);
+    int64_t nSigOpsCost = GetTransactionSigOpCost(tx, m_view, flags);
 
     // ws.m_modified_fees includes any fee deltas from PrioritiseTransaction
     ws.m_modified_fees = ws.m_base_fees;

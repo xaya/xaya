@@ -144,6 +144,9 @@ enum : uint32_t {
     // certain stuff (e. g., it allows immature spending of name_new's).
     SCRIPT_VERIFY_NAMES_MEMPOOL = (1U << 24),
 
+    // Disallow salt values in name_firstupdate that are shorter than 20 bytes.
+    SCRIPT_VERIFY_NAMES_LONG_SALT = (1U << 25),
+
     // Constants to point to the highest flag in use. Add new flags above this line.
     //
     SCRIPT_VERIFY_END_MARKER

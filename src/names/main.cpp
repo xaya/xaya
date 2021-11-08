@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2021 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -258,6 +258,11 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                               "NAME_FIRSTUPDATE on immature NAME_NEW");
     }
 
+  const bool requireLongSalt = (flags & SCRIPT_VERIFY_NAMES_LONG_SALT);
+  if (requireLongSalt && nameOpOut.getOpRand ().size () < 20)
+    return state.Invalid (TxValidationResult::TX_CONSENSUS,
+                          "tx-firstupdate-invalid-rand",
+                          "NAME_FIRSTUPDATE rand value is too short");
   if (nameOpOut.getOpRand ().size () > 20)
     return state.Invalid (TxValidationResult::TX_CONSENSUS,
                           "tx-firstupdate-invalid-rand",

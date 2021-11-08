@@ -712,6 +712,51 @@ BOOST_AUTO_TEST_CASE (name_tx_verification)
   BOOST_CHECK (!CheckNameTransaction (mtx, 100012, viewClean, state, 0));
 }
 
+BOOST_AUTO_TEST_CASE (name_firstupdate_salt_length)
+{
+  const valtype name = DecodeName ("x/test-name", NameEncoding::ASCII);
+  const valtype value = DecodeName ("{}", NameEncoding::ASCII);
+  const CScript addr = getTestAddress ();
+
+  const valtype shortRand(19, 'x');
+  const valtype correctRand(20, 'x');
+  const valtype longRand(21, 'x');
+
+  CCoinsView dummyView;
+
+  /* Builds and checks a firstupdate transaction for our test name and
+     the given rand value and verify flags.  */
+  const auto checkRand = [&] (const valtype& rand, const unsigned flags)
+    {
+      CCoinsViewCache view(&dummyView);
+
+      const CScript scrNew = CNameScript::buildNameNew (addr, name, rand);
+      const CScript scrFirst = CNameScript::buildNameFirstupdate (addr, name,
+                                                                  value, rand);
+
+      const COutPoint inCoin = addTestCoin (addr, 1, view);
+      const COutPoint inNew = addTestCoin (scrNew, 100'000, view);
+
+      CMutableTransaction mtx;
+      mtx.vin.emplace_back (inCoin);
+      mtx.vin.emplace_back (inNew);
+      mtx.vout.emplace_back (COIN, scrFirst);
+      mtx.SetNamecoin ();
+
+      TxValidationState state;
+      return CheckNameTransaction (mtx, 100'100, view, state, flags);
+    };
+
+  BOOST_CHECK (checkRand (shortRand, 0));
+  BOOST_CHECK (!checkRand (shortRand, SCRIPT_VERIFY_NAMES_LONG_SALT));
+
+  BOOST_CHECK (checkRand (correctRand, 0));
+  BOOST_CHECK (checkRand (correctRand, SCRIPT_VERIFY_NAMES_LONG_SALT));
+
+  BOOST_CHECK (!checkRand (longRand, 0));
+  BOOST_CHECK (!checkRand (longRand, SCRIPT_VERIFY_NAMES_LONG_SALT));
+}
+
 /* ************************************************************************** */
 
 BOOST_AUTO_TEST_CASE (name_updates_undo)
