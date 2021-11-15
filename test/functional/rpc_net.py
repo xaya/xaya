@@ -106,7 +106,7 @@ class NetTest(BitcoinTestFramework):
         assert_equal(peer_info[1][1]['connection_type'], 'inbound')
 
         # Check dynamically generated networks list in getpeerinfo help output.
-        assert "(ipv4, ipv6, onion, i2p, not_publicly_routable)" in self.nodes[0].help("getpeerinfo")
+        assert "(ipv4, ipv6, onion, i2p, cjdns, not_publicly_routable)" in self.nodes[0].help("getpeerinfo")
 
     def test_getnettotals(self):
         self.log.info("Test getnettotals")
@@ -157,7 +157,7 @@ class NetTest(BitcoinTestFramework):
             assert_net_servicesnames(int(info["localservices"], 0x10), info["localservicesnames"])
 
         # Check dynamically generated networks list in getnetworkinfo help output.
-        assert "(ipv4, ipv6, onion, i2p)" in self.nodes[0].help("getnetworkinfo")
+        assert "(ipv4, ipv6, onion, i2p, cjdns)" in self.nodes[0].help("getnetworkinfo")
 
     def test_getaddednodeinfo(self):
         self.log.info("Test getaddednodeinfo")
@@ -228,8 +228,8 @@ class NetTest(BitcoinTestFramework):
         assert_equal(res[0]["port"], 8333)
         assert_equal(res[0]["services"], P2P_SERVICES)
 
-        # Test for the absence of onion and I2P addresses.
-        for network in ["onion", "i2p"]:
+        # Test for the absence of onion, I2P and CJDNS addresses.
+        for network in ["onion", "i2p", "cjdns"]:
             assert_equal(self.nodes[0].getnodeaddresses(0, network), [])
 
         # Test invalid arguments.
@@ -260,7 +260,7 @@ class NetTest(BitcoinTestFramework):
 
         self.log.debug("Test that adding a valid address to the tried table succeeds")
         assert_equal(node.addpeeraddress(address="1.2.3.4", tried=True, port=8333), {"success": True})
-        with node.assert_debug_log(expected_msgs=["Addrman checks started: new 0, tried 1, total 1"]):
+        with node.assert_debug_log(expected_msgs=["CheckAddrman: new 0, tried 1, total 1 started"]):
             addrs = node.getnodeaddresses(count=0)  # getnodeaddresses re-runs the addrman checks
             assert_equal(len(addrs), 1)
             assert_equal(addrs[0]["address"], "1.2.3.4")
@@ -273,7 +273,7 @@ class NetTest(BitcoinTestFramework):
 
         self.log.debug("Test that adding a second address, this time to the new table, succeeds")
         assert_equal(node.addpeeraddress(address="2.0.0.0", port=8333), {"success": True})
-        with node.assert_debug_log(expected_msgs=["Addrman checks started: new 1, tried 1, total 2"]):
+        with node.assert_debug_log(expected_msgs=["CheckAddrman: new 1, tried 1, total 2 started"]):
             addrs = node.getnodeaddresses(count=0)  # getnodeaddresses re-runs the addrman checks
             assert_equal(len(addrs), 2)
 
