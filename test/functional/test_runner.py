@@ -344,6 +344,7 @@ BASE_SCRIPTS = [
     'name_list.py',
     'name_list.py --descriptors',
     'name_listunspent.py',
+    'name_longsalt.py',
     'name_multisig.py',
     'name_multisig.py --bip16-active',
     'name_multiupdate.py',
