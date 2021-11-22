@@ -232,4 +232,4 @@ namespace merkle_tests {
 std::vector<uint256> BlockMerkleBranch(const CBlock& block, uint32_t position);
 }
 
-#endif
+#endif // BITCOIN_TEST_UTIL_SETUP_COMMON_H
