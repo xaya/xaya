@@ -168,7 +168,6 @@ BITCOIN_CORE_H = \
   memusage.h \
   merkleblock.h \
   miner.h \
-  minisketchwrapper.h \
   names/common.h \
   names/encoding.h \
   names/main.h \
@@ -184,6 +183,7 @@ BITCOIN_CORE_H = \
   node/coin.h \
   node/coinstats.h \
   node/context.h \
+  node/minisketchwrapper.h \
   node/psbt.h \
   node/transaction.h \
   node/ui_interface.h \
@@ -348,7 +348,6 @@ libbitcoin_server_a_SOURCES = \
   init.cpp \
   mapport.cpp \
   miner.cpp \
-  minisketchwrapper.cpp \
   names/main.cpp \
   names/mempool.cpp \
   net.cpp \
@@ -358,6 +357,7 @@ libbitcoin_server_a_SOURCES = \
   node/coinstats.cpp \
   node/context.cpp \
   node/interfaces.cpp \
+  node/minisketchwrapper.cpp \
   node/psbt.cpp \
   node/transaction.cpp \
   node/ui_interface.cpp \
@@ -761,7 +761,9 @@ xaya_wallet_SOURCES += init/bitcoin-wallet.cpp
 xaya_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 xaya_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 xaya_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-xaya_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
+xaya_wallet_LDADD = \
+  $(LIBBITCOIN_WALLET_TOOL) \
+  $(bitcoin_bin_ldadd)
 
 if TARGET_WINDOWS
 xaya_wallet_SOURCES += bitcoin-wallet-res.rc

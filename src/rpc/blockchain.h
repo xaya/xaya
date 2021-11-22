@@ -74,4 +74,4 @@ UniValue CreateUTXOSnapshot(NodeContext& node, CChainState& chainstate, CAutoFil
 
 UniValue GetDifficultyJson(const CChain& chain);
 
-#endif
+#endif // BITCOIN_RPC_BLOCKCHAIN_H

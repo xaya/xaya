@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020 The Bitcoin Core developers
+# Copyright (c) 2020-2021 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """A limited-functionality wallet, which may replace a real wallet in tests"""
@@ -133,10 +133,9 @@ class MiniWallet:
 
         Args:
         txid: get the first utxo we find from a specific transaction
-
-        Note: Can be used to get the change output immediately after a send_self_transfer
         """
         index = -1  # by default the last utxo
+        self._utxos = sorted(self._utxos, key=lambda k: (k['value'], -k['height']))  # Put the largest utxo last
         if txid:
             utxo = next(filter(lambda utxo: txid == utxo['txid'], self._utxos))
             index = self._utxos.index(utxo)
@@ -172,8 +171,7 @@ class MiniWallet:
 
     def create_self_transfer(self, *, fee_rate=Decimal("0.003"), from_node, utxo_to_spend=None, mempool_valid=True, locktime=0, sequence=0):
         """Create and return a tx with the specified fee_rate. Fee may be exact or at most one satoshi higher than needed."""
-        self._utxos = sorted(self._utxos, key=lambda k: (k['value'], -k['height']))
-        utxo_to_spend = utxo_to_spend or self._utxos.pop()  # Pick the largest utxo (if none provided) and hope it covers the fee
+        utxo_to_spend = utxo_to_spend or self.get_utxo()
         if self._priv_key is None:
             vsize = Decimal(104)  # anyone-can-spend
         else:

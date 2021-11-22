@@ -235,4 +235,4 @@ std::vector<uint256> BlockMerkleBranch(const CBlock& block, uint32_t position);
 // Define == for coin equality (used by multiple tests).
 bool operator==(const Coin &a, const Coin &b);
 
-#endif
+#endif // BITCOIN_TEST_UTIL_SETUP_COMMON_H

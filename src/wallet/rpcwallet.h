@@ -50,4 +50,4 @@ UniValue SendMoney(CWallet& wallet, const CCoinControl& coin_control,
 
 RPCHelpMan getaddressinfo();
 RPCHelpMan signrawtransactionwithwallet();
-#endif //BITCOIN_WALLET_RPCWALLET_H
+#endif // BITCOIN_WALLET_RPCWALLET_H

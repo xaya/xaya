@@ -7,6 +7,8 @@
 #include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
 
+#include <univalue.h>
+
 #include <QMessageBox>
 
 #include <optional>
