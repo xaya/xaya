@@ -5,7 +5,7 @@
 #ifndef BITCOIN_RPC_AUXPOW_MINER_H
 #define BITCOIN_RPC_AUXPOW_MINER_H
 
-#include <miner.h>
+#include <node/miner.h>
 #include <powdata.h>
 #include <rpc/request.h>
 #include <script/script.h>

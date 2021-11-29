@@ -12,79 +12,97 @@ from test_framework.util import (
 )
 
 BECH32_VALID = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhyn'
+BECH32_VALID_CAPITALS = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhyn'.upper()
+BECH32_VALID_MULTISIG = 'chirt1qdg3myrgvzw7ml9q0ejxhlkyxm7vl9r56yzkfgvzclrf4hkpx9yfqjaa7sv'
+
 BECH32_INVALID_BECH32 = 'chirt1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqg8447y'
 BECH32_INVALID_BECH32M = 'chirt1qw508d6qejxtdg4y5r3zarvary0c5xw7kqc4u4j'
 BECH32_INVALID_VERSION = 'chirt130xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqp0lmw2'
 BECH32_INVALID_SIZE = 'chirt1s0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7v8n0nx0muaewav25r7vjx8'
 BECH32_INVALID_V0_SIZE = 'chirt1qw508d6qejxtdg4y5r3zarvary0c5xw7kqqkawq47'
 BECH32_INVALID_PREFIX = 'bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx'
+BECH32_TOO_LONG = 'chirt1q049edschfnwystcqnsvyfpj23mpsg3jcedq9xv049edschfnwystcqnsvyfpj23mpsg3jcedq9xv049edschfnwystcqnsvyfpj23m'
+BECH32_ONE_ERROR = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhye'
+BECH32_ONE_ERROR_CAPITALS = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhye'.upper()
+BECH32_TWO_ERRORS = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhea'
+BECH32_NO_SEPARATOR = 'chirtq049ldschfnwystcqnsvyfpj23mpsg3jcedq9xv'
+BECH32_INVALID_CHAR = 'chirt1q04oldschfnwystcqnsvyfpj23mpsg3jcedq9xv'
+BECH32_MULTISIG_TWO_ERRORS = 'chirt1qdg3myrgvzw7ml9q0ejxhlkyxm7vl9r56yzkfgvzclrf4hkpx9yfqjaa6sx'
+# FIXME: Rebrand and re-enable.
+#BECH32_WRONG_VERSION = 'bcrt1ptmp74ayg7p24uslctssvjm06q5phz4yrxucgnv'
 
 BASE58_VALID = 'cU3jY6Q3pXhZPiv1m5UZgxNbKxytbgEUKh'
 BASE58_INVALID_PREFIX = '17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem'
+BASE58_INVALID_CHECKSUM = 'mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJJfn'
+BASE58_INVALID_LENGTH = '2VKf7XKMrp4bVNVmuRbyCewkP8FhGLP2E54LHDPakr9Sq5mtU2'
 
 INVALID_ADDRESS = 'asfah14i8fajz0123f'
+INVALID_ADDRESS_2 = '1q049ldschfnwystcqnsvyfpj23mpsg3jcedq9xv'
 
 class InvalidAddressErrorMessageTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
 
+    def check_valid(self, addr):
+        info = self.nodes[0].validateaddress(addr)
+        assert info['isvalid']
+        assert 'error' not in info
+        assert 'error_locations' not in info
+
+    def check_invalid(self, addr, error_str, error_locations=None):
+        res = self.nodes[0].validateaddress(addr)
+        assert not res['isvalid']
+        assert_equal(res['error'], error_str)
+        if error_locations:
+            assert_equal(res['error_locations'], error_locations)
+        else:
+            assert_equal(res['error_locations'], [])
+
     def test_validateaddress(self):
-        node = self.nodes[0]
+        # Invalid Bech32
+        self.check_invalid(BECH32_INVALID_SIZE, 'Invalid Bech32 address data size')
+        self.check_invalid(BECH32_INVALID_PREFIX, 'Invalid HRP or Base58 character in address')
+        self.check_invalid(BECH32_INVALID_BECH32, 'Version 1+ witness address must use Bech32m checksum')
+        self.check_invalid(BECH32_INVALID_BECH32M, 'Version 0 witness address must use Bech32 checksum')
+        self.check_invalid(BECH32_INVALID_VERSION, 'Invalid Bech32 address witness version')
+        self.check_invalid(BECH32_INVALID_V0_SIZE, 'Invalid Bech32 v0 address data size')
+        self.check_invalid(BECH32_TOO_LONG, 'Bech32 string too long', list(range(90, 109)))
+        self.check_invalid(BECH32_ONE_ERROR, 'Invalid checksum', [44])
+        self.check_invalid(BECH32_TWO_ERRORS, 'Invalid checksum', [43, 44])
+        self.check_invalid(BECH32_ONE_ERROR_CAPITALS, 'Invalid checksum', [44])
+        self.check_invalid(BECH32_NO_SEPARATOR, 'Missing separator')
+        self.check_invalid(BECH32_INVALID_CHAR, 'Invalid Base 32 character', [9])
+        self.check_invalid(BECH32_MULTISIG_TWO_ERRORS, 'Invalid checksum', [62, 64])
+        #self.check_invalid(BECH32_WRONG_VERSION, 'Invalid checksum', [5])
 
-        # Bech32
-        info = node.validateaddress(BECH32_INVALID_SIZE)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid Bech32 address data size')
+        # Valid Bech32
+        self.check_valid(BECH32_VALID)
+        self.check_valid(BECH32_VALID_CAPITALS)
+        self.check_valid(BECH32_VALID_MULTISIG)
 
-        info = node.validateaddress(BECH32_INVALID_PREFIX)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid prefix for Bech32 address')
+        # Invalid Base58
+        self.check_invalid(BASE58_INVALID_PREFIX, 'Invalid prefix for Base58-encoded address')
+        self.check_invalid(BASE58_INVALID_CHECKSUM, 'Invalid checksum or length of Base58 address')
+        self.check_invalid(BASE58_INVALID_LENGTH, 'Invalid checksum or length of Base58 address')
 
-        info = node.validateaddress(BECH32_INVALID_BECH32)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Version 1+ witness address must use Bech32m checksum')
-
-        info = node.validateaddress(BECH32_INVALID_BECH32M)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Version 0 witness address must use Bech32 checksum')
-
-        info = node.validateaddress(BECH32_INVALID_V0_SIZE)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid Bech32 v0 address data size')
-
-        info = node.validateaddress(BECH32_VALID)
-        assert info['isvalid']
-        assert 'error' not in info
-
-        info = node.validateaddress(BECH32_INVALID_VERSION)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid Bech32 address witness version')
-
-        # Base58
-        info = node.validateaddress(BASE58_INVALID_PREFIX)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid prefix for Base58-encoded address')
-
-        info = node.validateaddress(BASE58_VALID)
-        assert info['isvalid']
-        assert 'error' not in info
+        # Valid Base58
+        self.check_valid(BASE58_VALID)
 
         # Invalid address format
-        info = node.validateaddress(INVALID_ADDRESS)
-        assert not info['isvalid']
-        assert_equal(info['error'], 'Invalid address format')
+        self.check_invalid(INVALID_ADDRESS, 'Invalid HRP or Base58 character in address')
+        self.check_invalid(INVALID_ADDRESS_2, 'Invalid HRP or Base58 character in address')
 
     def test_getaddressinfo(self):
         node = self.nodes[0]
 
         assert_raises_rpc_error(-5, "Invalid Bech32 address data size", node.getaddressinfo, BECH32_INVALID_SIZE)
 
-        assert_raises_rpc_error(-5, "Invalid prefix for Bech32 address", node.getaddressinfo, BECH32_INVALID_PREFIX)
+        assert_raises_rpc_error(-5, "Invalid HRP or Base58 character in address", node.getaddressinfo, BECH32_INVALID_PREFIX)
 
         assert_raises_rpc_error(-5, "Invalid prefix for Base58-encoded address", node.getaddressinfo, BASE58_INVALID_PREFIX)
 
-        assert_raises_rpc_error(-5, "Invalid address format", node.getaddressinfo, INVALID_ADDRESS)
+        assert_raises_rpc_error(-5, "Invalid HRP or Base58 character in address", node.getaddressinfo, INVALID_ADDRESS)
 
     def run_test(self):
         self.test_validateaddress()
