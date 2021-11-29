@@ -91,8 +91,8 @@ class KeyPoolTest(BitcoinTestFramework):
         nodes[0].walletlock()
         wi = nodes[0].getwalletinfo()
         if self.options.descriptors:
-            assert_equal(wi['keypoolsize_hd_internal'], 18)
-            assert_equal(wi['keypoolsize'], 18)
+            assert_equal(wi['keypoolsize_hd_internal'], 24)
+            assert_equal(wi['keypoolsize'], 24)
         else:
             assert_equal(wi['keypoolsize_hd_internal'], 6)
             assert_equal(wi['keypoolsize'], 6)
@@ -139,8 +139,8 @@ class KeyPoolTest(BitcoinTestFramework):
         nodes[0].keypoolrefill(100)
         wi = nodes[0].getwalletinfo()
         if self.options.descriptors:
-            assert_equal(wi['keypoolsize_hd_internal'], 300)
-            assert_equal(wi['keypoolsize'], 300)
+            assert_equal(wi['keypoolsize_hd_internal'], 400)
+            assert_equal(wi['keypoolsize'], 400)
         else:
             assert_equal(wi['keypoolsize_hd_internal'], 100)
             assert_equal(wi['keypoolsize'], 100)
@@ -219,7 +219,7 @@ class KeyPoolTest(BitcoinTestFramework):
 
         extraKeys = 0
         if self.options.descriptors:
-          extraKeys = 12
+          extraKeys = 18
 
         nodes[0].walletpassphrase('test', 12000)
         nodes[0].keypoolrefill(1)
