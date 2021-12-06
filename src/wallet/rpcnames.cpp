@@ -34,6 +34,7 @@
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/rpcwallet.h>
+#include <wallet/rpc/util.h>
 #include <wallet/scriptpubkeyman.h>
 #include <wallet/wallet.h>
 
@@ -325,25 +326,29 @@ getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, 
 {
     AssertLockHeld(pwallet->cs_wallet);
 
-    const auto* spk = pwallet->GetScriptPubKeyMan (output);
-    if (spk == nullptr)
-        return false;
+    for (const auto* spk : pwallet->GetScriptPubKeyMans (output))
+      {
+        if (spk == nullptr)
+            continue;
 
-    auto provider = spk->GetSigningProviderWithKeys (output);
-    if (provider == nullptr)
-        return false;
+        auto provider = spk->GetSigningProviderWithKeys (output);
+        if (provider == nullptr)
+            continue;
 
-    CTxDestination dest;
-    CKeyID keyid;
-    CKey key;
-    if (!ExtractDestination(output, dest))
-        return false; // If multisig.
-    assert(IsValidDestination(dest)); // We should never get a null destination.
+        CTxDestination dest;
+        CKeyID keyid;
+        CKey key;
+        if (!ExtractDestination(output, dest))
+            continue; // If multisig.
+        assert(IsValidDestination(dest)); // We should never get a null destination.
 
-    keyid = GetKeyForDestination(*provider, dest);
-    provider->GetKey(keyid, key);
+        keyid = GetKeyForDestination(*provider, dest);
+        provider->GetKey(keyid, key);
 
-    return getNameSalt(key, name, rand);
+        return getNameSalt(key, name, rand);
+      }
+
+    return false;
 }
 
 bool
@@ -872,8 +877,8 @@ queuerawtransaction ()
   {
     LOCK (cs_main);
     // Check validity
-    MempoolAcceptResult result = AcceptToMemoryPool(chainman.ActiveChainstate(), mempool, txParsed,
-      /* bypass_limits */ false, /* test_accept */ true);
+    MempoolAcceptResult result = AcceptToMemoryPool(mempool, chainman.ActiveChainstate(), txParsed,
+      GetTime(), /* bypass_limits */ false, /* test_accept */ true);
     // If it can be broadcast immediately, do that and return early.
     if (result.m_result_type == MempoolAcceptResult::ResultType::VALID)
     {

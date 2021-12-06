@@ -8,39 +8,15 @@
 #include <span.h>
 #include <wallet/walletutil.h>
 
-#include <any>
-#include <memory>
-#include <string>
 #include <vector>
 
 class CCoinControl;
 class CRecipient;
 class CRPCCommand;
+class CTxIn;
 class CWallet;
-class CWalletTx;
-class JSONRPCRequest;
-class LegacyScriptPubKeyMan;
-class UniValue;
-class CTransaction;
-struct PartiallySignedTransaction;
-struct WalletContext;
-
-extern const std::string HELP_REQUIRING_PASSPHRASE;
 
 Span<const CRPCCommand> GetWalletRPCCommands();
-
-/**
- * Figures out what wallet, if any, to use for a JSONRPCRequest.
- *
- * @param[in] request JSONRPCRequest that wishes to access a wallet
- * @return nullptr if no wallet should be used, or a pointer to the CWallet
- */
-std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
-
-void EnsureWalletIsUnlocked(const CWallet&);
-WalletContext& EnsureWalletContext(const std::any& context);
-LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
-const LegacyScriptPubKeyMan& EnsureConstLegacyScriptPubKeyMan(const CWallet& wallet);
 
 /* These are private to rpcwallet.cpp upstream, but are used also from
    rpcnames.cpp in Namecoin.  */

@@ -22,7 +22,7 @@
 #include <util/strencodings.h>
 #include <validation.h>
 #ifdef ENABLE_WALLET
-# include <wallet/rpcwallet.h>
+# include <wallet/rpc/util.h>
 # include <wallet/wallet.h>
 #endif
 
@@ -1133,7 +1133,7 @@ static const CRPCCommand commands[] =
     { "rawtransactions",     &namepsbt,                },
 };
 
-  return MakeSpan (commands);
+  return Span {commands};
 }
 
 void RegisterNameRPCCommands(CRPCTable &t)
