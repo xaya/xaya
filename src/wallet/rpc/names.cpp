@@ -21,8 +21,8 @@
 #include <random.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
-#include <rpc/net.h>
 #include <rpc/server.h>
+#include <rpc/server_util.h>
 #include <rpc/util.h>
 #include <script/names.h>
 #include <script/standard.h>
@@ -34,8 +34,8 @@
 #include <util/vector.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
-#include <wallet/rpcwallet.h>
 #include <wallet/rpc/util.h>
+#include <wallet/rpc/wallet.h>
 #include <wallet/scriptpubkeyman.h>
 #include <wallet/wallet.h>
 
@@ -634,12 +634,11 @@ queuerawtransaction ()
   // Validate transaction
   NodeContext& node = EnsureAnyNodeContext(request);
   ChainstateManager& chainman = EnsureChainman(node);
-  CTxMemPool& mempool = EnsureMemPool(node);
 
   {
     LOCK (cs_main);
     // Check validity
-    MempoolAcceptResult result = AcceptToMemoryPool(mempool, chainman.ActiveChainstate(), txParsed,
+    MempoolAcceptResult result = AcceptToMemoryPool(chainman.ActiveChainstate(), txParsed,
       GetTime(), /* bypass_limits */ false, /* test_accept */ true);
     // If it can be broadcast immediately, do that and return early.
     if (result.m_result_type == MempoolAcceptResult::ResultType::VALID)

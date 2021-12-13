@@ -11,9 +11,9 @@
 #include <node/context.h>
 #include <primitives/pureheader.h>
 #include <rpc/blockchain.h>
-#include <rpc/net.h>
 #include <rpc/protocol.h>
 #include <rpc/request.h>
+#include <rpc/server_util.h>
 #include <streams.h>
 #include <util/strencodings.h>
 #include <util/time.h>

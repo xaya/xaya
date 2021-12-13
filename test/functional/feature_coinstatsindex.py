@@ -40,7 +40,9 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         self.num_nodes = 2
         self.supports_cli = False
         self.extra_args = [
-            [],
+            # Explicitly set the output type in order to have consistent tx vsize / fees
+            # for both legacy and descriptor wallets (disables the change address type detection algorithm)
+            ["-addresstype=bech32", "-changetype=bech32"],
             ["-coinstatsindex"]
         ]
 
@@ -137,8 +139,8 @@ class CoinStatsIndexTest(BitcoinTestFramework):
             assert_equal(res5['block_info'], {
                 'unspendable': 0,
                 'prevout_spent': 50,
-                'new_outputs_ex_coinbase': Decimal('49.99995500'),
-                'coinbase': Decimal('50.00004500'),
+                'new_outputs_ex_coinbase': Decimal('49.99995560'),
+                'coinbase': Decimal('50.00004440'),
                 'unspendables': {
                     'genesis_block': 0,
                     'bip30': 0,
@@ -179,8 +181,8 @@ class CoinStatsIndexTest(BitcoinTestFramework):
             assert_equal(res6['block_info'], {
                 'unspendable': Decimal('20.99000000'),
                 'prevout_spent': 111,
-                'new_outputs_ex_coinbase': Decimal('89.99991880'),
-                'coinbase': Decimal('50.01008120'),
+                'new_outputs_ex_coinbase': Decimal('89.99993620'),
+                'coinbase': Decimal('50.01006380'),
                 'unspendables': {
                     'genesis_block': 0,
                     'bip30': 0,
@@ -278,14 +280,6 @@ class CoinStatsIndexTest(BitcoinTestFramework):
         index_node.reconsiderblock(block)
         res3 = index_node.gettxoutsetinfo(hash_type='muhash', hash_or_height=112)
         assert_equal(res2, res3)
-
-        self.log.info("Test that a node aware of stale blocks syncs them as well")
-        node = self.nodes[0]
-        # Ensure the node is aware of a stale block prior to restart
-        node.getblock(reorg_block)
-
-        self.restart_node(0, ["-coinstatsindex"])
-        assert_raises_rpc_error(-32603, "Unable to get data because coinstatsindex is still syncing.", node.gettxoutsetinfo, 'muhash', reorg_block)
 
     def _test_index_rejects_hash_serialized(self):
         self.log.info("Test that the rpc raises if the legacy hash is passed with the index")

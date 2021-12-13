@@ -17,6 +17,7 @@
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>
+#include <rpc/server_util.h>
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/strencodings.h>

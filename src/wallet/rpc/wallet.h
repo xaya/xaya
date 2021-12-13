@@ -2,8 +2,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_WALLET_RPCWALLET_H
-#define BITCOIN_WALLET_RPCWALLET_H
+#ifndef BITCOIN_WALLET_RPC_WALLET_H
+#define BITCOIN_WALLET_RPC_WALLET_H
 
 #include <span.h>
 #include <wallet/walletutil.h>
@@ -24,6 +24,4 @@ UniValue SendMoney(CWallet& wallet, const CCoinControl& coin_control,
                    const CTxIn* withInput,
                    std::vector<CRecipient>& recipients, mapValue_t map_value, bool verbose);
 
-RPCHelpMan getaddressinfo();
-RPCHelpMan signrawtransactionwithwallet();
-#endif // BITCOIN_WALLET_RPCWALLET_H
+#endif // BITCOIN_WALLET_RPC_WALLET_H
