@@ -69,12 +69,13 @@ VERSION_AUXPOW = (1 << 8)
 VERSION_CHAIN_START = (1 << 16)
 CHAIN_ID = 1
 
-# Serialization/deserialization tools
 def sha256(s):
-    return hashlib.new('sha256', s).digest()
+    return hashlib.sha256(s).digest()
+
 
 def hash256(s):
     return sha256(sha256(s))
+
 
 def ser_compact_size(l):
     r = b""
