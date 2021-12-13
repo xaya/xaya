@@ -72,12 +72,13 @@ CHAIN_ID = 1
 # Namecoin tx version
 NAMECOIN_TX_VERSION = 0x7100
 
-# Serialization/deserialization tools
 def sha256(s):
-    return hashlib.new('sha256', s).digest()
+    return hashlib.sha256(s).digest()
+
 
 def hash256(s):
     return sha256(sha256(s))
+
 
 def ser_compact_size(l):
     r = b""

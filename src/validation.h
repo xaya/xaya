@@ -211,18 +211,16 @@ struct PackageMempoolAcceptResult
  * Try to add a transaction to the mempool. This is an internal function and is exposed only for testing.
  * Client code should use ChainstateManager::ProcessTransaction()
  *
- * @param[in]  pool               Reference to the node's mempool.
  * @param[in]  active_chainstate  Reference to the active chainstate.
  * @param[in]  tx                 The transaction to submit for mempool acceptance.
- * @param[in]  accept_time        The timestamp for adding the transaction to the mempool. Usually
- *                                the current system time, but may be different.
+ * @param[in]  accept_time        The timestamp for adding the transaction to the mempool.
  *                                It is also used to determine when the entry expires.
  * @param[in]  bypass_limits      When true, don't enforce mempool fee and capacity limits.
  * @param[in]  test_accept        When true, run validation checks but don't submit to mempool.
  *
  * @returns a MempoolAcceptResult indicating whether the transaction was accepted/rejected with reason.
  */
-MempoolAcceptResult AcceptToMemoryPool(CTxMemPool& pool, CChainState& active_chainstate, const CTransactionRef& tx,
+MempoolAcceptResult AcceptToMemoryPool(CChainState& active_chainstate, const CTransactionRef& tx,
                                        int64_t accept_time, bool bypass_limits, bool test_accept)
     EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
@@ -356,7 +354,7 @@ public:
     ~CVerifyDB();
     bool VerifyDB(
         CChainState& chainstate,
-        const CChainParams& chainparams,
+        const Consensus::Params& consensus_params,
         CCoinsView& coinsview,
         int nCheckLevel,
         int nCheckDepth) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -661,6 +659,12 @@ public:
         return m_coins_views->m_dbview;
     }
 
+    //! @returns A pointer to the mempool.
+    CTxMemPool* GetMempool()
+    {
+        return m_mempool;
+    }
+
     //! @returns A reference to a wrapped view of the in-memory UTXO set that
     //!     handles disk read errors gracefully.
     CCoinsViewErrorCatcher& CoinsErrorCatcher() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
@@ -730,7 +734,8 @@ public:
     bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, BlockValidationState& state, CBlockIndex** ppindex, bool fRequested, const FlatFilePos* dbp, bool* fNewBlock) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     // Block (dis)connection on a given view:
-    DisconnectResult DisconnectBlock(const CBlock& block, const CBlockIndex* pindex, CCoinsViewCache& view, std::set<valtype>& unexpiredNames);
+    DisconnectResult DisconnectBlock(const CBlock& block, const CBlockIndex* pindex, CCoinsViewCache& view, std::set<valtype>& unexpiredNames)
+        EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
     bool ConnectBlock(const CBlock& block, BlockValidationState& state, CBlockIndex* pindex,
                       CCoinsViewCache& view,
                       std::set<valtype>& expiredNames,

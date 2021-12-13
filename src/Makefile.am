@@ -180,6 +180,8 @@ BITCOIN_CORE_H = \
   netbase.h \
   netmessagemaker.h \
   node/blockstorage.h \
+  node/caches.h \
+  node/chainstate.h \
   node/coin.h \
   node/coinstats.h \
   node/context.h \
@@ -208,13 +210,13 @@ BITCOIN_CORE_H = \
   rpc/client.h \
   rpc/mining.h \
   rpc/names.h \
-  rpc/net.h \
   rpc/protocol.h \
   rpc/rawtransaction.h \
   rpc/rawtransaction_util.h \
   rpc/register.h \
   rpc/request.h \
   rpc/server.h \
+  rpc/server_util.h \
   rpc/util.h \
   scheduler.h \
   script/descriptor.h \
@@ -291,9 +293,9 @@ BITCOIN_CORE_H = \
   wallet/ismine.h \
   wallet/load.h \
   wallet/receive.h \
-  wallet/rpcwallet.h \
-  wallet/rpcnames.h \
+  wallet/rpc/names.h \
   wallet/rpc/util.h \
+  wallet/rpc/wallet.h \
   wallet/salvage.h \
   wallet/scriptpubkeyman.h \
   wallet/spend.h \
@@ -352,6 +354,8 @@ libbitcoin_server_a_SOURCES = \
   net.cpp \
   net_processing.cpp \
   node/blockstorage.cpp \
+  node/caches.cpp \
+  node/chainstate.cpp \
   node/coin.cpp \
   node/coinstats.cpp \
   node/context.cpp \
@@ -376,6 +380,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/net.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
+  rpc/server_util.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   signet.cpp \
@@ -425,12 +430,17 @@ libbitcoin_wallet_a_SOURCES = \
   wallet/interfaces.cpp \
   wallet/load.cpp \
   wallet/receive.cpp \
+  wallet/rpc/addresses.cpp \
+  wallet/rpc/auxpow.cpp \
   wallet/rpc/backup.cpp \
+  wallet/rpc/coins.cpp \
   wallet/rpc/encrypt.cpp \
+  wallet/rpc/names.cpp \
+  wallet/rpc/spend.cpp \
   wallet/rpc/signmessage.cpp \
+  wallet/rpc/transactions.cpp \
   wallet/rpc/util.cpp \
-  wallet/rpcnames.cpp \
-  wallet/rpcwallet.cpp \
+  wallet/rpc/wallet.cpp \
   wallet/scriptpubkeyman.cpp \
   wallet/spend.cpp \
   wallet/transaction.cpp \

@@ -10,9 +10,9 @@
 #include <net.h>
 #include <node/context.h>
 #include <rpc/blockchain.h>
-#include <rpc/net.h>
 #include <rpc/protocol.h>
 #include <rpc/request.h>
+#include <rpc/server_util.h>
 #include <util/strencodings.h>
 #include <util/time.h>
 #include <validation.h>
