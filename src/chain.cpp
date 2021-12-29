@@ -12,8 +12,7 @@
 CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
 {
     CBlockHeader block;
-
-    block.nVersion       = nVersion;
+    block.nVersion = nVersion;
 
     /* The CBlockIndex object's block header is missing the auxpow.
        So if this is an auxpow block, read it from disk instead.  We only
@@ -27,9 +26,9 @@ CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParam
     if (pprev)
         block.hashPrevBlock = pprev->GetBlockHash();
     block.hashMerkleRoot = hashMerkleRoot;
-    block.nTime          = nTime;
-    block.nBits          = nBits;
-    block.nNonce         = nNonce;
+    block.nTime = nTime;
+    block.nBits = nBits;
+    block.nNonce = nNonce;
     return block;
 }
 
