@@ -19,7 +19,7 @@ class WalletHDTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [[], ['-keypool=0', '-addresstype=bech32']]
+        self.extra_args = [['-addresstype=bech32'], ['-keypool=0', '-addresstype=bech32']]
         self.supports_cli = False
 
     def skip_test_if_missing_module(self):
@@ -114,10 +114,7 @@ class WalletHDTest(BitcoinTestFramework):
             os.path.join(self.nodes[1].datadir, "hd.bak"),
             os.path.join(self.nodes[1].datadir, self.chain, "wallets", self.default_wallet_name, self.wallet_data_filename),
         )
-        args = self.extra_args[1]
-        if self.options.descriptors:
-          args.append ("-addresstype=bech32m")
-        self.start_node(1, extra_args=args)
+        self.start_node(1, extra_args=self.extra_args[1])
         self.connect_nodes(0, 1)
         self.sync_all()
         # Wallet automatically scans blocks older than key on startup
@@ -139,7 +136,7 @@ class WalletHDTest(BitcoinTestFramework):
                 keypath = self.nodes[1].getaddressinfo(out['scriptPubKey']['address'])['hdkeypath']
 
         if self.options.descriptors:
-            assert_equal(keypath[0:14], "m/86'/1'/0'/1/")
+            assert_equal(keypath[0:14], "m/84'/1'/0'/1/")
         else:
             assert_equal(keypath[0:7], "m/0'/1'")
 
