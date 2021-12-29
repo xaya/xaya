@@ -36,7 +36,7 @@ class MaxUploadTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 1
         self.extra_args = [[
-            "-maxuploadtarget=80",
+            "-maxuploadtarget=80M",
             "-acceptnonstdtxn=1",
         ]]
         self.supports_cli = False
