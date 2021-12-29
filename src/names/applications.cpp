@@ -153,3 +153,24 @@ NamespaceFromName (const valtype& data)
 
     return NamespaceFromName(name);
 }
+
+std::string
+DescFromName (const valtype& name, NameNamespace ns)
+{
+    switch (ns)
+    {
+        case NameNamespace::Domain:
+        {
+            const std::string nsStr = NamespaceToString(ns);
+            const auto nsLen = nsStr.length();
+
+            const std::string nameStr = EncodeName (name, NameEncoding::ASCII);
+            const std::string label = nameStr.substr(nsLen);
+
+            return label + ".bit";
+        }
+        default:
+        {
+            return EncodeNameForMessage(name);
+        }
+}
