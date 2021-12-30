@@ -46,6 +46,7 @@ private:
 private Q_SLOTS:
     bool eventFilter(QObject *object, QEvent *event);
     void selectionChanged();
+    void rowCountChanged();
 
     /** Spawn contextual menu (right mouse menu) for name table entry */
     void contextualMenu(const QPoint &point);

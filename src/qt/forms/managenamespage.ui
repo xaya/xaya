@@ -177,6 +177,22 @@ to the network and creates a pending name_firstupdate transaction.</string>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
+         <widget class="QLabel" name="countLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string></string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="countConfigureSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -208,6 +224,10 @@ to the network and creates a pending name_firstupdate transaction.</string>
           </property>
           <property name="text">
            <string>&amp;Configure Name&#8230;</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../bitcoin.qrc">
+            <normaloff>:/icons/edit</normaloff>:/icons/edit</iconset>
           </property>
           <property name="default">
            <bool>false</bool>
