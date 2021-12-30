@@ -8,9 +8,9 @@ and remove old versions as necessary (at a minimum when GetDesirableServiceFlags
 changes its default return value, as those are the services which seeds are added
 to addrman with).
 
-The seeds compiled into the release are created from pmconrad's DNS seed data, like this:
+The seeds compiled into the release are created from jonasbits's DNS seed data, like this:
 
-    curl -s https://bitcoin.quisquis.de/dl/nmc-dnsseed.dump.gz | gzip -dc > seeds_main.txt
+    curl -s https://stats.nmctest.net/seeds.txt?s=NamecoinNet > seeds_main.txt
     python3 makeseeds.py < seeds_main.txt > nodes_main.txt
     python3 generate-seeds.py . > ../../src/chainparamsseeds.h
 
