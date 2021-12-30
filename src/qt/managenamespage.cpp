@@ -87,7 +87,13 @@ void ManageNamesPage::setModel(WalletModel *walletModel)
     connect(ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, &ManageNamesPage::selectionChanged);
 
+    connect(model, &QAbstractItemModel::rowsInserted,
+            this, &ManageNamesPage::rowCountChanged);
+    connect(model, &QAbstractItemModel::rowsRemoved,
+            this, &ManageNamesPage::rowCountChanged);
+
     selectionChanged();
+    rowCountChanged();
 }
 
 bool ManageNamesPage::eventFilter(QObject *object, QEvent *event)
@@ -135,6 +141,16 @@ void ManageNamesPage::selectionChanged()
     // Buttons
     ui->configureNameButton->setEnabled(configureNameAction->isEnabled());
     ui->renewNameButton->setEnabled(renewNameAction->isEnabled());
+}
+
+void ManageNamesPage::rowCountChanged()
+{
+    if (!model)
+    {
+        return;
+    }
+
+    ui->countLabel->setText(tr("%1 names.").arg(model->rowCount()));
 }
 
 void ManageNamesPage::contextualMenu(const QPoint &point)
