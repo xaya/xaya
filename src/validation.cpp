@@ -3305,7 +3305,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidatio
     if (block.nBits != 0)
         return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER,
                              "nonzero-bits",
-                             "block header has non-zero nonce");
+                             "block header has non-zero bit");
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
