@@ -335,16 +335,31 @@ NameTableModel::NameTableModel(const PlatformStyle *platformStyle, WalletModel *
         QAbstractTableModel(parent),
         walletModel(parent),
         priv(new NameTablePriv(*this)),
-        platformStyle(platformStyle)
+        platformStyle(platformStyle),
+        initDone(false)
 {
-    columns << tr("Name") << tr("Value") << tr("Status");
-    priv->refreshNameTable(walletModel->wallet());
+    columns << tr("Name") << tr("Value") << tr("Expires In") << tr("Status");
+
+    // We can't init the name table from the constructor because executeRpc
+    // locks context.wallets_mutex, which is already taken if we're creating a
+    // new wallet.  So we use this stupid timer signal trick to delay the init.
+    connect(walletModel, &WalletModel::timerTimeout, this, &NameTableModel::init);
 
     connect(walletModel->getTransactionTableModel(), &TransactionTableModel::rowsInserted, this, &NameTableModel::processNewTransaction);
 }
 
 NameTableModel::~NameTableModel()
 {
+}
+
+void NameTableModel::init()
+{
+    if (initDone)
+        return;
+
+    priv->refreshNameTable(walletModel->wallet());
+
+    initDone = true;
 }
 
 void NameTableModel::processNewTransaction(const QModelIndex& parent, int start, int /*end*/)
