@@ -1063,8 +1063,9 @@ static RPCHelpMan testmempoolaccept()
 
 static RPCHelpMan decodepsbt()
 {
-    return RPCHelpMan{"decodepsbt",
-                "\nReturn a JSON object representing the serialized, base64-encoded partially signed transaction.\n",
+    return RPCHelpMan{
+        "decodepsbt",
+        "Return a JSON object representing the serialized, base64-encoded partially signed transaction.",
                 {
                     {"psbt", RPCArg::Type::STR, RPCArg::Optional::NO, "The PSBT base64 string"},
                 },
@@ -1173,7 +1174,7 @@ static RPCHelpMan decodepsbt()
                                 {
                                     {RPCResult::Type::STR_HEX, "key", "(key-value pair) An unknown key-value pair"},
                                 }},
-                                {RPCResult::Type::ARR, "proprietary", "The input proprietary map",
+                                {RPCResult::Type::ARR, "proprietary", /*optional=*/true, "The input proprietary map",
                                 {
                                     {RPCResult::Type::OBJ, "", "",
                                     {
@@ -1214,7 +1215,7 @@ static RPCHelpMan decodepsbt()
                                 {
                                     {RPCResult::Type::STR_HEX, "key", "(key-value pair) An unknown key-value pair"},
                                 }},
-                                {RPCResult::Type::ARR, "proprietary", "The output proprietary map",
+                                {RPCResult::Type::ARR, "proprietary", /*optional=*/true, "The output proprietary map",
                                 {
                                     {RPCResult::Type::OBJ, "", "",
                                     {

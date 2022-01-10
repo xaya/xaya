@@ -387,7 +387,7 @@
       "set=privatekeys:[\"5Mhmw9M9nJvSXeYgrMgtzgwg3q4MWYYqJ6CziURYEBsR9yNRpAQ\"]",
       "set=prevtxs:[{\"txid\":\"Zd49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc59412\",\"vout\":0,\"scriptPubKey\":\"76a91491b24bf9f5288532960ac687abb035127b1d28a588ac\"}]",
       "sign=ALL",
-      "outaddr=0.001:193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7"],
+      "outaddr=0.001:CQWGfPEzK7kjgt8M2uETMXJu4Z46wvFacB"],
     "return_code": 1,
     "error_txt": "error: txid must be hexadecimal string (not 'Zd49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc59412')",
     "description": "Tests the check for invalid txid due to invalid hex"
@@ -399,7 +399,7 @@
       "set=privatekeys:[\"5Mhmw9M9nJvSXeYgrMgtzgwg3q4MWYYqJ6CziURYEBsR9yNRpAQ\"]",
       "set=prevtxs:[{\"txid\":\"4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc594\",\"vout\":0,\"scriptPubKey\":\"76a91491b24bf9f5288532960ac687abb035127b1d28a588ac\"}]",
       "sign=ALL",
-      "outaddr=0.001:193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7"],
+      "outaddr=0.001:CQWGfPEzK7kjgt8M2uETMXJu4Z46wvFacB"],
     "return_code": 1,
     "error_txt": "error: txid must be hexadecimal string (not '4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc594')",
     "description": "Tests the check for invalid txid valid hex, but too short"
@@ -411,10 +411,33 @@
       "set=privatekeys:[\"5Mhmw9M9nJvSXeYgrMgtzgwg3q4MWYYqJ6CziURYEBsR9yNRpAQ\"]",
       "set=prevtxs:[{\"txid\":\"4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc5948512\",\"vout\":0,\"scriptPubKey\":\"76a91491b24bf9f5288532960ac687abb035127b1d28a588ac\"}]",
       "sign=ALL",
-      "outaddr=0.001:193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7"],
+      "outaddr=0.001:CQWGfPEzK7kjgt8M2uETMXJu4Z46wvFacB"],
     "return_code": 1,
     "error_txt": "error: txid must be hexadecimal string (not '4d49a71ec9da436f71ec4ee231d04f292a29cd316f598bb7068feccabdc5948512')",
     "description": "Tests the check for invalid txid valid hex, but too long"
+  },
+  { "exec": "./xaya-tx",
+    "args":
+    ["-create",
+      "in=00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff:0",
+      "set=privatekeys:[\"LENyKyqwkz6sgGirtrK6VdJKMV7oXQFWARywk43JqCyXcXx1uyaB\"]",
+      "set=prevtxs:[{\"txid\":\"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff\",\"vout\":0,\"amount\":\"0\", \"scriptPubKey\":\"0014751e76e8199196d454941c45d1b3a323f1433bd6\"}]",
+      "sign=ALL",
+      "outaddr=0.001:CQWGfPEzK7kjgt8M2uETMXJu4Z46wvFacB"],
+    "output_cmp": "txcreatesignsegwit1.hex",
+    "description": "Creates a new transaction with a single witness input and a single output, and then signs the transaction"
+  },
+  { "exec": "./xaya-tx",
+    "args":
+    ["-create",
+      "in=00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff:0",
+      "set=privatekeys:[\"LENyKyqwkz6sgGirtrK6VdJKMV7oXQFWARywk43JqCyXcXx1uyaB\"]",
+      "set=prevtxs:[{\"txid\":\"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff\",\"vout\":0,\"scriptPubKey\":\"0014751e76e8199196d454941c45d1b3a323f1433bd6\"}]",
+      "sign=ALL",
+      "outaddr=0.001:193P6LtvS4nCnkDvM9uXn1gsSRqh4aDAz7"],
+    "return_code": 1,
+    "error_txt": "Missing amount for CTxOut with scriptPubKey=0014751e76e8199196d454941c45d1b3a323f1433bd6",
+    "description": "Tests the check for missing input amount for witness transactions"
   },
   { "exec": "./xaya-tx",
     "args":

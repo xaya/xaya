@@ -11,6 +11,7 @@
 #include <index/coinstatsindex.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <util/overflow.h>
 #include <util/system.h>
 #include <validation.h>
 
@@ -29,13 +30,17 @@ uint64_t GetBogoSize(const CScript& script_pub_key)
 
 void
 AddCoinValueToTotals (const Coin& coin, const int sign,
-                      CAmount& totalCoins, CAmount& totalNames)
+                      std::optional<CAmount>& totalCoins,
+                      std::optional<CAmount>& totalNames)
 {
   const CNameScript nameOp(coin.out.scriptPubKey);
-  if (nameOp.isNameOp ())
-    totalNames += sign * coin.out.nValue;
-  else
-    totalCoins += sign * coin.out.nValue;
+  if (nameOp.isNameOp ()) {
+    if (totalNames.has_value ())
+      totalNames = CheckedAdd (*totalNames, sign * coin.out.nValue);
+  } else {
+    if (totalCoins.has_value ())
+      totalCoins = CheckedAdd (*totalCoins, sign * coin.out.nValue);
+  }
 }
 
 CDataStream TxOutSer(const COutPoint& outpoint, const Coin& coin) {
@@ -106,10 +111,8 @@ static bool GetUTXOStats(CCoinsView* view, BlockManager& blockman, CCoinsStats& 
     assert(pcursor);
 
     if (!pindex) {
-        {
-            LOCK(cs_main);
-            pindex = blockman.LookupBlockIndex(view->GetBestBlock());
-        }
+        LOCK(cs_main);
+        pindex = blockman.LookupBlockIndex(view->GetBestBlock());
     }
     stats.nHeight = Assert(pindex)->nHeight;
     stats.hashBlock = pindex->GetBlockHash();

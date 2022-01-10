@@ -22,8 +22,6 @@ class CBlockIndex;
 class CChain;
 class CChainState;
 class CTxMemPool;
-class ChainstateManager;
-class JSONRPCRequest;
 class UniValue;
 struct NodeContext;
 

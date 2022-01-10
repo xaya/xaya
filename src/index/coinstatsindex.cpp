@@ -93,6 +93,18 @@ struct DBHashKey {
     }
 };
 
+/** Variant of AddCoinValueToTotals that assumes no overflows happen.  */
+void AddCoinValueToTotals (const Coin& coin, const int sign,
+                           CAmount& totalCoins, CAmount& totalNames)
+{
+  std::optional<CAmount> coins(totalCoins);
+  std::optional<CAmount> names(totalNames);
+  AddCoinValueToTotals (coin, sign, coins, names);
+  assert (coins.has_value () && names.has_value ());
+  totalCoins = *coins;
+  totalNames = *names;
+}
+
 }; // namespace
 
 std::unique_ptr<CoinStatsIndex> g_coin_stats_index;
