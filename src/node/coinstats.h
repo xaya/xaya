@@ -24,9 +24,10 @@ enum class CoinStatsHashType {
     NONE,
 };
 
-struct CCoinsStats
-{
-    CoinStatsHashType m_hash_type;
+struct CCoinsStats {
+    //! Which hash type to use
+    const CoinStatsHashType m_hash_type;
+
     int nHeight{0};
     uint256 hashBlock{};
     uint64_t nTransactions{0};
@@ -34,8 +35,9 @@ struct CCoinsStats
     uint64_t nBogoSize{0};
     uint256 hashSerialized{};
     uint64_t nDiskSize{0};
-    CAmount nCoinAmount{0};
-    CAmount nNameAmount{0};
+    // The total amounts, or nullopt if an overflow occurred calculating them
+    std::optional<CAmount> nCoinAmount{0};
+    std::optional<CAmount> nNameAmount{0};
 
     //! The number of coins contained.
     uint64_t coins_count{0};
@@ -78,8 +80,10 @@ CDataStream TxOutSer(const COutPoint& outpoint, const Coin& coin);
 
 /** Applies the value of the given coin to either the name or the
  *  currency total.  The sign can be used to apply them negative
- *  in case of undos.  */
+ *  in case of undos.  The totals check for overflow and return a missing
+ *  value in that case.  */
 void AddCoinValueToTotals (const Coin& coin, int sign,
-                           CAmount& totalCoins, CAmount& totalNames);
+                           std::optional<CAmount>& totalCoins,
+                           std::optional<CAmount>& totalNames);
 
 #endif // BITCOIN_NODE_COINSTATS_H

@@ -96,7 +96,6 @@ Makefile
 !depends/Makefile
 src/qt/namecoin-qt
 Namecoin-Qt.app
-background.tiff*
 
 # Qt Creator
 Makefile.am.user
@@ -150,6 +149,5 @@ db4/
 
 osx_volname
 dist/
-*.background.tiff
 
 /guix-build-*
