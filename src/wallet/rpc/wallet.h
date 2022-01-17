@@ -10,10 +10,13 @@
 
 #include <vector>
 
-class CCoinControl;
-class CRecipient;
 class CRPCCommand;
 class CTxIn;
+
+namespace wallet {
+
+class CCoinControl;
+class CRecipient;
 class CWallet;
 
 Span<const CRPCCommand> GetWalletRPCCommands();
@@ -23,5 +26,7 @@ Span<const CRPCCommand> GetWalletRPCCommands();
 UniValue SendMoney(CWallet& wallet, const CCoinControl& coin_control,
                    const CTxIn* withInput,
                    std::vector<CRecipient>& recipients, mapValue_t map_value, bool verbose);
+
+} // namespace wallet
 
 #endif // BITCOIN_WALLET_RPC_WALLET_H

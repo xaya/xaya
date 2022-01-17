@@ -76,8 +76,8 @@ class UTXOSetHashTest(BitcoinTestFramework):
         # The values differ from upstream since in Xaya the genesis block's coinbase
         # is part of the UTXO set.
         self.log.info("Test deterministic UTXO set hash results")
-        assert_equal(node.gettxoutsetinfo()['hash_serialized_2'], "bd11b50d556a20109e255e689ba5c82f36125946588a00f015c167c24ac3374d")
-        assert_equal(node.gettxoutsetinfo("muhash")['muhash'], "01dd78f0245ea4d8f92c1c075db666cbe95d6f15c5b9f1156f3e4bee94a4cc53")
+        assert_equal(node.gettxoutsetinfo()['hash_serialized_2'], "0e75e3e4effae9bb8e81c9c6c5ffe2fd1ad775d8025da7b1cad1a0d1a319ddf2")
+        assert_equal(node.gettxoutsetinfo("muhash")['muhash'], "4f0156356a5acfa4f57d5eaee5abff49b7759f071786f924e5c791758e52f95d")
 
     def run_test(self):
         self.test_muhash_implementation()

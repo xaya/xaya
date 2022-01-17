@@ -110,7 +110,7 @@ SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
                      const CBlockIndex* pindex)
 {
   CBlock blk;
-  if (!ReadBlockFromDisk (blk, pindex, Params ().GetConsensus ()))
+  if (!node::ReadBlockFromDisk (blk, pindex, Params ().GetConsensus ()))
     {
       LogPrint (BCLog::GAME, "Reading block %s failed, ignoring\n",
                 pindex->GetBlockHash ().GetHex ());

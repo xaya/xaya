@@ -15,6 +15,10 @@ class CBlockIndex;
 class CZMQAbstractNotifier;
 class ZMQGameBlocksNotifier;
 
+namespace node {
+class BlockManager;
+} // namespace node
+
 class CZMQNotificationInterface final : public CValidationInterface
 {
 public:
@@ -22,7 +26,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static CZMQNotificationInterface* Create(const BlockManager& b);
+    static CZMQNotificationInterface* Create(const node::BlockManager& b);
 
     inline TrackedGames* GetTrackedGames() {
         return trackedGames.get();

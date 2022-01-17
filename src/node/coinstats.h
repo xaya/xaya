@@ -15,9 +15,12 @@
 #include <cstdint>
 #include <functional>
 
-class BlockManager;
 class CCoinsView;
+namespace node {
+class BlockManager;
+} // namespace node
 
+namespace node {
 enum class CoinStatsHashType {
     HASH_SERIALIZED,
     MUHASH,
@@ -72,7 +75,7 @@ struct CCoinsStats {
 };
 
 //! Calculate statistics about the unspent transaction output set
-bool GetUTXOStats(CCoinsView* view, BlockManager& blockman, CCoinsStats& stats, const std::function<void()>& interruption_point = {}, const CBlockIndex* pindex = nullptr);
+bool GetUTXOStats(CCoinsView* view, node::BlockManager& blockman, CCoinsStats& stats, const std::function<void()>& interruption_point = {}, const CBlockIndex* pindex = nullptr);
 
 uint64_t GetBogoSize(const CScript& script_pub_key);
 
@@ -85,5 +88,7 @@ CDataStream TxOutSer(const COutPoint& outpoint, const Coin& coin);
 void AddCoinValueToTotals (const Coin& coin, int sign,
                            std::optional<CAmount>& totalCoins,
                            std::optional<CAmount>& totalNames);
+
+} // namespace node
 
 #endif // BITCOIN_NODE_COINSTATS_H

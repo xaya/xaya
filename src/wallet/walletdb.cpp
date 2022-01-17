@@ -27,6 +27,7 @@
 #include <optional>
 #include <string>
 
+namespace wallet {
 namespace DBKeys {
 const std::string ACENTRY{"acentry"};
 const std::string ACTIVEEXTERNALSPK{"activeexternalspk"};
@@ -1215,3 +1216,4 @@ std::unique_ptr<WalletDatabase> CreateMockWalletDatabase()
     return std::make_unique<BerkeleyDatabase>(std::make_shared<BerkeleyEnvironment>(), "");
 #endif
 }
+} // namespace wallet

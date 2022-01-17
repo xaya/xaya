@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 The Xaya developers
+// Copyright (c) 2018-2022 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,11 +12,14 @@
 #include <string>
 #include <vector>
 
-class BlockManager;
 class CBlock;
 class CBlockIndex;
 class CTransaction;
 class UniValue;
+
+namespace node {
+class BlockManager;
+} // namespace node
 
 /**
  * Helper class to manage the list of tracked game IDs.
@@ -94,14 +97,15 @@ private:
    * Block manager with the block map we use to get context information
    * like median time for blocks.
    */
-  const BlockManager& blockman;
+  const node::BlockManager& blockman;
 
 public:
 
   static const char* PREFIX_ATTACH;
   static const char* PREFIX_DETACH;
 
-  explicit ZMQGameBlocksNotifier (const BlockManager& b, const TrackedGames& tg)
+  explicit ZMQGameBlocksNotifier (const node::BlockManager& b,
+                                  const TrackedGames& tg)
     : ZMQGameNotifier(tg), blockman(b)
   {}
 

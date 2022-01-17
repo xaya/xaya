@@ -9,6 +9,7 @@
 
 #include <zmq.h>
 
+#include <node/blockstorage.h>
 #include <validation.h>
 #include <util/system.h>
 
@@ -30,7 +31,7 @@ std::list<const CZMQAbstractNotifier*> CZMQNotificationInterface::GetActiveNotif
     return result;
 }
 
-CZMQNotificationInterface* CZMQNotificationInterface::Create(const BlockManager& blockman)
+CZMQNotificationInterface* CZMQNotificationInterface::Create(const node::BlockManager& blockman)
 {
     std::map<std::string, CZMQNotifierFactory> factories;
     factories["pubhashblock"] = CZMQAbstractNotifier::Create<CZMQPublishHashBlockNotifier>;

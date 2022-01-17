@@ -22,6 +22,9 @@
 #include <vector>
 
 class ChainstateManager;
+namespace node {
+class CBlockTemplate;
+} // namespace node
 
 namespace auxpow_tests
 {
@@ -44,7 +47,7 @@ private:
   /** The lock used for state in this object.  */
   mutable RecursiveMutex cs;
   /** All currently "active" block templates.  */
-  std::vector<std::unique_ptr<CBlockTemplate>> templates;
+  std::vector<std::unique_ptr<node::CBlockTemplate>> templates;
   /** Maps block hashes to pointers in vTemplates.  Does not own the memory.  */
   std::map<uint256, const CBlock*> blocks;
   /**
