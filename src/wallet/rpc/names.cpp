@@ -43,6 +43,9 @@
 #include <algorithm>
 #include <memory>
 
+namespace wallet
+{
+
 /* ************************************************************************** */
 namespace
 {
@@ -345,7 +348,7 @@ getNameSalt(CWallet* const pwallet, const valtype& name, const CScript& output, 
         keyid = GetKeyForDestination(*provider, dest);
         provider->GetKey(keyid, key);
 
-        return getNameSalt(key, name, rand);
+        return wallet::getNameSalt(key, name, rand);
       }
 
     return false;
@@ -870,7 +873,7 @@ queuerawtransaction ()
   const uint256& hashTx = txParsed->GetHash();
 
   // Validate transaction
-  NodeContext& node = EnsureAnyNodeContext(request);
+  node::NodeContext& node = EnsureAnyNodeContext(request);
   ChainstateManager& chainman = EnsureChainman(node);
 
   {
@@ -1093,3 +1096,5 @@ sendtoname ()
 }
   };
 }
+
+} // namespace wallet

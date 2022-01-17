@@ -22,9 +22,10 @@
 namespace
 {
 
-void auxMiningCheck(const JSONRPCRequest& request)
+using node::BlockAssembler;
+
+void auxMiningCheck(const node::NodeContext& node)
 {
-  const NodeContext& node = EnsureAnyNodeContext (request);
   const auto& connman = EnsureConnman (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -79,7 +80,7 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
           }
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
-        std::unique_ptr<CBlockTemplate> newBlock
+        std::unique_ptr<node::CBlockTemplate> newBlock
             = BlockAssembler (chainman.ActiveChainstate (), mempool, Params ())
                 .CreateNewBlock (scriptPubKey);
         if (newBlock == nullptr)
@@ -91,7 +92,7 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
         startTime = GetTime ();
 
         /* Finalise it by setting the version and building the merkle root.  */
-        IncrementExtraNonce (&newBlock->block, pindexPrev, extraNonce);
+        node::IncrementExtraNonce (&newBlock->block, pindexPrev, extraNonce);
         newBlock->block.SetAuxpowVersion (true);
 
         /* Save in our map of constructed blocks.  */
@@ -138,10 +139,10 @@ UniValue
 AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
                              const CScript& scriptPubKey)
 {
-  auxMiningCheck (request);
   LOCK (cs);
 
   const auto& node = EnsureAnyNodeContext (request);
+  auxMiningCheck (node);
   const auto& mempool = EnsureMemPool (node);
   const auto& chainman = EnsureChainman (node);
 
@@ -166,8 +167,8 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
                              const std::string& hashHex,
                              const std::string& auxpowHex) const
 {
-  auxMiningCheck (request);
   const auto& node = EnsureAnyNodeContext (request);
+  auxMiningCheck (node);
   auto& chainman = EnsureChainman (node);
 
   std::shared_ptr<CBlock> shared_block;

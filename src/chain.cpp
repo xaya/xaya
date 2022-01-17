@@ -4,6 +4,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chain.h>
+#include <util/time.h>
+
+std::string CBlockFileInfo::ToString() const
+{
+    return strprintf("CBlockFileInfo(blocks=%u, size=%u, heights=%u...%u, time=%s...%s)", nBlocks, nSize, nHeightFirst, nHeightLast, FormatISO8601Date(nTimeFirst), FormatISO8601Date(nTimeLast));
+}
 
 #include <node/blockstorage.h>
 
@@ -19,7 +25,7 @@ CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParam
        have to read the actual *header*, not the full block.  */
     if (block.IsAuxpow())
     {
-        ReadBlockHeaderFromDisk(block, this, consensusParams);
+        node::ReadBlockHeaderFromDisk(block, this, consensusParams);
         return block;
     }
 

@@ -136,15 +136,15 @@ addExpirationInfo (const ChainstateManager& chainman,
  * Adds the "ismine" field giving ownership info to the JSON object.
  */
 void
-addOwnershipInfo (const CScript& addr, const CWallet* pwallet,
+addOwnershipInfo (const CScript& addr, const wallet::CWallet* pwallet,
                   UniValue& data)
 {
   if (pwallet == nullptr)
     return;
 
   AssertLockHeld (pwallet->cs_wallet);
-  const isminetype mine = pwallet->IsMine (addr);
-  const bool isMine = (mine & ISMINE_SPENDABLE);
+  const wallet::isminetype mine = pwallet->IsMine (addr);
+  const bool isMine = (mine & wallet::ISMINE_SPENDABLE);
   data.pushKV ("ismine", isMine);
 }
 #endif
@@ -255,7 +255,7 @@ class MaybeWalletForRequest
 private:
 
 #ifdef ENABLE_WALLET
-  std::shared_ptr<CWallet> wallet;
+  std::shared_ptr<wallet::CWallet> wallet;
 #endif
 
 public:
@@ -268,9 +268,9 @@ public:
         /* GetWalletForJSONRPCRequest throws an internal error if there
            is no wallet context.  We want to handle this situation gracefully
            and just fall back to not having a wallet in this case.  */
-        if (util::AnyPtr<WalletContext> (request.context))
+        if (util::AnyPtr<wallet::WalletContext> (request.context))
           {
-            wallet = GetWalletForJSONRPCRequest (request);
+            wallet = wallet::GetWalletForJSONRPCRequest (request);
             return;
           }
       }
@@ -299,13 +299,13 @@ public:
   }
 
 #ifdef ENABLE_WALLET
-  CWallet*
+  wallet::CWallet*
   getWallet ()
   {
     return wallet.get ();
   }
 
-  const CWallet*
+  const wallet::CWallet*
   getWallet () const
   {
     return wallet.get ();
@@ -1105,7 +1105,7 @@ name_checkdb ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  NodeContext& node = EnsureAnyNodeContext (request);
+  node::NodeContext& node = EnsureAnyNodeContext (request);
   ChainstateManager& chainman = EnsureChainman (node);
 
   LOCK (cs_main);

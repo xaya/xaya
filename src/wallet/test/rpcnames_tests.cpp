@@ -16,7 +16,7 @@ TestNameSalt(const std::string& privkey_b58, const std::string& name_str, const 
     const valtype expectedSalt = ParseHex(expectedSalt_hex);
 
     valtype salt(20);
-    getNameSalt(privkey, name, salt);
+    wallet::getNameSalt(privkey, name, salt);
 
     BOOST_CHECK(salt == expectedSalt);
 }

@@ -533,7 +533,7 @@ public:
                 wallet_request.context = &m_context;
                 /* Unlike upstream Bitcoin, we need the NodeContext for
                    getauxblock.  */
-                wallet_request.context2 = util::AnyPtr<NodeContext>(request.context);
+                wallet_request.context2 = util::AnyPtr<node::NodeContext>(request.context);
                 return command.actor(wallet_request, result, last_handler);
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
@@ -572,7 +572,7 @@ public:
         options.require_existing = true;
         return MakeWallet(m_context, LoadWallet(m_context, name, true /* load_on_start */, options, status, error, warnings));
     }
-    std::unique_ptr<Wallet> restoreWallet(const std::string& backup_file, const std::string& wallet_name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    std::unique_ptr<Wallet> restoreWallet(const fs::path& backup_file, const std::string& wallet_name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
         DatabaseStatus status;
 
@@ -613,7 +613,7 @@ public:
 } // namespace wallet
 
 namespace interfaces {
-std::unique_ptr<Wallet> MakeWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(context, wallet) : nullptr; }
+std::unique_ptr<Wallet> MakeWallet(wallet::WalletContext& context, const std::shared_ptr<wallet::CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(context, wallet) : nullptr; }
 
 std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, ArgsManager& args)
 {
