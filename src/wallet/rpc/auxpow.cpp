@@ -11,6 +11,9 @@
 
 #include <univalue.h>
 
+namespace wallet
+{
+
 namespace
 {
 
@@ -195,3 +198,5 @@ RPCHelpMan getauxblock()
 },
     };
 }
+
+} // namespace wallet

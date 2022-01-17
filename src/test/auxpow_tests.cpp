@@ -518,11 +518,11 @@ class AuxpowMinerForTest : public AuxpowMiner
 private:
 
   /** Node (with chainman and mempool) used for the test.  */
-  const NodeContext& node;
+  const node::NodeContext& node;
 
 public:
 
-  explicit AuxpowMinerForTest (const NodeContext& n)
+  explicit AuxpowMinerForTest (const node::NodeContext& n)
     : node(n)
   {}
 
