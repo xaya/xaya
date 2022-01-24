@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_overflow_target)
     const auto params = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
     const auto& consensus = params->GetConsensus();
     uint256 hash;
-    unsigned int nBits = ~0x00800000;
+    unsigned int nBits{~0x00800000U};
     hash.SetHex("0x1");
     BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
 }
