@@ -236,8 +236,8 @@ struct LocalServiceInfo {
     uint16_t nPort;
 };
 
-extern RecursiveMutex cs_mapLocalHost;
-extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost GUARDED_BY(cs_mapLocalHost);
+extern Mutex g_maplocalhost_mutex;
+extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost GUARDED_BY(g_maplocalhost_mutex);
 
 extern const std::string NET_MESSAGE_COMMAND_OTHER;
 typedef std::map<std::string, uint64_t> mapMsgCmdSize; //command, total bytes
@@ -440,12 +440,12 @@ public:
     //! Whether this peer is an inbound onion, i.e. connected via our Tor onion service.
     const bool m_inbound_onion;
     std::atomic<int> nVersion{0};
-    RecursiveMutex cs_SubVer;
+    Mutex m_subver_mutex;
     /**
      * cleanSubVer is a sanitized string of the user agent byte array we read
      * from the wire. This cleaned string can safely be logged or displayed.
      */
-    std::string cleanSubVer GUARDED_BY(cs_SubVer){};
+    std::string cleanSubVer GUARDED_BY(m_subver_mutex){};
     bool m_prefer_evict{false}; // This peer is preferred for eviction.
     bool HasPermission(NetPermissionFlags permission) const {
         return NetPermissions::HasFlag(m_permissionFlags, permission);
@@ -942,12 +942,6 @@ public:
 
     void WakeMessageHandler();
 
-    /** Attempts to obfuscate tx time through exponentially distributed emitting.
-        Works assuming that a single interval is used.
-        Variable intervals will result in privacy decrease.
-    */
-    std::chrono::microseconds PoissonNextSendInbound(std::chrono::microseconds now, std::chrono::seconds average_interval);
-
     /** Return true if we should disconnect the peer for failing an inactivity check. */
     bool ShouldRunInactivityChecks(const CNode& node, std::chrono::seconds now) const;
 
@@ -1227,8 +1221,6 @@ private:
      */
     std::atomic_bool m_start_extra_block_relay_peers{false};
 
-    std::atomic<std::chrono::microseconds> m_next_send_inv_to_incoming{0us};
-
     /**
      * A vector of -bind=<address>:<port>=onion arguments each of which is
      * an address and port that are designated for incoming Tor connections.
@@ -1275,9 +1267,6 @@ private:
     friend struct CConnmanTest;
     friend struct ConnmanTestMsg;
 };
-
-/** Return a timestamp in the future (in microseconds) for exponentially distributed events. */
-std::chrono::microseconds PoissonNextSend(std::chrono::microseconds now, std::chrono::seconds average_interval);
 
 /** Dump binary message to file, with timestamp */
 void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming);
