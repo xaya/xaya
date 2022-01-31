@@ -433,6 +433,7 @@ CBlockIndex* BlockManager::GetLastCheckpoint(const CCheckpointData& data)
 
 bool IsBlockPruned(const CBlockIndex* pblockindex)
 {
+    AssertLockHeld(::cs_main);
     return (fHavePruned && !(pblockindex->nStatus & BLOCK_HAVE_DATA) && pblockindex->nTx > 0);
 }
 
@@ -517,7 +518,8 @@ static bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const
 
 bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
 {
-    FlatFilePos pos = pindex->GetUndoPos();
+    const FlatFilePos pos{WITH_LOCK(::cs_main, return pindex->GetUndoPos())};
+
     if (pos.IsNull()) {
         return error("%s: no undo data available", __func__);
     }
@@ -716,6 +718,7 @@ static bool WriteBlockToDisk(const CBlock& block, FlatFilePos& pos, const CMessa
 
 bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex* pindex, const CChainParams& chainparams)
 {
+    AssertLockHeld(::cs_main);
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull()) {
         FlatFilePos _pos;
@@ -834,23 +837,12 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatFilePos& pos, c
         }
 
         block.resize(blk_size); // Zeroing of memory is intentional here
-        filein.read((char*)block.data(), blk_size);
-    } catch(const std::exception& e) {
+        filein.read(MakeWritableByteSpan(block));
+    } catch (const std::exception& e) {
         return error("%s: Read from block file failed: %s for %s", __func__, e.what(), pos.ToString());
     }
 
     return true;
-}
-
-bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CBlockIndex* pindex, const CMessageHeader::MessageStartChars& message_start)
-{
-    FlatFilePos block_pos;
-    {
-        LOCK(cs_main);
-        block_pos = pindex->GetBlockPos();
-    }
-
-    return ReadRawBlockFromDisk(block, block_pos, message_start);
 }
 
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */

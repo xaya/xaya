@@ -15,6 +15,7 @@
             "n": 0,
             "scriptPubKey": {
                 "asm": "OP_HASH160 a4051c02398868af83f28f083208fae99a769263 OP_EQUAL",
+                "desc": "addr(DL6MUj6VETytXPU4s8UUWxLPMdvTFx3Ln1)#w0h56vc6",
                 "hex": "a914a4051c02398868af83f28f083208fae99a76926387",
                 "address": "DL6MUj6VETytXPU4s8UUWxLPMdvTFx3Ln1",
                 "type": "scripthash"

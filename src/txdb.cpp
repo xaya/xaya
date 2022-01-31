@@ -154,7 +154,7 @@ bool CDbNameIterator::next(valtype& name, CNameData& data) {
     if (!iter->Valid())
         return false;
 
-    std::pair<char, valtype> key;
+    std::pair<uint8_t, valtype> key;
     if (!iter->GetKey(key) || key.first != DB_NAME)
         return false;
     name = key.second;
@@ -370,7 +370,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
     for (; pcursor->Valid(); pcursor->Next())
     {
         interruption_point();
-        char chType;
+        uint8_t chType;
         if (!pcursor->GetKey(chType))
             continue;
 
@@ -399,7 +399,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
 
         case DB_NAME:
         {
-            std::pair<char, valtype> key;
+            std::pair<uint8_t, valtype> key;
             if (!pcursor->GetKey(key) || key.first != DB_NAME)
                 return error("%s : failed to read DB_NAME key", __func__);
             const valtype& name = key.second;
@@ -415,7 +415,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
 
         case DB_NAME_HISTORY:
         {
-            std::pair<char, valtype> key;
+            std::pair<uint8_t, valtype> key;
             if (!pcursor->GetKey(key) || key.first != DB_NAME_HISTORY)
                 return error("%s : failed to read DB_NAME_HISTORY key",
                              __func__);
@@ -517,8 +517,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nTime          = diskindex.nTime;
                 pindexNew->nBits          = diskindex.nBits;
                 pindexNew->nNonce         = diskindex.nNonce;
-                pindexNew->algo           = diskindex.algo;
                 pindexNew->nStatus        = diskindex.nStatus;
+                pindexNew->algo           = diskindex.algo;
                 pindexNew->nTx            = diskindex.nTx;
 
                 /* Bitcoin checks the PoW here.  We don't do this because

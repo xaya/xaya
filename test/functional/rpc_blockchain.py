@@ -6,6 +6,7 @@
 
 Test the following RPCs:
     - getblockchaininfo
+    - getdeploymentinfo
     - getchaintxstats
     - gettxoutsetinfo
     - getblockheader
@@ -81,6 +82,7 @@ class BlockchainTest(BitcoinTestFramework):
         self._test_stopatheight()
         self._test_waitforblockheight()
         self._test_getblock()
+        self._test_getdeploymentinfo()
         assert self.nodes[0].verifychain(4, 0)
 
     def mine_chain(self):
@@ -116,7 +118,6 @@ class BlockchainTest(BitcoinTestFramework):
             'mediantime',
             'pruned',
             'size_on_disk',
-            'softforks',
             'time',
             'verificationprogress',
             'warnings',
@@ -160,11 +161,6 @@ class BlockchainTest(BitcoinTestFramework):
         self.start_node(0, extra_args=[
             '-stopatheight=207',
             '-prune=550',
-            '-testactivationheight=bip34@2',
-            '-testactivationheight=dersig@3',
-            '-testactivationheight=cltv@4',
-            '-testactivationheight=csv@5',
-            '-testactivationheight=segwit@6',
         ])
 
         res = self.nodes[0].getblockchaininfo()
@@ -178,14 +174,45 @@ class BlockchainTest(BitcoinTestFramework):
         assert_equal(res['prune_target_size'], 576716800)
         assert_greater_than(res['size_on_disk'], 0)
 
-        assert_equal(res['softforks'], {
+    def check_signalling_deploymentinfo_result(self, gdi_result, height, blockhash, status_next):
+        assert height >= 144 and height <= 287
+
+        assert_equal(gdi_result, {
+          "hash": blockhash,
+          "height": height,
+          "deployments": {
             'bip16': {'type': 'buried', 'active': True, 'height': 0},
             'bip34': {'type': 'buried', 'active': True, 'height': 2},
             'bip66': {'type': 'buried', 'active': True, 'height': 3},
             'bip65': {'type': 'buried', 'active': True, 'height': 4},
             'csv': {'type': 'buried', 'active': True, 'height': 5},
             'segwit': {'type': 'buried', 'active': True, 'height': 6},
-        })
+        }})
+
+    def _test_getdeploymentinfo(self):
+        # Note: continues past -stopatheight height, so must be invoked
+        # after _test_stopatheight
+
+        self.log.info("Test getdeploymentinfo")
+        self.stop_node(0)
+        self.start_node(0, extra_args=[
+            '-testactivationheight=bip34@2',
+            '-testactivationheight=dersig@3',
+            '-testactivationheight=cltv@4',
+            '-testactivationheight=csv@5',
+            '-testactivationheight=segwit@6',
+        ])
+
+        gbci207 = self.nodes[0].getblockchaininfo()
+        self.check_signalling_deploymentinfo_result(self.nodes[0].getdeploymentinfo(), gbci207["blocks"], gbci207["bestblockhash"], "started")
+
+        # block just prior to lock in
+        self.generate(self.wallet, 287 - gbci207["blocks"])
+        gbci287 = self.nodes[0].getblockchaininfo()
+        self.check_signalling_deploymentinfo_result(self.nodes[0].getdeploymentinfo(), gbci287["blocks"], gbci287["bestblockhash"], "locked_in")
+
+        # calling with an explicit hash works
+        self.check_signalling_deploymentinfo_result(self.nodes[0].getdeploymentinfo(gbci207["bestblockhash"]), gbci207["blocks"], gbci207["bestblockhash"], "started")
 
     def _test_getchaintxstats(self):
         self.log.info("Test getchaintxstats")
