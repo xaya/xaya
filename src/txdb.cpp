@@ -132,7 +132,7 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
 
     for (; pcursor->Valid(); pcursor->Next())
     {
-        std::pair<char, CNameCache::ExpireEntry> key;
+        std::pair<uint8_t, CNameCache::ExpireEntry> key;
         if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY)
             break;
         const CNameCache::ExpireEntry& entry = key.second;
@@ -187,7 +187,7 @@ bool CDbNameIterator::next(valtype& name, CNameData& data) {
     if (!iter->Valid())
         return false;
 
-    std::pair<char, valtype> key;
+    std::pair<uint8_t, valtype> key;
     if (!iter->GetKey(key) || key.first != DB_NAME)
         return false;
     name = key.second;
@@ -412,7 +412,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
     for (; pcursor->Valid(); pcursor->Next())
     {
         interruption_point();
-        char chType;
+        uint8_t chType;
         if (!pcursor->GetKey(chType))
             continue;
 
@@ -441,7 +441,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
 
         case DB_NAME:
         {
-            std::pair<char, valtype> key;
+            std::pair<uint8_t, valtype> key;
             if (!pcursor->GetKey(key) || key.first != DB_NAME)
                 return error("%s : failed to read DB_NAME key", __func__);
             const valtype& name = key.second;
@@ -465,7 +465,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
 
         case DB_NAME_HISTORY:
         {
-            std::pair<char, valtype> key;
+            std::pair<uint8_t, valtype> key;
             if (!pcursor->GetKey(key) || key.first != DB_NAME_HISTORY)
                 return error("%s : failed to read DB_NAME_HISTORY key",
                              __func__);
@@ -480,7 +480,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
 
         case DB_NAME_EXPIRY:
         {
-            std::pair<char, CNameCache::ExpireEntry> key;
+            std::pair<uint8_t, CNameCache::ExpireEntry> key;
             if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY)
                 return error("%s : failed to read DB_NAME_EXPIRY key",
                              __func__);
@@ -589,16 +589,19 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 CBlockIndex* pindexNew = insertBlockIndex(diskindex.GetBlockHash());
                 pindexNew->pprev          = insertBlockIndex(diskindex.hashPrev);
                 pindexNew->nHeight        = diskindex.nHeight;
-                pindexNew->nFile          = diskindex.nFile;
-                pindexNew->nDataPos       = diskindex.nDataPos;
-                pindexNew->nUndoPos       = diskindex.nUndoPos;
                 pindexNew->nVersion       = diskindex.nVersion;
                 pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
                 pindexNew->nTime          = diskindex.nTime;
                 pindexNew->nBits          = diskindex.nBits;
                 pindexNew->nNonce         = diskindex.nNonce;
-                pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
+                {
+                    LOCK(::cs_main);
+                    pindexNew->nFile = diskindex.nFile;
+                    pindexNew->nDataPos = diskindex.nDataPos;
+                    pindexNew->nUndoPos = diskindex.nUndoPos;
+                    pindexNew->nStatus = diskindex.nStatus;
+                }
 
                 /* Bitcoin checks the PoW here.  We don't do this because
                    the CDiskBlockIndex does not contain the auxpow.

@@ -9,6 +9,7 @@
 #include <consensus/validation.h>
 #include <key_io.h>
 #include <names/encoding.h>
+#include <script/descriptor.h>
 #include <script/names.h>
 #include <script/script.h>
 #include <script/standard.h>
@@ -167,6 +168,7 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey, UniValue& out, bool include
         out.pushKV ("nameOp", NameOpToUniv (nameOp));
 
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
+    out.pushKV("desc", InferDescriptor(scriptPubKey, DUMMY_SIGNING_PROVIDER)->ToString());
     if (include_hex) out.pushKV("hex", HexStr(scriptPubKey));
 
     std::vector<std::vector<unsigned char>> solns;
