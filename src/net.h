@@ -284,7 +284,7 @@ public:
 
 /** Transport protocol agnostic message container.
  * Ideally it should only contain receive time, payload,
- * command and size.
+ * type and size.
  */
 class CNetMessage {
 public:
@@ -292,7 +292,7 @@ public:
     std::chrono::microseconds m_time{0}; //!< time of message receipt
     uint32_t m_message_size{0};          //!< size of the payload
     uint32_t m_raw_message_size{0};      //!< used wire size of the message (including header/checksum)
-    std::string m_command;
+    std::string m_type;
 
     CNetMessage(CDataStream&& recv_in) : m_recv(std::move(recv_in)) {}
 
@@ -624,9 +624,9 @@ public:
         return m_greatest_common_version;
     }
 
-    CService GetAddrLocal() const;
+    CService GetAddrLocal() const LOCKS_EXCLUDED(m_addr_local_mutex);
     //! May not be called more than once
-    void SetAddrLocal(const CService& addrLocalIn);
+    void SetAddrLocal(const CService& addrLocalIn) LOCKS_EXCLUDED(m_addr_local_mutex);
 
     CNode* AddRef()
     {
@@ -699,8 +699,8 @@ private:
     std::list<CNetMessage> vRecvMsg; // Used only by SocketHandler thread
 
     // Our address, as reported by the peer
-    CService addrLocal GUARDED_BY(cs_addrLocal);
-    mutable RecursiveMutex cs_addrLocal;
+    CService addrLocal GUARDED_BY(m_addr_local_mutex);
+    mutable Mutex m_addr_local_mutex;
 
     mapMsgCmdSize mapSendBytesPerMsgCmd GUARDED_BY(cs_vSend);
     mapMsgCmdSize mapRecvBytesPerMsgCmd GUARDED_BY(cs_vRecv);
