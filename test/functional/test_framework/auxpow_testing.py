@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 Daniel Kraft
+# Copyright (c) 2014-2022 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,14 +21,13 @@ def computeAuxpow (block, target, ok):
   (header, _) = mineBlock (header, target, ok)
   return auxpow.finishAuxpow (tx, header)
 
-def mineAuxpowBlock (node):
+def mineAuxpowBlock (node, addr):
   """
   Mine an auxpow block on the given RPC connection.  This uses the
   createauxblock and submitauxblock command pair.
   """
 
   def create ():
-    addr = node.getnewaddress ()
     return node.createauxblock (addr)
 
   return mineAuxpowBlockWithMethods (create, node.submitauxblock)
