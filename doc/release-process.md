@@ -101,7 +101,7 @@ Checkout the Namecoin Core version you'd like to build:
 pushd ./namecoin-core
 SIGNER='(your builder key, ie JeremyRand, jonasbits, etc)'
 VERSION='(new version without nc-prefix, e.g. 0.20.0)'
-git fetch "nc${VERSION}"
+git fetch origin "nc${VERSION}"
 git checkout "nc${VERSION}"
 popd
 ```
