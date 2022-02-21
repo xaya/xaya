@@ -7,7 +7,7 @@ git_root() {
 git_head_version() {
     local recent_tag
     if recent_tag="$(git describe --exact-match HEAD 2> /dev/null)"; then
-        echo "${recent_tag#v}"
+        echo "${recent_tag#nc}"
     else
         git rev-parse --short=12 HEAD
     fi

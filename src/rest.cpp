@@ -990,9 +990,12 @@ static bool rest_name(const std::any& context, HTTPRequest* req, const std::stri
     ChainstateManager& chainman = *maybe_chainman;
 
     CNameData data;
-    if (!chainman.ActiveChainstate ().CoinsTip ().GetName(plainName, data))
-        return RESTERR(req, HTTP_NOT_FOUND,
-                       EncodeNameForMessage (plainName) + " not found");
+    {
+        LOCK(cs_main);
+        if (!chainman.ActiveChainstate ().CoinsTip ().GetName(plainName, data))
+            return RESTERR(req, HTTP_NOT_FOUND,
+                           EncodeNameForMessage (plainName) + " not found");
+    }
 
     switch (rf)
     {
