@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2022 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -133,6 +133,7 @@ BOOST_AUTO_TEST_CASE (name_database)
 
   std::set<valtype> setExpected, setRet;
 
+  LOCK (cs_main);
   CCoinsViewCache& view = m_node.chainman->ActiveChainstate ().CoinsTip ();
 
   setExpected.clear ();
@@ -470,6 +471,7 @@ NameIterationTester::remove (const std::string& n)
 
 BOOST_AUTO_TEST_CASE (name_iteration)
 {
+  LOCK (cs_main);
   NameIterationTester tester(m_node.chainman->ActiveChainstate ().CoinsDB ());
 
   tester.verify ();
@@ -848,6 +850,7 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
 
   /* Use a "real" backing view, since GetNamesForHeight calls through
      to the base in any case.  */
+  LOCK (cs_main);
   CCoinsViewCache view(&m_node.chainman->ActiveChainstate ().CoinsTip ());
 
   const COutPoint coinId1 = addTestCoin (upd1, 100000, view);

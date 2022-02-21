@@ -1030,15 +1030,10 @@ sendtoname ()
           },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
-  if (!wallet)
+  std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest (request);
+  if (!pwallet)
     return NullUniValue;
-  CWallet* const pwallet = wallet.get ();
   const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
-
-  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
-    throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                       "Namecoin is downloading blocks...");
 
   /* Make sure the results are valid at least up to the most recent block
      the user could have gotten from another RPC command prior to now.  */
@@ -1056,12 +1051,15 @@ sendtoname ()
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], NO_OPTIONS);
 
   CNameData data;
-  if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
-    {
-      std::ostringstream msg;
-      msg << "name not found: " << EncodeNameForMessage (name);
-      throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
-    }
+  {
+    LOCK (cs_main);
+    if (!chainman.ActiveChainstate ().CoinsTip ().GetName (name, data))
+      {
+        std::ostringstream msg;
+        msg << "name not found: " << EncodeNameForMessage (name);
+        throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
+      }
+  }
   if (data.isExpired (chainman.ActiveHeight ()))
     throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, "the name is expired");
 
