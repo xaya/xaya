@@ -360,7 +360,15 @@ bool CoinStatsIndex::Init()
     if (pindex) {
         DBVal entry;
         if (!LookUpOne(*m_db, pindex, entry)) {
-            return false;
+            return error("%s: Cannot read current %s state; index may be corrupted",
+                         __func__, GetName());
+        }
+
+        uint256 out;
+        m_muhash.Finalize(out);
+        if (entry.muhash != out) {
+            return error("%s: Cannot read current %s state; index may be corrupted",
+                         __func__, GetName());
         }
 
         m_transaction_output_count = entry.transaction_output_count;
