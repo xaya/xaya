@@ -830,7 +830,7 @@ static bool CreateTransactionInternal(
     }
     else if ((unsigned int)nChangePosInOut > txNew.vout.size())
     {
-        error = _("Change index out of range");
+        error = _("Transaction change output index out of range");
         return false;
     }
 
