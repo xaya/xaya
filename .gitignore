@@ -10,6 +10,7 @@ src/xaya-hash
 src/xaya-node
 src/xaya-tx
 src/xaya-util
+src/xaya-chainstate
 src/xaya-wallet
 src/test/fuzz/fuzz
 src/test/test_xaya
