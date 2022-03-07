@@ -157,6 +157,8 @@ public:
         vSeeds.emplace_back("seed.namecoin.libreisp.se"); // Jonas Ostman
         vSeeds.emplace_back("nmc.seed.quisquis.de"); // Peter Conrad
         vSeeds.emplace_back("seed.nmc.markasoftware.com"); // Mark Polyakov
+        vSeeds.emplace_back("dnsseed1.nmc.dotbit.zone"); // Stefan Stere
+        vSeeds.emplace_back("dnsseed2.nmc.dotbit.zone"); // Stefan Stere
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
