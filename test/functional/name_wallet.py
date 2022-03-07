@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2019 Daniel Kraft
+# Copyright (c) 2014-2022 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -45,8 +45,7 @@ class NameWalletTest (NameTestFramework):
     assert totalFee >= extra
 
     absFee = totalFee - extra
-    size = Decimal (len (info['hex']) / 2)
-    assert_fee_amount (absFee, size, txFee)
+    assert_fee_amount (absFee, count_bytes (info["hex"]), txFee)
 
     return totalFee
 
