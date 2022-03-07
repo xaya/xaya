@@ -9,6 +9,7 @@ src/namecoin-gui
 src/namecoin-node
 src/namecoin-tx
 src/namecoin-util
+src/namecoin-chainstate
 src/namecoin-wallet
 src/test/fuzz/fuzz
 src/test/test_namecoin
