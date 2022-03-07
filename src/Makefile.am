@@ -780,6 +780,7 @@ bitcoin_util_LDADD = \
 bitcoin_chainstate_SOURCES = \
   bitcoin-chainstate.cpp \
   arith_uint256.cpp \
+  auxpow.cpp \
   blockfilter.cpp \
   chain.cpp \
   chainparamsbase.cpp \
@@ -817,6 +818,7 @@ bitcoin_chainstate_SOURCES = \
   policy/settings.cpp \
   pow.cpp \
   primitives/block.cpp \
+  primitives/pureheader.cpp \
   primitives/transaction.cpp \
   pubkey.cpp \
   random.cpp \
