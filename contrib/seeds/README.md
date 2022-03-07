@@ -12,6 +12,7 @@ The seeds compiled into the release are created from jonasbits's DNS seed data, 
 
     curl -s https://stats.nmctest.net/seeds.txt?s=NamecoinNet > seeds_main.txt
     python3 makeseeds.py < seeds_main.txt > nodes_main.txt
+    cat nodes_main_manual.txt >> nodes_main.txt
     python3 generate-seeds.py . > ../../src/chainparamsseeds.h
 
 ## Dependencies
