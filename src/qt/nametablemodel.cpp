@@ -84,7 +84,7 @@ public:
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
             UniValue message = find_value( e, "message");
-            LogPrintf ("name_list lookup error: %s\n", message.get_str());
+            LogPrint(BCLog::QT, "name_list lookup error: %s\n", message.get_str());
         }
 
         // will be an object if name_list command isn't available/other error
@@ -135,7 +135,7 @@ public:
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
             UniValue message = find_value( e, "message");
-            LogPrintf ("name_pending lookup error: %s\n", message.get_str());
+            LogPrint(BCLog::QT, "name_pending lookup error: %s\n", message.get_str());
         }
 
         // will be an object if name_pending command isn't available/other error
@@ -475,7 +475,7 @@ NameTableModel::emitDataChanged(int idx)
 QString NameTableModel::update(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
 {
     std::string strName = name.toStdString();
-    LogPrintf ("wallet attempting name_update: name=%s\n", strName);
+    LogPrint(BCLog::QT, "wallet attempting name_update: name=%s\n", strName);
 
     UniValue params(UniValue::VOBJ);
     params.pushKV ("name", strName);
@@ -501,7 +501,7 @@ QString NameTableModel::update(const QString &name, const std::optional<QString>
     catch (const UniValue& e) {
         UniValue message = find_value(e, "message");
         std::string errorStr = message.get_str();
-        LogPrintf ("name_update error: %s\n", errorStr);
+        LogPrint(BCLog::QT, "name_update error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
     }
     return tr ("");

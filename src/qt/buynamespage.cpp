@@ -139,7 +139,7 @@ QString BuyNamesPage::name_available(const QString &name) const
 QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
 {
     std::string strName = name.toStdString();
-    LogPrintf ("wallet attempting name_firstupdate: name=%s\n", strName);
+    LogPrint(BCLog::QT, "wallet attempting name_firstupdate: name=%s\n", strName);
 
     UniValue params(UniValue::VOBJ);
     params.pushKV ("name", strName);
@@ -165,7 +165,7 @@ QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QStri
     catch (const UniValue& e) {
         UniValue message = find_value(e, "message");
         std::string errorStr = message.get_str();
-        LogPrintf ("name_firstupdate error: %s\n", errorStr);
+        LogPrint(BCLog::QT, "name_firstupdate error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
     }
     return tr ("");
