@@ -580,17 +580,17 @@ def create_lots_of_big_transactions(node, txouts, utxos, num, fee):
     return txids
 
 
-def mine_large_block(test_framework, node, utxos=None):
+def mine_large_block(test_framework, mini_wallet, node):
     # generate a 8k transaction,
-    # and 10 of them is close to the 100k block limit
-    num = 10
+    # and 12 of them is close to the 100k block limit
     txouts = gen_return_txouts()
-    utxos = utxos if utxos is not None else []
-    if len(utxos) < num:
-        utxos.clear()
-        utxos.extend(node.listunspent())
-    fee = 100 * node.getnetworkinfo()["relayfee"]
-    create_lots_of_big_transactions(node, txouts, utxos, num, fee=fee)
+    from .messages import COIN
+    fee = 100 * int(node.getnetworkinfo()["relayfee"] * COIN)
+    for _ in range(12):
+        tx = mini_wallet.create_self_transfer(from_node=node, fee_rate=0, mempool_valid=False)['tx']
+        tx.vout[0].nValue -= fee
+        tx.vout.extend(txouts)
+        mini_wallet.sendrawtransaction(from_node=node, tx_hex=tx.serialize().hex())
     test_framework.generate(node, 1)
 
 
