@@ -1309,7 +1309,7 @@ else
   BITCOIN_QT_INIT
 
   dnl sets $bitcoin_enable_qt, $bitcoin_enable_qt_test, $bitcoin_enable_qt_dbus
-  BITCOIN_QT_CONFIGURE([5.9.5])
+  BITCOIN_QT_CONFIGURE([5.11.3])
 
   dnl Keep a copy of the original $QT_INCLUDES and use it when invoking qt's moc
   QT_INCLUDES_UNSUPPRESSED=$QT_INCLUDES
@@ -1446,6 +1446,8 @@ if test "$use_external_signer" != "no"; then
     ;;
     *)
       AC_MSG_CHECKING([whether Boost.Process can be used])
+      TEMP_CPPFLAGS="$CPPFLAGS"
+      CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
       TEMP_LDFLAGS="$LDFLAGS"
       dnl Boost 1.73 and older require the following workaround.
       LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
@@ -1453,6 +1455,7 @@ if test "$use_external_signer" != "no"; then
         [have_boost_process="yes"],
         [have_boost_process="no"])
       LDFLAGS="$TEMP_LDFLAGS"
+      CPPFLAGS="$TEMP_CPPFLAGS"
       AC_MSG_RESULT([$have_boost_process])
       if test "$have_boost_process" = "yes"; then
         use_external_signer="yes"
