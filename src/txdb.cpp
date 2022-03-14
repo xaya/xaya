@@ -391,7 +391,7 @@ bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::func
     if (blockHash.IsNull())
         nHeight = 0;
     else
-        nHeight = chainState.m_blockman.m_block_index.find(blockHash)->second->nHeight;
+        nHeight = chainState.m_blockman.m_block_index.find(blockHash)->second.nHeight;
 
     /* It seems that there are no "const iterators" for LevelDB.  Since we
        only need read operations on it, use a const-cast to get around
