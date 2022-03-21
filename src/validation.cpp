@@ -68,21 +68,22 @@
 using node::BLOCKFILE_CHUNK_SIZE;
 using node::BlockManager;
 using node::BlockMap;
+using node::CBlockIndexHeightOnlyComparator;
 using node::CBlockIndexWorkComparator;
 using node::CCoinsStats;
 using node::CoinStatsHashType;
+using node::fHavePruned;
+using node::fImporting;
+using node::fPruneMode;
+using node::fReindex;
 using node::GetUTXOStats;
+using node::nPruneTarget;
 using node::OpenBlockFile;
 using node::ReadBlockFromDisk;
 using node::SnapshotMetadata;
 using node::UNDOFILE_CHUNK_SIZE;
 using node::UndoReadFromDisk;
 using node::UnlinkPrunedFiles;
-using node::fHavePruned;
-using node::fImporting;
-using node::fPruneMode;
-using node::fReindex;
-using node::nPruneTarget;
 
 #define MICRO 0.000001
 #define MILLI 0.001
@@ -109,24 +110,6 @@ const std::vector<std::string> CHECKLEVEL_DOC {
     "level 4 tries to reconnect the blocks",
     "each level includes the checks of the previous levels",
 };
-
-bool CBlockIndexWorkComparator::operator()(const CBlockIndex *pa, const CBlockIndex *pb) const {
-    // First sort by most total work, ...
-    if (pa->nChainWork > pb->nChainWork) return false;
-    if (pa->nChainWork < pb->nChainWork) return true;
-
-    // ... then by earliest time received, ...
-    if (pa->nSequenceId < pb->nSequenceId) return false;
-    if (pa->nSequenceId > pb->nSequenceId) return true;
-
-    // Use pointer address as tie breaker (should only happen with blocks
-    // loaded from disk, as those all have id 0).
-    if (pa < pb) return false;
-    if (pa > pb) return true;
-
-    // Identical blocks.
-    return false;
-}
 
 /**
  * Mutex to guard access to validation specific variables, such as reading
@@ -155,14 +138,14 @@ arith_uint256 nMinimumChainWork;
 
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 
-CBlockIndex* CChainState::FindForkInGlobalIndex(const CBlockLocator& locator) const
+const CBlockIndex* CChainState::FindForkInGlobalIndex(const CBlockLocator& locator) const
 {
     AssertLockHeld(cs_main);
 
     // Find the latest block common to locator and chain - we expect that
     // locator.vHave is sorted descending by height.
     for (const uint256& hash : locator.vHave) {
-        CBlockIndex* pindex{m_blockman.LookupBlockIndex(hash)};
+        const CBlockIndex* pindex{m_blockman.LookupBlockIndex(hash)};
         if (pindex) {
             if (m_chain.Contains(pindex)) {
                 return pindex;
@@ -181,20 +164,12 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
                        std::vector<CScriptCheck>* pvChecks = nullptr)
                        EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
-bool CheckFinalTx(const CBlockIndex* active_chain_tip, const CTransaction &tx, int flags)
+bool CheckFinalTxAtTip(const CBlockIndex* active_chain_tip, const CTransaction& tx)
 {
     AssertLockHeld(cs_main);
     assert(active_chain_tip); // TODO: Make active_chain_tip a reference
 
-    // By convention a negative value for flags indicates that the
-    // current network-enforced consensus rules should be used. In
-    // a future soft-fork scenario that would mean checking which
-    // rules would be enforced for the next block and setting the
-    // appropriate flags. At the present time no soft-forks are
-    // scheduled, so no flags are set.
-    flags = std::max(flags, 0);
-
-    // CheckFinalTx() uses active_chain_tip.Height()+1 to evaluate
+    // CheckFinalTxAtTip() uses active_chain_tip.Height()+1 to evaluate
     // nLockTime because when IsFinalTx() is called within
     // AcceptBlock(), the height of the block *being*
     // evaluated is what is used. Thus if we want to know if a
@@ -206,18 +181,15 @@ bool CheckFinalTx(const CBlockIndex* active_chain_tip, const CTransaction &tx, i
     // less than the median time of the previous block they're contained in.
     // When the next block is created its previous block will be the current
     // chain tip, so we use that to calculate the median time passed to
-    // IsFinalTx() if LOCKTIME_MEDIAN_TIME_PAST is set.
-    const int64_t nBlockTime = (flags & LOCKTIME_MEDIAN_TIME_PAST)
-                             ? active_chain_tip->GetMedianTimePast()
-                             : GetAdjustedTime();
+    // IsFinalTx().
+    const int64_t nBlockTime{active_chain_tip->GetMedianTimePast()};
 
     return IsFinalTx(tx, nBlockHeight, nBlockTime);
 }
 
-bool CheckSequenceLocks(CBlockIndex* tip,
+bool CheckSequenceLocksAtTip(CBlockIndex* tip,
                         const CCoinsView& coins_view,
                         const CTransaction& tx,
-                        int flags,
                         LockPoints* lp,
                         bool useExistingLockPoints)
 {
@@ -225,7 +197,7 @@ bool CheckSequenceLocks(CBlockIndex* tip,
 
     CBlockIndex index;
     index.pprev = tip;
-    // CheckSequenceLocks() uses active_chainstate.m_chain.Height()+1 to evaluate
+    // CheckSequenceLocksAtTip() uses active_chainstate.m_chain.Height()+1 to evaluate
     // height based locks because when SequenceLocks() is called within
     // ConnectBlock(), the height of the block *being*
     // evaluated is what is used.
@@ -255,7 +227,7 @@ bool CheckSequenceLocks(CBlockIndex* tip,
                 prevheights[txinIndex] = coin.nHeight;
             }
         }
-        lockPair = CalculateSequenceLocks(tx, flags, prevheights, index);
+        lockPair = CalculateSequenceLocks(tx, STANDARD_LOCKTIME_VERIFY_FLAGS, prevheights, index);
         if (lp) {
             lp->height = lockPair.first;
             lp->time = lockPair.second;
@@ -271,7 +243,7 @@ bool CheckSequenceLocks(CBlockIndex* tip,
             // lockPair from CalculateSequenceLocks against tip+1.  We know
             // EvaluateSequenceLocks will fail if there was a non-zero sequence
             // lock on a mempool input, so we can use the return value of
-            // CheckSequenceLocks to indicate the LockPoints validity
+            // CheckSequenceLocksAtTip to indicate the LockPoints validity
             int maxInputHeight = 0;
             for (const int height : prevheights) {
                 // Can ignore mempool inputs since we'll fail if they had non-zero locks
@@ -361,26 +333,26 @@ void CChainState::MaybeUpdateMempoolForReorg(
     // Also updates valid entries' cached LockPoints if needed.
     // If false, the tx is still valid and its lockpoints are updated.
     // If true, the tx would be invalid in the next block; remove this entry and all of its descendants.
-    const auto filter_final_and_mature = [this, flags=STANDARD_LOCKTIME_VERIFY_FLAGS](CTxMemPool::txiter it)
+    const auto filter_final_and_mature = [this](CTxMemPool::txiter it)
         EXCLUSIVE_LOCKS_REQUIRED(m_mempool->cs, ::cs_main) {
         AssertLockHeld(m_mempool->cs);
         AssertLockHeld(::cs_main);
         const CTransaction& tx = it->GetTx();
 
         // The transaction must be final.
-        if (!CheckFinalTx(m_chain.Tip(), tx, flags)) return true;
+        if (!CheckFinalTxAtTip(m_chain.Tip(), tx)) return true;
         LockPoints lp = it->GetLockPoints();
         const bool validLP{TestLockPointValidity(m_chain, lp)};
         CCoinsViewMemPool view_mempool(&CoinsTip(), *m_mempool);
-        // CheckSequenceLocks checks if the transaction will be final in the next block to be
+        // CheckSequenceLocksAtTip checks if the transaction will be final in the next block to be
         // created on top of the new chain. We use useExistingLockPoints=false so that, instead of
         // using the information in lp (which might now refer to a block that no longer exists in
         // the chain), it will update lp to contain LockPoints relevant to the new chain.
-        if (!CheckSequenceLocks(m_chain.Tip(), view_mempool, tx, flags, &lp, validLP)) {
-            // If CheckSequenceLocks fails, remove the tx and don't depend on the LockPoints.
+        if (!CheckSequenceLocksAtTip(m_chain.Tip(), view_mempool, tx, &lp, validLP)) {
+            // If CheckSequenceLocksAtTip fails, remove the tx and don't depend on the LockPoints.
             return true;
         } else if (!validLP) {
-            // If CheckSequenceLocks succeeded, it also updated the LockPoints.
+            // If CheckSequenceLocksAtTip succeeded, it also updated the LockPoints.
             // Now update the mempool entry lockpoints as well.
             m_mempool->mapTx.modify(it, [&lp](CTxMemPoolEntry& e) { e.UpdateLockPoints(lp); });
         }
@@ -725,8 +697,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     // Only accept nLockTime-using transactions that can be mined in the next
     // block; we don't want our mempool filled up with transactions that can't
     // be mined yet.
-    if (!CheckFinalTx(m_active_chainstate.m_chain.Tip(), tx, STANDARD_LOCKTIME_VERIFY_FLAGS))
+    if (!CheckFinalTxAtTip(m_active_chainstate.m_chain.Tip(), tx)) {
         return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "non-final");
+    }
 
     if (m_pool.exists(GenTxid::Wtxid(tx.GetWitnessHash()))) {
         // Exact transaction already exists in the mempool.
@@ -825,8 +798,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     // be mined yet.
     // Pass in m_view which has all of the relevant inputs cached. Note that, since m_view's
     // backend was removed, it no longer pulls coins from the mempool.
-    if (!CheckSequenceLocks(m_active_chainstate.m_chain.Tip(), m_view, tx, STANDARD_LOCKTIME_VERIFY_FLAGS, &lp))
+    if (!CheckSequenceLocksAtTip(m_active_chainstate.m_chain.Tip(), m_view, tx, &lp)) {
         return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "non-BIP68-final");
+    }
 
     /* PolicyScriptChecks uses CheckInputScripts, while the namecoin-specific
        transaction checking is part of CheckTxInputs called here.  Thus we need
@@ -3487,7 +3461,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidatio
         // Don't accept any forks from the main chain prior to last checkpoint.
         // GetLastCheckpoint finds the last checkpoint in MapCheckpoints that's in our
         // BlockIndex().
-        CBlockIndex* pcheckpoint = blockman.GetLastCheckpoint(params.Checkpoints());
+        const CBlockIndex* pcheckpoint = blockman.GetLastCheckpoint(params.Checkpoints());
         if (pcheckpoint && nHeight < pcheckpoint->nHeight) {
             LogPrintf("ERROR: %s: forked chain older than last checkpoint (height %d)\n", __func__, nHeight);
             return state.Invalid(BlockValidationResult::BLOCK_CHECKPOINT, "bad-fork-prior-to-checkpoint");
@@ -4200,8 +4174,74 @@ bool ChainstateManager::LoadBlockIndex()
     // Load block index from databases
     bool needs_init = fReindex;
     if (!fReindex) {
-        bool ret = m_blockman.LoadBlockIndexDB(*this);
+        bool ret = m_blockman.LoadBlockIndexDB();
         if (!ret) return false;
+
+        std::vector<CBlockIndex*> vSortedByHeight{m_blockman.GetAllBlockIndices()};
+        std::sort(vSortedByHeight.begin(), vSortedByHeight.end(),
+                  CBlockIndexHeightOnlyComparator());
+
+        // Find start of assumed-valid region.
+        int first_assumed_valid_height = std::numeric_limits<int>::max();
+
+        for (const CBlockIndex* block : vSortedByHeight) {
+            if (block->IsAssumedValid()) {
+                auto chainstates = GetAll();
+
+                // If we encounter an assumed-valid block index entry, ensure that we have
+                // one chainstate that tolerates assumed-valid entries and another that does
+                // not (i.e. the background validation chainstate), since assumed-valid
+                // entries should always be pending validation by a fully-validated chainstate.
+                auto any_chain = [&](auto fnc) { return std::any_of(chainstates.cbegin(), chainstates.cend(), fnc); };
+                assert(any_chain([](auto chainstate) { return chainstate->reliesOnAssumedValid(); }));
+                assert(any_chain([](auto chainstate) { return !chainstate->reliesOnAssumedValid(); }));
+
+                first_assumed_valid_height = block->nHeight;
+                break;
+            }
+        }
+
+        for (CBlockIndex* pindex : vSortedByHeight) {
+            if (ShutdownRequested()) return false;
+            if (pindex->IsAssumedValid() ||
+                    (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) &&
+                     (pindex->HaveTxsDownloaded() || pindex->pprev == nullptr))) {
+
+                // Fill each chainstate's block candidate set. Only add assumed-valid
+                // blocks to the tip candidate set if the chainstate is allowed to rely on
+                // assumed-valid blocks.
+                //
+                // If all setBlockIndexCandidates contained the assumed-valid blocks, the
+                // background chainstate's ActivateBestChain() call would add assumed-valid
+                // blocks to the chain (based on how FindMostWorkChain() works). Obviously
+                // we don't want this since the purpose of the background validation chain
+                // is to validate assued-valid blocks.
+                //
+                // Note: This is considering all blocks whose height is greater or equal to
+                // the first assumed-valid block to be assumed-valid blocks, and excluding
+                // them from the background chainstate's setBlockIndexCandidates set. This
+                // does mean that some blocks which are not technically assumed-valid
+                // (later blocks on a fork beginning before the first assumed-valid block)
+                // might not get added to the background chainstate, but this is ok,
+                // because they will still be attached to the active chainstate if they
+                // actually contain more work.
+                //
+                // Instead of this height-based approach, an earlier attempt was made at
+                // detecting "holistically" whether the block index under consideration
+                // relied on an assumed-valid ancestor, but this proved to be too slow to
+                // be practical.
+                for (CChainState* chainstate : GetAll()) {
+                    if (chainstate->reliesOnAssumedValid() ||
+                            pindex->nHeight < first_assumed_valid_height) {
+                        chainstate->setBlockIndexCandidates.insert(pindex);
+                    }
+                }
+            }
+            if (pindex->nStatus & BLOCK_FAILED_MASK && (!m_best_invalid || pindex->nChainWork > m_best_invalid->nChainWork)) {
+                m_best_invalid = pindex;
+            }
+        }
+
         needs_init = m_blockman.m_block_index.empty();
     }
 
@@ -4305,7 +4345,7 @@ void CChainState::LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp)
                     }
 
                     // process in case the block isn't known yet
-                    CBlockIndex* pindex = m_blockman.LookupBlockIndex(hash);
+                    const CBlockIndex* pindex = m_blockman.LookupBlockIndex(hash);
                     if (!pindex || (pindex->nStatus & BLOCK_HAVE_DATA) == 0) {
                       BlockValidationState state;
                       if (AcceptBlock(pblock, state, nullptr, true, dbp, nullptr)) {
