@@ -217,6 +217,7 @@ BITCOIN_CORE_H = \
   rpc/blockchain.h \
   rpc/client.h \
   rpc/game.h \
+  rpc/mempool.h \
   rpc/mining.h \
   rpc/names.h \
   rpc/protocol.h \
@@ -387,6 +388,7 @@ libbitcoin_node_a_SOURCES = \
   rpc/auxpow_miner.cpp \
   rpc/blockchain.cpp \
   rpc/game.cpp \
+  rpc/mempool.cpp \
   rpc/mining.cpp \
   rpc/misc.cpp \
   rpc/names.cpp \
