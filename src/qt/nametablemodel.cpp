@@ -71,7 +71,7 @@ public:
         // TODO: Set name and value encoding to hex, so that nonstandard
         // encodings don't cause errors.
 
-        std::string walletURI = "/wallet/" + parent.walletModel->getWalletName().toStdString();
+        const std::string walletURI = "/wallet/" + parent.walletModel->getWalletName().toStdString();
 
         UniValue confirmedNames;
         try {
@@ -81,8 +81,8 @@ public:
             // should continue and try to add confirmed names and
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
-            UniValue message = find_value( e, "message");
-            LogPrintf ("name_list lookup error: %s\n", message.get_str());
+            const UniValue message = find_value( e, "message");
+            LogPrint(BCLog::QT, "name_list lookup error: %s\n", message.get_str());
         }
 
         // will be an object if name_list command isn't available/other error
@@ -131,8 +131,8 @@ public:
             // should continue and try to add confirmed names and
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
-            UniValue message = find_value( e, "message");
-            LogPrintf ("name_pending lookup error: %s\n", message.get_str());
+            const UniValue message = find_value( e, "message");
+            LogPrint(BCLog::QT, "name_pending lookup error: %s\n", message.get_str());
         }
 
         // will be an object if name_pending command isn't available/other error
@@ -471,8 +471,8 @@ NameTableModel::emitDataChanged(int idx)
 
 QString NameTableModel::update(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
 {
-    std::string strName = name.toStdString();
-    LogPrintf ("wallet attempting name_update: name=%s\n", strName);
+    const std::string strName = name.toStdString();
+    LogPrint(BCLog::QT, "wallet attempting name_update: name=%s\n", strName);
 
     UniValue params(UniValue::VOBJ);
     params.pushKV ("name", strName);
@@ -489,16 +489,15 @@ QString NameTableModel::update(const QString &name, const std::optional<QString>
         params.pushKV ("options", options);
     }
 
-    std::string walletURI = "/wallet/" + walletModel->getWalletName().toStdString();
+    const std::string walletURI = "/wallet/" + walletModel->getWalletName().toStdString();
 
-    UniValue res;
     try {
-       res = walletModel->node().executeRpc("name_update", params, walletURI);
+        walletModel->node().executeRpc("name_update", params, walletURI);
     }
     catch (const UniValue& e) {
-        UniValue message = find_value(e, "message");
-        std::string errorStr = message.get_str();
-        LogPrintf ("name_update error: %s\n", errorStr);
+        const UniValue message = find_value(e, "message");
+        const std::string errorStr = message.get_str();
+        LogPrint(BCLog::QT, "name_update error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
     }
     return tr ("");
