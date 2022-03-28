@@ -72,6 +72,7 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [Assets Attribution](assets-attribution.md)
 - [Assumeutxo design](assumeutxo.md)
 - [bitcoin.conf Configuration File](bitcoin-conf.md)
+- [CJDNS Support](cjdns.md)
 - [Files](files.md)
 - [Fuzz-testing](fuzzing.md)
 - [I2P Support](i2p.md)

@@ -9,19 +9,13 @@
  * headers for everything under src/rpc/ */
 class CRPCTable;
 
-/** Register block chain RPC commands */
 void RegisterBlockchainRPCCommands(CRPCTable &tableRPC);
-/** Register mempool RPC commands */
 void RegisterMempoolRPCCommands(CRPCTable&);
-/** Register P2P networking RPC commands */
+void RegisterTxoutProofRPCCommands(CRPCTable&);
 void RegisterNetRPCCommands(CRPCTable &tableRPC);
-/** Register miscellaneous RPC commands */
 void RegisterMiscRPCCommands(CRPCTable &tableRPC);
-/** Register mining RPC commands */
 void RegisterMiningRPCCommands(CRPCTable &tableRPC);
-/** Register raw transaction RPC commands */
 void RegisterRawTransactionRPCCommands(CRPCTable &tableRPC);
-/** Register raw transaction RPC commands */
 void RegisterSignerRPCCommands(CRPCTable &tableRPC);
 /** Register Namecoin RPC commands */
 void RegisterNameRPCCommands(CRPCTable &tableRPC);
@@ -30,6 +24,7 @@ static inline void RegisterAllCoreRPCCommands(CRPCTable &t)
 {
     RegisterBlockchainRPCCommands(t);
     RegisterMempoolRPCCommands(t);
+    RegisterTxoutProofRPCCommands(t);
     RegisterNetRPCCommands(t);
     RegisterMiscRPCCommands(t);
     RegisterMiningRPCCommands(t);
