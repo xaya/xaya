@@ -133,7 +133,7 @@ class BIP68Test(BitcoinTestFramework):
     def test_sequence_lock_confirmed_inputs(self):
         # Create lots of confirmed utxos, and use them to generate lots of random
         # transactions.
-        max_outputs = 10
+        max_outputs = 50
         addresses = []
         while len(addresses) < max_outputs:
             addresses.append(self.nodes[0].getnewaddress())
