@@ -7,7 +7,9 @@
 #define BITCOIN_CONSENSUS_PARAMS_H
 
 #include <uint256.h>
+
 #include <limits>
+#include <map>
 
 namespace Consensus {
 
@@ -71,6 +73,13 @@ struct BIP9Deployment {
 struct Params {
     uint256 hashGenesisBlock;
     int nSubsidyHalvingInterval;
+    /**
+     * Hashes of blocks that
+     * - are known to be consensus valid, and
+     * - buried in the chain, and
+     * - fail if the default script verify flags are applied.
+     */
+    std::map<uint256, uint32_t> script_flag_exceptions;
     /** Block height at with BIP16 becomes active */
     int BIP16Height;
     /** Block height and hash at which BIP34 becomes active */
