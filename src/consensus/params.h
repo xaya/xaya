@@ -9,7 +9,9 @@
 #include <consensus/amount.h>
 #include <powdata.h>
 #include <uint256.h>
+
 #include <limits>
+#include <map>
 
 #include <memory>
 
@@ -205,7 +207,14 @@ struct Params {
     int nSubsidyHalvingInterval;
     /** Initial block reward.  */
     CAmount initialSubsidy;
-    /** Block height at which BIP16 becomes active */
+    /**
+     * Hashes of blocks that
+     * - are known to be consensus valid, and
+     * - buried in the chain, and
+     * - fail if the default script verify flags are applied.
+     */
+    std::map<uint256, uint32_t> script_flag_exceptions;
+    /** Block height at with BIP16 becomes active */
     int BIP16Height;
     /** Block height at which BIP34 becomes active */
     int BIP34Height;
