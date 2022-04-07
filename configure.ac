@@ -3,7 +3,7 @@ define(_CLIENT_VERSION_MAJOR, 1)
 define(_CLIENT_VERSION_MINOR, 7)
 define(_CLIENT_VERSION_REVISION, 0)
 define(_CLIENT_VERSION_BUILD, 0)
-define(_CLIENT_VERSION_RC, 2)
+define(_CLIENT_VERSION_RC, 3)
 define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2022)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
@@ -1440,6 +1440,12 @@ if test "$use_external_signer" != "no"; then
     ;;
     *)
       AC_MSG_CHECKING([whether Boost.Process can be used])
+      TEMP_CXXFLAGS="$CXXFLAGS"
+      dnl Boost 1.78 requires the following workaround.
+      dnl See: https://github.com/boostorg/process/issues/235
+      CXXFLAGS="$CXXFLAGS -Wno-error=narrowing"
+      TEMP_CPPFLAGS="$CPPFLAGS"
+      CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
       TEMP_LDFLAGS="$LDFLAGS"
       dnl Boost 1.73 and older require the following workaround.
       LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
@@ -1447,6 +1453,8 @@ if test "$use_external_signer" != "no"; then
         [have_boost_process="yes"],
         [have_boost_process="no"])
       LDFLAGS="$TEMP_LDFLAGS"
+      CPPFLAGS="$TEMP_CPPFLAGS"
+      CXXFLAGS="$TEMP_CXXFLAGS"
       AC_MSG_RESULT([$have_boost_process])
       if test "$have_boost_process" = "yes"; then
         use_external_signer="yes"

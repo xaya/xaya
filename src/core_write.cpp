@@ -171,7 +171,9 @@ void ScriptPubKeyToUniv(const CScript& scriptPubKey, UniValue& out, bool include
         out.pushKV("burn", HexStr(burnData));
 
     out.pushKV("asm", ScriptToAsmStr(scriptPubKey));
-    out.pushKV("desc", InferDescriptor(scriptPubKey, DUMMY_SIGNING_PROVIDER)->ToString());
+    if (include_address) {
+        out.pushKV("desc", InferDescriptor(scriptPubKey, DUMMY_SIGNING_PROVIDER)->ToString());
+    }
     if (include_hex) out.pushKV("hex", HexStr(scriptPubKey));
 
     std::vector<std::vector<unsigned char>> solns;
