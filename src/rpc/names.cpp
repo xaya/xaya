@@ -328,19 +328,36 @@ getNameInfo (const ChainstateManager& chainman, const UniValue& options,
   return res;
 }
 
+/** Named constant for optional RPCResult fields.  */
+constexpr bool optional = true;
+
 } // anonymous namespace
+
+const RPCResult NameOpResult{RPCResult::Type::OBJ, "nameOp", optional,
+    "The encoded name-operation (if the script has one)",
+    {
+      {RPCResult::Type::STR, "op", "The type of operation"},
+      {RPCResult::Type::STR_HEX, "hash", optional, "Hash value for name_new"},
+      {RPCResult::Type::STR_HEX, "rand", optional, "Seed value for name_firstupdate"},
+      {RPCResult::Type::STR, "name", optional, "Name for updates"},
+      {RPCResult::Type::STR, "name_error", optional, "Encoding error for the name, if any"},
+      {RPCResult::Type::STR, "name_encoding", optional, "Encoding of the name"},
+      {RPCResult::Type::STR, "value", optional, "Value for updates"},
+      {RPCResult::Type::STR, "value_error", optional, "Encoding error for the value, if any"},
+      {RPCResult::Type::STR, "value_encoding", optional, "Encoding of the value"},
+    }};
 
 /* ************************************************************************** */
 
 NameInfoHelp::NameInfoHelp ()
 {
-  withField ({RPCResult::Type::STR, "name", "the requested name"});
+  withField ({RPCResult::Type::STR, "name", optional, "the requested name"});
   withField ({RPCResult::Type::STR, "name_encoding", "the encoding of \"name\""});
-  withField ({RPCResult::Type::STR, "name_error",
+  withField ({RPCResult::Type::STR, "name_error", optional,
               "replaces \"name\" in case there is an error"});
-  withField ({RPCResult::Type::STR, "value", "the name's current value"});
+  withField ({RPCResult::Type::STR, "value", optional, "the name's current value"});
   withField ({RPCResult::Type::STR, "value_encoding", "the encoding of \"value\""});
-  withField ({RPCResult::Type::STR, "value_error",
+  withField ({RPCResult::Type::STR, "value_error", optional,
               "replaces \"value\" in case there is an error"});
 
   withField ({RPCResult::Type::STR_HEX, "txid", "the name's last update tx"});
@@ -348,7 +365,7 @@ NameInfoHelp::NameInfoHelp ()
               "the index of the name output in the last update"});
   withField ({RPCResult::Type::STR, "address", "the address holding the name"});
 #ifdef ENABLE_WALLET
-  withField ({RPCResult::Type::BOOL, "ismine",
+  withField ({RPCResult::Type::BOOL, "ismine", optional,
               "whether the name is owned by the wallet"});
 #endif
 }
@@ -772,7 +789,6 @@ name_pending ()
           {
               NameInfoHelp ()
                 .withField ({RPCResult::Type::STR, "op", "the operation being performed"})
-                .withHeight ()
                 .finish ()
           }
       },
