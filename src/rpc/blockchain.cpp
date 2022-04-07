@@ -27,6 +27,7 @@
 #include <node/context.h>
 #include <node/utxo_snapshot.h>
 #include <primitives/transaction.h>
+#include <rpc/names.h>
 #include <rpc/rawtransaction.h>
 #include <rpc/request.h>
 #include <rpc/server.h>
@@ -912,7 +913,7 @@ static RPCHelpMan gettxoutsetinfo()
                         {RPCResult::Type::NUM, "transactions", /*optional=*/true, "The number of transactions with unspent outputs (not available when coinstatsindex is used)"},
                         {RPCResult::Type::NUM, "disk_size", /*optional=*/true, "The estimated size of the chainstate on disk (not available when coinstatsindex is used)"},
                         {
-                            RPCResult::Type::OBJ, "total_amount", "Data about the money supply",
+                            RPCResult::Type::OBJ, "amount", "Data about the money supply",
                             {
                                 {RPCResult::Type::STR_AMOUNT, "coins", "Total amount of coins in the UTXO set"},
                                 {RPCResult::Type::STR_AMOUNT, "names", "Amount locked in active names"},
@@ -1067,6 +1068,7 @@ static RPCHelpMan gettxout()
                     {RPCResult::Type::STR_HEX, "hex", ""},
                     {RPCResult::Type::STR, "type", "The type, eg pubkeyhash"},
                     {RPCResult::Type::STR, "address", /*optional=*/true, "The address (only if a well-defined address exists)"},
+                    NameOpResult,
                 }},
                 {RPCResult::Type::BOOL, "coinbase", "Coinbase or not"},
             }},
