@@ -83,6 +83,7 @@ static std::vector<RPCResult> DecodeTxDoc(const std::string& txid_field_doc)
 {
     return {
         {RPCResult::Type::STR_HEX, "txid", txid_field_doc},
+        {RPCResult::Type::STR_HEX, "btxid", "bare txid (without signatures)"},
         {RPCResult::Type::STR_HEX, "hash", "The transaction hash (differs from txid for witness transactions)"},
         {RPCResult::Type::NUM, "size", "The serialized transaction size"},
         {RPCResult::Type::NUM, "vsize", "The virtual transaction size (differs from size for witness transactions)"},
@@ -122,6 +123,7 @@ static std::vector<RPCResult> DecodeTxDoc(const std::string& txid_field_doc)
                     {RPCResult::Type::STR, "type", "The type, eg 'pubkeyhash'"},
                     {RPCResult::Type::STR, "address", /*optional=*/true, "The address (only if a well-defined address exists)"},
                     NameOpResult,
+                    {RPCResult::Type::STR_HEX, "burn", /*optional=*/true, "Burn data, if any"},
                 }},
             }},
         }},
@@ -370,6 +372,7 @@ static RPCHelpMan decodescript()
                 {RPCResult::Type::STR, "type", "The output type (e.g. " + GetAllOutputTypes() + ")"},
                 {RPCResult::Type::STR, "address", /*optional=*/true, "The address (only if a well-defined address exists)"},
                 NameOpResult,
+                {RPCResult::Type::STR_HEX, "burn", /*optional=*/true, "Burn data, if any"},
                 {RPCResult::Type::STR, "p2sh", /*optional=*/true,
                  "address of P2SH script wrapping this redeem script (not returned for types that should not be wrapped)"},
                 {RPCResult::Type::OBJ, "segwit", /*optional=*/true,
