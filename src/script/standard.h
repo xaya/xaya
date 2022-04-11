@@ -162,6 +162,11 @@ bool IsValidDestination(const CTxDestination& dest);
 /** Get the name of a TxoutType as a string */
 std::string GetTxnOutputType(TxoutType t);
 
+constexpr bool IsPushdataOp(opcodetype opcode)
+{
+    return opcode > OP_FALSE && opcode <= OP_PUSHDATA4;
+}
+
 /**
  * Checks if the given script is a burn (OP_RETURN) and returns the first
  * operand as data if it is.

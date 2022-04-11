@@ -29,14 +29,14 @@ class FeatureBlockfilterindexPruneTest(BitcoinTestFramework):
 
         self.log.info("prune some blocks")
         pruneheight = self.nodes[0].pruneblockchain(400)
-        # In upstream Bitcoin, the prune height is 248.  For auxpow it is
+        # In upstream Bitcoin, the prune height is 249.  For auxpow it is
         # different (but that doesn't affect this test) since pruning is done
         # on total block files, and auxpow blocks have a different size (so
         # that a different number of blocks fits into a whole file).
         #
         # the prune heights used here and below are magic numbers that are determined by the
         # thresholds at which block files wrap, so they depend on disk serialization and default block file size.
-        assert_equal(pruneheight, 388)
+        assert_equal(pruneheight, 389)
 
         self.log.info("check if we can access the tips blockfilter when we have pruned some blocks")
         assert_greater_than(len(self.nodes[0].getblockfilter(self.nodes[0].getbestblockhash())['filter']), 0)
@@ -45,19 +45,19 @@ class FeatureBlockfilterindexPruneTest(BitcoinTestFramework):
         assert_greater_than(len(self.nodes[0].getblockfilter(self.nodes[0].getblockhash(2))['filter']), 0)
 
         # mine and sync index up to a height that will later be the pruneheight
-        self.generate(self.nodes[0], 298)
-        self.sync_index(height=998)
+        self.generate(self.nodes[0], 256)
+        self.sync_index(height=956)
 
         self.log.info("start node without blockfilterindex")
         self.restart_node(0, extra_args=["-fastprune", "-prune=1"])
 
         self.log.info("make sure accessing the blockfilters throws an error")
         assert_raises_rpc_error(-1, "Index is not enabled for filtertype basic", self.nodes[0].getblockfilter, self.nodes[0].getblockhash(2))
-        self.generate(self.nodes[0], 502)
+        self.generate(self.nodes[0], 1500 - 956)
 
         self.log.info("prune exactly up to the blockfilterindexes best block while blockfilters are disabled")
         pruneheight_2 = self.nodes[0].pruneblockchain(1000)
-        assert_equal(pruneheight_2, 952)
+        assert_equal(pruneheight_2, 956)
         self.restart_node(0, extra_args=["-fastprune", "-prune=1", "-blockfilterindex=1"])
         self.log.info("make sure that we can continue with the partially synced index after having pruned up to the index height")
         self.sync_index(height=1500)

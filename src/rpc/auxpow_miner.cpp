@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 Daniel Kraft
+// Copyright (c) 2018-2022 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,6 +7,7 @@
 #include <arith_uint256.h>
 #include <auxpow.h>
 #include <chainparams.h>
+#include <consensus/merkle.h>
 #include <net.h>
 #include <node/context.h>
 #include <primitives/pureheader.h>
@@ -86,7 +87,7 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
         startTime = GetTime ();
 
         /* Finalise it by building the merkle root.  */
-        node::IncrementExtraNonce (&newBlock->block, pindexPrev, extraNonce);
+        newBlock->block.hashMerkleRoot = BlockMerkleRoot (newBlock->block);
 
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;

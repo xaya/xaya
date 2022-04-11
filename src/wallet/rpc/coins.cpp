@@ -115,7 +115,7 @@ RPCHelpMan getreceivedbyaddress()
 
     LOCK(pwallet->cs_wallet);
 
-    return ValueFromAmount(GetReceived(*pwallet, request.params, /* by_label */ false));
+    return ValueFromAmount(GetReceived(*pwallet, request.params, /*by_label=*/false));
 },
     };
 }
@@ -156,7 +156,7 @@ RPCHelpMan getreceivedbylabel()
 
     LOCK(pwallet->cs_wallet);
 
-    return ValueFromAmount(GetReceived(*pwallet, request.params, /* by_label */ true));
+    return ValueFromAmount(GetReceived(*pwallet, request.params, /*by_label=*/true));
 },
     };
 }
