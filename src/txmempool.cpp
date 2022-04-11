@@ -344,7 +344,7 @@ bool CTxMemPool::CalculateMemPoolAncestors(const CTxMemPoolEntry &entry,
         staged_ancestors = it->GetMemPoolParentsConst();
     }
 
-    return CalculateAncestorsAndCheckLimits(entry.GetTxSize(), /* entry_count */ 1,
+    return CalculateAncestorsAndCheckLimits(entry.GetTxSize(), /*entry_count=*/1,
                                             setAncestors, staged_ancestors,
                                             limitAncestorCount, limitAncestorSize,
                                             limitDescendantCount, limitDescendantSize, errString);
@@ -718,6 +718,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
 
 void CTxMemPool::_clear()
 {
+    vTxHashes.clear();
     mapTx.clear();
     mapNextTx.clear();
     names.clear();
