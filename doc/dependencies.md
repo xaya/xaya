@@ -18,7 +18,7 @@ You can find installation instructions in the `build-*.md` file for your platfor
 | Dependency | Version used | Minimum required | Runtime |
 | --- | --- | --- | --- |
 | [Boost](https://www.boost.org/users/download/) | 1.77.0 | [1.64.0](https://github.com/bitcoin/bitcoin/pull/22320) | No |
-| [libevent](https://github.com/libevent/libevent/releases) | 2.1.12-stable | [2.0.21](https://github.com/bitcoin/bitcoin/pull/18676) | No |
+| [libevent](https://github.com/libevent/libevent/releases) | 2.1.12-stable | [2.1.8](https://github.com/bitcoin/bitcoin/pull/24681) | No |
 | [glibc](https://www.gnu.org/software/libc/) | N/A | [2.18](https://github.com/bitcoin/bitcoin/pull/23511) | Yes |
 
 ## Optional
@@ -29,7 +29,7 @@ You can find installation instructions in the `build-*.md` file for your platfor
 | [Fontconfig](https://www.freedesktop.org/wiki/Software/fontconfig/) | 2.12.6 | 2.6 | Yes |
 | [FreeType](https://freetype.org) | 2.11.0 | 2.3.0 | Yes |
 | [qrencode](https://fukuchi.org/works/qrencode/) | [3.4.4](https://fukuchi.org/works/qrencode) | | No |
-| [Qt](https://www.qt.io) | [5.15.2](https://download.qt.io/official_releases/qt/) | [5.11.3](https://github.com/bitcoin/bitcoin/pull/24132) | No |
+| [Qt](https://www.qt.io) | [5.15.3](https://download.qt.io/official_releases/qt/) | [5.11.3](https://github.com/bitcoin/bitcoin/pull/24132) | No |
 
 ### Networking
 | Dependency | Version used | Minimum required | Runtime |
