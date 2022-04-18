@@ -25,7 +25,6 @@
 #include <util/strencodings.h>
 
 #include <QAction>
-#include <QActionGroup>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QProgressDialog>
