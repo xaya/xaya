@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 
+from test_framework import powhash
 from test_framework.key import ECKey
 from test_framework.script_util import key_to_p2wpkh_script
 from test_framework.test_framework import BitcoinTestFramework
@@ -49,6 +50,7 @@ class SignetMinerTest(BitcoinTestFramework):
                 sys.executable,
                 signet_miner_path,
                 f'--cli={node.cli.binary} -datadir={node.cli.datadir}',
+                f'--xayahash={powhash.xayahash}',
                 'generate',
                 f'--address={node.getnewaddress()}',
                 f'--grind-cmd={self.options.bitcoinutil} grind',
