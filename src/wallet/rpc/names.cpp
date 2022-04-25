@@ -442,7 +442,7 @@ name_new ()
 
   valtype rand(20);
   if (!getNameSalt (pwallet, name, output, rand))
-      GetRandBytes (&rand[0], rand.size ());
+      GetRandBytes (rand);
 
   const CScript newScript
       = CNameScript::buildNameNew (output, name, rand);

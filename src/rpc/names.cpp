@@ -945,7 +945,7 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
       else
         {
           rand.resize (20);
-          GetRandBytes (&rand[0], rand.size ());
+          GetRandBytes (rand);
         }
 
       const valtype name
