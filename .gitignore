@@ -97,7 +97,6 @@ ipch/
 *.log
 *.trs
 *.dmg
-*.iso
 
 *.json.h
 *.raw.h

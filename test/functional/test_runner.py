@@ -393,6 +393,7 @@ SKIPPED = [
     'feature_versionbits_warning.py',
     'p2p_dos_header_tree.py',
     'mempool_expiry.py',
+    'tool_signet_miner.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of
     # blocks).  They are also not relevant, since all BIP34-activated forks
     # are active from the start in Xaya.

@@ -265,7 +265,7 @@ game_sendupdates ()
                                         "fromblock");
 
   std::vector<unsigned char> tokenBin(16);
-  GetRandBytes (tokenBin.data (), tokenBin.size ());
+  GetRandBytes (tokenBin);
   const std::string reqtoken = HexStr (tokenBin);
   w.reqtoken = reqtoken;
 

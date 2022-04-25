@@ -192,10 +192,10 @@ class WalletTaprootTest(BitcoinTestFramework):
     """Test generation and spending of P2TR address outputs."""
 
     def set_test_params(self):
-        self.num_nodes = 3
+        self.num_nodes = 2
         self.setup_clean_chain = True
         base = ["-addresstype=bech32"]
-        self.extra_args = [base + ['-keypool=100'], base + ['-keypool=100'], base + ["-vbparams=taproot:1:1"]]
+        self.extra_args = [base + ['-keypool=100'], base + ['-keypool=100']]
         self.supports_cli = False
 
     def skip_test_if_missing_module(self):
@@ -244,15 +244,11 @@ class WalletTaprootTest(BitcoinTestFramework):
             assert_equal(len(rederive), 1)
             assert_equal(rederive[0], addr_g)
 
-        # tr descriptors can be imported regardless of Taproot status
+        # tr descriptors can be imported
         result = self.privs_tr_enabled.importdescriptors([{"desc": desc, "timestamp": "now"}])
         assert(result[0]["success"])
         result = self.pubs_tr_enabled.importdescriptors([{"desc": desc_pub, "timestamp": "now"}])
         assert(result[0]["success"])
-        result = self.privs_tr_disabled.importdescriptors([{"desc": desc, "timestamp": "now"}])
-        assert result[0]["success"]
-        result = self.pubs_tr_disabled.importdescriptors([{"desc": desc_pub, "timestamp": "now"}])
-        assert result[0]["success"]
 
     def do_test_sendtoaddress(self, comment, pattern, privmap, treefn, keys_pay, keys_change):
         self.log.info("Testing %s through sendtoaddress" % comment)
@@ -329,12 +325,8 @@ class WalletTaprootTest(BitcoinTestFramework):
         self.log.info("Creating wallets...")
         self.nodes[0].createwallet(wallet_name="privs_tr_enabled", descriptors=True, blank=True)
         self.privs_tr_enabled = self.nodes[0].get_wallet_rpc("privs_tr_enabled")
-        self.nodes[2].createwallet(wallet_name="privs_tr_disabled", descriptors=True, blank=True)
-        self.privs_tr_disabled=self.nodes[2].get_wallet_rpc("privs_tr_disabled")
         self.nodes[0].createwallet(wallet_name="pubs_tr_enabled", descriptors=True, blank=True, disable_private_keys=True)
         self.pubs_tr_enabled = self.nodes[0].get_wallet_rpc("pubs_tr_enabled")
-        self.nodes[2].createwallet(wallet_name="pubs_tr_disabled", descriptors=True, blank=True, disable_private_keys=True)
-        self.pubs_tr_disabled=self.nodes[2].get_wallet_rpc("pubs_tr_disabled")
         self.nodes[0].createwallet(wallet_name="boring")
         self.nodes[0].createwallet(wallet_name="addr_gen", descriptors=True, disable_private_keys=True, blank=True)
         self.nodes[0].createwallet(wallet_name="rpc_online", descriptors=True, blank=True)
