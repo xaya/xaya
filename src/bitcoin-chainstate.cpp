@@ -28,8 +28,6 @@
 #include <functional>
 #include <iosfwd>
 
-const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-
 int main(int argc, char* argv[])
 {
     // SETUP: Argument parsing and handling
@@ -256,8 +254,6 @@ epilogue:
         }
     }
     GetMainSignals().UnregisterBackgroundSignalScheduler();
-
-    WITH_LOCK(::cs_main, UnloadBlockIndex(nullptr, chainman));
 
     init::UnsetGlobals();
 }

@@ -77,6 +77,7 @@
 #include <validationinterface.h>
 #include <walletinitinterface.h>
 
+#include <algorithm>
 #include <condition_variable>
 #include <cstdint>
 #include <cstdio>
@@ -432,11 +433,11 @@ void SetupServerArgs(ArgsManager& argsman)
         -GetNumCores(), MAX_SCRIPTCHECK_THREADS, DEFAULT_SCRIPTCHECK_THREADS), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-persistmempool", strprintf("Whether to save the mempool on shutdown and load on restart (default: %u)", DEFAULT_PERSIST_MEMPOOL), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-pid=<file>", strprintf("Specify pid file. Relative paths will be prefixed by a net-specific datadir location. (default: %s)", BITCOIN_PID_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-prune=<n>", strprintf("Reduce storage requirements by enabling pruning (deleting) of old blocks. This allows the pruneblockchain RPC to be called to delete specific blocks, and enables automatic pruning of old blocks if a target size in MiB is provided. This mode is incompatible with -txindex and -coinstatsindex. "
+    argsman.AddArg("-prune=<n>", strprintf("Reduce storage requirements by enabling pruning (deleting) of old blocks. This allows the pruneblockchain RPC to be called to delete specific blocks and enables automatic pruning of old blocks if a target size in MiB is provided. This mode is incompatible with -txindex. "
             "Warning: Reverting this setting requires re-downloading the entire blockchain. "
             "(default: 0 = disable pruning blocks, 1 = allow manual pruning via RPC, >=%u = automatically prune block files to stay under the specified target size in MiB)", MIN_DISK_SPACE_FOR_BLOCK_FILES / 1024 / 1024), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-reindex", "Rebuild chain state and block index from the blk*.dat files on disk", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-reindex-chainstate", "Rebuild chain state from the currently indexed blocks. When in pruning mode or if blocks on disk might be corrupted, use full -reindex instead.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    argsman.AddArg("-reindex", "Rebuild chain state and block index from the blk*.dat files on disk. This will also rebuild active optional indexes.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    argsman.AddArg("-reindex-chainstate", "Rebuild chain state from the currently indexed blocks. When in pruning mode or if blocks on disk might be corrupted, use full -reindex instead. Deactivate all optional indexes before running this.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-settings=<file>", strprintf("Specify path to dynamic settings data file. Can be disabled with -nosettings. File is written at runtime and not meant to be edited by users (use %s instead for custom settings). Relative paths will be prefixed by datadir location. (default: %s)", BITCOIN_CONF_FILENAME, BITCOIN_SETTINGS_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
 #if HAVE_SYSTEM
     argsman.AddArg("-startupnotify=<cmd>", "Execute command on startup.", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
@@ -876,8 +877,6 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
     if (args.GetIntArg("-prune", 0)) {
         if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX))
             return InitError(_("Prune mode is incompatible with -txindex."));
-        if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX))
-            return InitError(_("Prune mode is incompatible with -coinstatsindex."));
         if (gArgs.GetBoolArg("-namehashindex", DEFAULT_NAMEHASHINDEX))
             return InitError(_("Prune mode is incompatible with -namehashindex."));
         if (args.GetBoolArg("-reindex-chainstate", false)) {
@@ -1051,6 +1050,19 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
 
     if (args.IsArgSet("-proxy") && args.GetArg("-proxy", "").empty()) {
         return InitError(_("No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>."));
+    }
+
+    if (args.GetBoolArg("-reindex-chainstate", false)) {
+        // indexes that must be deactivated to prevent index corruption, see #24630
+        if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX)) {
+            return InitError(_("-reindex-chainstate option is not compatible with -coinstatsindex. Please temporarily disable coinstatsindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes."));
+        }
+        if (g_enabled_filter_types.count(BlockFilterType::BASIC)) {
+            return InitError(_("-reindex-chainstate option is not compatible with -blockfilterindex. Please temporarily disable blockfilterindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes."));
+        }
+        if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
+            return InitError(_("-reindex-chainstate option is not compatible with -txindex. Please temporarily disable txindex while using -reindex-chainstate, or replace -reindex-chainstate with -reindex to fully rebuild all indexes."));
+        }
     }
 
 #if defined(USE_SYSCALL_SANDBOX)
@@ -1302,19 +1314,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // as they would never get updated.
     if (!ignores_incoming_txs) node.fee_estimator = std::make_unique<CBlockPolicyEstimator>();
 
-    assert(!node.mempool);
-    int check_ratio = std::min<int>(std::max<int>(args.GetIntArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
-    node.mempool = std::make_unique<CTxMemPool>(node.fee_estimator.get(), check_ratio);
-
-    assert(!node.chainman);
-    node.chainman = std::make_unique<ChainstateManager>();
-    ChainstateManager& chainman = *node.chainman;
-
-    assert(!node.peerman);
-    node.peerman = PeerManager::make(chainparams, *node.connman, *node.addrman, node.banman.get(),
-                                     chainman, *node.mempool, ignores_incoming_txs);
-    RegisterValidationInterface(node.peerman.get());
-
     // sanitize comments per BIP-0014, format user agent and check total size
     std::vector<std::string> uacomments;
     for (const std::string& cmt : args.GetArgs("-uacomment")) {
@@ -1446,8 +1445,16 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     LogPrintf("* Using %.1f MiB for chain state database\n", cache_sizes.coins_db * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", cache_sizes.coins * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
-    bool fLoaded = false;
-    while (!fLoaded && !ShutdownRequested()) {
+    assert(!node.mempool);
+    assert(!node.chainman);
+    const int mempool_check_ratio = std::clamp<int>(args.GetIntArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0, 1000000);
+
+    for (bool fLoaded = false; !fLoaded && !ShutdownRequested();) {
+        node.mempool = std::make_unique<CTxMemPool>(node.fee_estimator.get(), mempool_check_ratio);
+
+        node.chainman = std::make_unique<ChainstateManager>();
+        ChainstateManager& chainman = *node.chainman;
+
         const bool fReset = fReindex;
         bilingual_str strLoadError;
 
@@ -1582,6 +1589,13 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
     }
+
+    ChainstateManager& chainman = *Assert(node.chainman);
+
+    assert(!node.peerman);
+    node.peerman = PeerManager::make(chainparams, *node.connman, *node.addrman, node.banman.get(),
+                                     chainman, *node.mempool, ignores_incoming_txs);
+    RegisterValidationInterface(node.peerman.get());
 
     // ********************************************************* Step 8: start indexers
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {

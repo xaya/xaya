@@ -841,8 +841,9 @@ static RPCHelpMan pruneblockchain()
     CChain& active_chain = active_chainstate.m_chain;
 
     int heightParam = request.params[0].get_int();
-    if (heightParam < 0)
+    if (heightParam < 0) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative block height.");
+    }
 
     // Height value more than a billion is too high to be a block height, and
     // too low to be a block time (corresponds to timestamp from Sep 2001).
@@ -867,11 +868,10 @@ static RPCHelpMan pruneblockchain()
     }
 
     PruneBlockFilesManual(active_chainstate, height);
-    const CBlockIndex* block = CHECK_NONFATAL(active_chain.Tip());
-    while (block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA)) {
-        block = block->pprev;
-    }
-    return uint64_t(block->nHeight);
+    const CBlockIndex& block{*CHECK_NONFATAL(active_chain.Tip())};
+    const CBlockIndex* last_block{active_chainstate.m_blockman.GetFirstStoredBlock(block)};
+
+    return static_cast<uint64_t>(last_block->nHeight);
 },
     };
 }
@@ -1298,28 +1298,23 @@ RPCHelpMan getblockchaininfo()
     LOCK(cs_main);
     CChainState& active_chainstate = chainman.ActiveChainstate();
 
-    const CBlockIndex* tip = CHECK_NONFATAL(active_chainstate.m_chain.Tip());
-    const int height = tip->nHeight;
+    const CBlockIndex& tip{*CHECK_NONFATAL(active_chainstate.m_chain.Tip())};
+    const int height{tip.nHeight};
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("chain", Params().NetworkIDString());
     obj.pushKV("blocks", height);
     obj.pushKV("headers", chainman.m_best_header ? chainman.m_best_header->nHeight : -1);
-    obj.pushKV("bestblockhash", tip->GetBlockHash().GetHex());
-    obj.pushKV("difficulty", (double)GetDifficultyForBits(tip->nBits));
-    obj.pushKV("time", (int64_t)tip->nTime);
-    obj.pushKV("mediantime", (int64_t)tip->GetMedianTimePast());
-    obj.pushKV("verificationprogress", GuessVerificationProgress(Params().TxData(), tip));
+    obj.pushKV("bestblockhash", tip.GetBlockHash().GetHex());
+    obj.pushKV("difficulty", GetDifficultyForBits(tip.nBits));
+    obj.pushKV("time", tip.GetBlockTime());
+    obj.pushKV("mediantime", tip.GetMedianTimePast());
+    obj.pushKV("verificationprogress", GuessVerificationProgress(Params().TxData(), &tip));
     obj.pushKV("initialblockdownload", active_chainstate.IsInitialBlockDownload());
-    obj.pushKV("chainwork", tip->nChainWork.GetHex());
+    obj.pushKV("chainwork", tip.nChainWork.GetHex());
     obj.pushKV("size_on_disk", chainman.m_blockman.CalculateCurrentUsage());
     obj.pushKV("pruned", node::fPruneMode);
     if (node::fPruneMode) {
-        const CBlockIndex* block = CHECK_NONFATAL(tip);
-        while (block->pprev && (block->pprev->nStatus & BLOCK_HAVE_DATA)) {
-            block = block->pprev;
-        }
-
-        obj.pushKV("pruneheight",        block->nHeight);
+        obj.pushKV("pruneheight", chainman.m_blockman.GetFirstStoredBlock(tip)->nHeight);
 
         // if 0, execution bypasses the whole if block.
         bool automatic_pruning{args.GetIntArg("-prune", 0) != 1};
@@ -1331,7 +1326,7 @@ RPCHelpMan getblockchaininfo()
 
     if (IsDeprecatedRPCEnabled("softforks")) {
         const Consensus::Params& consensusParams = Params().GetConsensus();
-        obj.pushKV("softforks", DeploymentInfo(tip, consensusParams));
+        obj.pushKV("softforks", DeploymentInfo(&tip, consensusParams));
     }
 
     obj.pushKV("warnings", GetWarnings(false).original);
@@ -2470,44 +2465,36 @@ UniValue CreateUTXOSnapshot(
     return result;
 }
 
-
-void RegisterBlockchainRPCCommands(CRPCTable &t)
+void RegisterBlockchainRPCCommands(CRPCTable& t)
 {
-// clang-format off
-static const CRPCCommand commands[] =
-{ //  category              actor (function)
-  //  --------------------- ------------------------
-    { "blockchain",         &getblockchaininfo,                  },
-    { "blockchain",         &getchaintxstats,                    },
-    { "blockchain",         &getblockstats,                      },
-    { "blockchain",         &getbestblockhash,                   },
-    { "blockchain",         &getblockcount,                      },
-    { "blockchain",         &getblock,                           },
-    { "blockchain",         &getblockfrompeer,                   },
-    { "blockchain",         &getblockhash,                       },
-    { "blockchain",         &getblockheader,                     },
-    { "blockchain",         &getchaintips,                       },
-    { "blockchain",         &getdifficulty,                      },
-    { "blockchain",         &getdeploymentinfo,                  },
-    { "blockchain",         &gettxout,                           },
-    { "blockchain",         &gettxoutsetinfo,                    },
-    { "blockchain",         &pruneblockchain,                    },
-    { "blockchain",         &verifychain,                        },
-
-    { "blockchain",         &preciousblock,                      },
-    { "blockchain",         &scantxoutset,                       },
-    { "blockchain",         &getblockfilter,                     },
-
-    /* Not shown in help */
-    { "hidden",              &invalidateblock,                   },
-    { "hidden",              &reconsiderblock,                   },
-    { "hidden",              &waitfornewblock,                   },
-    { "hidden",              &waitforblock,                      },
-    { "hidden",              &waitforblockheight,                },
-    { "hidden",              &syncwithvalidationinterfacequeue,  },
-    { "hidden",              &dumptxoutset,                      },
-};
-// clang-format on
+    static const CRPCCommand commands[]{
+        {"blockchain", &getblockchaininfo},
+        {"blockchain", &getchaintxstats},
+        {"blockchain", &getblockstats},
+        {"blockchain", &getbestblockhash},
+        {"blockchain", &getblockcount},
+        {"blockchain", &getblock},
+        {"blockchain", &getblockfrompeer},
+        {"blockchain", &getblockhash},
+        {"blockchain", &getblockheader},
+        {"blockchain", &getchaintips},
+        {"blockchain", &getdifficulty},
+        {"blockchain", &getdeploymentinfo},
+        {"blockchain", &gettxout},
+        {"blockchain", &gettxoutsetinfo},
+        {"blockchain", &pruneblockchain},
+        {"blockchain", &verifychain},
+        {"blockchain", &preciousblock},
+        {"blockchain", &scantxoutset},
+        {"blockchain", &getblockfilter},
+        {"hidden", &invalidateblock},
+        {"hidden", &reconsiderblock},
+        {"hidden", &waitfornewblock},
+        {"hidden", &waitforblock},
+        {"hidden", &waitforblockheight},
+        {"hidden", &syncwithvalidationinterfacequeue},
+        {"hidden", &dumptxoutset},
+    };
     for (const auto& c : commands) {
         t.appendCommand(c.name, &c);
     }

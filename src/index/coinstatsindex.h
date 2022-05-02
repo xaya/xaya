@@ -37,6 +37,8 @@ private:
 
     bool ReverseBlock(const CBlock& block, const CBlockIndex* pindex);
 
+    bool AllowPrune() const override { return true; }
+
 protected:
     bool Init() override;
 
