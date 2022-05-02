@@ -11,15 +11,13 @@
 #include <hash.h> // for signet block challenge hash
 #include <powdata.h>
 #include <script/interpreter.h>
+#include <util/string.h>
 #include <util/system.h>
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <limits>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 
 namespace
 {
@@ -651,8 +649,7 @@ void CRegTestParams::UpdateActivationParametersFromArgs(const ArgsManager& args)
     if (!args.IsArgSet("-vbparams")) return;
 
     for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
-        std::vector<std::string> vDeploymentParams;
-        boost::split(vDeploymentParams, strDeployment, boost::is_any_of(":"));
+        std::vector<std::string> vDeploymentParams = SplitString(strDeployment, ':');
         if (vDeploymentParams.size() < 3 || 4 < vDeploymentParams.size()) {
             throw std::runtime_error("Version bits parameters malformed, expecting deployment:start:end[:min_activation_height]");
         }

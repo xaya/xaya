@@ -39,14 +39,13 @@ MessageVerificationResult MessageVerify(
         }
     }
 
-    bool invalid = false;
-    std::vector<unsigned char> signature_bytes = DecodeBase64(signature.c_str(), &invalid);
-    if (invalid) {
+    auto signature_bytes = DecodeBase64(signature);
+    if (!signature_bytes) {
         return MessageVerificationResult::ERR_MALFORMED_SIGNATURE;
     }
 
     CPubKey pubkey;
-    if (!pubkey.RecoverCompact(MessageHash(message), signature_bytes)) {
+    if (!pubkey.RecoverCompact(MessageHash(message), *signature_bytes)) {
         return MessageVerificationResult::ERR_PUBKEY_NOT_RECOVERED;
     }
 

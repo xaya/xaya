@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 Daniel Kraft
+// Copyright (c) 2019-2022 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -37,6 +37,8 @@ private:
   class DB;
 
   const std::unique_ptr<DB> db;
+
+  bool AllowPrune() const override { return false; }
 
 protected:
 

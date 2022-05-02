@@ -413,12 +413,11 @@ trackedgames ()
 
 void RegisterGameRPCCommands (CRPCTable& t)
 {
-static const CRPCCommand commands[] =
-{ //  category               actor (function)
-  //  ---------------------  -----------------------
-  { "game",                  &game_sendupdates,        },
-  { "game",                  &trackedgames,            },
-};
+  static const CRPCCommand commands[] =
+  {
+    {"game", &game_sendupdates},
+    {"game", &trackedgames},
+  };
 
   for (const auto& c : commands)
     t.appendCommand (c.name, &c);
