@@ -838,21 +838,31 @@ static bool CreateTransactionInternal(
     const CAmount not_input_fees = coin_selection_params.m_effective_feerate.GetFee(coin_selection_params.tx_noinputs_size);
     CAmount selection_target = recipients_sum + not_input_fees - nInputValue;
 
-    // Get available coins
-    std::vector<COutput> vAvailableCoins;
-    AvailableCoins(wallet, vAvailableCoins, &coin_control, 1, MAX_MONEY, MAX_MONEY, 0);
+    // If we have an explicit input, that input's value might be large enough
+    // so that no others need to be selected.
+    std::vector<COutput> selected_coins;
+    CAmount selected_value = 0;
+    if (selection_target > 0) {
+        // Get available coins
+        std::vector<COutput> vAvailableCoins;
+        AvailableCoins(wallet, vAvailableCoins, &coin_control, 1, MAX_MONEY, MAX_MONEY, 0);
 
-    // Choose coins to use
-    std::optional<SelectionResult> result = SelectCoins(wallet, vAvailableCoins, /*nTargetValue=*/selection_target, coin_control, coin_selection_params);
-    if (!result) {
-        error = _("Insufficient funds");
-        return false;
+        // Choose coins to use
+        std::optional<SelectionResult> result = SelectCoins(wallet, vAvailableCoins, /*nTargetValue=*/selection_target, coin_control, coin_selection_params);
+        if (!result) {
+            error = _("Insufficient funds");
+            return false;
+        }
+        TRACE5(coin_selection, selected_coins, wallet.GetName().c_str(), GetAlgorithmName(result->m_algo).c_str(), result->m_target, result->GetWaste(), result->GetSelectedValue());
+
+        // Shuffle selected coins and fill in final vin
+        selected_coins = result->GetShuffledInputVector();
+        selected_value = result->GetSelectedValue();
     }
-    TRACE5(coin_selection, selected_coins, wallet.GetName().c_str(), GetAlgorithmName(result->m_algo).c_str(), result->m_target, result->GetWaste(), result->GetSelectedValue());
 
     // Always make a change output
     // We will reduce the fee from this change output later, and remove the output if it is too small.
-    const CAmount change_and_fee = result->GetSelectedValue() - recipients_sum + nInputValue;
+    const CAmount change_and_fee = selected_value - recipients_sum + nInputValue;
     assert(change_and_fee >= 0);
     CTxOut newTxOut(change_and_fee, scriptChange);
 
@@ -868,9 +878,6 @@ static bool CreateTransactionInternal(
 
     assert(nChangePosInOut != -1);
     auto change_position = txNew.vout.insert(txNew.vout.begin() + nChangePosInOut, newTxOut);
-
-    // Shuffle selected coins and fill in final vin
-    std::vector<COutput> selected_coins = result->GetShuffledInputVector();
 
     // The sequence number is set to non-maxint so that DiscourageFeeSniping
     // works.
