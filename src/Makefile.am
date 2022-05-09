@@ -286,6 +286,7 @@ BITCOIN_CORE_H = \
   util/spanparsing.h \
   util/string.h \
   util/syscall_sandbox.h \
+  util/syserror.h \
   util/system.h \
   util/thread.h \
   util/threadnames.h \
@@ -396,12 +397,14 @@ libbitcoin_node_a_SOURCES = \
   rest.cpp \
   rpc/auxpow_miner.cpp \
   rpc/blockchain.cpp \
+  rpc/fees.cpp \
   rpc/game.cpp \
   rpc/mempool.cpp \
   rpc/mining.cpp \
-  rpc/misc.cpp \
   rpc/names.cpp \
+  rpc/node.cpp \
   rpc/net.cpp \
+  rpc/output_script.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/server_util.cpp \
@@ -689,6 +692,7 @@ libbitcoin_util_a_SOURCES = \
   util/getuniquepath.cpp \
   util/hasher.cpp \
   util/sock.cpp \
+  util/syserror.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \
@@ -969,7 +973,9 @@ libbitcoinkernel_la_SOURCES = \
   util/serfloat.cpp \
   util/settings.cpp \
   util/strencodings.cpp \
+  util/string.cpp \
   util/syscall_sandbox.cpp \
+  util/syserror.cpp \
   util/system.cpp \
   util/thread.cpp \
   util/threadnames.cpp \
