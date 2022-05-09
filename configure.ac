@@ -108,8 +108,6 @@ LT_INIT([pic-only win32-dll])
 
 dnl Check/return PATH for base programs.
 AC_PATH_TOOL([AR], [ar])
-AC_PATH_TOOL([RANLIB], [ranlib])
-AC_PATH_TOOL([STRIP], [strip])
 AC_PATH_TOOL([GCOV], [gcov])
 AC_PATH_TOOL([LLVM_COV], [llvm-cov])
 AC_PATH_PROG([LCOV], [lcov])
@@ -781,7 +779,7 @@ case $host in
            ;;
          *)
            AC_PATH_TOOL([DSYMUTIL], [dsymutil], [dsymutil])
-           AC_PATH_TOOL([INSTALLNAMETOOL], [install_name_tool], [install_name_tool])
+           AC_PATH_TOOL([INSTALL_NAME_TOOL], [install_name_tool], [install_name_tool])
            AC_PATH_TOOL([OTOOL], [otool], [otool])
            AC_PATH_PROGS([XORRISOFS], [xorrisofs], [xorrisofs])
 
