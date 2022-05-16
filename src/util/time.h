@@ -14,18 +14,27 @@
 
 using namespace std::chrono_literals;
 
+using SteadySeconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::seconds>;
+using SteadyMilliseconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds>;
+using SteadyMicroseconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::microseconds>;
+
 void UninterruptibleSleep(const std::chrono::microseconds& n);
 
 /**
- * Helper to count the seconds of a duration.
+ * Helper to count the seconds of a duration/time_point.
  *
- * All durations should be using std::chrono and calling this should generally
+ * All durations/time_points should be using std::chrono and calling this should generally
  * be avoided in code. Though, it is still preferred to an inline t.count() to
  * protect against a reliance on the exact type of t.
  *
- * This helper is used to convert durations before passing them over an
+ * This helper is used to convert durations/time_points before passing them over an
  * interface that doesn't support std::chrono (e.g. RPC, debug log, or the GUI)
  */
+template <typename Clock>
+constexpr int64_t count_seconds(std::chrono::time_point<Clock, std::chrono::seconds> t)
+{
+    return t.time_since_epoch().count();
+}
 constexpr int64_t count_seconds(std::chrono::seconds t) { return t.count(); }
 constexpr int64_t count_milliseconds(std::chrono::milliseconds t) { return t.count(); }
 constexpr int64_t count_microseconds(std::chrono::microseconds t) { return t.count(); }
@@ -47,8 +56,6 @@ int64_t GetTime();
 int64_t GetTimeMillis();
 /** Returns the system time (not mockable) */
 int64_t GetTimeMicros();
-/** Returns the system time (not mockable) */
-int64_t GetTimeSeconds(); // Like GetTime(), but not mockable
 
 /**
  * DEPRECATED
@@ -67,6 +74,15 @@ std::chrono::seconds GetMockTime();
 /** Return system time (or mocked time, if set) */
 template <typename T>
 T GetTime();
+/**
+ * Return the current time point cast to the given precicion. Only use this
+ * when an exact precicion is needed, otherwise use T::clock::now() directly.
+ */
+template <typename T>
+T Now()
+{
+    return std::chrono::time_point_cast<typename T::duration>(T::clock::now());
+}
 
 /**
  * ISO 8601 formatting is preferred. Use the FormatISO8601{DateTime,Date}

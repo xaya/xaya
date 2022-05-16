@@ -250,7 +250,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   shared_block->pow.setAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
-  return chainman.ProcessNewBlock (Params (), shared_block, true, nullptr);
+  return chainman.ProcessNewBlock (shared_block, true, nullptr);
 }
 
 bool
@@ -288,7 +288,7 @@ AuxpowMiner::submitWork (const JSONRPCRequest& request,
   shared_block->pow.setFakeHeader (std::move (fakeHeader));
   assert (shared_block->GetHash ().GetHex () == hashForLookup);
 
-  return chainman.ProcessNewBlock (Params (), shared_block, true, nullptr);
+  return chainman.ProcessNewBlock (shared_block, true, nullptr);
 }
 
 AuxpowMiner&
