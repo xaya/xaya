@@ -2,6 +2,7 @@
 #include <qt/forms/ui_buynamespage.h>
 
 #include <interfaces/node.h>
+#include <logging.h>
 #include <qt/configurenamedialog.h>
 #include <qt/guiutil.h>
 #include <qt/platformstyle.h>
