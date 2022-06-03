@@ -1888,6 +1888,8 @@ void CWallet::ReacceptWalletTransactions()
 
 bool CWallet::SubmitTxMemoryPoolAndRelay(CWalletTx& wtx, std::string& err_string, bool relay) const
 {
+    AssertLockHeld(cs_wallet);
+
     // Can't relay if wallet is not broadcasting
     if (!GetBroadcastTransactions()) return false;
     // Don't relay abandoned transactions
@@ -1916,12 +1918,11 @@ bool CWallet::SubmitTxMemoryPoolAndRelay(CWalletTx& wtx, std::string& err_string
 
 std::set<uint256> CWallet::GetTxConflicts(const CWalletTx& wtx) const
 {
-    std::set<uint256> result;
-    {
-        uint256 myHash = wtx.GetHash();
-        result = GetConflicts(myHash);
-        result.erase(myHash);
-    }
+    AssertLockHeld(cs_wallet);
+
+    const uint256 myHash{wtx.GetHash()};
+    std::set<uint256> result{GetConflicts(myHash)};
+    result.erase(myHash);
     return result;
 }
 
@@ -3011,6 +3012,7 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
     // so that in case of a shutdown event, the rescan will be repeated at the next start.
     // This is temporary until rescan and notifications delivery are unified under same
     // interface.
+    walletInstance->m_attaching_chain = true; //ignores chainStateFlushed notifications
     walletInstance->m_chain_notifications_handler = walletInstance->chain().handleNotifications(walletInstance);
 
     // If rescan_required = true, rescan_height remains equal to 0
@@ -3037,7 +3039,6 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
 
     if (tip_height && *tip_height != rescan_height)
     {
-        walletInstance->m_attaching_chain = true; //ignores chainStateFlushed notifications
         if (chain.havePruned()) {
             int block_height = *tip_height;
             while (block_height > 0 && chain.haveBlockOnDisk(block_height - 1) && rescan_height != block_height) {
@@ -3081,6 +3082,7 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
         walletInstance->chainStateFlushed(chain.getTipLocator());
         walletInstance->GetDatabase().IncrementUpdateCounter();
     }
+    walletInstance->m_attaching_chain = false;
 
     return true;
 }
@@ -3241,8 +3243,11 @@ int CWallet::GetTxDepthInMainChain(const CWalletTx& wtx) const
 
 int CWallet::GetTxBlocksToMaturity(const CWalletTx& wtx) const
 {
-    if (!wtx.IsCoinBase())
+    AssertLockHeld(cs_wallet);
+
+    if (!wtx.IsCoinBase()) {
         return 0;
+    }
     int chain_depth = GetTxDepthInMainChain(wtx);
     assert(chain_depth >= 0); // coinbase tx should not be conflicted
 
@@ -3256,6 +3261,8 @@ int CWallet::GetTxBlocksToMaturity(const CWalletTx& wtx) const
 
 bool CWallet::IsTxImmatureCoinBase(const CWalletTx& wtx) const
 {
+    AssertLockHeld(cs_wallet);
+
     // note GetBlocksToMaturity is 0 for non-coinbase tx
     return GetTxBlocksToMaturity(wtx) > 0;
 }

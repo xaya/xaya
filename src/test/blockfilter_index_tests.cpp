@@ -66,8 +66,7 @@ CBlock BuildChainTestingSetup::CreateBlock(const CBlockIndex* prev,
     const std::vector<CMutableTransaction>& txns,
     const CScript& scriptPubKey)
 {
-    const CChainParams& chainparams = Params();
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(m_node.chainman->ActiveChainstate(), *m_node.mempool, chainparams).CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey);
+    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler{m_node.chainman->ActiveChainstate(), *m_node.mempool}.CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey);
     CBlock& block = pblocktemplate->block;
     block.hashPrevBlock = prev->GetBlockHash();
     block.nTime = prev->nTime + 1;
@@ -85,7 +84,7 @@ CBlock BuildChainTestingSetup::CreateBlock(const CBlockIndex* prev,
     }
 
     auto& fakeHeader = block.pow.initFakeHeader (block);
-    while (!block.pow.checkProofOfWork(fakeHeader, Params().GetConsensus())) {
+    while (!block.pow.checkProofOfWork(fakeHeader, m_node.chainman->GetConsensus())) {
         ++fakeHeader.nNonce;
         assert(fakeHeader.nNonce);
     }

@@ -30,6 +30,7 @@
 #include <shutdown.h>
 #include <streams.h>
 #include <test/util/net.h>
+#include <timedata.h>
 #include <txdb.h>
 #include <util/strencodings.h>
 #include <util/string.h>
@@ -165,7 +166,11 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
-    m_node.chainman = std::make_unique<ChainstateManager>(chainparams);
+    const ChainstateManager::Options chainman_opts{
+        chainparams,
+        GetAdjustedTime,
+    };
+    m_node.chainman = std::make_unique<ChainstateManager>(chainman_opts);
     m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(m_cache_sizes.block_tree_db, true);
 
     // Start script-checking threads. Set g_parallel_script_checks to true so they are used.
@@ -193,7 +198,6 @@ ChainTestingSetup::~ChainTestingSetup()
 TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const char*>& extra_args)
     : ChainTestingSetup(chainName, extra_args)
 {
-    const CChainParams& chainparams = Params();
     // Ideally we'd move all the RPC tests to the functional testing framework
     // instead of unit tests, but for now we need these here.
     RegisterAllCoreRPCCommands(tableRPC);
@@ -203,7 +207,6 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
                                            Assert(m_node.mempool.get()),
                                            fPruneMode,
                                            m_args.GetBoolArg("-namehistory", false),
-                                           chainparams.GetConsensus(),
                                            m_args.GetBoolArg("-reindex-chainstate", false),
                                            m_cache_sizes.block_tree_db,
                                            m_cache_sizes.coins_db,
@@ -216,10 +219,8 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
         *Assert(m_node.chainman),
         fReindex.load(),
         m_args.GetBoolArg("-reindex-chainstate", false),
-        chainparams.GetConsensus(),
         m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS),
-        m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL),
-        /*get_unix_time_seconds=*/static_cast<int64_t(*)()>(GetTime));
+        m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL));
     assert(!maybe_verify_error.has_value());
 
     BlockValidationState state;
@@ -233,7 +234,7 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
                                                m_node.args->GetIntArg("-checkaddrman", 0));
     m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
     m_node.connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman); // Deterministic randomness for tests.
-    m_node.peerman = PeerManager::make(chainparams, *m_node.connman, *m_node.addrman,
+    m_node.peerman = PeerManager::make(*m_node.connman, *m_node.addrman,
                                        m_node.banman.get(), *m_node.chainman,
                                        *m_node.mempool, false);
     {
@@ -284,9 +285,8 @@ CBlock TestChain100Setup::CreateBlock(
     const CScript& scriptPubKey,
     CChainState& chainstate)
 {
-    const CChainParams& chainparams = Params();
     CTxMemPool empty_pool;
-    CBlock block = BlockAssembler(chainstate, empty_pool, chainparams).CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey)->block;
+    CBlock block = BlockAssembler{chainstate, empty_pool}.CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey)->block;
 
     Assert(block.vtx.size() == 1);
     for (const CMutableTransaction& tx : txns) {
@@ -295,7 +295,7 @@ CBlock TestChain100Setup::CreateBlock(
     RegenerateCommitments(block, *Assert(m_node.chainman));
 
     auto& fakeHeader = block.pow.initFakeHeader (block);
-    while (!block.pow.checkProofOfWork(fakeHeader, chainparams.GetConsensus())) ++fakeHeader.nNonce;
+    while (!block.pow.checkProofOfWork(fakeHeader, m_node.chainman->GetConsensus())) ++fakeHeader.nNonce;
 
     return block;
 }
