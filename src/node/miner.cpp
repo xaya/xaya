@@ -62,8 +62,8 @@ BlockAssembler::Options::Options()
     nBlockMaxWeight = DEFAULT_BLOCK_MAX_WEIGHT;
 }
 
-BlockAssembler::BlockAssembler(CChainState& chainstate, const CTxMemPool& mempool, const CChainParams& params, const Options& options)
-    : chainparams(params),
+BlockAssembler::BlockAssembler(CChainState& chainstate, const CTxMemPool& mempool, const Options& options)
+    : chainparams{chainstate.m_chainman.GetParams()},
       m_mempool(mempool),
       m_chainstate(chainstate)
 {
@@ -87,8 +87,8 @@ static BlockAssembler::Options DefaultOptions()
     return options;
 }
 
-BlockAssembler::BlockAssembler(CChainState& chainstate, const CTxMemPool& mempool, const CChainParams& params)
-    : BlockAssembler(chainstate, mempool, params, DefaultOptions()) {}
+BlockAssembler::BlockAssembler(CChainState& chainstate, const CTxMemPool& mempool)
+    : BlockAssembler(chainstate, mempool, DefaultOptions()) {}
 
 void BlockAssembler::resetBlock()
 {
@@ -172,7 +172,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     BlockValidationState state;
-    if (!TestBlockValidity(state, chainparams, m_chainstate, *pblock, pindexPrev, false, false)) {
+    if (!TestBlockValidity(state, chainparams, m_chainstate, *pblock, pindexPrev, GetAdjustedTime, false, false)) {
         throw std::runtime_error(strprintf("%s: TestBlockValidity failed: %s", __func__, state.ToString()));
     }
     int64_t nTime2 = GetTimeMicros();
