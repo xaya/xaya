@@ -47,8 +47,6 @@ static RPCHelpMan verifymessage()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    LOCK(cs_main);
-
     std::string strAddress  = request.params[0].get_str();
     std::string strSign     = request.params[1].get_str();
     std::string strMessage  = request.params[2].get_str();

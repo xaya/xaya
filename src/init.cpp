@@ -90,7 +90,6 @@
 #include <vector>
 
 #ifndef WIN32
-#include <attributes.h>
 #include <cerrno>
 #include <signal.h>
 #include <sys/stat.h>
@@ -337,7 +336,6 @@ void Shutdown(NodeContext& node)
         LogPrintf("%s: Unable to remove PID file: %s\n", __func__, fsbridge::get_filesystem_error_message(e));
     }
 
-    node.args = nullptr;
     LogPrintf("%s: done\n", __func__);
 }
 
