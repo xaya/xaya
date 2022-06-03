@@ -173,6 +173,7 @@ BITCOIN_CORE_H = \
   interfaces/node.h \
   interfaces/wallet.h \
   kernel/chainstatemanager_opts.h \
+  kernel/coinstats.h \
   key.h \
   key_io.h \
   logging.h \
@@ -192,7 +193,6 @@ BITCOIN_CORE_H = \
   node/caches.h \
   node/chainstate.h \
   node/coin.h \
-  node/coinstats.h \
   node/context.h \
   node/miner.h \
   node/minisketchwrapper.h \
@@ -333,7 +333,6 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
-ipc/capnp/libbitcoin_ipc_a-ipc.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
 # server: shared between bitcoind and bitcoin-qt
 # Contains code accessing mempool and chain state that is meant to be separated
@@ -360,6 +359,7 @@ libbitcoin_node_a_SOURCES = \
   index/coinstatsindex.cpp \
   index/txindex.cpp \
   init.cpp \
+  kernel/coinstats.cpp \
   mapport.cpp \
   net.cpp \
   netgroup.cpp \
@@ -368,7 +368,6 @@ libbitcoin_node_a_SOURCES = \
   node/caches.cpp \
   node/chainstate.cpp \
   node/coin.cpp \
-  node/coinstats.cpp \
   node/context.cpp \
   node/interfaces.cpp \
   node/miner.cpp \
@@ -857,7 +856,6 @@ libbitcoinkernel_la_SOURCES = \
   kernel/bitcoinkernel.cpp \
   arith_uint256.cpp \
   auxpow.cpp \
-  blockfilter.cpp \
   chain.cpp \
   chainparamsbase.cpp \
   chainparams.cpp \
@@ -875,15 +873,12 @@ libbitcoinkernel_la_SOURCES = \
   flatfile.cpp \
   fs.cpp \
   hash.cpp \
-  index/base.cpp \
-  index/blockfilterindex.cpp \
-  index/coinstatsindex.cpp \
   init/common.cpp \
+  kernel/coinstats.cpp \
   key.cpp \
   logging.cpp \
   node/blockstorage.cpp \
   node/chainstate.cpp \
-  node/coinstats.cpp \
   node/ui_interface.cpp \
   policy/feerate.cpp \
   policy/fees.cpp \
@@ -1020,6 +1015,10 @@ libbitcoin_ipc_mpgen_input = \
   ipc/capnp/init.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
+
+# Explicitly list dependencies on generated headers as described in
+# https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
+ipc/capnp/libbitcoin_ipc_a-protocol.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a

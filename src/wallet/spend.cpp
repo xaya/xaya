@@ -84,7 +84,7 @@ TxSize CalculateMaximumSignedTxSize(const CTransaction &tx, const CWallet *walle
     return CalculateMaximumSignedTxSize(tx, wallet, txouts, coin_control);
 }
 
-void AvailableCoins(const CWallet& wallet, std::vector<COutput>& vCoins, const CCoinControl* coinControl, const CAmount& nMinimumAmount, const CAmount& nMaximumAmount, const CAmount& nMinimumSumAmount, const uint64_t nMaximumCount)
+void AvailableCoins(const CWallet& wallet, std::vector<COutput>& vCoins, const CCoinControl* coinControl, std::optional<CFeeRate> feerate, const CAmount& nMinimumAmount, const CAmount& nMaximumAmount, const CAmount& nMinimumSumAmount, const uint64_t nMaximumCount)
 {
     AssertLockHeld(wallet.cs_wallet);
 
@@ -192,7 +192,7 @@ void AvailableCoins(const CWallet& wallet, std::vector<COutput>& vCoins, const C
             bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
             int input_bytes = GetTxSpendSize(wallet, wtx, i, (coinControl && coinControl->fAllowWatchOnly));
 
-            vCoins.emplace_back(COutPoint(wtx.GetHash(), i), wtx.tx->vout.at(i), nDepth, input_bytes, spendable, solvable, safeTx, wtx.GetTxTime(), tx_from_me);
+            vCoins.emplace_back(COutPoint(wtx.GetHash(), i), wtx.tx->vout.at(i), nDepth, input_bytes, spendable, solvable, safeTx, wtx.GetTxTime(), tx_from_me, feerate);
 
             // Checks the sum amount of all UTXO's.
             if (nMinimumSumAmount != MAX_MONEY) {
@@ -211,13 +211,18 @@ void AvailableCoins(const CWallet& wallet, std::vector<COutput>& vCoins, const C
     }
 }
 
+void AvailableCoinsListUnspent(const CWallet& wallet, std::vector<COutput>& vCoins, const CCoinControl* coinControl, const CAmount& nMinimumAmount, const CAmount& nMaximumAmount, const CAmount& nMinimumSumAmount, const uint64_t nMaximumCount)
+{
+    AvailableCoins(wallet, vCoins, coinControl, /*feerate=*/ std::nullopt, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount);
+}
+
 CAmount GetAvailableBalance(const CWallet& wallet, const CCoinControl* coinControl)
 {
     LOCK(wallet.cs_wallet);
 
     CAmount balance = 0;
     std::vector<COutput> vCoins;
-    AvailableCoins(wallet, vCoins, coinControl);
+    AvailableCoinsListUnspent(wallet, vCoins, coinControl);
     for (const COutput& out : vCoins) {
         if (out.spendable) {
             balance += out.txout.nValue;
@@ -257,7 +262,7 @@ std::map<CTxDestination, std::vector<COutput>> ListCoins(const CWallet& wallet)
     std::map<CTxDestination, std::vector<COutput>> result;
     std::vector<COutput> availableCoins;
 
-    AvailableCoins(wallet, availableCoins);
+    AvailableCoinsListUnspent(wallet, availableCoins);
 
     for (const COutput& coin : availableCoins) {
         CTxDestination address;
@@ -477,12 +482,11 @@ std::optional<SelectionResult> SelectCoins(const CWallet& wallet, const std::vec
         }
 
         /* Set some defaults for depth, spendable, solvable, safe, time, and from_me as these don't matter for preset inputs since no selection is being done. */
-        COutput output(outpoint, txout, /*depth=*/ 0, input_bytes, /*spendable=*/ true, /*solvable=*/ true, /*safe=*/ true, /*time=*/ 0, /*from_me=*/ false);
-        output.effective_value = output.txout.nValue - coin_selection_params.m_effective_feerate.GetFee(output.input_bytes);
+        COutput output(outpoint, txout, /*depth=*/ 0, input_bytes, /*spendable=*/ true, /*solvable=*/ true, /*safe=*/ true, /*time=*/ 0, /*from_me=*/ false, coin_selection_params.m_effective_feerate);
         if (coin_selection_params.m_subtract_fee_outputs) {
             value_to_select -= output.txout.nValue;
         } else {
-            value_to_select -= output.effective_value;
+            value_to_select -= output.GetEffectiveValue();
         }
         preset_coins.insert(outpoint);
         /* Set ancestors and descendants to 0 as they don't matter for preset inputs since no actual selection is being done.
@@ -788,7 +792,7 @@ static std::optional<CreatedTransactionResult> CreateTransactionInternal(
 
     // Get available coins
     std::vector<COutput> vAvailableCoins;
-    AvailableCoins(wallet, vAvailableCoins, &coin_control, 1, MAX_MONEY, MAX_MONEY, 0);
+    AvailableCoins(wallet, vAvailableCoins, &coin_control, coin_selection_params.m_effective_feerate, 1, MAX_MONEY, MAX_MONEY, 0);
 
     // Choose coins to use
     std::optional<SelectionResult> result = SelectCoins(wallet, vAvailableCoins, /*nTargetValue=*/selection_target, coin_control, coin_selection_params);
@@ -993,12 +997,13 @@ std::optional<CreatedTransactionResult> CreateTransaction(
         tmp_cc.m_avoid_partial_spends = true;
         bilingual_str error2; // fired and forgotten; if an error occurs, we discard the results
         std::optional<CreatedTransactionResult> txr_grouped = CreateTransactionInternal(wallet, vecSend, change_pos, error2, tmp_cc, fee_calc_out, sign);
+        // if fee of this alternative one is within the range of the max fee, we use this one
+        const bool use_aps{txr_grouped.has_value() ? (txr_grouped->fee <= txr_ungrouped->fee + wallet.m_max_aps_fee) : false};
+        TRACE5(coin_selection, aps_create_tx_internal, wallet.GetName().c_str(), use_aps, txr_grouped.has_value(),
+               txr_grouped.has_value() ? txr_grouped->fee : 0, txr_grouped.has_value() ? txr_grouped->change_pos : 0);
         if (txr_grouped) {
-            // if fee of this alternative one is within the range of the max fee, we use this one
-            const bool use_aps = txr_grouped->fee <= txr_ungrouped->fee + wallet.m_max_aps_fee;
             wallet.WalletLogPrintf("Fee non-grouped = %lld, grouped = %lld, using %s\n",
                 txr_ungrouped->fee, txr_grouped->fee, use_aps ? "grouped" : "non-grouped");
-            TRACE5(coin_selection, aps_create_tx_internal, wallet.GetName().c_str(), use_aps, true, txr_grouped->fee, txr_grouped->change_pos);
             if (use_aps) return txr_grouped;
         }
     }
