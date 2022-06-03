@@ -61,7 +61,6 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
                                                      CTxMemPool* mempool,
                                                      bool fPruneMode,
                                                      bool fNameHistory,
-                                                     const Consensus::Params& consensus_params,
                                                      bool fReindexChainState,
                                                      int64_t nBlockTreeDBCache,
                                                      int64_t nCoinDBCache,
@@ -80,10 +79,8 @@ enum class ChainstateLoadVerifyError {
 std::optional<ChainstateLoadVerifyError> VerifyLoadedChainstate(ChainstateManager& chainman,
                                                                 bool fReset,
                                                                 bool fReindexChainState,
-                                                                const Consensus::Params& consensus_params,
                                                                 int check_blocks,
-                                                                int check_level,
-                                                                std::function<int64_t()> get_unix_time_seconds);
+                                                                int check_level);
 } // namespace node
 
 #endif // BITCOIN_NODE_CHAINSTATE_H
