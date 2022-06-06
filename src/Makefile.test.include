@@ -208,6 +208,7 @@ test_test_xaya_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(TESTDEFS) $(EVENT
 test_test_xaya_LDADD = $(LIBTEST_UTIL)
 if ENABLE_WALLET
 test_test_xaya_LDADD += $(LIBBITCOIN_WALLET)
+test_test_xaya_CPPFLAGS += $(BDB_CPPFLAGS)
 endif
 
 test_test_xaya_LDADD += $(LIBBITCOIN_NODE) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CONSENSUS) $(LIBBITCOIN_CRYPTO) $(LIBUNIVALUE) \
@@ -276,7 +277,7 @@ test_fuzz_fuzz_SOURCES = \
  test/fuzz/locale.cpp \
  test/fuzz/merkleblock.cpp \
  test/fuzz/message.cpp \
- test/fuzz/miniscript_decode.cpp \
+ test/fuzz/miniscript.cpp \
  test/fuzz/minisketch.cpp \
  test/fuzz/muhash.cpp \
  test/fuzz/multiplication_overflow.cpp \

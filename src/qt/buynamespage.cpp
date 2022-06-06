@@ -123,7 +123,7 @@ QString BuyNamesPage::name_available(const QString &name) const
     catch (const UniValue& e)
     {
         const UniValue code = find_value(e, "code");
-        const int codeInt = code.get_int();
+        const int codeInt = code.getInt<int>();
         if (codeInt == RPC_WALLET_ERROR)
         {
             // Name doesn't exist, so it's available.

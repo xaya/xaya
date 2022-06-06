@@ -99,7 +99,7 @@ public:
 
                 const std::string name = maybeName.get_str();
                 const std::string data = maybeData.get_str();
-                const int height = find_value ( v, "height").get_int();
+                const int height = find_value ( v, "height").getInt<int>();
 
                 const bool isMine = find_value ( v, "ismine").get_bool();
                 const bool isExpired = false;
