@@ -277,7 +277,7 @@ public:
     catch (const UniValue& exc)
       {
         const auto& code = exc["code"];
-        if (!code.isNum () || code.get_int () != RPC_WALLET_NOT_SPECIFIED)
+        if (!code.isNum () || code.getInt<int> () != RPC_WALLET_NOT_SPECIFIED)
           throw;
 
       }
@@ -705,7 +705,7 @@ name_scan ()
 
   int count = 500;
   if (!request.params[1].isNull ())
-    count = request.params[1].get_int ();
+    count = request.params[1].getInt<int> ();
 
   /* Parse and interpret the name_scan-specific options.  */
   RPCTypeCheckObj (options,
@@ -719,14 +719,14 @@ name_scan ()
 
   int minConf = 1;
   if (options.exists ("minConf"))
-    minConf = options["minConf"].get_int ();
+    minConf = options["minConf"].getInt<int> ();
   if (minConf < 1)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "minConf must be >= 1");
 
   int maxConf = -1;
   if (options.exists ("maxConf"))
     {
-      maxConf = options["maxConf"].get_int ();
+      maxConf = options["maxConf"].getInt<int> ();
       if (maxConf < 0)
         throw JSONRPCError (RPC_INVALID_PARAMETER,
                             "maxConf must not be negative");
@@ -1041,8 +1041,8 @@ namerawtransaction ()
 
   UniValue result(UniValue::VOBJ);
 
-  PerformNameRawtx (request.params[1].get_int (), request.params[2].get_obj (),
-                    mtx, result);
+  PerformNameRawtx (request.params[1].getInt<int> (),
+                    request.params[2].get_obj (), mtx, result);
 
   result.pushKV ("hex", EncodeHexTx (CTransaction (mtx)));
   return result;
@@ -1093,8 +1093,8 @@ namepsbt ()
 
   UniValue result(UniValue::VOBJ);
 
-  PerformNameRawtx (request.params[1].get_int (), request.params[2].get_obj (),
-                    *psbtx.tx, result);
+  PerformNameRawtx (request.params[1].getInt<int> (),
+                    request.params[2].get_obj (), *psbtx.tx, result);
 
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << psbtx;
