@@ -21,6 +21,7 @@
 #include <node/blockstorage.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
+#include <policy/settings.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <random.h>
@@ -307,7 +308,7 @@ struct Peer {
         return m_tx_relay.get();
     };
 
-    TxRelay* GetTxRelay()
+    TxRelay* GetTxRelay() EXCLUSIVE_LOCKS_REQUIRED(!m_tx_relay_mutex)
     {
         return WITH_LOCK(m_tx_relay_mutex, return m_tx_relay.get());
     };
