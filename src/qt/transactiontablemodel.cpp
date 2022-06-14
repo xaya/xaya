@@ -17,6 +17,7 @@
 
 #include <core_io.h>
 #include <interfaces/handler.h>
+#include <names/applications.h>
 #include <uint256.h>
 
 #include <algorithm>
@@ -386,24 +387,52 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
     case TransactionRecord::Generated:
         return tr("Mined");
     case TransactionRecord::NameOp:
+    {
+        QString namespaceStrCap;
+        QString namespaceStrLow;
+        switch(wtx->nameNamespace)
+        {
+        case NameNamespace::Domain:
+            namespaceStrCap = tr("Domain");
+            namespaceStrLow = tr("domain");
+            break;
+        case NameNamespace::DomainData:
+            namespaceStrCap = tr("Domain data");
+            namespaceStrLow = tr("domain data");
+            break;
+        case NameNamespace::Identity:
+            namespaceStrCap = tr("Identity");
+            namespaceStrLow = tr("identity");
+            break;
+        case NameNamespace::IdentityData:
+            namespaceStrCap = tr("Identity data");
+            namespaceStrLow = tr("identity data");
+            break;
+        case NameNamespace::NonStandard:
+            namespaceStrCap = tr("Non-standard name");
+            namespaceStrLow = tr("non-standard name");
+            break;
+        }
+
         switch(wtx->nameOpType)
         {
         case TransactionRecord::NameOpType::New:
             return tr("Name pre-registration");
         case TransactionRecord::NameOpType::FirstUpdate:
-            return tr("Name registration");
+            return tr("%1 registration").arg(namespaceStrCap);
         case TransactionRecord::NameOpType::Update:
-            return tr("Name update");
+            return tr("%1 update").arg(namespaceStrCap);
         case TransactionRecord::NameOpType::Renew:
-            return tr("Name renewal");
+            return tr("%1 renewal").arg(namespaceStrCap);
         case TransactionRecord::NameOpType::Recv:
-            return tr("Received name");
+            return tr("Received %1").arg(namespaceStrLow);
         case TransactionRecord::NameOpType::Send:
-            return tr("Sent name");
+            return tr("Sent %1").arg(namespaceStrLow);
         case TransactionRecord::NameOpType::Other:
             return tr("Unknown name operation");
         } // no default case, so the compiler can warn about missing cases
         assert(false);
+    }
     default:
         return QString();
     }

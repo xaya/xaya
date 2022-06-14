@@ -104,6 +104,7 @@ BITCOIN_TESTS =\
   test/minisketch_tests.cpp \
   test/multisig_tests.cpp \
   test/name_tests.cpp \
+  test/name_applications_tests.cpp \
   test/name_mempool_tests.cpp \
   test/net_peer_eviction_tests.cpp \
   test/net_tests.cpp \
