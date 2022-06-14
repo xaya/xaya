@@ -153,12 +153,12 @@ public:
         // This is fine at runtime as we'll fall back to using them as an addrfetch if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("seed.namecoin.libreisp.se"); // Jonas Ostman
-        vSeeds.emplace_back("nmc.seed.quisquis.de"); // Peter Conrad
-        vSeeds.emplace_back("seed.nmc.markasoftware.com"); // Mark Polyakov
-        vSeeds.emplace_back("dnsseed1.nmc.dotbit.zone"); // Stefan Stere
-        vSeeds.emplace_back("dnsseed2.nmc.dotbit.zone"); // Stefan Stere
-        vSeeds.emplace_back("dnsseed.nmc.testls.space"); // mjgill89
+        vSeeds.emplace_back("seed.namecoin.libreisp.se."); // Jonas Ostman
+        vSeeds.emplace_back("nmc.seed.quisquis.de."); // Peter Conrad
+        vSeeds.emplace_back("seed.nmc.markasoftware.com."); // Mark Polyakov
+        vSeeds.emplace_back("dnsseed1.nmc.dotbit.zone."); // Stefan Stere
+        vSeeds.emplace_back("dnsseed2.nmc.dotbit.zone."); // Stefan Stere
+        vSeeds.emplace_back("dnsseed.nmc.testls.space."); // mjgill89
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
@@ -327,8 +327,8 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com"); // Marius Hanne
-        vSeeds.emplace_back("ncts.roanapur.info"); // Yanmaani
+        vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com."); // Marius Hanne
+        vSeeds.emplace_back("ncts.roanapur.info."); // Yanmaani
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
