@@ -5,6 +5,8 @@
 
 #include <QWidget>
 
+#include <optional>
+
 class WalletModel;
 
 namespace Ui {
