@@ -392,21 +392,13 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         QString namespaceStrLow;
         switch(wtx->nameNamespace)
         {
-        case NameNamespace::Domain:
-            namespaceStrCap = tr("Domain");
-            namespaceStrLow = tr("domain");
+        case NameNamespace::Game:
+            namespaceStrCap = tr("Game account");
+            namespaceStrLow = tr("game account");
             break;
-        case NameNamespace::DomainData:
-            namespaceStrCap = tr("Domain data");
-            namespaceStrLow = tr("domain data");
-            break;
-        case NameNamespace::Identity:
-            namespaceStrCap = tr("Identity");
-            namespaceStrLow = tr("identity");
-            break;
-        case NameNamespace::IdentityData:
-            namespaceStrCap = tr("Identity data");
-            namespaceStrLow = tr("identity data");
+        case NameNamespace::Player:
+            namespaceStrCap = tr("Player name");
+            namespaceStrLow = tr("player name");
             break;
         case NameNamespace::NonStandard:
             namespaceStrCap = tr("Non-standard name");

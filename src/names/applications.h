@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Jeremy Rand
+// Copyright (c) 2022 The Xaya developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,10 +12,8 @@
 
 enum class NameNamespace
 {
-    Domain,
-    DomainData,
-    Identity,
-    IdentityData,
+    Game,
+    Player,
     NonStandard,
 };
 
