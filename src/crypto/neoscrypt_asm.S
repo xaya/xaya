@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016 John Doering <ghostlander@phoenixcoin.org>
+ * Copyright (c) 2014-2018 John Doering <ghostlander@phoenixcoin.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,12 @@
  * SUCH DAMAGE.
  */
 
-#if defined(HAVE_CONFIG_H)
-#include "bitcoin-config.h"
-#endif
+#if defined(NEOSCRYPT_ASM) && defined(__x86_64__)
 
-#if defined(ASM) && defined(__x86_64__)
-
-/* MOVQ_FIX addresses incorrect behaviour of old GNU assembler when transferring
- * data between a 64-bit general purpose register and an MMX/SSE register:
- * suffix or operands invalid for `movq` */
+/* NEOSCRYPT_MOVQ_FIX addresses incorrect behaviour of old GNU assembler
+ * when transferring data between a 64-bit general purpose register
+ * and an MMX/SSE register:
+ * suffix or operands invalid for `movq' */
 
 /* blake2s_compress(mem)
  * AMD64 BLAKE2s block compression;
@@ -53,7 +50,7 @@ _blake2s_compress:
 	movq	%rcx, %rdi
 #endif
 
-#ifndef MOVQ_FIX
+#ifndef NEOSCRYPT_MOVQ_FIX
 	movq	%rsp, %mm0
 #else
 	movd	%esp, %mm0
@@ -1316,7 +1313,7 @@ _blake2s_compress:
 	xorl	%r12d, 16(%rdi)		/* finalise */
 	xorl	%r14d, 24(%rdi)		/* finalise */
 
-#ifndef MOVQ_FIX
+#ifndef NEOSCRYPT_MOVQ_FIX
 	movq	%mm0, %rsp
 #else
 	movd	%mm0, %esp
@@ -1722,7 +1719,7 @@ _neoscrypt_fastkdf_opt:
 	psadbw	%xmm5, %xmm0
 	movhlps	%xmm0, %xmm1
 	paddq	%xmm1, %xmm0
-#ifndef MOVQ_FIX
+#ifndef NEOSCRYPT_MOVQ_FIX
 	movq	%xmm0, %r13
 #else
 	movq	%xmm0, 0(%r14)
@@ -2523,9 +2520,11 @@ _neoscrypt:
 	movq	%rsi, %r15
 	movq	%rdx, %rbx
 
+#ifdef NEOSCRYPT_SHA256
 /* Scrypt mode */
 	testl	$0x01, %ebx
 	jnz	.scrypt
+#endif
 
 #ifdef WIN64
 /* attempt to allocate 33280 + 128 bytes of stack space fails miserably;
@@ -2554,7 +2553,7 @@ _neoscrypt:
 
 /* FastKDF */
 #ifdef WIN64
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rcx
 	movq	%r14, %rdx
 	movq	%rbp, %r8
@@ -2570,9 +2569,9 @@ _neoscrypt:
 	movq	%rbp, 40(%rsp)
 	movq	$256, 48(%rsp)
 	call	neoscrypt_fastkdf
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #else
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rdi
 	movq	%r14, %rsi
 	movq	%rbp, %rdx
@@ -2596,7 +2595,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* __APPLE__ */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #endif /* WIN64 */
 
 /* blkcpy(Z, X) */
@@ -3049,7 +3048,7 @@ _neoscrypt:
 
 /* FastKDF */
 #ifdef WIN64
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rcx
 	movq	%rbp, %rdx
 	movq	%r15, %r8
@@ -3066,9 +3065,9 @@ _neoscrypt:
 	movq	%r15, 40(%rsp)
 	movq	%rax, 48(%rsp)
 	call	neoscrypt_fastkdf
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #else
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rdi
 	movq	%rbp, %rsi
 	movq	%r15, %rdx
@@ -3092,7 +3091,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* __APPLE__ */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #endif /* WIN64 */
 
 #ifdef WIN64
@@ -3535,7 +3534,7 @@ _neoscrypt:
 
 /* FastKDF */
 #ifdef WIN64
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rcx
 	movq	%rbp, %rdx
 	movq	%r15, %r8
@@ -3552,9 +3551,9 @@ _neoscrypt:
 	movq	%r15, 40(%rsp)
 	movq	%rax, 48(%rsp)
 	call	neoscrypt_fastkdf
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #else
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movq	%r14, %rdi
 	movq	%rbp, %rsi
 	movq	%r15, %rdx
@@ -3579,7 +3578,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* __APPLE__ */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 #endif /* WIN64 */
 
 #ifdef WIN64
@@ -3603,6 +3602,8 @@ _neoscrypt:
 	popq	%rdi
 #endif
 	ret
+
+#ifdef NEOSCRYPT_SHA256
 
 .scrypt:
 #ifdef WIN64
@@ -3939,6 +3940,3988 @@ _neoscrypt:
 #endif
 	ret
 
+#endif /* NEOSCRYPT_SHA256 */
+
+#ifdef NEOSCRYPT_MINER_4WAY
+
+/* blake2s_compress_4way(mem)
+ * AMD64 (SSE2) BLAKE2s 4-way block compression */
+.globl blake2s_compress_4way
+.globl _blake2s_compress_4way
+blake2s_compress_4way:
+_blake2s_compress_4way:
+	pushq	%rbx
+	pushq	%rbp
+	pushq	%r12
+	pushq	%r13
+	pushq	%r14
+	pushq	%r15
+#ifdef WIN64
+	pushq	%rdi
+	pushq	%rsi
+	subq	$160, %rsp
+	movdqu	%xmm6, 144(%rsp)
+	movdqu	%xmm7, 128(%rsp)
+	movdqu	%xmm8, 112(%rsp)
+	movdqu	%xmm9, 96(%rsp)
+	movdqu	%xmm10, 80(%rsp)
+	movdqu	%xmm11, 64(%rsp)
+	movdqu	%xmm12, 48(%rsp)
+	movdqu	%xmm13, 32(%rsp)
+	movdqu	%xmm14, 16(%rsp)
+	movdqu	%xmm15, 0(%rsp)
+	movq	%rcx, %rdi
+#endif
+
+/* initialise */
+	leaq	448(%rdi), %rsi
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm8
+	movdqa	32(%rdi), %xmm4
+	movdqa	48(%rdi), %xmm10
+	movdqa	64(%rdi), %xmm12
+	movdqa	80(%rdi), %xmm1
+	movdqa	96(%rdi), %xmm13
+	movdqa	112(%rdi), %xmm5
+/*	movdqa	%xmm0, 0(%rsi) */
+/*	movdqa	%xmm8, 16(%rsi) */
+/*	movdqa	%xmm4, 32(%rsi) */
+/*	movdqa	%xmm10, 48(%rsi) */
+/*	movdqa	%xmm12, 64(%rsi) */
+/*	movdqa	%xmm1, 80(%rsi) */
+/*	movdqa	%xmm13, 96(%rsi) */
+/*	movdqa	%xmm5, 112(%rsi) */
+	movq	$0x6A09E6676A09E667, %r8
+	movq	$0xBB67AE85BB67AE85, %r9
+	movq	$0x3C6EF3723C6EF372, %r10
+	movq	$0xA54FF53AA54FF53A, %r11
+	movq	%r8, 128(%rsi)
+	movq	%r8, 136(%rsi)
+/*	movq	%r9, 144(%rsi) */
+/*	movq	%r9, 152(%rsi) */
+#ifndef NEOSCRYPT_MOVQ_FIX
+	movq	%r9, %xmm9
+	movlhps	%xmm9, %xmm9
+#else
+	movq	%r9, 0(%rsi)
+	movq	%r9, 8(%rsi)
+	movdqa	0(%rsi), %xmm9
+#endif
+	movq	%r10, 160(%rsi)
+	movq	%r10, 168(%rsi)
+/*	movq	%r11, 176(%rsi) */
+/*	movq	%r11, 184(%rsi) */
+#ifndef NEOSCRYPT_MOVQ_FIX
+	movq	%r11, %xmm11
+	movlhps	%xmm11, %xmm11
+#else
+	movq	%r11, 0(%rsi)
+	movq	%r11, 8(%rsi)
+	movdqa	0(%rsi), %xmm11
+#endif
+	movq	$0x510E527F510E527F, %r12
+	movq	$0x9B05688C9B05688C, %r13
+	movq	$0x1F83D9AB1F83D9AB, %r14
+	movq	$0x5BE0CD195BE0CD19, %r15
+	movq	128(%rdi), %rax
+	movq	136(%rdi), %rbx
+	movq	144(%rdi), %rcx
+	movq	152(%rdi), %rdx
+	movq	160(%rdi), %r8
+	movq	168(%rdi), %r9
+	movq	176(%rdi), %r10
+	movq	184(%rdi), %r11
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+	paddd	192(%rdi), %xmm0	/* A */
+	xorq	%r12, %rax
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	paddd	256(%rdi), %xmm4	/* C */
+	xorq	%r12, %rbx
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+	paddd	%xmm12, %xmm0		/* A */
+	xorq	%r13, %rcx
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+	paddd	%xmm13, %xmm4		/* C */
+	xorq	%r13, %rdx
+	movdqa	128(%rsi), %xmm2	/* A */
+	xorq	%r14, %r8
+	xorq	%r14, %r9
+	movdqa	160(%rsi), %xmm6	/* C */
+	xorq	%r15, %r10
+	xorq	%r15, %r11
+/*	movq	%rax, 192(%rsi) */
+/*	movq	%rbx, 200(%rsi) */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+#ifndef NEOSCRYPT_MOVQ_FIX
+	movq	%rax, %xmm3
+	movq	%rbx, %xmm15
+	movlhps	%xmm15, %xmm3
+#else
+	movq	%rax, 0(%rsi)
+	movq	%rbx, 8(%rsi)
+	movdqa	0(%rsi), %xmm3
+#endif
+	movq	%rcx, 208(%rsi)
+	pxor	%xmm0, %xmm3		/* A */
+	movq	%rdx, 216(%rsi)
+/*	movq	%r8, 224(%rsi) */
+/*	movq	%r9, 232(%rsi) */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+#ifndef NEOSCRYPT_MOVQ_FIX
+	movq	%r8, %xmm7
+	movq	%r9, %xmm15
+	movlhps	%xmm15, %xmm7
+#else
+	movq	%r8, 0(%rsi)
+	movq	%r9, 8(%rsi)
+	movdqa	0(%rsi), %xmm7
+#endif
+	movq	%r10, 240(%rsi)
+	pxor	%xmm4, %xmm7		/* C */
+	movq	%r11, 248(%rsi)
+/* round 0 (A and C) */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	208(%rdi), %xmm0	/* A */
+	paddd	272(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	224(%rdi), %xmm8	/* B */
+	paddd	288(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 0 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	240(%rdi), %xmm8	/* B */
+	paddd	304(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	320(%rdi), %xmm0	/* E */
+	paddd	384(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 0 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	336(%rdi), %xmm0	/* E */
+	paddd	400(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	352(%rdi), %xmm8	/* F */
+	paddd	416(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 0 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	368(%rdi), %xmm8	/* F */
+	paddd	432(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	416(%rdi), %xmm0	/* A */
+	paddd	336(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 1 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	352(%rdi), %xmm0	/* A */
+	paddd	432(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	256(%rdi), %xmm8	/* B */
+	paddd	400(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 1 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	320(%rdi), %xmm8	/* B */
+	paddd	288(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	208(%rdi), %xmm0	/* E */
+	paddd	368(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 1 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	384(%rdi), %xmm0	/* E */
+	paddd	304(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	192(%rdi), %xmm8	/* F */
+	paddd	272(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 1 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	224(%rdi), %xmm8	/* F */
+	paddd	240(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	368(%rdi), %xmm0	/* A */
+	paddd	272(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 2 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	320(%rdi), %xmm0	/* A */
+	paddd	224(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	384(%rdi), %xmm8	/* B */
+	paddd	432(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 2 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	192(%rdi), %xmm8	/* B */
+	paddd	400(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	352(%rdi), %xmm0	/* E */
+	paddd	304(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 2 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	416(%rdi), %xmm0	/* E */
+	paddd	208(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	240(%rdi), %xmm8	/* F */
+	paddd	336(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 2 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	288(%rdi), %xmm8	/* F */
+	paddd	256(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	304(%rdi), %xmm0	/* A */
+	paddd	400(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 3 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	336(%rdi), %xmm0	/* A */
+	paddd	384(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	240(%rdi), %xmm8	/* B */
+	paddd	368(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 3 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	208(%rdi), %xmm8	/* B */
+	paddd	416(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	224(%rdi), %xmm0	/* E */
+	paddd	256(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 3 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	288(%rdi), %xmm0	/* E */
+	paddd	192(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	272(%rdi), %xmm8	/* F */
+	paddd	432(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 3 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	352(%rdi), %xmm8	/* F */
+	paddd	320(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	336(%rdi), %xmm0	/* A */
+	paddd	224(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 4 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	192(%rdi), %xmm0	/* A */
+	paddd	256(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	272(%rdi), %xmm8	/* B */
+	paddd	352(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 4 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	304(%rdi), %xmm8	/* B */
+	paddd	432(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	416(%rdi), %xmm0	/* E */
+	paddd	288(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 4 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	208(%rdi), %xmm0	/* E */
+	paddd	320(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	368(%rdi), %xmm8	/* F */
+	paddd	240(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 4 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	384(%rdi), %xmm8	/* F */
+	paddd	400(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	224(%rdi), %xmm0	/* A */
+	paddd	192(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 5 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	384(%rdi), %xmm0	/* A */
+	paddd	368(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	288(%rdi), %xmm8	/* B */
+	paddd	320(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 5 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	352(%rdi), %xmm8	/* B */
+	paddd	240(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	256(%rdi), %xmm0	/* E */
+	paddd	432(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 5 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	400(%rdi), %xmm0	/* E */
+	paddd	416(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	304(%rdi), %xmm8	/* F */
+	paddd	208(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 5 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	272(%rdi), %xmm8	/* F */
+	paddd	336(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	384(%rdi), %xmm0	/* A */
+	paddd	416(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 6 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	272(%rdi), %xmm0	/* A */
+	paddd	400(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	208(%rdi), %xmm8	/* B */
+	paddd	256(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 6 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	432(%rdi), %xmm8	/* B */
+	paddd	352(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	192(%rdi), %xmm0	/* E */
+	paddd	336(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 6 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	304(%rdi), %xmm0	/* E */
+	paddd	224(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	288(%rdi), %xmm8	/* F */
+	paddd	320(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 6 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	240(%rdi), %xmm8	/* F */
+	paddd	368(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	400(%rdi), %xmm0	/* A */
+	paddd	384(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 7 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	368(%rdi), %xmm0	/* A */
+	paddd	208(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	304(%rdi), %xmm8	/* B */
+	paddd	240(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 7 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	416(%rdi), %xmm8	/* B */
+	paddd	336(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	272(%rdi), %xmm0	/* E */
+	paddd	320(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 7 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	192(%rdi), %xmm0	/* E */
+	paddd	288(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	432(%rdi), %xmm8	/* F */
+	paddd	224(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 7 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	256(%rdi), %xmm8	/* F */
+	paddd	352(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	288(%rdi), %xmm0	/* A */
+	paddd	368(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 8 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	432(%rdi), %xmm0	/* A */
+	paddd	240(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	416(%rdi), %xmm8	/* B */
+	paddd	192(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 8 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	336(%rdi), %xmm8	/* B */
+	paddd	320(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	384(%rdi), %xmm0	/* E */
+	paddd	208(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 8 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	224(%rdi), %xmm0	/* E */
+	paddd	256(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	400(%rdi), %xmm8	/* F */
+	paddd	352(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 8 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	304(%rdi), %xmm8	/* F */
+	paddd	272(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+/*	movdqa	0(%rsi), %xmm0 */	/* A */
+/*	movdqa	32(%rsi), %xmm4 */	/* C */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	paddd	352(%rdi), %xmm0	/* A */
+	paddd	304(%rdi), %xmm4	/* C */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* round 9 (A and C) */
+/*	movdqa	64(%rsi), %xmm12 */	/* A */
+/*	movdqa	96(%rsi), %xmm13 */	/* C */
+/*	movdqa	192(%rsi), %xmm3 */	/* A */
+/*	movdqa	224(%rsi), %xmm7 */	/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	128(%rsi), %xmm2 */	/* A */
+/*	movdqa	160(%rsi), %xmm6 */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	paddd	224(%rdi), %xmm0	/* A */
+	paddd	288(%rdi), %xmm4	/* C */
+	pslld	$16, %xmm3		/* A */
+	psrld	$16, %xmm14		/* A */
+	pslld	$16, %xmm7		/* C */
+	psrld	$16, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+	pslld	$20, %xmm12		/* A */
+	psrld	$12, %xmm14		/* A */
+	pslld	$20, %xmm13		/* C */
+	psrld	$12, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+	paddd	%xmm12, %xmm0		/* A */
+	paddd	%xmm13, %xmm4		/* C */
+/*	movdqa	%xmm0, 0(%rsi) */	/* A */
+/*	movdqa	%xmm4, 32(%rsi) */	/* C */
+	pxor	%xmm0, %xmm3		/* A */
+	pxor	%xmm4, %xmm7		/* C */
+	movdqa	%xmm3, %xmm14		/* A */
+	movdqa	%xmm7, %xmm15		/* C */
+	pslld	$24, %xmm3		/* A */
+	psrld	$8, %xmm14		/* A */
+	pslld	$24, %xmm7		/* C */
+	psrld	$8, %xmm15		/* C */
+	por	%xmm14, %xmm3		/* A */
+	por	%xmm15, %xmm7		/* C */
+	movdqa	%xmm3, 192(%rsi)	/* A */
+	movdqa	%xmm7, 224(%rsi)	/* C */
+	paddd	%xmm3, %xmm2		/* A */
+	paddd	%xmm7, %xmm6		/* C */
+/*	movdqa	%xmm2, 128(%rsi) */	/* A */
+/*	movdqa	%xmm6, 160(%rsi) */	/* C */
+	pxor	%xmm2, %xmm12		/* A */
+	pxor	%xmm6, %xmm13		/* C */
+	movdqa	%xmm12, %xmm14		/* A */
+	movdqa	%xmm13, %xmm15		/* C */
+/*	movdqa	16(%rsi), %xmm8 */	/* B */
+/*	movdqa	48(%rsi), %xmm10 */	/* D */
+	paddd	320(%rdi), %xmm8	/* B */
+	paddd	208(%rdi), %xmm10	/* D */
+	pslld	$25, %xmm12		/* A */
+	psrld	$7, %xmm14		/* A */
+	pslld	$25, %xmm13		/* C */
+	psrld	$7, %xmm15		/* C */
+	por	%xmm14, %xmm12		/* A */
+	por	%xmm15, %xmm13		/* C */
+/*	movdqa	%xmm12, 64(%rsi) */	/* A */
+/*	movdqa	%xmm13, 96(%rsi) */	/* C */
+/* round 9 (B and D) */
+/*	movdqa	80(%rsi), %xmm1 */	/* B */
+/*	movdqa	112(%rsi), %xmm5 */	/* D */
+	movdqa	208(%rsi), %xmm3	/* B */
+	movdqa	240(%rsi), %xmm7	/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	144(%rsi), %xmm9 */	/* B */
+/*	movdqa	176(%rsi), %xmm11 */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	paddd	256(%rdi), %xmm8	/* B */
+	paddd	272(%rdi), %xmm10	/* D */
+	pslld	$16, %xmm3		/* B */
+	psrld	$16, %xmm14		/* B */
+	pslld	$16, %xmm7		/* D */
+	psrld	$16, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+	pslld	$20, %xmm1		/* B */
+	psrld	$12, %xmm14		/* B */
+	pslld	$20, %xmm5		/* D */
+	psrld	$12, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+	paddd	%xmm1, %xmm8		/* B */
+	paddd	%xmm5, %xmm10		/* D */
+/*	movdqa	%xmm8, 16(%rsi) */	/* B */
+/*	movdqa	%xmm10, 48(%rsi) */	/* D */
+	pxor	%xmm8, %xmm3		/* B */
+	pxor	%xmm10, %xmm7		/* D */
+	movdqa	%xmm3, %xmm14		/* B */
+	movdqa	%xmm7, %xmm15		/* D */
+	pslld	$24, %xmm3		/* B */
+	psrld	$8, %xmm14		/* B */
+	pslld	$24, %xmm7		/* D */
+	psrld	$8, %xmm15		/* D */
+	por	%xmm14, %xmm3		/* B */
+	por	%xmm15, %xmm7		/* D */
+/*	movdqa	%xmm3, 208(%rsi) */	/* B */
+/*	movdqa	%xmm7, 240(%rsi) */	/* D */
+	paddd	%xmm3, %xmm9		/* B */
+	paddd	%xmm7, %xmm11		/* D */
+/*	movdqa	%xmm9, 144(%rsi) */	/* B */
+/*	movdqa	%xmm11, 176(%rsi) */	/* D */
+	pxor	%xmm9, %xmm1		/* B */
+	pxor	%xmm11, %xmm5		/* D */
+	movdqa	%xmm1, %xmm14		/* B */
+	movdqa	%xmm5, %xmm15		/* D */
+/*	movdqa	0(%rsi), %xmm0 */	/* E */
+/*	movdqa	32(%rsi), %xmm4 */	/* G */
+	paddd	432(%rdi), %xmm0	/* E */
+	paddd	240(%rdi), %xmm4	/* G */
+	pslld	$25, %xmm1		/* B */
+	psrld	$7, %xmm14		/* B */
+	pslld	$25, %xmm5		/* D */
+	psrld	$7, %xmm15		/* D */
+	por	%xmm14, %xmm1		/* B */
+	por	%xmm15, %xmm5		/* D */
+/*	movdqa	%xmm1, 80(%rsi) */	/* B */
+/*	movdqa	%xmm5, 112(%rsi) */	/* D */
+/* round 9 (E and G) */
+/*	movdqa	80(%rsi), %xmm1 */	/* E */
+/*	movdqa	112(%rsi), %xmm5 */	/* G */
+/*	movdqa	240(%rsi), %xmm7 */	/* E */
+/*	movdqa	208(%rsi), %xmm3 */	/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	160(%rsi), %xmm6 */	/* E */
+/*	movdqa	128(%rsi), %xmm2 */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	paddd	368(%rdi), %xmm0	/* E */
+	paddd	384(%rdi), %xmm4	/* G */
+	pslld	$16, %xmm7		/* E */
+	psrld	$16, %xmm14		/* E */
+	pslld	$16, %xmm3		/* G */
+	psrld	$16, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+	pslld	$20, %xmm1		/* E */
+	psrld	$12, %xmm14		/* E */
+	pslld	$20, %xmm5		/* G */
+	psrld	$12, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+	paddd	%xmm1, %xmm0		/* E */
+	paddd	%xmm5, %xmm4		/* G */
+/*	movdqa	%xmm0, 0(%rsi) */	/* E */
+/*	movdqa	%xmm4, 32(%rsi) */	/* G */
+	pxor	%xmm0, %xmm7		/* E */
+	pxor	%xmm4, %xmm3		/* G */
+	movdqa	%xmm7, %xmm14		/* E */
+	movdqa	%xmm3, %xmm15		/* G */
+	pslld	$24, %xmm7		/* E */
+	psrld	$8, %xmm14		/* E */
+	pslld	$24, %xmm3		/* G */
+	psrld	$8, %xmm15		/* G */
+	por	%xmm14, %xmm7		/* E */
+	por	%xmm15, %xmm3		/* G */
+	movdqa	%xmm7, 240(%rsi)	/* E */
+	movdqa	%xmm3, 208(%rsi)	/* G */
+	paddd	%xmm7, %xmm6		/* E */
+	paddd	%xmm3, %xmm2		/* G */
+/*	movdqa	%xmm6, 160(%rsi) */	/* E */
+/*	movdqa	%xmm2, 128(%rsi) */	/* G */
+	pxor	%xmm6, %xmm1		/* E */
+	pxor	%xmm2, %xmm5		/* G */
+	movdqa	%xmm1, %xmm14		/* E */
+	movdqa	%xmm5, %xmm15		/* G */
+/*	movdqa	16(%rsi), %xmm8 */	/* F */
+/*	movdqa	48(%rsi), %xmm10 */	/* H */
+	paddd	336(%rdi), %xmm8	/* F */
+	paddd	400(%rdi), %xmm10	/* H */
+	pslld	$25, %xmm1		/* E */
+	psrld	$7, %xmm14		/* E */
+	pslld	$25, %xmm5		/* G */
+	psrld	$7, %xmm15		/* G */
+	por	%xmm14, %xmm1		/* E */
+	por	%xmm15, %xmm5		/* G */
+/*	movdqa	%xmm1, 80(%rsi) */	/* E */
+/*	movdqa	%xmm5, 112(%rsi) */	/* G */
+/* round 9 (F and H) */
+/*	movdqa	96(%rsi), %xmm13 */	/* F */
+/*	movdqa	64(%rsi), %xmm12 */	/* H */
+	movdqa	192(%rsi), %xmm3	/* F */
+	movdqa	224(%rsi), %xmm7	/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	176(%rsi), %xmm11 */	/* F */
+/*	movdqa	144(%rsi), %xmm9 */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	paddd	416(%rdi), %xmm8	/* F */
+	paddd	192(%rdi), %xmm10	/* H */
+	pslld	$16, %xmm3		/* F */
+	psrld	$16, %xmm14		/* F */
+	pslld	$16, %xmm7		/* H */
+	psrld	$16, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$20, %xmm13		/* F */
+	psrld	$12, %xmm14		/* F */
+	pslld	$20, %xmm12		/* H */
+	psrld	$12, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+	paddd	%xmm13, %xmm8		/* F */
+	paddd	%xmm12, %xmm10		/* H */
+/*	movdqa	%xmm8, 16(%rsi) */	/* F */
+/*	movdqa	%xmm10, 48(%rsi) */	/* H */
+	pxor	%xmm8, %xmm3		/* F */
+	pxor	%xmm10, %xmm7		/* H */
+	movdqa	%xmm3, %xmm14		/* F */
+	movdqa	%xmm7, %xmm15		/* H */
+	pslld	$24, %xmm3		/* F */
+	psrld	$8, %xmm14		/* F */
+	pslld	$24, %xmm7		/* H */
+	psrld	$8, %xmm15		/* H */
+	por	%xmm14, %xmm3		/* F */
+	por	%xmm15, %xmm7		/* H */
+/*	movdqa	%xmm3, 192(%rsi) */	/* F */
+/*	movdqa	%xmm7, 224(%rsi) */	/* H */
+	paddd	%xmm3, %xmm11		/* F */
+	paddd	%xmm7, %xmm9		/* H */
+/*	movdqa	%xmm11, 176(%rsi) */	/* F */
+/*	movdqa	%xmm9, 144(%rsi) */	/* H */
+	pxor	%xmm11, %xmm13		/* F */
+	pxor	%xmm9, %xmm12		/* H */
+	movdqa	%xmm13, %xmm14		/* F */
+	movdqa	%xmm12, %xmm15		/* H */
+	pslld	$25, %xmm13		/* F */
+	psrld	$7, %xmm14		/* F */
+	pslld	$25, %xmm12		/* H */
+	psrld	$7, %xmm15		/* H */
+	por	%xmm14, %xmm13		/* F */
+	por	%xmm15, %xmm12		/* H */
+/*	movdqa	%xmm13, 96(%rsi) */	/* F */
+/*	movdqa	%xmm12, 64(%rsi) */	/* H */
+/* finalise */
+	movdqa	208(%rsi), %xmm14
+	pxor	%xmm2, %xmm0		/* 0() ^ 128() */
+	pxor	%xmm9, %xmm8		/* 16() ^ 144() */
+	movdqa	240(%rsi), %xmm15
+	pxor	%xmm6, %xmm4		/* 32() ^ 160() */
+	pxor	%xmm11, %xmm10		/* 48() ^ 176() */
+	pxor	%xmm3, %xmm12		/* 64() ^ 192() */
+	pxor	%xmm14, %xmm1		/* 80() ^ 208() */
+	pxor	%xmm7, %xmm13		/* 96() ^ 224() */
+	pxor	%xmm15, %xmm5		/* 112() ^ 240() */
+	pxor	0(%rdi), %xmm0
+	pxor	16(%rdi), %xmm8
+	pxor	32(%rdi), %xmm4
+	pxor	48(%rdi), %xmm10
+	pxor	64(%rdi), %xmm12
+	pxor	80(%rdi), %xmm1
+	pxor	96(%rdi), %xmm13
+	pxor	112(%rdi), %xmm5
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm8, 16(%rdi)
+	movdqa	%xmm4, 32(%rdi)
+	movdqa	%xmm10, 48(%rdi)
+	movdqa	%xmm12, 64(%rdi)
+	movdqa	%xmm1, 80(%rdi)
+	movdqa	%xmm13, 96(%rdi)
+	movdqa	%xmm5, 112(%rdi)
+
+#ifdef WIN64
+	movdqu	0(%rsp), %xmm15
+	movdqu	16(%rsp), %xmm14
+	movdqu	32(%rsp), %xmm13
+	movdqu	48(%rsp), %xmm12
+	movdqu	64(%rsp), %xmm11
+	movdqu	80(%rsp), %xmm10
+	movdqu	96(%rsp), %xmm9
+	movdqu	112(%rsp), %xmm8
+	movdqu	128(%rsp), %xmm7
+	movdqu	144(%rsp), %xmm6
+	addq	$160, %rsp
+	popq	%rsi
+	popq	%rdi
+#endif
+	popq	%r15
+	popq	%r14
+	popq	%r13
+	popq	%r12
+	popq	%rbp
+	popq	%rbx
+	ret
+
+
+/* neoscrypt_blkcpy(dst, src, len)
+ * AMD64 (SSE2) block memcpy();
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkcpy
+.globl _neoscrypt_blkcpy
+neoscrypt_blkcpy:
+_neoscrypt_blkcpy:
+#ifdef WIN64
+	movq	%rdi, %r10
+	movq	%rsi, %r11
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+#endif
+	xorq	%rcx, %rcx
+	movl	%edx, %ecx
+	shrl	$6, %ecx
+	movq	$64, %rax
+.blkcpy:
+	movdqa	0(%rsi), %xmm0
+	movdqa	16(%rsi), %xmm1
+	movdqa	32(%rsi), %xmm2
+	movdqa	48(%rsi), %xmm3
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	addq	%rax, %rdi
+	addq	%rax, %rsi
+	decl	%ecx
+	jnz	.blkcpy
+#ifdef WIN64
+	movq	%r10, %rdi
+	movq	%r11, %rsi
+#endif
+	ret
+
+
+/* neoscrypt_blkswp(blkA, blkB, len)
+ * AMD64 (SSE2) block swapper;
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkswp
+.globl _neoscrypt_blkswp
+neoscrypt_blkswp:
+_neoscrypt_blkswp:
+#ifdef WIN64
+	movq	%rdi, %r10
+	movq	%rsi, %r11
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+#endif
+	xorq	%rcx, %rcx
+	movl	%edx, %ecx
+	shrl	$6, %ecx
+	movq	$64, %rax
+.blkswp:
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	movdqa	0(%rsi), %xmm4
+	movdqa	16(%rsi), %xmm5
+	movdqa	32(%rsi), %xmm8
+	movdqa	48(%rsi), %xmm9
+	movdqa	%xmm0, 0(%rsi)
+	movdqa	%xmm1, 16(%rsi)
+	movdqa	%xmm2, 32(%rsi)
+	movdqa	%xmm3, 48(%rsi)
+	movdqa	%xmm4, 0(%rdi)
+	movdqa	%xmm5, 16(%rdi)
+	movdqa	%xmm8, 32(%rdi)
+	movdqa	%xmm9, 48(%rdi)
+	addq	%rax, %rdi
+	addq	%rax, %rsi
+	decl	%ecx
+	jnz	.blkswp
+#ifdef WIN64
+	movq	%r10, %rdi
+	movq	%r11, %rsi
+#endif
+	ret
+
+
+/* neoscrypt_blkxor(dst, src, len)
+ * AMD64 (SSE2) block XOR engine;
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkxor
+.globl _neoscrypt_blkxor
+neoscrypt_blkxor:
+_neoscrypt_blkxor:
+#ifdef WIN64
+	movq	%rdi, %r10
+	movq	%rsi, %r11
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+#endif
+	xorq	%rcx, %rcx
+	movl	%edx, %ecx
+	shrl	$6, %ecx
+	movq	$64, %rax
+.blkxor:
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	pxor	0(%rsi), %xmm0
+	pxor	16(%rsi), %xmm1
+	pxor	32(%rsi), %xmm2
+	pxor	48(%rsi), %xmm3
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	addq	%rax, %rdi
+	addq	%rax, %rsi
+	decl	%ecx
+	jnz	.blkxor
+#ifdef WIN64
+	movq	%r10, %rdi
+	movq	%r11, %rsi
+#endif
+	ret
+
+
+/* neoscrypt_pack_4way(dst, src, len)
+ * AMD64 4-way data packer */
+.globl neoscrypt_pack_4way
+.globl _neoscrypt_pack_4way
+neoscrypt_pack_4way:
+_neoscrypt_pack_4way:
+#ifdef WIN64
+	pushq	%rdi
+	pushq	%rsi
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+#endif
+
+	movq	%rdx, %rcx
+	shrq	$2, %rdx
+	leaq	0(%rsi, %rdx, 2), %rax
+	shrq	$4, %rcx
+.pack_4way:
+	movl	0(%rsi), %r8d
+	movl	0(%rsi, %rdx), %r9d
+	addq	$4, %rsi
+	movl	0(%rax), %r10d
+	movl	0(%rax, %rdx), %r11d
+	addq	$4, %rax
+	movl	%r8d, 0(%rdi)
+	movl	%r9d, 4(%rdi)
+	movl	%r10d, 8(%rdi)
+	movl	%r11d, 12(%rdi)
+	addq	$16, %rdi
+	decq	%rcx
+	jnz	.pack_4way
+
+#ifdef WIN64
+	popq	%rsi
+	popq	%rdi
+#endif
+	ret
+
+
+/* neoscrypt_unpack_4way(dst, src, len)
+ * AMD64 4-way data unpacker */
+.globl neoscrypt_unpack_4way
+.globl _neoscrypt_unpack_4way
+neoscrypt_unpack_4way:
+_neoscrypt_unpack_4way:
+#ifdef WIN64
+	pushq	%rdi
+	pushq	%rsi
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+#endif
+
+	movq	%rdx, %rcx
+	shrq	$2, %rdx
+	leaq	0(%rdi, %rdx, 2), %rax
+	shrq	$4, %rcx
+.unpack_4way:
+	movq	0(%rsi), %r8
+	movq	8(%rsi), %r9
+	addq	$16, %rsi
+	movl	%r8d, 0(%rdi)
+	shrq	$32, %r8
+	movl	%r9d, 0(%rax)
+	shrq	$32, %r9
+	movl	%r8d, 0(%rdi, %rdx)
+	addq	$4, %rdi
+	movl	%r9d, 0(%rax, %rdx)
+	addq	$4, %rax
+	decq	%rcx
+	jnz	.unpack_4way
+
+#ifdef WIN64
+	popq	%rsi
+	popq	%rdi
+#endif
+	ret
+
+
+/* neoscrypt_xor_4way(dst, srcA, srcB, srcC, srcD, len)
+ * AMD64 4-way XOR engine */
+.globl neoscrypt_xor_4way
+.globl _neoscrypt_xor_4way
+neoscrypt_xor_4way:
+_neoscrypt_xor_4way:
+	pushq	%rbx
+	pushq	%rbp
+#ifdef WIN64
+	pushq	%rdi
+	pushq	%rsi
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+	movq	%r9, %rbx
+	movq	72(%rsp), %rax
+	movq	80(%rsp), %rcx
+#else
+	movq	%rcx, %rbx
+	movq	%r8, %rax
+	movq	%r9, %rcx
+#endif
+
+	xorq	%rbp, %rbp
+	shrq	$4, %rcx
+.xor_4way:
+	movl	0(%rsi, %rbp), %r8d
+	movl	4(%rdx, %rbp), %r9d
+	movl	8(%rbx, %rbp), %r10d
+	movl	12(%rax, %rbp), %r11d
+	xorl	%r8d, 0(%rdi)
+	xorl	%r9d, 4(%rdi)
+	xorl	%r10d, 8(%rdi)
+	xorl	%r11d, 12(%rdi)
+	addl	$16, %ebp
+	addq	$16, %rdi
+	decq	%rcx
+	jnz	.xor_4way
+
+#ifdef WIN64
+	popq	%rsi
+	popq	%rdi
+#endif
+	popq	%rbp
+	popq	%rbx
+	ret
+
+
+/* neoscrypt_xor_salsa_4way(mem, xormem, workmem, double_rounds)
+ * AMD64 (SSE2) Salsa20 4-way with XOR */
+.globl neoscrypt_xor_salsa_4way
+.globl _neoscrypt_xor_salsa_4way
+neoscrypt_xor_salsa_4way:
+_neoscrypt_xor_salsa_4way:
+#ifdef WIN64
+	movq	%rdi, %r10
+	movq	%rsi, %r11
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+	movq	%r9, %rcx
+#endif
+/* XOR and copy to temporary memory */
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	movdqa	64(%rdi), %xmm4
+	movdqa	80(%rdi), %xmm5
+	movdqa	96(%rdi), %xmm6
+	movdqa	112(%rdi), %xmm7
+	movdqa	128(%rdi), %xmm8
+	movdqa	144(%rdi), %xmm9
+	movdqa	160(%rdi), %xmm10
+	movdqa	176(%rdi), %xmm11
+	movdqa	192(%rdi), %xmm12
+	movdqa	208(%rdi), %xmm13
+	movdqa	224(%rdi), %xmm14
+	movdqa	240(%rdi), %xmm15
+	pxor	0(%rsi), %xmm0
+	pxor	16(%rsi), %xmm1
+	pxor	32(%rsi), %xmm2
+	pxor	48(%rsi), %xmm3
+	pxor	64(%rsi), %xmm4
+	pxor	80(%rsi), %xmm5
+	pxor	96(%rsi), %xmm6
+	pxor	112(%rsi), %xmm7
+	pxor	128(%rsi), %xmm8
+	pxor	144(%rsi), %xmm9
+	pxor	160(%rsi), %xmm10
+	pxor	176(%rsi), %xmm11
+	pxor	192(%rsi), %xmm12
+	pxor	208(%rsi), %xmm13
+	pxor	224(%rsi), %xmm14
+	pxor	240(%rsi), %xmm15
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	movdqa	%xmm4, 64(%rdi)
+	movdqa	%xmm5, 80(%rdi)
+	movdqa	%xmm6, 96(%rdi)
+	movdqa	%xmm7, 112(%rdi)
+	movdqa	%xmm8, 128(%rdi)
+	movdqa	%xmm9, 144(%rdi)
+	movdqa	%xmm10, 160(%rdi)
+	movdqa	%xmm11, 176(%rdi)
+	movdqa	%xmm12, 192(%rdi)
+	movdqa	%xmm13, 208(%rdi)
+	movdqa	%xmm14, 224(%rdi)
+	movdqa	%xmm15, 240(%rdi)
+	movdqa	%xmm0, 0(%rdx)
+	movdqa	%xmm1, 16(%rdx)
+	movdqa	%xmm2, 32(%rdx)
+	movdqa	%xmm3, 48(%rdx)
+	movdqa	%xmm4, 64(%rdx)
+	movdqa	%xmm5, 80(%rdx)
+	movdqa	%xmm6, 96(%rdx)
+	movdqa	%xmm7, 112(%rdx)
+	movdqa	%xmm8, 128(%rdx)
+	movdqa	%xmm9, 144(%rdx)
+	movdqa	%xmm10, 160(%rdx)
+	movdqa	%xmm11, 176(%rdx)
+	movdqa	%xmm12, 192(%rdx)
+	movdqa	%xmm13, 208(%rdx)
+	movdqa	%xmm14, 224(%rdx)
+	movdqa	%xmm15, 240(%rdx)
+.xor_salsa_4way:
+/* quarters A and B */
+	movdqa	0(%rdx), %xmm0		/* A: load a */
+	movdqa	80(%rdx), %xmm4		/* B: load a */
+	paddd	192(%rdx), %xmm0	/* A: t = a + d */
+	paddd	16(%rdx), %xmm4		/* B: t = a + d */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$7, %xmm0		/* A: rotate t (1) */
+	psrld	$25, %xmm3		/* A: rotate t (2) */
+	pslld	$7, %xmm4		/* B: rotate t (1) */
+	psrld	$25, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	64(%rdx), %xmm0		/* A: b = b ^ t */
+	pxor	144(%rdx), %xmm4	/* B: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* A: copy b */
+	movdqa	%xmm4, %xmm5		/* B: copy b */
+	movdqa	%xmm1, 64(%rdx)		/* A: store b */
+	movdqa	%xmm5, 144(%rdx)	/* B: store b */
+	paddd	0(%rdx), %xmm0		/* A: t = b + a */
+	paddd	80(%rdx), %xmm4		/* B: t = b + a */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$9, %xmm0		/* A: rotate t (1) */
+	psrld	$23, %xmm3		/* A: rotate t (2) */
+	pslld	$9, %xmm4		/* B: rotate t (1) */
+	psrld	$23, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	128(%rdx), %xmm0	/* A: c = c ^ t */
+	pxor	208(%rdx), %xmm4	/* B: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* A: copy c */
+	movdqa	%xmm4, %xmm6		/* B: copy c */
+	movdqa	%xmm2, 128(%rdx)	/* A: store c */
+	movdqa	%xmm6, 208(%rdx)	/* B: store c */
+	paddd	%xmm1, %xmm0		/* A: t = c + b */
+	paddd	%xmm5, %xmm4		/* B: t = c + b */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$13, %xmm0		/* A: rotate t (1) */
+	psrld	$19, %xmm3		/* A: rotate t (2) */
+	pslld	$13, %xmm4		/* B: rotate t (1) */
+	psrld	$19, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	192(%rdx), %xmm0	/* A: d = d ^ t */
+	pxor	16(%rdx), %xmm4		/* B: d = d ^ t */
+	movdqa	%xmm0, 192(%rdx)	/* A: store d */
+	movdqa	%xmm4, 16(%rdx)		/* B: store d */
+	paddd	%xmm2, %xmm0		/* A: t = d + c */
+	paddd	%xmm6, %xmm4		/* B: t = d + c */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$18, %xmm0		/* A: rotate t (1) */
+	psrld	$14, %xmm3		/* A: rotate t (2) */
+	pslld	$18, %xmm4		/* B: rotate t (1) */
+	psrld	$14, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	0(%rdx), %xmm0		/* A: a = a ^ t */
+	pxor	80(%rdx), %xmm4		/* B: a = a ^ t */
+	movdqa	%xmm0, 0(%rdx)		/* A: store a */
+	movdqa	%xmm4, 80(%rdx)		/* B: store a */
+/* quarters C and D*/
+	movdqa	160(%rdx), %xmm0	/* C: load a */
+	movdqa	240(%rdx), %xmm4	/* D: load a */
+	paddd	96(%rdx), %xmm0		/* C: t = a + d */
+	paddd	176(%rdx), %xmm4	/* D: t = a + d */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$7, %xmm0		/* C: rotate t (1) */
+	psrld	$25, %xmm3		/* C: rotate t (2) */
+	pslld	$7, %xmm4		/* D: rotate t (1) */
+	psrld	$25, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	224(%rdx), %xmm0	/* C: b = b ^ t */
+	pxor	48(%rdx), %xmm4		/* D: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* C: copy b */
+	movdqa	%xmm4, %xmm5		/* D: copy b */
+	movdqa	%xmm1, 224(%rdx)	/* C: store b */
+	movdqa	%xmm5, 48(%rdx)		/* D: store b */
+	paddd	160(%rdx), %xmm0	/* C: t = b + a */
+	paddd	240(%rdx), %xmm4	/* D: t = b + a */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$9, %xmm0		/* C: rotate t (1) */
+	psrld	$23, %xmm3		/* C: rotate t (2) */
+	pslld	$9, %xmm4		/* D: rotate t (1) */
+	psrld	$23, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	32(%rdx), %xmm0		/* C: c = c ^ t */
+	pxor	112(%rdx), %xmm4	/* D: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* C: copy c */
+	movdqa	%xmm4, %xmm6		/* D: copy c */
+	movdqa	%xmm2, 32(%rdx)		/* C: store c */
+	movdqa	%xmm6, 112(%rdx)	/* D: store c */
+	paddd	%xmm1, %xmm0		/* C: t = c + b */
+	paddd	%xmm5, %xmm4		/* D: t = c + b */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$13, %xmm0		/* C: rotate t (1) */
+	psrld	$19, %xmm3		/* C: rotate t (2) */
+	pslld	$13, %xmm4		/* D: rotate t (1) */
+	psrld	$19, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	96(%rdx), %xmm0		/* C: d = d ^ t */
+	pxor	176(%rdx), %xmm4	/* D: d = d ^ t */
+	movdqa	%xmm0, 96(%rdx)		/* C: store d */
+	movdqa	%xmm4, 176(%rdx)	/* D: store d */
+	paddd	%xmm2, %xmm0		/* C: t = d + c */
+	paddd	%xmm6, %xmm4		/* D: t = d + c */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$18, %xmm0		/* C: rotate t (1) */
+	psrld	$14, %xmm3		/* C: rotate t (2) */
+	pslld	$18, %xmm4		/* D: rotate t (1) */
+	psrld	$14, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	160(%rdx), %xmm0	/* C: a = a ^ t */
+	pxor	240(%rdx), %xmm4	/* D: a = a ^ t */
+	movdqa	%xmm0, 160(%rdx)	/* C: store a */
+	movdqa	%xmm4, 240(%rdx)	/* D: store a */
+/* quarters E and F */
+	movdqa	0(%rdx), %xmm0		/* E: load a */
+	movdqa	80(%rdx), %xmm4		/* F: load a */
+	paddd	48(%rdx), %xmm0		/* E: t = a + d */
+	paddd	64(%rdx), %xmm4		/* F: t = a + d */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$7, %xmm0		/* E: rotate t (1) */
+	psrld	$25, %xmm3		/* E: rotate t (2) */
+	pslld	$7, %xmm4		/* F: rotate t (1) */
+	psrld	$25, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	16(%rdx), %xmm0		/* E: b = b ^ t */
+	pxor	96(%rdx), %xmm4		/* F: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* E: copy b */
+	movdqa	%xmm4, %xmm5		/* F: copy b */
+	movdqa	%xmm1, 16(%rdx)		/* E: store b */
+	movdqa	%xmm5, 96(%rdx)		/* F: store b */
+	paddd	0(%rdx), %xmm0		/* E: t = b + a */
+	paddd	80(%rdx), %xmm4		/* F: t = b + a */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$9, %xmm0		/* E: rotate t (1) */
+	psrld	$23, %xmm3		/* E: rotate t (2) */
+	pslld	$9, %xmm4		/* F: rotate t (1) */
+	psrld	$23, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	32(%rdx), %xmm0		/* E: c = c ^ t */
+	pxor	112(%rdx), %xmm4	/* F: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* E: copy c */
+	movdqa	%xmm4, %xmm6		/* F: copy c */
+	movdqa	%xmm2, 32(%rdx)		/* E: store c */
+	movdqa	%xmm6, 112(%rdx)	/* F: store c */
+	paddd	%xmm1, %xmm0		/* E: t = c + b */
+	paddd	%xmm5, %xmm4		/* F: t = c + b */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$13, %xmm0		/* E: rotate t (1) */
+	psrld	$19, %xmm3		/* E: rotate t (2) */
+	pslld	$13, %xmm4		/* F: rotate t (1) */
+	psrld	$19, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	48(%rdx), %xmm0		/* E: d = d ^ t */
+	pxor	64(%rdx), %xmm4		/* F: d = d ^ t */
+	movdqa	%xmm0, 48(%rdx)		/* E: store d */
+	movdqa	%xmm4, 64(%rdx)		/* F: store d */
+	paddd	%xmm2, %xmm0		/* E: t = d + c */
+	paddd	%xmm6, %xmm4		/* F: t = d + c */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$18, %xmm0		/* E: rotate t (1) */
+	psrld	$14, %xmm3		/* E: rotate t (2) */
+	pslld	$18, %xmm4		/* F: rotate t (1) */
+	psrld	$14, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	0(%rdx), %xmm0		/* E: a = a ^ t */
+	pxor	80(%rdx), %xmm4		/* F: a = a ^ t */
+	movdqa	%xmm0, 0(%rdx)		/* E: store a */
+	movdqa	%xmm4, 80(%rdx)		/* F: store a */
+/* quarters G and H */
+	movdqa	160(%rdx), %xmm0	/* G: load a */
+	movdqa	240(%rdx), %xmm4	/* H: load a */
+	paddd	144(%rdx), %xmm0	/* G: t = a + d */
+	paddd	224(%rdx), %xmm4	/* H: t = a + d */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$7, %xmm0		/* G: rotate t (1) */
+	psrld	$25, %xmm3		/* G: rotate t (2) */
+	pslld	$7, %xmm4		/* H: rotate t (1) */
+	psrld	$25, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	176(%rdx), %xmm0	/* G: b = b ^ t */
+	pxor	192(%rdx), %xmm4	/* H: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* G: copy b */
+	movdqa	%xmm4, %xmm5		/* H: copy b */
+	movdqa	%xmm1, 176(%rdx)	/* G: store b */
+	movdqa	%xmm5, 192(%rdx)	/* H: store b */
+	paddd	160(%rdx), %xmm0	/* G: t = b + a */
+	paddd	240(%rdx), %xmm4	/* H: t = b + a */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$9, %xmm0		/* G: rotate t (1) */
+	psrld	$23, %xmm3		/* G: rotate t (2) */
+	pslld	$9, %xmm4		/* H: rotate t (1) */
+	psrld	$23, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	128(%rdx), %xmm0	/* G: c = c ^ t */
+	pxor	208(%rdx), %xmm4	/* H: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* G: copy c */
+	movdqa	%xmm4, %xmm6		/* H: copy c */
+	movdqa	%xmm2, 128(%rdx)	/* G: store c */
+	movdqa	%xmm6, 208(%rdx)	/* H: store c */
+	paddd	%xmm1, %xmm0		/* G: t = c + b */
+	paddd	%xmm5, %xmm4		/* H: t = c + b */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$13, %xmm0		/* G: rotate t (1) */
+	psrld	$19, %xmm3		/* G: rotate t (2) */
+	pslld	$13, %xmm4		/* H: rotate t (1) */
+	psrld	$19, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	144(%rdx), %xmm0	/* G: d = d ^ t */
+	pxor	224(%rdx), %xmm4	/* H: d = d ^ t */
+	movdqa	%xmm0, 144(%rdx)	/* G: store d */
+	movdqa	%xmm4, 224(%rdx)	/* H: store d */
+	paddd	%xmm2, %xmm0		/* G: t = d + c */
+	paddd	%xmm6, %xmm4		/* H: t = d + c */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$18, %xmm0		/* G: rotate t (1) */
+	psrld	$14, %xmm3		/* G: rotate t (2) */
+	pslld	$18, %xmm4		/* H: rotate t (1) */
+	psrld	$14, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	160(%rdx), %xmm0	/* G: a = a ^ t */
+	pxor	240(%rdx), %xmm4	/* H: a = a ^ t */
+	movdqa	%xmm0, 160(%rdx)	/* G: store a */
+	movdqa	%xmm4, 240(%rdx)	/* H: store a */
+	decl	%ecx
+	jnz	.xor_salsa_4way
+
+/* write back data */
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	movdqa	64(%rdi), %xmm4
+	movdqa	80(%rdi), %xmm5
+	movdqa	96(%rdi), %xmm6
+	movdqa	112(%rdi), %xmm7
+	movdqa	128(%rdi), %xmm8
+	movdqa	144(%rdi), %xmm9
+	movdqa	160(%rdi), %xmm10
+	movdqa	176(%rdi), %xmm11
+	movdqa	192(%rdi), %xmm12
+	movdqa	208(%rdi), %xmm13
+	movdqa	224(%rdi), %xmm14
+	movdqa	240(%rdi), %xmm15
+	paddd	0(%rdx), %xmm0
+	paddd	16(%rdx), %xmm1
+	paddd	32(%rdx), %xmm2
+	paddd	48(%rdx), %xmm3
+	paddd	64(%rdx), %xmm4
+	paddd	80(%rdx), %xmm5
+	paddd	96(%rdx), %xmm6
+	paddd	112(%rdx), %xmm7
+	paddd	128(%rdx), %xmm8
+	paddd	144(%rdx), %xmm9
+	paddd	160(%rdx), %xmm10
+	paddd	176(%rdx), %xmm11
+	paddd	192(%rdx), %xmm12
+	paddd	208(%rdx), %xmm13
+	paddd	224(%rdx), %xmm14
+	paddd	240(%rdx), %xmm15
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	movdqa	%xmm4, 64(%rdi)
+	movdqa	%xmm5, 80(%rdi)
+	movdqa	%xmm6, 96(%rdi)
+	movdqa	%xmm7, 112(%rdi)
+	movdqa	%xmm8, 128(%rdi)
+	movdqa	%xmm9, 144(%rdi)
+	movdqa	%xmm10, 160(%rdi)
+	movdqa	%xmm11, 176(%rdi)
+	movdqa	%xmm12, 192(%rdi)
+	movdqa	%xmm13, 208(%rdi)
+	movdqa	%xmm14, 224(%rdi)
+	movdqa	%xmm15, 240(%rdi)
+#ifdef WIN64
+	movq	%r10, %rdi
+	movq	%r11, %rsi
+#endif
+	ret
+
+
+/* neoscrypt_xor_chacha_4way(mem, xormem, workmem, double_rounds)
+ * AMD64 (SSE2) ChaCha20 4-way with XOR */
+.globl neoscrypt_xor_chacha_4way
+.globl _neoscrypt_xor_chacha_4way
+neoscrypt_xor_chacha_4way:
+_neoscrypt_xor_chacha_4way:
+#ifdef WIN64
+	movq	%rdi, %r10
+	movq	%rsi, %r11
+	movq	%rcx, %rdi
+	movq	%rdx, %rsi
+	movq	%r8, %rdx
+	movq	%r9, %rcx
+#endif
+/* XOR and copy to temporary memory */
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	movdqa	64(%rdi), %xmm4
+	movdqa	80(%rdi), %xmm5
+	movdqa	96(%rdi), %xmm6
+	movdqa	112(%rdi), %xmm7
+	movdqa	128(%rdi), %xmm8
+	movdqa	144(%rdi), %xmm9
+	movdqa	160(%rdi), %xmm10
+	movdqa	176(%rdi), %xmm11
+	movdqa	192(%rdi), %xmm12
+	movdqa	208(%rdi), %xmm13
+	movdqa	224(%rdi), %xmm14
+	movdqa	240(%rdi), %xmm15
+	pxor	0(%rsi), %xmm0
+	pxor	16(%rsi), %xmm1
+	pxor	32(%rsi), %xmm2
+	pxor	48(%rsi), %xmm3
+	pxor	64(%rsi), %xmm4
+	pxor	80(%rsi), %xmm5
+	pxor	96(%rsi), %xmm6
+	pxor	112(%rsi), %xmm7
+	pxor	128(%rsi), %xmm8
+	pxor	144(%rsi), %xmm9
+	pxor	160(%rsi), %xmm10
+	pxor	176(%rsi), %xmm11
+	pxor	192(%rsi), %xmm12
+	pxor	208(%rsi), %xmm13
+	pxor	224(%rsi), %xmm14
+	pxor	240(%rsi), %xmm15
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	movdqa	%xmm4, 64(%rdi)
+	movdqa	%xmm5, 80(%rdi)
+	movdqa	%xmm6, 96(%rdi)
+	movdqa	%xmm7, 112(%rdi)
+	movdqa	%xmm8, 128(%rdi)
+	movdqa	%xmm9, 144(%rdi)
+	movdqa	%xmm10, 160(%rdi)
+	movdqa	%xmm11, 176(%rdi)
+	movdqa	%xmm12, 192(%rdi)
+	movdqa	%xmm13, 208(%rdi)
+	movdqa	%xmm14, 224(%rdi)
+	movdqa	%xmm15, 240(%rdi)
+	movdqa	%xmm0, 0(%rdx)
+	movdqa	%xmm1, 16(%rdx)
+	movdqa	%xmm2, 32(%rdx)
+	movdqa	%xmm3, 48(%rdx)
+	movdqa	%xmm4, 64(%rdx)
+	movdqa	%xmm5, 80(%rdx)
+	movdqa	%xmm6, 96(%rdx)
+	movdqa	%xmm7, 112(%rdx)
+	movdqa	%xmm8, 128(%rdx)
+	movdqa	%xmm9, 144(%rdx)
+	movdqa	%xmm10, 160(%rdx)
+	movdqa	%xmm11, 176(%rdx)
+	movdqa	%xmm12, 192(%rdx)
+	movdqa	%xmm13, 208(%rdx)
+	movdqa	%xmm14, 224(%rdx)
+	movdqa	%xmm15, 240(%rdx)
+.xor_chacha_4way:
+/* quarters A and B */
+	movdqa	0(%rdx), %xmm0		/* A: load a */
+	movdqa	16(%rdx), %xmm4		/* B: load a */
+	movdqa	64(%rdx), %xmm1		/* A: load b */
+	movdqa	80(%rdx), %xmm5		/* B: load b */
+	paddd	%xmm1, %xmm0		/* A: a = a + b */
+	paddd	%xmm5, %xmm4		/* B: a = a + b */
+	movdqa	192(%rdx), %xmm3	/* A: load d */
+	movdqa	208(%rdx), %xmm7	/* B: load d */
+	pxor	%xmm0, %xmm3		/* A: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* B: d = d ^ a */
+	movdqa	128(%rdx), %xmm2	/* A: load c */
+	movdqa	144(%rdx), %xmm6	/* B: load c */
+	movdqa	%xmm3, %xmm14		/* A: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* B: rotate d (0) */
+	pslld	$16, %xmm3		/* A: rotate d (1) */
+	psrld	$16, %xmm14		/* A: rotate d (2) */
+	pslld	$16, %xmm7		/* B: rotate d (1) */
+	psrld	$16, %xmm15		/* B: rotate d (2) */
+	por	%xmm14, %xmm3		/* A: rotate d (3) */
+	por	%xmm15, %xmm7		/* B: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* A: c = c + d */
+	paddd	%xmm7, %xmm6		/* B: c = c + d */
+	pxor	%xmm2, %xmm1		/* A: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* B: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* A: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* B: rotate b (0) */
+	pslld	$12, %xmm1		/* A: rotate b (1) */
+	psrld	$20, %xmm14		/* A: rotate b (2) */
+	pslld	$12, %xmm5		/* B: rotate b (1) */
+	psrld	$20, %xmm15		/* B: rotate b (2) */
+	por	%xmm14, %xmm1		/* A: rotate b (3) */
+	por	%xmm15, %xmm5		/* B: rotate b (3) */
+	paddd	%xmm1, %xmm0		/* A: a = a + b */
+	paddd	%xmm5, %xmm4		/* B: a = a + b */
+	movdqa	%xmm0, 0(%rdx)		/* A: store a */
+	movdqa	%xmm4, 16(%rdx)		/* B: store a */
+	pxor	%xmm0, %xmm3		/* A: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* B: d = d ^ a */
+	movdqa	%xmm3, %xmm14		/* A: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* B: rotate d (0) */
+	pslld	$8, %xmm3		/* A: rotate d (1) */
+	psrld	$24, %xmm14		/* A: rotate d (2) */
+	pslld	$8, %xmm7		/* B: rotate d (1) */
+	psrld	$24, %xmm15		/* B: rotate d (2) */
+	por	%xmm14, %xmm3		/* A: rotate d (3) */
+	por	%xmm15, %xmm7		/* B: rotate d (3) */
+	movdqa	%xmm3, 192(%rdx)	/* A: store d */
+	movdqa	%xmm7, 208(%rdx)	/* B: store d */
+	paddd	%xmm3, %xmm2		/* A: c = c + d */
+	paddd	%xmm7, %xmm6		/* B: c = c + d */
+	movdqa	%xmm2, 128(%rdx)	/* A: store c */
+	movdqa	%xmm6, 144(%rdx)	/* B: store c */
+	pxor	%xmm2, %xmm1		/* A: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* B: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* A: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* B: rotate b (0) */
+	pslld	$7, %xmm1		/* A: rotate b (1) */
+	psrld	$25, %xmm14		/* A: rotate b (2) */
+	pslld	$7, %xmm5		/* B: rotate b (1) */
+	psrld	$25, %xmm15		/* B: rotate b (2) */
+	por	%xmm14, %xmm1		/* A: rotate b (3) */
+	por	%xmm15, %xmm5		/* B: rotate b (3) */
+	movdqa	%xmm1, 64(%rdx)		/* A: store b */
+	movdqa	%xmm5, 80(%rdx)		/* B: store b */
+/* quarters C and D */
+	movdqa	32(%rdx), %xmm0		/* C: load a */
+	movdqa	48(%rdx), %xmm4		/* D: load a */
+	movdqa	96(%rdx), %xmm1		/* C: load b */
+	movdqa	112(%rdx), %xmm5	/* D: load b */
+	paddd	%xmm1, %xmm0		/* C: a = a + b */
+	paddd	%xmm5, %xmm4		/* D: a = a + b */
+	movdqa	224(%rdx), %xmm3	/* C: load d */
+	movdqa	240(%rdx), %xmm7	/* D: load d */
+	pxor	%xmm0, %xmm3		/* C: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* D: d = d ^ a */
+	movdqa	160(%rdx), %xmm2	/* C: load c */
+	movdqa	176(%rdx), %xmm6	/* D: load c */
+	movdqa	%xmm3, %xmm14		/* C: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* D: rotate d (0) */
+	pslld	$16, %xmm3		/* C: rotate d (1) */
+	psrld	$16, %xmm14		/* C: rotate d (2) */
+	pslld	$16, %xmm7		/* D: rotate d (1) */
+	psrld	$16, %xmm15		/* D: rotate d (2) */
+	por	%xmm14, %xmm3		/* C: rotate d (3) */
+	por	%xmm15, %xmm7		/* D: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* C: c = c + d */
+	paddd	%xmm7, %xmm6		/* D: c = c + d */
+	pxor	%xmm2, %xmm1		/* C: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* D: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* C: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* D: rotate b (0) */
+	pslld	$12, %xmm1		/* C: rotate b (1) */
+	psrld	$20, %xmm14		/* C: rotate b (2) */
+	pslld	$12, %xmm5		/* D: rotate b (1) */
+	psrld	$20, %xmm15		/* D: rotate b (2) */
+	por	%xmm14, %xmm1		/* C: rotate b (3) */
+	por	%xmm15, %xmm5		/* D: rotate b (3) */
+	paddd	%xmm1, %xmm0		/* C: a = a + b */
+	paddd	%xmm5, %xmm4		/* D: a = a + b */
+	movdqa	%xmm0, 32(%rdx)		/* C: store a */
+	movdqa	%xmm4, 48(%rdx)		/* D: store a */
+	pxor	%xmm0, %xmm3		/* C: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* D: d = d ^ a */
+	movdqa	%xmm3, %xmm14		/* C: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* D: rotate d (0) */
+	pslld	$8, %xmm3		/* C: rotate d (1) */
+	psrld	$24, %xmm14		/* C: rotate d (2) */
+	pslld	$8, %xmm7		/* D: rotate d (1) */
+	psrld	$24, %xmm15		/* D: rotate d (2) */
+	por	%xmm14, %xmm3		/* C: rotate d (3) */
+	por	%xmm15, %xmm7		/* D: rotate d (3) */
+	movdqa	%xmm3, 224(%rdx)	/* C: store d */
+	movdqa	%xmm7, 240(%rdx)	/* D: store d */
+	paddd	%xmm3, %xmm2		/* C: c = c + d */
+	paddd	%xmm7, %xmm6		/* D: c = c + d */
+	movdqa	%xmm2, 160(%rdx)	/* C: store c */
+	movdqa	%xmm6, 176(%rdx)	/* D: store c */
+	pxor	%xmm2, %xmm1		/* C: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* D: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* C: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* D: rotate b (0) */
+	pslld	$7, %xmm1		/* C: rotate b (1) */
+	psrld	$25, %xmm14		/* C: rotate b (2) */
+	pslld	$7, %xmm5		/* D: rotate b (1) */
+	psrld	$25, %xmm15		/* D: rotate b (2) */
+	por	%xmm14, %xmm1		/* C: rotate b (3) */
+	por	%xmm15, %xmm5		/* D: rotate b (3) */
+	movdqa	%xmm1, 96(%rdx)		/* C: store b */
+	movdqa	%xmm5, 112(%rdx)	/* D: store b */
+/* quarters E and F */
+	movdqa	0(%rdx), %xmm0		/* E: load a */
+	movdqa	16(%rdx), %xmm4		/* F: load a */
+	movdqa	80(%rdx), %xmm1		/* E: load b */
+	movdqa	96(%rdx), %xmm5		/* F: load b */
+	paddd	%xmm1, %xmm0		/* E: a = a + b */
+	paddd	%xmm5, %xmm4		/* F: a = a + b */
+	movdqa	240(%rdx), %xmm3	/* E: load d */
+	movdqa	192(%rdx), %xmm7	/* F: load d */
+	pxor	%xmm0, %xmm3		/* E: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* F: d = d ^ a */
+	movdqa	160(%rdx), %xmm2	/* E: load c */
+	movdqa	176(%rdx), %xmm6	/* F: load c */
+	movdqa	%xmm3, %xmm14		/* E: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* F: rotate d (0) */
+	pslld	$16, %xmm3		/* E: rotate d (1) */
+	psrld	$16, %xmm14		/* E: rotate d (2) */
+	pslld	$16, %xmm7		/* F: rotate d (1) */
+	psrld	$16, %xmm15		/* F: rotate d (2) */
+	por	%xmm14, %xmm3		/* E: rotate d (3) */
+	por	%xmm15, %xmm7		/* F: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* E: c = c + d */
+	paddd	%xmm7, %xmm6		/* F: c = c + d */
+	pxor	%xmm2, %xmm1		/* E: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* F: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* E: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* F: rotate b (0) */
+	pslld	$12, %xmm1		/* E: rotate b (1) */
+	psrld	$20, %xmm14		/* E: rotate b (2) */
+	pslld	$12, %xmm5		/* F: rotate b (1) */
+	psrld	$20, %xmm15		/* F: rotate b (2) */
+	por	%xmm14, %xmm1		/* E: rotate b (3) */
+	por	%xmm15, %xmm5		/* F: rotate b (3) */
+	paddd	%xmm1, %xmm0		/* E: a = a + b */
+	paddd	%xmm5, %xmm4		/* F: a = a + b */
+	movdqa	%xmm0, 0(%rdx)		/* E: store a */
+	movdqa	%xmm4, 16(%rdx)		/* F: store a */
+	pxor	%xmm0, %xmm3		/* E: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* F: d = d ^ a */
+	movdqa	%xmm3, %xmm14		/* E: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* F: rotate d (0) */
+	pslld	$8, %xmm3		/* E: rotate d (1) */
+	psrld	$24, %xmm14		/* E: rotate d (2) */
+	pslld	$8, %xmm7		/* F: rotate d (1) */
+	psrld	$24, %xmm15		/* F: rotate d (2) */
+	por	%xmm14, %xmm3		/* E: rotate d (3) */
+	por	%xmm15, %xmm7		/* F: rotate d (3) */
+	movdqa	%xmm3, 240(%rdx)	/* E: store d */
+	movdqa	%xmm7, 192(%rdx)	/* F: store d */
+	paddd	%xmm3, %xmm2		/* E: c = c + d */
+	paddd	%xmm7, %xmm6		/* F: c = c + d */
+	movdqa	%xmm2, 160(%rdx)	/* E: store c */
+	movdqa	%xmm6, 176(%rdx)	/* F: store c */
+	pxor	%xmm2, %xmm1		/* E: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* F: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* E: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* F: rotate b (0) */
+	pslld	$7, %xmm1		/* E: rotate b (1) */
+	psrld	$25, %xmm14		/* E: rotate b (2) */
+	pslld	$7, %xmm5		/* F: rotate b (1) */
+	psrld	$25, %xmm15		/* F: rotate b (2) */
+	por	%xmm14, %xmm1		/* E: rotate b (3) */
+	por	%xmm15, %xmm5		/* F: rotate b (3) */
+	movdqa	%xmm1, 80(%rdx)		/* E: store b */
+	movdqa	%xmm5, 96(%rdx)		/* F: store b */
+/* quarter G and H */
+	movdqa	32(%rdx), %xmm0		/* G: load a */
+	movdqa	48(%rdx), %xmm4		/* H: load a */
+	movdqa	64(%rdx), %xmm5		/* H: load b */
+	movdqa	112(%rdx), %xmm1	/* G: load b */
+	paddd	%xmm1, %xmm0		/* G: a = a + b */
+	paddd	%xmm5, %xmm4		/* H: a = a + b */
+	movdqa	208(%rdx), %xmm3	/* G: load d */
+	movdqa	224(%rdx), %xmm7	/* H: load d */
+	pxor	%xmm0, %xmm3		/* G: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* H: d = d ^ a */
+	movdqa	128(%rdx), %xmm2	/* G: load c */
+	movdqa	144(%rdx), %xmm6	/* H: load c */
+	movdqa	%xmm3, %xmm14		/* G: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* H: rotate d (0) */
+	pslld	$16, %xmm3		/* G: rotate d (1) */
+	psrld	$16, %xmm14		/* G: rotate d (2) */
+	pslld	$16, %xmm7		/* H: rotate d (1) */
+	psrld	$16, %xmm15		/* H: rotate d (2) */
+	por	%xmm14, %xmm3		/* G: rotate d (3) */
+	por	%xmm15, %xmm7		/* H: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* G: c = c + d */
+	paddd	%xmm7, %xmm6		/* H: c = c + d */
+	pxor	%xmm2, %xmm1		/* G: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* H: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* G: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* H: rotate b (0) */
+	pslld	$12, %xmm1		/* G: rotate b (1) */
+	psrld	$20, %xmm14		/* G: rotate b (2) */
+	pslld	$12, %xmm5		/* H: rotate b (1) */
+	psrld	$20, %xmm15		/* H: rotate b (2) */
+	por	%xmm14, %xmm1		/* G: rotate b (3) */
+	por	%xmm15, %xmm5		/* H: rotate b (3) */
+	paddd	%xmm1, %xmm0		/* G: a = a + b */
+	paddd	%xmm5, %xmm4		/* H: a = a + b */
+	movdqa	%xmm0, 32(%rdx)		/* G: store a */
+	movdqa	%xmm4, 48(%rdx)		/* H: store a */
+	pxor	%xmm0, %xmm3		/* G: d = d ^ a */
+	pxor	%xmm4, %xmm7		/* H: d = d ^ a */
+	movdqa	%xmm3, %xmm14		/* G: rotate d (0) */
+	movdqa	%xmm7, %xmm15		/* H: rotate d (0) */
+	pslld	$8, %xmm3		/* G: rotate d (1) */
+	psrld	$24, %xmm14		/* G: rotate d (2) */
+	pslld	$8, %xmm7		/* H: rotate d (1) */
+	psrld	$24, %xmm15		/* H: rotate d (2) */
+	por	%xmm14, %xmm3		/* G: rotate d (3) */
+	por	%xmm15, %xmm7		/* H: rotate d (3) */
+	movdqa	%xmm3, 208(%rdx)	/* G: store d */
+	movdqa	%xmm7, 224(%rdx)	/* H: store d */
+	paddd	%xmm3, %xmm2		/* G: c = c + d */
+	paddd	%xmm7, %xmm6		/* H: c = c + d */
+	movdqa	%xmm2, 128(%rdx)	/* G: store c */
+	movdqa	%xmm6, 144(%rdx)	/* H: store c */
+	pxor	%xmm2, %xmm1		/* G: b = b ^ c */
+	pxor	%xmm6, %xmm5		/* H: b = b ^ c */
+	movdqa	%xmm1, %xmm14		/* G: rotate b (0) */
+	movdqa	%xmm5, %xmm15		/* H: rotate b (0) */
+	pslld	$7, %xmm1		/* G: rotate b (1) */
+	psrld	$25, %xmm14		/* G: rotate b (2) */
+	pslld	$7, %xmm5		/* H: rotate b (1) */
+	psrld	$25, %xmm15		/* H: rotate b (2) */
+	por	%xmm14, %xmm1		/* G: rotate b (3) */
+	por	%xmm15, %xmm5		/* H: rotate b (3) */
+	movdqa	%xmm5, 64(%rdx)		/* H: store b */
+	movdqa	%xmm1, 112(%rdx)	/* G: store b */
+	decl	%ecx
+	jnz	.xor_chacha_4way
+
+/* write back data */
+	movdqa	0(%rdi), %xmm0
+	movdqa	16(%rdi), %xmm1
+	movdqa	32(%rdi), %xmm2
+	movdqa	48(%rdi), %xmm3
+	movdqa	64(%rdi), %xmm4
+	movdqa	80(%rdi), %xmm5
+	movdqa	96(%rdi), %xmm6
+	movdqa	112(%rdi), %xmm7
+	movdqa	128(%rdi), %xmm8
+	movdqa	144(%rdi), %xmm9
+	movdqa	160(%rdi), %xmm10
+	movdqa	176(%rdi), %xmm11
+	movdqa	192(%rdi), %xmm12
+	movdqa	208(%rdi), %xmm13
+	movdqa	224(%rdi), %xmm14
+	movdqa	240(%rdi), %xmm15
+	paddd	0(%rdx), %xmm0
+	paddd	16(%rdx), %xmm1
+	paddd	32(%rdx), %xmm2
+	paddd	48(%rdx), %xmm3
+	paddd	64(%rdx), %xmm4
+	paddd	80(%rdx), %xmm5
+	paddd	96(%rdx), %xmm6
+	paddd	112(%rdx), %xmm7
+	paddd	128(%rdx), %xmm8
+	paddd	144(%rdx), %xmm9
+	paddd	160(%rdx), %xmm10
+	paddd	176(%rdx), %xmm11
+	paddd	192(%rdx), %xmm12
+	paddd	208(%rdx), %xmm13
+	paddd	224(%rdx), %xmm14
+	paddd	240(%rdx), %xmm15
+	movdqa	%xmm0, 0(%rdi)
+	movdqa	%xmm1, 16(%rdi)
+	movdqa	%xmm2, 32(%rdi)
+	movdqa	%xmm3, 48(%rdi)
+	movdqa	%xmm4, 64(%rdi)
+	movdqa	%xmm5, 80(%rdi)
+	movdqa	%xmm6, 96(%rdi)
+	movdqa	%xmm7, 112(%rdi)
+	movdqa	%xmm8, 128(%rdi)
+	movdqa	%xmm9, 144(%rdi)
+	movdqa	%xmm10, 160(%rdi)
+	movdqa	%xmm11, 176(%rdi)
+	movdqa	%xmm12, 192(%rdi)
+	movdqa	%xmm13, 208(%rdi)
+	movdqa	%xmm14, 224(%rdi)
+	movdqa	%xmm15, 240(%rdi)
+#ifdef WIN64
+	movq	%r10, %rdi
+	movq	%r11, %rsi
+#endif
+	ret
+
+#endif /* NEOSCRYPT_MINER_4WAY */
+
 /* cpu_vec_exts()
  * AMD64 detector of any processor vector extensions present
  * output bits set in %rax:
@@ -4035,10 +8018,10 @@ _cpu_vec_exts:
 	popq	%rbx
 	ret
 
-#endif /* (ASM) && (__x86_64__) */
+#endif /* (NEOSCRYPT_ASM) && (__x86_64__) */
 
 
-#if defined(ASM) && defined(__i386__)
+#if defined(NEOSCRYPT_ASM) && defined(__i386__)
 
 /* blake2s_compress(mem)
  * i386 BLAKE2s block compression */
@@ -7324,9 +11307,11 @@ _neoscrypt:
 	movl	24(%esp), %edi
 	movl	28(%esp), %ebx
 
+#ifdef NEOSCRYPT_SHA256
 /* Scrypt mode */
 	testl	$0x01, %ebx
 	jnz	.scrypt
+#endif
 
 #ifdef WIN32
 /* attempt to allocate 33280 + 128 bytes of stack space fails miserably;
@@ -7354,7 +11339,7 @@ _neoscrypt:
 #endif /* WIN32 */
 
 /* FastKDF */
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movl	%esi, 0(%esp)
 	movl	%esi, 4(%esp)
 	movl	%ebp, 8(%esp)
@@ -7379,7 +11364,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* (WIN32) || (__APPLE__) */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 
 /* SSE2 switch */
 	testl	$0x1000, %ebx
@@ -8144,7 +12129,7 @@ _neoscrypt:
 	movq	%mm7, 248(%ebp)
 
 /* FastKDF */
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movl	%esi, 0(%esp)
 	movl	%ebp, 4(%esp)
 	movl	%edi, 8(%esp)
@@ -8167,7 +12152,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* (WIN32) || (__APPLE__) */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 
 #ifdef WIN32
 /* free memory */
@@ -8649,7 +12634,7 @@ _neoscrypt:
 	movdqa	%xmm7, 240(%ebp)
 
 /* FastKDF */
-#ifdef OPT
+#ifdef NEOSCRYPT_OPT
 	movl	%esi, 0(%esp)
 	movl	%ebp, 4(%esp)
 	movl	%edi, 8(%esp)
@@ -8672,7 +12657,7 @@ _neoscrypt:
 #else
 	call	neoscrypt_fastkdf
 #endif /* (WIN32) || (__APPLE__) */
-#endif /* OPT */
+#endif /* NEOSCRYPT_OPT */
 
 #ifdef WIN32
 /* free memory */
@@ -8690,6 +12675,8 @@ _neoscrypt:
 	popl	%ebp
 	popl	%ebx
 	ret
+
+#ifdef NEOSCRYPT_SHA256
 
 .scrypt:
 #ifdef WIN32
@@ -9020,6 +13007,3941 @@ _neoscrypt:
 	popl	%ebx
 	ret
 
+#endif /* NEOSCRYPT_SHA256 */
+
+#ifdef NEOSCRYPT_MINER_4WAY
+
+/* blake2s_compress_4way(mem)
+ * i386 (SSE2) BLAKE2s 4-way block compression */
+.globl blake2s_compress_4way
+.globl _blake2s_compress_4way
+blake2s_compress_4way:
+_blake2s_compress_4way:
+	pushl	%ebx
+	pushl	%ebp
+	pushl	%esi
+	pushl	%edi
+	movl	20(%esp), %edi
+
+/* initialise */
+	leal	448(%edi), %esi
+	movdqa	0(%edi), %xmm0
+	movdqa	16(%edi), %xmm2
+	movdqa	32(%edi), %xmm3
+	movdqa	48(%edi), %xmm7
+	movdqa	64(%edi), %xmm6
+	movdqa	80(%edi), %xmm1
+	movdqa	96(%edi), %xmm4
+	movdqa	112(%edi), %xmm5
+/*	movdqa	%xmm0, 0(%esi) */
+	movdqa	%xmm2, 16(%esi)
+	movdqa	%xmm3, 32(%esi)
+	movdqa	%xmm7, 48(%esi)
+/*	movdqa	%xmm6, 64(%esi) */
+/*	movdqa	%xmm1, 80(%esi) */
+/*	movdqa	%xmm4, 96(%esi) */
+/*	movdqa	%xmm5, 112(%esi) */
+	movl	$0x6A09E667, %eax
+	movl	$0xBB67AE85, %ebx
+	movl	$0x3C6EF372, %ecx
+	movl	$0xA54FF53A, %edx
+	movl	%eax, 128(%esi)
+	movl	%eax, 132(%esi)
+	movl	%eax, 136(%esi)
+	movl	%eax, 140(%esi)
+	movl	%ebx, 144(%esi)
+	movl	%ebx, 148(%esi)
+	movl	%ebx, 152(%esi)
+	movl	%ebx, 156(%esi)
+	movl	%ecx, 160(%esi)
+	movl	%ecx, 164(%esi)
+	movl	%ecx, 168(%esi)
+	movl	%ecx, 172(%esi)
+	movl	%edx, 176(%esi)
+	movl	%edx, 180(%esi)
+	movl	%edx, 184(%esi)
+	movl	%edx, 188(%esi)
+	movl	$0x510E527F, %ebp
+	movl	128(%edi), %eax
+	movl	132(%edi), %ebx
+	movl	136(%edi), %ecx
+	movl	140(%edi), %edx
+	xorl	%ebp, %eax
+	xorl	%ebp, %ebx
+	xorl	%ebp, %ecx
+	xorl	%ebp, %edx
+	movl	%eax, 192(%esi)
+	movl	%ebx, 196(%esi)
+	movl	%ecx, 200(%esi)
+	movl	%edx, 204(%esi)
+	movl	$0x9B05688C, %ebp
+	movl	144(%edi), %eax
+	movl	148(%edi), %ebx
+	movl	152(%edi), %ecx
+	movl	156(%edi), %edx
+	xorl	%ebp, %eax
+	xorl	%ebp, %ebx
+	xorl	%ebp, %ecx
+	xorl	%ebp, %edx
+	movl	%eax, 208(%esi)
+	movl	%ebx, 212(%esi)
+	movl	%ecx, 216(%esi)
+	movl	%edx, 220(%esi)
+	movl	$0x1F83D9AB, %ebp
+	movl	160(%edi), %eax
+	movl	164(%edi), %ebx
+	movl	168(%edi), %ecx
+	movl	172(%edi), %edx
+	xorl	%ebp, %eax
+	xorl	%ebp, %ebx
+	xorl	%ebp, %ecx
+	xorl	%ebp, %edx
+	movl	%eax, 224(%esi)
+	movl	%ebx, 228(%esi)
+	movl	%ecx, 232(%esi)
+	movl	%edx, 236(%esi)
+	movl	$0x5BE0CD19, %ebp
+	movl	176(%edi), %eax
+	movl	180(%edi), %ebx
+	movl	184(%edi), %ecx
+	movl	188(%edi), %edx
+	xorl	%ebp, %eax
+	xorl	%ebp, %ebx
+/*	movdqa	0(%esi), %xmm0 */	/* A */
+	xorl	%ebp, %ecx
+	xorl	%ebp, %edx
+	paddd	192(%edi), %xmm0	/* A */
+	movl	%eax, 240(%esi)
+	movl	%ebx, 244(%esi)
+	movl	%ecx, 248(%esi)
+	movl	%edx, 252(%esi)
+/* round 0 (A) */
+/*	movdqa	64(%esi), %xmm6 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm6, %xmm0
+	movdqa	128(%esi), %xmm2
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	208(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm6
+	movdqa	%xmm6, %xmm7
+	pslld	$20, %xmm6
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm6
+	paddd	%xmm6, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 128(%esi)
+	pxor	%xmm2, %xmm6
+	movdqa	%xmm6, %xmm7
+	paddd	224(%edi), %xmm0	/* B */
+	pslld	$25, %xmm6
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm6
+	movdqa	%xmm6, 64(%esi)
+/* round 0 (B) */
+/*	movdqa	80(%esi), %xmm1 */
+	movdqa	208(%esi), %xmm3
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	240(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 208(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	256(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 0 (C) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	224(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	272(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 224(%esi)
+	paddd	%xmm3, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	288(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 0 (D) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	304(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	320(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 0 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	336(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	352(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 0 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	368(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 192(%esi) */
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	384(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 0 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	400(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 208(%esi) */
+	paddd	%xmm4, %xmm6
+/*	movdqa	%xmm6, 128(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	416(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 0 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	432(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 224(%esi) */
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 144(%esi) */
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	416(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 64(%esi) */
+/* round 1 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	352(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	256(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 1 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	320(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	336(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 1 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	432(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	400(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 1 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	288(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	208(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 1 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	384(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	192(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 1 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	224(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	368(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 1 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	304(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	272(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 1 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	240(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	368(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 2 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	320(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	384(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 2 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	192(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	272(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 2 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	224(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	432(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 2 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	400(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	352(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 2 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	416(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	240(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 2 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	288(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	304(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 2 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	208(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	336(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 2 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	256(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	304(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 3 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	336(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	240(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 3 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	208(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	400(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 3 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	384(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	368(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 3 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	416(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	224(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 3 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	288(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	272(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 3 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	352(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	256(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 3 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	192(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	432(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 3 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	320(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	336(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 4 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	192(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	272(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 4 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	304(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	224(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 4 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	256(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	352(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 4 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	432(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	416(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 4 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	208(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	368(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 4 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	384(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	288(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 4 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	320(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	240(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 4 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	400(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	224(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 5 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	384(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	288(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 5 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	352(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	192(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 5 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	368(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	320(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 5 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	240(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	256(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 5 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	400(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	304(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 5 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	272(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	432(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 5 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	416(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	208(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 5 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	336(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	384(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 6 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	272(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	208(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 6 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	432(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	416(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 6 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	400(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	256(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 6 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	352(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	192(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 6 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	304(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	288(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 6 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	240(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	336(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 6 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	224(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	320(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 6 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	368(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	400(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 7 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	368(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	304(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 7 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	416(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	384(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 7 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	208(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	240(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 7 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	336(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	272(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 7 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	192(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	432(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 7 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	256(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	320(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 7 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	288(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	224(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 7 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	352(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	288(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 8 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	432(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	416(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 8 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	336(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	368(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 8 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	240(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	192(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 8 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	320(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	384(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 8 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	224(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	400(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 8 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	304(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	208(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 8 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	256(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	352(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 8 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	272(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	0(%esi), %xmm0		/* A */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	352(%edi), %xmm0	/* A */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 9 (A) */
+/*	movdqa	64(%esi), %xmm1 */
+/*	movdqa	192(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	128(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	224(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* B */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 192(%esi)
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 128(%esi)
+	pxor	%xmm6, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	320(%edi), %xmm0	/* B */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 64(%esi)
+/* round 9 (B) */
+	movdqa	80(%esi), %xmm1
+/*	movdqa	208(%esi), %xmm4 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	144(%esi), %xmm2 */
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	256(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	32(%esi), %xmm0		/* C */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 208(%esi)
+	paddd	%xmm4, %xmm2
+	movdqa	%xmm2, 144(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	304(%edi), %xmm0	/* C */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 80(%esi) */
+/* round 9 (C) */
+	movdqa	96(%esi), %xmm4
+/*	movdqa	224(%esi), %xmm5 */
+	paddd	%xmm4, %xmm0
+	movdqa	160(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	288(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	movdqa	48(%esi), %xmm0		/* D */
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 224(%esi)
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 160(%esi) */
+	pxor	%xmm2, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	208(%edi), %xmm0	/* D */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 96(%esi) */
+/* round 9 (D) */
+	movdqa	112(%esi), %xmm5
+	movdqa	240(%esi), %xmm3
+	paddd	%xmm5, %xmm0
+	movdqa	176(%esi), %xmm6
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	272(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 48(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	0(%esi), %xmm0		/* E */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 240(%esi) */
+	paddd	%xmm3, %xmm6
+/*	movdqa	%xmm6, 176(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	432(%edi), %xmm0	/* E */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 112(%esi) */
+/* round 9 (E) */
+/*	movdqa	80(%esi), %xmm1 */
+/*	movdqa	240(%esi), %xmm3 */
+	paddd	%xmm1, %xmm0
+/*	movdqa	160(%esi), %xmm2 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	paddd	368(%edi), %xmm0
+	por	%xmm7, %xmm3
+	paddd	%xmm3, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+	movdqa	%xmm0, 0(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	16(%esi), %xmm0		/* F */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+	movdqa	%xmm3, 240(%esi)
+	paddd	%xmm3, %xmm2
+	movdqa	%xmm2, 160(%esi)
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	paddd	336(%edi), %xmm0	/* F */
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+	movdqa	%xmm1, 80(%esi)
+/* round 9 (F) */
+/*	movdqa	96(%esi), %xmm4 */
+	movdqa	192(%esi), %xmm3
+	paddd	%xmm4, %xmm0
+/*	movdqa	176(%esi), %xmm6 */
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	pslld	$16, %xmm3
+	psrld	$16, %xmm7
+	por	%xmm7, %xmm3
+	paddd	416(%edi), %xmm0
+	paddd	%xmm3, %xmm6
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$20, %xmm4
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm0
+	movdqa	%xmm0, 16(%esi)
+	pxor	%xmm0, %xmm3
+	movdqa	%xmm3, %xmm7
+	movdqa	32(%esi), %xmm0		/* G */
+	pslld	$24, %xmm3
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm3
+/*	movdqa	%xmm3, 192(%esi) */
+	paddd	%xmm3, %xmm6
+	movdqa	%xmm6, 176(%esi)
+	pxor	%xmm6, %xmm4
+	movdqa	%xmm4, %xmm7
+	paddd	240(%edi), %xmm0	/* G */
+	pslld	$25, %xmm4
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm4
+	movdqa	%xmm4, 96(%esi)
+/* round 9 (G) */
+/*	movdqa	112(%esi), %xmm5 */
+	movdqa	208(%esi), %xmm4
+	paddd	%xmm5, %xmm0
+	movdqa	128(%esi), %xmm6
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	pslld	$16, %xmm4
+	psrld	$16, %xmm7
+	paddd	384(%edi), %xmm0
+	por	%xmm7, %xmm4
+	paddd	%xmm4, %xmm6
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$20, %xmm5
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm0
+	movdqa	%xmm0, 32(%esi)
+	pxor	%xmm0, %xmm4
+	movdqa	%xmm4, %xmm7
+	movdqa	48(%esi), %xmm0		/* H */
+	pslld	$24, %xmm4
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm4
+/*	movdqa	%xmm4, 208(%esi) */
+	paddd	%xmm4, %xmm6
+/*	movdqa	%xmm6, 128(%esi) */
+	pxor	%xmm6, %xmm5
+	movdqa	%xmm5, %xmm7
+	paddd	400(%edi), %xmm0	/* H */
+	pslld	$25, %xmm5
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm5
+	movdqa	%xmm5, 112(%esi)
+/* round 9 (H) */
+	movdqa	64(%esi), %xmm1
+	movdqa	224(%esi), %xmm5
+	paddd	%xmm1, %xmm0
+	movdqa	144(%esi), %xmm2
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$16, %xmm5
+	psrld	$16, %xmm7
+	paddd	192(%edi), %xmm0
+	por	%xmm7, %xmm5
+	paddd	%xmm5, %xmm2
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$20, %xmm1
+	psrld	$12, %xmm7
+	por	%xmm7, %xmm1
+	paddd	%xmm1, %xmm0
+/*	movdqa	%xmm0, 48(%esi) */
+	pxor	%xmm0, %xmm5
+	movdqa	%xmm5, %xmm7
+	pslld	$24, %xmm5
+	psrld	$8, %xmm7
+	por	%xmm7, %xmm5
+/*	movdqa	%xmm5, 224(%esi) */
+	paddd	%xmm5, %xmm2
+/*	movdqa	%xmm2, 144(%esi) */
+	pxor	%xmm2, %xmm1
+	movdqa	%xmm1, %xmm7
+	pslld	$25, %xmm1
+	psrld	$7, %xmm7
+	por	%xmm7, %xmm1
+/*	movdqa	%xmm1, 64(%esi) */
+/* finalise */
+	movdqa	112(%esi), %xmm7
+	pxor	%xmm3, %xmm1		/* 64() ^ 192() */
+	pxor	176(%esi), %xmm0	/* 48() ^ 176() */
+	pxor	16(%esi), %xmm2		/* 16() ^ 144() */
+	movdqa	32(%esi), %xmm3
+	pxor	80(%esi), %xmm4		/* 80() ^ 208() */
+	pxor	96(%esi), %xmm5		/* 96() ^ 224() */
+	pxor	0(%esi), %xmm6		/* 0() ^ 128() */
+	pxor	240(%esi), %xmm7	/* 112() ^ 240() */
+	pxor	160(%esi), %xmm3	/* 32() ^ 160() */
+	pxor	0(%edi), %xmm6
+	pxor	16(%edi), %xmm2
+	pxor	32(%edi), %xmm3
+	pxor	48(%edi), %xmm0
+	pxor	64(%edi), %xmm1
+	pxor	80(%edi), %xmm4
+	pxor	96(%edi), %xmm5
+	pxor	112(%edi), %xmm7
+	movdqa	%xmm6, 0(%edi)
+	movdqa	%xmm2, 16(%edi)
+	movdqa	%xmm3, 32(%edi)
+	movdqa	%xmm0, 48(%edi)
+	movdqa	%xmm1, 64(%edi)
+	movdqa	%xmm4, 80(%edi)
+	movdqa	%xmm5, 96(%edi)
+	movdqa	%xmm7, 112(%edi)
+
+	popl	%edi
+	popl	%esi
+	popl	%ebp
+	popl	%ebx
+	ret
+
+
+/* neoscrypt_blkcpy(dst, src, len)
+ * i386 (SSE2) block memcpy();
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkcpy
+.globl _neoscrypt_blkcpy
+neoscrypt_blkcpy:
+_neoscrypt_blkcpy:
+	movl	4(%esp), %eax
+	movl	8(%esp), %edx
+	movl	12(%esp), %ecx
+	shrl	$6, %ecx
+.blkcpy:
+	movdqa	0(%edx), %xmm0
+	movdqa	16(%edx), %xmm1
+	movdqa	32(%edx), %xmm2
+	movdqa	48(%edx), %xmm3
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	addl	$64, %edx
+	addl	$64, %eax
+	decl	%ecx
+	jnz	.blkcpy
+
+	ret
+
+
+/* neoscrypt_blkswp(blkA, blkB, len)
+ * i386 (SSE2) block swapper;
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkswp
+.globl _neoscrypt_blkswp
+neoscrypt_blkswp:
+_neoscrypt_blkswp:
+	movl	4(%esp), %eax
+	movl	8(%esp), %edx
+	movl	12(%esp), %ecx
+	shrl	$6, %ecx
+.blkswp:
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	movdqa	0(%edx), %xmm4
+	movdqa	16(%edx), %xmm5
+	movdqa	32(%edx), %xmm6
+	movdqa	48(%edx), %xmm7
+	movdqa	%xmm0, 0(%edx)
+	movdqa	%xmm1, 16(%edx)
+	movdqa	%xmm2, 32(%edx)
+	movdqa	%xmm3, 48(%edx)
+	movdqa	%xmm4, 0(%eax)
+	movdqa	%xmm5, 16(%eax)
+	movdqa	%xmm6, 32(%eax)
+	movdqa	%xmm7, 48(%eax)
+	addl	$64, %eax
+	addl	$64, %edx
+	decl	%ecx
+	jnz	.blkswp
+
+	ret
+
+
+/* neoscrypt_blkxor(dst, src, len)
+ * i386 (SSE2) block XOR engine;
+ * len must be a multiple of 64 bytes aligned properly */
+.globl neoscrypt_blkxor
+.globl _neoscrypt_blkxor
+neoscrypt_blkxor:
+_neoscrypt_blkxor:
+	movl	4(%esp), %eax
+	movl	8(%esp), %edx
+	movl	12(%esp), %ecx
+	shrl	$6, %ecx
+.blkxor:
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	pxor	0(%edx), %xmm0
+	pxor	16(%edx), %xmm1
+	pxor	32(%edx), %xmm2
+	pxor	48(%edx), %xmm3
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	addl	$64, %eax
+	addl	$64, %edx
+	decl	%ecx
+	jnz	.blkxor
+
+	ret
+
+
+/* neoscrypt_pack_4way(dst, src, len)
+ * i386 4-way data packer */
+.globl neoscrypt_pack_4way
+.globl _neoscrypt_pack_4way
+neoscrypt_pack_4way:
+_neoscrypt_pack_4way:
+	pushl	%ebx
+	pushl	%ebp
+	pushl	%esi
+	pushl	%edi
+	movl	20(%esp), %edi
+	movl	24(%esp), %esi
+	movl	28(%esp), %edx
+	movl	%edx, %ecx
+	shrl	$2, %edx
+	leal	0(%esi, %edx, 2), %eax
+	shrl	$4, %ecx
+.pack_4way:
+	movl	0(%esi), %ebx
+	movl	0(%esi, %edx), %ebp
+	addl	$4, %esi
+	movl	%ebx, 0(%edi)
+	movl	%ebp, 4(%edi)
+	movl	0(%eax), %ebx
+	movl	0(%eax, %edx), %ebp
+	addl	$4, %eax
+	movl	%ebx, 8(%edi)
+	movl	%ebp, 12(%edi)
+	addl	$16, %edi
+	decl	%ecx
+	jnz	.pack_4way
+
+	popl	%edi
+	popl	%esi
+	popl	%ebp
+	popl	%ebx
+	ret
+
+
+/* neoscrypt_unpack_4way(dst, src, len)
+ * i386 4-way data unpacker */
+.globl neoscrypt_unpack_4way
+.globl _neoscrypt_unpack_4way
+neoscrypt_unpack_4way:
+_neoscrypt_unpack_4way:
+	pushl	%ebx
+	pushl	%ebp
+	pushl	%esi
+	pushl	%edi
+	movl	20(%esp), %edi
+	movl	24(%esp), %esi
+	movl	28(%esp), %edx
+	movl	%edx, %ecx
+	shrl	$2, %edx
+	leal	0(%edi, %edx, 2), %eax
+	shrl	$4, %ecx
+.unpack_4way:
+	movl	0(%esi), %ebx
+	movl	4(%esi), %ebp
+	movl	%ebx, 0(%edi)
+	movl	%ebp, 0(%edi, %edx)
+	addl	$4, %edi
+	movl	8(%esi), %ebx
+	movl	12(%esi), %ebp
+	addl	$16, %esi
+	movl	%ebx, 0(%eax)
+	movl	%ebp, 0(%eax, %edx)
+	addl	$4, %eax
+	decl	%ecx
+	jnz	.unpack_4way
+
+	popl	%edi
+	popl	%esi
+	popl	%ebp
+	popl	%ebx
+	ret
+
+
+/* neoscrypt_xor_4way(dst, srcA, srcB, srcC, srcD, len)
+ * i386 4-way XOR engine */
+.globl neoscrypt_xor_4way
+.globl _neoscrypt_xor_4way
+neoscrypt_xor_4way:
+_neoscrypt_xor_4way:
+	pushl	%ebx
+	pushl	%ebp
+	pushl	%esi
+	pushl	%edi
+	movl	20(%esp), %edi
+	movl	24(%esp), %esi
+	movl	28(%esp), %edx
+	movl	32(%esp), %ebx
+	movl	36(%esp), %eax
+	movl	40(%esp), %ecx
+	shrl	$4, %ecx
+.xor_4way:
+	movl	0(%esi), %ebp
+	addl	$16, %esi
+	xorl	%ebp, 0(%edi)
+	movl	4(%edx), %ebp
+	addl	$16, %edx
+	xorl	%ebp, 4(%edi)
+	movl	8(%ebx), %ebp
+	addl	$16, %ebx
+	xorl	%ebp, 8(%edi)
+	movl	12(%eax), %ebp
+	addl	$16, %eax
+	xorl	%ebp, 12(%edi)
+	addl	$16, %edi
+	decl	%ecx
+	jnz	.xor_4way
+
+	popl	%edi
+	popl	%esi
+	popl	%ebp
+	popl	%ebx
+	ret
+
+
+/* neoscrypt_xor_salsa_4way(mem, xormem, workmem, rounds)
+ * i386 (SSE2) Salsa20 4-way with XOR */
+.globl neoscrypt_xor_salsa_4way
+.globl _neoscrypt_xor_salsa_4way
+neoscrypt_xor_salsa_4way:
+_neoscrypt_xor_salsa_4way:
+/* XOR and copy to temporary memory */
+	movl	4(%esp), %eax
+	movl	8(%esp), %ecx
+	movl	12(%esp), %edx
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	movdqa	64(%eax), %xmm4
+	movdqa	80(%eax), %xmm5
+	movdqa	96(%eax), %xmm6
+	movdqa	112(%eax), %xmm7
+	pxor	0(%ecx), %xmm0
+	pxor	16(%ecx), %xmm1
+	pxor	32(%ecx), %xmm2
+	pxor	48(%ecx), %xmm3
+	pxor	64(%ecx), %xmm4
+	pxor	80(%ecx), %xmm5
+	pxor	96(%ecx), %xmm6
+	pxor	112(%ecx), %xmm7
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	movdqa	%xmm4, 64(%eax)
+	movdqa	%xmm5, 80(%eax)
+	movdqa	%xmm6, 96(%eax)
+	movdqa	%xmm7, 112(%eax)
+	movdqa	%xmm0, 0(%edx)
+	movdqa	%xmm1, 16(%edx)
+	movdqa	%xmm2, 32(%edx)
+	movdqa	%xmm3, 48(%edx)
+	movdqa	%xmm4, 64(%edx)
+	movdqa	%xmm5, 80(%edx)
+	movdqa	%xmm6, 96(%edx)
+	movdqa	%xmm7, 112(%edx)
+	movdqa	128(%eax), %xmm0
+	movdqa	144(%eax), %xmm1
+	movdqa	160(%eax), %xmm2
+	movdqa	176(%eax), %xmm3
+	movdqa	192(%eax), %xmm4
+	movdqa	208(%eax), %xmm5
+	movdqa	224(%eax), %xmm6
+	movdqa	240(%eax), %xmm7
+	pxor	128(%ecx), %xmm0
+	pxor	144(%ecx), %xmm1
+	pxor	160(%ecx), %xmm2
+	pxor	176(%ecx), %xmm3
+	pxor	192(%ecx), %xmm4
+	pxor	208(%ecx), %xmm5
+	pxor	224(%ecx), %xmm6
+	pxor	240(%ecx), %xmm7
+	movdqa	%xmm0, 128(%eax)
+	movdqa	%xmm1, 144(%eax)
+	movdqa	%xmm2, 160(%eax)
+	movdqa	%xmm3, 176(%eax)
+	movdqa	%xmm4, 192(%eax)
+	movdqa	%xmm5, 208(%eax)
+	movdqa	%xmm6, 224(%eax)
+	movdqa	%xmm7, 240(%eax)
+	movdqa	%xmm0, 128(%edx)
+	movdqa	%xmm1, 144(%edx)
+	movdqa	%xmm2, 160(%edx)
+	movdqa	%xmm3, 176(%edx)
+	movdqa	%xmm4, 192(%edx)
+	movdqa	%xmm5, 208(%edx)
+	movdqa	%xmm6, 224(%edx)
+	movdqa	%xmm7, 240(%edx)
+/* number of double rounds */
+	movl	16(%esp), %ecx
+.xor_salsa_4way:
+/* quarters A and B */
+	movdqa	0(%edx), %xmm0		/* A: load a */
+	movdqa	80(%edx), %xmm4		/* B: load a */
+	paddd	192(%edx), %xmm0	/* A: t = a + d */
+	paddd	16(%edx), %xmm4		/* B: t = a + d */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$7, %xmm0		/* A: rotate t (1) */
+	psrld	$25, %xmm3		/* A: rotate t (2) */
+	pslld	$7, %xmm4		/* B: rotate t (1) */
+	psrld	$25, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	64(%edx), %xmm0		/* A: b = b ^ t */
+	pxor	144(%edx), %xmm4	/* B: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* A: copy b */
+	movdqa	%xmm4, %xmm5		/* B: copy b */
+	movdqa	%xmm1, 64(%edx)		/* A: store b */
+	movdqa	%xmm5, 144(%edx)	/* B: store b */
+	paddd	0(%edx), %xmm0		/* A: t = b + a */
+	paddd	80(%edx), %xmm4		/* B: t = b + a */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$9, %xmm0		/* A: rotate t (1) */
+	psrld	$23, %xmm3		/* A: rotate t (2) */
+	pslld	$9, %xmm4		/* B: rotate t (1) */
+	psrld	$23, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	128(%edx), %xmm0	/* A: c = c ^ t */
+	pxor	208(%edx), %xmm4	/* B: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* A: copy c */
+	movdqa	%xmm4, %xmm6		/* B: copy c */
+	movdqa	%xmm2, 128(%edx)	/* A: store c */
+	movdqa	%xmm6, 208(%edx)	/* B: store c */
+	paddd	%xmm1, %xmm0		/* A: t = c + b */
+	paddd	%xmm5, %xmm4		/* B: t = c + b */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$13, %xmm0		/* A: rotate t (1) */
+	psrld	$19, %xmm3		/* A: rotate t (2) */
+	pslld	$13, %xmm4		/* B: rotate t (1) */
+	psrld	$19, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	192(%edx), %xmm0	/* A: d = d ^ t */
+	pxor	16(%edx), %xmm4		/* B: d = d ^ t */
+	movdqa	%xmm0, 192(%edx)	/* A: store d */
+	movdqa	%xmm4, 16(%edx)		/* B: store d */
+	paddd	%xmm2, %xmm0		/* A: t = d + c */
+	paddd	%xmm6, %xmm4		/* B: t = d + c */
+	movdqa	%xmm0, %xmm3		/* A: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* B: rotate t (0) */
+	pslld	$18, %xmm0		/* A: rotate t (1) */
+	psrld	$14, %xmm3		/* A: rotate t (2) */
+	pslld	$18, %xmm4		/* B: rotate t (1) */
+	psrld	$14, %xmm7		/* B: rotate t (2) */
+	por	%xmm3, %xmm0		/* A: rotate t (3) */
+	por	%xmm7, %xmm4		/* B: rotate t (3) */
+	pxor	0(%edx), %xmm0		/* A: a = a ^ t */
+	pxor	80(%edx), %xmm4		/* B: a = a ^ t */
+	movdqa	%xmm0, 0(%edx)		/* A: store a */
+	movdqa	%xmm4, 80(%edx)		/* B: store a */
+/* quarters C and D*/
+	movdqa	160(%edx), %xmm0	/* C: load a */
+	movdqa	240(%edx), %xmm4	/* D: load a */
+	paddd	96(%edx), %xmm0		/* C: t = a + d */
+	paddd	176(%edx), %xmm4	/* D: t = a + d */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$7, %xmm0		/* C: rotate t (1) */
+	psrld	$25, %xmm3		/* C: rotate t (2) */
+	pslld	$7, %xmm4		/* D: rotate t (1) */
+	psrld	$25, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	224(%edx), %xmm0	/* C: b = b ^ t */
+	pxor	48(%edx), %xmm4		/* D: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* C: copy b */
+	movdqa	%xmm4, %xmm5		/* D: copy b */
+	movdqa	%xmm1, 224(%edx)	/* C: store b */
+	movdqa	%xmm5, 48(%edx)		/* D: store b */
+	paddd	160(%edx), %xmm0	/* C: t = b + a */
+	paddd	240(%edx), %xmm4	/* D: t = b + a */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$9, %xmm0		/* C: rotate t (1) */
+	psrld	$23, %xmm3		/* C: rotate t (2) */
+	pslld	$9, %xmm4		/* D: rotate t (1) */
+	psrld	$23, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	32(%edx), %xmm0		/* C: c = c ^ t */
+	pxor	112(%edx), %xmm4	/* D: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* C: copy c */
+	movdqa	%xmm4, %xmm6		/* D: copy c */
+	movdqa	%xmm2, 32(%edx)		/* C: store c */
+	movdqa	%xmm6, 112(%edx)	/* D: store c */
+	paddd	%xmm1, %xmm0		/* C: t = c + b */
+	paddd	%xmm5, %xmm4		/* D: t = c + b */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$13, %xmm0		/* C: rotate t (1) */
+	psrld	$19, %xmm3		/* C: rotate t (2) */
+	pslld	$13, %xmm4		/* D: rotate t (1) */
+	psrld	$19, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	96(%edx), %xmm0		/* C: d = d ^ t */
+	pxor	176(%edx), %xmm4	/* D: d = d ^ t */
+	movdqa	%xmm0, 96(%edx)		/* C: store d */
+	movdqa	%xmm4, 176(%edx)	/* D: store d */
+	paddd	%xmm2, %xmm0		/* C: t = d + c */
+	paddd	%xmm6, %xmm4		/* D: t = d + c */
+	movdqa	%xmm0, %xmm3		/* C: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* D: rotate t (0) */
+	pslld	$18, %xmm0		/* C: rotate t (1) */
+	psrld	$14, %xmm3		/* C: rotate t (2) */
+	pslld	$18, %xmm4		/* D: rotate t (1) */
+	psrld	$14, %xmm7		/* D: rotate t (2) */
+	por	%xmm3, %xmm0		/* C: rotate t (3) */
+	por	%xmm7, %xmm4		/* D: rotate t (3) */
+	pxor	160(%edx), %xmm0	/* C: a = a ^ t */
+	pxor	240(%edx), %xmm4	/* D: a = a ^ t */
+	movdqa	%xmm0, 160(%edx)	/* C: store a */
+	movdqa	%xmm4, 240(%edx)	/* D: store a */
+/* quarters E and F */
+	movdqa	0(%edx), %xmm0		/* E: load a */
+	movdqa	80(%edx), %xmm4		/* F: load a */
+	paddd	48(%edx), %xmm0		/* E: t = a + d */
+	paddd	64(%edx), %xmm4		/* F: t = a + d */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$7, %xmm0		/* E: rotate t (1) */
+	psrld	$25, %xmm3		/* E: rotate t (2) */
+	pslld	$7, %xmm4		/* F: rotate t (1) */
+	psrld	$25, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	16(%edx), %xmm0		/* E: b = b ^ t */
+	pxor	96(%edx), %xmm4		/* F: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* E: copy b */
+	movdqa	%xmm4, %xmm5		/* F: copy b */
+	movdqa	%xmm1, 16(%edx)		/* E: store b */
+	movdqa	%xmm5, 96(%edx)		/* F: store b */
+	paddd	0(%edx), %xmm0		/* E: t = b + a */
+	paddd	80(%edx), %xmm4		/* F: t = b + a */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$9, %xmm0		/* E: rotate t (1) */
+	psrld	$23, %xmm3		/* E: rotate t (2) */
+	pslld	$9, %xmm4		/* F: rotate t (1) */
+	psrld	$23, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	32(%edx), %xmm0		/* E: c = c ^ t */
+	pxor	112(%edx), %xmm4	/* F: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* E: copy c */
+	movdqa	%xmm4, %xmm6		/* F: copy c */
+	movdqa	%xmm2, 32(%edx)		/* E: store c */
+	movdqa	%xmm6, 112(%edx)	/* F: store c */
+	paddd	%xmm1, %xmm0		/* E: t = c + b */
+	paddd	%xmm5, %xmm4		/* F: t = c + b */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$13, %xmm0		/* E: rotate t (1) */
+	psrld	$19, %xmm3		/* E: rotate t (2) */
+	pslld	$13, %xmm4		/* F: rotate t (1) */
+	psrld	$19, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	48(%edx), %xmm0		/* E: d = d ^ t */
+	pxor	64(%edx), %xmm4		/* F: d = d ^ t */
+	movdqa	%xmm0, 48(%edx)		/* E: store d */
+	movdqa	%xmm4, 64(%edx)		/* F: store d */
+	paddd	%xmm2, %xmm0		/* E: t = d + c */
+	paddd	%xmm6, %xmm4		/* F: t = d + c */
+	movdqa	%xmm0, %xmm3		/* E: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* F: rotate t (0) */
+	pslld	$18, %xmm0		/* E: rotate t (1) */
+	psrld	$14, %xmm3		/* E: rotate t (2) */
+	pslld	$18, %xmm4		/* F: rotate t (1) */
+	psrld	$14, %xmm7		/* F: rotate t (2) */
+	por	%xmm3, %xmm0		/* E: rotate t (3) */
+	por	%xmm7, %xmm4		/* F: rotate t (3) */
+	pxor	0(%edx), %xmm0		/* E: a = a ^ t */
+	pxor	80(%edx), %xmm4		/* F: a = a ^ t */
+	movdqa	%xmm0, 0(%edx)		/* E: store a */
+	movdqa	%xmm4, 80(%edx)		/* F: store a */
+/* quarters G and H */
+	movdqa	160(%edx), %xmm0	/* G: load a */
+	movdqa	240(%edx), %xmm4	/* H: load a */
+	paddd	144(%edx), %xmm0	/* G: t = a + d */
+	paddd	224(%edx), %xmm4	/* H: t = a + d */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$7, %xmm0		/* G: rotate t (1) */
+	psrld	$25, %xmm3		/* G: rotate t (2) */
+	pslld	$7, %xmm4		/* H: rotate t (1) */
+	psrld	$25, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	176(%edx), %xmm0	/* G: b = b ^ t */
+	pxor	192(%edx), %xmm4	/* H: b = b ^ t */
+	movdqa	%xmm0, %xmm1		/* G: copy b */
+	movdqa	%xmm4, %xmm5		/* H: copy b */
+	movdqa	%xmm1, 176(%edx)	/* G: store b */
+	movdqa	%xmm5, 192(%edx)	/* H: store b */
+	paddd	160(%edx), %xmm0	/* G: t = b + a */
+	paddd	240(%edx), %xmm4	/* H: t = b + a */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$9, %xmm0		/* G: rotate t (1) */
+	psrld	$23, %xmm3		/* G: rotate t (2) */
+	pslld	$9, %xmm4		/* H: rotate t (1) */
+	psrld	$23, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	128(%edx), %xmm0	/* G: c = c ^ t */
+	pxor	208(%edx), %xmm4	/* H: c = c ^ t */
+	movdqa	%xmm0, %xmm2		/* G: copy c */
+	movdqa	%xmm4, %xmm6		/* H: copy c */
+	movdqa	%xmm2, 128(%edx)	/* G: store c */
+	movdqa	%xmm6, 208(%edx)	/* H: store c */
+	paddd	%xmm1, %xmm0		/* G: t = c + b */
+	paddd	%xmm5, %xmm4		/* H: t = c + b */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$13, %xmm0		/* G: rotate t (1) */
+	psrld	$19, %xmm3		/* G: rotate t (2) */
+	pslld	$13, %xmm4		/* H: rotate t (1) */
+	psrld	$19, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	144(%edx), %xmm0	/* G: d = d ^ t */
+	pxor	224(%edx), %xmm4	/* H: d = d ^ t */
+	movdqa	%xmm0, 144(%edx)	/* G: store d */
+	movdqa	%xmm4, 224(%edx)	/* H: store d */
+	paddd	%xmm2, %xmm0		/* G: t = d + c */
+	paddd	%xmm6, %xmm4		/* H: t = d + c */
+	movdqa	%xmm0, %xmm3		/* G: rotate t (0) */
+	movdqa	%xmm4, %xmm7		/* H: rotate t (0) */
+	pslld	$18, %xmm0		/* G: rotate t (1) */
+	psrld	$14, %xmm3		/* G: rotate t (2) */
+	pslld	$18, %xmm4		/* H: rotate t (1) */
+	psrld	$14, %xmm7		/* H: rotate t (2) */
+	por	%xmm3, %xmm0		/* G: rotate t (3) */
+	por	%xmm7, %xmm4		/* H: rotate t (3) */
+	pxor	160(%edx), %xmm0	/* G: a = a ^ t */
+	pxor	240(%edx), %xmm4	/* H: a = a ^ t */
+	movdqa	%xmm0, 160(%edx)	/* G: store a */
+	movdqa	%xmm4, 240(%edx)	/* H: store a */
+	decl	%ecx
+	jnz	.xor_salsa_4way
+
+/* write back data */
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	movdqa	64(%eax), %xmm4
+	movdqa	80(%eax), %xmm5
+	movdqa	96(%eax), %xmm6
+	movdqa	112(%eax), %xmm7
+	paddd	0(%edx), %xmm0
+	paddd	16(%edx), %xmm1
+	paddd	32(%edx), %xmm2
+	paddd	48(%edx), %xmm3
+	paddd	64(%edx), %xmm4
+	paddd	80(%edx), %xmm5
+	paddd	96(%edx), %xmm6
+	paddd	112(%edx), %xmm7
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	movdqa	%xmm4, 64(%eax)
+	movdqa	%xmm5, 80(%eax)
+	movdqa	%xmm6, 96(%eax)
+	movdqa	%xmm7, 112(%eax)
+	movdqa	128(%eax), %xmm0
+	movdqa	144(%eax), %xmm1
+	movdqa	160(%eax), %xmm2
+	movdqa	176(%eax), %xmm3
+	movdqa	192(%eax), %xmm4
+	movdqa	208(%eax), %xmm5
+	movdqa	224(%eax), %xmm6
+	movdqa	240(%eax), %xmm7
+	paddd	128(%edx), %xmm0
+	paddd	144(%edx), %xmm1
+	paddd	160(%edx), %xmm2
+	paddd	176(%edx), %xmm3
+	paddd	192(%edx), %xmm4
+	paddd	208(%edx), %xmm5
+	paddd	224(%edx), %xmm6
+	paddd	240(%edx), %xmm7
+	movdqa	%xmm0, 128(%eax)
+	movdqa	%xmm1, 144(%eax)
+	movdqa	%xmm2, 160(%eax)
+	movdqa	%xmm3, 176(%eax)
+	movdqa	%xmm4, 192(%eax)
+	movdqa	%xmm5, 208(%eax)
+	movdqa	%xmm6, 224(%eax)
+	movdqa	%xmm7, 240(%eax)
+
+	ret
+
+
+/* neoscrypt_xor_chacha_4way(mem, xormem, workmem, double_rounds)
+ * i386 (SSE2) ChaCha20 4-way with XOR */
+.globl neoscrypt_xor_chacha_4way
+.globl _neoscrypt_xor_chacha_4way
+neoscrypt_xor_chacha_4way:
+_neoscrypt_xor_chacha_4way:
+/* XOR and copy to temporary memory */
+	movl	4(%esp), %eax
+	movl	8(%esp), %ecx
+	movl	12(%esp), %edx
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	movdqa	64(%eax), %xmm4
+	movdqa	80(%eax), %xmm5
+	movdqa	96(%eax), %xmm6
+	movdqa	112(%eax), %xmm7
+	pxor	0(%ecx), %xmm0
+	pxor	16(%ecx), %xmm1
+	pxor	32(%ecx), %xmm2
+	pxor	48(%ecx), %xmm3
+	pxor	64(%ecx), %xmm4
+	pxor	80(%ecx), %xmm5
+	pxor	96(%ecx), %xmm6
+	pxor	112(%ecx), %xmm7
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	movdqa	%xmm4, 64(%eax)
+	movdqa	%xmm5, 80(%eax)
+	movdqa	%xmm6, 96(%eax)
+	movdqa	%xmm7, 112(%eax)
+	movdqa	%xmm0, 0(%edx)
+	movdqa	%xmm1, 16(%edx)
+	movdqa	%xmm2, 32(%edx)
+	movdqa	%xmm3, 48(%edx)
+	movdqa	%xmm4, 64(%edx)
+	movdqa	%xmm5, 80(%edx)
+	movdqa	%xmm6, 96(%edx)
+	movdqa	%xmm7, 112(%edx)
+	movdqa	128(%eax), %xmm0
+	movdqa	144(%eax), %xmm1
+	movdqa	160(%eax), %xmm2
+	movdqa	176(%eax), %xmm3
+	movdqa	192(%eax), %xmm4
+	movdqa	208(%eax), %xmm5
+	movdqa	224(%eax), %xmm6
+	movdqa	240(%eax), %xmm7
+	pxor	128(%ecx), %xmm0
+	pxor	144(%ecx), %xmm1
+	pxor	160(%ecx), %xmm2
+	pxor	176(%ecx), %xmm3
+	pxor	192(%ecx), %xmm4
+	pxor	208(%ecx), %xmm5
+	pxor	224(%ecx), %xmm6
+	pxor	240(%ecx), %xmm7
+	movdqa	%xmm0, 128(%eax)
+	movdqa	%xmm1, 144(%eax)
+	movdqa	%xmm2, 160(%eax)
+	movdqa	%xmm3, 176(%eax)
+	movdqa	%xmm4, 192(%eax)
+	movdqa	%xmm5, 208(%eax)
+	movdqa	%xmm6, 224(%eax)
+	movdqa	%xmm7, 240(%eax)
+	movdqa	%xmm0, 128(%edx)
+	movdqa	%xmm1, 144(%edx)
+	movdqa	%xmm2, 160(%edx)
+	movdqa	%xmm3, 176(%edx)
+	movdqa	%xmm4, 192(%edx)
+	movdqa	%xmm5, 208(%edx)
+	movdqa	%xmm6, 224(%edx)
+	movdqa	%xmm7, 240(%edx)
+/* number of double rounds */
+	movl	16(%esp), %ecx
+.xor_chacha_4way:
+/* quarters A and B, loads for C */
+	movdqa	0(%edx), %xmm0		/* A: load a */
+	movdqa	64(%edx), %xmm1		/* A: load b */
+	paddd	%xmm1, %xmm0		/* A: a = a + b */
+	movdqa	192(%edx), %xmm3	/* A: load d */
+	pxor	%xmm0, %xmm3		/* A: d = d ^ a */
+	movdqa	128(%edx), %xmm2	/* A: load c */
+	movdqa	%xmm3, %xmm7		/* A: rotate d (0) */
+	movdqa	16(%edx), %xmm4		/* B: load a */
+	pslld	$16, %xmm3		/* A: rotate d (1) */
+	psrld	$16, %xmm7		/* A: rotate d (2) */
+	movdqa	80(%edx), %xmm5		/* B: load b */
+	por	%xmm7, %xmm3		/* A: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* A: c = c + d */
+	paddd	%xmm5, %xmm4		/* B: a = a + b */
+	pxor	%xmm2, %xmm1		/* A: b = b ^ c */
+	movdqa	%xmm1, %xmm7		/* A: rotate b (0) */
+	movdqa	208(%edx), %xmm6	/* B: load d */
+	pslld	$12, %xmm1		/* A: rotate b (1) */
+	psrld	$20, %xmm7		/* A: rotate b (2) */
+	pxor	%xmm4, %xmm6		/* B: d = d ^ a */
+	por	%xmm7, %xmm1		/* A: rotate b (3) */
+	movdqa	%xmm6, %xmm7		/* B: rotate d (0) */
+	paddd	%xmm1, %xmm0		/* A: a = a + b */
+	pslld	$16, %xmm6		/* B: rotate d (1) */
+	psrld	$16, %xmm7		/* B: rotate d (2) */
+	movdqa	%xmm0, 0(%edx)		/* A: store a */
+	pxor	%xmm0, %xmm3		/* A: d = d ^ a */
+	por	%xmm7, %xmm6		/* B: rotate d (3) */
+	movdqa	144(%edx), %xmm0	/* B: load c */
+	movdqa	%xmm3, %xmm7		/* A: rotate d (0) */
+	paddd	%xmm6, %xmm0		/* B: c = c + d */
+	pslld	$8, %xmm3		/* A: rotate d (1) */
+	psrld	$24, %xmm7		/* A: rotate d (2) */
+	pxor	%xmm0, %xmm5		/* B: b = b ^ c */
+	por	%xmm7, %xmm3		/* A: rotate d (3) */
+	movdqa	%xmm5, %xmm7		/* B: rotate b (0) */
+	movdqa	%xmm3, 192(%edx)	/* A: store d */
+	paddd	%xmm3, %xmm2		/* A: c = c + d */
+	pslld	$12, %xmm5		/* B: rotate b (1) */
+	psrld	$20, %xmm7		/* B: rotate b (2) */
+	movdqa	%xmm2, 128(%edx)	/* A: store c */
+	pxor	%xmm2, %xmm1		/* A: b = b ^ c */
+	por	%xmm7, %xmm5		/* B: rotate b (3) */
+	movdqa	224(%edx), %xmm3	/* C: load d */
+	movdqa	%xmm1, %xmm7		/* A: rotate b (0) */
+	paddd	%xmm5, %xmm4		/* B: a = a + b */
+	pslld	$7, %xmm1		/* A: rotate b (1) */
+	psrld	$25, %xmm7		/* A: rotate b (2) */
+	movdqa	%xmm4, 16(%edx)		/* B: store a */
+	pxor	%xmm4, %xmm6		/* B: d = d ^ a */
+	por	%xmm7, %xmm1		/* A: rotate b (3) */
+	movdqa	160(%edx), %xmm2	/* C: load c */
+	movdqa	%xmm6, %xmm7		/* B: rotate d (0) */
+	movdqa	%xmm1, 64(%edx)		/* A: store b */
+	pslld	$8, %xmm6		/* B: rotate d (1) */
+	psrld	$24, %xmm7		/* B: rotate d (2) */
+	movdqa	96(%edx), %xmm1		/* C: load b */
+	por	%xmm7, %xmm6		/* B: rotate d (3) */
+	movdqa	%xmm6, 208(%edx)	/* B: store d */
+	paddd	%xmm6, %xmm0		/* B: c = c + d */
+	movdqa	%xmm0, 144(%edx)	/* B: store c */
+	pxor	%xmm0, %xmm5		/* B: b = b ^ c */
+	movdqa	%xmm5, %xmm7		/* B: rotate b (0) */
+	movdqa	32(%edx), %xmm0		/* C: load a */
+	pslld	$7, %xmm5		/* B: rotate b (1) */
+	psrld	$25, %xmm7		/* B: rotate b (2) */
+	por	%xmm7, %xmm5		/* B: rotate b (3) */
+	movdqa	%xmm5, 80(%edx)		/* B: store b */
+/* quarters C and D, loads for E */
+	paddd	%xmm1, %xmm0		/* C: a = a + b */
+	pxor	%xmm0, %xmm3		/* C: d = d ^ a */
+	movdqa	%xmm3, %xmm7		/* C: rotate d (0) */
+	movdqa	48(%edx), %xmm4		/* D: load a */
+	pslld	$16, %xmm3		/* C: rotate d (1) */
+	psrld	$16, %xmm7		/* C: rotate d (2) */
+	movdqa	112(%edx), %xmm5	/* D: load b */
+	por	%xmm7, %xmm3		/* C: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* C: c = c + d */
+	paddd	%xmm5, %xmm4		/* D: a = a + b */
+	pxor	%xmm2, %xmm1		/* C: b = b ^ c */
+	movdqa	%xmm1, %xmm7		/* C: rotate b (0) */
+	movdqa	240(%edx), %xmm6	/* D: load d */
+	pslld	$12, %xmm1		/* C: rotate b (1) */
+	psrld	$20, %xmm7		/* C: rotate b (2) */
+	pxor	%xmm4, %xmm6		/* D: d = d ^ a */
+	por	%xmm7, %xmm1		/* C: rotate b (3) */
+	movdqa	%xmm6, %xmm7		/* D: rotate d (0) */
+	paddd	%xmm1, %xmm0		/* C: a = a + b */
+	pslld	$16, %xmm6		/* D: rotate d (1) */
+	psrld	$16, %xmm7		/* D: rotate d (2) */
+	movdqa	%xmm0, 32(%edx)		/* C: store a */
+	pxor	%xmm0, %xmm3		/* C: d = d ^ a */
+	por	%xmm7, %xmm6		/* D: rotate d (3) */
+	movdqa	176(%edx), %xmm0	/* D: load c */
+	movdqa	%xmm3, %xmm7		/* C: rotate d (0) */
+	paddd	%xmm6, %xmm0		/* D: c = c + d */
+	pslld	$8, %xmm3		/* C: rotate d (1) */
+	psrld	$24, %xmm7		/* C: rotate d (2) */
+	pxor	%xmm0, %xmm5		/* D: b = b ^ c */
+	por	%xmm7, %xmm3		/* C: rotate d (3) */
+	movdqa	%xmm5, %xmm7		/* D: rotate b (0) */
+	movdqa	%xmm3, 224(%edx)	/* C: store d */
+	paddd	%xmm3, %xmm2		/* C: c = c + d */
+	pslld	$12, %xmm5		/* D: rotate b (1) */
+	psrld	$20, %xmm7		/* D: rotate b (2) */
+	movdqa	%xmm2, 160(%edx)	/* C: store c */
+	pxor	%xmm2, %xmm1		/* C: b = b ^ c */
+	por	%xmm7, %xmm5		/* D: rotate b (3) */
+	movdqa	%xmm1, %xmm7		/* C: rotate b (0) */
+	paddd	%xmm5, %xmm4		/* D: a = a + b */
+	pslld	$7, %xmm1		/* C: rotate b (1) */
+	psrld	$25, %xmm7		/* C: rotate b (2) */
+	movdqa	%xmm4, 48(%edx)		/* D: store a */
+	pxor	%xmm4, %xmm6		/* D: d = d ^ a */
+	por	%xmm7, %xmm1		/* C: rotate b (3) */
+	movdqa	160(%edx), %xmm2	/* E: load c */
+	movdqa	%xmm6, %xmm7		/* D: rotate d (0) */
+	movdqa	%xmm1, 96(%edx)		/* C: store b */
+	pslld	$8, %xmm6		/* D: rotate d (1) */
+	psrld	$24, %xmm7		/* D: rotate d (2) */
+	movdqa	80(%edx), %xmm1		/* E: load b */
+	por	%xmm7, %xmm6		/* D: rotate d (3) */
+	movdqa	%xmm6, 240(%edx)	/* D: store d */
+	movdqa	%xmm6, %xmm3		/* E: load d */
+	paddd	%xmm6, %xmm0		/* D: c = c + d */
+	movdqa	%xmm0, 176(%edx)	/* D: store c */
+	pxor	%xmm0, %xmm5		/* D: b = b ^ c */
+	movdqa	%xmm5, %xmm7		/* D: rotate b (0) */
+	movdqa	0(%edx), %xmm0		/* E: load a */
+	pslld	$7, %xmm5		/* D: rotate b (1) */
+	psrld	$25, %xmm7		/* D: rotate b (2) */
+	por	%xmm7, %xmm5		/* D: rotate b (3) */
+	movdqa	%xmm5, 112(%edx)	/* D: store b */
+/* quarters E and F, loads for G */
+	paddd	%xmm1, %xmm0		/* E: a = a + b */
+	pxor	%xmm0, %xmm3		/* E: d = d ^ a */
+	movdqa	%xmm3, %xmm7		/* E: rotate d (0) */
+	movdqa	16(%edx), %xmm4		/* F: load a */
+	pslld	$16, %xmm3		/* E: rotate d (1) */
+	psrld	$16, %xmm7		/* E: rotate d (2) */
+	movdqa	96(%edx), %xmm5		/* F: load b */
+	por	%xmm7, %xmm3		/* E: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* E: c = c + d */
+	paddd	%xmm5, %xmm4		/* F: a = a + b */
+	pxor	%xmm2, %xmm1		/* E: b = b ^ c */
+	movdqa	%xmm1, %xmm7		/* E: rotate b (0) */
+	movdqa	192(%edx), %xmm6	/* F: load d */
+	pslld	$12, %xmm1		/* E: rotate b (1) */
+	psrld	$20, %xmm7		/* E: rotate b (2) */
+	pxor	%xmm4, %xmm6		/* F: d = d ^ a */
+	por	%xmm7, %xmm1		/* E: rotate b (3) */
+	movdqa	%xmm6, %xmm7		/* F: rotate d (0) */
+	paddd	%xmm1, %xmm0		/* E: a = a + b */
+	pslld	$16, %xmm6		/* F: rotate d (1) */
+	psrld	$16, %xmm7		/* F: rotate d (2) */
+	movdqa	%xmm0, 0(%edx)		/* E: store a */
+	pxor	%xmm0, %xmm3		/* E: d = d ^ a */
+	por	%xmm7, %xmm6		/* F: rotate d (3) */
+	movdqa	176(%edx), %xmm0	/* F: load c */
+	movdqa	%xmm3, %xmm7		/* E: rotate d (0) */
+	paddd	%xmm6, %xmm0		/* F: c = c + d */
+	pslld	$8, %xmm3		/* E: rotate d (1) */
+	psrld	$24, %xmm7		/* E: rotate d (2) */
+	pxor	%xmm0, %xmm5		/* F: b = b ^ c */
+	por	%xmm7, %xmm3		/* E: rotate d (3) */
+	movdqa	%xmm5, %xmm7		/* F: rotate b (0) */
+	movdqa	%xmm3, 240(%edx)	/* E: store d */
+	paddd	%xmm3, %xmm2		/* E: c = c + d */
+	pslld	$12, %xmm5		/* F: rotate b (1) */
+	psrld	$20, %xmm7		/* F: rotate b (2) */
+	movdqa	%xmm2, 160(%edx)	/* E: store c */
+	pxor	%xmm2, %xmm1		/* E: b = b ^ c */
+	por	%xmm7, %xmm5		/* F: rotate b (3) */
+	movdqa	208(%edx), %xmm3	/* G: load d */
+	movdqa	%xmm1, %xmm7		/* E: rotate b (0) */
+	paddd	%xmm5, %xmm4		/* F: a = a + b */
+	pslld	$7, %xmm1		/* E: rotate b (1) */
+	psrld	$25, %xmm7		/* E: rotate b (2) */
+	movdqa	%xmm4, 16(%edx)		/* F: store a */
+	pxor	%xmm4, %xmm6		/* F: d = d ^ a */
+	por	%xmm7, %xmm1		/* E: rotate b (3) */
+	movdqa	128(%edx), %xmm2	/* G: load c */
+	movdqa	%xmm6, %xmm7		/* F: rotate d (0) */
+	movdqa	%xmm1, 80(%edx)		/* E: store b */
+	pslld	$8, %xmm6		/* F: rotate d (1) */
+	psrld	$24, %xmm7		/* F: rotate d (2) */
+	movdqa	112(%edx), %xmm1	/* G: load b */
+	por	%xmm7, %xmm6		/* F: rotate d (3) */
+	movdqa	%xmm6, 192(%edx)	/* F: store d */
+	paddd	%xmm6, %xmm0		/* F: c = c + d */
+	movdqa	%xmm0, 176(%edx)	/* F: store c */
+	pxor	%xmm0, %xmm5		/* F: b = b ^ c */
+	movdqa	%xmm5, %xmm7		/* F: rotate b (0) */
+	movdqa	32(%edx), %xmm0		/* G: load a */
+	pslld	$7, %xmm5		/* F: rotate b (1) */
+	psrld	$25, %xmm7		/* F: rotate b (2) */
+	por	%xmm7, %xmm5		/* F: rotate b (3) */
+	movdqa	%xmm5, 96(%edx)		/* F: store b */
+/* quarters G and H */
+	paddd	%xmm1, %xmm0		/* G: a = a + b */
+	pxor	%xmm0, %xmm3		/* G: d = d ^ a */
+	movdqa	%xmm3, %xmm7		/* G: rotate d (0) */
+	movdqa	48(%edx), %xmm4		/* H: load a */
+	pslld	$16, %xmm3		/* G: rotate d (1) */
+	psrld	$16, %xmm7		/* G: rotate d (2) */
+	movdqa	64(%edx), %xmm5		/* H: load b */
+	por	%xmm7, %xmm3		/* G: rotate d (3) */
+	paddd	%xmm3, %xmm2		/* G: c = c + d */
+	paddd	%xmm5, %xmm4		/* H: a = a + b */
+	pxor	%xmm2, %xmm1		/* G: b = b ^ c */
+	movdqa	%xmm1, %xmm7		/* G: rotate b (0) */
+	movdqa	224(%edx), %xmm6	/* H: load d */
+	pslld	$12, %xmm1		/* G: rotate b (1) */
+	psrld	$20, %xmm7		/* G: rotate b (2) */
+	pxor	%xmm4, %xmm6		/* H: d = d ^ a */
+	por	%xmm7, %xmm1		/* G: rotate b (3) */
+	movdqa	%xmm6, %xmm7		/* H: rotate d (0) */
+	paddd	%xmm1, %xmm0		/* G: a = a + b */
+	pslld	$16, %xmm6		/* H: rotate d (1) */
+	psrld	$16, %xmm7		/* H: rotate d (2) */
+	movdqa	%xmm0, 32(%edx)		/* G: store a */
+	pxor	%xmm0, %xmm3		/* G: d = d ^ a */
+	por	%xmm7, %xmm6		/* H: rotate d (3) */
+	movdqa	144(%edx), %xmm0	/* H: load c */
+	movdqa	%xmm3, %xmm7		/* G: rotate d (0) */
+	paddd	%xmm6, %xmm0		/* H: c = c + d */
+	pslld	$8, %xmm3		/* G: rotate d (1) */
+	psrld	$24, %xmm7		/* G: rotate d (2) */
+	pxor	%xmm0, %xmm5		/* H: b = b ^ c */
+	por	%xmm7, %xmm3		/* G: rotate d (3) */
+	movdqa	%xmm5, %xmm7		/* H: rotate b (0) */
+	movdqa	%xmm3, 208(%edx)	/* G: store d */
+	paddd	%xmm3, %xmm2		/* G: c = c + d */
+	pslld	$12, %xmm5		/* H: rotate b (1) */
+	psrld	$20, %xmm7		/* H: rotate b (2) */
+	movdqa	%xmm2, 128(%edx)	/* G: store c */
+	pxor	%xmm2, %xmm1		/* G: b = b ^ c */
+	por	%xmm7, %xmm5		/* H: rotate b (3) */
+	movdqa	%xmm1, %xmm7		/* G: rotate b (0) */
+	paddd	%xmm5, %xmm4		/* H: a = a + b */
+	pslld	$7, %xmm1		/* G: rotate b (1) */
+	psrld	$25, %xmm7		/* G: rotate b (2) */
+	movdqa	%xmm4, 48(%edx)		/* H: store a */
+	pxor	%xmm4, %xmm6		/* H: d = d ^ a */
+	por	%xmm7, %xmm1		/* G: rotate b (3) */
+	movdqa	%xmm6, %xmm7		/* H: rotate d (0) */
+	movdqa	%xmm1, 112(%edx)	/* G: store b */
+	pslld	$8, %xmm6		/* H: rotate d (1) */
+	psrld	$24, %xmm7		/* H: rotate d (2) */
+	por	%xmm7, %xmm6		/* H: rotate d (3) */
+	movdqa	%xmm6, 224(%edx)	/* H: store d */
+	paddd	%xmm6, %xmm0		/* H: c = c + d */
+	movdqa	%xmm0, 144(%edx)	/* H: store c */
+	pxor	%xmm0, %xmm5		/* H: b = b ^ c */
+	movdqa	%xmm5, %xmm7		/* H: rotate b (0) */
+	pslld	$7, %xmm5		/* H: rotate b (1) */
+	psrld	$25, %xmm7		/* H: rotate b (2) */
+	por	%xmm7, %xmm5		/* H: rotate b (3) */
+	movdqa	%xmm5, 64(%edx)		/* H: store b */
+	decl	%ecx
+	jnz	.xor_chacha_4way
+
+/* write back data */
+	movdqa	0(%eax), %xmm0
+	movdqa	16(%eax), %xmm1
+	movdqa	32(%eax), %xmm2
+	movdqa	48(%eax), %xmm3
+	movdqa	64(%eax), %xmm4
+	movdqa	80(%eax), %xmm5
+	movdqa	96(%eax), %xmm6
+	movdqa	112(%eax), %xmm7
+	paddd	0(%edx), %xmm0
+	paddd	16(%edx), %xmm1
+	paddd	32(%edx), %xmm2
+	paddd	48(%edx), %xmm3
+	paddd	64(%edx), %xmm4
+	paddd	80(%edx), %xmm5
+	paddd	96(%edx), %xmm6
+	paddd	112(%edx), %xmm7
+	movdqa	%xmm0, 0(%eax)
+	movdqa	%xmm1, 16(%eax)
+	movdqa	%xmm2, 32(%eax)
+	movdqa	%xmm3, 48(%eax)
+	movdqa	%xmm4, 64(%eax)
+	movdqa	%xmm5, 80(%eax)
+	movdqa	%xmm6, 96(%eax)
+	movdqa	%xmm7, 112(%eax)
+	movdqa	128(%eax), %xmm0
+	movdqa	144(%eax), %xmm1
+	movdqa	160(%eax), %xmm2
+	movdqa	176(%eax), %xmm3
+	movdqa	192(%eax), %xmm4
+	movdqa	208(%eax), %xmm5
+	movdqa	224(%eax), %xmm6
+	movdqa	240(%eax), %xmm7
+	paddd	128(%edx), %xmm0
+	paddd	144(%edx), %xmm1
+	paddd	160(%edx), %xmm2
+	paddd	176(%edx), %xmm3
+	paddd	192(%edx), %xmm4
+	paddd	208(%edx), %xmm5
+	paddd	224(%edx), %xmm6
+	paddd	240(%edx), %xmm7
+	movdqa	%xmm0, 128(%eax)
+	movdqa	%xmm1, 144(%eax)
+	movdqa	%xmm2, 160(%eax)
+	movdqa	%xmm3, 176(%eax)
+	movdqa	%xmm4, 192(%eax)
+	movdqa	%xmm5, 208(%eax)
+	movdqa	%xmm6, 224(%eax)
+	movdqa	%xmm7, 240(%eax)
+
+	ret
+
+#endif /* NEOSCRYPT_MINER_4WAY */
+
 /* cpu_vec_exts()
  * i386 detector of any vector extensions present
  * output bits set in %eax:
@@ -9085,7 +17007,7 @@ _cpu_vec_exts:
 	orl	$0x00001000, %ebp
 .cpu_vec_st1:
 /* Some original Cyrix processors report nonsense in %ecx of
- * the CPUID standard function 1, however they do not support even SSE */
+ * the CPUID standard function 1, however they don't support even SSE */
 	movl	$1, %eax
 	cpuid
 /* SSE (bit 25 of %edx); implies MMX+ and MMX */
@@ -9140,4 +17062,4 @@ _cpu_vec_exts:
 	popl	%ebx
 	ret
 
-#endif /* (ASM) && (__i386__) */
+#endif /* (NEOSCRYPT_ASM) && (__i386__) */
