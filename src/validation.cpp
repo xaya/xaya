@@ -25,7 +25,7 @@
 #include <names/main.h>
 #include <names/mempool.h>
 #include <node/blockstorage.h>
-#include <node/ui_interface.h>
+#include <node/interface_ui.h>
 #include <node/utxo_snapshot.h>
 #include <policy/policy.h>
 #include <policy/rbf.h>

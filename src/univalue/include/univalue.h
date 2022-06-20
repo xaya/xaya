@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://opensource.org/licenses/mit-license.php.
 
-#ifndef __UNIVALUE_H__
-#define __UNIVALUE_H__
+#ifndef BITCOIN_UNIVALUE_INCLUDE_UNIVALUE_H
+#define BITCOIN_UNIVALUE_INCLUDE_UNIVALUE_H
 
 #include <charconv>
 #include <cstdint>
@@ -202,4 +202,4 @@ const UniValue& find_value( const UniValue& obj, const std::string& name);
  */
 bool IsValidUtf8String(const std::string& str);
 
-#endif // __UNIVALUE_H__
+#endif // BITCOIN_UNIVALUE_INCLUDE_UNIVALUE_H

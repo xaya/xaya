@@ -29,7 +29,6 @@ LIBBITCOIN_NODE=libbitcoin_node.a
 LIBBITCOIN_COMMON=libbitcoin_common.a
 LIBBITCOIN_CONSENSUS=libbitcoin_consensus.a
 LIBBITCOIN_CLI=libbitcoin_cli.a
-LIBBITCOIN_KERNEL=libbitcoin_kernel.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
 LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.la
 LIBBITCOINQT=qt/libbitcoinqt.a
@@ -205,7 +204,7 @@ BITCOIN_CORE_H = \
   node/minisketchwrapper.h \
   node/psbt.h \
   node/transaction.h \
-  node/ui_interface.h \
+  node/interface_ui.h \
   node/utxo_snapshot.h \
   noui.h \
   outputtype.h \
@@ -389,7 +388,7 @@ libbitcoin_node_a_SOURCES = \
   node/minisketchwrapper.cpp \
   node/psbt.cpp \
   node/transaction.cpp \
-  node/ui_interface.cpp \
+  node/interface_ui.cpp \
   noui.cpp \
   policy/fees.cpp \
   policy/packages.cpp \
@@ -903,7 +902,7 @@ libbitcoinkernel_la_SOURCES = \
   names/mempool.cpp \
   node/blockstorage.cpp \
   node/chainstate.cpp \
-  node/ui_interface.cpp \
+  node/interface_ui.cpp \
   policy/feerate.cpp \
   policy/fees.cpp \
   policy/packages.cpp \

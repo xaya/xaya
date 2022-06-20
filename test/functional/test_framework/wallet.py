@@ -19,9 +19,13 @@ from test_framework.address import (
     key_to_p2pkh,
     key_to_p2sh_p2wpkh,
     key_to_p2wpkh,
+    output_key_to_p2tr,
 )
 from test_framework.descriptors import descsum_create
-from test_framework.key import ECKey
+from test_framework.key import (
+    ECKey,
+    compute_xonly_pubkey,
+)
 from test_framework.messages import (
     COIN,
     COutPoint,
@@ -38,6 +42,7 @@ from test_framework.script import (
     OP_NOP,
     OP_TRUE,
     SIGHASH_ALL,
+    taproot_construct,
 )
 from test_framework.script_util import (
     key_to_p2pk_script,
@@ -193,7 +198,7 @@ class MiniWallet:
 
         Returns a tuple (txid, n) referring to the created external utxo outpoint.
         """
-        tx = self.create_self_transfer(from_node=from_node, fee_rate=0, mempool_valid=False)['tx']
+        tx = self.create_self_transfer(from_node=from_node, fee_rate=0)["tx"]
         assert_greater_than_or_equal(tx.vout[0].nValue, amount + fee)
         tx.vout[0].nValue -= (amount + fee)           # change output -> MiniWallet
         tx.vout.append(CTxOut(amount, scriptPubKey))  # arbitrary output -> to be returned
@@ -230,7 +235,7 @@ class MiniWallet:
         # create simple tx template (1 input, 1 output)
         tx = self.create_self_transfer(
             fee_rate=0, from_node=from_node,
-            utxo_to_spend=utxos_to_spend[0], sequence=sequence, mempool_valid=False)['tx']
+            utxo_to_spend=utxos_to_spend[0], sequence=sequence)["tx"]
 
         # duplicate inputs, witnesses and outputs
         tx.vin = [deepcopy(tx.vin[0]) for _ in range(len(utxos_to_spend))]
@@ -248,9 +253,8 @@ class MiniWallet:
             o.nValue = outputs_value_total // num_outputs
         return tx
 
-    def create_self_transfer(self, *, fee_rate=Decimal("0.003"), from_node=None, utxo_to_spend=None, mempool_valid=True, locktime=0, sequence=0):
-        """Create and return a tx with the specified fee_rate. Fee may be exact or at most one satoshi higher than needed.
-           Checking mempool validity via the testmempoolaccept RPC can be skipped by setting mempool_valid to False."""
+    def create_self_transfer(self, *, fee_rate=Decimal("0.003"), from_node=None, utxo_to_spend=None, locktime=0, sequence=0):
+        """Create and return a tx with the specified fee_rate. Fee may be exact or at most one satoshi higher than needed."""
         from_node = from_node or self._test_node
         utxo_to_spend = utxo_to_spend or self.get_utxo()
         if self._priv_key is None:
@@ -277,11 +281,7 @@ class MiniWallet:
             tx.wit.vtxinwit[0].scriptWitness.stack = [CScript([OP_TRUE]), bytes([LEAF_VERSION_TAPSCRIPT]) + self._internal_key]
         tx_hex = tx.serialize().hex()
 
-        if mempool_valid:
-            tx_info = from_node.testmempoolaccept([tx_hex])[0]
-            assert_equal(tx_info['allowed'], True)
-            assert_equal(tx_info['vsize'], vsize)
-            assert_equal(tx_info['fees']['base'], utxo_to_spend['value'] - Decimal(send_value) / COIN)
+        assert_equal(tx.get_vsize(), vsize)
 
         return {'txid': tx.rehash(), 'wtxid': tx.getwtxid(), 'hex': tx_hex, 'tx': tx}
 
@@ -291,10 +291,10 @@ class MiniWallet:
         return txid
 
 
-def getnewdestination(address_type='bech32'):
+def getnewdestination(address_type='bech32m'):
     """Generate a random destination of the specified type and return the
        corresponding public key, scriptPubKey and address. Supported types are
-       'legacy', 'p2sh-segwit' and 'bech32'. Can be used when a random
+       'legacy', 'p2sh-segwit', 'bech32' and 'bech32m'. Can be used when a random
        destination is needed, but no compiled wallet is available (e.g. as
        replacement to the getnewaddress/getaddressinfo RPCs)."""
     key = ECKey()
@@ -309,7 +309,11 @@ def getnewdestination(address_type='bech32'):
     elif address_type == 'bech32':
         scriptpubkey = key_to_p2wpkh_script(pubkey)
         address = key_to_p2wpkh(pubkey)
-    # TODO: also support bech32m (need to generate x-only-pubkey)
+    elif address_type == 'bech32m':
+        tap = taproot_construct(compute_xonly_pubkey(key.get_bytes())[0])
+        pubkey = tap.output_pubkey
+        scriptpubkey = tap.scriptPubKey
+        address = output_key_to_p2tr(pubkey)
     else:
         assert False
     return pubkey, scriptpubkey, address
