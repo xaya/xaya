@@ -285,8 +285,7 @@ CBlock TestChain100Setup::CreateBlock(
     const CScript& scriptPubKey,
     CChainState& chainstate)
 {
-    CTxMemPool empty_pool;
-    CBlock block = BlockAssembler{chainstate, empty_pool}.CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey)->block;
+    CBlock block = BlockAssembler{chainstate, nullptr}.CreateNewBlock(PowAlgo::NEOSCRYPT, scriptPubKey)->block;
 
     Assert(block.vtx.size() == 1);
     for (const CMutableTransaction& tx : txns) {

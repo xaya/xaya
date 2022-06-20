@@ -8,12 +8,12 @@ from decimal import Decimal
 
 from test_framework.authproxy import JSONRPCException
 from test_framework.blocktools import COINBASE_MATURITY
-from test_framework.messages import COIN
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_raises_rpc_error,
+    create_lots_of_big_transactions,
     gen_return_txouts,
 )
 from test_framework.wallet import MiniWallet
@@ -30,16 +30,6 @@ class MempoolLimitTest(BitcoinTestFramework):
             "-spendzeroconfchange=0",
         ]]
         self.supports_cli = False
-
-    def send_large_txs(self, node, miniwallet, txouts, fee, tx_batch_size):
-        for _ in range(tx_batch_size):
-            tx = miniwallet.create_self_transfer(from_node=node, fee_rate=0, mempool_valid=False)['tx']
-            for txout in txouts:
-                tx.vout.append(txout)
-            tx.vout[0].nValue -= int(fee * COIN)
-            res = node.testmempoolaccept([tx.serialize().hex()])[0]
-            assert_equal(res['fees']['base'], fee)
-            miniwallet.sendrawtransaction(from_node=node, tx_hex=tx.serialize().hex())
 
     def run_test(self):
         txouts = gen_return_txouts()
@@ -74,7 +64,7 @@ class MempoolLimitTest(BitcoinTestFramework):
         for batch_of_txid in range(num_of_batches):
             fee = (batch_of_txid + 1) * base_fee
             try:
-                self.send_large_txs(node, miniwallet, txouts, fee, tx_batch_size)
+                create_lots_of_big_transactions(miniwallet, node, fee, tx_batch_size, txouts)
             except JSONRPCException as exc:
                 # If we run into a "memool full" error, just stop producing
                 # more transactions.
@@ -93,7 +83,11 @@ class MempoolLimitTest(BitcoinTestFramework):
 
         # Deliberately try to create a tx with a fee less than the minimum mempool fee to assert that it does not get added to the mempool
         self.log.info('Create a mempool tx that will not pass mempoolminfee')
-        assert_raises_rpc_error(-26, "mempool min fee not met", miniwallet.send_self_transfer, from_node=node, fee_rate=relayfee, mempool_valid=False)
+        assert_raises_rpc_error(-26, "mempool min fee not met", miniwallet.send_self_transfer, from_node=node, fee_rate=relayfee)
+
+        self.log.info('Test passing a value below the minimum (5 MB) to -maxmempool throws an error')
+        self.stop_node(0)
+        self.nodes[0].assert_start_raises_init_error(["-maxmempool=4"], "Error: -maxmempool must be at least 5 MB")
 
 
 if __name__ == '__main__':
