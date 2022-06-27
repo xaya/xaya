@@ -63,6 +63,7 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 - [BIPS](bips.md)
 - [Dnsseed Policy](dnsseed-policy.md)
 - [Benchmarking](benchmarking.md)
+- [Internal Design Docs](design/)
 
 ### Resources
 * Discuss on the [Namecoin forums](https://forum.namecoin.info/), in the [Development & Technical Discussion board](https://forum.namecoin.info/viewforum.php?f=8).
@@ -70,7 +71,6 @@ The Namecoin repo's [root README](https://github.com/namecoin/namecore/blob/mast
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)
-- [Assumeutxo design](assumeutxo.md)
 - [bitcoin.conf Configuration File](bitcoin-conf.md)
 - [CJDNS Support](cjdns.md)
 - [Files](files.md)
