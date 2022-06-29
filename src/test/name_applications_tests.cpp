@@ -110,4 +110,13 @@ BOOST_AUTO_TEST_CASE( namespace_detection )
     BOOST_CHECK(NamespaceFromName(identityData) == NameNamespace::IdentityData);
 }
 
+BOOST_AUTO_TEST_CASE( name_description )
+{
+    const valtype domainValid = DecodeName ("d/wikileaks", NameEncoding::ASCII);
+    BOOST_CHECK(DescFromName(domainValid, NameNamespace::Domain) == "wikileaks.bit");
+
+    const valtype identityValid = DecodeName ("id/wikileaks", NameEncoding::ASCII);
+    BOOST_CHECK(DescFromName(identityValid, NameNamespace::Identity) == "'id/wikileaks'");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
