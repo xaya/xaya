@@ -173,4 +173,5 @@ DescFromName (const valtype& name, NameNamespace ns)
         {
             return EncodeNameForMessage(name);
         }
+    }
 }
