@@ -32,4 +32,10 @@ BOOST_AUTO_TEST_CASE( namespace_detection )
     BOOST_CHECK(NamespaceFromName(utf8Valid) == NameNamespace::Player);
 }
 
+BOOST_AUTO_TEST_CASE( name_description )
+{
+    const valtype playerValid = DecodeName ("p/wikileaks", NameEncoding::ASCII);
+    BOOST_CHECK(DescFromName(playerValid, NameNamespace::Player) == "'p/wikileaks'");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

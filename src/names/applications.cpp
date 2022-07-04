@@ -94,3 +94,15 @@ NamespaceFromName (const valtype& data)
 
     return NamespaceFromName(name);
 }
+
+std::string
+DescFromName (const valtype& name, NameNamespace ns)
+{
+    switch (ns)
+    {
+        default:
+        {
+            return EncodeNameForMessage(name);
+        }
+    }
+}

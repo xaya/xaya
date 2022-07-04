@@ -20,4 +20,6 @@ enum class NameNamespace
 NameNamespace NamespaceFromName (const std::string& name);
 NameNamespace NamespaceFromName (const valtype& data);
 
+std::string DescFromName (const valtype& name, NameNamespace ns);
+
 #endif // H_BITCOIN_NAMES_APPLICATIONS
