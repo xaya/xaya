@@ -115,7 +115,7 @@ public:
         std::string* purpose) = 0;
 
     //! Get wallet address list.
-    virtual std::vector<WalletAddress> getAddresses() = 0;
+    virtual std::vector<WalletAddress> getAddresses() const = 0;
 
     //! Get receive requests.
     virtual std::vector<std::string> getAddressReceiveRequests() = 0;
