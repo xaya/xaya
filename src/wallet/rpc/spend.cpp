@@ -158,18 +158,16 @@ UniValue SendMoney(CWallet& wallet, const CCoinControl &coin_control,
 
     // Send
     constexpr int RANDOM_CHANGE_POSITION = -1;
-    bilingual_str error;
-    FeeCalculation fee_calc_out;
-    std::optional<CreatedTransactionResult> txr = CreateTransaction(wallet, recipients, withInput, RANDOM_CHANGE_POSITION, error, coin_control, fee_calc_out, true);
-    if (!txr) {
-        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, error.original);
+    auto res = CreateTransaction(wallet, recipients, withInput, RANDOM_CHANGE_POSITION, coin_control, true);
+    if (!res) {
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, res.GetError().original);
     }
-    CTransactionRef tx = txr->tx;
+    const CTransactionRef& tx = res.GetObj().tx;
     wallet.CommitTransaction(tx, std::move(map_value), {} /* orderForm */);
     if (verbose) {
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", tx->GetHash().GetHex());
-        entry.pushKV("fee_reason", StringForFeeReason(fee_calc_out.reason));
+        entry.pushKV("fee_reason", StringForFeeReason(res.GetObj().fee_calc.reason));
         return entry;
     }
     return tx->GetHash().GetHex();
@@ -1637,7 +1635,7 @@ RPCHelpMan walletcreatefundedpsbt()
         }, true
     );
 
-    UniValue options = request.params[3];
+    UniValue options{request.params[3].isNull() ? UniValue::VOBJ : request.params[3]};
 
     CAmount fee;
     int change_position;
