@@ -36,7 +36,6 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <txmempool.h>
-#include <util/designator.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/thread.h>
@@ -158,10 +157,10 @@ BasicTestingSetup::~BasicTestingSetup()
 CTxMemPool::Options MemPoolOptionsForTest(const NodeContext& node)
 {
     CTxMemPool::Options mempool_opts{
-        Desig(estimator) node.fee_estimator.get(),
+        .estimator = node.fee_estimator.get(),
         // Default to always checking mempool regardless of
         // chainparams.DefaultConsistencyChecks for tests
-        Desig(check_ratio) 1,
+        .check_ratio = 1,
     };
     ApplyArgsManOptions(*node.args, mempool_opts);
     return mempool_opts;
@@ -184,8 +183,8 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
     m_cache_sizes = CalculateCacheSizes(m_args);
 
     const ChainstateManager::Options chainman_opts{
-        chainparams,
-        GetAdjustedTime,
+        .chainparams = chainparams,
+        .adjusted_time_callback = GetAdjustedTime,
     };
     m_node.chainman = std::make_unique<ChainstateManager>(chainman_opts);
     m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(m_cache_sizes.block_tree_db, true);

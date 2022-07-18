@@ -271,7 +271,6 @@ BITCOIN_CORE_H = \
   util/bip32.h \
   util/bytevectorhash.h \
   util/check.h \
-  util/designator.h \
   util/epochguard.h \
   util/error.h \
   util/fastrange.h \
@@ -287,6 +286,7 @@ BITCOIN_CORE_H = \
   util/overloaded.h \
   util/rbf.h \
   util/readwritefile.h \
+  util/result.h \
   util/serfloat.h \
   util/settings.h \
   util/sock.h \
