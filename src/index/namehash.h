@@ -42,7 +42,7 @@ private:
 
 protected:
 
-    bool WriteBlock (const CBlock& block, const CBlockIndex* pindex) override;
+    bool CustomAppend (const interfaces::BlockInfo& block) override;
 
     BaseIndex::DB& GetDB () const override;
 
@@ -57,7 +57,8 @@ public:
     /**
      * Constructs the index, which becomes available to be queried.
      */
-    explicit NameHashIndex (size_t cache_size, bool memory, bool wipe);
+    explicit NameHashIndex (std::unique_ptr<interfaces::Chain> chain,
+                            size_t cache_size, bool memory, bool wipe);
 
     ~NameHashIndex ();
 

@@ -1316,31 +1316,32 @@ void CWallet::transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRe
     }
 }
 
-void CWallet::blockConnected(const CBlock& block, int height)
+void CWallet::blockConnected(const interfaces::BlockInfo& block)
 {
-    const uint256& block_hash = block.GetHash();
+    assert(block.data);
     LOCK(cs_wallet);
 
-    m_last_block_processed_height = height;
-    m_last_block_processed = block_hash;
-    for (size_t index = 0; index < block.vtx.size(); index++) {
-        SyncTransaction(block.vtx[index], TxStateConfirmed{block_hash, height, static_cast<int>(index)});
-        transactionRemovedFromMempool(block.vtx[index], MemPoolRemovalReason::BLOCK, 0 /* mempool_sequence */);
+    m_last_block_processed_height = block.height;
+    m_last_block_processed = block.hash;
+    for (size_t index = 0; index < block.data->vtx.size(); index++) {
+        SyncTransaction(block.data->vtx[index], TxStateConfirmed{block.hash, block.height, static_cast<int>(index)});
+        transactionRemovedFromMempool(block.data->vtx[index], MemPoolRemovalReason::BLOCK, 0 /* mempool_sequence */);
     }
     EffectTransactionQueue();
 }
 
-void CWallet::blockDisconnected(const CBlock& block, int height)
+void CWallet::blockDisconnected(const interfaces::BlockInfo& block)
 {
+    assert(block.data);
     LOCK(cs_wallet);
 
     // At block disconnection, this will change an abandoned transaction to
     // be unconfirmed, whether or not the transaction is added back to the mempool.
     // User may have to call abandontransaction again. It may be addressed in the
     // future with a stickier abandoned state or even removing abandontransaction call.
-    m_last_block_processed_height = height - 1;
-    m_last_block_processed = block.hashPrevBlock;
-    for (const CTransactionRef& ptx : block.vtx) {
+    m_last_block_processed_height = block.height - 1;
+    m_last_block_processed = *Assert(block.prev_hash);
+    for (const CTransactionRef& ptx : Assert(block.data)->vtx) {
         SyncTransaction(ptx, TxStateInactive{});
     }
 }
@@ -1724,7 +1725,8 @@ int64_t CWallet::RescanFromTime(int64_t startTime, const WalletRescanReserver& r
 /**
  * Scan the block chain (starting in start_block) for transactions
  * from or to us. If fUpdate is true, found transactions that already
- * exist in the wallet will be updated.
+ * exist in the wallet will be updated. If max_height is not set, the
+ * mempool will be scanned as well.
  *
  * @param[in] start_block Scan starting block. If block is not on the active
  *                        chain, the scan will return SUCCESS immediately.
@@ -1844,6 +1846,10 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                 progress_end = chain().guessVerificationProgress(tip_hash);
             }
         }
+    }
+    if (!max_height) {
+        WalletLogPrintf("Scanning current mempool transactions.\n");
+        WITH_LOCK(cs_wallet, chain().requestMempoolTransactions(*this));
     }
     ShowProgress(strprintf("%s " + _("Rescanning…").translated, GetDisplayName()), 100); // hide progress dialog in GUI
     if (block_height && fAbortRescan) {
@@ -2025,7 +2031,6 @@ TransactionError CWallet::FillPSBT(PartiallySignedTransaction& psbtx, bool& comp
     if (n_signed) {
         *n_signed = 0;
     }
-    const PrecomputedTransactionData txdata = PrecomputePSBTData(psbtx);
     LOCK(cs_wallet);
     // Get all of the previous transactions
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
@@ -2048,6 +2053,8 @@ TransactionError CWallet::FillPSBT(PartiallySignedTransaction& psbtx, bool& comp
             }
         }
     }
+
+    const PrecomputedTransactionData txdata = PrecomputePSBTData(psbtx);
 
     // Fill in information from ScriptPubKeyMans
     for (ScriptPubKeyMan* spk_man : GetAllScriptPubKeyMans()) {
@@ -3090,20 +3097,31 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
 
     if (tip_height && *tip_height != rescan_height)
     {
-        if (chain.havePruned()) {
+        // Technically we could execute the code below in any case, but performing the
+        // `while` loop below can make startup very slow, so only check blocks on disk
+        // if necessary.
+        if (chain.havePruned() || chain.hasAssumedValidChain()) {
             int block_height = *tip_height;
             while (block_height > 0 && chain.haveBlockOnDisk(block_height - 1) && rescan_height != block_height) {
                 --block_height;
             }
 
             if (rescan_height != block_height) {
-                // We can't rescan beyond non-pruned blocks, stop and throw an error.
+                // We can't rescan beyond blocks we don't have data for, stop and throw an error.
                 // This might happen if a user uses an old wallet within a pruned node
                 // or if they ran -disablewallet for a longer time, then decided to re-enable
                 // Exit early and print an error.
+                // It also may happen if an assumed-valid chain is in use and therefore not
+                // all block data is available.
                 // If a block is pruned after this check, we will load the wallet,
                 // but fail the rescan with a generic error.
-                error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
+
+                error = chain.hasAssumedValidChain() ?
+                     _(
+                        "Assumed-valid: last wallet synchronisation goes beyond "
+                        "available block data. You need to wait for the background "
+                        "validation chain to download more blocks.") :
+                     _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
                 return false;
             }
         }
