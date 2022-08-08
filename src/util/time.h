@@ -6,7 +6,7 @@
 #ifndef BITCOIN_UTIL_TIME_H
 #define BITCOIN_UTIL_TIME_H
 
-#include <compat.h>
+#include <compat/compat.h>
 
 #include <chrono>
 #include <cstdint>
@@ -24,6 +24,7 @@ struct NodeClock : public std::chrono::system_clock {
 };
 using NodeSeconds = std::chrono::time_point<NodeClock, std::chrono::seconds>;
 
+using SteadyClock = std::chrono::steady_clock;
 using SteadySeconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::seconds>;
 using SteadyMilliseconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds>;
 using SteadyMicroseconds = std::chrono::time_point<std::chrono::steady_clock, std::chrono::microseconds>;

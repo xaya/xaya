@@ -53,9 +53,6 @@ static const std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     auto database = MakeWalletDatabase("", options, status, error);
     auto wallet = CWallet::Create(context, "", std::move(database), options.create_flags, error, warnings);
     NotifyWalletLoaded(context, wallet);
-    if (context.chain) {
-        wallet->postInitProcess();
-    }
     return wallet;
 }
 
@@ -363,13 +360,13 @@ BOOST_FIXTURE_TEST_CASE(coin_mark_dirty_immature_credit, TestChain100Setup)
 
     // Call GetImmatureCredit() once before adding the key to the wallet to
     // cache the current immature credit amount, which is 0.
-    BOOST_CHECK_EQUAL(CachedTxGetImmatureCredit(wallet, wtx), 0);
+    BOOST_CHECK_EQUAL(CachedTxGetImmatureCredit(wallet, wtx, ISMINE_SPENDABLE), 0);
 
     // Invalidate the cached value, add the key, and make sure a new immature
     // credit amount is calculated.
     wtx.MarkDirty();
     AddKey(wallet, coinbaseKey);
-    BOOST_CHECK_EQUAL(CachedTxGetImmatureCredit(wallet, wtx), 50*COIN);
+    BOOST_CHECK_EQUAL(CachedTxGetImmatureCredit(wallet, wtx, ISMINE_SPENDABLE), 50*COIN);
 }
 
 static int64_t AddTx(ChainstateManager& chainman, CWallet& wallet, uint32_t lockTime, int64_t mockTime, int64_t blockTime)
@@ -768,6 +765,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
     // being blocked
     wallet = TestLoadWallet(context);
     BOOST_CHECK(rescan_completed);
+    // AddToWallet events for block_tx and mempool_tx
     BOOST_CHECK_EQUAL(addtx_count, 2);
     {
         LOCK(wallet->cs_wallet);
@@ -780,6 +778,8 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
     // transactionAddedToMempool events are processed
     promise.set_value();
     SyncWithValidationInterfaceQueue();
+    // AddToWallet events for block_tx and mempool_tx events are counted a
+    // second time as the notificaiton queue is processed
     BOOST_CHECK_EQUAL(addtx_count, 4);
 
 
@@ -803,7 +803,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
             SyncWithValidationInterfaceQueue();
         });
     wallet = TestLoadWallet(context);
-    BOOST_CHECK_EQUAL(addtx_count, 4);
+    BOOST_CHECK_EQUAL(addtx_count, 2);
     {
         LOCK(wallet->cs_wallet);
         BOOST_CHECK_EQUAL(wallet->mapWallet.count(block_tx.GetHash()), 1U);
