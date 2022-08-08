@@ -85,8 +85,8 @@ static constexpr int DNSSEEDS_DELAY_PEER_THRESHOLD = 1000; // "many" vs "few" pe
 /** The default timeframe for -maxuploadtarget. 1 day. */
 static constexpr std::chrono::seconds MAX_UPLOAD_TIMEFRAME{60 * 60 * 24};
 
-// We add a random period time (0 to 1 seconds) to feeler connections to prevent synchronization.
-#define FEELER_SLEEP_WINDOW 1
+// A random time period (0 to 1 seconds) is added to feeler connections to prevent synchronization.
+static constexpr auto FEELER_SLEEP_WINDOW{1s};
 
 /** Used to pass flags to the Bind() function */
 enum BindFlags {
@@ -187,7 +187,7 @@ static std::vector<CAddress> ConvertSeeds(const std::vector<uint8_t> &vSeedsIn)
     // it'll get a pile of addresses with newer timestamps.
     // Seed nodes are given a random 'last seen time' of between one and two
     // weeks ago.
-    const int64_t nOneWeek = 7*24*60*60;
+    const auto one_week{7 * 24h};
     std::vector<CAddress> vSeedsOut;
     FastRandomContext rng;
     CDataStream s(vSeedsIn, SER_NETWORK, PROTOCOL_VERSION | ADDRV2_FORMAT);
@@ -195,7 +195,7 @@ static std::vector<CAddress> ConvertSeeds(const std::vector<uint8_t> &vSeedsIn)
         CService endpoint;
         s >> endpoint;
         CAddress addr{endpoint, GetDesirableServiceFlags(NODE_NONE)};
-        addr.nTime = GetTime() - rng.randrange(nOneWeek) - nOneWeek;
+        addr.nTime = rng.rand_uniform_delay(Now<NodeSeconds>() - one_week, -one_week);
         LogPrint(BCLog::NET, "Added hardcoded seed: %s\n", addr.ToString());
         vSeedsOut.push_back(addr);
     }
@@ -452,10 +452,9 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
         }
     }
 
-    /// debug print
     LogPrintLevel(BCLog::NET, BCLog::Level::Debug, "trying connection %s lastseen=%.1fhrs\n",
-                  pszDest ? pszDest : addrConnect.ToString(),
-                  pszDest ? 0.0 : (double)(GetAdjustedTime() - addrConnect.nTime) / 3600.0);
+        pszDest ? pszDest : addrConnect.ToString(),
+        Ticks<HoursDouble>(pszDest ? 0h : AdjustedTime() - addrConnect.nTime));
 
     // Resolve
     const uint16_t default_port{pszDest != nullptr ? Params().GetDefaultPort(pszDest) :
@@ -1469,9 +1468,8 @@ void CConnman::ThreadDNSAddressSeed()
             unsigned int nMaxIPs = 256; // Limits number of IPs learned from a DNS seed
             if (LookupHost(host, vIPs, nMaxIPs, true)) {
                 for (const CNetAddr& ip : vIPs) {
-                    int nOneDay = 24*3600;
                     CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()), requiredServiceBits);
-                    addr.nTime = GetTime() - 3*nOneDay - rng.randrange(4*nOneDay); // use a random age between 3 and 7 days old
+                    addr.nTime = rng.rand_uniform_delay(Now<NodeSeconds>() - 3 * 24h, -4 * 24h); // use a random age between 3 and 7 days old
                     vAdd.push_back(addr);
                     found++;
                 }
@@ -1568,6 +1566,7 @@ int CConnman::GetExtraBlockRelayCount() const
 void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
 {
     SetSyscallSandboxPolicy(SyscallSandboxPolicy::NET_OPEN_CONNECTION);
+    FastRandomContext rng;
     // Connect to specific addresses
     if (!connect.empty())
     {
@@ -1736,7 +1735,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
 
         addrman.ResolveCollisions();
 
-        int64_t nANow = GetAdjustedTime();
+        const auto nANow{AdjustedTime()};
         int nTries = 0;
         while (!interruptNet)
         {
@@ -1759,7 +1758,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 break;
 
             CAddress addr;
-            int64_t addr_last_try{0};
+            NodeSeconds addr_last_try{0s};
 
             if (fFeeler) {
                 // First, try to get a tried table collision address. This returns
@@ -1799,8 +1798,9 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 continue;
 
             // only consider very recently tried nodes after 30 failed attempts
-            if (nANow - addr_last_try < 600 && nTries < 30)
+            if (nANow - addr_last_try < 10min && nTries < 30) {
                 continue;
+            }
 
             // for non-feelers, require all the services we'll want,
             // for feelers, only require they be a full node (only because most
@@ -1821,12 +1821,11 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         }
 
         if (addrConnect.IsValid()) {
-
             if (fFeeler) {
                 // Add small amount of random noise before connection to avoid synchronization.
-                int randsleep = GetRand<int>(FEELER_SLEEP_WINDOW * 1000);
-                if (!interruptNet.sleep_for(std::chrono::milliseconds(randsleep)))
+                if (!interruptNet.sleep_for(rng.rand_uniform_duration<CThreadInterrupt::Clock>(FEELER_SLEEP_WINDOW))) {
                     return;
+                }
                 LogPrint(BCLog::NET, "Making feeler connection to %s\n", addrConnect.ToString());
             }
 

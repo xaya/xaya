@@ -67,7 +67,7 @@ FUZZ_TARGET_INIT(txorphan, initialize_orphanage)
             for (uint32_t i = 0; i < num_out; i++) {
                 tx_mut.vout.emplace_back(CAmount{0}, CScript{});
             }
-            // restore previously poped outpoints
+            // restore previously popped outpoints
             for (auto& in : tx_mut.vin) {
                 outpoints.push_back(in.prevout);
             }
@@ -138,10 +138,8 @@ FUZZ_TARGET_INIT(txorphan, initialize_orphanage)
                 [&] {
                     // test mocktime and expiry
                     SetMockTime(ConsumeTime(fuzzed_data_provider));
-                    auto size_before = orphanage.Size();
                     auto limit = fuzzed_data_provider.ConsumeIntegral<unsigned int>();
-                    auto n_evicted = WITH_LOCK(g_cs_orphans, return orphanage.LimitOrphans(limit));
-                    Assert(size_before - n_evicted <= limit);
+                    WITH_LOCK(g_cs_orphans, orphanage.LimitOrphans(limit));
                     Assert(orphanage.Size() <= limit);
                 });
         }

@@ -58,6 +58,7 @@
 #include <warnings.h>
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <deque>
 #include <numeric>
@@ -2317,7 +2318,6 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
         m_blockman.m_dirty_blockindex.insert(pindex);
     }
 
-    assert(pindex->phashBlock);
     // add this block to the view's block chain
     view.SetBestBlock(pindex->GetBlockHash());
 
@@ -4314,11 +4314,16 @@ bool CChainState::LoadGenesisBlock()
     return true;
 }
 
-void CChainState::LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp)
+void CChainState::LoadExternalBlockFile(
+    FILE* fileIn,
+    FlatFilePos* dbp,
+    std::multimap<uint256, FlatFilePos>* blocks_with_unknown_parent)
 {
     AssertLockNotHeld(m_chainstate_mutex);
-    // Map of disk positions for blocks with unknown parent (only used for reindex)
-    static std::multimap<uint256, FlatFilePos> mapBlocksUnknownParent;
+
+    // Either both should be specified (-reindex), or neither (-loadblock).
+    assert(!dbp == !blocks_with_unknown_parent);
+
     int64_t nStart = GetTimeMillis();
 
     int nLoaded = 0;
@@ -4368,8 +4373,9 @@ void CChainState::LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp)
                     if (hash != m_params.GetConsensus().hashGenesisBlock && !m_blockman.LookupBlockIndex(block.hashPrevBlock)) {
                         LogPrint(BCLog::REINDEX, "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
                                 block.hashPrevBlock.ToString());
-                        if (dbp)
-                            mapBlocksUnknownParent.insert(std::make_pair(block.hashPrevBlock, *dbp));
+                        if (dbp && blocks_with_unknown_parent) {
+                            blocks_with_unknown_parent->emplace(block.hashPrevBlock, *dbp);
+                        }
                         continue;
                     }
 
@@ -4398,13 +4404,15 @@ void CChainState::LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp)
 
                 NotifyHeaderTip(*this);
 
+                if (!blocks_with_unknown_parent) continue;
+
                 // Recursively process earlier encountered successors of this block
                 std::deque<uint256> queue;
                 queue.push_back(hash);
                 while (!queue.empty()) {
                     uint256 head = queue.front();
                     queue.pop_front();
-                    std::pair<std::multimap<uint256, FlatFilePos>::iterator, std::multimap<uint256, FlatFilePos>::iterator> range = mapBlocksUnknownParent.equal_range(head);
+                    auto range = blocks_with_unknown_parent->equal_range(head);
                     while (range.first != range.second) {
                         std::multimap<uint256, FlatFilePos>::iterator it = range.first;
                         std::shared_ptr<CBlock> pblockrecursive = std::make_shared<CBlock>();
@@ -4419,7 +4427,7 @@ void CChainState::LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp)
                             }
                         }
                         range.first++;
-                        mapBlocksUnknownParent.erase(it);
+                        blocks_with_unknown_parent->erase(it);
                         NotifyHeaderTip(*this);
                     }
                 }

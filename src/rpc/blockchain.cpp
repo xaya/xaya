@@ -452,7 +452,7 @@ static RPCHelpMan syncwithvalidationinterfacequeue()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     SyncWithValidationInterfaceQueue();
-    return NullUniValue;
+    return UniValue::VNULL;
 },
     };
 }
@@ -1135,11 +1135,11 @@ static RPCHelpMan gettxout()
         LOCK(mempool.cs);
         CCoinsViewMemPool view(coins_view, mempool);
         if (!view.GetCoin(out, coin) || mempool.isSpent(out)) {
-            return NullUniValue;
+            return UniValue::VNULL;
         }
     } else {
         if (!coins_view->GetCoin(out, coin)) {
-            return NullUniValue;
+            return UniValue::VNULL;
         }
     }
 
@@ -1581,7 +1581,7 @@ static RPCHelpMan preciousblock()
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
     }
 
-    return NullUniValue;
+    return UniValue::VNULL;
 },
     };
 }
@@ -1622,7 +1622,7 @@ static RPCHelpMan invalidateblock()
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
     }
 
-    return NullUniValue;
+    return UniValue::VNULL;
 },
     };
 }
@@ -1662,7 +1662,7 @@ static RPCHelpMan reconsiderblock()
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
     }
 
-    return NullUniValue;
+    return UniValue::VNULL;
 },
     };
 }
@@ -2181,7 +2181,7 @@ static RPCHelpMan scantxoutset()
         CoinsViewScanReserver reserver;
         if (reserver.reserve()) {
             // no scan in progress
-            return NullUniValue;
+            return UniValue::VNULL;
         }
         result.pushKV("progress", g_scan_progress.load());
         return result;
