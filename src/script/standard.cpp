@@ -14,8 +14,7 @@
 
 #include <string>
 
-bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;
-unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
+typedef std::vector<unsigned char> valtype;
 
 CScriptID::CScriptID(const CScript& in) : BaseHash(Hash160(in)) {}
 CScriptID::CScriptID(const ScriptHash& in) : BaseHash(static_cast<uint160>(in)) {}

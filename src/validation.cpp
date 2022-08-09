@@ -125,7 +125,6 @@ GlobalMutex g_best_block_mutex;
 std::condition_variable g_best_block_cv;
 uint256 g_best_block;
 bool g_parallel_script_checks{false};
-bool fRequireStandard = true;
 bool fCheckBlockIndex = false;
 bool fCheckpointsEnabled = DEFAULT_CHECKPOINTS_ENABLED;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
@@ -648,8 +647,9 @@ private:
             return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "mempool min fee not met", strprintf("%d < %d", package_fee, mempoolRejectFee));
         }
 
-        if (package_fee < ::minRelayTxFee.GetFee(package_size)) {
-            return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "min relay fee not met", strprintf("%d < %d", package_fee, ::minRelayTxFee.GetFee(package_size)));
+        if (package_fee < m_pool.m_min_relay_feerate.GetFee(package_size)) {
+            return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "min relay fee not met",
+                                 strprintf("%d < %d", package_fee, m_pool.m_min_relay_feerate.GetFee(package_size)));
         }
         return true;
     }
@@ -701,8 +701,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
-    if (fRequireStandard && !IsStandardTx(tx, reason))
+    if (m_pool.m_require_standard && !IsStandardTx(tx, m_pool.m_max_datacarrier_bytes, m_pool.m_permit_bare_multisig, m_pool.m_dust_relay_feerate, reason)) {
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD, reason);
+    }
 
     // Do not work on transactions that are too small.
     // A transaction with 1 segwit input and 1 P2WPHK output has non-witness size of 82 bytes.
@@ -808,13 +809,14 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return false; // state filled in by CheckTxInputs
     }
 
-    if (fRequireStandard && !AreInputsStandard(tx, m_view)) {
+    if (m_pool.m_require_standard && !AreInputsStandard(tx, m_view)) {
         return state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs");
     }
 
     // Check for non-standard witnesses.
-    if (tx.HasWitness() && fRequireStandard && !IsWitnessStandard(tx, m_view))
+    if (tx.HasWitness() && m_pool.m_require_standard && !IsWitnessStandard(tx, m_view)) {
         return state.Invalid(TxValidationResult::TX_WITNESS_MUTATED, "bad-witness-nonstandard");
+    }
 
     int64_t nSigOpsCost = GetTransactionSigOpCost(tx, m_view, STANDARD_SCRIPT_VERIFY_FLAGS);
 
@@ -841,7 +843,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "bad-txns-too-many-sigops",
                 strprintf("%d", nSigOpsCost));
 
-    // No individual transactions are allowed below minRelayTxFee and mempool min fee except from
+    // No individual transactions are allowed below the min relay feerate and mempool min feerate except from
     // disconnected blocks and transactions in a package. Package transactions will be checked using
     // package feerate later.
     if (!bypass_limits && !args.m_package_feerates && !CheckFeeRate(ws.m_vsize, ws.m_modified_fees, state)) return false;
@@ -959,7 +961,7 @@ bool MemPoolAccept::ReplacementChecks(Workspace& ws)
         ws.m_conflicting_size += it->GetTxSize();
     }
     if (const auto err_string{PaysForRBF(ws.m_conflicting_fees, ws.m_modified_fees, ws.m_vsize,
-                                         ::incrementalRelayFee, hash)}) {
+                                         m_pool.m_incremental_relay_feerate, hash)}) {
         return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "insufficient fee", *err_string);
     }
     return true;
@@ -1698,7 +1700,8 @@ bool CScriptCheck::operator()() {
 static CuckooCache::cache<uint256, SignatureCacheHasher> g_scriptExecutionCache;
 static CSHA256 g_scriptExecutionCacheHasher;
 
-void InitScriptExecutionCache() {
+bool InitScriptExecutionCache(size_t max_size_bytes)
+{
     // Setup the salted hasher
     uint256 nonce = GetRandHash();
     // We want the nonce to be 64 bytes long to force the hasher to process
@@ -1706,12 +1709,14 @@ void InitScriptExecutionCache() {
     // just write our 32-byte entropy twice to fill the 64 bytes.
     g_scriptExecutionCacheHasher.Write(nonce.begin(), 32);
     g_scriptExecutionCacheHasher.Write(nonce.begin(), 32);
-    // nMaxCacheSize is unsigned. If -maxsigcachesize is set to zero,
-    // setup_bytes creates the minimum possible cache (2 elements).
-    size_t nMaxCacheSize = std::min(std::max((int64_t)0, gArgs.GetIntArg("-maxsigcachesize", DEFAULT_MAX_SIG_CACHE_SIZE) / 2), MAX_MAX_SIG_CACHE_SIZE) * ((size_t) 1 << 20);
-    size_t nElems = g_scriptExecutionCache.setup_bytes(nMaxCacheSize);
-    LogPrintf("Using %zu MiB out of %zu/2 requested for script execution cache, able to store %zu elements\n",
-            (nElems*sizeof(uint256)) >>20, (nMaxCacheSize*2)>>20, nElems);
+
+    auto setup_results = g_scriptExecutionCache.setup_bytes(max_size_bytes);
+    if (!setup_results) return false;
+
+    const auto [num_elems, approx_size_bytes] = *setup_results;
+    LogPrintf("Using %zu MiB out of %zu MiB requested for script execution cache, able to store %zu elements\n",
+              approx_size_bytes >> 20, max_size_bytes >> 20, num_elems);
+    return true;
 }
 
 /**
@@ -2629,6 +2634,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, DisconnectedBlockTr
 
     CBlockIndex *pindexDelete = m_chain.Tip();
     assert(pindexDelete);
+    assert(pindexDelete->pprev);
     // Read block from disk.
     std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
     CBlock& block = *pblock;
@@ -2676,7 +2682,7 @@ bool CChainState::DisconnectTip(BlockValidationState& state, DisconnectedBlockTr
         }
     }
 
-    m_chain.SetTip(pindexDelete->pprev);
+    m_chain.SetTip(*pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev);
     // Let wallets know transactions went from 1-confirmed to
@@ -2790,7 +2796,7 @@ bool CChainState::ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew
         disconnectpool.removeForBlock(blockConnecting.vtx);
     }
     // Update m_chain & related variables.
-    m_chain.SetTip(pindexNew);
+    m_chain.SetTip(*pindexNew);
     UpdateTip(pindexNew);
 
     int64_t nTime6 = GetTimeMicros(); nTimePostConnect += nTime6 - nTime5; nTimeTotal += nTime6 - nTime1;
@@ -3944,7 +3950,7 @@ bool CChainState::LoadChainTip()
     if (!pindex) {
         return false;
     }
-    m_chain.SetTip(pindex);
+    m_chain.SetTip(*pindex);
     PruneBlockIndexCandidates();
 
     tip = m_chain.Tip();
@@ -5021,7 +5027,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
         return false;
     }
 
-    snapshot_chainstate.m_chain.SetTip(snapshot_start_block);
+    snapshot_chainstate.m_chain.SetTip(*snapshot_start_block);
 
     // The remainder of this function requires modifying data protected by cs_main.
     LOCK(::cs_main);
