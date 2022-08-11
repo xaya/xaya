@@ -194,7 +194,8 @@ chain for " target " development."))
 
 (define (make-nsis-for-gcc-10 base-nsis)
   (package-with-extra-patches base-nsis
-    (search-our-patches "nsis-gcc-10-memmove.patch")))
+    (search-our-patches "nsis-gcc-10-memmove.patch"
+                        "nsis-disable-installer-reloc.patch")))
 
 (define (fix-ppc64-nx-default lief)
   (package-with-extra-patches lief
@@ -406,6 +407,11 @@ thus should be able to compile on most platforms where these exist.")
                                  line)))
                (substitute* "tests/test_validate.py"
                  (("^(.*)def test_revocation_mode_hard" line indent)
+                  (string-append indent
+                                 "@unittest.skip(\"Disabled by Guix\")\n"
+                                 line)))
+               (substitute* "tests/test_validate.py"
+                 (("^(.*)def test_revocation_mode_soft" line indent)
                   (string-append indent
                                  "@unittest.skip(\"Disabled by Guix\")\n"
                                  line)))

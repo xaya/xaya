@@ -20,6 +20,16 @@ if test "$PKG_CONFIG" = ""; then
   AC_MSG_ERROR([pkg-config not found])
 fi
 
+# When compiling with depends, the `PKG_CONFIG_PATH` and `PKG_CONFIG_LIBDIR` variables,
+# being set in a `config.site` file, are not exported to let the `--config-cache` option
+# work properly.
+if test -n "$PKG_CONFIG_PATH"; then
+  PKG_CONFIG="env PKG_CONFIG_PATH=$PKG_CONFIG_PATH $PKG_CONFIG"
+fi
+if test -n "$PKG_CONFIG_LIBDIR"; then
+  PKG_CONFIG="env PKG_CONFIG_LIBDIR=$PKG_CONFIG_LIBDIR $PKG_CONFIG"
+fi
+
 BITCOIN_DAEMON_NAME=xayad
 BITCOIN_GUI_NAME=xaya-qt
 BITCOIN_CLI_NAME=xaya-cli
@@ -324,7 +334,7 @@ AC_ARG_ENABLE([werror],
     [enable_werror=no])
 
 AC_ARG_ENABLE([external-signer],
-    [AS_HELP_STRING([--enable-external-signer],[compile external signer support (default is yes, requires Boost::Process)])],
+    [AS_HELP_STRING([--enable-external-signer],[compile external signer support (default is auto, requires Boost::Process)])],
     [use_external_signer=$enableval],
     [use_external_signer=auto])
 
