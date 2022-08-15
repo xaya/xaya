@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2022 Daniel Kraft
 // Copyright (c) 2021 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -119,14 +119,13 @@ CScript DestinationAddressHelper::getScript ()
     return GetScriptForDestination (*overrideDest);
 
   rdest.reset (new ReserveDestination (&wallet, wallet.m_default_address_type));
-  CTxDestination dest;
-  bilingual_str dest_err;
-  if (!rdest->GetReservedDestination (dest, false, dest_err))
+  const auto op_dest = rdest->GetReservedDestination (false);
+  if (!op_dest)
     throw JSONRPCError (RPC_WALLET_KEYPOOL_RAN_OUT,
                         strprintf ("Failed to generate mining address: %s",
-                                   dest_err.original));
+                                   util::ErrorString (op_dest).original));
 
-  return GetScriptForDestination (dest);
+  return GetScriptForDestination (*op_dest);
 }
 
 void DestinationAddressHelper::finalise ()
