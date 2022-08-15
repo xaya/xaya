@@ -4,7 +4,7 @@
         {
             "asm": "OP_NAME_REGISTER eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
             "address": "chirt1pamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhq8x7wet",
-            "desc": "addr(chirt1pamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhwamhq8x7wet)#ggktzccy",
+            "desc": "rawtr(eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)#jk7c6kys",
             "type": "witness_v1_taproot"
         }
     ],
