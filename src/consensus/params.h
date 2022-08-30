@@ -10,6 +10,7 @@
 #include <powdata.h>
 #include <uint256.h>
 
+#include <chrono>
 #include <limits>
 #include <map>
 
@@ -55,7 +56,7 @@ public:
      * Returns the target spacing (time in seconds between blocks) for blocks
      * of the given algorithm at the given height.
      */
-    virtual int64_t GetTargetSpacing(PowAlgo algo, unsigned height) const = 0;
+    virtual std::chrono::seconds GetTargetSpacing(PowAlgo algo, unsigned height) const = 0;
 
     /**
      * Checks whether a given fork is in effect at the given block height.
@@ -73,15 +74,15 @@ public:
         return COIN / 100;
     }
 
-    int64_t GetTargetSpacing(const PowAlgo algo,
-                             const unsigned height) const override
+    std::chrono::seconds GetTargetSpacing(const PowAlgo algo,
+                                          const unsigned height) const override
     {
         if (!ForkInEffect (Fork::POST_ICO, height))
         {
             /* The target spacing is independent for each mining algorithm,
                so that the effective block frequency is half the value (with
                two algos).  */
-            return 2 * 30;
+            return std::chrono::seconds{2 * 30};
         }
 
         /* After the POST_ICO fork, the target spacing is changed to have
@@ -91,9 +92,9 @@ public:
         switch (algo)
         {
             case PowAlgo::SHA256D:
-                return 120;
+                return std::chrono::seconds{120};
             case PowAlgo::NEOSCRYPT:
-                return 40;
+                return std::chrono::seconds{40};
             default:
                 assert(false);
         }

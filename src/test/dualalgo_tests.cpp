@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Xaya developers
+// Copyright (c) 2018-2022 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -61,7 +61,7 @@ OriginalDGW(const PowAlgo algo, const CBlockIndex* pindexLast, const Consensus::
     int64_t nActualTimespan = pindexLast->GetBlockTime() - pindex->GetBlockTime();
     // NOTE: is this accurate? nActualTimespan counts it for (nPastBlocks - 1) blocks only...
     int64_t nTargetTimespan
-        = nPastBlocks * params.rules->GetTargetSpacing(algo, nextHeight);
+        = nPastBlocks * Ticks<std::chrono::seconds>(params.rules->GetTargetSpacing(algo, nextHeight));
 
     if (nActualTimespan < nTargetTimespan/3)
         nActualTimespan = nTargetTimespan/3;
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE (difficulty_retargeting)
              then a bit faster than expected, we increase the difficulty away
              from the minimum, which is also good for the test.  */
           const int64_t targetSpacing
-              = AvgTargetSpacing (params, mixedChain.height () + 1);
+              = Ticks<std::chrono::seconds>(AvgTargetSpacing (params, mixedChain.height () + 1));
           indexNew.nTime = lastTime
                             + InsecureRandRange (targetSpacing)
                             - 10;
@@ -211,8 +211,10 @@ public:
 
 BOOST_FIXTURE_TEST_CASE (avg_target_spacing, PostIcoForkSetup)
 {
-  BOOST_CHECK_EQUAL (AvgTargetSpacing (*params, BEFORE_FORK), 30);
-  BOOST_CHECK_EQUAL (AvgTargetSpacing (*params, AFTER_FORK), 30);
+  BOOST_CHECK_EQUAL (
+      Ticks<std::chrono::seconds>(AvgTargetSpacing (*params, BEFORE_FORK)), 30);
+  BOOST_CHECK_EQUAL (
+      Ticks<std::chrono::seconds>(AvgTargetSpacing (*params, AFTER_FORK)), 30);
 }
 
 namespace

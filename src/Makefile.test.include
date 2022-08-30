@@ -88,7 +88,6 @@ BITCOIN_TESTS =\
   test/cuckoocache_tests.cpp \
   test/dbwrapper_tests.cpp \
   test/denialofservice_tests.cpp \
-  test/descriptor_tests.cpp \
   test/dualalgo_tests.cpp \
   test/flatfile_tests.cpp \
   test/fs_tests.cpp \
@@ -163,12 +162,14 @@ BITCOIN_TESTS =\
   test/versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
 #   base58_tests
+#   descriptor_tests.cpp: needs privkey rebranding
 #   key_io_tests: update the version in data/key_io_valid.json
 #   key_tests
 #   miner_tests
 
 if ENABLE_WALLET
 BITCOIN_TESTS += \
+  wallet/test/feebumper_tests.cpp \
   wallet/test/psbt_wallet_tests.cpp \
   wallet/test/spend_tests.cpp \
   wallet/test/wallet_tests.cpp \

@@ -19,7 +19,12 @@ class WalletHDTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [['-addresstype=bech32'], ['-keypool=0', '-addresstype=bech32']]
+        self.extra_args = [[], ['-keypool=0']]
+        # whitelist peers to speed up tx relay / mempool sync
+        for args in self.extra_args:
+            args.append("-addresstype=bech32")
+            args.append("-whitelist=noban@127.0.0.1")
+
         self.supports_cli = False
 
     def skip_test_if_missing_module(self):

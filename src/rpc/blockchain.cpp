@@ -1788,7 +1788,7 @@ static RPCHelpMan getchaintxstats()
 
     CHECK_NONFATAL(pindex != nullptr);
 
-    int blockcount = 30 * 24 * 60 * 60 / AvgTargetSpacing(Params().GetConsensus(), pindex->nHeight); // By default: 1 month
+    int blockcount = 30 * 24 * 60 * 60 / Ticks<std::chrono::seconds>(AvgTargetSpacing(Params().GetConsensus(), pindex->nHeight)); // By default: 1 month
 
     if (request.params[0].isNull()) {
         blockcount = std::max(0, std::min(blockcount, pindex->nHeight - 1));

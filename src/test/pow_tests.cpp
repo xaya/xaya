@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
     for (int i = 0; i < 10000; i++) {
         blocks[i].pprev = i ? &blocks[i - 1] : nullptr;
         blocks[i].nHeight = i;
-        blocks[i].nTime = 1269211443 + i * AvgTargetSpacing(chainParams->GetConsensus(), i);
+        blocks[i].nTime = 1269211443 + i * Ticks<std::chrono::seconds>(AvgTargetSpacing(chainParams->GetConsensus(), i));
         blocks[i].nBits = 0x207fffff; /* target 0x7fffff000... */
         if (i % 2 == 0)
           blocks[i].algo = PowAlgo::SHA256D;

@@ -8,6 +8,7 @@
 
 #include <serialize.h>
 #include <uint256.h>
+#include <util/time.h>
 
 #include <vector>
 
@@ -55,6 +56,11 @@ public:
 
     uint256 GetHash() const;
     uint256 GetPowHash(PowAlgo algo) const;
+
+    NodeSeconds Time() const
+    {
+        return NodeSeconds{std::chrono::seconds{nTime}};
+    }
 
     int64_t GetBlockTime() const
     {

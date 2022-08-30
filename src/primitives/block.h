@@ -11,6 +11,7 @@
 #include <primitives/pureheader.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <util/time.h>
 
 #include <memory>
 

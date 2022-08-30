@@ -196,7 +196,7 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
     for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
       {
         const arith_uint256 spacing
-            = params.rules->GetTargetSpacing (algo, tip.nHeight);
+            = Ticks<std::chrono::seconds>(params.rules->GetTargetSpacing (algo, tip.nHeight));
         denom *= spacing;
 
         const CBlockIndex* pindexWithAlgo = tip.GetLastAncestorWithAlgo (algo);

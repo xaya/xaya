@@ -706,7 +706,7 @@ void SelectParams(const std::string& network)
     globalChainParams = CreateChainParams(gArgs, network);
 }
 
-int64_t
+std::chrono::seconds
 AvgTargetSpacing (const Consensus::Params& params, const unsigned height)
 {
   /* The average target spacing for any block (all algorithms combined) is
@@ -722,7 +722,8 @@ AvgTargetSpacing (const Consensus::Params& params, const unsigned height)
   int64_t denom = 0;
   for (const PowAlgo algo : {PowAlgo::SHA256D, PowAlgo::NEOSCRYPT})
     {
-      const int64_t spacing = params.rules->GetTargetSpacing(algo, height);
+      const int64_t spacing = Ticks<std::chrono::seconds>(
+          params.rules->GetTargetSpacing(algo, height));
 
       /* Multiply all previous added block counts by this target spacing.  */
       denom *= spacing;
@@ -739,5 +740,5 @@ AvgTargetSpacing (const Consensus::Params& params, const unsigned height)
 
   assert (denom > 0);
   assert (numer % denom == 0);
-  return numer / denom;
+  return std::chrono::seconds{numer / denom};
 }

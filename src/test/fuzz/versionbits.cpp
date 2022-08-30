@@ -113,7 +113,7 @@ constexpr uint32_t MAX_START_TIME = 4102444800; // 2100-01-01
 FUZZ_TARGET_INIT(versionbits, initialize)
 {
     const CChainParams& params = *g_params;
-    const int64_t interval = AvgTargetSpacing(params.GetConsensus(), 0);
+    const int64_t interval = Ticks<std::chrono::seconds>(AvgTargetSpacing(params.GetConsensus(), 0));
     assert(interval > 1); // need to be able to halve it
     assert(interval < std::numeric_limits<int32_t>::max());
 
