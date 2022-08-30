@@ -11,6 +11,7 @@
 #include <primitives/pureheader.h>
 #include <serialize.h>
 #include <uint256.h>
+#include <util/time.h>
 
 #include <memory>
 
@@ -59,6 +60,7 @@ public:
      * the version accordingly.
      */
     void SetAuxpow (std::unique_ptr<CAuxPow> apow);
+
 };
 
 
