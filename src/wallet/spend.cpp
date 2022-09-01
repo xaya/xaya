@@ -959,8 +959,8 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
     // If we have an explicit input, that input's value might be large enough
     // so that no others need to be selected.
     std::vector<COutput> selected_coins;
-    CAmount selected_value = 0;
-    CAmount change_amount = 0;
+    CAmount selected_value = nInputValue;
+    CAmount change_amount;
     if (selection_target > 0) {
         // Get available coins
         auto available_coins = AvailableCoins(wallet,
@@ -980,22 +980,32 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         TRACE5(coin_selection, selected_coins, wallet.GetName().c_str(), GetAlgorithmName(result->GetAlgo()).c_str(), result->GetTarget(), result->GetWaste(), result->GetSelectedValue());
 
         change_amount = result->GetChange(coin_selection_params.min_viable_change, coin_selection_params.m_change_fee);
-        if (change_amount > 0) {
-            CTxOut newTxOut(change_amount, scriptChange);
-            if (nChangePosInOut == -1) {
-                // Insert change txn at random position:
-                nChangePosInOut = rng_fast.randrange(txNew.vout.size() + 1);
-            } else if ((unsigned int)nChangePosInOut > txNew.vout.size()) {
-                return util::Error{_("Transaction change output index out of range")};
-            }
-            txNew.vout.insert(txNew.vout.begin() + nChangePosInOut, newTxOut);
-        } else {
-            nChangePosInOut = -1;
-        }
 
         // Shuffle selected coins and fill in final vin
         selected_coins = result->GetShuffledInputVector();
-        selected_value = result->GetSelectedValue();
+        selected_value += result->GetSelectedValue();
+    } else {
+        change_amount = -selection_target;
+        /* The fee now is just not_input_fees, but that excludes the fee for
+           the change output itself.  We need to make sure to subtract that
+           as well.  */
+        change_amount -= coin_selection_params.m_change_fee;
+        if (change_amount < coin_selection_params.min_viable_change) {
+            change_amount = 0;
+        }
+    }
+
+    if (change_amount > 0) {
+        CTxOut newTxOut(change_amount, scriptChange);
+        if (nChangePosInOut == -1) {
+            // Insert change txn at random position:
+            nChangePosInOut = rng_fast.randrange(txNew.vout.size() + 1);
+        } else if ((unsigned int)nChangePosInOut > txNew.vout.size()) {
+            return util::Error{_("Transaction change output index out of range")};
+        }
+        txNew.vout.insert(txNew.vout.begin() + nChangePosInOut, newTxOut);
+    } else {
+        nChangePosInOut = -1;
     }
 
     for (const auto& coin : selected_coins) {
@@ -1010,7 +1020,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         return util::Error{_("Missing solving data for estimating transaction size")};
     }
     CAmount fee_needed = coin_selection_params.m_effective_feerate.GetFee(nBytes);
-    nFeeRet = selected_value + nInputValue - recipients_sum - change_amount;
+    nFeeRet = selected_value - recipients_sum - change_amount;
 
     // The only time that fee_needed should be less than the amount available for fees is when
     // we are subtracting the fee from the outputs. If this occurs at any other time, it is a bug.
