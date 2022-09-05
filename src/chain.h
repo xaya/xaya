@@ -249,6 +249,19 @@ public:
         return ret;
     }
 
+    CPureBlockHeader GetPureHeader() const
+    {
+        CPureBlockHeader block;
+        block.nVersion = nVersion;
+        if (pprev)
+            block.hashPrevBlock = pprev->GetBlockHash();
+        block.hashMerkleRoot = hashMerkleRoot;
+        block.nTime = nTime;
+        block.nBits = nBits;
+        block.nNonce = nNonce;
+        return block;
+    }
+
     CBlockHeader GetBlockHeader(const Consensus::Params& consensusParams) const;
 
     uint256 GetBlockHash() const

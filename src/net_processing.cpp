@@ -2458,10 +2458,33 @@ bool PeerManagerImpl::CheckHeadersAreContinuous(const std::vector<CBlockHeader>&
     return true;
 }
 
+namespace
+{
+
+/** Returns true if the list of headers is to be considered "max" (i.e.
+ *  there may be more), either by number of elements or size.  */
+bool IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& headers)
+{
+    if (headers.size() == MAX_HEADERS_RESULTS)
+        return true;
+
+    if (pfrom.nVersion < SIZE_HEADERS_LIMIT_VERSION)
+        return false;
+
+    size_t nSize = 0;
+    for (const auto& header : headers) {
+        nSize += GetSerializeSize(header, PROTOCOL_VERSION);
+    }
+
+    return nSize >= THRESHOLD_HEADERS_SIZE;
+}
+
+} // anonymous namespace
+
 bool PeerManagerImpl::IsContinuationOfLowWorkHeadersSync(Peer& peer, CNode& pfrom, std::vector<CBlockHeader>& headers)
 {
     if (peer.m_headers_sync) {
-        auto result = peer.m_headers_sync->ProcessNextHeaders(headers, headers.size() == MAX_HEADERS_RESULTS);
+        auto result = peer.m_headers_sync->ProcessNextHeaders(headers, IsHeadersListMax(pfrom, headers));
         if (result.request_more) {
             auto locator = peer.m_headers_sync->NextHeadersRequestLocator();
             // If we were instructed to ask for a locator, it should not be empty.
@@ -2882,13 +2905,8 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
     }
     Assume(pindexLast);
 
-    bool maxSize = (nCount == MAX_HEADERS_RESULTS);
-    if (pfrom.nVersion >= SIZE_HEADERS_LIMIT_VERSION
-          && nSize >= THRESHOLD_HEADERS_SIZE)
-        maxSize = true;
-
     // Consider fetching more headers if we are not using our headers-sync mechanism.
-    if (maxSize && !have_headers_sync) {
+    if (!have_headers_sync && IsHeadersListMax(pfrom, headers)) {
         // Headers message had its maximum size; the peer may have more headers.
         if (MaybeSendGetHeaders(pfrom, GetLocator(pindexLast), peer)) {
             LogPrint(BCLog::NET, "more getheaders (%d) to end to peer=%d (startheight:%d)\n",
