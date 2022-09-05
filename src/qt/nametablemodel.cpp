@@ -368,7 +368,7 @@ void NameTableModel::init()
     initDone = true;
 }
 
-void NameTableModel::updateExpiration(int count, const QDateTime& blockDate, double nVerificationProgress, bool header, SynchronizationState sync_state)
+void NameTableModel::updateExpiration(int count, const QDateTime& blockDate, double nVerificationProgress, SyncType header, SynchronizationState sync_state)
 {
     // ClientModel already throttles this for us.
 
