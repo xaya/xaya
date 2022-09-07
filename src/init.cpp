@@ -621,6 +621,7 @@ void SetupServerArgs(ArgsManager& argsman)
     gArgs.AddArg("-nameencoding=<enc>", strprintf("Sets the default encoding used for names in the RPC interface (default: %s)", EncodingToString(DEFAULT_NAME_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-valueencoding=<enc>", strprintf("Sets the default encoding used for values in the RPC interface (default: %s)", EncodingToString(DEFAULT_VALUE_ENCODING)), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     gArgs.AddArg("-limitnamechains=<n>", strprintf("Limit pending chains of name operations for name_update to <n> (default: %u)", DEFAULT_NAME_CHAIN_LIMIT), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    gArgs.AddArg("-checknamedb", "Check name database for consistency every x blocks, -1 to disable", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
 
     gArgs.AddArg("-maxgameblockattaches=<n>", strprintf("Sets the maximum number of attach steps sent for a single game_sendupdates request (default: %d)", DEFAULT_MAX_GAME_BLOCK_ATTACHES), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
 
@@ -773,7 +774,7 @@ namespace { // Variables internal to initialization process only
 int nMaxConnections;
 int nUserMaxConnections;
 int nFD;
-ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK | NODE_NETWORK_LIMITED | NODE_WITNESS);
+ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS);
 int64_t peer_connect_timeout;
 std::set<BlockFilterType> g_enabled_filter_types;
 
@@ -948,15 +949,12 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
 
     // ********************************************************* Step 3: parameter-to-internal-flags
     init::SetLoggingCategories(args);
+    init::SetLoggingLevel(args);
 
     fCheckBlockIndex = args.GetBoolArg("-checkblockindex", chainparams.DefaultConsistencyChecks());
     fCheckpointsEnabled = args.GetBoolArg("-checkpoints", DEFAULT_CHECKPOINTS_ENABLED);
 
     hashAssumeValid = uint256S(args.GetArg("-assumevalid", chainparams.GetConsensus().defaultAssumeValid.GetHex()));
-    if (!hashAssumeValid.IsNull())
-        LogPrintf("Assuming ancestors of block %s have valid signatures.\n", hashAssumeValid.GetHex());
-    else
-        LogPrintf("Validating signatures for all blocks.\n");
 
     if (args.IsArgSet("-minimumchainwork")) {
         const std::string minChainWorkStr = args.GetArg("-minimumchainwork", "");
@@ -967,10 +965,6 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
     } else {
         nMinimumChainWork = UintToArith256(chainparams.GetConsensus().nMinimumChainWork);
     }
-    LogPrintf("Setting nMinimumChainWork=%s\n", nMinimumChainWork.GetHex());
-    if (nMinimumChainWork < UintToArith256(chainparams.GetConsensus().nMinimumChainWork)) {
-        LogPrintf("Warning: nMinimumChainWork set below default value of %s\n", chainparams.GetConsensus().nMinimumChainWork.GetHex());
-    }
 
     // block pruning; get the amount of disk space (in MiB) to allot for block & undo files
     int64_t nPruneArg = args.GetIntArg("-prune", 0);
@@ -979,14 +973,12 @@ bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandb
     }
     nPruneTarget = (uint64_t) nPruneArg * 1024 * 1024;
     if (nPruneArg == 1) {  // manual pruning: -prune=1
-        LogPrintf("Block pruning enabled.  Use RPC call pruneblockchain(height) to manually prune block and undo files.\n");
         nPruneTarget = std::numeric_limits<uint64_t>::max();
         fPruneMode = true;
     } else if (nPruneTarget) {
         if (nPruneTarget < MIN_DISK_SPACE_FOR_BLOCK_FILES) {
             return InitError(strprintf(_("Prune configured below the minimum of %d MiB.  Please use a higher number."), MIN_DISK_SPACE_FOR_BLOCK_FILES / 1024 / 1024));
         }
-        LogPrintf("Prune configured to target %u MiB on disk for block and undo files.\n", nPruneTarget / 1024 / 1024);
         fPruneMode = true;
     }
 
@@ -1568,11 +1560,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     // ********************************************************* Step 10: data directory maintenance
 
-    // if pruning, unset the service bit and perform the initial blockstore prune
+    // if pruning, perform the initial blockstore prune
     // after any wallet rescanning has taken place.
     if (fPruneMode) {
-        LogPrintf("Unsetting NODE_NETWORK on prune mode\n");
-        nLocalServices = ServiceFlags(nLocalServices & ~NODE_NETWORK);
         if (!fReindex) {
             LOCK(cs_main);
             for (CChainState* chainstate : chainman.GetAll()) {
@@ -1580,6 +1570,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                 chainstate->PruneAndFlush();
             }
         }
+    } else {
+        LogPrintf("Setting NODE_NETWORK on non-prune mode\n");
+        nLocalServices = ServiceFlags(nLocalServices | NODE_NETWORK);
     }
 
     // ********************************************************* Step 11: import blocks

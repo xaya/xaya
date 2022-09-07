@@ -9,7 +9,6 @@
 #include <outputtype.h>
 #include <pubkey.h>
 #include <script/standard.h>
-#include <serialize.h>
 #include <uint256.h>
 #include <util/message.h>
 #include <util/strencodings.h>

@@ -77,3 +77,11 @@ GetNextWorkRequired (const PowAlgo algo, const CBlockIndex* pindexLast,
 
   return bnResult.GetCompact ();
 }
+
+// Check that on difficulty adjustments, the new difficulty does not increase
+// or decrease beyond the permitted limits.
+bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t height, uint32_t old_nbits, uint32_t new_nbits)
+{
+    /* TODO: Implement something proper for Xaya.  */
+    return true;
+}

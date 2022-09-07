@@ -187,6 +187,7 @@ BASE_SCRIPTS = [
     'wallet_signrawtransactionwithwallet.py --legacy-wallet',
     'wallet_signrawtransactionwithwallet.py --descriptors',
     'rpc_signrawtransactionwithkey.py',
+    'p2p_headers_sync_with_minchainwork.py',
     'rpc_rawtransaction.py --legacy-wallet',
     'wallet_groups.py --legacy-wallet',
     'wallet_transactiontime_rescan.py --descriptors',
@@ -341,6 +342,7 @@ BASE_SCRIPTS = [
     'feature_dirsymlinks.py',
     'feature_help.py',
     'feature_shutdown.py',
+    'wallet_migration.py',
     'p2p_ibd_txrelay.py',
     # Don't append tests at the end to avoid merge conflicts
     # Put them in a random line within the section that fits their approximate run-time

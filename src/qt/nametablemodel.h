@@ -2,6 +2,7 @@
 #define NAMETABLEMODEL_H
 
 #include <qt/bitcoinunits.h>
+#include <qt/clientmodel.h>
 
 #include <QAbstractTableModel>
 #include <QDateTime>
