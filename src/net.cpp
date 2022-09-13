@@ -1642,15 +1642,28 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 LOCK2(m_addr_fetches_mutex, m_added_nodes_mutex);
                 if (m_addr_fetches.empty() && m_added_nodes.empty()) {
                     add_fixed_seeds_now = true;
-                    LogPrintf("Adding fixed seeds as -dnsseed=0, -addnode is not provided and all -seednode(s) attempted\n");
+                    LogPrintf("Adding fixed seeds as -dnsseed=0 (or IPv4/IPv6 connections are disabled via -onlynet), -addnode is not provided and all -seednode(s) attempted\n");
                 }
             }
 
             if (add_fixed_seeds_now) {
+                std::vector<CAddress> seed_addrs{ConvertSeeds(Params().FixedSeeds())};
+                // We will not make outgoing connections to peers that are unreachable
+                // (e.g. because of -onlynet configuration).
+                // Therefore, we do not add them to addrman in the first place.
+                // Note that if you change -onlynet setting from one network to another,
+                // peers.dat will contain only peers of unreachable networks and
+                // manual intervention will be needed (either delete peers.dat after
+                // configuration change or manually add some reachable peer using addnode),
+                // see <https://github.com/bitcoin/bitcoin/issues/26035> for details.
+                seed_addrs.erase(std::remove_if(seed_addrs.begin(), seed_addrs.end(),
+                                               [](const CAddress& addr) { return !IsReachable(addr); }),
+                                seed_addrs.end());
                 CNetAddr local;
                 local.SetInternal("fixedseeds");
-                addrman.Add(ConvertSeeds(Params().FixedSeeds()), local);
+                addrman.Add(seed_addrs, local);
                 add_fixed_seeds = false;
+                LogPrintf("Added %d fixed seeds from reachable networks.\n", seed_addrs.size());
             }
         }
 
