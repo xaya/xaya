@@ -109,7 +109,7 @@ void Finish(FuzzedDataProvider& fuzzed_data_provider, MockedTxPool& tx_pool, Cha
     SyncWithValidationInterfaceQueue();
 }
 
-void MockTime(FuzzedDataProvider& fuzzed_data_provider, const CChainState& chainstate)
+void MockTime(FuzzedDataProvider& fuzzed_data_provider, const Chainstate& chainstate)
 {
     const auto time = ConsumeTime(fuzzed_data_provider,
                                   chainstate.m_chain.Tip()->GetMedianTimePast() + 1,

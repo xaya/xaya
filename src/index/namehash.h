@@ -46,12 +46,6 @@ protected:
 
     BaseIndex::DB& GetDB () const override;
 
-    const char*
-    GetName () const override
-    {
-      return "namehash";
-    }
-
 public:
 
     /**

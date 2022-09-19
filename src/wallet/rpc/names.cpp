@@ -478,7 +478,7 @@ namespace
  * @return True if the output could be found.
  */
 bool
-getNamePrevout (CChainState& chainState, const uint256& txid,
+getNamePrevout (Chainstate& chainState, const uint256& txid,
                 CTxOut& txOut, CTxIn& txIn)
 {
   AssertLockHeld (cs_main);

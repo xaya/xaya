@@ -387,7 +387,7 @@ bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockF
     return WriteBatch(batch, true);
 }
 
-bool CCoinsViewDB::ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const
+bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const
 {
     const uint256 blockHash = GetBestBlock();
     int nHeight;
