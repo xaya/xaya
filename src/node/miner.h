@@ -149,7 +149,7 @@ private:
 
     const CChainParams& chainparams;
     const CTxMemPool* const m_mempool;
-    CChainState& m_chainstate;
+    Chainstate& m_chainstate;
 
 public:
     struct Options {
@@ -158,8 +158,8 @@ public:
         CFeeRate blockMinFeeRate;
     };
 
-    explicit BlockAssembler(CChainState& chainstate, const CTxMemPool* mempool);
-    explicit BlockAssembler(CChainState& chainstate, const CTxMemPool* mempool, const Options& options);
+    explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool);
+    explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool, const Options& options);
 
     /** Construct a new block template with coinbase to scriptPubKeyIn */
     std::unique_ptr<CBlockTemplate> CreateNewBlock(PowAlgo algo, const CScript& scriptPubKeyIn);

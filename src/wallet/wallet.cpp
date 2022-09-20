@@ -885,7 +885,7 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
 
     wtx.mapValue["replaced_by_txid"] = newHash.ToString();
 
-    // Refresh mempool status without waiting for transactionRemovedFromMempool
+    // Refresh mempool status without waiting for transactionRemovedFromMempool or transactionAddedToMempool
     RefreshMempoolStatus(wtx, chain());
 
     WalletBatch batch(GetDatabase());
@@ -1967,7 +1967,7 @@ std::set<uint256> CWallet::GetTxConflicts(const CWalletTx& wtx) const
 // The `force` option results in all unconfirmed transactions being submitted to
 // the mempool. This does not necessarily result in those transactions being relayed,
 // that depends on the `relay` option. Periodic rebroadcast uses the pattern
-// relay=true force=false (also the default values), while loading into the mempool
+// relay=true force=false, while loading into the mempool
 // (on start, or after import) uses relay=false force=true.
 void CWallet::ResubmitWalletTransactions(bool relay, bool force)
 {
@@ -2833,7 +2833,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     ArgsManager& args = *Assert(context.args);
     const std::string& walletFile = database->Filename();
 
-    int64_t nStart = GetTimeMillis();
+    const auto start{SteadyClock::now()};
     // TODO: Can't use std::make_shared because we need a custom deleter but
     // should be possible to use std::allocate_shared.
     const std::shared_ptr<CWallet> walletInstance(new CWallet(chain, name, args, std::move(database)), ReleaseWallet);
@@ -2866,8 +2866,12 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
             warnings.push_back(strprintf(_("Error reading %s! Transaction data may be missing or incorrect."
                                            " Rescanning wallet."), walletFile));
             rescan_required = true;
-        }
-        else {
+        } else if (nLoadWalletRet == DBErrors::UNKNOWN_DESCRIPTOR) {
+            error = strprintf(_("Unrecognized descriptor found. Loading wallet %s\n\n"
+                                "The wallet might had been created on a newer version.\n"
+                                "Please try running the latest software version.\n"), walletFile);
+            return nullptr;
+        } else {
             error = strprintf(_("Error loading %s"), walletFile);
             return nullptr;
         }
@@ -3050,7 +3054,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     walletInstance->m_spend_zero_conf_change = args.GetBoolArg("-spendzeroconfchange", DEFAULT_SPEND_ZEROCONF_CHANGE);
     walletInstance->m_signal_rbf = args.GetBoolArg("-walletrbf", DEFAULT_WALLET_RBF);
 
-    walletInstance->WalletLogPrintf("Wallet completed loading in %15dms\n", GetTimeMillis() - nStart);
+    walletInstance->WalletLogPrintf("Wallet completed loading in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
 
     // Try to top up keypool. No-op if the wallet is locked.
     walletInstance->TopUpKeyPool();

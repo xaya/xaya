@@ -18,7 +18,7 @@
 
 class CBlock;
 class CBlockIndex;
-class CChainState;
+class Chainstate;
 class CValidationState;
 class UniValue;
 
@@ -75,7 +75,7 @@ private:
 
   friend class PowData;
   friend UniValue AuxpowToJSON(const CAuxPow& auxpow, bool verbose,
-                               CChainState& active_chainstate);
+                               Chainstate& active_chainstate);
   friend class auxpow_tests::CAuxPowForTest;
   friend class powdata_tests::CAuxPowForTest;
 

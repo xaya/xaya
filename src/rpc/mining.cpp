@@ -668,7 +668,7 @@ static RPCHelpMan getblocktemplate()
     UniValue lpval = NullUniValue;
     std::set<std::string> setClientRules;
     PowAlgo algo = PowAlgo::NEOSCRYPT;
-    CChainState& active_chainstate = chainman.ActiveChainstate();
+    Chainstate& active_chainstate = chainman.ActiveChainstate();
     CChain& active_chain = active_chainstate.m_chain;
     if (!request.params[0].isNull())
     {

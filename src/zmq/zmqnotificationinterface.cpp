@@ -9,8 +9,7 @@
 
 #include <zmq.h>
 
-#include <node/blockstorage.h>
-#include <validation.h>
+#include <primitives/block.h>
 #include <util/system.h>
 
 CZMQNotificationInterface::CZMQNotificationInterface() : pcontext(nullptr)

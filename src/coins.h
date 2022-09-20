@@ -21,7 +21,7 @@
 #include <functional>
 #include <unordered_map>
 
-class CChainState;
+class Chainstate;
 
 /**
  * A UTXO entry.
@@ -194,7 +194,7 @@ public:
     virtual std::unique_ptr<CCoinsViewCursor> Cursor() const;
 
     // Validate the name database.
-    virtual bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const;
+    virtual bool ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
     virtual ~CCoinsView() {}
@@ -223,7 +223,7 @@ public:
     bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
     std::unique_ptr<CCoinsViewCursor> Cursor() const override;
     size_t EstimateSize() const override;
-    bool ValidateNameDB(const CChainState& chainState, const std::function<void()>& interruption_point) const override;
+    bool ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const override;
 };
 
 

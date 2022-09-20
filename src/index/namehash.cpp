@@ -49,7 +49,7 @@ NameHashIndex::DB::WritePreimages (
 NameHashIndex::NameHashIndex (std::unique_ptr<interfaces::Chain> chain,
                               const size_t cache_size, const bool memory,
                               const bool wipe)
-  : BaseIndex(std::move (chain)),
+  : BaseIndex(std::move (chain), "namehash"),
     db(std::make_unique<NameHashIndex::DB> (cache_size, memory, wipe))
 {}
 

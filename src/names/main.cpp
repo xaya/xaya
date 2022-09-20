@@ -311,7 +311,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
 }
 
 void
-CheckNameDB (CChainState& chainState, bool disconnect)
+CheckNameDB (Chainstate& chainState, bool disconnect)
 {
   const int option
     = gArgs.GetIntArg ("-checknamedb", Params ().DefaultCheckNameDB ());
