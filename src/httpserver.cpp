@@ -21,11 +21,11 @@
 #include <util/threadnames.h>
 #include <util/translation.h>
 
+#include <cstdio>
+#include <cstdlib>
 #include <deque>
 #include <memory>
 #include <optional>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 
 #include <sys/types.h>

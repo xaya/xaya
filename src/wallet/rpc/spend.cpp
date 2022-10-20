@@ -340,7 +340,7 @@ RPCHelpMan sendmany()
                     {"estimate_mode", RPCArg::Type::STR, RPCArg::Default{"unset"}, "The fee estimate mode, must be one of (case insensitive):\n"
                      "\"" + FeeModes("\"\n\"") + "\""},
                     {"fee_rate", RPCArg::Type::AMOUNT, RPCArg::DefaultHint{"not set, fall back to wallet fee estimation"}, "Specify a fee rate in " + CURRENCY_ATOM + "/vB."},
-                    {"verbose", RPCArg::Type::BOOL, RPCArg::Default{false}, "If true, return extra infomration about the transaction."},
+                    {"verbose", RPCArg::Type::BOOL, RPCArg::Default{false}, "If true, return extra information about the transaction."},
                 },
                 {
                     RPCResult{"if verbose is not set or set to false",
@@ -505,7 +505,6 @@ void FundTransaction(CWallet& wallet, CMutableTransaction& tx, CAmount& fee_out,
         coinControl.fAllowWatchOnly = options.get_bool();
       }
       else {
-        RPCTypeCheckArgument(options, UniValue::VOBJ);
         RPCTypeCheckObj(options,
             {
                 {"add_inputs", UniValueType(UniValue::VBOOL)},
@@ -1655,7 +1654,6 @@ RPCHelpMan walletcreatefundedpsbt()
     bool rbf{wallet.m_signal_rbf};
     const UniValue &replaceable_arg = options["replaceable"];
     if (!replaceable_arg.isNull()) {
-        RPCTypeCheckArgument(replaceable_arg, UniValue::VBOOL);
         rbf = replaceable_arg.isTrue();
     }
     CMutableTransaction rawTx = ConstructTransaction(request.params[0], request.params[1], request.params[2], rbf);
