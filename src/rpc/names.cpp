@@ -484,8 +484,7 @@ NameOptionsHelp::buildRpcArg () const
 {
   return RPCArg ("options", RPCArg::Type::OBJ,
                  RPCArg::Optional::OMITTED_NAMED_ARG,
-                 "Options for this RPC call",
-                 innerArgs, "options");
+                 "Options for this RPC call", innerArgs);
 }
 
 /* ************************************************************************** */
@@ -1015,8 +1014,8 @@ namerawtransaction ()
                   {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
                   {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The new value for the name"},
                   {"rand", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The nonce value to use for registrations"},
-              },
-           "nameop"},
+              }
+          },
       },
       RPCResult {RPCResult::Type::OBJ, "", "",
           {
@@ -1065,8 +1064,8 @@ namepsbt ()
                   {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to operate on"},
                   {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The new value for the name"},
                   {"rand", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The nonce value to use for registrations"},
-              },
-           "nameop"},
+              }
+          },
       },
       RPCResult {RPCResult::Type::OBJ, "", "",
           {
