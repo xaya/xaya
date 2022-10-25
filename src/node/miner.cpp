@@ -261,13 +261,9 @@ static int UpdatePackagesForAdded(const CTxMemPool& mempool,
             modtxiter mit = mapModifiedTx.find(desc);
             if (mit == mapModifiedTx.end()) {
                 CTxMemPoolModifiedEntry modEntry(desc);
-                modEntry.nSizeWithAncestors -= it->GetTxSize();
-                modEntry.nModFeesWithAncestors -= it->GetModifiedFee();
-                modEntry.nSigOpCostWithAncestors -= it->GetSigOpCost();
-                mapModifiedTx.insert(modEntry);
-            } else {
-                mapModifiedTx.modify(mit, update_for_parent_inclusion(it));
+                mit = mapModifiedTx.insert(modEntry).first;
             }
+            mapModifiedTx.modify(mit, update_for_parent_inclusion(it));
         }
     }
     return nDescendantsUpdated;
@@ -400,9 +396,8 @@ void BlockAssembler::addPackageTxs(const CTxMemPool& mempool, int& nPackagesSele
         }
 
         CTxMemPool::setEntries ancestors;
-        uint64_t nNoLimit = std::numeric_limits<uint64_t>::max();
         std::string dummy;
-        mempool.CalculateMemPoolAncestors(*iter, ancestors, nNoLimit, nNoLimit, nNoLimit, nNoLimit, dummy, false);
+        mempool.CalculateMemPoolAncestors(*iter, ancestors, CTxMemPool::Limits::NoLimits(), dummy, false);
 
         onlyUnconfirmed(ancestors);
         ancestors.insert(iter);
