@@ -520,7 +520,7 @@ RPCHelpMan listunspent()
                             {"minimumSumAmount", RPCArg::Type::AMOUNT, RPCArg::DefaultHint{"unlimited"}, "Minimum sum value of all UTXOs in " + CURRENCY_UNIT + ""},
                             {"includeNames", RPCArg::Type::BOOL, RPCArg::DefaultHint{"false"}, "Include name outputs"},
                         },
-                        "query_options"},
+                        RPCArgOptions{.oneline_description="query_options"}},
                 },
                 RPCResult{
                     RPCResult::Type::ARR, "", "",
