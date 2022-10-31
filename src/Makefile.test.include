@@ -148,6 +148,7 @@ BITCOIN_TESTS =\
   test/transaction_tests.cpp \
   test/txindex_tests.cpp \
   test/txpackage_tests.cpp \
+  test/txreconciliation_tests.cpp \
   test/txrequest_tests.cpp \
   test/txvalidation_tests.cpp \
   test/txvalidationcache_tests.cpp \
@@ -377,8 +378,8 @@ endif
 if TARGET_WINDOWS
 else
 if ENABLE_BENCH
-	@echo "Running bench/bench_bitcoin (one iteration sanity check)..."
-	$(BENCH_BINARY) --sanity-check > /dev/null
+	@echo "Running bench/bench_bitcoin (one iteration sanity check, only high priority)..."
+	$(BENCH_BINARY) -sanity-check -priority-level=high > /dev/null
 endif
 endif
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C secp256k1 check
