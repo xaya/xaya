@@ -107,7 +107,7 @@ class NameRegistrationTest (NameTestFramework):
     # Check for mismatch with prev tx from another node for name_firstupdate
     # and name_update.
     self.sync_blocks ()
-    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Not found pre-selected input',
                              self.firstupdateName,
                              1, "test-name", newA, "value")
     self.firstupdateName (0, "test-name", newA, "test-value")
@@ -163,7 +163,7 @@ class NameRegistrationTest (NameTestFramework):
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
                              node.name_update, "wrong-name", "foo")
-    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Not found pre-selected input',
                              node.name_update, "test-name", "stolen?")
 
     # Update failing after expiry.  Re-registration possible.

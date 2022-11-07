@@ -67,7 +67,8 @@ namespace BCLog {
         UTIL        = (1 << 25),
         BLOCKSTORE  = (1 << 26),
         TXRECONCILIATION = (1 << 27),
-        NAMES       = (1 << 28),
+        SCAN        = (1 << 28),
+        NAMES       = (1 << 29),
         ALL         = ~(uint32_t)0,
     };
     enum class Level {
