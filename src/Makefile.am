@@ -135,6 +135,7 @@ BITCOIN_CORE_H = \
   coins.h \
   common/bloom.h \
   common/run_command.h \
+  common/url.h \
   compat/assumptions.h \
   compat/byteswap.h \
   compat/compat.h \
@@ -313,7 +314,6 @@ BITCOIN_CORE_H = \
   util/translation.h \
   util/types.h \
   util/ui_change_type.h \
-  util/url.h \
   util/vector.h \
   validation.h \
   validationinterface.h \
@@ -688,6 +688,11 @@ libbitcoin_common_a_SOURCES = \
   script/standard.cpp \
   warnings.cpp \
   $(BITCOIN_CORE_H)
+
+if USE_LIBEVENT
+libbitcoin_common_a_CPPFLAGS += $(EVENT_CFLAGS)
+libbitcoin_common_a_SOURCES += common/url.cpp
+endif
 #
 
 # util #
@@ -734,10 +739,6 @@ libbitcoin_util_a_SOURCES = \
   util/time.cpp \
   util/tokenpipe.cpp \
   $(BITCOIN_CORE_H)
-
-if USE_LIBEVENT
-libbitcoin_util_a_SOURCES += util/url.cpp
-endif
 #
 
 # cli #
@@ -804,6 +805,7 @@ endif
 namecoin_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
+  $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO)
 
@@ -963,7 +965,6 @@ libbitcoinkernel_la_SOURCES = \
   support/cleanse.cpp \
   support/lockedpool.cpp \
   sync.cpp \
-  threadinterrupt.cpp \
   txdb.cpp \
   txmempool.cpp \
   uint256.cpp \
