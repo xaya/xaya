@@ -4,13 +4,19 @@
 
 #include <zmq/zmqnotificationinterface.h>
 
+#include <logging.h>
+#include <primitives/block.h>
+#include <util/system.h>
 #include <zmq/zmqpublishnotifier.h>
 #include <zmq/zmqutil.h>
 
 #include <zmq.h>
 
-#include <primitives/block.h>
-#include <util/system.h>
+#include <cassert>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 CZMQNotificationInterface::CZMQNotificationInterface() : pcontext(nullptr)
 {

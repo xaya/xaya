@@ -134,6 +134,7 @@ BITCOIN_CORE_H = \
   clientversion.h \
   coins.h \
   common/bloom.h \
+  common/run_command.h \
   compat/assumptions.h \
   compat/byteswap.h \
   compat/compat.h \
@@ -412,6 +413,7 @@ libbitcoin_node_a_SOURCES = \
   node/minisketchwrapper.cpp \
   node/psbt.cpp \
   node/transaction.cpp \
+  node/utxo_snapshot.cpp \
   node/validation_cache_args.cpp \
   noui.cpp \
   policy/fees.cpp \
@@ -647,7 +649,7 @@ libbitcoin_consensus_a_SOURCES = \
   version.h
 
 # common: shared between bitcoind, and bitcoin-qt and non-server tools
-libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BOOST_CPPFLAGS)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
   auxpow.cpp \
@@ -656,6 +658,7 @@ libbitcoin_common_a_SOURCES = \
   chainparams.cpp \
   coins.cpp \
   common/bloom.cpp \
+  common/run_command.cpp \
   compressor.cpp \
   core_read.cpp \
   core_write.cpp \
@@ -953,6 +956,7 @@ libbitcoinkernel_la_SOURCES = \
   node/blockstorage.cpp \
   node/chainstate.cpp \
   node/interface_ui.cpp \
+  node/utxo_snapshot.cpp \
   policy/feerate.cpp \
   policy/fees.cpp \
   policy/packages.cpp \
