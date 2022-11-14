@@ -131,7 +131,7 @@ class NameRegistrationTest (NameTestFramework):
     # Invalid updates.
     assert_raises_rpc_error (-25, 'this name can not be updated',
                              node.name_update, "x/wrong-name", val ("foo"))
-    assert_raises_rpc_error (-6, 'Input tx not found in wallet',
+    assert_raises_rpc_error (-6, 'Not found pre-selected input',
                              node.name_update, "x/test-name", val ("stolen?"))
 
     # Test that name updates are even possible with less balance in the wallet
