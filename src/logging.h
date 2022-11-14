@@ -66,8 +66,9 @@ namespace BCLog {
 #endif
         UTIL        = (1 << 25),
         BLOCKSTORE  = (1 << 26),
-        NAMES       = (1 << 27),
-        GAME        = (1 << 28),
+        TXRECONCILIATION = (1 << 27),
+        NAMES       = (1 << 28),
+        GAME        = (1 << 29),
         ALL         = ~(uint32_t)0,
     };
     enum class Level {
