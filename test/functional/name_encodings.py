@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2021 Daniel Kraft
+# Copyright (c) 2018-2022 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -427,9 +427,9 @@ class NameEncodingsTest (NameTestFramework):
     # This method can be name_show, name_history or name_scan later on,
     # but the basic testing is always the same.
     def verifyReadMethod (func):
-      assert_raises_rpc_error (-3, "Expected type string",
+      assert_raises_rpc_error (-3, "is not of expected type string",
                                func, nameAscii, {"nameEncoding": 42})
-      assert_raises_rpc_error (-3, "Expected type string",
+      assert_raises_rpc_error (-3, "is not of expected type string",
                                func, nameAscii, {"valueEncoding": 42})
       assert_raises_rpc_error (-1000, "Name/value is invalid",
                                func, nameUtf8)
@@ -520,10 +520,10 @@ class NameEncodingsTest (NameTestFramework):
     valueUtf8 = '{"foo":"äöü"}'
 
     # Type check for the encoding options.
-    assert_raises_rpc_error (-3, "Expected type string",
+    assert_raises_rpc_error (-3, "is not of expected type string",
                              self.node.name_update, nameAscii, valueAscii,
                              {"nameEncoding": 42})
-    assert_raises_rpc_error (-3, "Expected type string",
+    assert_raises_rpc_error (-3, "is not of expected type string",
                              self.node.name_update, nameAscii, valueAscii,
                              {"valueEncoding": 42})
 
