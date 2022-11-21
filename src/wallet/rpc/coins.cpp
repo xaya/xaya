@@ -7,6 +7,7 @@
 #include <rpc/names.h>
 #include <rpc/server_util.h>
 #include <rpc/util.h>
+#include <script/names.h>
 #include <util/moneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -600,7 +601,6 @@ RPCHelpMan listunspent()
 
     CoinFilterParams filter_coins;
     filter_coins.min_amount = 0;
-    bool include_names{false};
 
     if (!request.params[4].isNull()) {
         const UniValue& options = request.params[4].get_obj();
@@ -632,8 +632,13 @@ RPCHelpMan listunspent()
             filter_coins.include_immature_coinbase = options["include_immature_coinbase"].get_bool();
         }
 
-        if (options.exists("includeNames"))
-            include_names = options["includeNames"].get_bool();
+        if (options.exists("includeNames") && options["includeNames"].get_bool()) {
+            /* Retrieve and store "current" expiration depth.  We use that later
+               to determine, based on confirmations, whether or not names
+               are expired.  */
+            filter_coins.name_max_depth = Params().GetConsensus()
+                .rules->NameExpirationDepth(chainman.ActiveHeight());
+        }
     }
 
     // Make sure the results are valid at least up to the most recent block
@@ -642,7 +647,6 @@ RPCHelpMan listunspent()
 
     UniValue results(UniValue::VARR);
     std::vector<COutput> vecOutputs;
-    int expireDepth;
     {
         CCoinControl cctl;
         cctl.m_avoid_address_reuse = false;
@@ -650,12 +654,6 @@ RPCHelpMan listunspent()
         cctl.m_max_depth = nMaxDepth;
         cctl.m_include_unsafe_inputs = include_unsafe;
         LOCK(pwallet->cs_wallet);
-
-        /* Retrieve and store "current" expiration depth.  We use that later
-           to determine, based on confirmations, whether or not names
-           are expired.  */
-        expireDepth = Params().GetConsensus()
-                        .rules->NameExpirationDepth(chainman.ActiveHeight());
         vecOutputs = AvailableCoinsListUnspent(*pwallet, &cctl, filter_coins).All();
     }
 
@@ -672,26 +670,11 @@ RPCHelpMan listunspent()
         if (destinations.size() && (!fValidAddress || !destinations.count(address)))
             continue;
 
-        /* Check if this is a name output.  If it is, we have to apply
-           additional rules:  If the name is already expired, then the output
-           is definitely unspendable; in that case, exclude it always.
-           Otherwise, we may include the output only if the user opted to
-           receive also name outputs.  */
-        const CNameScript nameOp(scriptPubKey);
-        if (nameOp.isNameOp ())
-          {
-            if (!include_names)
-              continue;
-
-            /* Name new's don't expire, so check for being an actual update.  */
-            if (nameOp.isAnyUpdate () && out.depth > expireDepth)
-              continue;
-          }
-
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", out.outpoint.hash.GetHex());
         entry.pushKV("vout", (int)out.outpoint.n);
 
+        const CNameScript nameOp(scriptPubKey);
         if (nameOp.isNameOp())
             entry.pushKV("nameOp", NameOpToUniv(nameOp));
 

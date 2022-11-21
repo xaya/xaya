@@ -302,8 +302,19 @@ CoinsResult AvailableCoins(const CWallet& wallet,
             // it is safe to assume that this input is solvable if input_bytes is greater -1.
             bool solvable = input_bytes > -1;
             bool spendable = ((mine & ISMINE_SPENDABLE) != ISMINE_NO) || (((mine & ISMINE_WATCH_ONLY) != ISMINE_NO) && (coinControl && coinControl->fAllowWatchOnly && solvable));
-            if (CNameScript::isNameScript(wtx.tx->vout[i].scriptPubKey))
-                spendable = false;
+
+            /* Check if this is a name script, and if so, apply filtering
+               based on the relevant user options.  */
+            const CNameScript nameOp(wtx.tx->vout[i].scriptPubKey);
+            if (nameOp.isNameOp ()) {
+                if (params.name_max_depth < 0)
+                    continue;
+
+                /* name_new's don't expire, but all other outputs become
+                   unspendable if too deep in the chain.  */
+                if (nameOp.isAnyUpdate () && nDepth > params.name_max_depth)
+                    continue;
+            }
 
             // Filter by spendable outputs only
             if (!spendable && params.only_spendable) continue;

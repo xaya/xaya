@@ -68,6 +68,10 @@ struct CoinFilterParams {
     bool only_spendable{true};
     // By default, do not include immature coinbase outputs
     bool include_immature_coinbase{false};
+    /** If -1 (the default), do not include name outputs.  Otherwise,
+     *  include name outputs (apart from name_new) that are up to the given
+     *  depth in the chain (i.e. not expired).  */
+    int64_t name_max_depth{-1};
 };
 
 /**
