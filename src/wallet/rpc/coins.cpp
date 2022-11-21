@@ -7,6 +7,7 @@
 #include <rpc/names.h>
 #include <rpc/server_util.h>
 #include <rpc/util.h>
+#include <script/names.h>
 #include <util/moneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -518,6 +519,7 @@ RPCHelpMan listunspent()
                             {"maximumAmount", RPCArg::Type::AMOUNT, RPCArg::DefaultHint{"unlimited"}, "Maximum value of each UTXO in " + CURRENCY_UNIT + ""},
                             {"maximumCount", RPCArg::Type::NUM, RPCArg::DefaultHint{"unlimited"}, "Maximum number of UTXOs"},
                             {"minimumSumAmount", RPCArg::Type::AMOUNT, RPCArg::DefaultHint{"unlimited"}, "Minimum sum value of all UTXOs in " + CURRENCY_UNIT + ""},
+                            {"include_immature_coinbase", RPCArg::Type::BOOL, RPCArg::Default{false}, "Include immature coinbase UTXOs"},
                             {"includeNames", RPCArg::Type::BOOL, RPCArg::DefaultHint{"false"}, "Include name outputs"},
                         },
                         RPCArgOptions{.oneline_description="query_options"}},
@@ -597,11 +599,8 @@ RPCHelpMan listunspent()
         include_unsafe = request.params[3].get_bool();
     }
 
-    CAmount nMinimumAmount = 0;
-    CAmount nMaximumAmount = MAX_MONEY;
-    CAmount nMinimumSumAmount = MAX_MONEY;
-    uint64_t nMaximumCount = 0;
-    bool includeNames = false;
+    CoinFilterParams filter_coins;
+    filter_coins.min_amount = 0;
 
     if (!request.params[4].isNull()) {
         const UniValue& options = request.params[4].get_obj();
@@ -612,24 +611,31 @@ RPCHelpMan listunspent()
                 {"maximumAmount", UniValueType()},
                 {"minimumSumAmount", UniValueType()},
                 {"maximumCount", UniValueType(UniValue::VNUM)},
+                {"include_immature_coinbase", UniValueType(UniValue::VBOOL)},
                 {"includeNames", UniValueType(UniValue::VBOOL)},
             },
             true, true);
 
         if (options.exists("minimumAmount"))
-            nMinimumAmount = AmountFromValue(options["minimumAmount"]);
+            filter_coins.min_amount = AmountFromValue(options["minimumAmount"]);
 
         if (options.exists("maximumAmount"))
-            nMaximumAmount = AmountFromValue(options["maximumAmount"]);
+            filter_coins.max_amount = AmountFromValue(options["maximumAmount"]);
 
         if (options.exists("minimumSumAmount"))
-            nMinimumSumAmount = AmountFromValue(options["minimumSumAmount"]);
+            filter_coins.min_sum_amount = AmountFromValue(options["minimumSumAmount"]);
 
         if (options.exists("maximumCount"))
-            nMaximumCount = options["maximumCount"].getInt<int64_t>();
+            filter_coins.max_count = options["maximumCount"].getInt<int64_t>();
 
-        if (options.exists("includeNames"))
-            includeNames = options["includeNames"].get_bool();
+        if (options.exists("include_immature_coinbase")) {
+            filter_coins.include_immature_coinbase = options["include_immature_coinbase"].get_bool();
+        }
+
+        if (options.exists("includeNames") && options["includeNames"].get_bool()) {
+            /* Names in Xaya don't expire, so just use a large number.  */
+            filter_coins.name_max_depth = std::numeric_limits<int64_t>::max();
+        }
     }
 
     // Make sure the results are valid at least up to the most recent block
@@ -645,7 +651,7 @@ RPCHelpMan listunspent()
         cctl.m_max_depth = nMaxDepth;
         cctl.m_include_unsafe_inputs = include_unsafe;
         LOCK(pwallet->cs_wallet);
-        vecOutputs = AvailableCoinsListUnspent(*pwallet, &cctl, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount).All();
+        vecOutputs = AvailableCoinsListUnspent(*pwallet, &cctl, filter_coins).All();
     }
 
     LOCK(pwallet->cs_wallet);
@@ -661,22 +667,11 @@ RPCHelpMan listunspent()
         if (destinations.size() && (!fValidAddress || !destinations.count(address)))
             continue;
 
-        /* Check if this is a name output.  If it is, we have to apply
-           additional rules:  If the name is already expired, then the output
-           is definitely unspendable; in that case, exclude it always.
-           Otherwise, we may include the output only if the user opted to
-           receive also name outputs.  */
-        const CNameScript nameOp(scriptPubKey);
-        if (nameOp.isNameOp ())
-          {
-            if (!includeNames)
-              continue;
-          }
-
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", out.outpoint.hash.GetHex());
         entry.pushKV("vout", (int)out.outpoint.n);
 
+        const CNameScript nameOp(scriptPubKey);
         if (nameOp.isNameOp())
             entry.pushKV("nameOp", NameOpToUniv(nameOp));
 

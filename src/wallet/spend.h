@@ -55,23 +55,38 @@ struct CoinsResult {
     CAmount total_amount{0};
 };
 
+struct CoinFilterParams {
+    // Outputs below the minimum amount will not get selected
+    CAmount min_amount{1};
+    // Outputs above the maximum amount will not get selected
+    CAmount max_amount{MAX_MONEY};
+    // Return outputs until the minimum sum amount is covered
+    CAmount min_sum_amount{MAX_MONEY};
+    // Maximum number of outputs that can be returned
+    uint64_t max_count{0};
+    // By default, return only spendable outputs
+    bool only_spendable{true};
+    // By default, do not include immature coinbase outputs
+    bool include_immature_coinbase{false};
+    /** If -1 (the default), do not include name outputs.  Otherwise,
+     *  include name outputs (apart from name_new) that are up to the given
+     *  depth in the chain (i.e. not expired).  */
+    int64_t name_max_depth{-1};
+};
+
 /**
  * Populate the CoinsResult struct with vectors of available COutputs, organized by OutputType.
  */
 CoinsResult AvailableCoins(const CWallet& wallet,
                            const CCoinControl* coinControl = nullptr,
                            std::optional<CFeeRate> feerate = std::nullopt,
-                           const CAmount& nMinimumAmount = 1,
-                           const CAmount& nMaximumAmount = MAX_MONEY,
-                           const CAmount& nMinimumSumAmount = MAX_MONEY,
-                           const uint64_t nMaximumCount = 0,
-                           bool only_spendable = true) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
+                           const CoinFilterParams& params = {}) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 
 /**
- * Wrapper function for AvailableCoins which skips the `feerate` parameter. Use this function
+ * Wrapper function for AvailableCoins which skips the `feerate` and `CoinFilterParams::only_spendable` parameters. Use this function
  * to list all available coins (e.g. listunspent RPC) while not intending to fund a transaction.
  */
-CoinsResult AvailableCoinsListUnspent(const CWallet& wallet, const CCoinControl* coinControl = nullptr, const CAmount& nMinimumAmount = 1, const CAmount& nMaximumAmount = MAX_MONEY, const CAmount& nMinimumSumAmount = MAX_MONEY, const uint64_t nMaximumCount = 0) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
+CoinsResult AvailableCoinsListUnspent(const CWallet& wallet, const CCoinControl* coinControl = nullptr, CoinFilterParams params = {}) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 
 CAmount GetAvailableBalance(const CWallet& wallet, const CCoinControl* coinControl = nullptr);
 
