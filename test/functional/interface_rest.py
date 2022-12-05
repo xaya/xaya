@@ -61,6 +61,9 @@ class RESTTest (BitcoinTestFramework):
             args.append("-whitelist=noban@127.0.0.1")
         self.supports_cli = False
 
+    def add_options(self, parser):
+        self.add_wallet_options(parser)
+
     def test_rest_request(
             self,
             uri: str,

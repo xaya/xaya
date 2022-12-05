@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2021 The Xaya developers
+# Copyright (c) 2018-2022 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test spendability of premine and that P2SH is enforced correctly for it."""
@@ -26,6 +26,9 @@ class PremineTest(BitcoinTestFramework):
 
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
+
+  def add_options (self, parser):
+    self.add_wallet_options (parser)
 
   def run_test(self):
     node = self.nodes[0]

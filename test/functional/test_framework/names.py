@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 Daniel Kraft
+# Copyright (c) 2014-2022 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,6 +26,9 @@ class NameTestFramework (BitcoinTestFramework):
 
   def skip_test_if_missing_module(self):
     self.skip_if_no_wallet()
+
+  def add_options (self, parser):
+    self.add_wallet_options (parser)
 
   def setup_name_test (self, args = [[]] * 4):
     self.num_nodes = len (args)
