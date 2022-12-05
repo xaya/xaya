@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 Daniel Kraft
+# Copyright (c) 2014-2022 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -45,6 +45,7 @@ class NameMultisigTest (NameTestFramework):
     self.setup_name_test ([self.node_args] * 2)
 
   def add_options (self, parser):
+    super ().add_options (parser)
     parser.add_argument ("--bip16-active", dest="activated", default=False,
                          action="store_true",
                          help="Test behaviour with BIP16 active")

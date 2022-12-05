@@ -14,6 +14,9 @@ from test_framework.auxpow import reverseHex
 from test_framework.auxpow_testing import computeAuxpow
 
 class KeyPoolTest(BitcoinTestFramework):
+    def add_options(self, parser):
+        self.add_wallet_options(parser)
+
     def set_test_params(self):
         self.num_nodes = 1
         self.extra_args = [['-addresstype=bech32']]
