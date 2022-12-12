@@ -7,10 +7,6 @@
 Test various backwards compatibility scenarios. Requires previous releases binaries,
 see test/README.md.
 
-v0.15.2 is not required by this test, but it is used in wallet_upgradewallet.py.
-Due to a hardfork in regtest, it can't be used to sync nodes.
-
-
 Due to RPC changes introduced in various versions the below tests
 won't work for older versions without some patches or workarounds.
 
@@ -274,6 +270,7 @@ class BackwardsCompatibilityTest(BitcoinTestFramework):
             assert_equal(info["desc"], descsum_create(descriptor))
 
             # Now copy that same wallet back to 0.16 to make sure no automatic upgrade breaks it
+            node_master.unloadwallet("u1_v16")
             os.remove(os.path.join(node_v16_wallets_dir, "wallets/u1_v16"))
             shutil.copyfile(
                 os.path.join(node_master_wallets_dir, "u1_v16"),
