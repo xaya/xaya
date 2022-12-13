@@ -38,8 +38,10 @@ class NameReorgTest (NameTestFramework):
     assert_equal (node.getrawmempool (), [])
     self.generate (node, 1)
     txidA = node.name_update ("x/a", val ("changed value"))
-    txidB = node.name_register ("x/b", val ("b short"))
     txidC = node.name_register ("x/c", val ("c registered"))
+    # txidB will be the conflicted tx, we do it last to that
+    # none of the ones we want resurrected depends on it accidentally.
+    txidB = node.name_register ("x/b", val ("b short"))
     self.generate (node, 1)
     self.checkName (0, "x/a", val ("changed value"))
     self.checkName (0, "x/b", val ("b short"))

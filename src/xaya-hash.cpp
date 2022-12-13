@@ -5,15 +5,22 @@
 /* Command-line utility to compute the PoW hash of a block header given in hex.
    This is used for the regtests to access Neoscrypt from Python.  */
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <core_io.h>
 #include <powdata.h>
 #include <primitives/pureheader.h>
 #include <uint256.h>
 
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 
-int main (int argc, char** argv)
+const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
+
+MAIN_FUNCTION
 {
   if (argc != 3)
     {
