@@ -19,7 +19,7 @@ lib_LTLIBRARIES =
 noinst_LTLIBRARIES =
 
 bin_PROGRAMS =
-noinst_PROGRAMS = xaya-hash
+noinst_PROGRAMS =
 TESTS =
 BENCHMARKS =
 
@@ -840,21 +840,6 @@ xaya_tx_LDADD = \
   $(LIBSECP256K1)
 
 xaya_tx_LDADD += $(BOOST_LIBS)
-#
-
-# xaya-hash binary #
-xaya_hash_SOURCES = xaya-hash.cpp
-xaya_hash_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-xaya_hash_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-xaya_hash_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
-
-xaya_hash_LDADD = \
-  $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBBITCOIN_CONSENSUS) \
-  $(LIBBITCOIN_CRYPTO) \
-  $(LIBUNIVALUE) \
-  $(LIBSECP256K1)
 #
 
 # bitcoin-wallet binary #

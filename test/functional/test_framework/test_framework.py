@@ -247,11 +247,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             "src",
             "xaya-cli" + config["environment"]["EXEEXT"],
         )
-        fname_xayahash = os.path.join(
-            config["environment"]["BUILDDIR"],
-            "src",
-            "xaya-hash" + config["environment"]["EXEEXT"],
-        )
         fname_bitcoinutil = os.path.join(
             config["environment"]["BUILDDIR"],
             "src",
@@ -260,7 +255,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.options.bitcoind = os.getenv("BITCOIND", default=fname_bitcoind)
         self.options.bitcoincli = os.getenv("BITCOINCLI", default=fname_bitcoincli)
         self.options.bitcoinutil = os.getenv("BITCOINUTIL", default=fname_bitcoinutil)
-        powhash.xayahash = os.getenv("XAYA-HASH", default=fname_xayahash)
 
         os.environ['PATH'] = os.pathsep.join([
             os.path.join(config['environment']['BUILDDIR'], 'src'),
