@@ -12,6 +12,11 @@ class NameDeterministicSaltTest(NameTestFramework):
         self.setup_clean_chain = True
         self.setup_name_test ([[]])
 
+    def add_wallet_options (self, parser):
+        # Make sure we only allow (and use as default) legacy wallets,
+        # as otherwise the hdseed setting won't work.
+        super ().add_wallet_options (parser, descriptors=False, legacy=True)
+
     def run_test(self):
         node = self.nodes[0]
         node.sethdseed(seed="cQDxbmQfwRV3vP1mdnVHq37nJekHLsuD3wdSQseBRA2ct4MFk5Pq")
