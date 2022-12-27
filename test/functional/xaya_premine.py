@@ -24,6 +24,11 @@ class PremineTest(BitcoinTestFramework):
     self.setup_clean_chain = True
     self.num_nodes = 1
 
+  def add_wallet_options (self, parser):
+    # Make sure we only allow (and use as default) legacy wallets,
+    # as otherwise the hdseed setting won't work.
+    super ().add_wallet_options (parser, descriptors=False, legacy=True)
+
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 

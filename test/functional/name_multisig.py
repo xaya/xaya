@@ -43,6 +43,11 @@ class NameMultisigTest (NameTestFramework):
     self.node_args = ["-acceptnonstdtxn=1", "-testactivationheight=segwit@1000000"]
     self.setup_name_test ([self.node_args] * 2)
 
+  def add_wallet_options (self, parser):
+    # Make sure we only allow (and use as default) legacy wallets,
+    # as otherwise the addmultisig does not work as used in the test.
+    super ().add_wallet_options (parser, descriptors=False, legacy=True)
+
   def add_options (self, parser):
     super ().add_options (parser)
     parser.add_argument ("--bip16-active", dest="activated", default=False,

@@ -79,12 +79,23 @@ OriginalDGW(const PowAlgo algo, const CBlockIndex* pindexLast, const Consensus::
     return bnNew.GetCompact();
 }
 
+class CopyableBlockIndex : public CBlockIndex
+{
+
+public:
+
+  CopyableBlockIndex (const CBlockIndex& blk)
+    : CBlockIndex(blk)
+  {}
+
+};
+
 class TestChain
 {
 
 private:
 
-  std::vector<std::unique_ptr<CBlockIndex>> blocks;
+  std::vector<std::unique_ptr<CopyableBlockIndex>> blocks;
 
 public:
 
@@ -106,7 +117,8 @@ public:
   void
   attach (const CBlockIndex& indexNew)
   {
-    std::unique_ptr<CBlockIndex> modified(new CBlockIndex (indexNew));
+    std::unique_ptr<CopyableBlockIndex> modified(
+        new CopyableBlockIndex (indexNew));
     modified->pprev = tip ();
     modified->nHeight = blocks.size ();
     blocks.push_back (std::move (modified));
