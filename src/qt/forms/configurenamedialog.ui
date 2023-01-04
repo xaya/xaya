@@ -177,6 +177,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QLabel" name="dataSize">
+         <property name="text">
+          <string>0 / 520</string>
+         </property>
+        </widget>
+       </item>
        <!--
        <item>
         <widget class="QPushButton" name="btnDNSEditor">
