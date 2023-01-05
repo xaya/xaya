@@ -248,6 +248,12 @@
    <header>qt/qvalidatedlineedit.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>dataEdit</tabstop>
+  <tabstop>transferTo</tabstop>
+  <tabstop>addressBookButton</tabstop>
+  <tabstop>pasteButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../bitcoin.qrc"/>
  </resources>
