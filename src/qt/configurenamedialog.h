@@ -41,6 +41,7 @@ public Q_SLOTS:
     void accept() override;
     void on_addressBookButton_clicked();
     void on_pasteButton_clicked();
+    void onDataEdited(const QString &name);
 
 private:
     Ui::ConfigureNameDialog *ui;
