@@ -177,6 +177,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QLabel" name="dataSize">
+         <property name="text">
+          <string>0 / 520</string>
+         </property>
+        </widget>
+       </item>
        <!--
        <item>
         <widget class="QPushButton" name="btnDNSEditor">
@@ -248,6 +255,12 @@
    <header>qt/qvalidatedlineedit.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>dataEdit</tabstop>
+  <tabstop>transferTo</tabstop>
+  <tabstop>addressBookButton</tabstop>
+  <tabstop>pasteButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../bitcoin.qrc"/>
  </resources>

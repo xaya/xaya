@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,9 +26,6 @@
 
 namespace
 {
-
-constexpr unsigned MAX_VALUE_LENGTH = 2048;
-constexpr unsigned MAX_NAME_LENGTH = 256;
 
 /* Ensure that the name length fits to the script element size limit to avoid
    a situation as in Namecoin where names can become unspendable.  */

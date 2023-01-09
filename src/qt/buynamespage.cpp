@@ -13,8 +13,6 @@
 
 #include <QMessageBox>
 
-#include <optional>
-
 BuyNamesPage::BuyNamesPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
     platformStyle(platformStyle),

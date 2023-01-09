@@ -30,10 +30,13 @@ ConfigureNameDialog::ConfigureNameDialog(const PlatformStyle *platformStyle,
     ui->labelName->setText(name);
     ui->dataEdit->setText(data);
 
+    connect(ui->dataEdit, &QLineEdit::textEdited, this, &ConfigureNameDialog::onDataEdited);
+    onDataEdited(data);
+
     returnData = data;
 
-    ui->labelSubmitHint->setText(tr("name_update transaction will be issued immediately"));
-    setWindowTitle(tr("Update Name"));
+    ui->labelSubmitHint->setText(tr("Name update will take approximately 10 minutes to 2 hours."));
+    setWindowTitle(tr("Reconfigure Name"));
 }
 
 
@@ -89,4 +92,10 @@ void ConfigureNameDialog::on_addressBookButton_clicked()
     dlg.setModel(walletModel->getAddressTableModel());
     if (dlg.exec())
         ui->transferTo->setText(dlg.getReturnValue());
+}
+
+void ConfigureNameDialog::onDataEdited(const QString &name)
+{
+    ui->dataSize->setText(tr("%1 / %2").arg(name.size()).arg(MAX_VALUE_LENGTH));
+    ui->dataSize->resize(ui->dataSize->fontMetrics().horizontalAdvance(ui->dataSize->text()), ui->dataSize->height());
 }

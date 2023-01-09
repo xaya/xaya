@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,6 +18,10 @@ class CCoinsViewCache;
 class Chainstate;
 class CTxMemPool;
 class TxValidationState;
+
+/* Some constants defining name limits.  */
+constexpr unsigned MAX_VALUE_LENGTH = 2048;
+constexpr unsigned MAX_NAME_LENGTH = 256;
 
 /** The amount of coins to lock in created transactions.  */
 constexpr CAmount NAME_LOCKED_AMOUNT = COIN / 100;
