@@ -32,8 +32,8 @@ ConfigureNameDialog::ConfigureNameDialog(const PlatformStyle *platformStyle,
 
     returnData = data;
 
-    ui->labelSubmitHint->setText(tr("name_update transaction will be issued immediately"));
-    setWindowTitle(tr("Update Name"));
+    ui->labelSubmitHint->setText(tr("Name update will take approximately 10 minutes to 2 hours."));
+    setWindowTitle(tr("Reconfigure Name"));
 }
 
 
