@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Copyright (c) 2020 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -44,11 +44,6 @@ EncodingFromOptionsJson (const UniValue& options, const std::string& field,
                          const NameEncoding defaultValue)
 {
   NameEncoding res = defaultValue;
-  RPCTypeCheckObj (options,
-    {
-      {field, UniValueType (UniValue::VSTR)},
-    },
-    true, false);
   if (options.exists (field))
     try
       {
@@ -184,12 +179,6 @@ valtype
 GetNameForLookup (const UniValue& val, const UniValue& opt)
 {
   const valtype identifier = DecodeNameFromRPCOrThrow (val, opt);
-
-  RPCTypeCheckObj (opt,
-    {
-      {"byHash", UniValueType (UniValue::VSTR)},
-    },
-    true, false);
 
   if (!opt.exists ("byHash"))
     return identifier;
@@ -508,7 +497,6 @@ name_show ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
   auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
@@ -569,7 +557,6 @@ name_history ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
   auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (!fNameHistory)
@@ -656,8 +643,6 @@ name_scan ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
   auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
@@ -675,16 +660,6 @@ name_scan ()
   int count = 500;
   if (!request.params[1].isNull ())
     count = request.params[1].getInt<int> ();
-
-  /* Parse and interpret the name_scan-specific options.  */
-  RPCTypeCheckObj (options,
-    {
-      {"minConf", UniValueType (UniValue::VNUM)},
-      {"maxConf", UniValueType (UniValue::VNUM)},
-      {"prefix", UniValueType (UniValue::VSTR)},
-      {"regexp", UniValueType (UniValue::VSTR)},
-    },
-    true, false);
 
   int minConf = 1;
   if (options.exists ("minConf"))
@@ -798,8 +773,6 @@ name_pending ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
-
   MaybeWalletForRequest wallet(request);
   auto& mempool = EnsureMemPool (EnsureAnyNodeContext (request));
   LOCK2 (wallet.getLock (), mempool.cs);
@@ -882,14 +855,6 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
      operations with arbitrary hex data.  */
   const UniValue NO_OPTIONS(UniValue::VOBJ);
 
-  RPCTypeCheckObj (nameOp,
-    {
-      {"op", UniValueType (UniValue::VSTR)},
-      {"name", UniValueType (UniValue::VSTR)},
-      {"value", UniValueType (UniValue::VSTR)},
-    }
-  );
-
   const std::string op = find_value (nameOp, "op").get_str ();
   const valtype name
     = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
@@ -935,9 +900,6 @@ namerawtransaction ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
-
   CMutableTransaction mtx;
   if (!DecodeHexTx (mtx, request.params[0].get_str (), true))
     throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "TX decode failed");
@@ -982,9 +944,6 @@ namepsbt ()
       },
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VNUM, UniValue::VOBJ});
-
   PartiallySignedTransaction psbtx;
   std::string error;
   if (!DecodeBase64PSBT (psbtx, request.params[0].get_str (), error))

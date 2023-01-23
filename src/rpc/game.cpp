@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Xaya developers
+// Copyright (c) 2018-2023 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -254,8 +254,6 @@ game_sendupdates ()
       [&] (const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
 #if ENABLE_ZMQ
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR});
   const auto& chainman = EnsureAnyChainman (request.context);
 
   SendUpdatesWorker::Work w;
@@ -381,8 +379,6 @@ trackedgames ()
 #if ENABLE_ZMQ
   if (request.params.size () != 0 && request.params.size () != 2)
     throw std::runtime_error (self.ToString ());
-
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VSTR});
 
   auto* tracked = GetTrackedGames ();
 
