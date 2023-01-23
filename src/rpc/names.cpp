@@ -44,6 +44,11 @@ EncodingFromOptionsJson (const UniValue& options, const std::string& field,
                          const NameEncoding defaultValue)
 {
   NameEncoding res = defaultValue;
+  RPCTypeCheckObj (options,
+    {
+      {field, UniValueType (UniValue::VSTR)},
+    },
+    true, false);
   if (options.exists (field))
     try
       {
@@ -192,6 +197,12 @@ valtype
 GetNameForLookup (const UniValue& val, const UniValue& opt)
 {
   const valtype identifier = DecodeNameFromRPCOrThrow (val, opt);
+
+  RPCTypeCheckObj (opt,
+    {
+      {"byHash", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
 
   if (!opt.exists ("byHash"))
     return identifier;
@@ -517,6 +528,13 @@ name_show ()
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
 
+  /* Parse and interpret the name_show-specific options.  */
+  RPCTypeCheckObj(options,
+    {
+      {"allowExpired", UniValueType(UniValue::VBOOL)},
+    },
+    true, false);
+
   bool allow_expired = gArgs.GetBoolArg("-allowexpired", DEFAULT_ALLOWEXPIRED);
   if (options.exists("allowExpired"))
     allow_expired = options["allowExpired"].get_bool();
@@ -683,6 +701,16 @@ name_scan ()
   int count = 500;
   if (!request.params[1].isNull ())
     count = request.params[1].getInt<int> ();
+
+  /* Parse and interpret the name_scan-specific options.  */
+  RPCTypeCheckObj (options,
+    {
+      {"minConf", UniValueType (UniValue::VNUM)},
+      {"maxConf", UniValueType (UniValue::VNUM)},
+      {"prefix", UniValueType (UniValue::VSTR)},
+      {"regexp", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
 
   int minConf = 1;
   if (options.exists ("minConf"))
@@ -877,6 +905,11 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
     throw JSONRPCError (RPC_INVALID_PARAMETER, "vout is out of range");
   auto& script = mtx.vout[nOut].scriptPubKey;
 
+  RPCTypeCheckObj (nameOp,
+    {
+      {"op", UniValueType (UniValue::VSTR)},
+    }
+  );
   const std::string op = find_value (nameOp, "op").get_str ();
 
   /* namerawtransaction does not have an options argument.  This would just
@@ -887,6 +920,13 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
 
   if (op == "name_new")
     {
+      RPCTypeCheckObj (nameOp,
+        {
+          {"name", UniValueType (UniValue::VSTR)},
+          {"rand", UniValueType (UniValue::VSTR)},
+        },
+        true);
+
       valtype rand;
       if (nameOp.exists ("rand"))
         {
@@ -909,6 +949,14 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
     }
   else if (op == "name_firstupdate")
     {
+      RPCTypeCheckObj (nameOp,
+        {
+          {"name", UniValueType (UniValue::VSTR)},
+          {"value", UniValueType (UniValue::VSTR)},
+          {"rand", UniValueType (UniValue::VSTR)},
+        }
+      );
+
       const std::string randStr = find_value (nameOp, "rand").get_str ();
       if (!IsHex (randStr))
         throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
@@ -924,6 +972,13 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
     }
   else if (op == "name_update")
     {
+      RPCTypeCheckObj (nameOp,
+        {
+          {"name", UniValueType (UniValue::VSTR)},
+          {"value", UniValueType (UniValue::VSTR)},
+        }
+      );
+
       const valtype name
           = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
       const valtype value
