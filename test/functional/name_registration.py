@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 Daniel Kraft
+# Copyright (c) 2014-2023 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -92,9 +92,6 @@ class NameRegistrationTest (NameTestFramework):
     assert_raises_rpc_error (-25, 'exists already',
                              node.name_new, "name-0",
                              {"allowExisting": False})
-    assert_raises_rpc_error (-3, 'is not of expected type bool',
-                             node.name_new, "other",
-                             {"allowExisting": 42.5})
     node.name_new ("name-0", {"allowExisting": True})
 
     # Check for error with rand mismatch (wrong name)

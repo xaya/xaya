@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Copyright (c) 2021 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -99,11 +99,6 @@ public:
 
 void DestinationAddressHelper::setOptions (const UniValue& opt)
 {
-  RPCTypeCheckObj (opt,
-    {
-      {"destAddress", UniValueType (UniValue::VSTR)},
-    },
-    true, false);
   if (!opt.exists ("destAddress"))
     return;
 
@@ -144,12 +139,6 @@ SendNameOutput (const JSONRPCRequest& request,
                 CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
-  RPCTypeCheckObj (opt,
-    {
-      {"sendCoins", UniValueType (UniValue::VOBJ)},
-    },
-    true, false);
-
   auto& node = EnsureAnyNodeContext (request);
   if (wallet.GetBroadcastTransactions ())
     EnsureConnman (node);
@@ -212,7 +201,6 @@ name_list ()
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
 
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ}, true);
   const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   UniValue options(UniValue::VOBJ);
@@ -400,17 +388,11 @@ name_new ()
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
 
-  RPCTypeCheck (request.params, {UniValue::VSTR, UniValue::VOBJ});
   const auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
   UniValue options(UniValue::VOBJ);
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
-  RPCTypeCheckObj (options,
-    {
-      {"allowExisting", UniValueType (UniValue::VBOOL)},
-    },
-    true, false);
 
   const valtype name = DecodeNameFromRPCOrThrow (request.params[0], options);
   if (name.size () > MAX_NAME_LENGTH)
@@ -552,9 +534,6 @@ name_firstupdate ()
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
 
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VSTR, UniValue::VSTR,
-                 UniValue::VOBJ}, true);
   const auto& node = EnsureAnyNodeContext (request);
   const auto& chainman = EnsureChainman (node);
 
@@ -748,8 +727,6 @@ name_update ()
     return NullUniValue;
   CWallet* const pwallet = wallet.get ();
 
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR, UniValue::VSTR, UniValue::VOBJ}, true);
   const auto& node = EnsureAnyNodeContext (request);
   const auto& chainman = EnsureChainman (node);
 
@@ -861,9 +838,6 @@ queuerawtransaction ()
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet) return NullUniValue;
 
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR});
-
   // parse transaction from parameter
   CMutableTransaction mtxParsed;
   if (!DecodeHexTx(mtxParsed, request.params[0].get_str(), true, true))
@@ -932,9 +906,6 @@ dequeuetransaction ()
 {
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet) return NullUniValue;
-
-  RPCTypeCheck (request.params,
-                {UniValue::VSTR});
 
   const uint256& txid = ParseHashV (request.params[0], "txid");
 
