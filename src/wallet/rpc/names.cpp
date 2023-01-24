@@ -100,6 +100,11 @@ public:
 
 void DestinationAddressHelper::setOptions (const UniValue& opt)
 {
+  RPCTypeCheckObj (opt,
+    {
+      {"destAddress", UniValueType (UniValue::VSTR)},
+    },
+    true, false);
   if (!opt.exists ("destAddress"))
     return;
 
@@ -140,6 +145,13 @@ SendNameOutput (const JSONRPCRequest& request,
                 CWallet& wallet, const CScript& nameOutScript,
                 const CTxIn* nameInput, const UniValue& opt)
 {
+  RPCTypeCheckObj (opt,
+    {
+      {"sendCoins", UniValueType (UniValue::VOBJ)},
+      {"burn", UniValueType (UniValue::VOBJ)},
+    },
+    true, false);
+
   auto& node = EnsureAnyNodeContext (request);
   if (wallet.GetBroadcastTransactions ())
     EnsureConnman (node);
