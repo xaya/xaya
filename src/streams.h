@@ -10,6 +10,7 @@
 #include <span.h>
 #include <support/allocators/zeroafterfree.h>
 #include <util/overflow.h>
+#include <version.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -182,15 +183,12 @@ public:
  * >> and << read and write unformatted data using the above serialization templates.
  * Fills with data in linear time; some stringstream implementations take N^2 time.
  */
-class CDataStream
+class DataStream
 {
 protected:
     using vector_type = SerializeData;
     vector_type vch;
     vector_type::size_type m_read_pos{0};
-
-    int nType;
-    int nVersion;
 
 public:
     typedef vector_type::allocator_type   allocator_type;
@@ -203,23 +201,9 @@ public:
     typedef vector_type::const_iterator   const_iterator;
     typedef vector_type::reverse_iterator reverse_iterator;
 
-    explicit CDataStream(int nTypeIn, int nVersionIn)
-        : nType{nTypeIn},
-          nVersion{nVersionIn} {}
-
-    explicit CDataStream(Span<const uint8_t> sp, int type, int version) : CDataStream{AsBytes(sp), type, version} {}
-    explicit CDataStream(Span<const value_type> sp, int nTypeIn, int nVersionIn)
-        : vch(sp.data(), sp.data() + sp.size()),
-          nType{nTypeIn},
-          nVersion{nVersionIn} {}
-
-    template <typename... Args>
-    CDataStream(int nTypeIn, int nVersionIn, Args&&... args)
-        : nType{nTypeIn},
-          nVersion{nVersionIn}
-    {
-        ::SerializeMany(*this, std::forward<Args>(args)...);
-    }
+    explicit DataStream() {}
+    explicit DataStream(Span<const uint8_t> sp) : DataStream{AsBytes(sp)} {}
+    explicit DataStream(Span<const value_type> sp) : vch(sp.data(), sp.data() + sp.size()) {}
 
     std::string str() const
     {
@@ -271,11 +255,6 @@ public:
     bool eof() const             { return size() == 0; }
     int in_avail() const         { return size(); }
 
-    void SetType(int n)          { nType = n; }
-    int GetType() const          { return nType; }
-    void SetVersion(int n)       { nVersion = n; }
-    int GetVersion() const       { return nVersion; }
-
     void read(Span<value_type> dst)
     {
         if (dst.size() == 0) return;
@@ -283,7 +262,7 @@ public:
         // Read from the beginning of the buffer
         auto next_read_pos{CheckedAdd(m_read_pos, dst.size())};
         if (!next_read_pos.has_value() || next_read_pos.value() > vch.size()) {
-            throw std::ios_base::failure("CDataStream::read(): end of data");
+            throw std::ios_base::failure("DataStream::read(): end of data");
         }
         memcpy(dst.data(), &vch[m_read_pos], dst.size());
         if (next_read_pos.value() == vch.size()) {
@@ -299,7 +278,7 @@ public:
         // Ignore from the beginning of the buffer
         auto next_read_pos{CheckedAdd(m_read_pos, num_ignore)};
         if (!next_read_pos.has_value() || next_read_pos.value() > vch.size()) {
-            throw std::ios_base::failure("CDataStream::ignore(): end of data");
+            throw std::ios_base::failure("DataStream::ignore(): end of data");
         }
         if (next_read_pos.value() == vch.size()) {
             m_read_pos = 0;
@@ -324,7 +303,7 @@ public:
     }
 
     template<typename T>
-    CDataStream& operator<<(const T& obj)
+    DataStream& operator<<(const T& obj)
     {
         // Serialize to this stream
         ::Serialize(*this, obj);
@@ -332,7 +311,7 @@ public:
     }
 
     template<typename T>
-    CDataStream& operator>>(T&& obj)
+    DataStream& operator>>(T&& obj)
     {
         // Unserialize from this stream
         ::Unserialize(*this, obj);
@@ -362,6 +341,65 @@ public:
         }
     }
 };
+
+class CDataStream : public DataStream
+{
+private:
+    int nType;
+    int nVersion;
+
+public:
+    explicit CDataStream(int nTypeIn, int nVersionIn)
+        : nType{nTypeIn},
+          nVersion{nVersionIn} {}
+
+    explicit CDataStream(Span<const uint8_t> sp, int type, int version) : CDataStream{AsBytes(sp), type, version} {}
+    explicit CDataStream(Span<const value_type> sp, int nTypeIn, int nVersionIn)
+        : DataStream{sp},
+          nType{nTypeIn},
+          nVersion{nVersionIn} {}
+
+    template <typename... Args>
+    CDataStream(int nTypeIn, int nVersionIn, Args&&... args)
+        : nType{nTypeIn},
+          nVersion{nVersionIn}
+    {
+        ::SerializeMany(*this, std::forward<Args>(args)...);
+    }
+
+    int GetType() const          { return nType; }
+    void SetVersion(int n)       { nVersion = n; }
+    int GetVersion() const       { return nVersion; }
+
+    template <typename T>
+    CDataStream& operator<<(const T& obj)
+    {
+        ::Serialize(*this, obj);
+        return *this;
+    }
+
+    template <typename T>
+    CDataStream& operator>>(T&& obj)
+    {
+        ::Unserialize(*this, obj);
+        return *this;
+    }
+};
+
+/* In auxpow, serialising the block header includes a transaction.  The logic
+   for those depends on GetVersion(), so it can check the witness flag.
+   Thus upstream code assuming that we can write a block header to DataStream
+   breaks, which we fix hereby.  */
+template <typename Stream>
+  inline int GetVersionOrProtocol (const Stream& s)
+{
+    return s.GetVersion();
+}
+template <>
+  inline int GetVersionOrProtocol<DataStream> (const DataStream& s)
+{
+    return PROTOCOL_VERSION;
+}
 
 template <typename IStream>
 class BitStreamReader
