@@ -73,7 +73,7 @@ struct CCoinsStats {
 
 uint64_t GetBogoSize(const CScript& script_pub_key);
 
-CDataStream TxOutSer(const COutPoint& outpoint, const Coin& coin);
+DataStream TxOutSer(const COutPoint& outpoint, const Coin& coin);
 
 /** Applies the value of the given coin to either the name or the
  *  currency total.  The sign can be used to apply them negative

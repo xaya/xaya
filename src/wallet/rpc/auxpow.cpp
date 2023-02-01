@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Bitcoin Core developers
+// Copyright (c) 2011-2023 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -137,8 +137,8 @@ RPCHelpMan getauxblock()
                 "required to merge-mine it.  With arguments, submits a solved\n"
                 "auxpow for a previously returned block.\n",
                 {
-                    {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Hash of the block to submit"},
-                    {"auxpow", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Serialised auxpow found"},
+                    {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Hash of the block to submit"},
+                    {"auxpow", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Serialised auxpow found"},
                 },
                 {
                   RPCResult{"without arguments",
@@ -207,8 +207,8 @@ RPCHelpMan getwork()
         "\nWith arguments, submits a solved PoW for a previously-returned block.\n"
         "\nDEPRECATED: If hash is not given, it will be deduced from data.  Prefer to add an explicit hash.\n",
         {
-            {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Hash of the block to submit"},
-            {"data", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Solved block header data"},
+            {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Hash of the block to submit"},
+            {"data", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Solved block header data"},
         },
         RPCResults{
             RPCResult{"without arguments",

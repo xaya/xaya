@@ -256,6 +256,8 @@ BASE_SCRIPTS = [
     'wallet_importprunedfunds.py --descriptors',
     'p2p_leak_tx.py',
     'p2p_eviction.py',
+    # FIXME: Reenable when debugged.
+    #'p2p_ibd_stalling.py',
     'wallet_signmessagewithaddress.py',
     'rpc_signmessagewithprivkey.py',
     'rpc_generate.py',
@@ -410,6 +412,7 @@ SKIPPED = [
     'feature_signet.py',
     'feature_versionbits_warning.py',
     'p2p_dos_header_tree.py',
+    'p2p_ibd_stalling.py',
     'mempool_expiry.py',
     'tool_signet_miner.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of

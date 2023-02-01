@@ -232,7 +232,7 @@ game_sendupdates ()
       {
           {"gameid", RPCArg::Type::STR, RPCArg::Optional::NO, "The game ID for which to send notifications"},
           {"fromblock", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Starting block hash"},
-          {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED_NAMED_ARG, "Target block hash"},
+          {"toblock", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Target block hash"},
       },
       RPCResult {RPCResult::Type::OBJ, "", "",
           {
@@ -357,8 +357,8 @@ trackedgames ()
       "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
       "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
       {
-          {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Can be \"add\" or \"remove\""},
-          {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "The game ID to add or remove"},
+          {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Can be \"add\" or \"remove\""},
+          {"gameid", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "The game ID to add or remove"},
       },
       RPCResults {
         RPCResult{"if called without arguments", RPCResult::Type::ARR, "", "",

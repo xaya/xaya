@@ -210,7 +210,7 @@ name_list ()
   return RPCHelpMan ("name_list",
       "\nShows the status of all names in the wallet.\n",
       {
-          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only include this name"},
+          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Only include this name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::ARR, "", "",
@@ -397,7 +397,7 @@ name_register ()
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
-          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Value for the name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -491,7 +491,7 @@ name_update ()
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
-          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Value for the name"},
+          {"value", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Value for the name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::STR_HEX, "", "the transaction ID"},
@@ -761,9 +761,9 @@ sendtoname ()
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to send to."},
           {"amount", RPCArg::Type::AMOUNT, RPCArg::Optional::NO, "The amount in " + CURRENCY_UNIT + " to send. eg 0.1"},
-          {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment used to store what the transaction is for.\n"
+          {"comment", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "A comment used to store what the transaction is for.\n"
   "                             This is not part of the transaction, just kept in your wallet."},
-          {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "A comment to store the name of the person or organization\n"
+          {"comment_to", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "A comment to store the name of the person or organization\n"
   "                             to which you're sending the transaction. This is not part of the \n"
   "                             transaction, just kept in your wallet."},
           {"subtractfeefromamount", RPCArg::Type::BOOL, RPCArg::Default{false}, "The fee will be deducted from the amount being sent.\n"

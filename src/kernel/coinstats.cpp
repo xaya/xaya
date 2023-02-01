@@ -63,8 +63,9 @@ AddCoinValueToTotals (const Coin& coin, const int sign,
   }
 }
 
-CDataStream TxOutSer(const COutPoint& outpoint, const Coin& coin) {
-    CDataStream ss(SER_DISK, PROTOCOL_VERSION);
+DataStream TxOutSer(const COutPoint& outpoint, const Coin& coin)
+{
+    DataStream ss{};
     ss << outpoint;
     ss << static_cast<uint32_t>(coin.nHeight * 2 + coin.fCoinBase);
     ss << coin.out;

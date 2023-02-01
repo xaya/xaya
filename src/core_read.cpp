@@ -211,7 +211,7 @@ bool DecodeHexObject(T& obj, const std::string& strHex)
     if (!IsHex(strHex)) return false;
 
     const std::vector<unsigned char> data(ParseHex(strHex));
-    CDataStream stream(data, SER_NETWORK, PROTOCOL_VERSION);
+    DataStream stream{data};
     try {
         stream >> obj;
     } catch (const std::exception&) {

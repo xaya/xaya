@@ -10,6 +10,7 @@
 #include <prevector.h>
 #include <script/script.h>
 #include <serialize.h>
+#include <streams.h>
 #include <uint256.h>
 
 #include <cstddef>
@@ -215,7 +216,7 @@ struct CMutableTransaction;
  */
 template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
-    const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
+    const bool fAllowWitness = !(GetVersionOrProtocol(s) & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s >> tx.nVersion;
     unsigned char flags = 0;
@@ -254,7 +255,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
 
 template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
-    const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
+    const bool fAllowWitness = !(GetVersionOrProtocol(s) & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s << tx.nVersion;
     unsigned char flags = 0;

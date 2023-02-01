@@ -62,11 +62,6 @@ struct UniValueType {
     UniValue::VType type;
 };
 
-/**
- * Type-check one argument; throws JSONRPCError if wrong type given.
- */
-void RPCTypeCheckArgument(const UniValue& value, const UniValueType& typeExpected);
-
 /*
   Check for expected keys/value types in an Object.
 */
@@ -154,18 +149,14 @@ struct RPCArg {
         /** Required arg */
         NO,
         /**
-         * The arg is optional for one of two reasons:
-         *
-         * Optional arg that is a named argument and has a default value of
-         * `null`.
-         *
-         * Optional argument with default value omitted because they are
-         * implicitly clear. That is, elements in an array may not
-         * exist by default.
+         * Optional argument for which the default value is omitted from
+         * help text for one of two reasons:
+         * - It's a named argument and has a default value of `null`.
+         * - Its default value is implicitly clear. That is, elements in an
+         *    array may not exist by default.
          * When possible, the default value should be specified.
          */
         OMITTED,
-        OMITTED_NAMED_ARG, // Deprecated alias for OMITTED, can be removed
     };
     /** Hint for default value */
     using DefaultHint = std::string;
@@ -214,8 +205,11 @@ struct RPCArg {
 
     bool IsOptional() const;
 
-    /** Check whether the request JSON type matches. */
-    void MatchesType(const UniValue& request) const;
+    /**
+     * Check whether the request JSON type matches.
+     * Returns true if type matches, or object describing error(s) if not.
+     */
+    UniValue MatchesType(const UniValue& request) const;
 
     /** Return the first of all aliases */
     std::string GetFirstName() const;

@@ -476,7 +476,7 @@ RPCArg
 NameOptionsHelp::buildRpcArg () const
 {
   return RPCArg ("options", RPCArg::Type::OBJ,
-                 RPCArg::Optional::OMITTED_NAMED_ARG,
+                 RPCArg::Optional::OMITTED,
                  "Options for this RPC call", innerArgs);
 }
 
@@ -777,7 +777,7 @@ name_pending ()
       "\nLists unconfirmed name operations in the mempool.\n"
       "\nIf a name is given, only check for operations on this name.\n",
       {
-          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Only look for this name"},
+          {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Only look for this name"},
           optHelp.buildRpcArg (),
       },
       RPCResult {RPCResult::Type::ARR, "", "",
