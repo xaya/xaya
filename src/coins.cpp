@@ -16,7 +16,7 @@ std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint
 bool CCoinsView::GetName(const valtype &name, CNameData &data) const { return false; }
 bool CCoinsView::GetNameHistory(const valtype &name, CNameHistory &data) const { return false; }
 CNameIterator* CCoinsView::IterateNames() const { assert (false); }
-bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return false; }
+bool CCoinsView::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names, bool erase) { return false; }
 std::unique_ptr<CCoinsViewCursor> CCoinsView::Cursor() const { return nullptr; }
 bool CCoinsView::ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const { return false; }
 
@@ -35,12 +35,12 @@ bool CCoinsViewBacked::GetName(const valtype &name, CNameData &data) const { ret
 bool CCoinsViewBacked::GetNameHistory(const valtype &name, CNameHistory &data) const { return base->GetNameHistory(name, data); }
 CNameIterator* CCoinsViewBacked::IterateNames() const { return base->IterateNames(); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
-bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) { return base->BatchWrite(mapCoins, hashBlock, names); }
+bool CCoinsViewBacked::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names, bool erase) { return base->BatchWrite(mapCoins, hashBlock, names, erase); }
 std::unique_ptr<CCoinsViewCursor> CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 bool CCoinsViewBacked::ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const { return base->ValidateNameDB(chainState, interruption_point); }
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView *baseIn) : CCoinsViewBacked(baseIn), cachedCoinsUsage(0) {}
+CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn) {}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
     return memusage::DynamicUsage(cacheCoins) + cachedCoinsUsage;
@@ -261,8 +261,10 @@ void CCoinsViewCache::DeleteName(const valtype &name) {
     cacheNames.remove(name);
 }
 
-bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const CNameCache &names) {
-    for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end(); it = mapCoins.erase(it)) {
+bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn, const CNameCache &names, bool erase) {
+    for (CCoinsMap::iterator it = mapCoins.begin();
+            it != mapCoins.end();
+            it = erase ? mapCoins.erase(it) : std::next(it)) {
         // Ignore non-dirty entries (optimization).
         if (!(it->second.flags & CCoinsCacheEntry::DIRTY)) {
             continue;
@@ -275,7 +277,14 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
                 // Create the coin in the parent cache, move the data up
                 // and mark it as dirty.
                 CCoinsCacheEntry& entry = cacheCoins[it->first];
-                entry.coin = std::move(it->second.coin);
+                if (erase) {
+                    // The `move` call here is purely an optimization; we rely on the
+                    // `mapCoins.erase` call in the `for` expression to actually remove
+                    // the entry from the child map.
+                    entry.coin = std::move(it->second.coin);
+                } else {
+                    entry.coin = it->second.coin;
+                }
                 cachedCoinsUsage += entry.coin.DynamicMemoryUsage();
                 entry.flags = CCoinsCacheEntry::DIRTY;
                 // We can mark it FRESH in the parent if it was FRESH in the child
@@ -303,7 +312,14 @@ bool CCoinsViewCache::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlockIn
             } else {
                 // A normal modification.
                 cachedCoinsUsage -= itUs->second.coin.DynamicMemoryUsage();
-                itUs->second.coin = std::move(it->second.coin);
+                if (erase) {
+                    // The `move` call here is purely an optimization; we rely on the
+                    // `mapCoins.erase` call in the `for` expression to actually remove
+                    // the entry from the child map.
+                    itUs->second.coin = std::move(it->second.coin);
+                } else {
+                    itUs->second.coin = it->second.coin;
+                }
                 cachedCoinsUsage += itUs->second.coin.DynamicMemoryUsage();
                 itUs->second.flags |= CCoinsCacheEntry::DIRTY;
                 // NOTE: It isn't safe to mark the coin as FRESH in the parent
@@ -325,10 +341,30 @@ bool CCoinsViewCache::Flush() {
     if (hashBlock.IsNull() && cacheCoins.empty() && cacheNames.empty())
         return true;
 
-    bool fOk = base->BatchWrite(cacheCoins, hashBlock, cacheNames);
-    cacheCoins.clear();
+    bool fOk = base->BatchWrite(cacheCoins, hashBlock, cacheNames, /*erase=*/true);
+    if (fOk && !cacheCoins.empty()) {
+        /* BatchWrite must erase all cacheCoins elements when erase=true. */
+        throw std::logic_error("Not all cached coins were erased");
+    }
     cachedCoinsUsage = 0;
     cacheNames.clear();
+    return fOk;
+}
+
+bool CCoinsViewCache::Sync()
+{
+    bool fOk = base->BatchWrite(cacheCoins, hashBlock, cacheNames, /*erase=*/false);
+    // Instead of clearing `cacheCoins` as we would in Flush(), just clear the
+    // FRESH/DIRTY flags of any coin that isn't spent.
+    for (auto it = cacheCoins.begin(); it != cacheCoins.end(); ) {
+        if (it->second.coin.IsSpent()) {
+            cachedCoinsUsage -= it->second.coin.DynamicMemoryUsage();
+            it = cacheCoins.erase(it);
+        } else {
+            it->second.flags = 0;
+            ++it;
+        }
+    }
     return fOk;
 }
 

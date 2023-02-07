@@ -53,7 +53,7 @@ protected:
 private:
     CZMQNotificationInterface();
 
-    void *pcontext;
+    void* pcontext{nullptr};
     std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
 
     /**

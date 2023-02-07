@@ -65,7 +65,7 @@ public:
     bool GetName(const valtype &name, CNameData &data) const override;
     bool GetNameHistory(const valtype &name, CNameHistory &data) const override;
     CNameIterator* IterateNames() const override;
-    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names) override;
+    bool BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock, const CNameCache &names, bool erase = true) override;
     std::unique_ptr<CCoinsViewCursor> Cursor() const override;
     bool ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const override;
 
