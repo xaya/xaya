@@ -8,6 +8,7 @@
 #include <pow.h>
 #include <primitives/pureheader.h>
 #include <streams.h>
+#include <test/util/random.h>
 #include <test/util/txmempool.h>
 
 #include <test/util/setup_common.h>

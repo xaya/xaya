@@ -9,6 +9,7 @@
 #include <rpc/blockchain.h>
 #include <sync.h>
 #include <test/util/chainstate.h>
+#include <test/util/random.h>
 #include <test/util/setup_common.h>
 #include <timedata.h>
 #include <uint256.h>
@@ -374,6 +375,7 @@ struct SnapshotTestSetup : TestChain100Setup {
             BOOST_CHECK_EQUAL(chainman.GetAll().size(), 0);
             const ChainstateManager::Options chainman_opts{
                 .chainparams = ::Params(),
+                .datadir = m_args.GetDataDirNet(),
                 .adjusted_time_callback = GetAdjustedTime,
             };
             // For robustness, ensure the old manager is destroyed before creating a
