@@ -42,7 +42,10 @@ std::unique_ptr<CCoinsViewCursor> CCoinsViewBacked::Cursor() const { return base
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 bool CCoinsViewBacked::ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const { return base->ValidateNameDB(chainState, interruption_point); }
 
-CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn) : CCoinsViewBacked(baseIn) {}
+CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn, bool deterministic) :
+    CCoinsViewBacked(baseIn), m_deterministic(deterministic),
+    cacheCoins(0, SaltedOutpointHasher(/*deterministic=*/deterministic))
+{}
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
     return memusage::DynamicUsage(cacheCoins) + cachedCoinsUsage;
@@ -424,7 +427,24 @@ void CCoinsViewCache::ReallocateCache()
     // Cache should be empty when we're calling this.
     assert(cacheCoins.size() == 0);
     cacheCoins.~CCoinsMap();
-    ::new (&cacheCoins) CCoinsMap();
+    ::new (&cacheCoins) CCoinsMap(0, SaltedOutpointHasher(/*deterministic=*/m_deterministic));
+}
+
+void CCoinsViewCache::SanityCheck() const
+{
+    size_t recomputed_usage = 0;
+    for (const auto& [_, entry] : cacheCoins) {
+        unsigned attr = 0;
+        if (entry.flags & CCoinsCacheEntry::DIRTY) attr |= 1;
+        if (entry.flags & CCoinsCacheEntry::FRESH) attr |= 2;
+        if (entry.coin.IsSpent()) attr |= 4;
+        // Only 5 combinations are possible.
+        assert(attr != 2 && attr != 4 && attr != 7);
+
+        // Recompute cachedCoinsUsage.
+        recomputed_usage += entry.coin.DynamicMemoryUsage();
+    }
+    assert(recomputed_usage == cachedCoinsUsage);
 }
 
 static const size_t MIN_TRANSACTION_OUTPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxOut(), PROTOCOL_VERSION);

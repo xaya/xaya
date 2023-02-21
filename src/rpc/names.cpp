@@ -21,6 +21,7 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/strencodings.h>
+#include <util/system.h>
 #include <validation.h>
 #ifdef ENABLE_WALLET
 # include <wallet/rpc/util.h>
