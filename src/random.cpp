@@ -8,23 +8,22 @@
 #include <compat/cpuid.h>
 #include <crypto/sha256.h>
 #include <crypto/sha512.h>
-#include <support/cleanse.h>
-#ifdef WIN32
-#include <compat/compat.h>
-#include <wincrypt.h>
-#endif
 #include <logging.h>
 #include <randomenv.h>
-#include <support/allocators/secure.h>
 #include <span.h>
-#include <sync.h>     // for Mutex
-#include <util/time.h> // for GetTimeMicros()
+#include <support/allocators/secure.h>
+#include <support/cleanse.h>
+#include <sync.h>
+#include <util/time.h>
 
 #include <cmath>
 #include <cstdlib>
 #include <thread>
 
-#ifndef WIN32
+#ifdef WIN32
+#include <windows.h>
+#include <wincrypt.h>
+#else
 #include <fcntl.h>
 #include <sys/time.h>
 #endif
@@ -599,18 +598,15 @@ uint256 GetRandHash() noexcept
 void FastRandomContext::RandomSeed()
 {
     uint256 seed = GetRandHash();
-    rng.SetKey(seed.begin(), 32);
+    rng.SetKey32(seed.begin());
     requires_seed = false;
 }
 
 uint256 FastRandomContext::rand256() noexcept
 {
-    if (bytebuf_size < 32) {
-        FillByteBuffer();
-    }
+    if (requires_seed) RandomSeed();
     uint256 ret;
-    memcpy(ret.begin(), bytebuf + 64 - bytebuf_size, 32);
-    bytebuf_size -= 32;
+    rng.Keystream(ret.data(), ret.size());
     return ret;
 }
 
@@ -624,9 +620,9 @@ std::vector<unsigned char> FastRandomContext::randbytes(size_t len)
     return ret;
 }
 
-FastRandomContext::FastRandomContext(const uint256& seed) noexcept : requires_seed(false), bytebuf_size(0), bitbuf_size(0)
+FastRandomContext::FastRandomContext(const uint256& seed) noexcept : requires_seed(false), bitbuf_size(0)
 {
-    rng.SetKey(seed.begin(), 32);
+    rng.SetKey32(seed.begin());
 }
 
 bool Random_SanityCheck()
@@ -637,7 +633,7 @@ bool Random_SanityCheck()
      * GetOSRand() overwrites all 32 bytes of the output given a maximum
      * number of tries.
      */
-    static const ssize_t MAX_TRIES = 1024;
+    static constexpr int MAX_TRIES{1024};
     uint8_t data[NUM_OS_RANDOM_BYTES];
     bool overwritten[NUM_OS_RANDOM_BYTES] = {}; /* Tracks which bytes have been overwritten at least once */
     int num_overwritten;
@@ -675,25 +671,22 @@ bool Random_SanityCheck()
     return true;
 }
 
-FastRandomContext::FastRandomContext(bool fDeterministic) noexcept : requires_seed(!fDeterministic), bytebuf_size(0), bitbuf_size(0)
+FastRandomContext::FastRandomContext(bool fDeterministic) noexcept : requires_seed(!fDeterministic), bitbuf_size(0)
 {
     if (!fDeterministic) {
         return;
     }
     uint256 seed;
-    rng.SetKey(seed.begin(), 32);
+    rng.SetKey32(seed.begin());
 }
 
 FastRandomContext& FastRandomContext::operator=(FastRandomContext&& from) noexcept
 {
     requires_seed = from.requires_seed;
     rng = from.rng;
-    std::copy(std::begin(from.bytebuf), std::end(from.bytebuf), std::begin(bytebuf));
-    bytebuf_size = from.bytebuf_size;
     bitbuf = from.bitbuf;
     bitbuf_size = from.bitbuf_size;
     from.requires_seed = true;
-    from.bytebuf_size = 0;
     from.bitbuf_size = 0;
     return *this;
 }
