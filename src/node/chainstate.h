@@ -25,6 +25,7 @@ struct ChainstateLoadOptions {
     bool reindex{false};
     bool reindex_chainstate{false};
     bool prune{false};
+    bool require_full_verification{true};
     bool nameHistory{false};
     int64_t check_blocks{DEFAULT_CHECKBLOCKS};
     int64_t check_level{DEFAULT_CHECKLEVEL};
@@ -36,7 +37,13 @@ struct ChainstateLoadOptions {
 //! case, and treat other cases as errors. More complex applications may want to
 //! try reindexing in the generic failure case, and pass an interrupt callback
 //! and exit cleanly in the interrupted case.
-enum class ChainstateLoadStatus { SUCCESS, FAILURE, FAILURE_INCOMPATIBLE_DB, INTERRUPTED };
+enum class ChainstateLoadStatus {
+    SUCCESS,
+    FAILURE,
+    FAILURE_INCOMPATIBLE_DB,
+    FAILURE_INSUFFICIENT_DBCACHE,
+    INTERRUPTED,
+};
 
 //! Chainstate load status code and optional error string.
 using ChainstateLoadResult = std::tuple<ChainstateLoadStatus, bilingual_str>;
