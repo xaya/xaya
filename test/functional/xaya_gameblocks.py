@@ -400,7 +400,8 @@ class GameBlocksTest (XayaZmqTest):
     rawtx = self.node.fundrawtransaction (rawtx["hex"])
     signed = self.node.signrawtransactionwithwallet (rawtx["hex"])
     assert signed["complete"]
-    txid = self.node.sendrawtransaction (signed["hex"])
+    txid = self.node.sendrawtransaction (hexstring=signed["hex"],
+                                         maxburnamount=10)
     self.generate (self.node, 1)
 
     _, data = self.games["a"].receive ()

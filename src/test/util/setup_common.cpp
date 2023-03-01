@@ -224,6 +224,7 @@ void TestingSetup::LoadVerifyActivateChainstate()
     options.nameHistory = m_args.GetBoolArg("-namehistory", false),
     options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
     options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
+    options.require_full_verification = m_args.IsArgSet("-checkblocks") || m_args.IsArgSet("-checklevel");
     auto [status, error] = LoadChainstate(chainman, m_cache_sizes, options);
     assert(status == node::ChainstateLoadStatus::SUCCESS);
 
