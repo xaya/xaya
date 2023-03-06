@@ -18,10 +18,11 @@ class WalletChangeAddressTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 3
         # discardfee is used to make change outputs less likely in the change_pos test
+        base = ["-addresstype=bech32"]
         self.extra_args = [
-            [],
-            ["-discardfee=1"],
-            ["-avoidpartialspends", "-discardfee=1"]
+            base + [],
+            base + ["-discardfee=1"],
+            base + ["-avoidpartialspends", "-discardfee=1"]
         ]
 
     def skip_test_if_missing_module(self):
