@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+class ArgsManager;
 class UniValue;
 
 // Application startup time (used for uptime calculation)
@@ -96,8 +97,8 @@ void ReleaseDirectoryLocks();
 bool TryCreateDirectories(const fs::path& p);
 fs::path GetDefaultDataDir();
 // Return true if -datadir option points to a valid directory or is not specified.
-bool CheckDataDirOption();
-fs::path GetConfigFile(const fs::path& configuration_file_path);
+bool CheckDataDirOption(const ArgsManager& args);
+fs::path GetConfigFile(const ArgsManager& args, const fs::path& configuration_file_path);
 #ifdef WIN32
 fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
@@ -112,11 +113,12 @@ void runCommand(const std::string& strCommand);
  * Most paths passed as configuration arguments are treated as relative to
  * the datadir if they are not absolute.
  *
+ * @param args Parsed arguments and settings.
  * @param path The path to be conditionally prefixed with datadir.
  * @param net_specific Use network specific datadir variant
  * @return The normalized path.
  */
-fs::path AbsPathForConfigVal(const fs::path& path, bool net_specific = true);
+fs::path AbsPathForConfigVal(const ArgsManager& args, const fs::path& path, bool net_specific = true);
 
 inline bool IsSwitchChar(char c)
 {
@@ -287,7 +289,6 @@ protected:
      * Get data directory path
      *
      * @return Absolute path on success, otherwise an empty path when a non-directory path would be returned
-     * @post Returned directory path is created unless it is empty
      */
     const fs::path& GetDataDirBase() const { return GetDataDir(false); }
 
@@ -295,7 +296,6 @@ protected:
      * Get data directory path with appended network identifier
      *
      * @return Absolute path on success, otherwise an empty path when a non-directory path would be returned
-     * @post Returned directory path is created unless it is empty
      */
     const fs::path& GetDataDirNet() const { return GetDataDir(true); }
 
