@@ -146,6 +146,7 @@ BITCOIN_TESTS =\
   test/timedata_tests.cpp \
   test/torcontrol_tests.cpp \
   test/transaction_tests.cpp \
+  test/translation_tests.cpp \
   test/txindex_tests.cpp \
   test/txpackage_tests.cpp \
   test/txreconciliation_tests.cpp \
@@ -185,7 +186,8 @@ BITCOIN_TESTS += \
   wallet/test/rpc_util_tests.cpp \
   wallet/test/rpcnames_tests.cpp \
   wallet/test/scriptpubkeyman_tests.cpp \
-  wallet/test/walletload_tests.cpp
+  wallet/test/walletload_tests.cpp \
+  wallet/test/group_outputs_tests.cpp
 
 FUZZ_SUITE_LD_COMMON +=\
  $(SQLITE_LIBS) \
