@@ -22,6 +22,7 @@
 #include <flatfile.h>
 #include <fs.h>
 #include <hash.h>
+#include <kernel/chainparams.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <logging/timer.h>
@@ -5389,7 +5390,7 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(
     CCoinsViewDB& ibd_coins_db = m_ibd_chainstate->CoinsDB();
     m_ibd_chainstate->ForceFlushStateToDisk();
 
-    auto maybe_au_data = ExpectedAssumeutxo(curr_height, ::Params());
+    auto maybe_au_data = ExpectedAssumeutxo(curr_height, m_options.chainparams);
     if (!maybe_au_data) {
         LogPrintf("[snapshot] assumeutxo data not found for height " /* Continued */
             "(%d) - refusing to validate snapshot\n", curr_height);
@@ -5515,7 +5516,9 @@ static ChainstateManager::Options&& Flatten(ChainstateManager::Options&& opts)
     return std::move(opts);
 }
 
-ChainstateManager::ChainstateManager(Options options) : m_options{Flatten(std::move(options))} {}
+ChainstateManager::ChainstateManager(Options options, node::BlockManager::Options blockman_options)
+    : m_options{Flatten(std::move(options))},
+      m_blockman{std::move(blockman_options)} {}
 
 ChainstateManager::~ChainstateManager()
 {

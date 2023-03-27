@@ -6,13 +6,13 @@
 #include <txdb.h>
 
 #include <chain.h>
+#include <logging.h>
 #include <names/encoding.h>
 #include <pow.h>
 #include <random.h>
 #include <script/names.h>
 #include <shutdown.h>
 #include <uint256.h>
-#include <util/system.h>
 #include <util/translation.h>
 #include <util/vector.h>
 #include <validation.h>
