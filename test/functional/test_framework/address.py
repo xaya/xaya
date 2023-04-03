@@ -21,10 +21,16 @@ from .script import (
     taproot_construct,
 )
 from .util import assert_equal
+from test_framework.script_util import (
+    keyhash_to_p2pkh_script,
+    program_to_witness_script,
+    scripthash_to_p2sh_script,
+)
 from test_framework.segwit_addr import (
     decode_segwit_address,
     encode_segwit_address,
 )
+
 
 ADDRESS_BCRT1_UNSPENDABLE = 'ncrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvadqwz'
 ADDRESS_BCRT1_UNSPENDABLE_DESCRIPTOR = 'addr(ncrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqvadqwz)#8esmyuyj'
@@ -164,12 +170,27 @@ def check_script(script):
 
 def bech32_to_bytes(address):
     hrp = address.split('1')[0]
-    if hrp not in ['bc', 'tb', 'bcrt']:
+    if hrp not in ['nc', 'tn', 'ncrt']:
         return (None, None)
     version, payload = decode_segwit_address(hrp, address)
     if version is None:
         return (None, None)
     return version, bytearray(payload)
+
+
+def address_to_scriptpubkey(address):
+    """Converts a given address to the corresponding output script (scriptPubKey)."""
+    version, payload = bech32_to_bytes(address)
+    if version is not None:
+        return program_to_witness_script(version, payload) # testnet segwit scriptpubkey
+    payload, version = base58_to_byte(address)
+    if version == 111:  # testnet pubkey hash
+        return keyhash_to_p2pkh_script(payload)
+    elif version == 196:  # testnet script hash
+        return scripthash_to_p2sh_script(payload)
+    # TODO: also support other address formats
+    else:
+        assert False
 
 
 class TestFrameworkScript(unittest.TestCase):
@@ -193,7 +214,7 @@ class TestFrameworkScript(unittest.TestCase):
 
     def test_bech32_decode(self):
         def check_bech32_decode(payload, version):
-            hrp = "tb"
+            hrp = "tn"
             self.assertEqual(bech32_to_bytes(encode_segwit_address(hrp, version, payload)), (version, payload))
 
         check_bech32_decode(bytes.fromhex('36e3e2a33f328de12e4b43c515a75fba2632ecc3'), 0)
