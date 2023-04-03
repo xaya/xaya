@@ -1385,10 +1385,10 @@ void LegacyScriptPubKeyMan::ReturnDestination(int64_t nIndex, bool fInternal, co
     WalletLogPrintf("keypool return %d\n", nIndex);
 }
 
-bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, const OutputType type, bool internal)
+bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, const OutputType type)
 {
     assert(type != OutputType::BECH32M);
-    if (!CanGetAddresses(internal)) {
+    if (!CanGetAddresses(/*internal=*/ false)) {
         return false;
     }
 
@@ -1396,10 +1396,10 @@ bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, const OutputType typ
     {
         LOCK(cs_KeyStore);
         int64_t nIndex;
-        if (!ReserveKeyFromKeyPool(nIndex, keypool, internal) && !m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
+        if (!ReserveKeyFromKeyPool(nIndex, keypool, /*fRequestedInternal=*/ false) && !m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
             if (m_storage.IsLocked()) return false;
             WalletBatch batch(m_storage.GetDatabase());
-            result = GenerateNewKey(batch, m_hd_chain, internal);
+            result = GenerateNewKey(batch, m_hd_chain, /*internal=*/ false);
             return true;
         }
         KeepDestination(nIndex, type);
@@ -1507,6 +1507,7 @@ std::vector<CKeyID> GetAffectedKeys(const CScript& spk, const SigningProvider& p
     FlatSigningProvider out;
     InferDescriptor(spk, provider)->Expand(0, DUMMY_SIGNING_PROVIDER, dummy, out);
     std::vector<CKeyID> ret;
+    ret.reserve(out.pubkeys.size());
     for (const auto& entry : out.pubkeys) {
         ret.push_back(entry.first);
     }
@@ -2501,6 +2502,7 @@ TransactionError DescriptorScriptPubKeyMan::FillPSBT(PartiallySignedTransaction&
         } else {
             // Maybe there are pubkeys listed that we can sign for
             std::vector<CPubKey> pubkeys;
+            pubkeys.reserve(input.hd_keypaths.size() + 2);
 
             // ECDSA Pubkeys
             for (const auto& [pk, _] : input.hd_keypaths) {
