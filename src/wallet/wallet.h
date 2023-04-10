@@ -7,7 +7,6 @@
 #define BITCOIN_WALLET_WALLET_H
 
 #include <consensus/amount.h>
-#include <fs.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <logging.h>
@@ -17,6 +16,7 @@
 #include <psbt.h>
 #include <script/names.h>
 #include <tinyformat.h>
+#include <util/fs.h>
 #include <util/hasher.h>
 #include <util/message.h>
 #include <util/result.h>
