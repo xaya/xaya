@@ -10,7 +10,7 @@
 #include <key_io.h>
 #include <names/applications.h>
 #include <script/names.h>
-#include <wallet/ismine.h>
+#include <wallet/types.h>
 
 #include <stdint.h>
 

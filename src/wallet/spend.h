@@ -98,8 +98,6 @@ CoinsResult AvailableCoins(const CWallet& wallet,
  */
 CoinsResult AvailableCoinsListUnspent(const CWallet& wallet, const CCoinControl* coinControl = nullptr, CoinFilterParams params = {}) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 
-CAmount GetAvailableBalance(const CWallet& wallet, const CCoinControl* coinControl = nullptr);
-
 /**
  * Find non-change parent output.
  */
