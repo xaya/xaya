@@ -127,10 +127,10 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Namecoin mainnet chain at height
-        // 625'000, with best block hash:
-        // fe5a2bfbdbb33b59d6e96271791c9fd130dc3d1f6c08a4e3f0457a2287498b9e
+        // 660'000, with best block hash:
+        // 092b0979c8004b1051c84e10e3b42f54ed58c4990f06bf330174a5a32a36cf7d
         consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000002623ca68ee9a9b2b0bbb3aaa");
-        consensus.defaultAssumeValid = uint256S("0xfe5a2bfbdbb33b59d6e96271791c9fd130dc3d1f6c08a4e3f0457a2287498b9e"); // 625'000
+        consensus.defaultAssumeValid = uint256S("0x092b0979c8004b1051c84e10e3b42f54ed58c4990f06bf330174a5a32a36cf7d"); // 660'000
 
         consensus.nAuxpowChainId = 0x0001;
         consensus.nAuxpowStartHeight = 19200;
@@ -213,10 +213,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data from RPC: getchaintxstats 4096 fe5a2bfbdbb33b59d6e96271791c9fd130dc3d1f6c08a4e3f0457a2287498b9e
-            .nTime    = 1660391035,
-            .nTxCount = 6482131,
-            .dTxRate  = 0.01497457125189064,
+            // Data from RPC: getchaintxstats 4096 092b0979c8004b1051c84e10e3b42f54ed58c4990f06bf330174a5a32a36cf7d
+            .nTime    = 1680959410,
+            .nTxCount = 6921862,
+            .dTxRate  = 0.01243156461341465,
         };
 
         /* See also doc/NamecoinBugs.txt for more explanation on the
@@ -413,15 +413,15 @@ public:
             bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
             //vSeeds.emplace_back("178.128.221.177");
 
-            consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000001291fc22898");
-            consensus.defaultAssumeValid = uint256S("0x000000d1a0e224fa4679d2fb2187ba55431c284fa1b74cbc8cfda866fd4d2c09"); // 105495
+            consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000001899d8142b0");
+            consensus.defaultAssumeValid = uint256S("0x0000004429ef154f7e00b4f6b46bfbe2d2678ecd351d95bbfca437ab9a5b84ec"); // 138000
             m_assumed_blockchain_size = 1;
             m_assumed_chain_state_size = 0;
             chainTxData = ChainTxData{
-                // Data from RPC: getchaintxstats 4096 000000d1a0e224fa4679d2fb2187ba55431c284fa1b74cbc8cfda866fd4d2c09
-                .nTime    = 1661702566,
-                .nTxCount = 1903567,
-                .dTxRate  = 0.02336701143027275,
+                // Data from RPC: getchaintxstats 4096 0000004429ef154f7e00b4f6b46bfbe2d2678ecd351d95bbfca437ab9a5b84ec
+                .nTime    = 1681127428,
+                .nTxCount = 2226359,
+                .dTxRate  = 0.006424463050600656,
             };
         } else {
             bin = *options.challenge;
