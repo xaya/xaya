@@ -1,13 +1,13 @@
-// Copyright (c) 2019-2022 Daniel Kraft
+// Copyright (c) 2019-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <index/namehash.h>
 
+#include <common/args.h>
 #include <hash.h>
 #include <primitives/block.h>
 #include <script/names.h>
-#include <util/system.h>
 
 #include <utility>
 #include <vector>

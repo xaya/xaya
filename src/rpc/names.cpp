@@ -5,6 +5,7 @@
 
 #include <base58.h>
 #include <chainparams.h>
+#include <common/args.h>
 #include <core_io.h>
 #include <init.h>
 #include <index/namehash.h>

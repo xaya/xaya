@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,6 +6,7 @@
 
 #include <chainparams.h>
 #include <coins.h>
+#include <common/args.h>
 #include <consensus/validation.h>
 #include <dbwrapper.h>
 #include <hash.h>
@@ -15,7 +16,6 @@
 #include <txmempool.h>
 #include <uint256.h>
 #include <undo.h>
-#include <util/system.h>
 #include <util/strencodings.h>
 #include <validation.h>
 

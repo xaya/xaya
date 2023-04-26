@@ -12,6 +12,7 @@
 #include <auxpow.h>
 #include <chain.h>
 #include <checkqueue.h>
+#include <common/args.h>
 #include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
@@ -5042,7 +5043,6 @@ bool Chainstate::ResizeCoinsCaches(size_t coinstip_size, size_t coinsdb_size)
     } else {
         // Otherwise, flush state to disk and deallocate the in-memory coins map.
         ret = FlushStateToDisk(state, FlushStateMode::ALWAYS);
-        CoinsTip().ReallocateCache();
     }
     return ret;
 }
