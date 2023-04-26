@@ -13,6 +13,7 @@
 #include <addrman.h>
 #include <banman.h>
 #include <clientversion.h>
+#include <common/args.h>
 #include <compat/compat.h>
 #include <consensus/consensus.h>
 #include <crypto/sha256.h>
@@ -30,7 +31,6 @@
 #include <util/sock.h>
 #include <util/strencodings.h>
 #include <util/syscall_sandbox.h>
-#include <util/system.h>
 #include <util/thread.h>
 #include <util/threadinterrupt.h>
 #include <util/trace.h>
@@ -2614,6 +2614,11 @@ size_t CConnman::GetNodeCount(ConnectionDirection flags) const
     return nNum;
 }
 
+uint32_t CConnman::GetMappedAS(const CNetAddr& addr) const
+{
+    return m_netgroupman.GetMappedAS(addr);
+}
+
 void CConnman::GetNodeStats(std::vector<CNodeStats>& vstats) const
 {
     vstats.clear();
@@ -2622,7 +2627,7 @@ void CConnman::GetNodeStats(std::vector<CNodeStats>& vstats) const
     for (CNode* pnode : m_nodes) {
         vstats.emplace_back();
         pnode->CopyStats(vstats.back());
-        vstats.back().m_mapped_as = m_netgroupman.GetMappedAS(pnode->addr);
+        vstats.back().m_mapped_as = GetMappedAS(pnode->addr);
     }
 }
 
