@@ -1,11 +1,11 @@
-// Copyright (c) 2018 Daniel Kraft
+// Copyright (c) 2018-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <names/encoding.h>
 
+#include <common/args.h>
 #include <logging.h>
-#include <util/system.h>
 #include <util/strencodings.h>
 
 #include <univalue.h>

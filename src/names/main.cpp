@@ -6,6 +6,7 @@
 
 #include <chainparams.h>
 #include <coins.h>
+#include <common/args.h>
 #include <consensus/validation.h>
 #include <dbwrapper.h>
 #include <hash.h>
@@ -16,7 +17,6 @@
 #include <txmempool.h>
 #include <uint256.h>
 #include <undo.h>
-#include <util/system.h>
 #include <util/strencodings.h>
 #include <validation.h>
 

@@ -6,13 +6,14 @@
 #include <chainparams.h>
 
 #include <chainparamsseeds.h>
+#include <common/args.h>
 #include <consensus/merkle.h>
 #include <deploymentinfo.h>
 #include <hash.h> // for signet block challenge hash
+#include <logging.h>
 #include <powdata.h>
 #include <script/interpreter.h>
 #include <util/string.h>
-#include <util/system.h>
 
 #include <algorithm>
 #include <cassert>

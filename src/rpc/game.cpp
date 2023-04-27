@@ -6,6 +6,7 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <common/args.h>
 #include <logging.h>
 #include <node/blockstorage.h>
 #include <random.h>
@@ -16,7 +17,6 @@
 #include <script/script.h>
 #include <uint256.h>
 #include <util/strencodings.h>
-#include <util/system.h>
 #include <util/thread.h>
 #include <validation.h>
 #include <zmq/zmqgames.h>

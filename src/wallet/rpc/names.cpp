@@ -5,6 +5,7 @@
 
 #include <base58.h>
 #include <coins.h>
+#include <common/args.h>
 #include <consensus/validation.h>
 #include <crypto/hkdf_sha256_32.h>
 #include <core_io.h>
@@ -29,7 +30,6 @@
 #include <txmempool.h>
 #include <util/fees.h>
 #include <util/moneystr.h>
-#include <util/system.h>
 #include <util/translation.h>
 #include <util/vector.h>
 #include <validation.h>

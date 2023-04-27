@@ -4,9 +4,12 @@
 
 #include <zmq/zmqnotificationinterface.h>
 
+#include <common/args.h>
 #include <logging.h>
 #include <primitives/block.h>
-#include <util/system.h>
+#include <primitives/transaction.h>
+#include <validationinterface.h>
+#include <zmq/zmqabstractnotifier.h>
 #include <zmq/zmqpublishnotifier.h>
 #include <zmq/zmqutil.h>
 

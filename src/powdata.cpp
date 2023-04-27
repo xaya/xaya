@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Xaya developers
+// Copyright (c) 2018-2023 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +6,7 @@
 
 #include <arith_uint256.h>
 #include <consensus/params.h>
-#include <util/system.h>
+#include <logging.h>
 
 #include <sstream>
 #include <stdexcept>
