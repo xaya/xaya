@@ -194,13 +194,14 @@ task:
   name: 'ARM [unit tests, no functional tests] [bullseye]'
   << : *GLOBAL_TASK_TEMPLATE
   arm_container:
-    image: debian:bullseye
     cpu: 2
     memory: 8G
-    # docker_arguments:  # Can use dockerfile after https://github.com/cirruslabs/cirrus-ci-docs/issues/1154
+    dockerfile: ci/test_imagefile
+    docker_arguments:
+      CI_IMAGE_NAME_TAG: debian:bullseye
+      FILE_ENV: "./ci/test/00_setup_env_arm.sh"
   env:
     << : *CIRRUS_EPHEMERAL_WORKER_TEMPLATE_ENV
-    FILE_ENV: "./ci/test/00_setup_env_arm.sh"
     QEMU_USER_CMD: ""  # Disable qemu and run the test natively
 
 task:
@@ -261,7 +262,7 @@ task:
     MAKEJOBS: "-j4"  # Avoid excessive memory use due to MSan
 
 task:
-  name: '[ASan + LSan + UBSan + integer, no depends, USDT] [jammy]'
+  name: '[ASan + LSan + UBSan + integer, no depends, USDT] [lunar]'
   << : *GLOBAL_TASK_TEMPLATE
   # We can't use a 'container' for the USDT interface tests as the CirrusCI
   # containers don't have privileges to hook into bitcoind. CirrusCI uses
@@ -269,8 +270,9 @@ task:
   # Images can be found here: https://cloud.google.com/compute/docs/images/os-details
   compute_engine_instance:
     image_project: ubuntu-os-cloud
-    image: family/ubuntu-2204-lts # when upgrading, check if we can drop "ADD_UNTRUSTED_BPFCC_PPA"
+    image: family/ubuntu-2304-amd64 # https://cirrus-ci.org/guide/custom-vms/#custom-compute-engine-vms
     cpu: 4
+    disk: 100
     memory: 12G
   env:
     << : *CIRRUS_EPHEMERAL_WORKER_TEMPLATE_ENV
