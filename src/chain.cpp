@@ -16,7 +16,7 @@ std::string CBlockFileInfo::ToString() const
 
 /* Moved here from the header, because we need auxpow and the logic
    becomes more involved.  */
-CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
+CBlockHeader CBlockIndex::GetBlockHeader(const node::BlockManager& blockman) const
 {
     CBlockHeader block;
     block.nVersion = nVersion;
@@ -26,7 +26,7 @@ CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParam
        have to read the actual *header*, not the full block.  */
     if (block.IsAuxpow())
     {
-        node::ReadBlockHeaderFromDisk(block, this, consensusParams);
+        blockman.ReadBlockHeaderFromDisk(block, *this);
         return block;
     }
 

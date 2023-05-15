@@ -83,7 +83,7 @@ public:
             // should continue and try to add confirmed names and
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
-            const UniValue message = find_value( e, "message");
+            const UniValue message = e.find_value( "message");
             LogPrint(BCLog::QT, "name_list lookup error: %s\n", message.get_str());
         }
 
@@ -92,8 +92,8 @@ public:
         {
             for (const auto& v : confirmedNames.getValues())
             {
-                UniValue maybeName = find_value ( v, "name");
-                UniValue maybeData = find_value ( v, "value");
+                UniValue maybeName = v.find_value ( "name");
+                UniValue maybeData = v.find_value ( "value");
                 if (!maybeName.isStr() || !maybeData.isStr())
                 {
                     continue;
@@ -101,11 +101,11 @@ public:
 
                 const std::string name = maybeName.get_str();
                 const std::string data = maybeData.get_str();
-                const int height = find_value ( v, "height").getInt<int>();
-                const int expiresIn = find_value ( v, "expires_in").getInt<int>();
+                const int height = v.find_value ( "height").getInt<int>();
+                const int expiresIn = v.find_value ( "expires_in").getInt<int>();
 
-                const bool isMine = find_value ( v, "ismine").get_bool();
-                const bool isExpired = find_value ( v, "expired").get_bool();
+                const bool isMine = v.find_value ( "ismine").get_bool();
+                const bool isExpired = v.find_value ( "expired").get_bool();
                 // TODO: Check "op" field
 
                 std::string status = NameTableEntry::NAME_STATUS_CONFIRMED;
@@ -134,7 +134,7 @@ public:
             // should continue and try to add confirmed names and
             // pending names. show error to user in case something
             // actually went wrong so they can potentially recover
-            const UniValue message = find_value( e, "message");
+            const UniValue message = e.find_value( "message");
             LogPrint(BCLog::QT, "name_pending lookup error: %s\n", message.get_str());
         }
 
@@ -143,8 +143,8 @@ public:
         {
             for (const auto& v : pendingNames.getValues())
             {
-                UniValue maybeName = find_value ( v, "name");
-                UniValue maybeData = find_value ( v, "value");
+                UniValue maybeName = v.find_value ( "name");
+                UniValue maybeData = v.find_value ( "value");
                 if (!maybeName.isStr() || !maybeData.isStr())
                 {
                     continue;
@@ -153,8 +153,8 @@ public:
                 const std::string name = maybeName.get_str();
                 const std::string data = maybeData.get_str();
 
-                const bool isMine = find_value ( v, "ismine").get_bool();
-                const std::string op = find_value ( v, "op").get_str();
+                const bool isMine = v.find_value ( "ismine").get_bool();
+                const std::string op = v.find_value ( "op").get_str();
 
                 const bool confirmedEntryExists = vNamesO.count(name);
 
@@ -513,7 +513,7 @@ QString NameTableModel::update(const QString &name, const std::optional<QString>
         walletModel->node().executeRpc("name_update", params, walletURI);
     }
     catch (const UniValue& e) {
-        const UniValue message = find_value(e, "message");
+        const UniValue message = e.find_value("message");
         const std::string errorStr = message.get_str();
         LogPrint(BCLog::QT, "name_update error: %s\n", errorStr);
         return QString::fromStdString(errorStr);

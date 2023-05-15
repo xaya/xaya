@@ -120,7 +120,7 @@ QString BuyNamesPage::name_available(const QString &name) const
     }
     catch (const UniValue& e)
     {
-        const UniValue code = find_value(e, "code");
+        const UniValue code = e.find_value("code");
         const int codeInt = code.getInt<int>();
         if (codeInt == RPC_WALLET_ERROR)
         {
@@ -128,7 +128,7 @@ QString BuyNamesPage::name_available(const QString &name) const
             return QString("");
         }
 
-        const UniValue message = find_value(e, "message");
+        const UniValue message = e.find_value("message");
         const std::string errorStr = message.get_str();
         LogPrint(BCLog::QT, "name_show error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
@@ -163,7 +163,7 @@ QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QStri
         walletModel->node().executeRpc("name_firstupdate", params, walletURI);
     }
     catch (const UniValue& e) {
-        const UniValue message = find_value(e, "message");
+        const UniValue message = e.find_value("message");
         const std::string errorStr = message.get_str();
         LogPrint(BCLog::QT, "name_firstupdate error: %s\n", errorStr);
         return QString::fromStdString(errorStr);

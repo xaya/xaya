@@ -912,7 +912,7 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
       {"op", UniValueType (UniValue::VSTR)},
     }
   );
-  const std::string op = find_value (nameOp, "op").get_str ();
+  const std::string op = nameOp.find_value ("op").get_str ();
 
   /* namerawtransaction does not have an options argument.  This would just
      make the already long list of arguments longer.  Instead of using
@@ -932,7 +932,7 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
       valtype rand;
       if (nameOp.exists ("rand"))
         {
-          const std::string randStr = find_value (nameOp, "rand").get_str ();
+          const std::string randStr = nameOp.find_value ("rand").get_str ();
           if (!IsHex (randStr))
             throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
           rand = ParseHex (randStr);
@@ -944,7 +944,7 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
         }
 
       const valtype name
-          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
+          = DecodeNameFromRPCOrThrow (nameOp.find_value ("name"), NO_OPTIONS);
 
       script = CNameScript::buildNameNew (script, name, rand);
       result.pushKV ("rand", HexStr (rand));
@@ -959,15 +959,15 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
         }
       );
 
-      const std::string randStr = find_value (nameOp, "rand").get_str ();
+      const std::string randStr = nameOp.find_value ("rand").get_str ();
       if (!IsHex (randStr))
         throw JSONRPCError (RPC_DESERIALIZATION_ERROR, "rand must be hex");
       const valtype rand = ParseHex (randStr);
 
       const valtype name
-          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
+          = DecodeNameFromRPCOrThrow (nameOp.find_value ("name"), NO_OPTIONS);
       const valtype value
-          = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"),
+          = DecodeValueFromRPCOrThrow (nameOp.find_value ("value"),
                                        NO_OPTIONS);
 
       script = CNameScript::buildNameFirstupdate (script, name, value, rand);
@@ -982,9 +982,9 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
       );
 
       const valtype name
-          = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
+          = DecodeNameFromRPCOrThrow (nameOp.find_value ("name"), NO_OPTIONS);
       const valtype value
-          = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"),
+          = DecodeValueFromRPCOrThrow (nameOp.find_value ("value"),
                                        NO_OPTIONS);
 
       script = CNameScript::buildNameUpdate (script, name, value);
