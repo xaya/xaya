@@ -23,7 +23,7 @@ TestNameSalt(const std::string& privkey_b58, const std::string& name_str, const 
 
 BOOST_AUTO_TEST_CASE(name_salts)
 {
-    SelectParams(CBaseChainParams::REGTEST);
+    SelectParams(ChainType::REGTEST);
     TestNameSalt( // test_name_salt_addr_p2pkh
                 /* private key   */ "b51HTKAaN3Ep9itrf6wFfUGQ4jwQq7Tfay2GNnXKzrFDM5ZogXwA",
                 /* name          */ "d/wikileaks",

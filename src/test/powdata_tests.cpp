@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2019 The Xaya developers
+// Copyright (c) 2018-2023 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE (powlimit_for_algo_mainnet)
 
 BOOST_AUTO_TEST_CASE (powlimit_for_algo_regtest)
 {
-  SelectParams (CBaseChainParams::REGTEST);
+  SelectParams (ChainType::REGTEST);
   const auto& params = Params ().GetConsensus ();
   BOOST_CHECK (powLimitForAlgo (PowAlgo::SHA256D, params)
                 == params.powLimitNeoscrypt);
@@ -192,7 +192,7 @@ public:
   PowDataForTest pow;
 
   ValidationSetup ()
-    : TestingSetup(CBaseChainParams::REGTEST),
+    : TestingSetup(ChainType::REGTEST),
       params(Params ().GetConsensus ())
   {
     block.nTime = 1234;

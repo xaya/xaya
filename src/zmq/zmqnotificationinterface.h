@@ -10,6 +10,7 @@
 #include <zmq/zmqgames.h>
 
 #include <cstdint>
+#include <functional>
 #include <list>
 #include <memory>
 
@@ -18,10 +19,6 @@ class CBlockIndex;
 class CZMQAbstractNotifier;
 class ZMQGameBlocksNotifier;
 
-namespace node {
-class BlockManager;
-} // namespace node
-
 class CZMQNotificationInterface final : public CValidationInterface
 {
 public:
@@ -29,7 +26,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static CZMQNotificationInterface* Create(const node::BlockManager& b);
+    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(CBlock&, const CBlockIndex&)> get_block_by_index, std::function<const CBlockIndex*(const uint256&)> get_index_by_hash);
 
     inline TrackedGames* GetTrackedGames() {
         return trackedGames.get();
@@ -67,6 +64,6 @@ private:
 
 };
 
-extern CZMQNotificationInterface* g_zmq_notification_interface;
+extern std::unique_ptr<CZMQNotificationInterface> g_zmq_notification_interface;
 
 #endif // BITCOIN_ZMQ_ZMQNOTIFICATIONINTERFACE_H

@@ -16,6 +16,10 @@
 #include <vector>
 
 class CBlockIndex;
+namespace node
+{
+  class BlockManager;
+}
 
 /**
  * Default value for the -maxgameblockattaches option, which determines how
@@ -54,6 +58,8 @@ public:
 
 private:
 
+  const node::BlockManager& blockman;
+
   std::queue<Work> work;
   bool interrupted;
 
@@ -66,7 +72,7 @@ private:
 
 public:
 
-  SendUpdatesWorker ();
+  SendUpdatesWorker (const node::BlockManager& bm);
   ~SendUpdatesWorker ();
 
   SendUpdatesWorker (const SendUpdatesWorker&) = delete;

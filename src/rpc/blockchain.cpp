@@ -65,9 +65,7 @@ using kernel::CoinStatsHashType;
 
 using node::BlockManager;
 using node::NodeContext;
-using node::ReadBlockFromDisk;
 using node::SnapshotMetadata;
-using node::UndoReadFromDisk;
 
 struct CUpdatedBlock
 {
@@ -142,6 +140,28 @@ static const CBlockIndex* ParseHashOrHeight(const UniValue& param, ChainstateMan
     }
 }
 
+/** The RPC result type for "powdata" subobjects.  */
+const RPCResult POWDATA_RESULT{RPCResult::Type::OBJ, "powdata", "The block's attached PoW data",
+        {
+            {RPCResult::Type::STR, "algo", "Mining algorithm used for this block"},
+            {RPCResult::Type::BOOL, "mergemined", "Whether this block is merge mined"},
+            {RPCResult::Type::STR_HEX, "bits", "The bits"},
+            {RPCResult::Type::NUM, "difficulty", "The difficulty"},
+            {RPCResult::Type::STR_HEX, "fakeheader", /* optional */ true, "Serialised fake header if not merge mined"},
+            {RPCResult::Type::OBJ, "auxpow", /* optional */ true, "The auxpow object if merge mined",
+                {
+                    {RPCResult::Type::OBJ, "tx", "The parent chain coinbase tx of this auxpow",
+                        {{RPCResult::Type::ELISION, "", "Same format as for decoded raw transactions"}}},
+                    {RPCResult::Type::NUM, "index", "Merkle index of the parent coinbase"},
+                    {RPCResult::Type::ARR, "merklebranch", "Merkle branch of the parent coinbase",
+                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
+                    {RPCResult::Type::NUM, "chainindex", "Index in the auxpow Merkle tree"},
+                    {RPCResult::Type::ARR, "chainmerklebranch", "Branch in the auxpow Merkle tree",
+                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
+                    {RPCResult::Type::STR_HEX, "parentblock", "The parent block serialised as hex string"},
+                }},
+        }};
+
 /** Converts the base data, excluding any contextual information,
  * in a block header to JSON.  */
 static UniValue blockheaderToJSON(const CPureBlockHeader& header)
@@ -188,12 +208,12 @@ PowDataToJSON (const PowData& pow, const bool verbose, Chainstate& active_chains
 
 } // anonymous namespace
 
-UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex)
+UniValue blockheaderToJSON(const BlockManager& blockman, const CBlockIndex* tip, const CBlockIndex* blockindex)
 {
     // Serialize passed information without accessing chain state of the active chain!
     AssertLockNotHeld(cs_main); // For performance reasons
 
-    auto result = blockheaderToJSON(blockindex->GetBlockHeader(Params().GetConsensus()));
+    auto result = blockheaderToJSON(blockindex->GetBlockHeader(blockman));
 
     const CBlockIndex* pnext;
     int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
@@ -211,7 +231,7 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
 
 UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, TxVerbosity verbosity)
 {
-    UniValue result = blockheaderToJSON(tip, blockindex);
+    UniValue result = blockheaderToJSON(blockman, tip, blockindex);
 
     result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
     result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
@@ -229,7 +249,7 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
         case TxVerbosity::SHOW_DETAILS_AND_PREVOUT:
             CBlockUndo blockUndo;
             const bool is_not_pruned{WITH_LOCK(::cs_main, return !blockman.IsBlockPruned(blockindex))};
-            const bool have_undo{is_not_pruned && UndoReadFromDisk(blockUndo, blockindex)};
+            const bool have_undo{is_not_pruned && blockman.UndoReadFromDisk(blockUndo, *blockindex)};
 
             for (size_t i = 0; i < block.vtx.size(); ++i) {
                 const CTransactionRef& tx = block.vtx.at(i);
@@ -646,6 +666,7 @@ static RPCHelpMan getblockheader()
                             {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
                             {RPCResult::Type::STR_HEX, "previousblockhash", /*optional=*/true, "The hash of the previous block (if available)"},
                             {RPCResult::Type::STR_HEX, "nextblockhash", /*optional=*/true, "The hash of the next block (if available)"},
+                            POWDATA_RESULT,
                         }},
                     RPCResult{"for verbose=false",
                         RPCResult::Type::STR_HEX, "", "A string that is serialized, hex-encoded data for block 'hash'"},
@@ -676,7 +697,7 @@ static RPCHelpMan getblockheader()
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
 
-    const auto header = pblockindex->GetBlockHeader(Params().GetConsensus());
+    const auto header = pblockindex->GetBlockHeader(chainman.m_blockman);
 
     if (!fVerbose)
     {
@@ -686,10 +707,10 @@ static RPCHelpMan getblockheader()
         return strHex;
     }
 
-    auto result = blockheaderToJSON(tip, pblockindex);
+    auto result = blockheaderToJSON(chainman.m_blockman, tip, pblockindex);
     result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose, chainman.ActiveChainstate()));
 
-    return blockheaderToJSON(tip, pblockindex);
+    return result;
 },
     };
 }
@@ -704,7 +725,7 @@ static CBlock GetBlockChecked(BlockManager& blockman, const CBlockIndex* pblocki
         }
     }
 
-    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    if (!blockman.ReadBlockFromDisk(block, *pblockindex)) {
         // Block not found on disk. This could be because we have the block
         // header in our index but not yet have the block or did not accept the
         // block. Or if the block was pruned right after we released the lock above.
@@ -728,7 +749,7 @@ static CBlockUndo GetUndoChecked(BlockManager& blockman, const CBlockIndex* pblo
         }
     }
 
-    if (!UndoReadFromDisk(blockUndo, pblockindex)) {
+    if (!blockman.UndoReadFromDisk(blockUndo, *pblockindex)) {
         throw JSONRPCError(RPC_MISC_ERROR, "Can't read undo data from disk");
     }
 
@@ -797,26 +818,7 @@ static RPCHelpMan getblock()
                     {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
                     {RPCResult::Type::STR_HEX, "previousblockhash", /*optional=*/true, "The hash of the previous block (if available)"},
                     {RPCResult::Type::STR_HEX, "nextblockhash", /*optional=*/true, "The hash of the next block (if available)"},
-                    {RPCResult::Type::OBJ, "powdata", "The block's attached PoW data",
-                        {
-                            {RPCResult::Type::STR, "algo", "Mining algorithm used for this block"},
-                            {RPCResult::Type::BOOL, "mergemined", "Whether this block is merge mined"},
-                            {RPCResult::Type::STR_HEX, "bits", "The bits"},
-                            {RPCResult::Type::NUM, "difficulty", "The difficulty"},
-                            {RPCResult::Type::STR_HEX, "fakeheader", /* optional */ true, "Serialised fake header if not merge mined"},
-                            {RPCResult::Type::OBJ, "auxpow", "The auxpow object if merge mined",
-                                {
-                                    {RPCResult::Type::OBJ, "tx", "The parent chain coinbase tx of this auxpow",
-                                        {{RPCResult::Type::ELISION, "", "Same format as for decoded raw transactions"}}},
-                                    {RPCResult::Type::NUM, "index", "Merkle index of the parent coinbase"},
-                                    {RPCResult::Type::ARR, "merklebranch", "Merkle branch of the parent coinbase",
-                                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
-                                    {RPCResult::Type::NUM, "chainindex", "Index in the auxpow Merkle tree"},
-                                    {RPCResult::Type::ARR, "chainmerklebranch", "Branch in the auxpow Merkle tree",
-                                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
-                                    {RPCResult::Type::STR_HEX, "parentblock", "The parent block serialised as hex string"},
-                                }},
-                        }},
+                    POWDATA_RESULT,
                     {RPCResult::Type::STR_HEX, "rngseed", "Seed value that may be used for (not fully secure) random numbers in games"},
                     {RPCResult::Type::STR_HEX, "previousblockhash", "The hash of the previous block"},
                     {RPCResult::Type::STR_HEX, "nextblockhash", "The hash of the next block"},
@@ -1415,7 +1417,7 @@ RPCHelpMan getblockchaininfo()
     const CBlockIndex& tip{*CHECK_NONFATAL(active_chainstate.m_chain.Tip())};
     const int height{tip.nHeight};
     UniValue obj(UniValue::VOBJ);
-    obj.pushKV("chain", chainman.GetParams().NetworkIDString());
+    obj.pushKV("chain", chainman.GetParams().GetChainTypeString());
     obj.pushKV("blocks", height);
     obj.pushKV("headers", chainman.m_best_header ? chainman.m_best_header->nHeight : -1);
     obj.pushKV("bestblockhash", tip.GetBlockHash().GetHex());

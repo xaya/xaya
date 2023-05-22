@@ -7,6 +7,7 @@
 #include <net.h>
 #include <signet.h>
 #include <uint256.h>
+#include <util/chaintype.h>
 #include <validation.h>
 
 #include <test/util/setup_common.h>
@@ -40,7 +41,7 @@ static void TestBlockSubsidyHalvings(const Consensus::Params& consensusParams)
 
 BOOST_AUTO_TEST_CASE(block_subsidy_test)
 {
-    const auto chainParams = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
+    const auto chainParams = CreateChainParams(*m_node.args, ChainType::MAIN);
     TestBlockSubsidyHalvings(chainParams->GetConsensus()); // As in main
     /* Testing other intervals as is done upstream doesn't work, as we would
        need to craft a ConsensusRules instance for the POST_ICO fork check.  */
@@ -48,7 +49,7 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
 
 BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 {
-    const auto chainParams = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
+    const auto chainParams = CreateChainParams(*m_node.args, ChainType::MAIN);
     CAmount nSum = 0;
     CAmount nLastSubsidy;
     int nLastHeight = 0;
@@ -94,15 +95,15 @@ BOOST_AUTO_TEST_CASE(subsidy_limit_test)
 
 BOOST_AUTO_TEST_CASE(subsidy_post_ico_fork_test)
 {
-    const auto main = CreateChainParams(*m_node.args, CBaseChainParams::MAIN);
+    const auto main = CreateChainParams(*m_node.args, ChainType::MAIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(439999, main->GetConsensus()), COIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(440000, main->GetConsensus()), 382934346);
 
-    const auto test = CreateChainParams(*m_node.args, CBaseChainParams::TESTNET);
+    const auto test = CreateChainParams(*m_node.args, ChainType::TESTNET);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(10999, test->GetConsensus()), COIN);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(11000, test->GetConsensus()), 10 * COIN);
 
-    const auto regtest = CreateChainParams(*m_node.args, CBaseChainParams::REGTEST);
+    const auto regtest = CreateChainParams(*m_node.args, ChainType::REGTEST);
     BOOST_CHECK_EQUAL(GetBlockSubsidy(1, regtest->GetConsensus()), 50 * COIN);
 }
 
@@ -110,7 +111,7 @@ BOOST_AUTO_TEST_CASE(signet_parse_tests)
 {
     ArgsManager signet_argsman;
     signet_argsman.ForceSetArg("-signetchallenge", "51"); // set challenge to OP_TRUE
-    const auto signet_params = CreateChainParams(signet_argsman, CBaseChainParams::SIGNET);
+    const auto signet_params = CreateChainParams(signet_argsman, ChainType::SIGNET);
     CBlock block;
     BOOST_CHECK(signet_params->GetConsensus().signet_challenge == std::vector<uint8_t>{OP_TRUE});
     CScript challenge{OP_TRUE};
@@ -170,7 +171,7 @@ BOOST_AUTO_TEST_CASE(signet_parse_tests)
 //! Test retrieval of valid assumeutxo values.
 BOOST_AUTO_TEST_CASE(test_assumeutxo)
 {
-    const auto params = CreateChainParams(*m_node.args, CBaseChainParams::REGTEST);
+    const auto params = CreateChainParams(*m_node.args, ChainType::REGTEST);
 
     // These heights don't have assumeutxo configurations associated, per the contents
     // of kernel/chainparams.cpp.

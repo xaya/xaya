@@ -123,7 +123,7 @@ public:
     const UniValue& get_array() const;
 
     enum VType type() const { return getType(); }
-    friend const UniValue& find_value( const UniValue& obj, const std::string& name);
+    const UniValue& find_value(std::string_view key) const;
 };
 
 template <class It>
@@ -200,8 +200,6 @@ static inline bool json_isspace(int ch)
 }
 
 extern const UniValue NullUniValue;
-
-const UniValue& find_value( const UniValue& obj, const std::string& name);
 
 /**
  * Verifies whether a given string consists only of valid UTF-8 code points

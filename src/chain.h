@@ -19,6 +19,11 @@
 
 #include <vector>
 
+namespace node
+{
+  class BlockManager;
+}
+
 /**
  * Maximum amount of time that a block timestamp is allowed to exceed the
  * current network-adjusted time before the block will be accepted.
@@ -267,7 +272,7 @@ public:
         return block;
     }
 
-    CBlockHeader GetBlockHeader(const Consensus::Params& consensusParams) const;
+    CBlockHeader GetBlockHeader(const node::BlockManager& blockman) const;
 
     uint256 GetBlockHash() const
     {

@@ -204,7 +204,7 @@ static bool HTTPReq_JSONRPC(const std::any& context, HTTPRequest* req)
                     } else {
                         const UniValue& request = valRequest[reqIdx].get_obj();
                         // Parse method
-                        std::string strMethod = find_value(request, "method").get_str();
+                        std::string strMethod = request.find_value("method").get_str();
                         if (!g_rpc_whitelist[jreq.authUser].count(strMethod)) {
                             LogPrintf("RPC User %s not allowed to call method %s\n", jreq.authUser, strMethod);
                             req->WriteReply(HTTP_FORBIDDEN);

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Xaya developers
+// Copyright (c) 2018-2023 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -330,7 +330,7 @@ ZMQGameBlocksNotifier::SendBlockNotifications (
 
   {
     LOCK (cs_main);
-    const CBlockIndex* pindex = blockman.LookupBlockIndex (blkHash);
+    const CBlockIndex* pindex = getIndexByHash (blkHash);
     assert (pindex != nullptr);
     blockData.pushKV ("height", pindex->nHeight);
     blockData.pushKV ("mediantime", pindex->GetMedianTimePast ());

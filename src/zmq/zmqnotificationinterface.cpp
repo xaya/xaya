@@ -39,12 +39,14 @@ std::list<const CZMQAbstractNotifier*> CZMQNotificationInterface::GetActiveNotif
     return result;
 }
 
-CZMQNotificationInterface* CZMQNotificationInterface::Create(const node::BlockManager& blockman)
+std::unique_ptr<CZMQNotificationInterface> CZMQNotificationInterface::Create(std::function<bool(CBlock&, const CBlockIndex&)> get_block_by_index, std::function<const CBlockIndex*(const uint256&)> get_index_by_hash)
 {
     std::map<std::string, CZMQNotifierFactory> factories;
     factories["pubhashblock"] = CZMQAbstractNotifier::Create<CZMQPublishHashBlockNotifier>;
     factories["pubhashtx"] = CZMQAbstractNotifier::Create<CZMQPublishHashTransactionNotifier>;
-    factories["pubrawblock"] = CZMQAbstractNotifier::Create<CZMQPublishRawBlockNotifier>;
+    factories["pubrawblock"] = [&get_block_by_index]() -> std::unique_ptr<CZMQAbstractNotifier> {
+        return std::make_unique<CZMQPublishRawBlockNotifier>(get_block_by_index);
+    };
     factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
     factories["pubsequence"] = CZMQAbstractNotifier::Create<CZMQPublishSequenceNotifier>;
 
@@ -52,9 +54,9 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create(const node::BlockMa
     std::unique_ptr<TrackedGames> trackedGames(new TrackedGames(vTrackedGames));
 
     ZMQGameBlocksNotifier* gameBlocksNotifier = nullptr;
-    factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier, &blockman]() {
+    factories["pubgameblocks"] = [&trackedGames, &gameBlocksNotifier, &get_index_by_hash]() {
         assert (gameBlocksNotifier == nullptr);
-        auto res = std::make_unique<ZMQGameBlocksNotifier>(blockman, *trackedGames);
+        auto res = std::make_unique<ZMQGameBlocksNotifier>(get_index_by_hash, *trackedGames);
         gameBlocksNotifier = res.get();
         return res;
     };
@@ -85,7 +87,7 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create(const node::BlockMa
         notificationInterface->gameBlocksNotifier = gameBlocksNotifier;
 
         if (notificationInterface->Initialize()) {
-            return notificationInterface.release();
+            return notificationInterface;
         }
     }
 
@@ -217,4 +219,4 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
     });
 }
 
-CZMQNotificationInterface* g_zmq_notification_interface = nullptr;
+std::unique_ptr<CZMQNotificationInterface> g_zmq_notification_interface;

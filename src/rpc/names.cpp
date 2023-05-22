@@ -886,11 +886,11 @@ PerformNameRawtx (const unsigned nOut, const UniValue& nameOp,
     }
   );
 
-  const std::string op = find_value (nameOp, "op").get_str ();
+  const std::string op = nameOp.find_value ("op").get_str ();
   const valtype name
-    = DecodeNameFromRPCOrThrow (find_value (nameOp, "name"), NO_OPTIONS);
+    = DecodeNameFromRPCOrThrow (nameOp.find_value ("name"), NO_OPTIONS);
   const valtype value
-    = DecodeValueFromRPCOrThrow (find_value (nameOp, "value"), NO_OPTIONS);
+    = DecodeValueFromRPCOrThrow (nameOp.find_value ("value"), NO_OPTIONS);
 
   if (op == "name_register")
     script = CNameScript::buildNameRegister (script, name, value);

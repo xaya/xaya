@@ -83,8 +83,8 @@ SendUpdatesWorker::Work::str () const
   return res.str ();
 }
 
-SendUpdatesWorker::SendUpdatesWorker ()
-  : interrupted(false)
+SendUpdatesWorker::SendUpdatesWorker (const node::BlockManager& bm)
+  : blockman(bm), interrupted(false)
 {
   runner.reset (new std::thread ([this] ()
     {
@@ -107,10 +107,11 @@ void
 SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
                      const std::string& commandPrefix,
                      const std::string& reqtoken,
-                     const CBlockIndex* pindex)
+                     const CBlockIndex* pindex,
+                     const node::BlockManager& blockman)
 {
   CBlock blk;
-  if (!node::ReadBlockFromDisk (blk, pindex, Params ().GetConsensus ()))
+  if (!blockman.ReadBlockFromDisk (blk, *pindex))
     {
       LogPrint (BCLog::GAME, "Reading block %s failed, ignoring\n",
                 pindex->GetBlockHash ().GetHex ());
@@ -160,11 +161,11 @@ SendUpdatesWorker::run (SendUpdatesWorker& self)
       for (const auto* pindex : w.detach)
         SendUpdatesOneBlock (w.trackedGames,
                              ZMQGameBlocksNotifier::PREFIX_DETACH,
-                             w.reqtoken, pindex);
+                             w.reqtoken, pindex, self.blockman);
       for (const auto* pindex : w.attach)
         SendUpdatesOneBlock (w.trackedGames,
                              ZMQGameBlocksNotifier::PREFIX_ATTACH,
-                             w.reqtoken, pindex);
+                             w.reqtoken, pindex, self.blockman);
       LogPrint (BCLog::GAME, "Finished processing sendupdates: %s\n",
                 w.str ().c_str ());
     }

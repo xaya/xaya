@@ -14,10 +14,10 @@ std::string CBlockFileInfo::ToString() const
 }
 
 
-CBlockHeader CBlockIndex::GetBlockHeader(const Consensus::Params& consensusParams) const
+CBlockHeader CBlockIndex::GetBlockHeader(const node::BlockManager& blockman) const
 {
     CBlockHeader block;
-    node::ReadBlockHeaderFromDisk (block, this, consensusParams);
+    blockman.ReadBlockHeaderFromDisk (block, *this);
     return block;
 }
 

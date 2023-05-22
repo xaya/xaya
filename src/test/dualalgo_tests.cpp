@@ -209,7 +209,7 @@ public:
 
   PostIcoForkSetup ()
   {
-    SelectParams (CBaseChainParams::REGTEST);
+    SelectParams (ChainType::REGTEST);
     params = &Params ().GetConsensus ();
 
     BOOST_CHECK (!params->rules->ForkInEffect (Consensus::Fork::POST_ICO,
