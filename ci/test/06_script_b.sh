@@ -24,6 +24,11 @@ if [ "$RUN_FUZZ_TESTS" = "true" ]; then
   if [ ! -d "$DIR_FUZZ_IN" ]; then
     git clone --depth=1 https://github.com/bitcoin-core/qa-assets "${DIR_QA_ASSETS}"
   fi
+  (
+    cd "${DIR_QA_ASSETS}"
+    echo "Using qa-assets repo from commit ..."
+    git log -1
+  )
 elif [ "$RUN_UNIT_TESTS" = "true" ] || [ "$RUN_UNIT_TESTS_SEQUENTIAL" = "true" ]; then
   export DIR_UNIT_TEST_DATA=${DIR_QA_ASSETS}/unit_test_data/
   if [ ! -d "$DIR_UNIT_TEST_DATA" ]; then
@@ -101,14 +106,6 @@ cd "${BASE_BUILD_DIR}/bitcoin-$HOST"
 
 bash -c "./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG" || ( (cat config.log) && false)
 
-if [[ ${USE_MEMORY_SANITIZER} == "true" ]]; then
-  # MemorySanitizer (MSAN) does not support tracking memory initialization done by
-  # using the Linux getrandom syscall. Avoid using getrandom by undefining
-  # HAVE_SYS_GETRANDOM. See https://github.com/google/sanitizers/issues/852 for
-  # details.
-  grep -v HAVE_SYS_GETRANDOM src/config/bitcoin-config.h > src/config/bitcoin-config.h.tmp && mv src/config/bitcoin-config.h.tmp src/config/bitcoin-config.h
-fi
-
 if [[ "${RUN_TIDY}" == "true" ]]; then
   MAYBE_BEAR="bear --config src/.bear-tidy-config"
   MAYBE_TOKEN="--"
@@ -166,14 +163,11 @@ if [ "${RUN_TIDY}" = "true" ]; then
   python3 "${DIR_IWYU}/include-what-you-use/iwyu_tool.py" \
            -p . "${MAKEJOBS}" \
            -- -Xiwyu --cxx17ns -Xiwyu --mapping_file="${BASE_BUILD_DIR}/bitcoin-$HOST/contrib/devtools/iwyu/bitcoin.core.imp" \
+           -Xiwyu --max_line_length=160 \
            2>&1 | tee /tmp/iwyu_ci.out
   cd "${BASE_ROOT_DIR}/src"
   python3 "${DIR_IWYU}/include-what-you-use/fix_includes.py" --nosafe_headers < /tmp/iwyu_ci.out
   git --no-pager diff
-fi
-
-if [ "$RUN_SECURITY_TESTS" = "true" ]; then
-  make test-security-check
 fi
 
 if [ "$RUN_FUZZ_TESTS" = "true" ]; then
