@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,7 +14,6 @@
 #include <script/names.h>
 #include <txdb.h>
 #include <undo.h>
-#include <util/system.h>
 #include <validation.h>
 
 #include <test/util/setup_common.h>

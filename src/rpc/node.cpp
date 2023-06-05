@@ -20,9 +20,9 @@
 #include <rpc/util.h>
 #include <scheduler.h>
 #include <univalue.h>
+#include <util/any.h>
 #include <util/check.h>
 #include <util/syscall_sandbox.h>
-#include <util/system.h>
 
 #include <stdint.h>
 #ifdef HAVE_MALLOC_INFO

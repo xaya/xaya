@@ -7,10 +7,10 @@
 #define BITCOIN_WALLET_BDB_H
 
 #include <clientversion.h>
+#include <common/system.h>
 #include <serialize.h>
 #include <streams.h>
 #include <util/fs.h>
-#include <util/system.h>
 #include <wallet/db.h>
 
 #include <atomic>
@@ -190,9 +190,13 @@ class BerkeleyCursor : public DatabaseCursor
 {
 private:
     Dbc* m_cursor;
+    std::vector<std::byte> m_key_prefix;
+    bool m_first{true};
 
 public:
-    explicit BerkeleyCursor(BerkeleyDatabase& database, const BerkeleyBatch& batch);
+    // Constructor for cursor for records matching the prefix
+    // To match all records, an empty prefix may be provided.
+    explicit BerkeleyCursor(BerkeleyDatabase& database, const BerkeleyBatch& batch, Span<const std::byte> prefix = {});
     ~BerkeleyCursor() override;
 
     Status Next(DataStream& key, DataStream& value) override;
@@ -229,6 +233,7 @@ public:
     void Close() override;
 
     std::unique_ptr<DatabaseCursor> GetNewCursor() override;
+    std::unique_ptr<DatabaseCursor> GetNewPrefixCursor(Span<const std::byte> prefix) override;
     bool TxnBegin() override;
     bool TxnCommit() override;
     bool TxnAbort() override;
