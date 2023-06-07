@@ -9,6 +9,7 @@
 #include <addrman.h>
 #include <banman.h>
 #include <chainparams.h>
+#include <common/system.h>
 #include <common/url.h>
 #include <consensus/consensus.h>
 #include <consensus/params.h>
@@ -23,6 +24,7 @@
 #include <node/blockstorage.h>
 #include <node/chainstate.h>
 #include <node/context.h>
+#include <node/kernel_notifications.h>
 #include <node/mempool_args.h>
 #include <node/miner.h>
 #include <node/validation_cache_args.h>
@@ -46,7 +48,6 @@
 #include <util/chaintype.h>
 #include <util/strencodings.h>
 #include <util/string.h>
-#include <util/system.h>
 #include <util/thread.h>
 #include <util/threadnames.h>
 #include <util/time.h>
@@ -65,6 +66,7 @@ using node::ApplyArgsManOptions;
 using node::BlockAssembler;
 using node::BlockManager;
 using node::CalculateCacheSizes;
+using node::KernelNotifications;
 using node::LoadChainstate;
 using node::RegenerateCommitments;
 using node::VerifyLoadedChainstate;
@@ -183,11 +185,14 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
+    m_node.notifications = std::make_unique<KernelNotifications>();
+
     const ChainstateManager::Options chainman_opts{
         .chainparams = chainparams,
         .datadir = m_args.GetDataDirNet(),
         .adjusted_time_callback = GetAdjustedTime,
         .check_block_index = true,
+        .notifications = *m_node.notifications,
     };
     const BlockManager::Options blockman_opts{
         .chainparams = chainman_opts.chainparams,

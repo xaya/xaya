@@ -15,7 +15,6 @@
 #include <primitives/block.h>
 #include <script/script.h>
 #include <util/strencodings.h>
-#include <util/system.h>
 
 #include <algorithm>
 
