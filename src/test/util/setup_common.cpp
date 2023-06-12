@@ -234,7 +234,8 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     options.reindex = node::fReindex;
     options.reindex_chainstate = m_args.GetBoolArg("-reindex-chainstate", false);
     options.prune = chainman.m_blockman.IsPruneMode();
-    options.nameHistory = m_args.GetBoolArg("-namehistory", false),
+    fNameHistory = false;
+    options.nameHistory = false;
     options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
     options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
     options.require_full_verification = m_args.IsArgSet("-checkblocks") || m_args.IsArgSet("-checklevel");
