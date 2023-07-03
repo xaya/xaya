@@ -22,7 +22,10 @@ import shlex
 import sys
 from pathlib import Path
 
-from .authproxy import JSONRPCException
+from .authproxy import (
+    JSONRPCException,
+    serialization_fallback,
+)
 from .descriptors import descsum_create
 from .p2p import P2P_SUBVERSION
 from .util import (
@@ -36,7 +39,6 @@ from .util import (
     rpc_url,
     wait_until_helper,
     p2p_port,
-    EncodeDecimal,
 )
 
 BITCOIND_PROC_WAIT_TIMEOUT = 60
@@ -426,12 +428,20 @@ class TestNode():
             conf.write(conf_data)
 
     @property
+    def datadir_path(self) -> Path:
+        return Path(self.datadir)
+
+    @property
     def chain_path(self) -> Path:
-        return Path(self.datadir) / self.chain
+        return self.datadir_path / self.chain
 
     @property
     def debug_log_path(self) -> Path:
         return self.chain_path / 'debug.log'
+
+    @property
+    def wallets_path(self) -> Path:
+        return self.chain_path / "wallets"
 
     def debug_log_bytes(self) -> int:
         with open(self.debug_log_path, encoding='utf-8') as dl:
@@ -724,7 +734,7 @@ def arg_to_cli(arg):
     elif arg is None:
         return 'null'
     elif isinstance(arg, dict) or isinstance(arg, list):
-        return json.dumps(arg, default=EncodeDecimal)
+        return json.dumps(arg, default=serialization_fallback)
     else:
         return str(arg)
 

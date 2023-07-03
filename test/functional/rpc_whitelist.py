@@ -6,12 +6,10 @@
 A test for RPC users with restricted permissions
 """
 from test_framework.test_framework import BitcoinTestFramework
-import os
 from test_framework.util import (
     config_file,
-    get_datadir_path,
     assert_equal,
-    str_to_b64str
+    str_to_b64str,
 )
 import http.client
 import urllib.parse
@@ -31,8 +29,7 @@ class RPCWhitelistTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
 
-    def setup_chain(self):
-        super().setup_chain()
+    def run_test(self):
         # 0 => Username
         # 1 => Password (Hashed)
         # 2 => Permissions
@@ -56,7 +53,7 @@ class RPCWhitelistTest(BitcoinTestFramework):
         ]
         # These commands shouldn't be allowed for any user to test failures
         self.never_allowed = ["getnetworkinfo"]
-        with open(os.path.join(get_datadir_path(self.options.tmpdir, 0), config_file), 'a', encoding='utf8') as f:
+        with open(self.nodes[0].datadir_path / config_file, "a", encoding="utf8") as f:
             f.write("\nrpcwhitelistdefault=0\n")
             for user in self.users:
                 f.write("rpcauth=" + user[0] + ":" + user[1] + "\n")
@@ -65,9 +62,8 @@ class RPCWhitelistTest(BitcoinTestFramework):
             for strangedude in self.strange_users:
                 f.write("rpcauth=" + strangedude[0] + ":" + strangedude[1] + "\n")
                 f.write("rpcwhitelist=" + strangedude[0] + strangedude[2] + "\n")
+        self.restart_node(0)
 
-
-    def run_test(self):
         for user in self.users:
             permissions = user[2].replace(" ", "").split(",")
             # Pop all empty items
