@@ -30,7 +30,6 @@
 #include <util/fs.h>
 #include <util/sock.h>
 #include <util/strencodings.h>
-#include <util/syscall_sandbox.h>
 #include <util/thread.h>
 #include <util/threadinterrupt.h>
 #include <util/trace.h>
@@ -38,16 +37,10 @@
 
 #ifdef WIN32
 #include <string.h>
-#else
-#include <fcntl.h>
 #endif
 
 #if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS
 #include <ifaddrs.h>
-#endif
-
-#ifdef USE_POLL
-#include <poll.h>
 #endif
 
 #include <algorithm>
@@ -1381,7 +1374,6 @@ void CConnman::ThreadSocketHandler()
 {
     AssertLockNotHeld(m_total_bytes_sent_mutex);
 
-    SetSyscallSandboxPolicy(SyscallSandboxPolicy::NET);
     while (!interruptNet)
     {
         DisconnectNodes();
@@ -1401,7 +1393,6 @@ void CConnman::WakeMessageHandler()
 
 void CConnman::ThreadDNSAddressSeed()
 {
-    SetSyscallSandboxPolicy(SyscallSandboxPolicy::INITIALIZATION_DNS_SEED);
     FastRandomContext rng;
     std::vector<std::string> seeds = Params().DNSSeeds();
     Shuffle(seeds.begin(), seeds.end(), rng);
@@ -1607,7 +1598,6 @@ std::unordered_set<Network> CConnman::GetReachableEmptyNetworks() const
 void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
 {
     AssertLockNotHeld(m_unused_i2p_sessions_mutex);
-    SetSyscallSandboxPolicy(SyscallSandboxPolicy::NET_OPEN_CONNECTION);
     FastRandomContext rng;
     // Connect to specific addresses
     if (!connect.empty())
@@ -1854,7 +1844,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
 
             // Require outbound IPv4/IPv6 connections, other than feelers, to be to distinct network groups
             if (!fFeeler && outbound_ipv46_peer_netgroups.count(m_netgroupman.GetGroup(addr))) {
-                break;
+                continue;
             }
 
             // if we selected an invalid or local address, restart
@@ -1976,7 +1966,6 @@ std::vector<AddedNodeInfo> CConnman::GetAddedNodeInfo() const
 void CConnman::ThreadOpenAddedConnections()
 {
     AssertLockNotHeld(m_unused_i2p_sessions_mutex);
-    SetSyscallSandboxPolicy(SyscallSandboxPolicy::NET_ADD_CONNECTION);
     while (true)
     {
         CSemaphoreGrant grant(*semAddnode);
@@ -2045,7 +2034,6 @@ void CConnman::ThreadMessageHandler()
 {
     LOCK(NetEventsInterface::g_msgproc_mutex);
 
-    SetSyscallSandboxPolicy(SyscallSandboxPolicy::MESSAGE_HANDLER);
     while (!flagInterruptMsgProc)
     {
         bool fMoreWork = false;
@@ -2939,13 +2927,13 @@ void CaptureMessageToFile(const CAddress& addr,
     AutoFile f{fsbridge::fopen(path, "ab")};
 
     ser_writedata64(f, now.count());
-    f.write(MakeByteSpan(msg_type));
+    f << Span{msg_type};
     for (auto i = msg_type.length(); i < CMessageHeader::COMMAND_SIZE; ++i) {
         f << uint8_t{'\0'};
     }
     uint32_t size = data.size();
     ser_writedata32(f, size);
-    f.write(AsBytes(data));
+    f << data;
 }
 
 std::function<void(const CAddress& addr,

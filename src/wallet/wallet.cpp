@@ -2929,7 +2929,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
         else if (nLoadWalletRet == DBErrors::NONCRITICAL_ERROR)
         {
             warnings.push_back(strprintf(_("Error reading %s! All keys read correctly, but transaction data"
-                                           " or address book entries might be missing or incorrect."),
+                                           " or address metadata may be missing or incorrect."),
                 walletFile));
         }
         else if (nLoadWalletRet == DBErrors::TOO_NEW) {
@@ -3878,7 +3878,7 @@ bool CWallet::MigrateToSQLite(bilingual_str& error)
     bool began = batch->TxnBegin();
     assert(began); // This is a critical error, the new db could not be written to. The original db exists as a backup, but we should not continue execution.
     for (const auto& [key, value] : records) {
-        if (!batch->Write(MakeUCharSpan(key), MakeUCharSpan(value))) {
+        if (!batch->Write(Span{key}, Span{value})) {
             batch->TxnAbort();
             m_database->Close();
             fs::remove(m_database->Filename());
