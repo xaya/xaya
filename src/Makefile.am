@@ -212,6 +212,7 @@ BITCOIN_CORE_H = \
   netbase.h \
   netgroup.h \
   netmessagemaker.h \
+  node/abort.h \
   node/blockmanager_args.h \
   node/blockstorage.h \
   node/caches.h \
@@ -322,6 +323,7 @@ BITCOIN_CORE_H = \
   util/readwritefile.h \
   util/result.h \
   util/serfloat.h \
+  util/signalinterrupt.h \
   util/sock.h \
   util/spanparsing.h \
   util/string.h \
@@ -416,6 +418,7 @@ libbitcoin_node_a_SOURCES = \
   net.cpp \
   net_processing.cpp \
   netgroup.cpp \
+  node/abort.cpp \
   node/blockmanager_args.cpp \
   node/blockstorage.cpp \
   node/caches.cpp \
@@ -769,6 +772,7 @@ libbitcoin_util_a_SOURCES = \
   util/moneystr.cpp \
   util/rbf.cpp \
   util/readwritefile.cpp \
+  util/signalinterrupt.cpp \
   util/thread.cpp \
   util/threadinterrupt.cpp \
   util/threadnames.cpp \
@@ -971,7 +975,6 @@ libbitcoinkernel_la_SOURCES = \
   names/mempool.cpp \
   node/blockstorage.cpp \
   node/chainstate.cpp \
-  node/interface_ui.cpp \
   node/utxo_snapshot.cpp \
   policy/feerate.cpp \
   policy/fees.cpp \
@@ -1013,6 +1016,7 @@ libbitcoinkernel_la_SOURCES = \
   util/moneystr.cpp \
   util/rbf.cpp \
   util/serfloat.cpp \
+  util/signalinterrupt.cpp \
   util/strencodings.cpp \
   util/string.cpp \
   util/syserror.cpp \
