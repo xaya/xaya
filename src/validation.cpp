@@ -51,6 +51,7 @@
 #include <util/hasher.h>
 #include <util/moneystr.h>
 #include <util/rbf.h>
+#include <util/signalinterrupt.h>
 #include <util/strencodings.h>
 #include <util/time.h>
 #include <util/trace.h>
@@ -1885,9 +1886,9 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState& state,
     return true;
 }
 
-bool AbortNode(BlockValidationState& state, const std::string& strMessage, const bilingual_str& userMessage)
+bool FatalError(Notifications& notifications, BlockValidationState& state, const std::string& strMessage, const bilingual_str& userMessage)
 {
-    AbortNode(strMessage, userMessage);
+    notifications.fatalError(strMessage, userMessage);
     return state.Error(strMessage);
 }
 
@@ -2129,7 +2130,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
             // We don't write down blocks to disk if they may have been
             // corrupted, so this should be impossible unless we're having hardware
             // problems.
-            return AbortNode(state, "Corrupt block found indicating potential hardware failure; shutting down");
+            return FatalError(m_chainman.GetNotifications(), state, "Corrupt block found indicating potential hardware failure; shutting down");
         }
         return error("%s: Consensus::CheckBlock: %s", __func__, state.ToString());
     }
@@ -2549,7 +2550,7 @@ bool Chainstate::FlushStateToDisk(
         if (fDoFullFlush || fPeriodicWrite) {
             // Ensure we can write block index
             if (!CheckDiskSpace(m_blockman.m_opts.blocks_dir)) {
-                return AbortNode(state, "Disk space is too low!", _("Disk space is too low!"));
+                return FatalError(m_chainman.GetNotifications(), state, "Disk space is too low!", _("Disk space is too low!"));
             }
             {
                 LOG_TIME_MILLIS_WITH_CATEGORY("write block and undo data to disk", BCLog::BENCH);
@@ -2563,7 +2564,7 @@ bool Chainstate::FlushStateToDisk(
                 LOG_TIME_MILLIS_WITH_CATEGORY("write block index to disk", BCLog::BENCH);
 
                 if (!m_blockman.WriteBlockIndexDB()) {
-                    return AbortNode(state, "Failed to write to block index database");
+                    return FatalError(m_chainman.GetNotifications(), state, "Failed to write to block index database");
                 }
             }
             // Finally remove any pruned files
@@ -2585,11 +2586,11 @@ bool Chainstate::FlushStateToDisk(
             // an overestimation, as most will delete an existing entry or
             // overwrite one. Still, use a conservative safety factor of 2.
             if (!CheckDiskSpace(m_chainman.m_options.datadir, 48 * 2 * 2 * CoinsTip().GetCacheSize())) {
-                return AbortNode(state, "Disk space is too low!", _("Disk space is too low!"));
+                return FatalError(m_chainman.GetNotifications(), state, "Disk space is too low!", _("Disk space is too low!"));
             }
             // Flush the chainstate (which may refer to block index entries).
             if (!CoinsTip().Flush())
-                return AbortNode(state, "Failed to write to coin database");
+                return FatalError(m_chainman.GetNotifications(), state, "Failed to write to coin database");
             m_last_flush = nNow;
             full_flush_completed = true;
             TRACE5(utxocache, flush,
@@ -2605,7 +2606,7 @@ bool Chainstate::FlushStateToDisk(
         GetMainSignals().ChainStateFlushed(m_chain.GetLocator());
     }
     } catch (const std::runtime_error& e) {
-        return AbortNode(state, std::string("System error while flushing: ") + e.what());
+        return FatalError(m_chainman.GetNotifications(), state, std::string("System error while flushing: ") + e.what());
     }
     return true;
 }
@@ -2841,7 +2842,7 @@ bool Chainstate::ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew,
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         if (!m_blockman.ReadBlockFromDisk(*pblockNew, *pindexNew)) {
-            return AbortNode(state, "Failed to read block");
+            return FatalError(m_chainman.GetNotifications(), state, "Failed to read block");
         }
         pthisBlock = pblockNew;
     } else {
@@ -3025,7 +3026,7 @@ bool Chainstate::ActivateBestChainStep(BlockValidationState& state, CBlockIndex*
             // If we're unable to disconnect a block during normal operation,
             // then that is a failure of our local system -- we should abort
             // rather than stay on a less work chain.
-            AbortNode(state, "Failed to disconnect block; see debug.log for details");
+            FatalError(m_chainman.GetNotifications(), state, "Failed to disconnect block; see debug.log for details");
             return false;
         }
         fBlocksDisconnected = true;
@@ -3234,11 +3235,11 @@ bool Chainstate::ActivateBestChain(BlockValidationState& state, std::shared_ptr<
             break;
         }
 
-        // We check shutdown only after giving ActivateBestChainStep a chance to run once so that we
-        // never shutdown before connecting the genesis block during LoadChainTip(). Previously this
-        // caused an assert() failure during shutdown in such cases as the UTXO DB flushing checks
+        // We check interrupt only after giving ActivateBestChainStep a chance to run once so that we
+        // never interrupt before connecting the genesis block during LoadChainTip(). Previously this
+        // caused an assert() failure during interrupt in such cases as the UTXO DB flushing checks
         // that the best block hash is non-null.
-        if (ShutdownRequested()) break;
+        if (m_chainman.m_interrupt) break;
     } while (pindexNewTip != pindexMostWork);
     CheckBlockIndex();
 
@@ -3328,7 +3329,7 @@ bool Chainstate::InvalidateBlock(BlockValidationState& state, CBlockIndex* pinde
 
     // Disconnect (descendants of) pindex, and mark them invalid.
     while (true) {
-        if (ShutdownRequested()) break;
+        if (m_chainman.m_interrupt) break;
 
         // Make sure the queue of validation callbacks doesn't grow unboundedly.
         LimitValidationInterfaceQueue();
@@ -4026,7 +4027,7 @@ bool Chainstate::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, BlockV
         }
         ReceivedBlockTransactions(block, pindex, blockPos);
     } catch (const std::runtime_error& e) {
-        return AbortNode(state, std::string("System error: ") + e.what());
+        return FatalError(m_chainman.GetNotifications(), state, std::string("System error: ") + e.what());
     }
 
     FlushStateToDisk(state, FlushStateMode::NONE);
@@ -4136,7 +4137,7 @@ void Chainstate::LoadMempool(const fs::path& load_path, FopenFn mockable_fopen_f
 {
     if (!m_mempool) return;
     ::LoadMempool(*m_mempool, load_path, *this, mockable_fopen_function);
-    m_mempool->SetLoadTried(!ShutdownRequested());
+    m_mempool->SetLoadTried(!m_chainman.m_interrupt);
 }
 
 bool Chainstate::LoadChainTip()
@@ -4269,7 +4270,7 @@ VerifyDBResult CVerifyDB::VerifyDB(
                 skipped_l3_checks = true;
             }
         }
-        if (ShutdownRequested()) return VerifyDBResult::INTERRUPTED;
+        if (chainstate.m_chainman.m_interrupt) return VerifyDBResult::INTERRUPTED;
     }
     if (pindexFailure) {
         LogPrintf("Verification error: coin database inconsistencies found (last %i blocks, %i good transactions before that)\n", chainstate.m_chain.Height() - pindexFailure->nHeight + 1, nGoodTransactions);
@@ -4302,7 +4303,7 @@ VerifyDBResult CVerifyDB::VerifyDB(
                 LogPrintf("Verification error: found unconnectable block at %d, hash=%s (%s)\n", pindex->nHeight, pindex->GetBlockHash().ToString(), state.ToString());
                 return VerifyDBResult::CORRUPTED_BLOCK_DB;
             }
-            if (ShutdownRequested()) return VerifyDBResult::INTERRUPTED;
+            if (chainstate.m_chainman.m_interrupt) return VerifyDBResult::INTERRUPTED;
         }
     }
 
@@ -4470,7 +4471,7 @@ bool ChainstateManager::LoadBlockIndex()
         }
 
         for (CBlockIndex* pindex : vSortedByHeight) {
-            if (ShutdownRequested()) return false;
+            if (m_interrupt) return false;
             if (pindex->IsAssumedValid() ||
                     (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) &&
                      (pindex->HaveTxsDownloaded() || pindex->pprev == nullptr))) {
@@ -4576,7 +4577,7 @@ void Chainstate::LoadExternalBlockFile(
         // such as a block fails to deserialize.
         uint64_t nRewind = blkdat.GetPos();
         while (!blkdat.eof()) {
-            if (ShutdownRequested()) return;
+            if (m_chainman.m_interrupt) return;
 
             blkdat.SetPos(nRewind);
             nRewind++; // start one byte further next time, in case of failure
@@ -4717,7 +4718,7 @@ void Chainstate::LoadExternalBlockFile(
             }
         }
     } catch (const std::runtime_error& e) {
-        AbortNode(std::string("System error: ") + e.what());
+        m_chainman.GetNotifications().fatalError(std::string("System error: ") + e.what());
     }
     LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
 }
@@ -5169,7 +5170,7 @@ bool ChainstateManager::ActivateSnapshot(
             snapshot_chainstate.reset();
             bool removed = DeleteCoinsDBFromDisk(*snapshot_datadir, /*is_snapshot=*/true);
             if (!removed) {
-                AbortNode(strprintf("Failed to remove snapshot chainstate dir (%s). "
+                GetNotifications().fatalError(strprintf("Failed to remove snapshot chainstate dir (%s). "
                     "Manually remove it before restarting.\n", fs::PathToString(*snapshot_datadir)));
             }
         }
@@ -5209,13 +5210,13 @@ struct StopHashingException : public std::exception
 {
     const char* what() const throw() override
     {
-        return "ComputeUTXOStats interrupted by shutdown.";
+        return "ComputeUTXOStats interrupted.";
     }
 };
 
-static void SnapshotUTXOHashBreakpoint()
+static void SnapshotUTXOHashBreakpoint(const util::SignalInterrupt& interrupt)
 {
-    if (ShutdownRequested()) throw StopHashingException();
+    if (interrupt) throw StopHashingException();
 }
 
 bool ChainstateManager::PopulateAndValidateSnapshot(
@@ -5292,7 +5293,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
         // If our average Coin size is roughly 41 bytes, checking every 120,000 coins
         // means <5MB of memory imprecision.
         if (coins_processed % 120000 == 0) {
-            if (ShutdownRequested()) {
+            if (m_interrupt) {
                 return false;
             }
 
@@ -5349,7 +5350,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 
     try {
         maybe_stats = ComputeUTXOStats(
-            CoinStatsHashType::HASH_SERIALIZED, snapshot_coinsdb, m_blockman, SnapshotUTXOHashBreakpoint);
+            CoinStatsHashType::HASH_SERIALIZED, snapshot_coinsdb, m_blockman, [&interrupt = m_interrupt] { SnapshotUTXOHashBreakpoint(interrupt); });
     } catch (StopHashingException const&) {
         return false;
     }
@@ -5434,8 +5435,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 //      through IsUsable() checks, or
 //
 //  (ii) giving each chainstate its own lock instead of using cs_main for everything.
-SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(
-      std::function<void(bilingual_str)> shutdown_fnc)
+SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
 {
     AssertLockHeld(cs_main);
     if (m_ibd_chainstate.get() == &this->ActiveChainstate() ||
@@ -5487,7 +5487,7 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(
             user_error = strprintf(Untranslated("%s\n%s"), user_error, util::ErrorString(rename_result));
         }
 
-        shutdown_fnc(user_error);
+        GetNotifications().fatalError(user_error.original, user_error);
     };
 
     if (index_new.GetBlockHash() != snapshot_blockhash) {
@@ -5527,7 +5527,7 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(
             CoinStatsHashType::HASH_SERIALIZED,
             &ibd_coins_db,
             m_blockman,
-            SnapshotUTXOHashBreakpoint);
+            [&interrupt = m_interrupt] { SnapshotUTXOHashBreakpoint(interrupt); });
     } catch (StopHashingException const&) {
         return SnapshotCompletionResult::STATS_FAILED;
     }
@@ -5636,9 +5636,10 @@ static ChainstateManager::Options&& Flatten(ChainstateManager::Options&& opts)
     return std::move(opts);
 }
 
-ChainstateManager::ChainstateManager(Options options, node::BlockManager::Options blockman_options)
-    : m_options{Flatten(std::move(options))},
-      m_blockman{std::move(blockman_options)} {}
+ChainstateManager::ChainstateManager(const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options)
+    : m_interrupt{interrupt},
+      m_options{Flatten(std::move(options))},
+      m_blockman{interrupt, std::move(blockman_options)} {}
 
 ChainstateManager::~ChainstateManager()
 {
@@ -5783,13 +5784,13 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
 
     fs::path tmp_old{ibd_chainstate_path + "_todelete"};
 
-    auto rename_failed_abort = [](
+    auto rename_failed_abort = [this](
                                    fs::path p_old,
                                    fs::path p_new,
                                    const fs::filesystem_error& err) {
         LogPrintf("%s: error renaming file (%s): %s\n",
                 __func__, fs::PathToString(p_old), err.what());
-        AbortNode(strprintf(
+        GetNotifications().fatalError(strprintf(
             "Rename of '%s' -> '%s' failed. "
             "Cannot clean up the background chainstate leveldb directory.",
             fs::PathToString(p_old), fs::PathToString(p_new)));
@@ -5814,7 +5815,7 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
     }
 
     if (!DeleteCoinsDBFromDisk(tmp_old, /*is_snapshot=*/false)) {
-        // No need to AbortNode because once the unneeded bg chainstate data is
+        // No need to FatalError because once the unneeded bg chainstate data is
         // moved, it will not interfere with subsequent initialization.
         LogPrintf("Deletion of %s failed. Please remove it manually, as the " /* Continued */
                   "directory is now unnecessary.\n",
