@@ -247,6 +247,11 @@ std::shared_ptr<CWallet> LoadWalletInternal(WalletContext& context, const std::s
             return nullptr;
         }
 
+        // Legacy wallets are being deprecated, warn if the loaded wallet is legacy
+        if (!wallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
+            warnings.push_back(_("Wallet loaded successfully. The legacy wallet type is being deprecated and support for creating and opening legacy wallets will be removed in the future. Legacy wallets can be migrated to a descriptor wallet with migratewallet."));
+        }
+
         NotifyWalletLoaded(context, wallet);
         AddWallet(context, wallet);
         wallet->postInitProcess();
@@ -4139,7 +4144,7 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
                 return false;
             }
         } else {
-            // Labels for everything else (send) should be cloned to all
+            // Labels for everything else ("send") should be cloned to all
             if (data.watchonly_wallet) {
                 LOCK(data.watchonly_wallet->cs_wallet);
                 // Add to the watchonly. Preserve the labels, purpose, and change-ness
@@ -4148,7 +4153,6 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
                 if (!addr_pair.second.IsChange()) {
                     data.watchonly_wallet->m_address_book[addr_pair.first].SetLabel(label);
                 }
-                continue;
             }
             if (data.solvable_wallet) {
                 LOCK(data.solvable_wallet->cs_wallet);
@@ -4158,7 +4162,6 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
                 if (!addr_pair.second.IsChange()) {
                     data.solvable_wallet->m_address_book[addr_pair.first].SetLabel(label);
                 }
-                continue;
             }
         }
     }
@@ -4169,10 +4172,10 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
         WalletBatch batch{wallet.GetDatabase()};
         for (const auto& [destination, addr_book_data] : wallet.m_address_book) {
             auto address{EncodeDestination(destination)};
-            auto label{addr_book_data.GetLabel()};
-            // don't bother writing default values (unknown purpose, empty label)
+            std::optional<std::string> label = addr_book_data.IsChange() ? std::nullopt : std::make_optional(addr_book_data.GetLabel());
+            // don't bother writing default values (unknown purpose)
             if (addr_book_data.purpose) batch.WritePurpose(address, PurposeToString(*addr_book_data.purpose));
-            if (!label.empty()) batch.WriteName(address, label);
+            if (label) batch.WriteName(address, *label);
         }
     };
     if (data.watchonly_wallet) persist_address_book(*data.watchonly_wallet);
