@@ -43,8 +43,7 @@ from test_framework.script import (
     OP_INVALIDOPCODE,
     OP_RETURN,
     OP_TRUE,
-    SIGHASH_ALL,
-    LegacySignatureHash,
+    sign_input_legacy,
 )
 from test_framework.script_util import (
     script_to_p2sh_script,
@@ -1253,8 +1252,7 @@ class FullBlockTest(BitcoinTestFramework):
         if (scriptPubKey[0] == OP_TRUE):  # an anyone-can-spend
             tx.vin[0].scriptSig = CScript()
             return
-        (sighash, err) = LegacySignatureHash(spend_tx.vout[0].scriptPubKey, tx, 0, SIGHASH_ALL)
-        tx.vin[0].scriptSig = CScript([self.coinbase_key.sign_ecdsa(sighash) + bytes(bytearray([SIGHASH_ALL]))])
+        sign_input_legacy(tx, 0, spend_tx.vout[0].scriptPubKey, self.coinbase_key)
 
     def create_and_sign_transaction(self, spend_tx, value, script=CScript([OP_TRUE])):
         tx = self.create_tx(spend_tx, 0, value, script)
