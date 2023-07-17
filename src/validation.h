@@ -23,7 +23,6 @@
 #include <policy/packages.h>
 #include <policy/policy.h>
 #include <script/script_error.h>
-#include <shutdown.h>
 #include <sync.h>
 #include <txdb.h>
 #include <txmempool.h> // For CTxMemPool::cs
@@ -984,7 +983,6 @@ public:
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }
     const uint256& AssumedValidBlock() const { return *Assert(m_options.assumed_valid_block); }
     kernel::Notifications& GetNotifications() const { return m_options.notifications; };
-    int StopAtHeight() const { return m_options.stop_at_height; };
 
     /**
      * Alias for ::cs_main.
@@ -1001,7 +999,7 @@ public:
 
     const util::SignalInterrupt& m_interrupt;
     const Options m_options;
-    std::thread m_load_block;
+    std::thread m_thread_load;
     //! A single BlockManager instance is shared across each constructed
     //! chainstate to avoid duplicating block metadata.
     node::BlockManager m_blockman;

@@ -81,9 +81,10 @@ int main(int argc, char* argv[])
     class KernelNotifications : public kernel::Notifications
     {
     public:
-        void blockTip(SynchronizationState, CBlockIndex&) override
+        kernel::InterruptResult blockTip(SynchronizationState, CBlockIndex&) override
         {
             std::cout << "Block tip changed" << std::endl;
+            return {};
         }
         void headerTip(SynchronizationState, int64_t height, int64_t timestamp, bool presync) override
         {
@@ -287,7 +288,7 @@ epilogue:
     // Without this precise shutdown sequence, there will be a lot of nullptr
     // dereferencing and UB.
     scheduler.stop();
-    if (chainman.m_load_block.joinable()) chainman.m_load_block.join();
+    if (chainman.m_thread_load.joinable()) chainman.m_thread_load.join();
     StopScriptCheckWorkerThreads();
 
     GetMainSignals().FlushBackgroundCallbacks();
