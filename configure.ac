@@ -714,6 +714,8 @@ case $host in
        AC_MSG_ERROR([windres not found])
      fi
 
+     CORE_CPPFLAGS="$CORE_CPPFLAGS -DSECP256K1_STATIC"
+
      CORE_CPPFLAGS="$CORE_CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -D_WIN32_WINNT=0x0601 -D_WIN32_IE=0x0501 -DWIN32_LEAN_AND_MEAN"
      dnl Prevent the definition of min/max macros.
      dnl We always want to use the standard library.
@@ -919,8 +921,6 @@ if test "$ac_cv_sys_large_files" != "" &&
   CORE_CPPFLAGS="$CORE_CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
 fi
 
-AC_SEARCH_LIBS([clock_gettime],[rt])
-
 if test "$enable_gprof" = "yes"; then
     dnl -pg is incompatible with -pie. Since hardening and profiling together doesn't make sense,
     dnl we simply make them mutually exclusive here. Additionally, hardened toolchains may force
@@ -958,7 +958,8 @@ if test "$use_hardening" != "no"; then
 
   case $host in
     *mingw*)
-      dnl stack-clash-protection doesn't currently work, and likely should just be skipped for Windows.
+      dnl stack-clash-protection doesn't compile with GCC 10 and earlier.
+      dnl In any case, it is a no-op for Windows.
       dnl See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90458 for more details.
       ;;
     *)
