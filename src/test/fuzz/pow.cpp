@@ -26,7 +26,7 @@ void initialize_pow()
 #if 0
 FIXME: Update and re-enable for Xayas dual-algo changes.
 
-FUZZ_TARGET_INIT(pow, initialize_pow)
+FUZZ_TARGET(pow, .init = initialize_pow)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     const Consensus::Params& consensus_params = Params().GetConsensus();
@@ -90,7 +90,7 @@ FUZZ_TARGET_INIT(pow, initialize_pow)
 }
 
 
-FUZZ_TARGET_INIT(pow_transition, initialize_pow)
+FUZZ_TARGET(pow_transition, .init = initialize_pow)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     const Consensus::Params& consensus_params{Params().GetConsensus()};
