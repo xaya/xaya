@@ -58,9 +58,35 @@ void URITests::uriTests()
     uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?req-message=Wikipedia Example Address"));
     QVERIFY(GUIUtil::parseBitcoinURI(uri, &rv));
 
+    // Commas in amounts are not allowed.
     uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=1,000&label=Wikipedia Example"));
     QVERIFY(!GUIUtil::parseBitcoinURI(uri, &rv));
 
     uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=1,000.0&label=Wikipedia Example"));
     QVERIFY(!GUIUtil::parseBitcoinURI(uri, &rv));
+
+    // There are two amount specifications. The last value wins.
+    uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=100&amount=200&label=Wikipedia Example"));
+    QVERIFY(GUIUtil::parseBitcoinURI(uri, &rv));
+    QVERIFY(rv.address == QString("N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG"));
+    QVERIFY(rv.amount == 20000000000LL);
+    QVERIFY(rv.label == QString("Wikipedia Example"));
+
+    // The first amount value is correct. However, the second amount value is not valid. Hence, the URI is not valid.
+    uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=100&amount=1,000&label=Wikipedia Example"));
+    QVERIFY(!GUIUtil::parseBitcoinURI(uri, &rv));
+
+    // Test label containing a question mark ('?').
+    uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=100&label=?"));
+    QVERIFY(GUIUtil::parseBitcoinURI(uri, &rv));
+    QVERIFY(rv.address == QString("N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG"));
+    QVERIFY(rv.amount == 10000000000LL);
+    QVERIFY(rv.label == QString("?"));
+
+    // Escape sequences are not supported.
+    uri.setUrl(QString("namecoin:N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG?amount=100&label=%3F"));
+    QVERIFY(GUIUtil::parseBitcoinURI(uri, &rv));
+    QVERIFY(rv.address == QString("N8YSXKveXdUQJSup2zvB1SkKrE2JfznpXG"));
+    QVERIFY(rv.amount == 10000000000LL);
+    QVERIFY(rv.label == QString("%3F"));
 }
