@@ -4,13 +4,15 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the generation of UTXO snapshots using `dumptxoutset`.
 """
+from pathlib import Path
 
 from test_framework.blocktools import COINBASE_MATURITY
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal, assert_raises_rpc_error
-
-import hashlib
-from pathlib import Path
+from test_framework.util import (
+    assert_equal,
+    assert_raises_rpc_error,
+    sha256sum_file,
+)
 
 
 class DumptxoutsetTest(BitcoinTestFramework):
@@ -39,11 +41,10 @@ class DumptxoutsetTest(BitcoinTestFramework):
             out['base_hash'],
             '88d5051db843887ddbdf78aed76a535477dd62fcb21fa9266b1b18be7534a222')
 
-        with open(str(expected_path), 'rb') as f:
-            digest = hashlib.sha256(f.read()).hexdigest()
-            # UTXO snapshot hash should be deterministic based on mocked time.
-            assert_equal(
-                digest, '5ea21bb63c662bd73cdc0b550c9de2bbdea85f4cd0655ba07cba147a53dabc8d')
+        # UTXO snapshot hash should be deterministic based on mocked time.
+        assert_equal(
+            sha256sum_file(str(expected_path)).hex(),
+            '5ea21bb63c662bd73cdc0b550c9de2bbdea85f4cd0655ba07cba147a53dabc8d')
 
         assert_equal(
             out['txoutset_hash'], '5f8febcbf5c0ea552ccf38e8717d96d8898f8810b2fe5614f98234c8cba11c9c')
