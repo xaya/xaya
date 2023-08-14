@@ -480,7 +480,7 @@ CBlockFileInfo* BlockManager::GetBlockFileInfo(size_t n)
     return &m_blockfile_info.at(n);
 }
 
-bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock, const CMessageHeader::MessageStartChars& messageStart) const
+bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock) const
 {
     // Open history file to append
     AutoFile fileout{OpenUndoFile(pos)};
@@ -490,7 +490,7 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
 
     // Write index header
     unsigned int nSize = GetSerializeSize(blockundo, CLIENT_VERSION);
-    fileout << messageStart << nSize;
+    fileout << GetParams().MessageStart() << nSize;
 
     // Write undo data
     long fileOutPos = ftell(fileout.Get());
@@ -712,7 +712,7 @@ bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFileP
     return true;
 }
 
-bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos, const CMessageHeader::MessageStartChars& messageStart) const
+bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
 {
     // Open history file to append
     CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
@@ -722,7 +722,7 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos, const
 
     // Write index header
     unsigned int nSize = GetSerializeSize(block, fileout.GetVersion());
-    fileout << messageStart << nSize;
+    fileout << GetParams().MessageStart() << nSize;
 
     // Write block
     long fileOutPos = ftell(fileout.Get());
@@ -744,7 +744,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
         if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40)) {
             return error("ConnectBlock(): FindUndoPos failed");
         }
-        if (!UndoWriteToDisk(blockundo, _pos, block.pprev->GetBlockHash(), GetParams().MessageStart())) {
+        if (!UndoWriteToDisk(blockundo, _pos, block.pprev->GetBlockHash())) {
             return FatalError(m_opts.notifications, state, "Failed to write undo data");
         }
         // rev files are written in block height order, whereas blk files are written as blocks come in (often out of order)
@@ -835,7 +835,7 @@ bool BlockManager::ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockInde
     return ReadBlockOrHeader(block, index, *this);
 }
 
-bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatFilePos& pos, const CMessageHeader::MessageStartChars& message_start) const
+bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatFilePos& pos) const
 {
     FlatFilePos hpos = pos;
     hpos.nPos -= 8; // Seek back 8 bytes for meta header
@@ -850,10 +850,10 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
 
         filein >> blk_start >> blk_size;
 
-        if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE)) {
+        if (memcmp(blk_start, GetParams().MessageStart(), CMessageHeader::MESSAGE_START_SIZE)) {
             return error("%s: Block magic mismatch for %s: %s versus expected %s", __func__, pos.ToString(),
                     HexStr(blk_start),
-                    HexStr(message_start));
+                    HexStr(GetParams().MessageStart()));
         }
 
         if (blk_size > MAX_SIZE) {
@@ -888,7 +888,7 @@ FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, cons
         return FlatFilePos();
     }
     if (!position_known) {
-        if (!WriteBlockToDisk(block, blockPos, GetParams().MessageStart())) {
+        if (!WriteBlockToDisk(block, blockPos)) {
             m_opts.notifications.fatalError("Failed to write block");
             return FlatFilePos();
         }

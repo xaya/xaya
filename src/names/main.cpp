@@ -10,6 +10,7 @@
 #include <consensus/validation.h>
 #include <dbwrapper.h>
 #include <hash.h>
+#include <logging.h>
 #include <names/encoding.h>
 #include <script/interpreter.h>
 #include <script/names.h>
