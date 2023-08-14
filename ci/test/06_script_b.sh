@@ -19,6 +19,11 @@ fi
 echo "Free disk space:"
 df -h
 
+# What host to compile for. See also ./depends/README.md
+# Tests that need cross-compilation export the appropriate HOST.
+# Tests that run natively guess the host
+export HOST=${HOST:-$("$BASE_ROOT_DIR/depends/config.guess")}
+
 if [ "$RUN_FUZZ_TESTS" = "true" ]; then
   export DIR_FUZZ_IN=${DIR_QA_ASSETS}/fuzz_seed_corpus/
   if [ ! -d "$DIR_FUZZ_IN" ]; then
@@ -124,13 +129,6 @@ if [[ $HOST = *-mingw32 ]]; then
   "${BASE_ROOT_DIR}/ci/test/wrap-wine.sh"
 fi
 
-if [ -n "$QEMU_USER_CMD" ]; then
-  # Generate all binaries, so that they can be wrapped
-  make "$MAKEJOBS" -C src/secp256k1 VERBOSE=1
-  make "$MAKEJOBS" -C src minisketch/test VERBOSE=1
-  "${BASE_ROOT_DIR}/ci/test/wrap-qemu.sh"
-fi
-
 if [ -n "$USE_VALGRIND" ]; then
   "${BASE_ROOT_DIR}/ci/test/wrap-valgrind.sh"
 fi
@@ -148,9 +146,13 @@ if [ "$RUN_FUNCTIONAL_TESTS" = "true" ]; then
 fi
 
 if [ "${RUN_TIDY}" = "true" ]; then
+  cmake -B /tidy-build -DLLVM_DIR=/usr/lib/llvm-16/cmake -DCMAKE_BUILD_TYPE=Release -S "${BASE_ROOT_DIR}"/contrib/devtools/bitcoin-tidy
+  cmake --build /tidy-build "$MAKEJOBS"
+  cmake --build /tidy-build --target bitcoin-tidy-tests "$MAKEJOBS"
+
   set -eo pipefail
   cd "${BASE_BUILD_DIR}/bitcoin-$HOST/src/"
-  ( run-clang-tidy-16 -quiet "${MAKEJOBS}" ) | grep -C5 "error"
+  ( run-clang-tidy-16 -quiet -load="/tidy-build/libbitcoin-tidy.so" "${MAKEJOBS}" ) | grep -C5 "error"
   # Filter out files by regex here, because regex may not be
   # accepted in src/.bear-tidy-config
   # Filter out:
@@ -158,13 +160,13 @@ if [ "${RUN_TIDY}" = "true" ]; then
   jq 'map(select(.file | test("src/qt/qrc_.*\\.cpp$|/moc_.*\\.cpp$") | not))' ../compile_commands.json > tmp.json
   mv tmp.json ../compile_commands.json
   cd "${BASE_BUILD_DIR}/bitcoin-$HOST/"
-  python3 "${DIR_IWYU}/include-what-you-use/iwyu_tool.py" \
+  python3 "/include-what-you-use/iwyu_tool.py" \
            -p . "${MAKEJOBS}" \
            -- -Xiwyu --cxx17ns -Xiwyu --mapping_file="${BASE_BUILD_DIR}/bitcoin-$HOST/contrib/devtools/iwyu/bitcoin.core.imp" \
            -Xiwyu --max_line_length=160 \
            2>&1 | tee /tmp/iwyu_ci.out
   cd "${BASE_ROOT_DIR}/src"
-  python3 "${DIR_IWYU}/include-what-you-use/fix_includes.py" --nosafe_headers < /tmp/iwyu_ci.out
+  python3 "/include-what-you-use/fix_includes.py" --nosafe_headers < /tmp/iwyu_ci.out
   git --no-pager diff
 fi
 
