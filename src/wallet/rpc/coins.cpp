@@ -9,6 +9,7 @@
 #include <rpc/server_util.h>
 #include <rpc/util.h>
 #include <script/names.h>
+#include <script/script.h>
 #include <util/moneystr.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -693,7 +694,7 @@ RPCHelpMan listunspent()
             std::unique_ptr<SigningProvider> provider = pwallet->GetSolvingProvider(scriptPubKey);
             if (provider) {
                 if (scriptPubKey.IsPayToScriptHash(true)) {
-                    const CScriptID& hash = CScriptID(std::get<ScriptHash>(address));
+                    const CScriptID hash = ToScriptID(std::get<ScriptHash>(address));
                     CScript redeemScript;
                     if (provider->GetCScript(hash, redeemScript)) {
                         entry.pushKV("redeemScript", HexStr(redeemScript));
