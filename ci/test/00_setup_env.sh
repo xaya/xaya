@@ -8,10 +8,14 @@ export LC_ALL=C.UTF-8
 
 set -ex
 
-# The root dir.
+# The source root dir, usually from git, usually read-only.
 # The ci system copies this folder.
-BASE_ROOT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../../ >/dev/null 2>&1 && pwd )
-export BASE_ROOT_DIR
+BASE_READ_ONLY_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../../ >/dev/null 2>&1 && pwd )
+export BASE_READ_ONLY_DIR
+# The destination root dir inside the container.
+# This folder will also hold any SDKs.
+# This folder only exists on the ci guest and will be a copy of BASE_READ_ONLY_DIR
+export BASE_ROOT_DIR="${BASE_ROOT_DIR:-/ci_container_base}"
 # The depends dir.
 # This folder exists only on the ci guest, and on the ci host as a volume.
 export DEPENDS_DIR=${DEPENDS_DIR:-$BASE_ROOT_DIR/depends}
