@@ -669,13 +669,13 @@ public:
     void GetTransactionAncestry(const uint256& txid, size_t& ancestors, size_t& descendants, size_t* ancestorsize = nullptr, CAmount* ancestorfees = nullptr) const;
 
     /**
-     * @returns true if we've made an attempt to load the mempool regardless of
+     * @returns true if an initial attempt to load the persisted mempool was made, regardless of
      *          whether the attempt was successful or not
      */
     bool GetLoadTried() const;
 
     /**
-     * Set whether or not we've made an attempt to load the mempool (regardless
+     * Set whether or not an initial attempt to load the persisted mempool was made (regardless
      * of whether the attempt was successful or not)
      */
     void SetLoadTried(bool load_tried);
@@ -757,6 +757,10 @@ public:
         return mapTx.project<0>(mapTx.get<index_by_wtxid>().find(wtxid));
     }
     TxMempoolInfo info(const GenTxid& gtxid) const;
+
+    /** Returns info for a transaction if its entry_sequence < last_sequence */
+    TxMempoolInfo info_for_relay(const GenTxid& gtxid, uint64_t last_sequence) const;
+
     std::vector<TxMempoolInfo> infoAll() const;
 
     size_t DynamicMemoryUsage() const;

@@ -15,7 +15,7 @@
 #include <primitives/transaction.h>
 #include <script/names.h>
 #include <script/script.h>
-#include <script/standard.h>
+#include <script/solver.h>
 #include <validation.h>
 
 #include <univalue.h>

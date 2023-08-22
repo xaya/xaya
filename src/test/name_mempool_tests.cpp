@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2022 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,6 +15,7 @@
 #include <validationinterface.h>
 
 #include <test/util/setup_common.h>
+#include <test/util/txmempool.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -27,6 +28,10 @@ namespace
 
 class NameMempoolTestSetup : public TestingSetup
 {
+
+private:
+
+  const TestMemPoolEntryHelper memPoolHelper;
 
 public:
 
@@ -106,7 +111,8 @@ public:
   CTxMemPoolEntry
   Entry (const CTransaction& tx)
   {
-    return CTxMemPoolEntry (MakeTransactionRef (tx), 0, 0, 100, false, 1, lp);
+    CTransaction txCopy = tx;
+    return memPoolHelper.FromTx (MakeTransactionRef (std::move (txCopy)));
   }
 
 };

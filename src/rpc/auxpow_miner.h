@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 Daniel Kraft
+// Copyright (c) 2018-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <powdata.h>
 #include <rpc/request.h>
 #include <script/script.h>
-#include <script/standard.h>
 #include <sync.h>
 #include <txmempool.h>
 #include <uint256.h>

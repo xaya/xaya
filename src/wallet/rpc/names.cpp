@@ -26,7 +26,6 @@
 #include <rpc/server_util.h>
 #include <rpc/util.h>
 #include <script/names.h>
-#include <script/standard.h>
 #include <txmempool.h>
 #include <util/fees.h>
 #include <util/moneystr.h>

@@ -5,10 +5,13 @@
 
 #include <script/script.h>
 
+#include <hash.h>
 #include <script/names.h>
 #include <util/strencodings.h>
 
 #include <string>
+
+CScriptID::CScriptID(const CScript& in) : BaseHash(Hash160(in)) {}
 
 std::string GetOpName(opcodetype opcode)
 {
