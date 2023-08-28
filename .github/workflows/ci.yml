@@ -14,8 +14,8 @@ on:
       - '**'
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.event_name != 'pull_request' && github.run_id || github.ref }}
+  cancel-in-progress: true
 
 env:
   DANGER_RUN_CI_ON_HOST: 1
@@ -24,7 +24,7 @@ env:
 
 jobs:
   macos-native-x86_64:
-    name: macOS 13 native, x86_64 [no depends, sqlite only, gui]
+    name: 'macOS 13 native, x86_64, no depends, sqlite only, gui'
     # Use latest image, but hardcode version to avoid silent upgrades (and breaks).
     # See: https://github.com/actions/runner-images#available-images.
     runs-on: macos-13  # Use M1 once available https://github.com/github/roadmap/issues/528
@@ -51,12 +51,20 @@ jobs:
       - name: Set Ccache directory
         run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache_dir" >> "$GITHUB_ENV"
 
-      - name: Ccache cache
-        uses: actions/cache@v3
+      - name: Restore Ccache cache
+        uses: actions/cache/restore@v3
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ github.job }}-ccache-cache-${{ github.run_id }}
-          restore-keys: ${{ github.job }}-ccache-cache
+          key: ${{ github.job }}-ccache-${{ github.run_id }}
+          restore-keys: ${{ github.job }}-ccache-
 
       - name: CI script
         run: ./ci/test_run_all.sh
+
+      - name: Save Ccache cache
+        uses: actions/cache/save@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          # https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+          key: ${{ github.job }}-ccache-${{ github.run_id }}
