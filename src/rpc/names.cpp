@@ -522,7 +522,7 @@ name_show ()
 {
   auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
-  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
+  if (chainman.IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
@@ -605,7 +605,7 @@ name_history ()
   if (!fNameHistory)
     throw std::runtime_error ("-namehistory is not enabled");
 
-  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
+  if (chainman.IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 
@@ -688,7 +688,7 @@ name_scan ()
 {
   auto& chainman = EnsureChainman (EnsureAnyNodeContext (request));
 
-  if (chainman.ActiveChainstate ().IsInitialBlockDownload ())
+  if (chainman.IsInitialBlockDownload ())
     throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                        "Namecoin is downloading blocks...");
 

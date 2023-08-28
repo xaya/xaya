@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 Daniel Kraft
+// Copyright (c) 2018-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,8 +35,7 @@ void auxMiningCheck(const node::NodeContext& node)
     throw JSONRPCError (RPC_CLIENT_NOT_CONNECTED,
                         "Namecoin is not connected!");
 
-  if (chainman.ActiveChainstate ().IsInitialBlockDownload ()
-        && !Params ().MineBlocksOnDemand ())
+  if (chainman.IsInitialBlockDownload () && !Params ().MineBlocksOnDemand ())
     throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
                         "Namecoin is downloading blocks...");
 
