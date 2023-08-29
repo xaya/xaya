@@ -123,6 +123,7 @@ BASE_SCRIPTS = [
     'feature_abortnode.py',
     'wallet_address_types.py --legacy-wallet',
     'wallet_address_types.py --descriptors',
+    'p2p_orphan_handling.py',
     'wallet_basic.py --legacy-wallet',
     'wallet_basic.py --descriptors',
     'feature_maxtipage.py',
@@ -270,6 +271,7 @@ BASE_SCRIPTS = [
     'p2p_eviction.py',
     # FIXME: Reenable when debugged.
     #'p2p_ibd_stalling.py',
+    'p2p_net_deadlock.py',
     'wallet_signmessagewithaddress.py',
     'rpc_signmessagewithprivkey.py',
     'rpc_generate.py',

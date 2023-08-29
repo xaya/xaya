@@ -131,7 +131,7 @@ class ConfArgsTest(BitcoinTestFramework):
         # datadir= line pointing at the node datadir.
         node = self.nodes[0]
         conf_text = pathlib.Path(node.bitcoinconf).read_text()
-        conf_path = default_datadir / "xaya.conf"
+        conf_path = default_datadir / config_file
         conf_path.write_text(f"datadir={node.datadir}\n{conf_text}")
 
         # Drop the node -datadir= argument during this test, because if it is
@@ -337,7 +337,7 @@ class ConfArgsTest(BitcoinTestFramework):
         # Test that passing a redundant -conf command line argument pointing to
         # the same bitcoin.conf that would be loaded anyway does not trigger an
         # error.
-        self.start_node(0, [f'-conf={node.datadir}/xaya.conf'])
+        self.start_node(0, [f'-conf={node.datadir}/{config_file}'])
         self.stop_node(0)
 
     def test_ignored_default_conf(self):
@@ -359,7 +359,7 @@ class ConfArgsTest(BitcoinTestFramework):
         # startup error because the node datadir contains a different
         # bitcoin.conf that would be ignored.
         node = self.nodes[0]
-        (default_datadir / "xaya.conf").write_text(f"datadir={node.datadir}\n")
+        (default_datadir / config_file).write_text(f"datadir={node.datadir}\n")
 
         # Drop the node -datadir= argument during this test, because if it is
         # specified it would take precedence over the datadir setting in the
@@ -368,9 +368,17 @@ class ConfArgsTest(BitcoinTestFramework):
         node.args = [arg for arg in node.args if not arg.startswith("-datadir=")]
         node.assert_start_raises_init_error([], re.escape(
             f'Error: Data directory "{node.datadir}" contains a "xaya.conf" file which is ignored, because a '
-            f'different configuration file "{default_datadir}/xaya.conf" from data directory "{default_datadir}" '
+            f'different configuration file "{default_datadir}/{config_file}" from data directory "{default_datadir}" '
             f'is being used instead.') + r"[\s\S]*", env=env, match=ErrorMatch.FULL_REGEX)
         node.args = node_args
+
+    def test_acceptstalefeeestimates_arg_support(self):
+        self.log.info("Test -acceptstalefeeestimates option support")
+        conf_file = self.nodes[0].datadir_path / config_file
+        for chain, chain_name in {("main", ""), ("test", "testnet3"), ("signet", "signet")}:
+            util.write_config(conf_file, n=0, chain=chain_name, extra_config='acceptstalefeeestimates=1\n')
+            self.nodes[0].assert_start_raises_init_error(expected_msg=f'Error: acceptstalefeeestimates is not supported on {chain} chain.')
+        util.write_config(conf_file, n=0, chain="regtest")  # Reset to regtest
 
     def run_test(self):
         self.test_log_buffer()
@@ -384,6 +392,7 @@ class ConfArgsTest(BitcoinTestFramework):
         self.test_invalid_command_line_options()
         self.test_ignored_conf()
         self.test_ignored_default_conf()
+        self.test_acceptstalefeeestimates_arg_support()
 
         # Remove the -datadir argument so it doesn't override the config file
         self.nodes[0].args = [arg for arg in self.nodes[0].args if not arg.startswith("-datadir")]
