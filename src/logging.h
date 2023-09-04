@@ -68,8 +68,9 @@ namespace BCLog {
         BLOCKSTORAGE = (1 << 26),
         TXRECONCILIATION = (1 << 27),
         SCAN        = (1 << 28),
-        NAMES       = (1 << 29),
-        GAME        = (1 << 30),
+        TXPACKAGES  = (1 << 29),
+        NAMES       = (1 << 30),
+        GAME        = (static_cast<uint32_t> (1) << 31),
         ALL         = ~(uint32_t)0,
     };
     enum class Level {

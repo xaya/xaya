@@ -104,8 +104,6 @@ public:
     bool DefaultConsistencyChecks() const { return fDefaultConsistencyChecks; }
     /** Default value for -checknamedb argument */
     virtual int DefaultCheckNameDB() const = 0;
-    /** Policy: Filter transactions that do not match well-defined patterns */
-    bool RequireStandard() const { return fRequireStandard; }
     /** If this chain is exclusively used for testing */
     bool IsTestChain() const { return m_is_test_chain; }
     /** If this chain allows time to be mocked */
@@ -183,7 +181,6 @@ protected:
     CBlock genesis;
     std::vector<uint8_t> vFixedSeeds;
     bool fDefaultConsistencyChecks;
-    bool fRequireStandard;
     bool m_is_test_chain;
     bool m_is_mockable_chain;
     CCheckpointData checkpointData;
