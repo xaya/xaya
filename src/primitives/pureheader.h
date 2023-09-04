@@ -54,7 +54,16 @@ public:
         return (nTime == 0);
     }
 
-    uint256 GetHash() const;
+    /**
+     * Returns the base hash, which is the "ordinary" hash of the pure header
+     * (and thus does not include the CBlockHeader specific PowData).
+     *
+     * The base hash is used to construct the PoW, i.e. the PoW commits to
+     * the base hash to ensure the basic data of the Xaya block is verified
+     * by it.
+     */
+    uint256 GetBaseHash() const;
+
     uint256 GetPowHash(PowAlgo algo) const;
 
     NodeSeconds Time() const

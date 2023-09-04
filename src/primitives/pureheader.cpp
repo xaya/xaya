@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cassert>
 
-uint256 CPureBlockHeader::GetHash() const
+uint256 CPureBlockHeader::GetBaseHash() const
 {
     return SerializeHash(*this);
 }
@@ -48,7 +48,7 @@ uint256 CPureBlockHeader::GetPowHash (const PowAlgo algo) const
   switch (algo)
     {
     case PowAlgo::SHA256D:
-      return GetHash ();
+      return GetBaseHash ();
     case PowAlgo::NEOSCRYPT:
       return GetNeoscryptHash (*this);
     default:

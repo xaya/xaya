@@ -91,7 +91,7 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
         /* Save in our map of constructed blocks.  */
         pblockCur = &newBlock->block;
         curBlocks.emplace (std::make_pair (algo, scriptID), pblockCur);
-        blocks[pblockCur->GetHash ()] = pblockCur;
+        blocks[pblockCur->GetBaseHash ()] = pblockCur;
         templates.push_back (std::move (newBlock));
       }
   }
@@ -145,7 +145,7 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
                                           scriptPubKey, target);
 
   UniValue result(UniValue::VOBJ);
-  result.pushKV ("hash", pblock->GetHash ().GetHex ());
+  result.pushKV ("hash", pblock->GetBaseHash ().GetHex ());
   result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("chainid", Params ().GetConsensus ().nAuxpowChainId);
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
@@ -198,7 +198,7 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
 
   CPureBlockHeader fakeHeader;
   fakeHeader.SetNull ();
-  fakeHeader.hashMerkleRoot = pblock->GetHash ();
+  fakeHeader.hashMerkleRoot = pblock->GetBaseHash ();
 
   /* To construct the data result, we first have to serialise the template
      fake header of the PoW data.  Then perform the byte-order swapping and
@@ -212,7 +212,7 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
   SwapGetWorkEndianness (data);
 
   UniValue result(UniValue::VOBJ);
-  result.pushKV ("hash", pblock->GetHash ().GetHex ());
+  result.pushKV ("hash", pblock->GetBaseHash ().GetHex ());
   result.pushKV ("data", HexStr (data));
   result.pushKV ("algo", PowAlgoToString (pblock->pow.getCoreAlgo ()));
   result.pushKV ("previousblockhash", pblock->hashPrevBlock.GetHex ());
@@ -247,7 +247,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   ss >> *pow;
 
   shared_block->pow.setAuxpow (std::move (pow));
-  assert (shared_block->GetHash ().GetHex () == hashHex);
+  assert (shared_block->GetBaseHash ().GetHex () == hashHex);
 
   return chainman.ProcessNewBlock (shared_block, /*force_processing=*/true,
                                    /*min_pow_checked=*/true, nullptr);
@@ -286,7 +286,7 @@ AuxpowMiner::submitWork (const JSONRPCRequest& request,
   }
 
   shared_block->pow.setFakeHeader (std::move (fakeHeader));
-  assert (shared_block->GetHash ().GetHex () == hashForLookup);
+  assert (shared_block->GetBaseHash ().GetHex () == hashForLookup);
 
   return chainman.ProcessNewBlock (shared_block, /*force_processing=*/true,
                                    /*min_pow_checked=*/true, nullptr);

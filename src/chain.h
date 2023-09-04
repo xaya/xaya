@@ -415,14 +415,24 @@ class CDiskBlockIndex : public CBlockIndex
 public:
     uint256 hashPrev;
 
+    /**
+     * The underlying block hash.  We need to store it explicitly (from the
+     * CBlockIndex on construction, and then saved on disk) since we cannot
+     * compute it without the PowData.
+     */
+    uint256 hashBlock;
+
     CDiskBlockIndex()
     {
         hashPrev = uint256();
+        hashBlock = uint256();
     }
 
     explicit CDiskBlockIndex(const CBlockIndex* pindex) : CBlockIndex(*pindex)
     {
         hashPrev = (pprev ? pprev->GetBlockHash() : uint256());
+        assert(pindex->phashBlock != nullptr);
+        hashBlock = *(pindex->phashBlock);
     }
 
     SERIALIZE_METHODS(CDiskBlockIndex, obj)
@@ -447,18 +457,7 @@ public:
         READWRITE(obj.nNonce);
 
         READWRITE(obj.algo);
-    }
-
-    uint256 ConstructBlockHash() const
-    {
-        CPureBlockHeader block;
-        block.nVersion = nVersion;
-        block.hashPrevBlock = hashPrev;
-        block.hashMerkleRoot = hashMerkleRoot;
-        block.nTime = nTime;
-        block.nBits = 0;
-        block.nNonce = nNonce;
-        return block.GetHash();
+        READWRITE(obj.hashBlock);
     }
 
     uint256 GetBlockHash() = delete;

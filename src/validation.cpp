@@ -1580,7 +1580,7 @@ PackageMempoolAcceptResult ProcessNewPackage(Chainstate& active_chainstate, CTxM
 
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
-    if (!block.pow.isValid (block.GetHash(), params))
+    if (!block.pow.isValid (block.GetBaseHash(), params))
         return error("%s : proof of work failed", __func__);
     return true;
 }

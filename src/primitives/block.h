@@ -36,6 +36,13 @@ public:
   }
 
   /**
+   * Returns the hash of the full CBlockHeader, including the PowData.
+   * This is what is used to identify blocks in Xaya, and it ensures that
+   * the blockchain consensus also covers the PowData (and thus the RNG seed).
+   */
+  uint256 GetHash() const;
+
+  /**
    * Returns a hash based on the PoW of this block, which can be used for
    * the generation of random numbers in games.  Note that there is some
    * potential for miners to manipulate this:  Namely, they can withhold

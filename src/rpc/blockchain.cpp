@@ -167,7 +167,6 @@ const RPCResult POWDATA_RESULT{RPCResult::Type::OBJ, "powdata", "The block's att
 static UniValue blockheaderToJSON(const CPureBlockHeader& header)
 {
     UniValue result(UniValue::VOBJ);
-    result.pushKV("hash", header.GetHash().GetHex());
     result.pushKV("version", header.nVersion);
     result.pushKV("versionHex", strprintf("%08x", header.nVersion));
     result.pushKV("merkleroot", header.hashMerkleRoot.GetHex());
@@ -214,6 +213,7 @@ UniValue blockheaderToJSON(const BlockManager& blockman, const CBlockIndex* tip,
     AssertLockNotHeld(cs_main); // For performance reasons
 
     auto result = blockheaderToJSON(blockindex->GetBlockHeader(blockman));
+    result.pushKV("hash", blockindex->GetBlockHash().GetHex());
 
     const CBlockIndex* pnext;
     int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
@@ -276,7 +276,7 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow, const bool verbose, Chainstate& act
     {
         UniValue tx(UniValue::VOBJ);
         tx.pushKV("hex", EncodeHexTx(*auxpow.coinbaseTx));
-        TxToJSON(*auxpow.coinbaseTx, auxpow.parentBlock.GetHash(), tx, active_chainstate);
+        TxToJSON(*auxpow.coinbaseTx, auxpow.parentBlock.GetBaseHash(), tx, active_chainstate);
         result.pushKV("tx", tx);
     }
 
@@ -297,7 +297,11 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow, const bool verbose, Chainstate& act
     }
 
     if (verbose)
-        result.pushKV("parentblock", blockheaderToJSON(auxpow.parentBlock));
+        {
+            UniValue parent = blockheaderToJSON(auxpow.parentBlock);
+            parent.pushKV("hash", auxpow.parentBlock.GetBaseHash().GetHex());
+            result.pushKV("parentblock", parent);
+        }
     else
     {
         CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);

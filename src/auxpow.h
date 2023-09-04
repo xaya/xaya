@@ -131,7 +131,7 @@ public:
   inline uint256
   getParentBlockHash () const
   {
-    return parentBlock.GetHash ();
+    return parentBlock.GetBaseHash ();
   }
 
   /**

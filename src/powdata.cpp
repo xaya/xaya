@@ -99,7 +99,7 @@ PowData::initFakeHeader (const CPureBlockHeader& block)
 {
   std::unique_ptr<CPureBlockHeader> hdr(new CPureBlockHeader ());
   hdr->SetNull ();
-  hdr->hashMerkleRoot = block.GetHash ();
+  hdr->hashMerkleRoot = block.GetBaseHash ();
   setFakeHeader (std::move (hdr));
   return *fakeHeader;
 }

@@ -9,6 +9,16 @@
 #include <tinyformat.h>
 
 uint256
+CBlockHeader::GetHash () const
+{
+  /* FIXME: Actually set fork time to not just the genesis block.  */
+  if (nTime > 1601286749)
+    return SerializeHash(*this);
+
+  return GetBaseHash();
+}
+
+uint256
 CBlockHeader::GetRngSeed () const
 {
   /* Random numbers in games must not be based off the block hash itself, as
@@ -23,7 +33,7 @@ CBlockHeader::GetRngSeed () const
   if (pow.isMergeMined ())
     powHash = pow.getAuxpow ().getParentBlockHash ();
   else
-    powHash = pow.getFakeHeader ().GetHash ();
+    powHash = pow.getFakeHeader ().GetBaseHash ();
   assert (!powHash.IsNull ());
 
   return Hash (powHash);

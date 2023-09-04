@@ -28,6 +28,7 @@ HeadersSyncState::HeadersSyncState(NodeId id, const Consensus::Params& consensus
     m_minimum_required_work(minimum_required_work),
     m_current_chain_work(chain_start->nChainWork),
     m_last_header_received(m_chain_start->GetPureHeader()),
+    m_last_hash_received(m_chain_start->GetBlockHash()),
     m_current_height(chain_start->nHeight)
 {
     // Estimate the number of blocks that could possibly exist on the peer's
@@ -51,6 +52,7 @@ void HeadersSyncState::Finalize()
     Assume(m_download_state != State::FINAL);
     m_header_commitments = {};
     m_last_header_received.SetNull();
+    m_last_hash_received.SetNull();
     m_redownloaded_headers = {};
     m_redownload_buffer_last_hash.SetNull();
     m_redownload_buffer_first_prev_hash.SetNull();
@@ -143,7 +145,7 @@ bool HeadersSyncState::ValidateAndStoreHeadersCommitments(const std::vector<CBlo
     Assume(m_download_state == State::PRESYNC);
     if (m_download_state != State::PRESYNC) return false;
 
-    if (headers[0].hashPrevBlock != m_last_header_received.GetHash()) {
+    if (headers[0].hashPrevBlock != m_last_hash_received) {
         // Somehow our peer gave us a header that doesn't connect.
         // This might be benign -- perhaps our peer reorged away from the chain
         // they were on. Give up on this sync for now (likely we will start a
@@ -211,6 +213,7 @@ bool HeadersSyncState::ValidateAndProcessSingleHeader(const CBlockHeader& curren
 
     m_current_chain_work += GetBlockProof(CBlockIndex(current));
     m_last_header_received = current;
+    m_last_hash_received = current.GetHash();
     m_current_height = next_height;
 
     return true;
@@ -307,7 +310,7 @@ CBlockLocator HeadersSyncState::NextHeadersRequestLocator() const
 
     if (m_download_state == State::PRESYNC) {
         // During pre-synchronization, we continue from the last header received.
-        locator.push_back(m_last_header_received.GetHash());
+        locator.push_back(m_last_hash_received);
     }
 
     if (m_download_state == State::REDOWNLOAD) {

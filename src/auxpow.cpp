@@ -164,7 +164,7 @@ std::unique_ptr<CAuxPow>
 CAuxPow::createAuxPow (const CPureBlockHeader& header)
 {
   /* Build a minimal coinbase script input for merge-mining.  */
-  const uint256 blockHash = header.GetHash ();
+  const uint256 blockHash = header.GetBaseHash ();
   valtype inputData(blockHash.begin (), blockHash.end ());
   std::reverse (inputData.begin (), inputData.end ());
   inputData.push_back (1);

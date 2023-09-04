@@ -244,7 +244,10 @@ private:
     /** Store the latest header received while in PRESYNC (initialized to m_chain_start) */
     CPureBlockHeader m_last_header_received;
 
-    /** Height of m_last_header_received */
+    /** Block hash of m_last_header_received */
+    uint256 m_last_hash_received;
+
+    /** Height of m_last_hash_received */
     int64_t m_current_height{0};
 
     /** During phase 2 (REDOWNLOAD), we buffer redownloaded headers in memory
