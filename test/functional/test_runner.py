@@ -410,6 +410,7 @@ BASE_SCRIPTS = [
     'xaya_gamepending.py',
     'xaya_postico_fork.py',
     'xaya_premine.py --legacy-wallet',
+    'xaya_rngseed.py',
     'xaya_trackedgames.py',
     'xaya_trading.py',
 ]

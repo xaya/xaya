@@ -8,16 +8,28 @@
 #include <hash.h>
 #include <tinyformat.h>
 
+/* 2023-10-15 midnight UTC */
+constexpr int64_t RNG_SEED_BLOCKHASH_FORK_TIME = 1697328000;
+
 uint256
 CBlockHeader::GetRngSeed () const
 {
-  /* Random numbers in games must not be based off the block hash itself, as
-     this can be trivially brute-forced by miners *before* they even attempt
-     the PoW attached to it.  Because of that, the seed for random numbers
-     should be derived from the PoW itself, i.e. the "fake header" or the
-     auxpow parent block.  Furthermore, to avoid the bias towards smaller
-     numbers that exists with SHA256D-mined auxpow headers, we hash the
-     PoW hash again to get a uniform distribution.  */
+  /* Previously, we based random numbers on the PoW instead of the block hash.
+     This makes it harder to brute-force desired outcomes for miners.
+     However, the PoW is not part of network consensus, so this does not
+     (necessarily) establish consensus over the random numbers.
+
+     Hence, with a fork, we switch the RNG seed to the block hash (or rather,
+     hash of the block hash, to ensure a uniform distribution in any case).
+
+     It would be possible to use the PoW again, if it was made part of
+     network consensus (for instance, the block hash could commit to the PoW,
+     with the PoW itself referring to the block by a hash not including the
+     PoW).  This likely requires a network hard fork, and thus it is not
+     yet done.  */
+
+  if (nTime >= RNG_SEED_BLOCKHASH_FORK_TIME)
+    return Hash (GetHash ());
 
   uint256 powHash;
   if (pow.isMergeMined ())
