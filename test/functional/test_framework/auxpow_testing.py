@@ -34,7 +34,7 @@ def mineAuxpowBlock (node, addr):
 
   return mineAuxpowBlockWithMethods (create, node.submitauxblock)
 
-def mineAuxpowBlockWithMethods (create, submit):
+def mineAuxpowBlockWithMethods (rpc, create, submit):
   """
   Mine an auxpow block, using the given methods for creation and submission.
   """
@@ -45,7 +45,7 @@ def mineAuxpowBlockWithMethods (create, submit):
   res = submit (auxblock['hash'], apow)
   assert res
 
-  return auxblock['hash']
+  return rpc.getbestblockhash ()
 
 def mineWorkBlockWithMethods (rpc, create, submit):
   """
@@ -58,7 +58,7 @@ def mineWorkBlockWithMethods (rpc, create, submit):
   res = submit (work['hash'], solved)
   assert res
 
-  return work['hash']
+  return rpc.getbestblockhash ()
 
 def getCoinbaseAddr (node, blockHash):
     """

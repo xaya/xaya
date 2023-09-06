@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 Daniel Kraft
+# Copyright (c) 2014-2023 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -108,10 +108,10 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (self.nodes[1].getrawmempool (), [])
     height = self.nodes[1].getblockcount ()
     assert_equal (height, auxblock['height'])
-    assert_equal (self.nodes[1].getblockhash (height), auxblock['hash'])
+    blkHash = self.nodes[1].getbestblockhash ()
 
     # Call getblock and verify the auxpow field.
-    data = self.nodes[1].getblock (auxblock['hash'])['powdata']
+    data = self.nodes[1].getblock (blkHash)['powdata']
     assert 'auxpow' in data
     auxJson = data['auxpow']
     assert_equal (auxJson['chainindex'], 0)
@@ -120,7 +120,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (type (auxJson['parentblock']), dict)
 
     # The non-verbose block header RPC should contain the auxpow at the end.
-    data = self.nodes[1].getblockheader (auxblock['hash'], False)
+    data = self.nodes[1].getblockheader (blkHash, False)
     assert_equal (data[-160:], apow[-160:])
 
     # Check that it paid correctly to the first node.
@@ -128,7 +128,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert_equal (len (t), 1)
     t = t[0]
     assert_equal (t['category'], "immature")
-    assert_equal (t['blockhash'], auxblock['hash'])
+    assert_equal (t['blockhash'], blkHash)
     assert t['generated']
     assert_greater_than_or_equal (t['amount'], Decimal ("1"))
     assert_equal (t['confirmations'], 1)
@@ -140,7 +140,7 @@ class AuxpowMiningTest (BitcoinTestFramework):
     # height.  Check this.  (With segwit, the height is different, so we skip
     # this for simplicity.)
     if not self.options.segwit:
-      blk = self.nodes[1].getblock (auxblock['hash'])
+      blk = self.nodes[1].getblock (blkHash)
       tx = self.nodes[1].getrawtransaction (blk['tx'][0], True, blk['hash'])
       coinbase = tx['vin'][0]['coinbase']
       assert_equal ("02%02x00" % auxblock['height'], coinbase[0 : 6])
@@ -155,8 +155,8 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is changed from one block to the next.
-    hash1 = mineAuxpowBlockWithMethods (create, submit)
-    hash2 = mineAuxpowBlockWithMethods (create, submit)
+    hash1 = mineAuxpowBlockWithMethods (self.nodes[0], create, submit)
+    hash2 = mineAuxpowBlockWithMethods (self.nodes[0], create, submit)
     self.sync_all ()
     addr1 = getCoinbaseAddr (self.nodes[1], hash1)
     addr2 = getCoinbaseAddr (self.nodes[1], hash2)
@@ -187,8 +187,8 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.test_common (create, submit)
 
     # Ensure that the payout address is the one which we specify
-    hash1 = mineAuxpowBlockWithMethods (create, submit)
-    hash2 = mineAuxpowBlockWithMethods (create, submit)
+    hash1 = mineAuxpowBlockWithMethods (self.nodes[0], create, submit)
+    hash2 = mineAuxpowBlockWithMethods (self.nodes[0], create, submit)
     self.sync_all ()
     actual1 = getCoinbaseAddr (self.nodes[1], hash1)
     actual2 = getCoinbaseAddr (self.nodes[1], hash2)

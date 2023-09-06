@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2022 Daniel Kraft
+# Copyright (c) 2018-2023 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -67,13 +67,14 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     solved = solveData (work['data'], target, True)
     res = submit (work['hash'], solved)
     assert res
+    blkHash = self.nodes[0].getbestblockhash ()
 
     # Make sure that the block is indeed accepted.
     height = self.nodes[0].getblockcount ()
     assert_equal (height, work['height'])
 
     # Call getblock and verify the powdata field.
-    data = self.nodes[0].getblock (work['hash'])
+    data = self.nodes[0].getblock (blkHash)
     assert 'powdata' in data
     data = data['powdata']
     assert_equal (data['algo'], 'neoscrypt')
@@ -107,7 +108,7 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     solved = solveData (work['data'], target, True)
     res = submit (solved)
     assert res
-    assert_equal (self.nodes[0].getbestblockhash (), work['hash'])
+    assert_equal (self.nodes[0].getblockcount (), work['height'])
 
   def test_getwork (self):
     """
