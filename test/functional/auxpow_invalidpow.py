@@ -35,26 +35,28 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
 
     self.log.info ("Sending block with invalid auxpow over P2P...")
     tip = node.getbestblockhash ()
-    blk, blkHash = self.createBlock ()
-    self.solvePowData (blk.powData, False)
+    blk = self.createBlock ()
+    blkHash = self.solvePowData (blk, False)
+    print (blkHash)
     peer.send_blocks_and_test ([blk], node, force_send=True,
                                success=False, reject_reason="high-hash")
     assert_equal (node.getbestblockhash (), tip)
 
     self.log.info ("Sending the same block with valid auxpow...")
-    self.solvePowData (blk.powData, True)
+    blkHash = self.solvePowData (blk, True)
+    print (blkHash)
     peer.send_blocks_and_test ([blk], node, success=True)
     assert_equal (node.getbestblockhash (), blkHash)
 
     self.log.info ("Submitting block with invalid auxpow...")
     tip = node.getbestblockhash ()
-    blk, blkHash = self.createBlock ()
-    self.solvePowData (blk.powData, False)
+    blk = self.createBlock ()
+    blkHash = self.solvePowData (blk, False)
     assert_equal (node.submitblock (blk.serialize ().hex ()), "high-hash")
     assert_equal (node.getbestblockhash (), tip)
 
     self.log.info ("Submitting block with valid auxpow...")
-    self.solvePowData (blk.powData, True)
+    blkHash = self.solvePowData (blk, True)
     assert_equal (node.submitblock (blk.serialize ().hex ()), None)
     assert_equal (node.getbestblockhash (), blkHash)
 
@@ -71,28 +73,29 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     time = bestBlock["time"] + 1
 
     block = create_block (tip, create_coinbase (height), time)
-    newHash = "%064x" % block.sha256
 
-    block.powData.fakeHeader.hashMerkleRoot = block.sha256
+    block.powData.fakeHeader.hashMerkleRoot = block.baseHash
     block.powData.rehash ()
 
-    return block, newHash
+    return block
 
 
-  def solvePowData (self, powData, ok):
+  def solvePowData (self, block, ok):
     """
     Solves the fake header in the given powData, to be either valid
     (ok = True) or invalid (ok = False).
     """
 
-    target = uint256_from_compact (powData.nBits)
+    target = uint256_from_compact (block.powData.nBits)
 
     while True:
-      powData.fakeHeader.nNonce += 1
-      powData.rehash ()
-      isOk = (powData.fakeHeader.powHash <= target)
+      block.powData.fakeHeader.nNonce += 1
+      block.powData.rehash ()
+      isOk = (block.powData.fakeHeader.powHash <= target)
       if isOk == ok:
-        return
+        block.rehash ()
+        return "%064x" % block.sha256
+
 
 if __name__ == '__main__':
   AuxpowInvalidPoWTest ().main ()

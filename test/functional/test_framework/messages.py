@@ -681,7 +681,7 @@ class CTransaction:
 
 class CPureBlockHeader():
     __slots__ = ("hash", "hashMerkleRoot", "hashPrevBlock", "nBits", "nNonce",
-                 "nTime", "nVersion", "sha256", "powHash")
+                 "nTime", "nVersion", "baseHash", "powHash")
 
     def __init__(self, header=None):
         if header is None:
@@ -693,10 +693,10 @@ class CPureBlockHeader():
             self.nTime = header.nTime
             self.nBits = header.nBits
             self.nNonce = header.nNonce
-            self.sha256 = header.sha256
+            self.baseHash = header.sha256
             self.powHash = header.powHash
             self.hash = header.hash
-            self.calc_sha256()
+            self.calc_basehash()
 
     def set_null(self):
         self.nVersion = 4
@@ -705,7 +705,7 @@ class CPureBlockHeader():
         self.nTime = 0
         self.nBits = 0
         self.nNonce = 0
-        self.sha256 = None
+        self.baseHash = None
         self.powHash = None
         self.hash = None
 
@@ -716,7 +716,7 @@ class CPureBlockHeader():
         self.nTime = struct.unpack("<I", f.read(4))[0]
         self.nBits = struct.unpack("<I", f.read(4))[0]
         self.nNonce = struct.unpack("<I", f.read(4))[0]
-        self.sha256 = None
+        self.baseHash = None
         self.powHash = None
         self.hash = None
 
@@ -730,8 +730,8 @@ class CPureBlockHeader():
         r += struct.pack("<I", self.nNonce)
         return r
 
-    def calc_sha256(self):
-        if self.sha256 is None or self.powHash is None:
+    def calc_basehash(self):
+        if self.baseHash is None or self.powHash is None:
             r = b""
             r += struct.pack("<i", self.nVersion)
             r += ser_uint256(self.hashPrevBlock)
@@ -739,14 +739,14 @@ class CPureBlockHeader():
             r += struct.pack("<I", self.nTime)
             r += struct.pack("<I", self.nBits)
             r += struct.pack("<I", self.nNonce)
-            self.sha256 = uint256_from_str(hash256(r))
+            self.baseHash = uint256_from_str(hash256(r))
             self.powHash = uint256_from_str(powhash.forHeader('neoscrypt', r))
             self.hash = hash256(r)[::-1].hex()
 
     def rehash(self):
-        self.sha256 = None
-        self.calc_sha256()
-        return self.sha256
+        self.baseHash = None
+        self.calc_basehash()
+        return self.baseHash
 
     def __repr__(self):
         return "CPureBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x)" \
@@ -839,15 +839,17 @@ class PowData():
 
 
 class CBlockHeader(CPureBlockHeader):
-    __slots__ = ("powData")
+    __slots__ = ("sha256", "powData")
 
     def __init__(self, header=None):
         super(CBlockHeader, self).__init__(header)
         if header is not None:
             self.powData = header.powData
+            self.sha256 = header.sha256
 
     def set_null(self):
         super(CBlockHeader, self).set_null()
+        self.sha256 = None
         self.powData = PowData()
 
     def deserialize(self, f):
@@ -860,9 +862,15 @@ class CBlockHeader(CPureBlockHeader):
         r += self.powData.serialize()
         return r
 
+    def calc_sha256(self):
+        self.calc_basehash()
+        self.sha256 = uint256_from_str(hash256(self.serialize()))
+
     def rehash(self):
         self.powData.rehash()
-        return super(CBlockHeader, self).rehash()
+        self.calc_sha256()
+        super(CBlockHeader, self).rehash()
+        return self.sha256
 
     def __repr__(self):
         return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x powData=%s)" \
@@ -938,7 +946,7 @@ class CBlock(CBlockHeader):
 
     def solve(self):
         self.rehash()
-        self.powData.fakeHeader.hashMerkleRoot = self.sha256
+        self.powData.fakeHeader.hashMerkleRoot = self.baseHash
         self.powData.rehash()
         target = uint256_from_compact(self.powData.nBits)
         while self.powData.fakeHeader.powHash > target:
