@@ -33,9 +33,9 @@ void ConnmanTestMsg::Handshake(CNode& node,
                 Using<CustomUintFormatter<8>>(remote_services), //
                 int64_t{},                                      // dummy time
                 int64_t{},                                      // ignored service bits
-                CService{},                                     // dummy
+                WithParams(CNetAddr::V1, CService{}),           // dummy
                 int64_t{},                                      // ignored service bits
-                CService{},                                     // ignored
+                WithParams(CNetAddr::V1, CService{}),           // ignored
                 uint64_t{1},                                    // dummy nonce
                 std::string{},                                  // dummy subver
                 int32_t{},                                      // dummy starting_height
@@ -78,7 +78,7 @@ void ConnmanTestMsg::FlushSendBuffer(CNode& node) const
     node.vSendMsg.clear();
     node.m_send_memusage = 0;
     while (true) {
-        const auto& [to_send, _more, _msg_type] = node.m_transport->GetBytesToSend();
+        const auto& [to_send, _more, _msg_type] = node.m_transport->GetBytesToSend(false);
         if (to_send.empty()) break;
         node.m_transport->MarkBytesSent(to_send.size());
     }
@@ -90,7 +90,7 @@ bool ConnmanTestMsg::ReceiveMsgFrom(CNode& node, CSerializedNetMsg&& ser_msg) co
     assert(queued);
     bool complete{false};
     while (true) {
-        const auto& [to_send, _more, _msg_type] = node.m_transport->GetBytesToSend();
+        const auto& [to_send, _more, _msg_type] = node.m_transport->GetBytesToSend(false);
         if (to_send.empty()) break;
         NodeReceiveMsgBytes(node, to_send, complete);
         node.m_transport->MarkBytesSent(to_send.size());
