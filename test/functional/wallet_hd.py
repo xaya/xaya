@@ -88,7 +88,7 @@ class WalletHDTest(BitcoinTestFramework):
         self.stop_node(1)
         # we need to delete the complete chain directory
         # otherwise node1 would auto-recover all funds in flag the keypool keys as used
-        shutil.rmtree(os.path.join(self.nodes[1].chain_path, "blocks"))
+        shutil.rmtree(os.path.join(self.nodes[1].blocks_path))
         shutil.rmtree(os.path.join(self.nodes[1].chain_path, "chainstate"))
         shutil.copyfile(
             os.path.join(self.nodes[1].datadir, "hd.bak"),
@@ -116,7 +116,7 @@ class WalletHDTest(BitcoinTestFramework):
 
         # Try a RPC based rescan
         self.stop_node(1)
-        shutil.rmtree(os.path.join(self.nodes[1].chain_path, "blocks"))
+        shutil.rmtree(os.path.join(self.nodes[1].blocks_path))
         shutil.rmtree(os.path.join(self.nodes[1].chain_path, "chainstate"))
         shutil.copyfile(
             os.path.join(self.nodes[1].datadir, "hd.bak"),
