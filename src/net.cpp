@@ -35,6 +35,7 @@
 #include <util/threadinterrupt.h>
 #include <util/trace.h>
 #include <util/translation.h>
+#include <util/vector.h>
 
 #ifdef WIN32
 #include <string.h>
@@ -470,8 +471,8 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
         Ticks<HoursDouble>(pszDest ? 0h : Now<NodeSeconds>() - addrConnect.nTime));
 
     // Resolve
-    const uint16_t default_port{pszDest != nullptr ? Params().GetDefaultPort(pszDest) :
-                                                     Params().GetDefaultPort()};
+    const uint16_t default_port{pszDest != nullptr ? GetDefaultPort(pszDest) :
+                                                     m_params.GetDefaultPort()};
     if (pszDest) {
         const std::vector<CService> resolved{Lookup(pszDest, default_port, fNameLookup && !HaveNameProxy(), 256)};
         if (!resolved.empty()) {
@@ -730,7 +731,7 @@ V1Transport::V1Transport(const NodeId node_id, int nTypeIn, int nVersionIn) noex
     m_node_id(node_id), hdrbuf(nTypeIn, nVersionIn), vRecv(nTypeIn, nVersionIn)
 {
     assert(std::size(Params().MessageStart()) == std::size(m_magic_bytes));
-    std::copy(std::begin(Params().MessageStart()), std::end(Params().MessageStart()), m_magic_bytes);
+    m_magic_bytes = Params().MessageStart();
     LOCK(m_recv_mutex);
     Reset();
 }
@@ -759,7 +760,7 @@ int V1Transport::readHeader(Span<const uint8_t> msg_bytes)
     }
 
     // Check start string, network magic
-    if (memcmp(hdr.pchMessageStart, m_magic_bytes, CMessageHeader::MESSAGE_START_SIZE) != 0) {
+    if (hdr.pchMessageStart != m_magic_bytes) {
         LogPrint(BCLog::NET, "Header error: Wrong MessageStart %s received, peer=%d\n", HexStr(hdr.pchMessageStart), m_node_id);
         return -1;
     }
@@ -899,8 +900,7 @@ void V1Transport::MarkBytesSent(size_t bytes_sent) noexcept
         m_bytes_sent = 0;
     } else if (!m_sending_header && m_bytes_sent == m_message_to_send.data.size()) {
         // We're done sending a message's data. Wipe the data vector to reduce memory consumption.
-        m_message_to_send.data.clear();
-        m_message_to_send.data.shrink_to_fit();
+        ClearShrink(m_message_to_send.data);
         m_bytes_sent = 0;
     }
 }
@@ -979,35 +979,55 @@ public:
 
 const V2MessageMap V2_MESSAGE_MAP;
 
-} // namespace
-
-V2Transport::V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in) noexcept :
-    m_cipher{}, m_initiating{initiating}, m_nodeid{nodeid},
-    m_v1_fallback{nodeid, type_in, version_in}, m_recv_type{type_in}, m_recv_version{version_in},
-    m_recv_state{initiating ? RecvState::KEY : RecvState::KEY_MAYBE_V1},
-    m_send_state{initiating ? SendState::AWAITING_KEY : SendState::MAYBE_V1}
+CKey GenerateRandomKey() noexcept
 {
-    // Construct garbage (including its length) using a FastRandomContext.
-    FastRandomContext rng;
-    size_t garbage_len = rng.randrange(MAX_GARBAGE_LEN + 1);
-    // Initialize the send buffer with ellswift pubkey + garbage.
-    m_send_buffer.resize(EllSwiftPubKey::size() + garbage_len);
-    std::copy(std::begin(m_cipher.GetOurPubKey()), std::end(m_cipher.GetOurPubKey()), MakeWritableByteSpan(m_send_buffer).begin());
-    rng.fillrand(MakeWritableByteSpan(m_send_buffer).subspan(EllSwiftPubKey::size()));
+    CKey key;
+    key.MakeNewKey(/*fCompressed=*/true);
+    return key;
 }
 
-V2Transport::V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in, const CKey& key, Span<const std::byte> ent32, Span<const uint8_t> garbage) noexcept :
+std::vector<uint8_t> GenerateRandomGarbage() noexcept
+{
+    std::vector<uint8_t> ret;
+    FastRandomContext rng;
+    ret.resize(rng.randrange(V2Transport::MAX_GARBAGE_LEN + 1));
+    rng.fillrand(MakeWritableByteSpan(ret));
+    return ret;
+}
+
+} // namespace
+
+void V2Transport::StartSendingHandshake() noexcept
+{
+    AssertLockHeld(m_send_mutex);
+    Assume(m_send_state == SendState::AWAITING_KEY);
+    Assume(m_send_buffer.empty());
+    // Initialize the send buffer with ellswift pubkey + provided garbage.
+    m_send_buffer.resize(EllSwiftPubKey::size() + m_send_garbage.size());
+    std::copy(std::begin(m_cipher.GetOurPubKey()), std::end(m_cipher.GetOurPubKey()), MakeWritableByteSpan(m_send_buffer).begin());
+    std::copy(m_send_garbage.begin(), m_send_garbage.end(), m_send_buffer.begin() + EllSwiftPubKey::size());
+    // We cannot wipe m_send_garbage as it will still be used to construct the garbage
+    // authentication packet.
+}
+
+V2Transport::V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in, const CKey& key, Span<const std::byte> ent32, std::vector<uint8_t> garbage) noexcept :
     m_cipher{key, ent32}, m_initiating{initiating}, m_nodeid{nodeid},
     m_v1_fallback{nodeid, type_in, version_in}, m_recv_type{type_in}, m_recv_version{version_in},
     m_recv_state{initiating ? RecvState::KEY : RecvState::KEY_MAYBE_V1},
+    m_send_garbage{std::move(garbage)},
     m_send_state{initiating ? SendState::AWAITING_KEY : SendState::MAYBE_V1}
 {
-    assert(garbage.size() <= MAX_GARBAGE_LEN);
-    // Initialize the send buffer with ellswift pubkey + provided garbage.
-    m_send_buffer.resize(EllSwiftPubKey::size() + garbage.size());
-    std::copy(std::begin(m_cipher.GetOurPubKey()), std::end(m_cipher.GetOurPubKey()), MakeWritableByteSpan(m_send_buffer).begin());
-    std::copy(garbage.begin(), garbage.end(), m_send_buffer.begin() + EllSwiftPubKey::size());
+    Assume(m_send_garbage.size() <= MAX_GARBAGE_LEN);
+    // Start sending immediately if we're the initiator of the connection.
+    if (initiating) {
+        LOCK(m_send_mutex);
+        StartSendingHandshake();
+    }
 }
+
+V2Transport::V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in) noexcept :
+    V2Transport{nodeid, initiating, type_in, version_in, GenerateRandomKey(),
+                MakeByteSpan(GetRandHash()), GenerateRandomGarbage()} { }
 
 void V2Transport::SetReceiveState(RecvState recv_state) noexcept
 {
@@ -1087,9 +1107,10 @@ void V2Transport::ProcessReceivedMaybeV1Bytes() noexcept
     if (!std::equal(m_recv_buffer.begin(), m_recv_buffer.end(), v1_prefix.begin())) {
         // Mismatch with v1 prefix, so we can assume a v2 connection.
         SetReceiveState(RecvState::KEY); // Convert to KEY state, leaving received bytes around.
-        // Transition the sender to AWAITING_KEY state (if not already).
+        // Transition the sender to AWAITING_KEY state and start sending.
         LOCK(m_send_mutex);
         SetSendState(SendState::AWAITING_KEY);
+        StartSendingHandshake();
     } else if (m_recv_buffer.size() == v1_prefix.size()) {
         // Full match with the v1 prefix, so fall back to v1 behavior.
         LOCK(m_send_mutex);
@@ -1102,8 +1123,8 @@ void V2Transport::ProcessReceivedMaybeV1Bytes() noexcept
         SetReceiveState(RecvState::V1);
         SetSendState(SendState::V1);
         // Reset v2 transport buffers to save memory.
-        m_recv_buffer = {};
-        m_send_buffer = {};
+        ClearShrink(m_recv_buffer);
+        ClearShrink(m_send_buffer);
     } else {
         // We have not received enough to distinguish v1 from v2 yet. Wait until more bytes come.
     }
@@ -1123,7 +1144,7 @@ bool V2Transport::ProcessReceivedKeyBytes() noexcept
     // they receive our uniformly random key and garbage, but detecting this case specially
     // means we can log it.
     static constexpr std::array<uint8_t, 12> MATCH = {'v', 'e', 'r', 's', 'i', 'o', 'n', 0, 0, 0, 0, 0};
-    static constexpr size_t OFFSET = sizeof(CMessageHeader::MessageStartChars);
+    static constexpr size_t OFFSET = std::tuple_size_v<MessageStartChars>;
     if (!m_initiating && m_recv_buffer.size() >= OFFSET + MATCH.size()) {
         if (std::equal(MATCH.begin(), MATCH.end(), m_recv_buffer.begin() + OFFSET)) {
             LogPrint(BCLog::NET, "V2 transport error: V1 peer with wrong MessageStart %s\n",
@@ -1149,7 +1170,6 @@ bool V2Transport::ProcessReceivedKeyBytes() noexcept
         SetSendState(SendState::READY);
 
         // Append the garbage terminator to the send buffer.
-        size_t garbage_len = m_send_buffer.size() - EllSwiftPubKey::size();
         m_send_buffer.resize(m_send_buffer.size() + BIP324Cipher::GARBAGE_TERMINATOR_LEN);
         std::copy(m_cipher.GetSendGarbageTerminator().begin(),
                   m_cipher.GetSendGarbageTerminator().end(),
@@ -1160,9 +1180,11 @@ bool V2Transport::ProcessReceivedKeyBytes() noexcept
         m_send_buffer.resize(m_send_buffer.size() + BIP324Cipher::EXPANSION);
         m_cipher.Encrypt(
             /*contents=*/{},
-            /*aad=*/MakeByteSpan(m_send_buffer).subspan(EllSwiftPubKey::size(), garbage_len),
+            /*aad=*/MakeByteSpan(m_send_garbage),
             /*ignore=*/false,
             /*output=*/MakeWritableByteSpan(m_send_buffer).last(BIP324Cipher::EXPANSION));
+        // We no longer need the garbage.
+        ClearShrink(m_send_garbage);
 
         // Construct version packet in the send buffer.
         m_send_buffer.resize(m_send_buffer.size() + BIP324Cipher::EXPANSION + VERSION_CONTENTS.size());
@@ -1252,7 +1274,7 @@ bool V2Transport::ProcessReceivedPacketBytes() noexcept
             // Ignore flag does not matter for garbage authentication. Any valid packet functions
             // as authentication. Receive and process the version packet next.
             SetReceiveState(RecvState::VERSION);
-            m_recv_garbage = {};
+            ClearShrink(m_recv_garbage);
             break;
         case RecvState::VERSION:
             if (!ignore) {
@@ -1272,9 +1294,9 @@ bool V2Transport::ProcessReceivedPacketBytes() noexcept
             Assume(false);
         }
         // Wipe the receive buffer where the next packet will be received into.
-        m_recv_buffer = {};
+        ClearShrink(m_recv_buffer);
         // In all but APP_READY state, we can wipe the decoded contents.
-        if (m_recv_state != RecvState::APP_READY) m_recv_decode_buffer = {};
+        if (m_recv_state != RecvState::APP_READY) ClearShrink(m_recv_decode_buffer);
     } else {
         // We either have less than 3 bytes, so we don't know the packet's length yet, or more
         // than 3 bytes but less than the packet's full ciphertext. Wait until those arrive.
@@ -1488,7 +1510,7 @@ CNetMessage V2Transport::GetReceivedMessage(std::chrono::microseconds time, bool
         LogPrint(BCLog::NET, "V2 transport error: invalid message type (%u bytes contents), peer=%d\n", m_recv_decode_buffer.size(), m_nodeid);
         reject_message = true;
     }
-    m_recv_decode_buffer = {};
+    ClearShrink(m_recv_decode_buffer);
     SetReceiveState(RecvState::APP);
 
     return msg;
@@ -1522,7 +1544,7 @@ bool V2Transport::SetMessageToSend(CSerializedNetMsg& msg) noexcept
     m_cipher.Encrypt(MakeByteSpan(contents), {}, false, MakeWritableByteSpan(m_send_buffer));
     m_send_type = msg.m_type;
     // Release memory
-    msg.data = {};
+    ClearShrink(msg.data);
     return true;
 }
 
@@ -1532,9 +1554,7 @@ Transport::BytesToSend V2Transport::GetBytesToSend(bool have_next_message) const
     LOCK(m_send_mutex);
     if (m_send_state == SendState::V1) return m_v1_fallback.GetBytesToSend(have_next_message);
 
-    // We do not send anything in MAYBE_V1 state (as we don't know if the peer is v1 or v2),
-    // despite there being data in the send buffer in that state.
-    if (m_send_state == SendState::MAYBE_V1) return {{}, false, m_send_type};
+    if (m_send_state == SendState::MAYBE_V1) Assume(m_send_buffer.empty());
     Assume(m_send_pos <= m_send_buffer.size());
     return {
         Span{m_send_buffer}.subspan(m_send_pos),
@@ -1553,12 +1573,10 @@ void V2Transport::MarkBytesSent(size_t bytes_sent) noexcept
 
     m_send_pos += bytes_sent;
     Assume(m_send_pos <= m_send_buffer.size());
-    // Only wipe the buffer when everything is sent in the READY state. In the AWAITING_KEY state
-    // we still need the garbage that's in the send buffer to construct the garbage authentication
-    // packet.
-    if (m_send_state == SendState::READY && m_send_pos == m_send_buffer.size()) {
+    // Wipe the buffer when everything is sent.
+    if (m_send_pos == m_send_buffer.size()) {
         m_send_pos = 0;
-        m_send_buffer = {};
+        ClearShrink(m_send_buffer);
     }
 }
 
@@ -2165,7 +2183,7 @@ void CConnman::WakeMessageHandler()
 void CConnman::ThreadDNSAddressSeed()
 {
     FastRandomContext rng;
-    std::vector<std::string> seeds = Params().DNSSeeds();
+    std::vector<std::string> seeds = m_params.DNSSeeds();
     Shuffle(seeds.begin(), seeds.end(), rng);
     int seeds_right_now = 0; // Number of seeds left before testing if we have enough connections
     int found = 0;
@@ -2256,7 +2274,7 @@ void CConnman::ThreadDNSAddressSeed()
             const auto addresses{LookupHost(host, nMaxIPs, true)};
             if (!addresses.empty()) {
                 for (const CNetAddr& ip : addresses) {
-                    CAddress addr = CAddress(CService(ip, Params().GetDefaultPort()), requiredServiceBits);
+                    CAddress addr = CAddress(CService(ip, m_params.GetDefaultPort()), requiredServiceBits);
                     addr.nTime = rng.rand_uniform_delay(Now<NodeSeconds>() - 3 * 24h, -4 * 24h); // use a random age between 3 and 7 days old
                     vAdd.push_back(addr);
                     found++;
@@ -2461,7 +2479,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             }
 
             if (add_fixed_seeds_now) {
-                std::vector<CAddress> seed_addrs{ConvertSeeds(Params().FixedSeeds())};
+                std::vector<CAddress> seed_addrs{ConvertSeeds(m_params.FixedSeeds())};
                 // We will not make outgoing connections to peers that are unreachable
                 // (e.g. because of -onlynet configuration).
                 // Therefore, we do not add them to addrman in the first place.
@@ -2750,7 +2768,7 @@ std::vector<AddedNodeInfo> CConnman::GetAddedNodeInfo() const
     }
 
     for (const std::string& strAddNode : lAddresses) {
-        CService service(LookupNumeric(strAddNode, Params().GetDefaultPort(strAddNode)));
+        CService service(LookupNumeric(strAddNode, GetDefaultPort(strAddNode)));
         AddedNodeInfo addedNode{strAddNode, CService(), false, false};
         if (service.IsValid()) {
             // strAddNode is an IP:port
@@ -3056,11 +3074,12 @@ void CConnman::SetNetworkActive(bool active)
 }
 
 CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In, AddrMan& addrman_in,
-                   const NetGroupManager& netgroupman, bool network_active)
+                   const NetGroupManager& netgroupman, const CChainParams& params, bool network_active)
     : addrman(addrman_in)
     , m_netgroupman{netgroupman}
     , nSeed0(nSeed0In)
     , nSeed1(nSeed1In)
+    , m_params(params)
 {
     SetTryNewOutboundPeer(false);
 
@@ -3074,6 +3093,16 @@ NodeId CConnman::GetNewNodeId()
     return nLastNodeId.fetch_add(1, std::memory_order_relaxed);
 }
 
+uint16_t CConnman::GetDefaultPort(Network net) const
+{
+    return net == NET_I2P ? I2P_SAM31_PORT : m_params.GetDefaultPort();
+}
+
+uint16_t CConnman::GetDefaultPort(const std::string& addr) const
+{
+    CNetAddr a;
+    return a.SetSpecial(addr) ? GetDefaultPort(a.GetNetwork()) : m_params.GetDefaultPort();
+}
 
 bool CConnman::Bind(const CService& addr_, unsigned int flags, NetPermissionFlags permissions)
 {

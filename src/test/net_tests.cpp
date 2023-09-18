@@ -850,7 +850,7 @@ BOOST_AUTO_TEST_CASE(initial_advertise_from_version_message)
     std::chrono::microseconds time_received_dummy{0};
 
     const auto msg_version =
-        msg_maker.Make(NetMsgType::VERSION, PROTOCOL_VERSION, services, time, services, WithParams(CAddress::V1_NETWORK, peer_us));
+        msg_maker.Make(NetMsgType::VERSION, PROTOCOL_VERSION, services, time, services, CAddress::V1_NETWORK(peer_us));
     CDataStream msg_version_stream{msg_version.data, SER_NETWORK, PROTOCOL_VERSION};
 
     m_node.peerman->ProcessMessage(
@@ -876,7 +876,7 @@ BOOST_AUTO_TEST_CASE(initial_advertise_from_version_message)
             DataStream s{data};
             std::vector<CAddress> addresses;
 
-            s >> WithParams(CAddress::V1_NETWORK, addresses);
+            s >> CAddress::V1_NETWORK(addresses);
 
             for (const auto& addr : addresses) {
                 if (addr == expected) {
@@ -1008,12 +1008,20 @@ BOOST_AUTO_TEST_CASE(advertise_local_address)
 
 namespace {
 
+CKey GenerateRandomTestKey() noexcept
+{
+    CKey key;
+    uint256 key_data = InsecureRand256();
+    key.Set(key_data.begin(), key_data.end(), true);
+    return key;
+}
+
 /** A class for scenario-based tests of V2Transport
  *
  * Each V2TransportTester encapsulates a V2Transport (the one being tested), and can be told to
  * interact with it. To do so, it also encapsulates a BIP324Cipher to act as the other side. A
  * second V2Transport is not used, as doing so would not permit scenarios that involve sending
- * invalid data, or ones scenarios using BIP324 features that are not implemented on the sending
+ * invalid data, or ones using BIP324 features that are not implemented on the sending
  * side (like decoy packets).
  */
 class V2TransportTester
@@ -1031,6 +1039,7 @@ public:
     /** Construct a tester object. test_initiator: whether the tested transport is initiator. */
     V2TransportTester(bool test_initiator) :
         m_transport(0, test_initiator, SER_NETWORK, INIT_PROTO_VERSION),
+        m_cipher{GenerateRandomTestKey(), MakeByteSpan(InsecureRand256())},
         m_test_initiator(test_initiator) {}
 
     /** Data type returned by Interact:
@@ -1105,7 +1114,7 @@ public:
     }
 
     /** Send V1 version message header to the transport. */
-    void SendV1Version(const CMessageHeader::MessageStartChars& magic)
+    void SendV1Version(const MessageStartChars& magic)
     {
         CMessageHeader hdr(magic, "version", 126 + InsecureRandRange(11));
         CDataStream ser(SER_NETWORK, CLIENT_VERSION);
@@ -1348,11 +1357,19 @@ BOOST_AUTO_TEST_CASE(v2transport_test)
         BOOST_CHECK(!(*ret)[1]);
         BOOST_CHECK((*ret)[2] && (*ret)[2]->m_type == "tx" && Span{(*ret)[2]->m_recv} == MakeByteSpan(msg_data_2));
 
-        // Then send a message with a bit error, expecting failure.
+        // Then send a message with a bit error, expecting failure. It's possible this failure does
+        // not occur immediately (when the length descriptor was modified), but it should come
+        // eventually, and no messages can be delivered anymore.
         tester.SendMessage("bad", msg_data_1);
         tester.Damage();
-        ret = tester.Interact();
-        BOOST_CHECK(!ret);
+        while (true) {
+            ret = tester.Interact();
+            if (!ret) break; // failure
+            BOOST_CHECK(ret->size() == 0); // no message can be delivered
+            // Send another message.
+            auto msg_data_3 = g_insecure_rand_ctx.randbytes<uint8_t>(InsecureRandRange(10000));
+            tester.SendMessage(uint8_t(12), msg_data_3); // getheaders short id
+        }
     }
 
     // Normal scenario, with a transport in responder node.

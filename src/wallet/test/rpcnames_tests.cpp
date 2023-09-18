@@ -3,6 +3,7 @@
 
 #include <test/util/setup_common.h>
 #include <key_io.h>
+#include <util/strencodings.h>
 #include <wallet/rpc/names.h>
 
 #include <boost/test/unit_test.hpp>

@@ -90,10 +90,10 @@ void DeserializeDB(Stream& stream, Data&& data, bool fCheckSum = true)
 {
     HashVerifier verifier{stream};
     // de-serialize file header (network specific magic number) and ..
-    unsigned char pchMsgTmp[4];
+    MessageStartChars pchMsgTmp;
     verifier >> pchMsgTmp;
     // ... verify the network matches ours
-    if (memcmp(pchMsgTmp, Params().MessageStart(), sizeof(pchMsgTmp))) {
+    if (pchMsgTmp != Params().MessageStart()) {
         throw std::runtime_error{"Invalid network magic number"};
     }
 
@@ -216,14 +216,14 @@ util::Result<std::unique_ptr<AddrMan>> LoadAddrman(const NetGroupManager& netgro
 void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors)
 {
     LOG_TIME_SECONDS(strprintf("Flush %d outbound block-relay-only peer addresses to anchors.dat", anchors.size()));
-    SerializeFileDB("anchors", anchors_db_path, WithParams(CAddress::V2_DISK, anchors));
+    SerializeFileDB("anchors", anchors_db_path, CAddress::V2_DISK(anchors));
 }
 
 std::vector<CAddress> ReadAnchors(const fs::path& anchors_db_path)
 {
     std::vector<CAddress> anchors;
     try {
-        DeserializeFileDB(anchors_db_path, WithParams(CAddress::V2_DISK, anchors));
+        DeserializeFileDB(anchors_db_path, CAddress::V2_DISK(anchors));
         LogPrintf("Loaded %i addresses from %s\n", anchors.size(), fs::quoted(fs::PathToString(anchors_db_path.filename())));
     } catch (const std::exception&) {
         anchors.clear();
