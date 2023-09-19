@@ -10,15 +10,16 @@
 #include <chainparams.h>
 #include <common/bloom.h>
 #include <compat/compat.h>
-#include <node/connection_types.h>
 #include <consensus/amount.h>
 #include <crypto/siphash.h>
 #include <hash.h>
 #include <i2p.h>
+#include <kernel/messagestartchars.h>
 #include <net_permissions.h>
 #include <netaddress.h>
 #include <netbase.h>
 #include <netgroup.h>
+#include <node/connection_types.h>
 #include <policy/feerate.h>
 #include <protocol.h>
 #include <random.h>
@@ -46,6 +47,7 @@
 
 class AddrMan;
 class BanMan;
+class CChainParams;
 class CNode;
 class CScheduler;
 struct bilingual_str;
@@ -366,7 +368,7 @@ public:
 class V1Transport final : public Transport
 {
 private:
-    CMessageHeader::MessageStartChars m_magic_bytes;
+    MessageStartChars m_magic_bytes;
     const NodeId m_node_id; // Only for logging
     mutable Mutex m_recv_mutex; //!< Lock for receive state
     mutable CHash256 hasher GUARDED_BY(m_recv_mutex);
@@ -546,25 +548,25 @@ private:
     enum class SendState : uint8_t {
         /** (Responder only) Not sending until v1 or v2 is detected.
          *
-         * This is the initial state for responders. The send buffer contains the public key to
-         * send, but nothing is sent in this state yet. When the receiver determines whether this
+         * This is the initial state for responders. The send buffer is empty.
+         * When the receiver determines whether this
          * is a V1 or V2 connection, the sender state becomes AWAITING_KEY (for v2) or V1 (for v1).
          */
         MAYBE_V1,
 
         /** Waiting for the other side's public key.
          *
-         * This is the initial state for initiators. The public key is sent out. When the receiver
-         * receives the other side's public key and transitions to GARB_GARBTERM, the sender state
-         * becomes READY. */
+         * This is the initial state for initiators. The public key and garbage is sent out. When
+         * the receiver receives the other side's public key and transitions to GARB_GARBTERM, the
+         * sender state becomes READY. */
         AWAITING_KEY,
 
         /** Normal sending state.
          *
          * In this state, the ciphers are initialized, so packets can be sent. When this state is
-         * entered, the garbage, garbage terminator, garbage authentication packet, and version
-         * packet are appended to the send buffer (in addition to the key which may still be
-         * there). In this state a message can be provided if the send buffer is empty. */
+         * entered, the garbage terminator, garbage authentication packet, and version
+         * packet are appended to the send buffer (in addition to the key and garbage which may
+         * still be there). In this state a message can be provided if the send buffer is empty. */
         READY,
 
         /** This transport is using v1 fallback.
@@ -607,6 +609,8 @@ private:
     std::vector<uint8_t> m_send_buffer GUARDED_BY(m_send_mutex);
     /** How many bytes from the send buffer have been sent so far. */
     uint32_t m_send_pos GUARDED_BY(m_send_mutex) {0};
+    /** The garbage sent, or to be sent (MAYBE_V1 and AWAITING_KEY state only). */
+    std::vector<uint8_t> m_send_garbage GUARDED_BY(m_send_mutex);
     /** Type of the message being sent. */
     std::string m_send_type GUARDED_BY(m_send_mutex);
     /** Current sender state. */
@@ -620,6 +624,8 @@ private:
     static std::optional<std::string> GetMessageType(Span<const uint8_t>& contents) noexcept;
     /** Determine how many received bytes can be processed in one go (not allowed in V1 state). */
     size_t GetMaxBytesToProcess() noexcept EXCLUSIVE_LOCKS_REQUIRED(m_recv_mutex);
+    /** Put our public key + garbage in the send buffer. */
+    void StartSendingHandshake() noexcept EXCLUSIVE_LOCKS_REQUIRED(m_send_mutex);
     /** Process bytes in m_recv_buffer, while in KEY_MAYBE_V1 state. */
     void ProcessReceivedMaybeV1Bytes() noexcept EXCLUSIVE_LOCKS_REQUIRED(m_recv_mutex, !m_send_mutex);
     /** Process bytes in m_recv_buffer, while in KEY state. */
@@ -642,7 +648,7 @@ public:
     V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in) noexcept;
 
     /** Construct a V2 transport with specified keys and garbage (test use only). */
-    V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in, const CKey& key, Span<const std::byte> ent32, Span<const uint8_t> garbage) noexcept;
+    V2Transport(NodeId nodeid, bool initiating, int type_in, int version_in, const CKey& key, Span<const std::byte> ent32, std::vector<uint8_t> garbage) noexcept;
 
     // Receive side functions.
     bool ReceivedMessageComplete() const noexcept override EXCLUSIVE_LOCKS_REQUIRED(!m_recv_mutex);
@@ -1082,7 +1088,7 @@ public:
     }
 
     CConnman(uint64_t seed0, uint64_t seed1, AddrMan& addrman, const NetGroupManager& netgroupman,
-             bool network_active = true);
+             const CChainParams& params, bool network_active = true);
 
     ~CConnman();
 
@@ -1358,6 +1364,9 @@ private:
     // Whether the node should be passed out in ForEach* callbacks
     static bool NodeFullyConnected(const CNode* pnode);
 
+    uint16_t GetDefaultPort(Network net) const;
+    uint16_t GetDefaultPort(const std::string& addr) const;
+
     // Network usage totals
     mutable Mutex m_total_bytes_sent_mutex;
     std::atomic<uint64_t> nTotalBytesRecv{0};
@@ -1566,6 +1575,8 @@ private:
     private:
         std::vector<CNode*> m_nodes_copy;
     };
+
+    const CChainParams& m_params;
 
     friend struct ConnmanTestMsg;
 };
