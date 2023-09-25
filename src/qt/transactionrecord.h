@@ -70,7 +70,6 @@ public:
         SendToOther,
         RecvWithAddress,
         RecvFromOther,
-        SendToSelf,
         NameOp,
     };
 
