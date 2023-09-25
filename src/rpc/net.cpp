@@ -287,7 +287,7 @@ static RPCHelpMan addnode()
                 strprintf("Addnode connections are limited to %u at a time", MAX_ADDNODE_CONNECTIONS) +
                 " and are counted separately from the -maxconnections limit.\n",
                 {
-                    {"node", RPCArg::Type::STR, RPCArg::Optional::NO, "The node (see getpeerinfo for nodes)"},
+                    {"node", RPCArg::Type::STR, RPCArg::Optional::NO, "The address of the peer to connect to"},
                     {"command", RPCArg::Type::STR, RPCArg::Optional::NO, "'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once"},
                 },
                 RPCResult{RPCResult::Type::NONE, "", ""},
@@ -297,10 +297,8 @@ static RPCHelpMan addnode()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    std::string strCommand;
-    if (!request.params[1].isNull())
-        strCommand = request.params[1].get_str();
-    if (strCommand != "onetry" && strCommand != "add" && strCommand != "remove") {
+    const std::string command{request.params[1].get_str()};
+    if (command != "onetry" && command != "add" && command != "remove") {
         throw std::runtime_error(
             self.ToString());
     }
@@ -308,24 +306,24 @@ static RPCHelpMan addnode()
     NodeContext& node = EnsureAnyNodeContext(request.context);
     CConnman& connman = EnsureConnman(node);
 
-    std::string strNode = request.params[0].get_str();
+    const std::string node_arg{request.params[0].get_str()};
 
-    if (strCommand == "onetry")
+    if (command == "onetry")
     {
         CAddress addr;
-        connman.OpenNetworkConnection(addr, false, nullptr, strNode.c_str(), ConnectionType::MANUAL);
+        connman.OpenNetworkConnection(addr, /*fCountFailure=*/false, /*grantOutbound=*/nullptr, node_arg.c_str(), ConnectionType::MANUAL);
         return UniValue::VNULL;
     }
 
-    if (strCommand == "add")
+    if (command == "add")
     {
-        if (!connman.AddNode(strNode)) {
+        if (!connman.AddNode(node_arg)) {
             throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Node already added");
         }
     }
-    else if(strCommand == "remove")
+    else if (command == "remove")
     {
-        if (!connman.RemoveAddedNode(strNode)) {
+        if (!connman.RemoveAddedNode(node_arg)) {
             throw JSONRPCError(RPC_CLIENT_NODE_NOT_ADDED, "Error: Node could not be removed. It has not been added previously.");
         }
     }
@@ -1016,6 +1014,55 @@ static RPCHelpMan sendmsgtopeer()
     };
 }
 
+static RPCHelpMan getaddrmaninfo()
+{
+    return RPCHelpMan{"getaddrmaninfo",
+                      "\nProvides information about the node's address manager by returning the number of "
+                      "addresses in the `new` and `tried` tables and their sum for all networks.\n"
+                      "This RPC is for testing only.\n",
+                      {},
+                      RPCResult{
+                              RPCResult::Type::OBJ_DYN, "", "json object with network type as keys",
+                              {
+                                      {RPCResult::Type::OBJ, "network", "the network (" + Join(GetNetworkNames(), ", ") + ")",
+                                       {
+                                               {RPCResult::Type::NUM, "new", "number of addresses in the new table, which represent potential peers the node has discovered but hasn't yet successfully connected to."},
+                                               {RPCResult::Type::NUM, "tried", "number of addresses in the tried table, which represent peers the node has successfully connected to in the past."},
+                                               {RPCResult::Type::NUM, "total", "total number of addresses in both new/tried tables"},
+                                       }},
+                              }
+                      },
+                      RPCExamples{
+                              HelpExampleCli("getaddrmaninfo", "")
+                              + HelpExampleRpc("getaddrmaninfo", "")
+                      },
+                      [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+                      {
+                          NodeContext& node = EnsureAnyNodeContext(request.context);
+                          if (!node.addrman) {
+                              throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Address manager functionality missing or disabled");
+                          }
+
+                          UniValue ret(UniValue::VOBJ);
+                          for (int n = 0; n < NET_MAX; ++n) {
+                              enum Network network = static_cast<enum Network>(n);
+                              if (network == NET_UNROUTABLE || network == NET_INTERNAL) continue;
+                              UniValue obj(UniValue::VOBJ);
+                              obj.pushKV("new", node.addrman->Size(network, true));
+                              obj.pushKV("tried", node.addrman->Size(network, false));
+                              obj.pushKV("total", node.addrman->Size(network));
+                              ret.pushKV(GetNetworkName(network), obj);
+                          }
+                          UniValue obj(UniValue::VOBJ);
+                          obj.pushKV("new", node.addrman->Size(std::nullopt, true));
+                          obj.pushKV("tried", node.addrman->Size(std::nullopt, false));
+                          obj.pushKV("total", node.addrman->Size());
+                          ret.pushKV("all_networks", obj);
+                          return ret;
+                      },
+    };
+}
+
 void RegisterNetRPCCommands(CRPCTable& t)
 {
     static const CRPCCommand commands[]{
@@ -1035,6 +1082,7 @@ void RegisterNetRPCCommands(CRPCTable& t)
         {"hidden", &addconnection},
         {"hidden", &addpeeraddress},
         {"hidden", &sendmsgtopeer},
+        {"hidden", &getaddrmaninfo},
     };
     for (const auto& c : commands) {
         t.appendCommand(c.name, &c);

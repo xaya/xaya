@@ -23,6 +23,7 @@
 #include <flatfile.h>
 #include <hash.h>
 #include <kernel/chainparams.h>
+#include <kernel/disconnected_transactions.h>
 #include <kernel/mempool_entry.h>
 #include <kernel/messagestartchars.h>
 #include <kernel/notifications_interface.h>
@@ -82,8 +83,6 @@ using node::CBlockIndexWorkComparator;
 using node::fReindex;
 using node::SnapshotMetadata;
 
-/** Maximum kilobytes for transactions to store for processing during reorg */
-static const unsigned int MAX_DISCONNECTED_TX_POOL_SIZE = 20000;
 /** Time to wait between writing blocks/block index to disk. */
 static constexpr std::chrono::hours DATABASE_WRITE_INTERVAL{1};
 /** Time to wait between flushing chainstate to disk. */
@@ -298,28 +297,30 @@ void Chainstate::MaybeUpdateMempoolForReorg(
     AssertLockHeld(cs_main);
     AssertLockHeld(m_mempool->cs);
     std::vector<uint256> vHashUpdate;
-    // disconnectpool's insertion_order index sorts the entries from
-    // oldest to newest, but the oldest entry will be the last tx from the
-    // latest mined block that was disconnected.
-    // Iterate disconnectpool in reverse, so that we add transactions
-    // back to the mempool starting with the earliest transaction that had
-    // been previously seen in a block.
-    auto it = disconnectpool.queuedTx.get<insertion_order>().rbegin();
-    while (it != disconnectpool.queuedTx.get<insertion_order>().rend()) {
-        // ignore validation errors in resurrected transactions
-        if (!fAddToMempool || (*it)->IsCoinBase() ||
-            AcceptToMemoryPool(*this, *it, GetTime(),
-                /*bypass_limits=*/true, /*test_accept=*/false).m_result_type !=
-                    MempoolAcceptResult::ResultType::VALID) {
-            // If the transaction doesn't make it in to the mempool, remove any
-            // transactions that depend on it (which would now be orphans).
-            m_mempool->removeRecursive(**it, MemPoolRemovalReason::REORG);
-        } else if (m_mempool->exists(GenTxid::Txid((*it)->GetHash()))) {
-            vHashUpdate.push_back((*it)->GetHash());
+    {
+        // disconnectpool is ordered so that the front is the most recently-confirmed
+        // transaction (the last tx of the block at the tip) in the disconnected chain.
+        // Iterate disconnectpool in reverse, so that we add transactions
+        // back to the mempool starting with the earliest transaction that had
+        // been previously seen in a block.
+        const auto queuedTx = disconnectpool.take();
+        auto it = queuedTx.rbegin();
+        while (it != queuedTx.rend()) {
+            // ignore validation errors in resurrected transactions
+            if (!fAddToMempool || (*it)->IsCoinBase() ||
+                AcceptToMemoryPool(*this, *it, GetTime(),
+                    /*bypass_limits=*/true, /*test_accept=*/false).m_result_type !=
+                        MempoolAcceptResult::ResultType::VALID) {
+                // If the transaction doesn't make it in to the mempool, remove any
+                // transactions that depend on it (which would now be orphans).
+                m_mempool->removeRecursive(**it, MemPoolRemovalReason::REORG);
+            } else if (m_mempool->exists(GenTxid::Txid((*it)->GetHash()))) {
+                vHashUpdate.push_back((*it)->GetHash());
+            }
+            ++it;
         }
-        ++it;
     }
-    disconnectpool.queuedTx.clear();
+
     // AcceptToMemoryPool/addUnchecked all assume that new mempool entries have
     // no in-mempool children, which is generally not true when adding
     // previously-confirmed transactions back to the mempool.
@@ -434,8 +435,7 @@ public:
         m_pool(mempool),
         m_view(&m_dummy),
         m_viewmempool(&active_chainstate.CoinsTip(), m_pool),
-        m_active_chainstate(active_chainstate),
-        m_limits{m_pool.m_limits}
+        m_active_chainstate(active_chainstate)
     {
     }
 
@@ -636,6 +636,7 @@ private:
     // Enforce package mempool ancestor/descendant limits (distinct from individual
     // ancestor/descendant limits done in PreChecks).
     bool PackageMempoolChecks(const std::vector<CTransactionRef>& txns,
+                              int64_t total_vsize,
                               PackageValidationState& package_state) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_pool.cs);
 
     // Run the script checks using our policy flags. As this can be slow, we should
@@ -684,8 +685,6 @@ private:
     CCoinsView m_dummy;
 
     Chainstate& m_active_chainstate;
-
-    CTxMemPool::Limits m_limits;
 
     /** Whether the transaction(s) would replace any mempool transactions. If so, RBF rules apply. */
     bool m_rbf{false};
@@ -875,6 +874,11 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     if (!bypass_limits && !args.m_package_feerates && !CheckFeeRate(ws.m_vsize, ws.m_modified_fees, state)) return false;
 
     ws.m_iters_conflicting = m_pool.GetIterSet(ws.m_conflicts);
+
+    // Note that these modifications are only applicable to single transaction scenarios;
+    // carve-outs and package RBF are disabled for multi-transaction evaluations.
+    CTxMemPool::Limits maybe_rbf_limits = m_pool.m_limits;
+
     // Calculate in-mempool ancestors, up to a limit.
     if (ws.m_conflicts.size() == 1) {
         // In general, when we receive an RBF transaction with mempool conflicts, we want to know whether we
@@ -907,11 +911,11 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         assert(ws.m_iters_conflicting.size() == 1);
         CTxMemPool::txiter conflict = *ws.m_iters_conflicting.begin();
 
-        m_limits.descendant_count += 1;
-        m_limits.descendant_size_vbytes += conflict->GetSizeWithDescendants();
+        maybe_rbf_limits.descendant_count += 1;
+        maybe_rbf_limits.descendant_size_vbytes += conflict->GetSizeWithDescendants();
     }
 
-    auto ancestors{m_pool.CalculateMemPoolAncestors(*entry, m_limits)};
+    auto ancestors{m_pool.CalculateMemPoolAncestors(*entry, maybe_rbf_limits)};
     if (!ancestors) {
         // If CalculateMemPoolAncestors fails second time, we want the original error string.
         // Contracting/payment channels CPFP carve-out:
@@ -927,9 +931,9 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         // this, see https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2018-November/016518.html
         CTxMemPool::Limits cpfp_carve_out_limits{
             .ancestor_count = 2,
-            .ancestor_size_vbytes = m_limits.ancestor_size_vbytes,
-            .descendant_count = m_limits.descendant_count + 1,
-            .descendant_size_vbytes = m_limits.descendant_size_vbytes + EXTRA_DESCENDANT_TX_SIZE_LIMIT,
+            .ancestor_size_vbytes = maybe_rbf_limits.ancestor_size_vbytes,
+            .descendant_count = maybe_rbf_limits.descendant_count + 1,
+            .descendant_size_vbytes = maybe_rbf_limits.descendant_size_vbytes + EXTRA_DESCENDANT_TX_SIZE_LIMIT,
         };
         const auto error_message{util::ErrorString(ancestors).original};
         if (ws.m_vsize > EXTRA_DESCENDANT_TX_SIZE_LIMIT) {
@@ -1002,6 +1006,7 @@ bool MemPoolAccept::ReplacementChecks(Workspace& ws)
 }
 
 bool MemPoolAccept::PackageMempoolChecks(const std::vector<CTransactionRef>& txns,
+                                         const int64_t total_vsize,
                                          PackageValidationState& package_state)
 {
     AssertLockHeld(cs_main);
@@ -1012,7 +1017,7 @@ bool MemPoolAccept::PackageMempoolChecks(const std::vector<CTransactionRef>& txn
                        { return !m_pool.exists(GenTxid::Txid(tx->GetHash()));}));
 
     std::string err_string;
-    if (!m_pool.CheckPackageLimits(txns, m_limits, err_string)) {
+    if (!m_pool.CheckPackageLimits(txns, total_vsize, err_string)) {
         // This is a package-wide error, separate from an individual transaction error.
         return package_state.Invalid(PackageValidationResult::PCKG_POLICY, "package-mempool-limits", err_string);
     }
@@ -1167,7 +1172,7 @@ bool MemPoolAccept::SubmitPackage(const ATMPArgs& args, std::vector<Workspace>& 
         // Re-calculate mempool ancestors to call addUnchecked(). They may have changed since the
         // last calculation done in PreChecks, since package ancestors have already been submitted.
         {
-            auto ancestors{m_pool.CalculateMemPoolAncestors(*ws.m_entry, m_limits)};
+            auto ancestors{m_pool.CalculateMemPoolAncestors(*ws.m_entry, m_pool.m_limits)};
             if(!ancestors) {
                 results.emplace(ws.m_ptx->GetWitnessHash(), MempoolAcceptResult::Failure(ws.m_state));
                 // Since PreChecks() and PackageMempoolChecks() both enforce limits, this should never fail.
@@ -1297,7 +1302,7 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptMultipleTransactions(const std::
     // because it's unnecessary. Also, CPFP carve out can increase the limit for individual
     // transactions, but this exemption is not extended to packages in CheckPackageLimits().
     std::string err_string;
-    if (txns.size() > 1 && !PackageMempoolChecks(txns, package_state)) {
+    if (txns.size() > 1 && !PackageMempoolChecks(txns, m_total_vsize, package_state)) {
         return PackageMempoolAcceptResult(package_state, std::move(results));
     }
 
@@ -2842,15 +2847,10 @@ bool Chainstate::DisconnectTip(BlockValidationState& state, DisconnectedBlockTra
     }
 
     if (disconnectpool && m_mempool) {
-        // Save transactions to re-add to mempool at end of reorg
-        for (auto it = block.vtx.rbegin(); it != block.vtx.rend(); ++it) {
-            disconnectpool->addTransaction(*it);
-        }
-        while (disconnectpool->DynamicMemoryUsage() > MAX_DISCONNECTED_TX_POOL_SIZE * 1000) {
-            // Drop the earliest entry, and remove its children from the mempool.
-            auto it = disconnectpool->queuedTx.get<insertion_order>().begin();
-            m_mempool->removeRecursive(**it, MemPoolRemovalReason::REORG);
-            disconnectpool->removeEntry(it);
+        // Save transactions to re-add to mempool at end of reorg. If any entries are evicted for
+        // exceeding memory limits, remove them and their descendants from the mempool.
+        for (auto&& evicted_tx : disconnectpool->AddTransactionsFromBlock(block.vtx)) {
+            m_mempool->removeRecursive(*evicted_tx, MemPoolRemovalReason::REORG);
         }
     }
 
@@ -3100,7 +3100,7 @@ bool Chainstate::ActivateBestChainStep(BlockValidationState& state, CBlockIndex*
 
     // Disconnect active blocks which are no longer in the best chain.
     bool fBlocksDisconnected = false;
-    DisconnectedBlockTransactions disconnectpool;
+    DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_SIZE * 1000};
     while (m_chain.Tip() && m_chain.Tip() != pindexFork) {
         if (!DisconnectTip(state, &disconnectpool)) {
             // This is likely a fatal error, but keep the mempool consistent,
@@ -3434,7 +3434,7 @@ bool Chainstate::InvalidateBlock(BlockValidationState& state, CBlockIndex* pinde
 
         // ActivateBestChain considers blocks already in m_chain
         // unconditionally valid already, so force disconnect away from it.
-        DisconnectedBlockTransactions disconnectpool;
+        DisconnectedBlockTransactions disconnectpool{MAX_DISCONNECTED_TX_POOL_SIZE * 1000};
         bool ret = DisconnectTip(state, &disconnectpool);
         // DisconnectTip will add transactions to disconnectpool.
         // Adjust the mempool to be consistent with the new tip, adding
