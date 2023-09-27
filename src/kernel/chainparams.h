@@ -95,7 +95,7 @@ public:
     /** Default value for -checknamedb argument */
     virtual int DefaultCheckNameDB() const = 0;
     /** If this chain is exclusively used for testing */
-    bool IsTestChain() const { return m_is_test_chain; }
+    bool IsTestChain() const { return m_chain_type != ChainType::MAIN; }
     /** If this chain allows time to be mocked */
     bool IsMockableChain() const { return m_is_mockable_chain; }
     uint64_t PruneAfterHeight() const { return nPruneAfterHeight; }
@@ -171,7 +171,6 @@ protected:
     CBlock genesis;
     std::vector<uint8_t> vFixedSeeds;
     bool fDefaultConsistencyChecks;
-    bool m_is_test_chain;
     bool m_is_mockable_chain;
     CCheckpointData checkpointData;
     MapAssumeutxo m_assumeutxo_data;

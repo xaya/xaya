@@ -57,7 +57,7 @@ MessageVerificationResult MessageVerify(
         return MessageVerificationResult::OK;
     }
 
-    if (!(CTxDestination(PKHash(pubkey)) == destination)) {
+    if (!(PKHash(pubkey) == *std::get_if<PKHash>(&destination))) {
         return MessageVerificationResult::ERR_NOT_SIGNED;
     }
 
