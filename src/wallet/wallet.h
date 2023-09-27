@@ -293,6 +293,10 @@ struct CRecipient
     CTxDestination dest;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
+
+    /** The name prefix script, which gets added to the CTxDestination
+        set, if this is a name operation.  */
+    CScript nameScript;
 };
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime

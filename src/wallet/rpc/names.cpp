@@ -85,9 +85,9 @@ public:
   void setOptions (const UniValue& opt);
 
   /**
-   * Returns the script that should be used as destination.
+   * Returns the destination that should be used as destination.
    */
-  CScript getScript ();
+  CTxDestination getDest ();
 
   /**
    * Marks the key as used if one has been reserved.  This should be called
@@ -113,10 +113,10 @@ void DestinationAddressHelper::setOptions (const UniValue& opt)
   overrideDest.reset (new CTxDestination (std::move (dest)));
 }
 
-CScript DestinationAddressHelper::getScript ()
+CTxDestination DestinationAddressHelper::getDest ()
 {
   if (overrideDest != nullptr)
-    return GetScriptForDestination (*overrideDest);
+    return *overrideDest;
 
   rdest.reset (new ReserveDestination (&wallet, wallet.m_default_address_type));
   const auto op_dest = rdest->GetReservedDestination (false);
@@ -125,7 +125,7 @@ CScript DestinationAddressHelper::getScript ()
                         strprintf ("Failed to generate mining address: %s",
                                    util::ErrorString (op_dest).original));
 
-  return GetScriptForDestination (*op_dest);
+  return *op_dest;
 }
 
 void DestinationAddressHelper::finalise ()
@@ -141,7 +141,8 @@ void DestinationAddressHelper::finalise ()
  */
 UniValue
 SendNameOutput (const JSONRPCRequest& request,
-                CWallet& wallet, const CScript& nameOutScript,
+                CWallet& wallet,
+                const CTxDestination& dest, const CScript& nameOp,
                 const CTxIn* nameInput, const UniValue& opt)
 {
   RPCTypeCheckObj (opt,
@@ -155,13 +156,13 @@ SendNameOutput (const JSONRPCRequest& request,
     EnsureConnman (node);
 
   std::vector<CRecipient> vecSend;
-  vecSend.push_back ({nameOutScript, NAME_LOCKED_AMOUNT, false});
+  vecSend.push_back ({dest, NAME_LOCKED_AMOUNT, false, nameOp});
 
   if (opt.exists ("sendCoins"))
     for (const std::string& addr : opt["sendCoins"].getKeys ())
       {
-        const CTxDestination dest = DecodeDestination (addr);
-        if (!IsValidDestination (dest))
+        const CTxDestination coinDest = DecodeDestination (addr);
+        if (!IsValidDestination (coinDest))
           throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
                               "Invalid address: " + addr);
 
@@ -169,7 +170,7 @@ SendNameOutput (const JSONRPCRequest& request,
         if (nAmount <= 0)
           throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for send");
 
-        vecSend.push_back ({GetScriptForDestination (dest), nAmount, false});
+        vecSend.push_back ({coinDest, nAmount, false});
       }
 
   CCoinControl coinControl;
@@ -435,17 +436,17 @@ name_new ()
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
 
-  const CScript output = destHelper.getScript ();
+  const CTxDestination dest = destHelper.getDest ();
 
   valtype rand(20);
-  if (!getNameSalt (pwallet, name, output, rand))
+  if (!getNameSalt (pwallet, name, GetScriptForDestination (dest), rand))
       GetRandBytes (rand);
 
-  const CScript newScript
-      = CNameScript::buildNameNew (output, name, rand);
+  const CScript nameOp
+      = CNameScript::buildNameNew (CScript (), name, rand);
 
   const UniValue txidVal
-      = SendNameOutput (request, *pwallet, newScript, nullptr, options);
+      = SendNameOutput (request, *pwallet, dest, nameOp, nullptr, options);
   destHelper.finalise ();
 
   const std::string randStr = HexStr (rand);
@@ -699,12 +700,12 @@ name_firstupdate ()
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
 
-  const CScript nameScript
-    = CNameScript::buildNameFirstupdate (destHelper.getScript (), name, value,
-                                         rand);
+  const CScript nameOp
+    = CNameScript::buildNameFirstupdate (CScript (), name, value, rand);
 
   const UniValue txidVal
-      = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
+      = SendNameOutput (request, *pwallet, destHelper.getDest (), nameOp,
+                        &txIn, options);
   destHelper.finalise ();
 
   return txidVal;
@@ -822,11 +823,12 @@ name_update ()
   DestinationAddressHelper destHelper(*pwallet);
   destHelper.setOptions (options);
 
-  const CScript nameScript
-    = CNameScript::buildNameUpdate (destHelper.getScript (), name, value);
+  const CScript nameOp
+    = CNameScript::buildNameUpdate (CScript (), name, value);
 
   const UniValue txidVal
-      = SendNameOutput (request, *pwallet, nameScript, &txIn, options);
+      = SendNameOutput (request, *pwallet, destHelper.getDest (), nameOp,
+                        &txIn, options);
   destHelper.finalise ();
 
   return txidVal;

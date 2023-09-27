@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2017 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -194,6 +194,11 @@ public:
     const CNameScript op(script);
     return op.isNameOp ();
   }
+
+  /**
+   * Concats together a base address and name prefix script.
+   */
+  static CScript AddNamePrefix (const CScript& addr, const CScript& prefix);
 
   /**
    * Builds a NAME_NEW operation for the given address, name and rand value.

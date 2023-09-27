@@ -1015,7 +1015,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
             coin_selection_params.m_subtract_fee_outputs = true;
         }
 
-        if (CNameScript::isNameScript (GetScriptForDestination (recipient.dest)))
+        if (CNameScript::isNameScript (recipient.nameScript))
             isNamecoin = true;
     }
 
@@ -1104,7 +1104,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
     // vouts to the payees
     for (const auto& recipient : vecSend)
     {
-        CTxOut txout(recipient.nAmount, GetScriptForDestination(recipient.dest));
+        CTxOut txout(recipient.nAmount, CNameScript::AddNamePrefix (GetScriptForDestination(recipient.dest), recipient.nameScript));
 
         // Include the fee cost for outputs.
         coin_selection_params.tx_noinputs_size += ::GetSerializeSize(txout, PROTOCOL_VERSION);

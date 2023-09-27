@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2020 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -64,21 +64,13 @@ CNameScript::CNameScript (const CScript& script)
   address = CScript (pc, script.end ());
 }
 
-namespace
-{
-
-/**
- * Concats together a base address and name prefix script.
- */
 CScript
-AddNamePrefix (const CScript& addr, const CScript& prefix)
+CNameScript::AddNamePrefix (const CScript& addr, const CScript& prefix)
 {
   CScript res = prefix;
   res.insert (res.end (), addr.begin (), addr.end ());
   return res;
 }
-
-} // anonymous namespace
 
 CScript
 CNameScript::buildNameNew (const CScript& addr, const valtype& name,
