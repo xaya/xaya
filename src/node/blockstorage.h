@@ -29,6 +29,7 @@
 #include <vector>
 
 class BlockValidationState;
+class CAutoFile;
 class CBlock;
 class CBlockFileInfo;
 class CBlockHeader;
@@ -124,15 +125,20 @@ private:
      */
     bool LoadBlockIndex()
         EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-    void FlushBlockFile(bool fFinalize = false, bool finalize_undo = false);
-    void FlushUndoFile(int block_file, bool finalize = false);
-    bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
+
+    /** Return false if block file or undo file flushing fails. */
+    [[nodiscard]] bool FlushBlockFile(bool fFinalize = false, bool finalize_undo = false);
+
+    /** Return false if undo file flushing fails. */
+    [[nodiscard]] bool FlushUndoFile(int block_file, bool finalize = false);
+
+    [[nodiscard]] bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
     bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 
     FlatFileSeq BlockFileSeq() const;
     FlatFileSeq UndoFileSeq() const;
 
-    FILE* OpenUndoFile(const FlatFilePos& pos, bool fReadOnly = false) const;
+    CAutoFile OpenUndoFile(const FlatFilePos& pos, bool fReadOnly = false) const;
 
     bool WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const;
     bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock) const;
@@ -284,7 +290,7 @@ public:
     void UpdatePruneLock(const std::string& name, const PruneLockInfo& lock_info) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /** Open a block file (blk?????.dat) */
-    FILE* OpenBlockFile(const FlatFilePos& pos, bool fReadOnly = false) const;
+    CAutoFile OpenBlockFile(const FlatFilePos& pos, bool fReadOnly = false) const;
 
     /** Translation to a filesystem path */
     fs::path GetBlockPosFilename(const FlatFilePos& pos) const;
