@@ -173,8 +173,8 @@ public:
             }
         };
 
-        m_assumeutxo_data = MapAssumeutxo{
-         // TODO to be specified in a future patch.
+        m_assumeutxo_data = {
+            // TODO to be specified in a future patch.
         };
 
         chainTxData = ChainTxData{
@@ -270,8 +270,13 @@ public:
             }
         };
 
-        m_assumeutxo_data = MapAssumeutxo{
-            // TODO to be specified in a future patch.
+        m_assumeutxo_data = {
+            {
+                .height = 2'500'000,
+                .hash_serialized = AssumeutxoHash{uint256S("0x2a8fdefef3bf75fa00540ccaaaba4b5281bea94229327bdb0f7416ef1e7a645c")},
+                .nChainTx = 66484552,
+                .blockhash = uint256S("0x0000000000000093bcb68c03a9a168ae252572d348a2eaeba2cdf9231d73206f")
+            }
         };
 
         chainTxData = ChainTxData{
@@ -379,6 +384,15 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear();
+
+        m_assumeutxo_data = {
+            {
+                .height = 160'000,
+                .hash_serialized = AssumeutxoHash{uint256S("0x5225141cb62dee63ab3be95f9b03d60801f264010b1816d4bd00618b2736e7be")},
+                .nChainTx = 2289496,
+                .blockhash = uint256S("0x0000003ca3c99aff040f2563c2ad8f8ec88bd0fd6b8f0895cfaf1ef90353a62c")
+            }
+        };
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
@@ -492,14 +506,19 @@ public:
             }
         };
 
-        m_assumeutxo_data = MapAssumeutxo{
+        m_assumeutxo_data = {
             {
-                110,
-                {AssumeutxoHash{uint256S("0x162681de9f290aaeb9137f1fd70842cfff8307903fb19660a4e4428581d21d60")}, 110},
+                .height = 110,
+                .hash_serialized = AssumeutxoHash{uint256S("0x162681de9f290aaeb9137f1fd70842cfff8307903fb19660a4e4428581d21d60")},
+                .nChainTx = 111,
+                .blockhash = uint256S("0x5dd7b94b2c61d979459c9de55113f3edfc7796a70f7a1e301dcb8dd86ceaa654")
             },
             {
-                200,
-                {AssumeutxoHash{uint256S("0x51c8d11d8b5c1de51543c579736e786aa2736206d1e11e627568029ce092cf62")}, 200},
+                // For use by test/functional/feature_assumeutxo.py
+                .height = 299,
+                .hash_serialized = AssumeutxoHash{uint256S("0xdb3b4c29fd2674caf3c163ea3767e67500204cc74c6d9ae396b27005e25f925f")},
+                .nChainTx = 300,
+                .blockhash = uint256S("0x324cc81513e21f2a3297a0a3821183f045a4cc1cac835e073c851c4932d7264d")
             },
         };
 

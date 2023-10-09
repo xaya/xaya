@@ -10,7 +10,7 @@
 
 uint256 CPureBlockHeader::GetHash() const
 {
-    return SerializeHash(*this);
+    return (CHashWriter{PROTOCOL_VERSION} << *this).GetHash();
 }
 
 void CPureBlockHeader::SetBaseVersion(int32_t nBaseVersion, int32_t nChainId)
