@@ -179,7 +179,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   }
 
   const std::vector<unsigned char> vchAuxPow = ParseHex (auxpowHex);
-  CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+  CDataStream ss(vchAuxPow, SER_NETWORK, PROTOCOL_VERSION);
   std::unique_ptr<CAuxPow> pow(new CAuxPow ());
   ss >> *pow;
   shared_block->SetAuxpow (std::move (pow));
