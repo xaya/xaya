@@ -14,7 +14,8 @@ BOOST_AUTO_TEST_SUITE(policy_fee_tests)
 
 BOOST_AUTO_TEST_CASE(FeeRounder)
 {
-    FeeFilterRounder fee_rounder{CFeeRate{1000}};
+    FastRandomContext rng{/*fDeterministic=*/true};
+    FeeFilterRounder fee_rounder{CFeeRate{1000}, rng};
 
     // check that 1000 rounds to 974 or 1071
     std::set<CAmount> results;
@@ -34,7 +35,7 @@ BOOST_AUTO_TEST_CASE(FeeRounder)
     /* Namecoin uses a different DEFAULT_MIN_RELAY_TX_FEE value than
        upstream Bitcoin.  Verify the expected rounding value for MAX_MONEY
        (which is used as fee filter during IBD) also for that.  */
-    FeeFilterRounder nmc_rounder{CFeeRate{DEFAULT_MIN_RELAY_TX_FEE}};
+    FeeFilterRounder nmc_rounder{CFeeRate{DEFAULT_MIN_RELAY_TX_FEE}, rng};
     BOOST_CHECK_EQUAL(nmc_rounder.round(MAX_MONEY), 9452957);
 }
 

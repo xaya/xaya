@@ -78,7 +78,7 @@ CheckPowRoundtrip (const std::string& hex)
   stream >> powData;
 
   std::vector<unsigned char> serialised;
-  CVectorWriter writer(SER_NETWORK, PROTOCOL_VERSION, serialised, 0);
+  CVectorWriter writer(PROTOCOL_VERSION, serialised, 0);
   writer << powData;
 
   BOOST_CHECK_EQUAL (HexStr (serialised), hex);

@@ -16,7 +16,7 @@
 
 uint256 CPureBlockHeader::GetHash() const
 {
-    return SerializeHash(*this);
+    return (CHashWriter{PROTOCOL_VERSION} << *this).GetHash();
 }
 
 namespace
@@ -26,7 +26,7 @@ uint256
 GetNeoscryptHash (const CPureBlockHeader& hdr)
 {
   std::vector<unsigned char> data;
-  CVectorWriter writer(SER_GETHASH, PROTOCOL_VERSION, data, 0);
+  CVectorWriter writer(PROTOCOL_VERSION, data, 0);
   writer << hdr;
 
   /* We swap the byte order similar to what getwork does, as that seems to be
