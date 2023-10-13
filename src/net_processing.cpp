@@ -4201,6 +4201,16 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         for (; pindex; pindex = m_chainman.ActiveChain().Next(pindex))
         {
             const CBlockHeader header = pindex->GetBlockHeader(m_chainman.m_blockman);
+            /* Unlike upstream Bitcoin, we need to get the stored block on disk
+               to convert pindex to header.  This may fail if we are still
+               in initial sync with assumeutxo (for instance).  In this case,
+               explicitly ignore the request.  */
+            if (header.IsNull ())
+              {
+                  LogPrint(BCLog::NET, "%s: ignoring getheaders request that we do not have on disk yet", __func__);
+                  return;
+              }
+
             ++nCount;
             nSize += GetSerializeSize(header, PROTOCOL_VERSION);
             vHeaders.push_back(header);
