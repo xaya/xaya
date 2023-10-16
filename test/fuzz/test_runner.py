@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2021 The Bitcoin Core developers
+# Copyright (c) 2019-present The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Run fuzz test targets.
@@ -276,10 +276,18 @@ def merge_inputs(*, fuzz_pool, corpus, test_list, src_dir, build_dir, merge_dir)
     for t in test_list:
         args = [
             os.path.join(build_dir, 'src', 'test', 'fuzz', 'fuzz'),
-            '-merge=1',
+            '-set_cover_merge=1',
+            # set_cover_merge is used instead of -merge=1 to reduce the overall
+            # size of the qa-assets git repository a bit, but more importantly,
+            # to cut the runtime to iterate over all fuzz inputs [0].
+            # [0] https://github.com/bitcoin-core/qa-assets/issues/130#issuecomment-1761760866
             '-shuffle=0',
             '-prefer_small=1',
-            '-use_value_profile=1',  # Also done by oss-fuzz https://github.com/google/oss-fuzz/issues/1406#issuecomment-387790487
+            '-use_value_profile=0',
+            # use_value_profile is enabled by oss-fuzz [0], but disabled for
+            # now to avoid bloating the qa-assets git repository [1].
+            # [0] https://github.com/google/oss-fuzz/issues/1406#issuecomment-387790487
+            # [1] https://github.com/bitcoin-core/qa-assets/issues/130#issuecomment-1749075891
             os.path.join(corpus, t),
             os.path.join(merge_dir, t),
         ]

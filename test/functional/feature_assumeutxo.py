@@ -36,7 +36,11 @@ Interesting starting states could be loading a snapshot when the current chain t
 
 """
 from test_framework.test_framework import BitcoinTestFramework
-from test_framework.util import assert_equal
+from test_framework.util import (
+    assert_equal,
+    assert_raises_rpc_error,
+)
+import struct
 
 START_HEIGHT = 199
 SNAPSHOT_BASE_HEIGHT = 299
@@ -61,6 +65,37 @@ class AssumeutxoTest(BitcoinTestFramework):
         including blocks the other hasn't yet seen."""
         self.add_nodes(3)
         self.start_nodes(extra_args=self.extra_args)
+
+    def test_invalid_snapshot_scenarios(self, valid_snapshot_path):
+        self.log.info("Test different scenarios of loading invalid snapshot files")
+        with open(valid_snapshot_path, 'rb') as f:
+            valid_snapshot_contents = f.read()
+        bad_snapshot_path = valid_snapshot_path + '.mod'
+
+        self.log.info("  - snapshot file refering to a block that is not in the assumeutxo parameters")
+        # we can only test this with a block that is already known, as otherwise the `loadtxoutset` RPC
+        # would time out (waiting to see the hash in the headers chain), rather than error immediately
+        bad_snapshot_height = SNAPSHOT_BASE_HEIGHT - 1
+        with open(bad_snapshot_path, 'wb') as f:
+            bad_snapshot_block_hash = self.nodes[0].getblockhash(bad_snapshot_height)
+            # block hash of the snapshot base is stored right at the start (first 32 bytes)
+            f.write(bytes.fromhex(bad_snapshot_block_hash)[::-1] + valid_snapshot_contents[32:])
+
+        expected_log = f"assumeutxo height in snapshot metadata not recognized ({bad_snapshot_height}) - refusing to load snapshot"
+        with self.nodes[1].assert_debug_log([expected_log]):
+            assert_raises_rpc_error(-32603, "Unable to load UTXO snapshot", self.nodes[1].loadtxoutset, bad_snapshot_path)
+
+        self.log.info("  - snapshot file with wrong number of coins")
+        valid_num_coins = struct.unpack("<I", valid_snapshot_contents[32:32 + 4])[0]
+        for off in [-1, +1]:
+            with open(bad_snapshot_path, 'wb') as f:
+                f.write(valid_snapshot_contents[:32])
+                f.write(struct.pack("<I", valid_num_coins + off))
+                f.write(valid_snapshot_contents[32 + 4:])
+
+            expected_log = f"bad snapshot - coins left over after deserializing 298 coins" if off == -1 else f"bad snapshot format or truncated snapshot after deserializing 299 coins"
+            with self.nodes[1].assert_debug_log([expected_log]):
+                assert_raises_rpc_error(-32603, "Unable to load UTXO snapshot", self.nodes[1].loadtxoutset, bad_snapshot_path)
 
     def run_test(self):
         """
@@ -119,6 +154,8 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(n1.getblockcount(), START_HEIGHT)
 
         assert_equal(n0.getblockchaininfo()["blocks"], FINAL_HEIGHT)
+
+        self.test_invalid_snapshot_scenarios(dump_output['path'])
 
         self.log.info(f"Loading snapshot into second node from {dump_output['path']}")
         loaded = n1.loadtxoutset(dump_output['path'])
