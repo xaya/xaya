@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-#define NAMECOINCONSENSUS_API_VER 1
+#define NAMECOINCONSENSUS_API_VER 2
 
 typedef enum namecoinconsensus_error_t
 {
@@ -41,6 +41,8 @@ typedef enum namecoinconsensus_error_t
     namecoinconsensus_ERR_TX_DESERIALIZE,
     namecoinconsensus_ERR_AMOUNT_REQUIRED,
     namecoinconsensus_ERR_INVALID_FLAGS,
+    namecoinconsensus_ERR_SPENT_OUTPUTS_REQUIRED,
+    namecoinconsensus_ERR_SPENT_OUTPUTS_MISMATCH
 } namecoinconsensus_error;
 
 /** Script verification flags */
@@ -53,10 +55,18 @@ enum
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY = (1U << 9), // enable CHECKLOCKTIMEVERIFY (BIP65)
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY = (1U << 10), // enable CHECKSEQUENCEVERIFY (BIP112)
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS             = (1U << 11), // enable WITNESS (BIP141)
+    namecoinconsensus_SCRIPT_FLAGS_VERIFY_TAPROOT             = (1U << 17), // enable TAPROOT (BIPs 341 & 342)
     namecoinconsensus_SCRIPT_FLAGS_VERIFY_ALL                 = namecoinconsensus_SCRIPT_FLAGS_VERIFY_P2SH | namecoinconsensus_SCRIPT_FLAGS_VERIFY_DERSIG |
-                                                                namecoinconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY |
-                                                                namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS
+                                                               namecoinconsensus_SCRIPT_FLAGS_VERIFY_NULLDUMMY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKLOCKTIMEVERIFY |
+                                                               namecoinconsensus_SCRIPT_FLAGS_VERIFY_CHECKSEQUENCEVERIFY | namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS |
+                                                               namecoinconsensus_SCRIPT_FLAGS_VERIFY_TAPROOT
 };
+
+typedef struct {
+    const unsigned char *scriptPubKey;
+    unsigned int scriptPubKeySize;
+    int64_t value;
+} UTXO;
 
 /// Returns 1 if the input nIn of the serialized transaction pointed to by
 /// txTo correctly spends the scriptPubKey pointed to by scriptPubKey under
@@ -68,6 +78,11 @@ EXPORT_SYMBOL int namecoinconsensus_verify_script(const unsigned char *scriptPub
 
 EXPORT_SYMBOL int namecoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, int64_t amount,
                                     const unsigned char *txTo        , unsigned int txToLen,
+                                    unsigned int nIn, unsigned int flags, namecoinconsensus_error* err);
+
+EXPORT_SYMBOL int namecoinconsensus_verify_script_with_spent_outputs(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, int64_t amount,
+                                    const unsigned char *txTo        , unsigned int txToLen,
+                                    const UTXO *spentOutputs, unsigned int spentOutputsLen,
                                     unsigned int nIn, unsigned int flags, namecoinconsensus_error* err);
 
 EXPORT_SYMBOL unsigned int namecoinconsensus_version();

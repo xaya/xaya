@@ -2456,7 +2456,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
 
         CTxUndo undoDummy;
         if (i > 0) {
-            blockundo.vtxundo.push_back(CTxUndo());
+            blockundo.vtxundo.emplace_back();
         }
         UpdateCoins(tx, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
         ApplyNameTransaction(tx, pindex->nHeight, view, blockundo);
@@ -5821,8 +5821,8 @@ void ChainstateManager::MaybeRebalanceCaches()
     assert(ibd_usable || snapshot_usable);
 
     if (ibd_usable && !snapshot_usable) {
-        LogPrintf("[snapshot] allocating all cache to the IBD chainstate\n");
-        // Allocate everything to the IBD chainstate.
+        // Allocate everything to the IBD chainstate. This will always happen
+        // when we are not using a snapshot.
         m_ibd_chainstate->ResizeCoinsCaches(m_total_coinstip_cache, m_total_coinsdb_cache);
     }
     else if (snapshot_usable && !ibd_usable) {
