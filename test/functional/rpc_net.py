@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2022 The Bitcoin Core developers
+# Copyright (c) 2017-present The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test RPC calls related to net.
@@ -315,9 +315,11 @@ class NetTest(BitcoinTestFramework):
 
         self.log.debug("Test that adding an address with invalid port fails")
         assert_raises_rpc_error(-1, "JSON integer out of range", self.nodes[0].addpeeraddress, address="1.2.3.4", port=-1)
-        assert_raises_rpc_error(-1, "JSON integer out of range", self.nodes[0].addpeeraddress,address="1.2.3.4", port=65536)
+        assert_raises_rpc_error(-1, "JSON integer out of range", self.nodes[0].addpeeraddress, address="1.2.3.4", port=65536)
 
         self.log.debug("Test that adding a valid address to the tried table succeeds")
+        self.addr_time = int(time.time())
+        node.setmocktime(self.addr_time)
         assert_equal(node.addpeeraddress(address="1.2.3.4", tried=True, port=8333), {"success": True})
         with node.assert_debug_log(expected_msgs=["CheckAddrman: new 0, tried 1, total 1 started"]):
             addrs = node.getnodeaddresses(count=0)  # getnodeaddresses re-runs the addrman checks
@@ -373,11 +375,6 @@ class NetTest(BitcoinTestFramework):
         self.log.info("Test getaddrmaninfo")
         node = self.nodes[1]
 
-        self.log.debug("Test that getaddrmaninfo is a hidden RPC")
-        # It is hidden from general help, but its detailed help may be called directly.
-        assert "getaddrmaninfo" not in node.help()
-        assert "getaddrmaninfo" in node.help("getaddrmaninfo")
-
         # current count of ipv4 addresses in addrman is {'new':1, 'tried':1}
         self.log.info("Test that count of addresses in addrman match expected values")
         res = node.getaddrmaninfo()
@@ -409,8 +406,7 @@ class NetTest(BitcoinTestFramework):
             assert_equal(result["network"], expected["network"])
             assert_equal(result["source"], expected["source"])
             assert_equal(result["source_network"], expected["source_network"])
-            # To avoid failing on slow test runners, use a 10s vspan here.
-            assert_approx(result["time"], time.time(), vspan=10)
+            assert_equal(result["time"], self.addr_time)
 
         def check_getrawaddrman_entries(expected):
             """Utility to compare a getrawaddrman result with expected addrman contents"""
