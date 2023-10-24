@@ -1499,8 +1499,8 @@ static CScriptWitness ScriptWitnessFromJSON(const UniValue& univalue)
 
 #if defined(HAVE_CONSENSUS_LIB)
 
-/* Test simple (successful) usage of bitcoinconsensus_verify_script */
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_returns_true)
+/* Test simple (successful) usage of namecoinconsensus_verify_script */
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_returns_true)
 {
     unsigned int libconsensus_flags = 0;
     int nIn = 0;
@@ -1522,8 +1522,8 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_returns_true)
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_OK);
 }
 
-/* Test bitcoinconsensus_verify_script returns invalid tx index err*/
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_index_err)
+/* Test namecoinconsensus_verify_script returns invalid tx index err*/
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_tx_index_err)
 {
     unsigned int libconsensus_flags = 0;
     int nIn = 3;
@@ -1545,8 +1545,8 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_index_err)
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_TX_INDEX);
 }
 
-/* Test bitcoinconsensus_verify_script returns tx size mismatch err*/
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_size)
+/* Test namecoinconsensus_verify_script returns tx size mismatch err*/
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_tx_size)
 {
     unsigned int libconsensus_flags = 0;
     int nIn = 0;
@@ -1568,8 +1568,8 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_size)
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_TX_SIZE_MISMATCH);
 }
 
-/* Test bitcoinconsensus_verify_script returns invalid tx serialization error */
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_serialization)
+/* Test namecoinconsensus_verify_script returns invalid tx serialization error */
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_tx_serialization)
 {
     unsigned int libconsensus_flags = 0;
     int nIn = 0;
@@ -1591,8 +1591,8 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_tx_serialization)
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_TX_DESERIALIZE);
 }
 
-/* Test bitcoinconsensus_verify_script returns amount required error */
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_amount_required_err)
+/* Test namecoinconsensus_verify_script returns amount required error */
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_amount_required_err)
 {
     unsigned int libconsensus_flags = namecoinconsensus_SCRIPT_FLAGS_VERIFY_WITNESS;
     int nIn = 0;
@@ -1614,8 +1614,8 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_amount_required_err)
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_AMOUNT_REQUIRED);
 }
 
-/* Test bitcoinconsensus_verify_script returns invalid flags err */
-BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_invalid_flags)
+/* Test namecoinconsensus_verify_script returns invalid flags err */
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_invalid_flags)
 {
     unsigned int libconsensus_flags = 1 << 3;
     int nIn = 0;
@@ -1635,6 +1635,37 @@ BOOST_AUTO_TEST_CASE(bitcoinconsensus_verify_script_invalid_flags)
     int result = namecoinconsensus_verify_script(scriptPubKey.data(), scriptPubKey.size(), UCharCast(stream.data()), stream.size(), nIn, libconsensus_flags, &err);
     BOOST_CHECK_EQUAL(result, 0);
     BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_INVALID_FLAGS);
+}
+
+/* Test namecoinconsensus_verify_script returns spent outputs required err */
+BOOST_AUTO_TEST_CASE(namecoinconsensus_verify_script_spent_outputs_required_err)
+{
+    unsigned int libconsensus_flags{namecoinconsensus_SCRIPT_FLAGS_VERIFY_TAPROOT};
+    const int nIn{0};
+
+    CScript scriptPubKey;
+    CScript scriptSig;
+    CScriptWitness wit;
+
+    scriptPubKey << OP_EQUAL;
+    CTransaction creditTx{BuildCreditingTransaction(scriptPubKey, 1)};
+    CTransaction spendTx{BuildSpendingTransaction(scriptSig, wit, creditTx)};
+
+    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+    stream << spendTx;
+
+    namecoinconsensus_error err;
+    int result{namecoinconsensus_verify_script_with_spent_outputs(scriptPubKey.data(), scriptPubKey.size(), creditTx.vout[0].nValue, UCharCast(stream.data()), stream.size(), nullptr, 0, nIn, libconsensus_flags, &err)};
+    BOOST_CHECK_EQUAL(result, 0);
+    BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_SPENT_OUTPUTS_REQUIRED);
+
+    result = namecoinconsensus_verify_script_with_amount(scriptPubKey.data(), scriptPubKey.size(), creditTx.vout[0].nValue, UCharCast(stream.data()), stream.size(), nIn, libconsensus_flags, &err);
+    BOOST_CHECK_EQUAL(result, 0);
+    BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_SPENT_OUTPUTS_REQUIRED);
+
+    result = namecoinconsensus_verify_script(scriptPubKey.data(), scriptPubKey.size(), UCharCast(stream.data()), stream.size(), nIn, libconsensus_flags, &err);
+    BOOST_CHECK_EQUAL(result, 0);
+    BOOST_CHECK_EQUAL(err, namecoinconsensus_ERR_SPENT_OUTPUTS_REQUIRED);
 }
 
 #endif // defined(HAVE_CONSENSUS_LIB)
@@ -1685,12 +1716,29 @@ static void AssetTest(const UniValue& test)
         PrecomputedTransactionData txdata;
         txdata.Init(tx, std::vector<CTxOut>(prevouts));
         CachingTransactionSignatureChecker txcheck(&tx, idx, prevouts[idx].nValue, true, txdata);
+
+#if defined(HAVE_CONSENSUS_LIB)
+        CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+        stream << tx;
+        std::vector<UTXO> utxos;
+        utxos.resize(prevouts.size());
+        for (size_t i = 0; i < prevouts.size(); i++) {
+            utxos[i].scriptPubKey = prevouts[i].scriptPubKey.data();
+            utxos[i].scriptPubKeySize = prevouts[i].scriptPubKey.size();
+            utxos[i].value = prevouts[i].nValue;
+        }
+#endif
+
         for (const auto flags : ALL_CONSENSUS_FLAGS) {
             // "final": true tests are valid for all flags. Others are only valid with flags that are
             // a subset of test_flags.
             if (fin || ((flags & test_flags) == flags)) {
                 bool ret = VerifyScript(tx.vin[idx].scriptSig, prevouts[idx].scriptPubKey, &tx.vin[idx].scriptWitness, flags, txcheck, nullptr);
                 BOOST_CHECK(ret);
+#if defined(HAVE_CONSENSUS_LIB)
+                int lib_ret = namecoinconsensus_verify_script_with_spent_outputs(prevouts[idx].scriptPubKey.data(), prevouts[idx].scriptPubKey.size(), prevouts[idx].nValue, UCharCast(stream.data()), stream.size(), utxos.data(), utxos.size(), idx, flags, nullptr);
+                BOOST_CHECK(lib_ret == 1);
+#endif
             }
         }
     }
@@ -1702,11 +1750,28 @@ static void AssetTest(const UniValue& test)
         PrecomputedTransactionData txdata;
         txdata.Init(tx, std::vector<CTxOut>(prevouts));
         CachingTransactionSignatureChecker txcheck(&tx, idx, prevouts[idx].nValue, true, txdata);
+
+#if defined(HAVE_CONSENSUS_LIB)
+        CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
+        stream << tx;
+        std::vector<UTXO> utxos;
+        utxos.resize(prevouts.size());
+        for (size_t i = 0; i < prevouts.size(); i++) {
+            utxos[i].scriptPubKey = prevouts[i].scriptPubKey.data();
+            utxos[i].scriptPubKeySize = prevouts[i].scriptPubKey.size();
+            utxos[i].value = prevouts[i].nValue;
+        }
+#endif
+
         for (const auto flags : ALL_CONSENSUS_FLAGS) {
             // If a test is supposed to fail with test_flags, it should also fail with any superset thereof.
             if ((flags & test_flags) == test_flags) {
                 bool ret = VerifyScript(tx.vin[idx].scriptSig, prevouts[idx].scriptPubKey, &tx.vin[idx].scriptWitness, flags, txcheck, nullptr);
                 BOOST_CHECK(!ret);
+#if defined(HAVE_CONSENSUS_LIB)
+                int lib_ret = namecoinconsensus_verify_script_with_spent_outputs(prevouts[idx].scriptPubKey.data(), prevouts[idx].scriptPubKey.size(), prevouts[idx].nValue, UCharCast(stream.data()), stream.size(), utxos.data(), utxos.size(), idx, flags, nullptr);
+                BOOST_CHECK(lib_ret == 0);
+#endif
             }
         }
     }

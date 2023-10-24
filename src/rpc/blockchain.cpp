@@ -2093,7 +2093,7 @@ static RPCHelpMan getblockstats()
             // New feerate uses satoshis per virtual byte instead of per serialized byte
             CAmount feerate = weight ? (txfee * WITNESS_SCALE_FACTOR) / weight : 0;
             if (do_feerate_percentiles) {
-                feerate_array.emplace_back(std::make_pair(feerate, weight));
+                feerate_array.emplace_back(feerate, weight);
             }
             maxfeerate = std::max(maxfeerate, feerate);
             minfeerate = std::min(minfeerate, feerate);
@@ -2900,6 +2900,7 @@ static RPCHelpMan loadtxoutset()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     NodeContext& node = EnsureAnyNodeContext(request.context);
+    ChainstateManager& chainman = EnsureChainman(node);
     fs::path path{AbsPathForConfigVal(EnsureArgsman(node), fs::u8path(request.params[0].get_str()))};
 
     FILE* file{fsbridge::fopen(path, "rb")};
@@ -2914,13 +2915,15 @@ static RPCHelpMan loadtxoutset()
     afile >> metadata;
 
     uint256 base_blockhash = metadata.m_base_blockhash;
+    if (!chainman.GetParams().AssumeutxoForBlockhash(base_blockhash).has_value()) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Unable to load UTXO snapshot, "
+            "assumeutxo block hash in snapshot metadata not recognized (%s)", base_blockhash.ToString()));
+    }
     int max_secs_to_wait_for_headers = 60 * 10;
     CBlockIndex* snapshot_start_block = nullptr;
 
     LogPrintf("[snapshot] waiting to see blockheader %s in headers chain before snapshot activation\n",
         base_blockhash.ToString());
-
-    ChainstateManager& chainman = EnsureChainman(node);
 
     while (max_secs_to_wait_for_headers > 0) {
         snapshot_start_block = WITH_LOCK(::cs_main,

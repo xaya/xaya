@@ -1132,7 +1132,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const 
     }
 
     //// debug print
-    WalletLogPrintf("AddToWallet %s  %s%s\n", hash.ToString(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""));
+    WalletLogPrintf("AddToWallet %s  %s%s %s\n", hash.ToString(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""), TxStateString(state));
 
     // Write to disk
     if (fInsertedNew || fUpdated)
@@ -4349,7 +4349,7 @@ util::Result<MigrationResult> MigrateLegacyToDescriptor(const std::string& walle
 
         // Remember this wallet's walletdir to remove after unloading
         std::vector<fs::path> wallet_dirs;
-        wallet_dirs.push_back(fs::PathFromString(local_wallet->GetDatabase().Filename()).parent_path());
+        wallet_dirs.emplace_back(fs::PathFromString(local_wallet->GetDatabase().Filename()).parent_path());
 
         // Unload the wallet locally
         assert(local_wallet.use_count() == 1);
@@ -4362,7 +4362,7 @@ util::Result<MigrationResult> MigrateLegacyToDescriptor(const std::string& walle
 
         // Get the directories to remove after unloading
         for (std::shared_ptr<CWallet>& w : created_wallets) {
-            wallet_dirs.push_back(fs::PathFromString(w->GetDatabase().Filename()).parent_path());
+            wallet_dirs.emplace_back(fs::PathFromString(w->GetDatabase().Filename()).parent_path());
         }
 
         // Unload the wallets
