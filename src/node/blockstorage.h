@@ -32,9 +32,6 @@
 class BlockValidationState;
 class CAutoFile;
 class CBlock;
-class CBlockFileInfo;
-class CBlockHeader;
-class CBlockIndex;
 class CBlockUndo;
 class CChainParams;
 class Chainstate;
