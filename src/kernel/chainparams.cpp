@@ -365,7 +365,7 @@ public:
         m_assumeutxo_data = {
             {
                 .height = 2'500'000,
-                .hash_serialized = AssumeutxoHash{uint256S("0x2a8fdefef3bf75fa00540ccaaaba4b5281bea94229327bdb0f7416ef1e7a645c")},
+                .hash_serialized = AssumeutxoHash{uint256S("0xf841584909f68e47897952345234e37fcd9128cd818f41ee6c3ca68db8071be7")},
                 .nChainTx = 66484552,
                 .blockhash = uint256S("0x0000000000000093bcb68c03a9a168ae252572d348a2eaeba2cdf9231d73206f")
             }
@@ -480,7 +480,7 @@ public:
         m_assumeutxo_data = {
             {
                 .height = 160'000,
-                .hash_serialized = AssumeutxoHash{uint256S("0x5225141cb62dee63ab3be95f9b03d60801f264010b1816d4bd00618b2736e7be")},
+                .hash_serialized = AssumeutxoHash{uint256S("0xfe0a44309b74d6b5883d246cb419c6221bcccf0b308c9b59b7d70783dbdf928a")},
                 .nChainTx = 2289496,
                 .blockhash = uint256S("0x0000003ca3c99aff040f2563c2ad8f8ec88bd0fd6b8f0895cfaf1ef90353a62c")
             }
@@ -610,14 +610,14 @@ public:
         m_assumeutxo_data = {
             {
                 .height = 110,
-                .hash_serialized = AssumeutxoHash{uint256S("0xdc81af66a58085fe977c6aab56b49630d87b84521fc5a8a5c53f2f4b23c8d6d5")},
+                .hash_serialized = AssumeutxoHash{uint256S("0xc7b1cf5103d6dd47a4feddb01f0fc951d109ed88f9b406f720a8a7f9942689e4")},
                 .nChainTx = 111,
                 .blockhash = uint256S("0xb5b31111b3ee8c91956ffb9b248950dd26a878eb72ab7d9e9286bb27603c1ba2")
             },
             {
                 // For use by test/functional/feature_assumeutxo.py
                 .height = 299,
-                .hash_serialized = AssumeutxoHash{uint256S("0x285c658325083a72799acfbb52df11185a9dc2939d1b22f8aec875039a66a772")},
+                .hash_serialized = AssumeutxoHash{uint256S("0x42004ccf755c7e298da566190a9d4708660135f44ff257f2df3d24d696eaca6f")},
                 .nChainTx = 300,
                 .blockhash = uint256S("0xf147e851dea1b7a3af413bedf8e26045f1160c1139ee3473fb1d1e3295006095")
             },

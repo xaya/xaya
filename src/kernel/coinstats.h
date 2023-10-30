@@ -6,6 +6,7 @@
 #define BITCOIN_KERNEL_COINSTATS_H
 
 #include <consensus/amount.h>
+#include <crypto/muhash.h>
 #include <streams.h>
 #include <uint256.h>
 
@@ -73,7 +74,8 @@ struct CCoinsStats {
 
 uint64_t GetBogoSize(const CScript& script_pub_key);
 
-DataStream TxOutSer(const COutPoint& outpoint, const Coin& coin);
+void ApplyCoinHash(MuHash3072& muhash, const COutPoint& outpoint, const Coin& coin);
+void RemoveCoinHash(MuHash3072& muhash, const COutPoint& outpoint, const Coin& coin);
 
 /** Applies the value of the given coin to either the name or the
  *  currency total.  The sign can be used to apply them negative
