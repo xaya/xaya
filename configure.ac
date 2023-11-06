@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-define(_CLIENT_VERSION_MAJOR, 25)
+define(_CLIENT_VERSION_MAJOR, 26)
 define(_CLIENT_VERSION_MINOR, 99)
 define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_RC, 0)
@@ -128,8 +128,8 @@ AC_PATH_TOOL([AR], [ar])
 AC_PATH_TOOL([GCOV], [gcov])
 AC_PATH_TOOL([LLVM_COV], [llvm-cov])
 AC_PATH_PROG([LCOV], [lcov])
-dnl Python 3.8 is specified in .python-version and should be used if available, see doc/dependencies.md
-AC_PATH_PROGS([PYTHON], [python3.8 python3.9 python3.10 python3.11 python3.12 python3 python])
+dnl The minimum supported version is specified in .python-version and should be used if available, see doc/dependencies.md
+AC_PATH_PROGS([PYTHON], [python3.9 python3.10 python3.11 python3.12 python3 python])
 AC_PATH_PROG([GENHTML], [genhtml])
 AC_PATH_PROG([GIT], [git])
 AC_PATH_PROG([CCACHE], [ccache])
@@ -447,10 +447,7 @@ if test "$CXXFLAGS_overridden" = "no"; then
   AX_CHECK_COMPILE_FLAG([-Wduplicated-cond], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wduplicated-cond"], [], [$CXXFLAG_WERROR])
   AX_CHECK_COMPILE_FLAG([-Wlogical-op], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wlogical-op"], [], [$CXXFLAG_WERROR])
   AX_CHECK_COMPILE_FLAG([-Woverloaded-virtual], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Woverloaded-virtual"], [], [$CXXFLAG_WERROR])
-  dnl -Wsuggest-override is broken with GCC before 9.2
-  dnl https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78010
-  AX_CHECK_COMPILE_FLAG([-Wsuggest-override], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wsuggest-override"], [], [$CXXFLAG_WERROR],
-                        [AC_LANG_SOURCE([[struct A { virtual void f(); }; struct B : A { void f() final; };]])])
+  AX_CHECK_COMPILE_FLAG([-Wsuggest-override], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wsuggest-override"], [], [$CXXFLAG_WERROR])
   AX_CHECK_COMPILE_FLAG([-Wunreachable-code-loop-increment], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wunreachable-code-loop-increment"], [], [$CXXFLAG_WERROR])
   AX_CHECK_COMPILE_FLAG([-Wimplicit-fallthrough], [WARN_CXXFLAGS="$WARN_CXXFLAGS -Wimplicit-fallthrough"], [], [$CXXFLAG_WERROR])
 
@@ -1427,15 +1424,13 @@ dnl Check for libminiupnpc (optional)
 if test "$use_upnp" != "no"; then
   TEMP_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$CPPFLAGS $MINIUPNPC_CPPFLAGS"
-  AC_CHECK_HEADERS(
-    [miniupnpc/miniupnpc.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h],
-    [AC_CHECK_LIB([miniupnpc], [upnpDiscover], [MINIUPNPC_LIBS="$MINIUPNPC_LIBS -lminiupnpc"], [have_miniupnpc=no], [$MINIUPNPC_LIBS])],
-    [have_miniupnpc=no]
-  )
+  AC_CHECK_HEADERS([miniupnpc/miniupnpc.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h], [], [have_miniupnpc=no])
 
-  dnl The minimum supported miniUPnPc API version is set to 17. This excludes
-  dnl versions with known vulnerabilities.
   if test "$have_miniupnpc" != "no"; then
+    AC_CHECK_LIB([miniupnpc], [upnpDiscover], [MINIUPNPC_LIBS="$MINIUPNPC_LIBS -lminiupnpc"], [have_miniupnpc=no], [$MINIUPNPC_LIBS])
+
+    dnl The minimum supported miniUPnPc API version is set to 17. This excludes
+    dnl versions with known vulnerabilities.
     AC_MSG_CHECKING([whether miniUPnPc API version is supported])
     AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[
         @%:@include <miniupnpc/miniupnpc.h>
@@ -1460,9 +1455,12 @@ dnl Check for libnatpmp (optional).
 if test "$use_natpmp" != "no"; then
   TEMP_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$CPPFLAGS $NATPMP_CPPFLAGS"
-  AC_CHECK_HEADERS([natpmp.h],
-                   [AC_CHECK_LIB([natpmp], [initnatpmp], [NATPMP_LIBS="$NATPMP_LIBS -lnatpmp"], [have_natpmp=no], [$NATPMP_LIBS])],
-                   [have_natpmp=no])
+  AC_CHECK_HEADERS([natpmp.h], [], [have_natpmp=no])
+
+  if test "$have_natpmp" != "no"; then
+    AC_CHECK_LIB([natpmp], [initnatpmp], [NATPMP_LIBS="$NATPMP_LIBS -lnatpmp"], [have_natpmp=no], [$NATPMP_LIBS])
+  fi
+
   CPPFLAGS="$TEMP_CPPFLAGS"
 fi
 
