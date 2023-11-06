@@ -1075,8 +1075,9 @@ sendtoname ()
   EnsureWalletIsUnlocked(*pwallet);
 
   std::vector<CRecipient> recipients;
+  const CNoDestination dest(data.getAddress ());
   const CAmount amount = AmountFromValue (request.params[1]);
-  recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
+  recipients.push_back ({dest, amount, fSubtractFeeFromAmount});
 
   return SendMoney(*pwallet, coin_control, nullptr, recipients, mapValue, false);
 }
