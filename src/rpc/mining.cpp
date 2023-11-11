@@ -118,7 +118,7 @@ static RPCHelpMan getnetworkhashps()
 {
     return RPCHelpMan{"getnetworkhashps",
                 "\nReturns the estimated network hashes per second based on the last n blocks.\n"
-                "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
+                "Pass in [blocks] to override # of blocks.\n"
                 "Pass in [height] to estimate the network speed at the time when a certain block was found.\n",
                 {
                     {"nblocks", RPCArg::Type::NUM, RPCArg::Default{120}, "The number of blocks, or -1 for blocks since last difficulty change."},

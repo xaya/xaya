@@ -58,6 +58,7 @@ TIME_RANGE_STEP = 600  # ten-minute steps
 TIME_RANGE_MTP = TIME_GENESIS_BLOCK + (HEIGHT - 6) * TIME_RANGE_STEP
 TIME_RANGE_TIP = TIME_GENESIS_BLOCK + (HEIGHT - 1) * TIME_RANGE_STEP
 TIME_RANGE_END = TIME_GENESIS_BLOCK + HEIGHT * TIME_RANGE_STEP
+DIFFICULTY_ADJUSTMENT_INTERVAL = 2016
 
 PREMINE_VALUE = Decimal ('222222222')
 
@@ -416,6 +417,10 @@ class BlockchainTest(BitcoinTestFramework):
         # This should be 2 hashes every 10 minutes or 1/300
         assert abs(hashes_per_second['neoscrypt'] * 300 - 1) < 0.0001
         assert_equal (hashes_per_second['sha256d'], 0)
+
+        # In Xaya, there is continuous difficulty adjustment, so a negative
+        # value (used upstream for "since last difficulty update) is not
+        # supported.
 
     def _test_stopatheight(self):
         self.log.info("Test stopping at height")

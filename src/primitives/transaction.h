@@ -6,12 +6,13 @@
 #ifndef BITCOIN_PRIMITIVES_TRANSACTION_H
 #define BITCOIN_PRIMITIVES_TRANSACTION_H
 
+#include <attributes.h>
 #include <consensus/amount.h>
-#include <prevector.h>
 #include <script/script.h>
 #include <serialize.h>
 #include <streams.h>
 #include <uint256.h>
+#include <util/transaction_identifier.h> // IWYU pragma: export
 
 #include <cstddef>
 #include <cstdint>
@@ -310,11 +311,11 @@ public:
 
 private:
     /** Memory only. */
-    const uint256 hash;
-    const uint256 m_witness_hash;
+    const Txid hash;
+    const Wtxid m_witness_hash;
 
-    uint256 ComputeHash() const;
-    uint256 ComputeWitnessHash() const;
+    Txid ComputeHash() const;
+    Wtxid ComputeWitnessHash() const;
 
 public:
     /** Convert a CMutableTransaction into a CTransaction. */
@@ -335,8 +336,8 @@ public:
         return vin.empty() && vout.empty();
     }
 
-    const uint256& GetHash() const { return hash; }
-    const uint256& GetWitnessHash() const { return m_witness_hash; };
+    const Txid& GetHash() const LIFETIMEBOUND { return hash; }
+    const Wtxid& GetWitnessHash() const LIFETIMEBOUND { return m_witness_hash; };
 
     /**
      * Returns the "bare txid" of this transaction.  This is a hash similar
@@ -415,7 +416,7 @@ struct CMutableTransaction
     /** Compute the hash of this CMutableTransaction. This is computed on the
      * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
      */
-    uint256 GetHash() const;
+    Txid GetHash() const;
 
     bool HasWitness() const
     {
@@ -442,7 +443,7 @@ public:
     static GenTxid Txid(const uint256& hash) { return GenTxid{false, hash}; }
     static GenTxid Wtxid(const uint256& hash) { return GenTxid{true, hash}; }
     bool IsWtxid() const { return m_is_wtxid; }
-    const uint256& GetHash() const { return m_hash; }
+    const uint256& GetHash() const LIFETIMEBOUND { return m_hash; }
     friend bool operator==(const GenTxid& a, const GenTxid& b) { return a.m_is_wtxid == b.m_is_wtxid && a.m_hash == b.m_hash; }
     friend bool operator<(const GenTxid& a, const GenTxid& b) { return std::tie(a.m_is_wtxid, a.m_hash) < std::tie(b.m_is_wtxid, b.m_hash); }
 };

@@ -189,7 +189,7 @@ SendNameOutput (const JSONRPCRequest& request,
           throw JSONRPCError (RPC_TYPE_ERROR, "Invalid amount for burn");
 
         const CScript scr = CScript () << OP_RETURN << bytes;
-        vecSend.push_back ({scr, nAmount, false});
+        vecSend.push_back ({CNoDestination (scr), nAmount, false});
       }
 
   CCoinControl coinControl;
@@ -836,8 +836,9 @@ sendtoname ()
   EnsureWalletIsUnlocked(*pwallet);
 
   std::vector<CRecipient> recipients;
+  const CNoDestination dest(data.getAddress ());
   const CAmount amount = AmountFromValue (request.params[1]);
-  recipients.push_back ({data.getAddress (), amount, fSubtractFeeFromAmount});
+  recipients.push_back ({dest, amount, fSubtractFeeFromAmount});
 
   return SendMoney(*pwallet, coin_control, nullptr, recipients, mapValue, false);
 }
