@@ -15,6 +15,7 @@
 #include <node/context.h>
 #include <primitives/transaction.h>
 #include <psbt.h>
+#include <random.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
 #include <rpc/server.h>

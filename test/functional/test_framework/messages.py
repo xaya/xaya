@@ -30,7 +30,7 @@ import time
 import unittest
 
 from test_framework import powhash
-from test_framework.siphash import siphash256
+from test_framework.crypto.siphash import siphash256
 from test_framework.util import assert_equal
 
 MAX_LOCATOR_SZ = 101
