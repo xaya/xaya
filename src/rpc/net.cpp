@@ -16,6 +16,7 @@
 #include <netbase.h>
 #include <node/context.h>
 #include <policy/settings.h>
+#include <protocol.h>
 #include <rpc/blockchain.h>
 #include <rpc/protocol.h>
 #include <rpc/server_util.h>
@@ -96,6 +97,18 @@ static RPCHelpMan ping()
     return UniValue::VNULL;
 },
     };
+}
+
+/** Returns, given services flags, a list of humanly readable (known) network services */
+static UniValue GetServicesNames(ServiceFlags services)
+{
+    UniValue servicesNames(UniValue::VARR);
+
+    for (const auto& flag : serviceFlagsToStr(services)) {
+        servicesNames.push_back(flag);
+    }
+
+    return servicesNames;
 }
 
 static RPCHelpMan getpeerinfo()
@@ -487,7 +500,7 @@ static RPCHelpMan getaddednodeinfo()
     NodeContext& node = EnsureAnyNodeContext(request.context);
     const CConnman& connman = EnsureConnman(node);
 
-    std::vector<AddedNodeInfo> vInfo = connman.GetAddedNodeInfo();
+    std::vector<AddedNodeInfo> vInfo = connman.GetAddedNodeInfo(/*include_connected=*/true);
 
     if (!request.params[0].isNull()) {
         bool found = false;
