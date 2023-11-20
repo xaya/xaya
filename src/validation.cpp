@@ -356,7 +356,7 @@ void Chainstate::MaybeUpdateMempoolForReorg(
             const std::optional<LockPoints> new_lock_points{CalculateLockPointsAtTip(m_chain.Tip(), view_mempool, tx)};
             if (new_lock_points.has_value() && CheckSequenceLocksAtTip(m_chain.Tip(), *new_lock_points)) {
                 // Now update the mempool entry lockpoints as well.
-                m_mempool->mapTx.modify(it, [&new_lock_points](CTxMemPoolEntry& e) { e.UpdateLockPoints(*new_lock_points); });
+                it->UpdateLockPoints(*new_lock_points);
             } else {
                 return true;
             }
@@ -365,9 +365,7 @@ void Chainstate::MaybeUpdateMempoolForReorg(
         // If the transaction spends any coinbase outputs, it must be mature.
         if (it->GetSpendsCoinbase()) {
             for (const CTxIn& txin : tx.vin) {
-                auto it2 = m_mempool->mapTx.find(txin.prevout.hash);
-                if (it2 != m_mempool->mapTx.end())
-                    continue;
+                if (m_mempool->exists(GenTxid::Txid(txin.prevout.hash))) continue;
                 const Coin& coin{CoinsTip().AccessCoin(txin.prevout)};
                 assert(!coin.IsSpent());
                 const auto mempool_spend_height{m_chain.Tip()->nHeight + 1};
@@ -727,7 +725,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     }
 
     // Transactions smaller than 65 non-witness bytes are not relayed to mitigate CVE-2017-12842.
-    if (::GetSerializeSize(tx, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) < MIN_STANDARD_TX_NONWITNESS_SIZE)
+    if (::GetSerializeSize(TX_NO_WITNESS(tx)) < MIN_STANDARD_TX_NONWITNESS_SIZE)
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "tx-size-small");
 
     // Only accept nLockTime-using transactions that can be mined in the next
@@ -1540,9 +1538,8 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptPackage(const Package& package, 
             // transactions that are already in the mempool, and only call AcceptMultipleTransactions() with
             // the new transactions. This ensures we don't double-count transaction counts and sizes when
             // checking ancestor/descendant limits, or double-count transaction fees for fee-related policy.
-            auto iter = m_pool.GetIter(txid);
-            assert(iter != std::nullopt);
-            results_final.emplace(wtxid, MempoolAcceptResult::MempoolTx(iter.value()->GetTxSize(), iter.value()->GetFee()));
+            const auto& entry{*Assert(m_pool.GetEntry(txid))};
+            results_final.emplace(wtxid, MempoolAcceptResult::MempoolTx(entry.GetTxSize(), entry.GetFee()));
         } else if (m_pool.exists(GenTxid::Txid(txid))) {
             // Transaction with the same non-witness data but different witness (same txid,
             // different wtxid) already exists in the mempool.
@@ -1551,10 +1548,9 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptPackage(const Package& package, 
             // transaction for the mempool one. Note that we are ignoring the validity of the
             // package transaction passed in.
             // TODO: allow witness replacement in packages.
-            auto iter = m_pool.GetIter(txid);
-            assert(iter != std::nullopt);
+            const auto& entry{*Assert(m_pool.GetEntry(txid))};
             // Provide the wtxid of the mempool tx so that the caller can look it up in the mempool.
-            results_final.emplace(wtxid, MempoolAcceptResult::MempoolTxDifferentWitness(iter.value()->GetTx().GetWitnessHash()));
+            results_final.emplace(wtxid, MempoolAcceptResult::MempoolTxDifferentWitness(entry.GetTx().GetWitnessHash()));
         } else {
             // Transaction does not already exist in the mempool.
             // Try submitting the transaction on its own.
@@ -3782,7 +3778,7 @@ bool CheckBlock(const CBlock& block, BlockValidationState& state, const Consensu
     // checks that use witness data may be performed here.
 
     // Size limits
-    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
+    if (block.vtx.empty() || block.vtx.size() * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT || ::GetSerializeSize(TX_NO_WITNESS(block)) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT)
         return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-blk-length", "size limits failed");
 
     // Enforce the temporary DB lock limit.
@@ -4838,7 +4834,7 @@ void ChainstateManager::LoadExternalBlockFile(
                         // This block can be processed immediately; rewind to its start, read and deserialize it.
                         blkdat.SetPos(nBlockPos);
                         pblock = std::make_shared<CBlock>();
-                        blkdat >> *pblock;
+                        blkdat >> TX_WITH_WITNESS(*pblock);
                         nRewind = blkdat.GetPos();
 
                         BlockValidationState state;

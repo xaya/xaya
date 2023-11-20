@@ -303,7 +303,7 @@ bool WalletBatch::EraseLockedUTXO(const COutPoint& output)
 
 bool WalletBatch::WriteQueuedTransaction(const uint256& txid, const CMutableTransaction& tx)
 {
-    return WriteIC(std::make_pair(DBKeys::QUEUED_TX, txid), tx);
+    return WriteIC(std::make_pair(DBKeys::QUEUED_TX, txid), TX_WITH_WITNESS (tx));
 }
 
 bool WalletBatch::EraseQueuedTransaction(const uint256& txid)
@@ -742,7 +742,7 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
         uint256 u256Txid = uint256S(strTxid);
 
         CMutableTransaction pending;
-        value >> pending;
+        value >> TX_WITH_WITNESS (pending);
 
         pwallet->queuedTransactionMap[u256Txid] = pending;
 

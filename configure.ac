@@ -139,8 +139,6 @@ AC_PATH_TOOL([OBJCOPY], [objcopy])
 AC_PATH_PROG([DOXYGEN], [doxygen])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
-AC_ARG_VAR([PYTHONPATH], [Augments the default search path for python module files])
-
 AC_ARG_ENABLE([wallet],
   [AS_HELP_STRING([--disable-wallet],
   [disable wallet (enabled by default)])],
@@ -1002,7 +1000,6 @@ dnl "ad_strip" as the symbol for the entry point.
 if test "$TARGET_OS" = "darwin"; then
   AX_CHECK_LINK_FLAG([-Wl,-dead_strip], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip"], [], [$LDFLAG_WERROR])
   AX_CHECK_LINK_FLAG([-Wl,-dead_strip_dylibs], [CORE_LDFLAGS="$CORE_LDFLAGS -Wl,-dead_strip_dylibs"], [], [$LDFLAG_WERROR])
-  AX_CHECK_LINK_FLAG([-Wl,-bind_at_load], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,-bind_at_load"], [], [$LDFLAG_WERROR])
   AX_CHECK_LINK_FLAG([-Wl,-fixup_chains], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,-fixup_chains"], [], [$LDFLAG_WERROR])
 fi
 
@@ -1967,6 +1964,17 @@ case ${OS} in
    *Windows*)
      sed  's/BUILDDIR="\/\([[a-z]]\)/BUILDDIR="\1:/'  test/config.ini > test/config-2.ini
      mv test/config-2.ini test/config.ini
+   ;;
+esac
+
+dnl An old hack similar to a98356fee to remove hard-coded
+dnl bind_at_load flag from libtool
+case $host in
+  *darwin*)
+     AC_MSG_RESULT([Removing -Wl,bind_at_load from libtool.])
+     sed < libtool > libtool-2 '/bind_at_load/d'
+     mv libtool-2 libtool
+     chmod 755 libtool
    ;;
 esac
 

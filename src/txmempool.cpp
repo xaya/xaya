@@ -412,6 +412,7 @@ CTxMemPool::CTxMemPool(const Options& opts)
       m_max_datacarrier_bytes{opts.max_datacarrier_bytes},
       m_require_standard{opts.require_standard},
       m_full_rbf{opts.full_rbf},
+      m_persist_v1_dat{opts.persist_v1_dat},
       m_limits{opts.limits},
       names{*this}
 {
@@ -483,8 +484,8 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
 
     names.addUnchecked (entry);
 
-    vTxHashes.emplace_back(tx.GetWitnessHash(), newit);
-    newit->vTxHashesIdx = vTxHashes.size() - 1;
+    txns_randomized.emplace_back(newit->GetSharedTx());
+    newit->idx_randomized = txns_randomized.size() - 1;
 
     TRACE3(mempool, added,
         entry.GetTx().GetHash().data(),
@@ -522,14 +523,16 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
 
     RemoveUnbroadcastTx(hash, true /* add logging because unchecked */ );
 
-    if (vTxHashes.size() > 1) {
-        vTxHashes[it->vTxHashesIdx] = std::move(vTxHashes.back());
-        vTxHashes[it->vTxHashesIdx].second->vTxHashesIdx = it->vTxHashesIdx;
-        vTxHashes.pop_back();
-        if (vTxHashes.size() * 2 < vTxHashes.capacity())
-            vTxHashes.shrink_to_fit();
+    if (txns_randomized.size() > 1) {
+        // Update idx_randomized of the to-be-moved entry.
+        Assert(GetEntry(txns_randomized.back()->GetHash()))->idx_randomized = it->idx_randomized;
+        // Remove entry from txns_randomized by replacing it with the back and deleting the back.
+        txns_randomized[it->idx_randomized] = std::move(txns_randomized.back());
+        txns_randomized.pop_back();
+        if (txns_randomized.size() * 2 < txns_randomized.capacity())
+            txns_randomized.shrink_to_fit();
     } else
-        vTxHashes.clear();
+        txns_randomized.clear();
 
     totalTxSize -= it->GetTxSize();
     m_total_fee -= it->GetFee();
@@ -851,6 +854,18 @@ static TxMempoolInfo GetInfo(CTxMemPool::indexed_transaction_set::const_iterator
     return TxMempoolInfo{it->GetSharedTx(), it->GetTime(), it->GetFee(), it->GetTxSize(), it->GetModifiedFee() - it->GetFee()};
 }
 
+std::vector<CTxMemPoolEntryRef> CTxMemPool::entryAll() const
+{
+    AssertLockHeld(cs);
+
+    std::vector<CTxMemPoolEntryRef> ret;
+    ret.reserve(mapTx.size());
+    for (const auto& it : GetSortedDepthAndScore()) {
+        ret.emplace_back(*it);
+    }
+    return ret;
+}
+
 std::vector<TxMempoolInfo> CTxMemPool::infoAll() const
 {
     LOCK(cs);
@@ -863,6 +878,13 @@ std::vector<TxMempoolInfo> CTxMemPool::infoAll() const
     }
 
     return ret;
+}
+
+const CTxMemPoolEntry* CTxMemPool::GetEntry(const Txid& txid) const
+{
+    AssertLockHeld(cs);
+    const auto i = mapTx.find(txid);
+    return i == mapTx.end() ? nullptr : &(*i);
 }
 
 CTransactionRef CTxMemPool::get(const uint256& hash) const
@@ -1048,7 +1070,7 @@ void CCoinsViewMemPool::Reset()
 size_t CTxMemPool::DynamicMemoryUsage() const {
     LOCK(cs);
     // Estimate the overhead of mapTx to be 15 pointers + an allocation, as no exact formula for boost::multi_index_contained is implemented.
-    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 15 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
+    return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 15 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(txns_randomized) + cachedInnerUsage;
 }
 
 void CTxMemPool::RemoveUnbroadcastTx(const uint256& txid, const bool unchecked) {

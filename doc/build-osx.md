@@ -178,7 +178,9 @@ It is required that you have `python` installed.
 
     Configure and build the headless Namecoin Core binaries as well as the GUI (if Qt is found).
 
-## Running
+If `berkeley-db@4` is installed, then legacy wallet support will be built.
+If `sqlite` is installed, then descriptor wallet support will also be built.
+Additionally, this explicitly disables the GUI.
 
 ``` bash
 ./autogen.sh
