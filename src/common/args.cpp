@@ -28,7 +28,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -718,6 +717,13 @@ fs::path ArgsManager::GetConfigFilePath() const
 {
     LOCK(cs_args);
     return *Assert(m_config_path);
+}
+
+void ArgsManager::SetConfigFilePath(fs::path path)
+{
+    LOCK(cs_args);
+    assert(!m_config_path);
+    m_config_path = path;
 }
 
 ChainType ArgsManager::GetChainType() const

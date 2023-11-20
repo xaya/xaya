@@ -84,7 +84,7 @@ private:
     const bool spendsCoinbase;      //!< keep track of transactions that spend a coinbase
     const int64_t sigOpCost;        //!< Total sigop cost
     CAmount m_modified_fee;         //!< Used for determining the priority of the transaction for mining in a block
-    LockPoints lockPoints;          //!< Track the height and time at which tx was final
+    mutable LockPoints lockPoints;  //!< Track the height and time at which tx was final
 
     // Information about descendants of this transaction that are in the
     // mempool; if we remove this transaction we must remove all of these
@@ -166,7 +166,7 @@ public:
     }
 
     // Update the LockPoints after a reorg
-    void UpdateLockPoints(const LockPoints& lp)
+    void UpdateLockPoints(const LockPoints& lp) const
     {
         lockPoints = lp;
     }
@@ -203,8 +203,10 @@ public:
         return nameOp.getOpName();
     }
 
-    mutable size_t vTxHashesIdx; //!< Index in mempool's vTxHashes
+    mutable size_t idx_randomized; //!< Index in mempool's txns_randomized
     mutable Epoch::Marker m_epoch_marker; //!< epoch when last touched, useful for graph algorithms
 };
+
+using CTxMemPoolEntryRef = CTxMemPoolEntry::CTxMemPoolEntryRef;
 
 #endif // BITCOIN_KERNEL_MEMPOOL_ENTRY_H

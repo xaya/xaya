@@ -16,7 +16,7 @@
 
 uint256 CPureBlockHeader::GetHash() const
 {
-    return (CHashWriter{PROTOCOL_VERSION} << *this).GetHash();
+    return (HashWriter{} << *this).GetHash();
 }
 
 namespace

@@ -738,7 +738,7 @@ listqueuedtransactions ()
     const uint256& txid = i.first;
     const CMutableTransaction& tx = i.second;
 
-    const std::string txStr = EncodeHexTx(CTransaction(tx), RPCSerializationFlags());
+    const std::string txStr = EncodeHexTx(CTransaction(tx));
 
     UniValue entry(UniValue::VOBJ);
     entry.pushKV("transaction", txStr);

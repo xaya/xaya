@@ -2324,9 +2324,9 @@ void PeerManagerImpl::ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& 
     }
     if (pblock) {
         if (inv.IsMsgBlk()) {
-            m_connman.PushMessage(&pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::BLOCK, *pblock));
+            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::BLOCK, TX_NO_WITNESS(*pblock)));
         } else if (inv.IsMsgWitnessBlk()) {
-            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::BLOCK, *pblock));
+            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::BLOCK, TX_WITH_WITNESS(*pblock)));
         } else if (inv.IsMsgFilteredBlk()) {
             bool sendMerkleBlock = false;
             CMerkleBlock merkleBlock;
@@ -2347,7 +2347,7 @@ void PeerManagerImpl::ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& 
                 // however we MUST always provide at least what the remote peer needs
                 typedef std::pair<unsigned int, uint256> PairType;
                 for (PairType& pair : merkleBlock.vMatchedTxn)
-                    m_connman.PushMessage(&pfrom, msgMaker.Make(SERIALIZE_TRANSACTION_NO_WITNESS, NetMsgType::TX, *pblock->vtx[pair.first]));
+                    m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::TX, TX_NO_WITNESS(*pblock->vtx[pair.first])));
             }
             // else
             // no response
@@ -2364,7 +2364,7 @@ void PeerManagerImpl::ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& 
                     m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::CMPCTBLOCK, cmpctblock));
                 }
             } else {
-                m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::BLOCK, *pblock));
+                m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::BLOCK, TX_WITH_WITNESS(*pblock)));
             }
         }
     }
@@ -2434,8 +2434,8 @@ void PeerManagerImpl::ProcessGetData(CNode& pfrom, Peer& peer, const std::atomic
         CTransactionRef tx = FindTxForGetData(*tx_relay, ToGenTxid(inv));
         if (tx) {
             // WTX and WITNESS_TX imply we serialize with witness
-            int nSendFlags = (inv.IsMsgTx() ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
-            m_connman.PushMessage(&pfrom, msgMaker.Make(nSendFlags, NetMsgType::TX, *tx));
+            const auto maybe_with_witness = (inv.IsMsgTx() ? TX_NO_WITNESS : TX_WITH_WITNESS);
+            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::TX, maybe_with_witness(*tx)));
             m_mempool.RemoveUnbroadcastTx(tx->GetHash());
         } else {
             vNotFound.push_back(inv);
@@ -2465,7 +2465,7 @@ void PeerManagerImpl::ProcessGetData(CNode& pfrom, Peer& peer, const std::atomic
         // of transactions relevant to them, without having to download the
         // entire memory pool.
         // Also, other nodes can use these messages to automatically request a
-        // transaction from some other peer that annnounced it, and stop
+        // transaction from some other peer that announced it, and stop
         // waiting for us to respond.
         // In normal operation, we often send NOTFOUND messages for parents of
         // transactions that we relay; if a peer is missing a parent, they may
@@ -2592,7 +2592,7 @@ bool IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& heade
 
     size_t nSize = 0;
     for (const auto& header : headers) {
-        nSize += GetSerializeSize(header, PROTOCOL_VERSION);
+        nSize += GetSerializeSize(header);
     }
 
     return nSize >= THRESHOLD_HEADERS_SIZE;
@@ -2922,7 +2922,7 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
 
     size_t nSize = 0;
     for (const auto& header : headers) {
-        nSize += GetSerializeSize(header, PROTOCOL_VERSION);
+        nSize += GetSerializeSize(header);
         if (pfrom.nVersion >= SIZE_HEADERS_LIMIT_VERSION
               && nSize > MAX_HEADERS_SIZE) {
             LOCK(cs_main);
@@ -3644,7 +3644,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             return;
         }
 
-        // Log succesful connections unconditionally for outbound, but not for inbound as those
+        // Log successful connections unconditionally for outbound, but not for inbound as those
         // can be triggered by an attacker at high rate.
         if (!pfrom.IsInboundConn() || LogAcceptCategory(BCLog::NET, BCLog::Level::Debug)) {
             const auto mapped_as{m_connman.GetMappedAS(pfrom.addr)};
@@ -4169,7 +4169,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             LogPrint(BCLog::NET, "Ignoring getheaders from peer=%d because active chain has too little work; sending empty response\n", pfrom.GetId());
             // Just respond with an empty headers message, to tell the peer to
             // go away but not treat us as unresponsive.
-            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::HEADERS, std::vector<CBlock>()));
+            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::HEADERS, std::vector<CBlockHeader>()));
             return;
         }
 
@@ -4215,7 +4215,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
               }
 
             ++nCount;
-            nSize += GetSerializeSize(header, PROTOCOL_VERSION);
+            nSize += GetSerializeSize(header);
             vHeaders.emplace_back(header);
             if (nCount >= MAX_HEADERS_RESULTS
                   || pindex->GetBlockHash() == hashStop)
@@ -4235,9 +4235,8 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             LogPrintf("ERROR: not pushing 'headers', too large\n");
         else
         {
-            LogPrint(BCLog::NET, "pushing %u headers, %u bytes\n", nCount, nSize);
-            // pindex can be nullptr either if we sent ::ChainActive().Tip() OR
-            // if our peer has ::ChainActive().Tip() (and thus we are sending an empty
+            // pindex can be nullptr either if we sent m_chainman.ActiveChain().Tip() OR
+            // if our peer has m_chainman.ActiveChain().Tip() (and thus we are sending an empty
             // headers message). In both cases it's safe to update
             // pindexBestHeaderSent to be our tip.
             //
@@ -4249,7 +4248,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             // will re-announce the new block via headers (or compact blocks again)
             // in the SendMessages logic.
             nodestate->pindexBestHeaderSent = pindex ? pindex : m_chainman.ActiveChain().Tip();
-            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::HEADERS, vHeaders));
+            m_connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::HEADERS, TX_WITH_WITNESS(vHeaders)));
         }
 
         return;
@@ -4268,7 +4267,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         if (m_chainman.IsInitialBlockDownload()) return;
 
         CTransactionRef ptx;
-        vRecv >> ptx;
+        vRecv >> TX_WITH_WITNESS(ptx);
         const CTransaction& tx = *ptx;
 
         const uint256& txid = ptx->GetHash();
@@ -4769,7 +4768,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         }
 
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
-        vRecv >> *pblock;
+        vRecv >> TX_WITH_WITNESS(*pblock);
 
         LogPrint(BCLog::NET, "received block %s peer=%d\n", pblock->GetHash().ToString(), pfrom.GetId());
 
@@ -5780,7 +5779,7 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
                         LogPrint(BCLog::NET, "%s: sending header %s to peer=%d\n", __func__,
                                 vHeaders.front().GetHash().ToString(), pto->GetId());
                     }
-                    m_connman.PushMessage(pto, msgMaker.Make(NetMsgType::HEADERS, vHeaders));
+                    m_connman.PushMessage(pto, msgMaker.Make(NetMsgType::HEADERS, TX_WITH_WITNESS(vHeaders)));
                     state.pindexBestHeaderSent = pBestIndex;
                 } else
                     fRevertToInv = true;
