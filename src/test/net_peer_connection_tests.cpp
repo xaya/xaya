@@ -119,11 +119,21 @@ BOOST_AUTO_TEST_CASE(test_addnode_getaddednodeinfo_and_connection_detection)
 
     BOOST_TEST_MESSAGE("\nCall AddNode() with 2 addrs resolving to existing localhost addnode entry; neither should be added");
     BOOST_CHECK(!connman->AddNode({/*m_added_node=*/"127.0.0.1", /*m_use_v2transport=*/true}));
+    // OpenBSD doesn't support the IPv4 shorthand notation with omitted zero-bytes.
+#if !defined(__OpenBSD__)
     BOOST_CHECK(!connman->AddNode({/*m_added_node=*/"127.1", /*m_use_v2transport=*/true}));
+#endif
 
     BOOST_TEST_MESSAGE("\nExpect GetAddedNodeInfo to return expected number of peers with `include_connected` true/false");
     BOOST_CHECK_EQUAL(connman->GetAddedNodeInfo(/*include_connected=*/true).size(), nodes.size());
     BOOST_CHECK(connman->GetAddedNodeInfo(/*include_connected=*/false).empty());
+
+    // Test AddedNodesContain()
+    for (auto node : connman->TestNodes()) {
+        BOOST_CHECK(connman->AddedNodesContain(node->addr));
+    }
+    AddPeer(id, nodes, *peerman, *connman, ConnectionType::OUTBOUND_FULL_RELAY);
+    BOOST_CHECK(!connman->AddedNodesContain(nodes.back()->addr));
 
     BOOST_TEST_MESSAGE("\nPrint GetAddedNodeInfo contents:");
     for (const auto& info : connman->GetAddedNodeInfo(/*include_connected=*/true)) {

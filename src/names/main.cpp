@@ -302,7 +302,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
      outputs should be marked as unspendable in this case.  Otherwise,
      we get an inconsistency between the UTXO set and the name database.  */
   CChainParams::BugType type;
-  const uint256 txHash = tx.GetHash ();
+  const Txid txHash = tx.GetHash ();
   if (Params ().IsHistoricBug (txHash, nHeight, type)
       && type != CChainParams::BUG_FULLY_APPLY)
     {

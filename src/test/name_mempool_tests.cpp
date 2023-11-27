@@ -337,7 +337,7 @@ BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
 
   const CNameScript nameOp(UpdateScript (ADDR, "upd", "o"));
   CNameData data;
-  data.fromScript (100, COutPoint (uint256 (), 0), nameOp);
+  data.fromScript (100, COutPoint (Txid (), 0), nameOp);
   view.SetName (Name ("upd"), data, false);
 
   mempool.checkNames (view, 10);

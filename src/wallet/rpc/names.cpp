@@ -477,7 +477,7 @@ namespace
  * @return True if the output could be found.
  */
 bool
-getNamePrevout (Chainstate& chainState, const uint256& txid,
+getNamePrevout (Chainstate& chainState, const Txid& txid,
                 CTxOut& txOut, CTxIn& txIn)
 {
   AssertLockHeld (cs_main);
@@ -599,10 +599,11 @@ name_firstupdate ()
                             "this name is already active");
     }
 
-  uint256 prevTxid = uint256::ZERO; // if it can't find a txid, force an error
+  Txid prevTxid;
+  prevTxid.SetNull (); // if it can't find a txid, force an error
   if (fixedTxid)
     {
-      prevTxid = ParseHashV (request.params[2], "txid");
+      prevTxid = TxidFromString (request.params[2].get_str ());
     }
   else
     {
@@ -659,7 +660,7 @@ name_firstupdate ()
         }
     }
 
-  if (prevTxid == uint256::ZERO)
+  if (prevTxid.IsNull ())
     throw JSONRPCError (RPC_TRANSACTION_ERROR, "scan for previous txid failed");
 
   CTxOut prevOut;

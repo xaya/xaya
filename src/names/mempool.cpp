@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,7 +36,7 @@ namespace
  * there is any.  The txid must be for an entry in the mempool.
  */
 COutPoint
-getNameOutput (const CTxMemPool& pool, const uint256& txid)
+getNameOutput (const CTxMemPool& pool, const Txid& txid)
 {
   AssertLockHeld (pool.cs);
 
@@ -69,8 +69,8 @@ CNameMemPool::lastNameOutput (const valtype& name) const
          than outpoint) is enough, as those transactions must be in a "chain"
          anyway.  */
 
-      const std::set<uint256>& candidateTxids = itUpd->second;
-      std::set<uint256> spentTxids;
+      const std::set<Txid>& candidateTxids = itUpd->second;
+      std::set<Txid> spentTxids;
 
       for (const auto& txid : candidateTxids)
         {
@@ -106,7 +106,7 @@ CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
 {
   AssertLockHeld (pool.cs);
 
-  const uint256& txHash = entry.GetTx ().GetHash ();
+  const Txid& txHash = entry.GetTx ().GetHash ();
   if (entry.isNameNew ())
     {
       const valtype& newHash = entry.getNameNewHash ();
@@ -130,7 +130,7 @@ CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
       const auto mit = updates.find (name);
 
       if (mit == updates.end ())
-        updates.emplace (name, std::set<uint256> ({txHash}));
+        updates.emplace (name, std::set<Txid> ({txHash}));
       else
         mit->second.insert (txHash);
     }
@@ -223,7 +223,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 
       /* We need to make sure that we keep our copy of txids even when the
          transactions are removed one by one.  */
-      const std::set<uint256> txidsCopy = mit->second;
+      const std::set<Txid> txidsCopy = mit->second;
 
       for (const auto& txid : txidsCopy)
         {
@@ -247,7 +247,7 @@ CNameMemPool::check (const CCoinsViewCache& tip,
   std::map<valtype, unsigned> nameUpdates;
   for (const auto& entry : pool.mapTx)
     {
-      const uint256 txHash = entry.GetTx ().GetHash ();
+      const Txid txHash = entry.GetTx ().GetHash ();
       if (entry.isNameNew ())
         {
           const valtype& newHash = entry.getNameNewHash ();
@@ -317,7 +317,7 @@ CNameMemPool::checkTx (const CTransaction& tx) const
         case OP_NAME_NEW:
           {
             const valtype& newHash = nameOp.getOpHash ();
-            std::map<valtype, uint256>::const_iterator mi;
+            std::map<valtype, Txid>::const_iterator mi;
             mi = mapNameNews.find (newHash);
             if (mi != mapNameNews.end () && mi->second != tx.GetHash ())
               return false;
