@@ -152,8 +152,8 @@ BOOST_AUTO_TEST_CASE (name_database)
   CNameData dataHeight1, dataHeight2, data2;
   CScript updateScript = CNameScript::buildNameUpdate (addr, name1, value);
   const CNameScript nameOp(updateScript);
-  dataHeight1.fromScript (height1, COutPoint (uint256 (), 0), nameOp);
-  dataHeight2.fromScript (height2, COutPoint (uint256 (), 0), nameOp);
+  dataHeight1.fromScript (height1, COutPoint (Txid (), 0), nameOp);
+  dataHeight2.fromScript (height2, COutPoint (Txid (), 0), nameOp);
 
   LOCK (cs_main);
   CCoinsViewCache& view = m_node.chainman->ActiveChainstate ().CoinsTip ();
@@ -332,7 +332,7 @@ NameIterationTester::getNextData ()
   const CNameScript nameOp(updateScript);
 
   CNameData res;
-  res.fromScript (++counter, COutPoint (uint256 (), 0), nameOp);
+  res.fromScript (++counter, COutPoint (Txid (), 0), nameOp);
 
   return res;
 }

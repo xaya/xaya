@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +7,6 @@
 
 #include <names/common.h>
 #include <primitives/transaction.h>
-#include <uint256.h>
 
 #include <map>
 #include <memory>
@@ -46,7 +45,7 @@ private:
    * For any given name, at most one registering transaction is allowed in the
    * mempool (as all others would conflict with it).
    */
-  std::map<valtype, uint256> mapNameRegs;
+  std::map<valtype, Txid> mapNameRegs;
 
   /**
    * Keep track of all transactions that update a given name.  For each name,
@@ -57,7 +56,7 @@ private:
    * We also use this to determine the length of chains of pending name_update
    * operations.
    */
-  std::map<valtype, std::set<uint256>> updates;
+  std::map<valtype, std::set<Txid>> updates;
 
 public:
 

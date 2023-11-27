@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2023 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,7 +36,7 @@ namespace
  * there is any.  The txid must be for an entry in the mempool.
  */
 COutPoint
-getNameOutput (const CTxMemPool& pool, const uint256& txid)
+getNameOutput (const CTxMemPool& pool, const Txid& txid)
 {
   AssertLockHeld (pool.cs);
 
@@ -69,8 +69,8 @@ CNameMemPool::lastNameOutput (const valtype& name) const
          than outpoint) is enough, as those transactions must be in a "chain"
          anyway.  */
 
-      const std::set<uint256>& candidateTxids = itUpd->second;
-      std::set<uint256> spentTxids;
+      const std::set<Txid>& candidateTxids = itUpd->second;
+      std::set<Txid> spentTxids;
 
       for (const auto& txid : candidateTxids)
         {
@@ -105,7 +105,7 @@ void
 CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
 {
   AssertLockHeld (pool.cs);
-  const uint256& txHash = entry.GetTx ().GetHash ();
+  const Txid& txHash = entry.GetTx ().GetHash ();
 
   if (entry.isNameRegistration ())
     {
@@ -120,7 +120,7 @@ CNameMemPool::addUnchecked (const CTxMemPoolEntry& entry)
       const auto mit = updates.find (name);
 
       if (mit == updates.end ())
-        updates.emplace (name, std::set<uint256> ({txHash}));
+        updates.emplace (name, std::set<Txid> ({txHash}));
       else
         mit->second.insert (txHash);
     }
@@ -183,7 +183,7 @@ CNameMemPool::check (const CCoinsViewCache& tip) const
   std::map<valtype, unsigned> nameUpdates;
   for (const auto& entry : pool.mapTx)
     {
-      const uint256 txHash = entry.GetTx ().GetHash ();
+      const Txid txHash = entry.GetTx ().GetHash ();
       if (entry.isNameRegistration ())
         {
           const valtype& name = entry.getName ();
