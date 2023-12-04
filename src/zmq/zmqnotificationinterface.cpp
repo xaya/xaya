@@ -6,6 +6,7 @@
 
 #include <common/args.h>
 #include <kernel/chain.h>
+#include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -169,10 +170,12 @@ void CZMQNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, co
     });
 }
 
-void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx, uint64_t mempool_sequence)
+void CZMQNotificationInterface::TransactionAddedToMempool(const NewMempoolTransactionInfo& ptx, uint64_t mempool_sequence)
 {
-    TryForEachAndRemoveFailed(notifiers, [&ptx, mempool_sequence](CZMQAbstractNotifier* notifier) {
-        return notifier->NotifyTransaction(*ptx) && notifier->NotifyTransactionAcceptance(*ptx, mempool_sequence);
+    const CTransaction& tx = *(ptx.info.m_tx);
+
+    TryForEachAndRemoveFailed(notifiers, [&tx, mempool_sequence](CZMQAbstractNotifier* notifier) {
+        return notifier->NotifyTransaction(tx) && notifier->NotifyTransactionAcceptance(tx, mempool_sequence);
     });
 }
 

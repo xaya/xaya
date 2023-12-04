@@ -17,6 +17,7 @@
 class CBlock;
 class CBlockIndex;
 class CZMQAbstractNotifier;
+struct NewMempoolTransactionInfo;
 class ZMQGameBlocksNotifier;
 
 class CZMQNotificationInterface final : public CValidationInterface
@@ -41,7 +42,7 @@ protected:
     void Shutdown();
 
     // CValidationInterface
-    void TransactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) override;
+    void TransactionAddedToMempool(const NewMempoolTransactionInfo& tx, uint64_t mempool_sequence) override;
     void TransactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) override;
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected) override;

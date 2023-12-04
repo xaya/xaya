@@ -199,7 +199,7 @@ PowDataToJSON (const PowData& pow, const bool verbose, Chainstate& active_chains
     result.pushKV ("auxpow", AuxpowToJSON (pow.getAuxpow (), verbose, active_chainstate));
   else
     {
-      CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+      DataStream ss;
       ss << pow.getFakeHeader ();
       result.pushKV ("fakeheader", HexStr (ss));
     }
@@ -301,8 +301,8 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow, const bool verbose, Chainstate& act
         result.pushKV("parentblock", blockheaderToJSON(auxpow.parentBlock));
     else
     {
-        CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
-        ssParent << auxpow.parentBlock;
+        DataStream ssParent;
+        ssParent << RPCTxSerParams(auxpow.parentBlock);
         const std::string strHex = HexStr(ssParent);
         result.pushKV("parentblock", strHex);
     }

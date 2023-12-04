@@ -204,7 +204,7 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
      fake header of the PoW data.  Then perform the byte-order swapping and
      add zero-padding up to 128 bytes.  */
   std::vector<unsigned char> data;
-  CVectorWriter writer(PROTOCOL_VERSION, data, 0);
+  VectorWriter writer(data, 0);
   writer << fakeHeader;
   const size_t len = data.size ();
   data.resize (128, 0);
@@ -242,7 +242,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   }
 
   const std::vector<unsigned char> vchAuxPow = ParseHex (auxpowHex);
-  CDataStream ss(vchAuxPow, SER_NETWORK, PROTOCOL_VERSION);
+  DataStream ss(vchAuxPow);
   std::unique_ptr<CAuxPow> pow(new CAuxPow ());
   ss >> *pow;
 
@@ -268,7 +268,7 @@ AuxpowMiner::submitWork (const JSONRPCRequest& request,
   vchData.resize (80);
   SwapGetWorkEndianness (vchData);
 
-  CDataStream ss(vchData, SER_NETWORK, PROTOCOL_VERSION);
+  DataStream ss(vchData);
   std::unique_ptr<CPureBlockHeader> fakeHeader(new CPureBlockHeader ());
   ss >> *fakeHeader;
 

@@ -73,12 +73,12 @@ namespace
 PowData
 CheckPowRoundtrip (const std::string& hex)
 {
-  CDataStream stream(ParseHex (hex), SER_NETWORK, PROTOCOL_VERSION);
+  DataStream stream(ParseHex (hex));
   PowData powData;
   stream >> powData;
 
   std::vector<unsigned char> serialised;
-  CVectorWriter writer(PROTOCOL_VERSION, serialised, 0);
+  VectorWriter writer(serialised, 0);
   writer << powData;
 
   BOOST_CHECK_EQUAL (HexStr (serialised), hex);

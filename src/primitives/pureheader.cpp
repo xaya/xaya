@@ -26,7 +26,7 @@ uint256
 GetNeoscryptHash (const CPureBlockHeader& hdr)
 {
   std::vector<unsigned char> data;
-  CVectorWriter writer(PROTOCOL_VERSION, data, 0);
+  VectorWriter writer(data, 0);
   writer << hdr;
 
   /* We swap the byte order similar to what getwork does, as that seems to be

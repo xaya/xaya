@@ -54,14 +54,31 @@ using node::UpdateTime;
 
 /**
  * Return average network hashes per second based on the last 'lookup' blocks,
- * or from the last difficulty change if 'lookup' is nonpositive.
- * If 'height' is nonnegative, compute the estimate at the time when a given block was found.
+ * or from the last difficulty change if 'lookup' is -1.
+ * If 'height' is -1, compute the estimate from current chain tip.
+ * If 'height' is a valid block height, compute the estimate at the time when a given block was found.
  */
 static UniValue GetNetworkHashPS(int lookup, int height, const CChain& active_chain) {
+    if (lookup < -1 || lookup == 0) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid nblocks. Must be a positive number or -1.");
+    }
+
+    if (height < -1 || height > active_chain.Height()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block does not exist at specified height");
+    }
+
     const CBlockIndex* pb = active_chain.Tip();
 
-    if (height >= 0 && height < active_chain.Height()) {
+    if (height >= 0) {
         pb = active_chain[height];
+    }
+
+    if (pb == nullptr || !pb->nHeight)
+    {
+        UniValue result(UniValue::VOBJ);
+        result.pushKV ("neoscrypt", 0);
+        result.pushKV ("sha256d", 0);
+        return result;
     }
 
     // If lookup is larger than chain, then set it to chain length.
@@ -121,7 +138,7 @@ static RPCHelpMan getnetworkhashps()
                 "Pass in [blocks] to override # of blocks.\n"
                 "Pass in [height] to estimate the network speed at the time when a certain block was found.\n",
                 {
-                    {"nblocks", RPCArg::Type::NUM, RPCArg::Default{120}, "The number of blocks, or -1 for blocks since last difficulty change."},
+                    {"nblocks", RPCArg::Type::NUM, RPCArg::Default{120}, "The number of previous blocks to calculate estimate from, or -1 for blocks since last difficulty change."},
                     {"height", RPCArg::Type::NUM, RPCArg::Default{-1}, "To estimate at the time of the given height."},
                 },
                 RPCResult{RPCResult::Type::OBJ, "", "",
