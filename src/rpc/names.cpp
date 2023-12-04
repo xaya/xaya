@@ -1086,7 +1086,7 @@ namepsbt ()
   PerformNameRawtx (request.params[1].getInt<int> (),
                     request.params[2].get_obj (), *psbtx.tx, result);
 
-  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  DataStream ssTx;
   ssTx << psbtx;
   result.pushKV ("psbt", EncodeBase64 (MakeUCharSpan (ssTx)));
 

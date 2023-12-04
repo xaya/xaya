@@ -261,8 +261,8 @@ UniValue AuxpowToJSON(const CAuxPow& auxpow, const bool verbose, Chainstate& act
         result.pushKV("parentblock", blockheaderToJSON(auxpow.parentBlock));
     else
     {
-        CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
-        ssParent << auxpow.parentBlock;
+        DataStream ssParent;
+        ssParent << RPCTxSerParams(auxpow.parentBlock);
         const std::string strHex = HexStr(ssParent);
         result.pushKV("parentblock", strHex);
     }
