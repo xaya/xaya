@@ -529,7 +529,8 @@ BOOST_AUTO_TEST_CASE (is_name_valid)
   BOOST_CHECK (IsNameValid (
       DecodeName ("foo/bar", NameEncoding::ASCII), state));
   BOOST_CHECK (IsNameValid (
-      DecodeName (u8"foo/äöü+/2 5", NameEncoding::UTF8), state));
+      DecodeName (reinterpret_cast<const char*> (u8"foo/äöü+/2 5"),
+                  NameEncoding::UTF8), state));
 
   /* Invalid due to namespace rule.  */
   BOOST_CHECK (!IsNameValid (DecodeName ("", NameEncoding::ASCII), state));
@@ -562,14 +563,14 @@ BOOST_AUTO_TEST_CASE (is_value_valid)
 
   /* Valid JSON values, including some UTF-8.  */
   BOOST_CHECK (IsValueValid (DecodeName ("{}", NameEncoding::ASCII), state));
-  BOOST_CHECK (IsValueValid (DecodeName (u8R"(
+  BOOST_CHECK (IsValueValid (DecodeName (reinterpret_cast<const char*> (u8R"(
     {
       "text": "äöü",
       "array": [1, 2, 3],
       "flag": true,
       "pi": 3.1415927
     }
-  )", NameEncoding::UTF8), state));
+  )"), NameEncoding::UTF8), state));
 
   /* Valid JSON with duplicate keys.  */
   BOOST_CHECK (IsValueValid (DecodeName (R"(
@@ -865,7 +866,7 @@ BOOST_FIXTURE_TEST_CASE (encoding_ascii, EncodingTestSetup)
   InvalidString ("a\tx");
   InvalidString ("a\x80x");
   InvalidString (std::string ({'a', 0, 'x'}));
-  InvalidString (u8"ä");
+  InvalidString (reinterpret_cast<const char*> (u8"ä"));
 
   InvalidData ({'a', 0, 'x'});
   InvalidData ({'a', 0x19, 'x'});
@@ -877,10 +878,12 @@ BOOST_FIXTURE_TEST_CASE (encoding_utf8, EncodingTestSetup)
   encoding = NameEncoding::UTF8;
 
   valtype expected({0x20, 'a', 'b', 'c', '\t', '4', '2', 0x00, 0x7f});
-  const std::string utf8Str = u8"äöü";
+  const std::string utf8Str(reinterpret_cast<const char*> (u8"äöü"));
   BOOST_CHECK_EQUAL (utf8Str.size (), 6);
   expected.insert (expected.end (), utf8Str.begin (), utf8Str.end ());
-  ValidRoundtrip (" abc\t42" + std::string ({0}) + u8"\x7fäöü", expected);
+  ValidRoundtrip (" abc\t42" + std::string ({0})
+                    + reinterpret_cast<const char*> (u8"\x7fäöü"),
+                  expected);
   ValidRoundtrip ("", {});
 
   InvalidString ("a\x80x");

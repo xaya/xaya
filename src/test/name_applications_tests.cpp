@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( namespace_detection )
     const valtype gameValid = DecodeName ("g/wikileaks", NameEncoding::ASCII);
     BOOST_CHECK(NamespaceFromName(gameValid) == NameNamespace::Game);
 
-    const valtype utf8Valid = DecodeName (u8"p/äöü", NameEncoding::UTF8);
+    const valtype utf8Valid = DecodeName (reinterpret_cast<const char*> (u8"p/äöü"), NameEncoding::UTF8);
     BOOST_CHECK(NamespaceFromName(utf8Valid) == NameNamespace::Player);
 }
 
