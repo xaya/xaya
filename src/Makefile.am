@@ -274,7 +274,6 @@ BITCOIN_CORE_H = \
   script/sign.h \
   script/signingprovider.h \
   script/solver.h \
-  shutdown.h \
   signet.h \
   streams.h \
   support/allocators/pool.h \
@@ -307,7 +306,6 @@ BITCOIN_CORE_H = \
   util/fees.h \
   util/fs.h \
   util/fs_helpers.h \
-  util/getuniquepath.h \
   util/golombrice.h \
   util/hash_type.h \
   util/hasher.h \
@@ -463,7 +461,6 @@ libbitcoin_node_a_SOURCES = \
   rpc/signmessage.cpp \
   rpc/txoutproof.cpp \
   script/sigcache.cpp \
-  shutdown.cpp \
   signet.cpp \
   timedata.cpp \
   torcontrol.cpp \
@@ -749,7 +746,6 @@ libbitcoin_util_a_SOURCES = \
   util/fees.cpp \
   util/fs.cpp \
   util/fs_helpers.cpp \
-  util/getuniquepath.cpp \
   util/hasher.cpp \
   util/sock.cpp \
   util/syserror.cpp \
@@ -989,7 +985,6 @@ libbitcoinkernel_la_SOURCES = \
   util/exception.cpp \
   util/fs.cpp \
   util/fs_helpers.cpp \
-  util/getuniquepath.cpp \
   util/hasher.cpp \
   util/moneystr.cpp \
   util/rbf.cpp \
