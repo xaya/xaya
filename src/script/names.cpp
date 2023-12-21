@@ -55,6 +55,24 @@ CNameScript::CNameScript (const CScript& script)
 }
 
 CScript
+CNameScript::GetPrefix () const
+{
+  switch (op)
+    {
+    case OP_NAME_REGISTER:
+      return CScript () << OP_NAME_REGISTER
+                        << getOpName () << getOpValue ()
+                        << OP_2DROP << OP_DROP;
+    case OP_NAME_UPDATE:
+      return CScript () << OP_NAME_UPDATE
+                        << getOpName () << getOpValue ()
+                        << OP_2DROP << OP_DROP;
+    default:
+      return CScript ();
+    }
+}
+
+CScript
 CNameScript::AddNamePrefix (const CScript& addr, const CScript& prefix)
 {
   CScript res = prefix;
@@ -66,18 +84,20 @@ CScript
 CNameScript::buildNameRegister (const CScript& addr, const valtype& name,
                                 const valtype& value)
 {
-  CScript prefix;
-  prefix << OP_NAME_REGISTER << name << value << OP_2DROP << OP_DROP;
+  CNameScript op;
+  op.op = OP_NAME_REGISTER;
+  op.args = {name, value};
 
-  return AddNamePrefix (addr, prefix);
+  return AddNamePrefix (addr, op.GetPrefix ());
 }
 
 CScript
 CNameScript::buildNameUpdate (const CScript& addr, const valtype& name,
                               const valtype& value)
 {
-  CScript prefix;
-  prefix << OP_NAME_UPDATE << name << value << OP_2DROP << OP_DROP;
+  CNameScript op;
+  op.op = OP_NAME_UPDATE;
+  op.args = {name, value};
 
-  return AddNamePrefix (addr, prefix);
+  return AddNamePrefix (addr, op.GetPrefix ());
 }

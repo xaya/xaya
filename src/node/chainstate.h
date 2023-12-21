@@ -33,7 +33,6 @@ struct ChainstateLoadOptions {
     bool nameHistory{false};
     int64_t check_blocks{DEFAULT_CHECKBLOCKS};
     int64_t check_level{DEFAULT_CHECKLEVEL};
-    std::function<bool()> check_interrupt;
     std::function<void()> coins_error_cb;
 };
 

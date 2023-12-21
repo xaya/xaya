@@ -307,6 +307,10 @@ EXTRA_DIST += \
     test/util/data/txcreatesignsegwit1.hex \
     test/util/data/txcreatesign.hex \
     test/util/data/txcreatesign.json \
+    test/util/data/txreplace1.hex \
+    test/util/data/txreplacenoinputs.hex \
+    test/util/data/txreplaceomittedn.hex \
+    test/util/data/txreplacesingleinput.hex \
     test/util/rpcauth-test.py
 
 CLEANFILES = $(OSX_ZIP) $(BITCOIN_WIN_INSTALLER)

@@ -1082,6 +1082,9 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const 
         wtx.m_it_wtxOrdered = wtxOrdered.insert(std::make_pair(wtx.nOrderPos, &wtx));
         wtx.nTimeSmart = ComputeTimeSmart(wtx, rescanning_old_block);
         AddToSpends(wtx, &batch);
+
+        // Update birth time when tx time is older than it.
+        MaybeUpdateBirthTime(wtx.GetTxTime());
     }
 
     if (!fInsertedNew)
@@ -1201,6 +1204,10 @@ bool CWallet::LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx
             }
         }
     }
+
+    // Update birth time when tx time is older than it.
+    MaybeUpdateBirthTime(wtx.GetTxTime());
+
     return true;
 }
 
@@ -1793,11 +1800,11 @@ bool CWallet::ImportScriptPubKeys(const std::string& label, const std::set<CScri
     return true;
 }
 
-void CWallet::FirstKeyTimeChanged(const ScriptPubKeyMan* spkm, int64_t new_birth_time)
+void CWallet::MaybeUpdateBirthTime(int64_t time)
 {
     int64_t birthtime = m_birth_time.load();
-    if (new_birth_time < birthtime) {
-        m_birth_time = new_birth_time;
+    if (time < birthtime) {
+        m_birth_time = time;
     }
 }
 
@@ -2338,6 +2345,8 @@ DBErrors CWallet::LoadWallet()
 {
     LOCK(cs_wallet);
 
+    Assert(m_spk_managers.empty());
+    Assert(m_wallet_flags == 0);
     DBErrors nLoadWalletRet = WalletBatch(GetDatabase()).LoadWallet(this);
     if (nLoadWalletRet == DBErrors::NEED_REWRITE)
     {
@@ -3133,7 +3142,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
         int64_t time = spk_man->GetTimeFirstKey();
         if (!time_first_key || time < *time_first_key) time_first_key = time;
     }
-    if (time_first_key) walletInstance->m_birth_time = *time_first_key;
+    if (time_first_key) walletInstance->MaybeUpdateBirthTime(*time_first_key);
 
     if (chain && !AttachChain(walletInstance, *chain, rescan_required, error, warnings)) {
         return nullptr;
@@ -3599,10 +3608,12 @@ LegacyScriptPubKeyMan* CWallet::GetOrCreateLegacyScriptPubKeyMan()
 
 void CWallet::AddScriptPubKeyMan(const uint256& id, std::unique_ptr<ScriptPubKeyMan> spkm_man)
 {
+    // Add spkm_man to m_spk_managers before calling any method
+    // that might access it.
     const auto& spkm = m_spk_managers[id] = std::move(spkm_man);
 
     // Update birth time if needed
-    FirstKeyTimeChanged(spkm.get(), spkm->GetTimeFirstKey());
+    MaybeUpdateBirthTime(spkm->GetTimeFirstKey());
 }
 
 void CWallet::SetupLegacyScriptPubKeyMan()
@@ -3635,7 +3646,7 @@ void CWallet::ConnectScriptPubKeyManNotifiers()
     for (const auto& spk_man : GetActiveScriptPubKeyMans()) {
         spk_man->NotifyWatchonlyChanged.connect(NotifyWatchonlyChanged);
         spk_man->NotifyCanGetAddressesChanged.connect(NotifyCanGetAddressesChanged);
-        spk_man->NotifyFirstKeyTimeChanged.connect(std::bind(&CWallet::FirstKeyTimeChanged, this, std::placeholders::_1, std::placeholders::_2));
+        spk_man->NotifyFirstKeyTimeChanged.connect(std::bind(&CWallet::MaybeUpdateBirthTime, this, std::placeholders::_2));
     }
 }
 

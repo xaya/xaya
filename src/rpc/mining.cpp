@@ -29,7 +29,6 @@
 #include <script/descriptor.h>
 #include <script/script.h>
 #include <script/signingprovider.h>
-#include <shutdown.h>
 #include <timedata.h>
 #include <txmempool.h>
 #include <univalue.h>
@@ -195,11 +194,11 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock& block, uint64_t& 
     }
     assert (pfakeHeader != nullptr);
 
-    while (max_tries > 0 && pfakeHeader->nNonce < std::numeric_limits<uint32_t>::max() && !block.pow.checkProofOfWork(*pfakeHeader, chainman.GetConsensus()) && !ShutdownRequested()) {
+    while (max_tries > 0 && pfakeHeader->nNonce < std::numeric_limits<uint32_t>::max() && !block.pow.checkProofOfWork(*pfakeHeader, chainman.GetConsensus()) && !chainman.m_interrupt) {
         ++pfakeHeader->nNonce;
         --max_tries;
     }
-    if (max_tries == 0 || ShutdownRequested()) {
+    if (max_tries == 0 || chainman.m_interrupt) {
         return false;
     }
     if (pfakeHeader->nNonce == std::numeric_limits<uint32_t>::max()) {
@@ -222,7 +221,7 @@ static UniValue generateBlocks(ChainstateManager& chainman, const CTxMemPool& me
     const PowAlgo algo = powAlgoFromJson(algoJson);
 
     UniValue blockHashes(UniValue::VARR);
-    while (nGenerate > 0 && !ShutdownRequested()) {
+    while (nGenerate > 0 && !chainman.m_interrupt) {
         std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler{chainman.ActiveChainstate(), &mempool}.CreateNewBlock(algo, coinbase_script));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");

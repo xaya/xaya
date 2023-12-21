@@ -165,6 +165,12 @@ public:
   }
 
   /**
+   * Returns just the name script prefix that this operation represents
+   * (without the base address).
+   */
+  CScript GetPrefix () const;
+
+  /**
    * Concats together a base address and name prefix script.
    */
   static CScript AddNamePrefix (const CScript& addr, const CScript& prefix);
