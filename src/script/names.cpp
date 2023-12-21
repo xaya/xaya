@@ -65,6 +65,26 @@ CNameScript::CNameScript (const CScript& script)
 }
 
 CScript
+CNameScript::GetPrefix () const
+{
+  switch (op)
+    {
+    case OP_NAME_NEW:
+      return CScript () << OP_NAME_NEW << getOpHash () << OP_2DROP;
+    case OP_NAME_FIRSTUPDATE:
+      return CScript () << OP_NAME_FIRSTUPDATE
+                        << getOpName () << getOpRand () << getOpValue ()
+                        << OP_2DROP << OP_2DROP;
+    case OP_NAME_UPDATE:
+      return CScript () << OP_NAME_UPDATE
+                        << getOpName () << getOpValue ()
+                        << OP_2DROP << OP_DROP;
+    default:
+      return CScript ();
+    }
+}
+
+CScript
 CNameScript::AddNamePrefix (const CScript& addr, const CScript& prefix)
 {
   CScript res = prefix;
@@ -80,29 +100,31 @@ CNameScript::buildNameNew (const CScript& addr, const valtype& name,
   toHash.insert (toHash.end (), name.begin (), name.end ());
   const uint160 hash = Hash160 (toHash);
 
-  CScript prefix;
-  prefix << OP_NAME_NEW << ToByteVector (hash) << OP_2DROP;
+  CNameScript op;
+  op.op = OP_NAME_NEW;
+  op.args = {ToByteVector (hash)};
 
-  return AddNamePrefix (addr, prefix);
+  return AddNamePrefix (addr, op.GetPrefix ());
 }
 
 CScript
 CNameScript::buildNameFirstupdate (const CScript& addr, const valtype& name,
                                    const valtype& value, const valtype& rand)
 {
-  CScript prefix;
-  prefix << OP_NAME_FIRSTUPDATE << name << rand << value
-         << OP_2DROP << OP_2DROP;
+  CNameScript op;
+  op.op = OP_NAME_FIRSTUPDATE;
+  op.args = {name, rand, value};
 
-  return AddNamePrefix (addr, prefix);
+  return AddNamePrefix (addr, op.GetPrefix ());
 }
 
 CScript
 CNameScript::buildNameUpdate (const CScript& addr, const valtype& name,
                               const valtype& value)
 {
-  CScript prefix;
-  prefix << OP_NAME_UPDATE << name << value << OP_2DROP << OP_DROP;
+  CNameScript op;
+  op.op = OP_NAME_UPDATE;
+  op.args = {name, value};
 
-  return AddNamePrefix (addr, prefix);
+  return AddNamePrefix (addr, op.GetPrefix ());
 }

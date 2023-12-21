@@ -101,14 +101,14 @@ double GetDifficultyForBits(const uint32_t nBits)
     return dDiff;
 }
 
-static int ComputeNextBlockAndDepth(const CBlockIndex* tip, const CBlockIndex* blockindex, const CBlockIndex*& next)
+static int ComputeNextBlockAndDepth(const CBlockIndex& tip, const CBlockIndex& blockindex, const CBlockIndex*& next)
 {
-    next = tip->GetAncestor(blockindex->nHeight + 1);
-    if (next && next->pprev == blockindex) {
-        return tip->nHeight - blockindex->nHeight + 1;
+    next = tip.GetAncestor(blockindex.nHeight + 1);
+    if (next && next->pprev == &blockindex) {
+        return tip.nHeight - blockindex.nHeight + 1;
     }
     next = nullptr;
-    return blockindex == tip ? 1 : -1;
+    return &blockindex == &tip ? 1 : -1;
 }
 
 static const CBlockIndex* ParseHashOrHeight(const UniValue& param, ChainstateManager& chainman)
@@ -172,27 +172,27 @@ static UniValue blockheaderToJSON(const CPureBlockHeader& header)
     return result;
 }
 
-UniValue blockheaderToJSON(const BlockManager& blockman, const CBlockIndex* tip, const CBlockIndex* blockindex)
+UniValue blockheaderToJSON(const BlockManager& blockman, const CBlockIndex& tip, const CBlockIndex& blockindex)
 {
     // Serialize passed information without accessing chain state of the active chain!
     AssertLockNotHeld(cs_main); // For performance reasons
 
-    auto result = blockheaderToJSON(blockindex->GetBlockHeader(blockman));
+    auto result = blockheaderToJSON(blockindex.GetBlockHeader(blockman));
 
     const CBlockIndex* pnext;
     int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
     result.pushKV("confirmations", confirmations);
-    result.pushKV("height", blockindex->nHeight);
-    result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
-    result.pushKV("nTx", (uint64_t)blockindex->nTx);
+    result.pushKV("height", blockindex.nHeight);
+    result.pushKV("mediantime", (int64_t)blockindex.GetMedianTimePast());
+    result.pushKV("chainwork", blockindex.nChainWork.GetHex());
+    result.pushKV("nTx", (uint64_t)blockindex.nTx);
 
     if (pnext)
         result.pushKV("nextblockhash", pnext->GetBlockHash().GetHex());
     return result;
 }
 
-UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, TxVerbosity verbosity)
+UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIndex& tip, const CBlockIndex& blockindex, TxVerbosity verbosity)
 {
     UniValue result = blockheaderToJSON(blockman, tip, blockindex);
 
@@ -212,7 +212,7 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
         case TxVerbosity::SHOW_DETAILS_AND_PREVOUT:
             CBlockUndo blockUndo;
             const bool is_not_pruned{WITH_LOCK(::cs_main, return !blockman.IsBlockPruned(blockindex))};
-            const bool have_undo{is_not_pruned && blockman.UndoReadFromDisk(blockUndo, *blockindex)};
+            const bool have_undo{is_not_pruned && blockman.UndoReadFromDisk(blockUndo, blockindex)};
 
             for (size_t i = 0; i < block.vtx.size(); ++i) {
                 const CTransactionRef& tx = block.vtx.at(i);
@@ -488,7 +488,7 @@ static RPCHelpMan getdifficulty()
 {
     ChainstateManager& chainman = EnsureAnyChainman(request.context);
     LOCK(cs_main);
-    return GetDifficultyForBits(chainman.ActiveChain().Tip()->nBits);
+    return GetDifficultyForBits(CHECK_NONFATAL(chainman.ActiveChain().Tip())->nBits);
 },
     };
 }
@@ -645,7 +645,7 @@ static RPCHelpMan getblockheader()
         return strHex;
     }
 
-    auto result = blockheaderToJSON(chainman.m_blockman, tip, pblockindex);
+    auto result = blockheaderToJSON(chainman.m_blockman, *tip, *pblockindex);
     if (header.auxpow)
         result.pushKV("auxpow", AuxpowToJSON(*header.auxpow, fVerbose, chainman.ActiveChainstate()));
 
@@ -654,17 +654,17 @@ static RPCHelpMan getblockheader()
     };
 }
 
-static CBlock GetBlockChecked(BlockManager& blockman, const CBlockIndex* pblockindex)
+static CBlock GetBlockChecked(BlockManager& blockman, const CBlockIndex& blockindex)
 {
     CBlock block;
     {
         LOCK(cs_main);
-        if (blockman.IsBlockPruned(pblockindex)) {
+        if (blockman.IsBlockPruned(blockindex)) {
             throw JSONRPCError(RPC_MISC_ERROR, "Block not available (pruned data)");
         }
     }
 
-    if (!blockman.ReadBlockFromDisk(block, *pblockindex)) {
+    if (!blockman.ReadBlockFromDisk(block, blockindex)) {
         // Block not found on disk. This could be because we have the block
         // header in our index but not yet have the block or did not accept the
         // block. Or if the block was pruned right after we released the lock above.
@@ -674,21 +674,21 @@ static CBlock GetBlockChecked(BlockManager& blockman, const CBlockIndex* pblocki
     return block;
 }
 
-static CBlockUndo GetUndoChecked(BlockManager& blockman, const CBlockIndex* pblockindex)
+static CBlockUndo GetUndoChecked(BlockManager& blockman, const CBlockIndex& blockindex)
 {
     CBlockUndo blockUndo;
 
     // The Genesis block does not have undo data
-    if (pblockindex->nHeight == 0) return blockUndo;
+    if (blockindex.nHeight == 0) return blockUndo;
 
     {
         LOCK(cs_main);
-        if (blockman.IsBlockPruned(pblockindex)) {
+        if (blockman.IsBlockPruned(blockindex)) {
             throw JSONRPCError(RPC_MISC_ERROR, "Undo data not available (pruned data)");
         }
     }
 
-    if (!blockman.UndoReadFromDisk(blockUndo, *pblockindex)) {
+    if (!blockman.UndoReadFromDisk(blockUndo, blockindex)) {
         throw JSONRPCError(RPC_MISC_ERROR, "Can't read undo data from disk");
     }
 
@@ -815,7 +815,7 @@ static RPCHelpMan getblock()
         }
     }
 
-    const CBlock block{GetBlockChecked(chainman.m_blockman, pblockindex)};
+    const CBlock block{GetBlockChecked(chainman.m_blockman, *pblockindex)};
 
     if (verbosity <= 0)
     {
@@ -834,7 +834,7 @@ static RPCHelpMan getblock()
         tx_verbosity = TxVerbosity::SHOW_DETAILS_AND_PREVOUT;
     }
 
-    auto result = blockToJSON(chainman.m_blockman, block, tip, pblockindex, tx_verbosity);
+    auto result = blockToJSON(chainman.m_blockman, block, *tip, *pblockindex, tx_verbosity);
 
     if (block.auxpow)
         result.pushKV("auxpow", AuxpowToJSON(*block.auxpow, verbosity >= 1, chainman.ActiveChainstate()));
@@ -1917,8 +1917,8 @@ static RPCHelpMan getblockstats()
         }
     }
 
-    const CBlock& block = GetBlockChecked(chainman.m_blockman, &pindex);
-    const CBlockUndo& blockUndo = GetUndoChecked(chainman.m_blockman, &pindex);
+    const CBlock& block = GetBlockChecked(chainman.m_blockman, pindex);
+    const CBlockUndo& blockUndo = GetUndoChecked(chainman.m_blockman, pindex);
 
     const bool do_all = stats.size() == 0; // Calculate everything if nothing selected (default)
     const bool do_mediantxsize = do_all || stats.count("mediantxsize") != 0;
@@ -2377,8 +2377,8 @@ public:
 
 static bool CheckBlockFilterMatches(BlockManager& blockman, const CBlockIndex& blockindex, const GCSFilter::ElementSet& needles)
 {
-    const CBlock block{GetBlockChecked(blockman, &blockindex)};
-    const CBlockUndo block_undo{GetUndoChecked(blockman, &blockindex)};
+    const CBlock block{GetBlockChecked(blockman, blockindex)};
+    const CBlockUndo block_undo{GetUndoChecked(blockman, blockindex)};
 
     // Check if any of the outputs match the scriptPubKey
     for (const auto& tx : block.vtx) {
@@ -2705,7 +2705,7 @@ static RPCHelpMan dumptxoutset()
     if (fs::exists(path)) {
         throw JSONRPCError(
             RPC_INVALID_PARAMETER,
-            path.u8string() + " already exists. If you are sure this is what you want, "
+            path.utf8string() + " already exists. If you are sure this is what you want, "
             "move it out of the way first");
     }
 
@@ -2714,7 +2714,7 @@ static RPCHelpMan dumptxoutset()
     if (afile.IsNull()) {
         throw JSONRPCError(
             RPC_INVALID_PARAMETER,
-            "Couldn't open file " + temppath.u8string() + " for writing.");
+            "Couldn't open file " + temppath.utf8string() + " for writing.");
     }
 
     NodeContext& node = EnsureAnyNodeContext(request.context);
@@ -2722,7 +2722,7 @@ static RPCHelpMan dumptxoutset()
         node, node.chainman->ActiveChainstate(), afile, path, temppath);
     fs::rename(temppath, path);
 
-    result.pushKV("path", path.u8string());
+    result.pushKV("path", path.utf8string());
     return result;
 },
     };
@@ -2794,7 +2794,7 @@ UniValue CreateUTXOSnapshot(
     result.pushKV("coins_written", maybe_stats->coins_count);
     result.pushKV("base_hash", tip->GetBlockHash().ToString());
     result.pushKV("base_height", tip->nHeight);
-    result.pushKV("path", path.u8string());
+    result.pushKV("path", path.utf8string());
     result.pushKV("txoutset_hash", maybe_stats->hashSerialized.ToString());
     result.pushKV("nchaintx", tip->nChainTx);
     return result;
@@ -2847,7 +2847,7 @@ static RPCHelpMan loadtxoutset()
     if (afile.IsNull()) {
         throw JSONRPCError(
             RPC_INVALID_PARAMETER,
-            "Couldn't open file " + path.u8string() + " for reading.");
+            "Couldn't open file " + path.utf8string() + " for reading.");
     }
 
     SnapshotMetadata metadata;

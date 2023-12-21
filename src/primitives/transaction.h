@@ -429,8 +429,7 @@ struct CMutableTransaction
     }
 
     /**
-     * Turn this into a Namecoin version transaction.  It is assumed
-     * that it isn't already.
+     * Turn this into a Namecoin version transaction if it is not yet one.
      */
     void SetNamecoin();
 };

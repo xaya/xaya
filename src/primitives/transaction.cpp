@@ -81,7 +81,6 @@ bool CTransaction::ComputeHasWitness() const
 
 void CMutableTransaction::SetNamecoin()
 {
-    assert (nVersion == CTransaction::CURRENT_VERSION);
     nVersion = CTransaction::NAMECOIN_VERSION;
 }
 
