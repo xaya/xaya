@@ -3691,8 +3691,7 @@ void CWallet::SetupDescriptorScriptPubKeyMans()
 
     if (!IsWalletFlagSet(WALLET_FLAG_EXTERNAL_SIGNER)) {
         // Make a seed
-        CKey seed_key;
-        seed_key.MakeNewKey(true);
+        CKey seed_key = GenerateRandomKey();
         CPubKey seed = seed_key.GetPubKey();
         assert(seed_key.VerifyPubKey(seed));
 
