@@ -397,7 +397,7 @@ static RPCHelpMan getrawtransaction()
         LOCK(cs_main);
         blockindex = chainman.m_blockman.LookupBlockIndex(hash_block);
     }
-    if (verbosity == 1) {
+    if (verbosity == 1 || !blockindex) {
         TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate());
         return result;
     }
@@ -406,8 +406,7 @@ static RPCHelpMan getrawtransaction()
     CBlock block;
     const bool is_block_pruned{WITH_LOCK(cs_main, return chainman.m_blockman.IsBlockPruned(blockindex))};
 
-    if (tx->IsCoinBase() ||
-        !blockindex || is_block_pruned ||
+    if (tx->IsCoinBase() || is_block_pruned ||
         !(chainman.m_blockman.UndoReadFromDisk(blockUndo, *blockindex) && chainman.m_blockman.ReadBlockFromDisk(block, *blockindex))) {
         TxToJSON(*tx, hash_block, result, chainman.ActiveChainstate());
         return result;
