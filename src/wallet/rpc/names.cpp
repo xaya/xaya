@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Copyright (c) 2021 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -304,7 +304,8 @@ name_list ()
 bool
 getNameSalt(const CKey& key, const valtype& name, valtype& rand)
 {
-    const valtype ikm(key.begin(), key.end());
+    const valtype ikm(reinterpret_cast<const unsigned char*> (key.begin()),
+                      reinterpret_cast<const unsigned char*> (key.end()));
     const std::string salt(reinterpret_cast<const char*>(name.data()), name.size());
     const std::string info("Namecoin Registration Salt");
     CHKDF_HMAC_SHA256_L32 hkdf32(ikm.data(), ikm.size(), salt);
