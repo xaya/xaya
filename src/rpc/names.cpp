@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Copyright (c) 2020 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -805,24 +805,19 @@ name_pending ()
   if (request.params.size () >= 2)
     options = request.params[1].get_obj ();
 
-  std::vector<uint256> txHashes;
-  mempool.queryHashes (txHashes);
-
   const bool hasNameFilter = !request.params[0].isNull ();
   valtype nameFilter;
   if (hasNameFilter)
     nameFilter = DecodeNameFromRPCOrThrow (request.params[0], options);
 
   UniValue arr(UniValue::VARR);
-  for (const auto& txHash : txHashes)
+  for (const CTxMemPoolEntry& entry : mempool.entryAll ())
     {
-      std::shared_ptr<const CTransaction> tx = mempool.get (txHash);
-      if (!tx)
-        continue;
+      const auto& tx = entry.GetTx ();
 
-      for (size_t n = 0; n < tx->vout.size (); ++n)
+      for (size_t n = 0; n < tx.vout.size (); ++n)
         {
-          const auto& txOut = tx->vout[n];
+          const auto& txOut = tx.vout[n];
           const CNameScript op(txOut.scriptPubKey);
           if (!op.isNameOp () || !op.isAnyUpdate ())
             continue;
@@ -831,7 +826,7 @@ name_pending ()
 
           UniValue obj = getNameInfo (options,
                                       op.getOpName (), op.getOpValue (),
-                                      COutPoint (tx->GetHash (), n),
+                                      COutPoint (tx.GetHash (), n),
                                       op.getAddress ());
           addOwnershipInfo (op.getAddress (), wallet, obj);
           switch (op.getNameOp ())
