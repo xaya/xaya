@@ -2239,7 +2239,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     // Also, currently the rule against blocks more than 2 hours in the future
     // is enforced in ContextualCheckBlockHeader(); we wouldn't want to
     // re-enforce that rule here (at least until we make it impossible for
-    // m_adjusted_time_callback() to go backward).
+    // the clock to go backward).
     if (!CheckBlock(block, state, params.GetConsensus(), !fJustCheck, !fJustCheck)) {
         if (state.GetResult() == BlockValidationResult::BLOCK_MUTATED) {
             // We don't write down blocks to disk if they may have been
@@ -3828,7 +3828,7 @@ arith_uint256 CalculateHeadersWork(const std::vector<CBlockHeader>& headers)
  *  in ConnectBlock().
  *  Note that -reindex-chainstate skips the validation that happens here!
  */
-static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidationState& state, BlockManager& blockman, const ChainstateManager& chainman, const CBlockIndex* pindexPrev, NodeClock::time_point now) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidationState& state, BlockManager& blockman, const ChainstateManager& chainman, const CBlockIndex* pindexPrev) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
     AssertLockHeld(::cs_main);
     assert(pindexPrev != nullptr);
@@ -3862,7 +3862,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidatio
         return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER, "time-too-old", "block's timestamp is too early");
 
     // Check timestamp
-    if (block.Time() > now + std::chrono::seconds{MAX_FUTURE_BLOCK_TIME}) {
+    if (block.Time() > NodeClock::now() + std::chrono::seconds{MAX_FUTURE_BLOCK_TIME}) {
         return state.Invalid(BlockValidationResult::BLOCK_TIME_FUTURE, "time-too-new", "block timestamp too far in the future");
     }
 
@@ -4002,7 +4002,7 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
             LogPrint(BCLog::VALIDATION, "header %s has prev block invalid: %s\n", hash.ToString(), block.hashPrevBlock.ToString());
             return state.Invalid(BlockValidationResult::BLOCK_INVALID_PREV, "bad-prevblk");
         }
-        if (!ContextualCheckBlockHeader(block, state, m_blockman, *this, pindexPrev, m_options.adjusted_time_callback())) {
+        if (!ContextualCheckBlockHeader(block, state, m_blockman, *this, pindexPrev)) {
             LogPrint(BCLog::VALIDATION, "%s: Consensus::ContextualCheckBlockHeader: %s, %s\n", __func__, hash.ToString(), state.ToString());
             return false;
         }
@@ -4287,7 +4287,6 @@ bool TestBlockValidity(BlockValidationState& state,
                        Chainstate& chainstate,
                        const CBlock& block,
                        CBlockIndex* pindexPrev,
-                       const std::function<NodeClock::time_point()>& adjusted_time_callback,
                        bool fCheckPOW,
                        bool fCheckMerkleRoot)
 {
@@ -4301,7 +4300,7 @@ bool TestBlockValidity(BlockValidationState& state,
     indexDummy.phashBlock = &block_hash;
 
     // NOTE: CheckBlockHeader is called by CheckBlock
-    if (!ContextualCheckBlockHeader(block, state, chainstate.m_blockman, chainstate.m_chainman, pindexPrev, adjusted_time_callback()))
+    if (!ContextualCheckBlockHeader(block, state, chainstate.m_blockman, chainstate.m_chainman, pindexPrev))
         return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, state.ToString());
     if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot))
         return error("%s: Consensus::CheckBlock: %s", __func__, state.ToString());
@@ -4919,16 +4918,6 @@ void ChainstateManager::CheckBlockIndex()
     CBlockIndex* pindexFirstAssumeValid = nullptr; // Oldest ancestor of pindex which has BLOCK_ASSUMED_VALID
     while (pindex != nullptr) {
         nNodes++;
-        // Make sure nChainTx sum is correctly computed.
-        unsigned int prev_chain_tx = pindex->pprev ? pindex->pprev->nChainTx : 0;
-        assert((pindex->nChainTx == pindex->nTx + prev_chain_tx)
-               // For testing, allow transaction counts to be completely unset.
-               || (pindex->nChainTx == 0 && pindex->nTx == 0)
-               // For testing, allow this nChainTx to be unset if previous is also unset.
-               || (pindex->nChainTx == 0 && prev_chain_tx == 0 && pindex->pprev)
-               // Transaction counts prior to snapshot are unknown.
-               || pindex->IsAssumedValid());
-
         if (pindexFirstAssumeValid == nullptr && pindex->nStatus & BLOCK_ASSUMED_VALID) pindexFirstAssumeValid = pindex;
         if (pindexFirstInvalid == nullptr && pindex->nStatus & BLOCK_FAILED_VALID) pindexFirstInvalid = pindex;
         if (pindexFirstMissing == nullptr && !(pindex->nStatus & BLOCK_HAVE_DATA)) {
@@ -5011,6 +5000,15 @@ void ChainstateManager::CheckBlockIndex()
             // Checks for not-invalid blocks.
             assert((pindex->nStatus & BLOCK_FAILED_MASK) == 0); // The failed mask cannot be set for blocks without invalid parents.
         }
+        // Make sure nChainTx sum is correctly computed.
+        unsigned int prev_chain_tx = pindex->pprev ? pindex->pprev->nChainTx : 0;
+        assert((pindex->nChainTx == pindex->nTx + prev_chain_tx)
+               // Transaction may be completely unset - happens if only the header was accepted but the block hasn't been processed.
+               || (pindex->nChainTx == 0 && pindex->nTx == 0)
+               // nChainTx may be unset, but nTx set (if a block has been accepted, but one of its predecessors hasn't been processed yet)
+               || (pindex->nChainTx == 0 && prev_chain_tx == 0 && pindex->pprev)
+               // Transaction counts prior to snapshot are unknown.
+               || pindex->IsAssumedValid());
         // Chainstate-specific checks on setBlockIndexCandidates
         for (auto c : GetAll()) {
             if (c->m_chain.Tip() == nullptr) continue;
@@ -5838,7 +5836,6 @@ static ChainstateManager::Options&& Flatten(ChainstateManager::Options&& opts)
     if (!opts.check_block_index.has_value()) opts.check_block_index = opts.chainparams.DefaultConsistencyChecks();
     if (!opts.minimum_chain_work.has_value()) opts.minimum_chain_work = UintToArith256(opts.chainparams.GetConsensus().nMinimumChainWork);
     if (!opts.assumed_valid_block.has_value()) opts.assumed_valid_block = opts.chainparams.GetConsensus().defaultAssumeValid;
-    Assert(opts.adjusted_time_callback);
     return std::move(opts);
 }
 
