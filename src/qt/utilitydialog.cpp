@@ -58,7 +58,8 @@ HelpMessageDialog::HelpMessageDialog(QWidget *parent, bool about) :
         ui->helpMessage->setVisible(false);
     } else {
         setWindowTitle(tr("Command-line options"));
-        QString header = "Usage:  xaya-qt [command-line options]                     \n";
+        QString header = "Usage: xaya-qt [command-line options] [URI]\n\n"
+                         "Optional URI is a Xaya address in BIP21 URI format.\n";
         QTextCursor cursor(ui->helpMessage->document());
         cursor.insertText(version);
         cursor.insertBlock();
