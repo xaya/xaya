@@ -48,6 +48,14 @@ static bool UseMaxSig(const std::optional<CTxIn>& txin, const CCoinControl* coin
     return coin_control && (coin_control->fAllowWatchOnly || (txin && coin_control->IsExternalSelected(txin->prevout)));
 }
 
+/** Strips the name prefix off the script of a txout.  This is irrelevant
+    for fee calculation / signed size.  */
+static CScript StripNamePrefix(const CTxOut& txo)
+{
+    const CNameScript nameOp(txo.scriptPubKey);
+    return nameOp.getAddress();
+}
+
 /** Get the size of an input (in witness units) once it's signed.
  *
  * @param desc The output script descriptor of the coin spent by this input.
@@ -83,7 +91,7 @@ int CalculateMaximumSignedInputSize(const CTxOut& txout, const COutPoint outpoin
 {
     if (!provider) return -1;
 
-    if (const auto desc = InferDescriptor(txout.scriptPubKey, *provider)) {
+    if (const auto desc = InferDescriptor(StripNamePrefix(txout), *provider)) {
         if (const auto weight = MaxInputWeight(*desc, {}, coin_control, true, can_grind_r)) {
             return static_cast<int>(GetVirtualTransactionSize(*weight, 0, 0));
         }
@@ -124,7 +132,7 @@ static std::optional<int64_t> GetSignedTxinWeight(const CWallet* wallet, const C
     }
 
     // Otherwise, use the maximum satisfaction size provided by the descriptor.
-    std::unique_ptr<Descriptor> desc{GetDescriptor(wallet, coin_control, txo.scriptPubKey)};
+    std::unique_ptr<Descriptor> desc{GetDescriptor(wallet, coin_control, StripNamePrefix(txo))};
     if (desc) return MaxInputWeight(*desc, {txin}, coin_control, tx_is_segwit, can_grind_r);
 
     return {};
