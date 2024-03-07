@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 The Xaya developers
+// Copyright (c) 2018-2024 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,6 +7,7 @@
 #include <chain.h>
 #include <chainparams.h>
 #include <common/args.h>
+#include <config/bitcoin-config.h>
 #include <logging.h>
 #include <node/blockstorage.h>
 #include <random.h>

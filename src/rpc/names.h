@@ -29,14 +29,12 @@ void addHeightInfo (int height, UniValue& data);
 
 Span<const CRPCCommand> GetNameRPCCommands ();
 
-#ifdef ENABLE_WALLET
 namespace wallet {
 class CWallet;
 } // namespace wallet
 void addOwnershipInfo (const CScript& addr,
                        const wallet::CWallet* pwallet,
                        UniValue& data);
-#endif
 
 /**
  * Decodes a name given through the RPC interface and throws a

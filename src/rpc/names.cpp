@@ -10,6 +10,7 @@
 #include <init.h>
 #include <index/namehash.h>
 #include <key_io.h>
+#include <logging.h>
 #include <names/common.h>
 #include <names/main.h>
 #include <node/context.h>
@@ -25,10 +26,8 @@
 #include <util/any.h>
 #include <util/strencodings.h>
 #include <validation.h>
-#ifdef ENABLE_WALLET
-# include <wallet/rpc/util.h>
-# include <wallet/wallet.h>
-#endif
+#include <wallet/rpc/util.h>
+#include <wallet/wallet.h>
 
 #include <univalue.h>
 
@@ -121,7 +120,6 @@ addHeightInfo (const int height, UniValue& data)
   data.pushKV ("height", height);
 }
 
-#ifdef ENABLE_WALLET
 /**
  * Adds the "ismine" field giving ownership info to the JSON object.
  */
@@ -137,7 +135,6 @@ addOwnershipInfo (const CScript& addr, const wallet::CWallet* pwallet,
   const bool isMine = (mine & wallet::ISMINE_SPENDABLE);
   data.pushKV ("ismine", isMine);
 }
-#endif
 
 namespace
 {
