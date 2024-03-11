@@ -3,6 +3,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <config/bitcoin-config.h>
+
 #include <base58.h>
 #include <chainparams.h>
 #include <common/args.h>
@@ -26,8 +28,10 @@
 #include <util/any.h>
 #include <util/strencodings.h>
 #include <validation.h>
-#include <wallet/rpc/util.h>
-#include <wallet/wallet.h>
+#ifdef ENABLE_WALLET
+# include <wallet/rpc/util.h>
+# include <wallet/wallet.h>
+#endif
 
 #include <univalue.h>
 
@@ -120,6 +124,7 @@ addHeightInfo (const int height, UniValue& data)
   data.pushKV ("height", height);
 }
 
+#ifdef ENABLE_WALLET
 /**
  * Adds the "ismine" field giving ownership info to the JSON object.
  */
@@ -135,6 +140,7 @@ addOwnershipInfo (const CScript& addr, const wallet::CWallet* pwallet,
   const bool isMine = (mine & wallet::ISMINE_SPENDABLE);
   data.pushKV ("ismine", isMine);
 }
+#endif // ENABLE_WALLET
 
 namespace
 {
