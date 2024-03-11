@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -355,19 +355,23 @@ class NameConflictTracker : public CValidationInterface
 
 private:
 
+  /** The node context, used to register the interface.  */
+  node::NodeContext& m_node;
+
   /** The txids that have been removed according to our callback.  */
   std::vector<uint256> txids;
 
 public:
 
-  NameConflictTracker ()
+  NameConflictTracker (node::NodeContext& node)
+    : m_node(node)
   {
-    RegisterValidationInterface (this);
+    m_node.validation_signals->RegisterValidationInterface (this);
   }
 
   ~NameConflictTracker ()
   {
-    UnregisterValidationInterface (this);
+    m_node.validation_signals->UnregisterValidationInterface (this);
   }
 
   void
@@ -385,7 +389,7 @@ public:
   void
   ExpectTxids (const std::vector<uint256>& expected) const
   {
-    while (GetMainSignals ().CallbacksPending () > 0)
+    while (m_node.validation_signals->CallbacksPending () > 0)
       UninterruptibleSleep (std::chrono::milliseconds (10));
     BOOST_CHECK (txids == expected);
   }
@@ -404,7 +408,7 @@ BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
   BOOST_CHECK (mempool.registersName (Name ("foo")));
   BOOST_CHECK (!mempool.checkNameOps (tx2));
 
-  NameConflictTracker tracker;
+  NameConflictTracker tracker(m_node);
   mempool.removeConflicts (tx2);
   tracker.ExpectTxids ({tx1.GetHash ()});
 
@@ -425,7 +429,7 @@ BOOST_FIXTURE_TEST_CASE (expire_conflicts, NameMempoolTestSetup)
   mempool.addUnchecked (e2);
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
 
-  NameConflictTracker tracker;
+  NameConflictTracker tracker(m_node);
   mempool.removeExpireConflicts ({Name ("foo")});
   tracker.ExpectTxids ({tx1.GetHash (), tx2.GetHash ()});
 
@@ -441,7 +445,7 @@ BOOST_FIXTURE_TEST_CASE (unexpire_conflicts, NameMempoolTestSetup)
   mempool.addUnchecked (e);
   BOOST_CHECK (mempool.registersName (Name ("foo")));
 
-  NameConflictTracker tracker;
+  NameConflictTracker tracker(m_node);
   mempool.removeUnexpireConflicts ({Name ("foo")});
   tracker.ExpectTxids ({tx.GetHash ()});
 
