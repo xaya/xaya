@@ -23,4 +23,6 @@ NameNamespace NamespaceFromName (const valtype& data);
 
 std::string DescFromName (const valtype& name, NameNamespace ns);
 
+bool IsValidJSONOrEmptyString (const std::string& text);
+
 #endif // H_BITCOIN_NAMES_APPLICATIONS

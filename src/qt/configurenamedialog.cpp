@@ -8,6 +8,7 @@
 #include <qt/platformstyle.h>
 #include <qt/walletmodel.h>
 #include <wallet/wallet.h>
+#include <names/applications.h>
 
 #include <QMessageBox>
 #include <QClipboard>
@@ -51,6 +52,7 @@ void ConfigureNameDialog::accept()
         return;
 
     QString addr = ui->transferTo->text();
+    std::string data = ui->dataEdit->text().toStdString();
 
     if (addr != "" && !walletModel->validateAddress(addr))
     {
@@ -61,7 +63,19 @@ void ConfigureNameDialog::accept()
     returnData = ui->dataEdit->text();
     returnTransferTo = ui->transferTo->text();
 
-    QDialog::accept();
+    if(!IsValidJSONOrEmptyString(data)){
+        QMessageBox::StandardButton MessageBoxInvalidJSON = 
+        QMessageBox::warning(this, tr("Invalid JSON"),
+                tr("Are you sure you want to continue anyway? The inputted JSON data is invalid, and is likely to make the name unresolvable."), 
+                QMessageBox::Ok|QMessageBox::Cancel);
+
+        if(MessageBoxInvalidJSON == QMessageBox::Ok){
+            QDialog::accept();
+        }
+    } else {
+        QDialog::accept();
+    }
+
 }
 
 void ConfigureNameDialog::setModel(WalletModel *walletModel)
@@ -98,4 +112,13 @@ void ConfigureNameDialog::onDataEdited(const QString &name)
 {
     ui->dataSize->setText(tr("%1 / %2").arg(name.size()).arg(MAX_VALUE_LENGTH_UI));
     ui->dataSize->resize(ui->dataSize->fontMetrics().horizontalAdvance(ui->dataSize->text()), ui->dataSize->height());
+
+    std::string data = ui->dataEdit->text().toStdString();
+
+    if(IsValidJSONOrEmptyString(data)){
+        ui->labelValidJSON->setText(tr("Valid JSON text."));
+    } else {
+        ui->labelValidJSON->setText(tr("JSON data inputted is invalid."));
+    }
 }
+

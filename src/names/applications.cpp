@@ -8,6 +8,8 @@
 
 #include <regex>
 
+#include <univalue.h>
+
 namespace
 {
 
@@ -174,4 +176,11 @@ DescFromName (const valtype& name, NameNamespace ns)
             return EncodeNameForMessage(name);
         }
     }
+}
+
+bool
+IsValidJSONOrEmptyString (const std::string& text){
+    UniValue v;
+
+    return text.empty() || v.read(text);
 }
