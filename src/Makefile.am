@@ -10,6 +10,7 @@ DIST_SUBDIRS = secp256k1
 
 AM_LDFLAGS = $(LIBTOOL_LDFLAGS) $(HARDENED_LDFLAGS) $(GPROF_LDFLAGS) $(SANITIZER_LDFLAGS) $(CORE_LDFLAGS)
 AM_CXXFLAGS = $(CORE_CXXFLAGS) $(DEBUG_CXXFLAGS) $(HARDENED_CXXFLAGS) $(WARN_CXXFLAGS) $(NOWARN_CXXFLAGS) $(ERROR_CXXFLAGS) $(GPROF_CXXFLAGS) $(SANITIZER_CXXFLAGS)
+AM_OBJCXXFLAGS = $(AM_CXXFLAGS)
 AM_CPPFLAGS = $(DEBUG_CPPFLAGS) $(HARDENED_CPPFLAGS) $(CORE_CPPFLAGS)
 AM_LIBTOOLFLAGS = --preserve-dup-deps
 PTHREAD_FLAGS = $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
@@ -334,6 +335,7 @@ BITCOIN_CORE_H = \
   util/spanparsing.h \
   util/string.h \
   util/syserror.h \
+  util/task_runner.h \
   util/thread.h \
   util/threadinterrupt.h \
   util/threadnames.h \
@@ -1003,7 +1005,6 @@ libbitcoinkernel_la_SOURCES = \
   pubkey.cpp \
   random.cpp \
   randomenv.cpp \
-  scheduler.cpp \
   script/interpreter.cpp \
   script/names.cpp \
   script/script.cpp \
@@ -1021,7 +1022,6 @@ libbitcoinkernel_la_SOURCES = \
   util/batchpriority.cpp \
   util/chaintype.cpp \
   util/check.cpp \
-  util/exception.cpp \
   util/fs.cpp \
   util/fs_helpers.cpp \
   util/hasher.cpp \
@@ -1032,7 +1032,6 @@ libbitcoinkernel_la_SOURCES = \
   util/strencodings.cpp \
   util/string.cpp \
   util/syserror.cpp \
-  util/thread.cpp \
   util/threadnames.cpp \
   util/time.cpp \
   util/tokenpipe.cpp \
