@@ -45,6 +45,8 @@ class RawTransactionsTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 4
         self.setup_clean_chain = True
+        # whitelist peers to speed up tx relay / mempool sync
+        self.noban_tx_relay = True
         # This test isn't testing tx relay. Set whitelist on the peers for
         # instant tx relay.
         self.extra_args = [['-whitelist=noban@127.0.0.1', '-addresstype=bech32']] * self.num_nodes

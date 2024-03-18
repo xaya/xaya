@@ -129,9 +129,11 @@ bool CCoinsViewDB::GetNamesForHeight(unsigned nHeight, std::set<valtype>& names)
           break;
 
         const valtype& name = entry.name;
-        if (names.count(name) > 0)
-            return error("%s : duplicate name %s in expire index",
-                         __func__, EncodeNameForMessage(name));
+        if (names.count(name) > 0) {
+            LogError ("%s : duplicate name %s in expire index",
+                      __func__, EncodeNameForMessage(name));
+            return false;
+        }
         names.insert(name);
     }
 
@@ -179,8 +181,10 @@ bool CDbNameIterator::next(valtype& name, CNameData& data) {
         return false;
     name = key.second;
 
-    if (!iter->GetValue(data))
-        return error("%s : failed to read data from iterator", __func__);
+    if (!iter->GetValue(data)) {
+        LogError ("%s : failed to read data from iterator", __func__);
+        return false;
+    }
 
     iter->Next ();
     return true;
@@ -368,8 +372,10 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
         case DB_COIN:
         {
             Coin coin;
-            if (!pcursor->GetValue(coin))
-                return error("%s : failed to read coin", __func__);
+            if (!pcursor->GetValue(coin)) {
+                LogError ("%s : failed to read coin", __func__);
+                return false;
+            }
 
             if (!coin.out.IsNull())
             {
@@ -377,9 +383,11 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
                 if (nameOp.isNameOp() && nameOp.isAnyUpdate())
                 {
                     const valtype& name = nameOp.getOpName();
-                    if (namesInUTXO.count(name) > 0)
-                        return error("%s : name %s duplicated in UTXO set",
-                                     __func__, EncodeNameForMessage(name));
+                    if (namesInUTXO.count(name) > 0) {
+                        LogError ("%s : name %s duplicated in UTXO set",
+                                  __func__, EncodeNameForMessage(name));
+                        return false;
+                    }
                     namesInUTXO.insert(nameOp.getOpName());
                 }
             }
@@ -389,17 +397,23 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
         case DB_NAME:
         {
             std::pair<uint8_t, valtype> key;
-            if (!pcursor->GetKey(key) || key.first != DB_NAME)
-                return error("%s : failed to read DB_NAME key", __func__);
+            if (!pcursor->GetKey(key) || key.first != DB_NAME) {
+                LogError ("%s : failed to read DB_NAME key", __func__);
+                return false;
+            }
             const valtype& name = key.second;
 
             CNameData data;
-            if (!pcursor->GetValue(data))
-                return error("%s : failed to read name value", __func__);
+            if (!pcursor->GetValue(data)) {
+                LogError ("%s : failed to read name value", __func__);
+                return false;
+            }
 
-            if (nameHeightsData.count(name) > 0)
-                return error("%s : name %s duplicated in name index",
-                             __func__, EncodeNameForMessage(name));
+            if (nameHeightsData.count(name) > 0) {
+                LogError ("%s : name %s duplicated in name index",
+                          __func__, EncodeNameForMessage(name));
+                return false;
+            }
             nameHeightsData.insert(std::make_pair(name, data.getHeight()));
             
             /* Expiration is checked at height+1, because that matches
@@ -413,14 +427,17 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
         case DB_NAME_HISTORY:
         {
             std::pair<uint8_t, valtype> key;
-            if (!pcursor->GetKey(key) || key.first != DB_NAME_HISTORY)
-                return error("%s : failed to read DB_NAME_HISTORY key",
-                             __func__);
+            if (!pcursor->GetKey(key) || key.first != DB_NAME_HISTORY) {
+                LogError ("%s : failed to read DB_NAME_HISTORY key", __func__);
+                return false;
+            }
             const valtype& name = key.second;
 
-            if (namesWithHistory.count(name) > 0)
-                return error("%s : name %s has duplicate history",
-                             __func__, EncodeNameForMessage(name));
+            if (namesWithHistory.count(name) > 0) {
+                LogError ("%s : name %s has duplicate history",
+                          __func__, EncodeNameForMessage(name));
+                return false;
+            }
             namesWithHistory.insert(name);
             break;
         }
@@ -428,15 +445,18 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
         case DB_NAME_EXPIRY:
         {
             std::pair<uint8_t, CNameCache::ExpireEntry> key;
-            if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY)
-                return error("%s : failed to read DB_NAME_EXPIRY key",
-                             __func__);
+            if (!pcursor->GetKey(key) || key.first != DB_NAME_EXPIRY) {
+                LogError ("%s : failed to read DB_NAME_EXPIRY key", __func__);
+                return false;
+            }
             const CNameCache::ExpireEntry& entry = key.second;
             const valtype& name = entry.name;
 
-            if (nameHeightsIndex.count(name) > 0)
-                return error("%s : name %s duplicated in expire idnex",
-                             __func__, EncodeNameForMessage(name));
+            if (nameHeightsIndex.count(name) > 0) {
+                LogError ("%s : name %s duplicated in expire idnex",
+                          __func__, EncodeNameForMessage(name));
+                return false;
+            }
 
             nameHeightsIndex.insert(std::make_pair(name, entry.nHeight));
             break;
@@ -451,27 +471,37 @@ bool CCoinsViewDB::ValidateNameDB(const Chainstate& chainState, const std::funct
 
     assert (nameHeightsData.size() >= namesInDB.size());
 
-    if (nameHeightsIndex != nameHeightsData)
-        return error("%s : name height data mismatch", __func__);
+    if (nameHeightsIndex != nameHeightsData) {
+        LogError ("%s : name height data mismatch", __func__);
+        return false;
+    }
 
     for (const auto& name : namesInDB)
-        if (namesInUTXO.count(name) == 0)
-            return error("%s : name '%s' in DB but not UTXO set",
-                         __func__, EncodeNameForMessage(name));
+        if (namesInUTXO.count(name) == 0) {
+            LogError ("%s : name '%s' in DB but not UTXO set",
+                      __func__, EncodeNameForMessage(name));
+            return false;
+        }
     for (const auto& name : namesInUTXO)
-        if (namesInDB.count(name) == 0)
-            return error("%s : name '%s' in UTXO set but not DB",
-                         __func__, EncodeNameForMessage(name));
+        if (namesInDB.count(name) == 0) {
+            LogError ("%s : name '%s' in UTXO set but not DB",
+                      __func__, EncodeNameForMessage(name));
+            return false;
+        }
 
     if (fNameHistory)
     {
         for (const auto& name : namesWithHistory)
-            if (nameHeightsData.count(name) == 0)
-                return error("%s : history entry for name '%s' not in main DB",
-                             __func__, EncodeNameForMessage(name));
-    } else if (!namesWithHistory.empty ())
-        return error("%s : name_history entries in DB, but"
-                     " -namehistory not set", __func__);
+            if (nameHeightsData.count(name) == 0) {
+                LogError ("%s : history entry for name '%s' not in main DB",
+                          __func__, EncodeNameForMessage(name));
+                return false;
+            }
+    } else if (!namesWithHistory.empty ()) {
+        LogError ("%s : name_history entries in DB, but"
+                  " -namehistory not set", __func__);
+        return false;
+    }
 
     LogPrintf("Checked name database, %u unexpired names, %u total.\n",
               namesInDB.size(), nameHeightsData.size());

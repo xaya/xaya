@@ -395,11 +395,17 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
 
       CNameData data;
       if (!view.GetName (*i, data))
-        return error ("%s : name %s not found in the database",
-                      __func__, nameStr);
+        {
+          LogError ("%s : name %s not found in the database",
+                    __func__, nameStr);
+          return false;
+        }
       if (!data.isExpired (nHeight))
-        return error ("%s : name %s is not actually expired",
-                      __func__, nameStr);
+        {
+          LogError ("%s : name %s is not actually expired",
+                    __func__, nameStr);
+          return false;
+        }
 
       /* Special rule:  When d/postmortem expires (the name used by
          libcoin in the name-stealing demonstration), it's coin
@@ -411,15 +417,24 @@ ExpireNames (unsigned nHeight, CCoinsViewCache& view, CBlockUndo& undo,
       const COutPoint& out = data.getUpdateOutpoint ();
       Coin coin;
       if (!view.GetCoin(out, coin))
-        return error ("%s : name coin for %s is not available",
-                      __func__, nameStr);
+        {
+          LogError ("%s : name coin for %s is not available",
+                    __func__, nameStr);
+          return false;
+        }
       const CNameScript nameOp(coin.out.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ()
           || nameOp.getOpName () != *i)
-        return error ("%s : name coin to be expired is wrong script", __func__);
+        {
+          LogError ("%s : name coin to be expired is wrong script", __func__);
+          return false;
+        }
 
       if (!view.SpendCoin (out, &coin))
-        return error ("%s : spending name coin failed", __func__);
+        {
+          LogError ("%s : spending name coin failed", __func__);
+          return false;
+        }
       undo.vexpired.push_back (coin);
     }
 
@@ -441,26 +456,41 @@ UnexpireNames (unsigned nHeight, CBlockUndo& undo, CCoinsViewCache& view,
     {
       const CNameScript nameOp(i->out.scriptPubKey);
       if (!nameOp.isNameOp () || !nameOp.isAnyUpdate ())
-        return error ("%s : wrong script to be unexpired", __func__);
+        {
+          LogError ("%s : wrong script to be unexpired", __func__);
+          return false;
+        }
 
       const valtype& name = nameOp.getOpName ();
       if (names.count (name) > 0)
-        return error ("%s : name %s unexpired twice",
-                      __func__, EncodeNameForMessage (name));
+        {
+          LogError ("%s : name %s unexpired twice",
+                    __func__, EncodeNameForMessage (name));
+          return false;
+        }
       names.insert (name);
 
       CNameData data;
       if (!view.GetName (nameOp.getOpName (), data))
-        return error ("%s : no data for name '%s' to be unexpired",
-                      __func__, EncodeNameForMessage (name));
+        {
+          LogError ("%s : no data for name '%s' to be unexpired",
+                    __func__, EncodeNameForMessage (name));
+          return false;
+        }
       if (!data.isExpired (nHeight) || data.isExpired (nHeight - 1))
-        return error ("%s : name '%s' to be unexpired is not expired in the DB"
-                      " or it was already expired before the current height",
-                      __func__, EncodeNameForMessage (name));
+        {
+          LogError ("%s : name '%s' to be unexpired is not expired in the DB"
+                    " or it was already expired before the current height",
+                    __func__, EncodeNameForMessage (name));
+          return false;
+        }
 
       if (ApplyTxInUndo (std::move(*i), view,
                          data.getUpdateOutpoint ()) != DISCONNECT_OK)
-        return error ("%s : failed to undo name coin spending", __func__);
+        {
+          LogError ("%s : failed to undo name coin spending", __func__);
+          return false;
+        }
     }
 
   return true;
