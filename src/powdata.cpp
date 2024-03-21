@@ -132,33 +132,58 @@ PowData::isValid (const uint256& hash, const Consensus::Params& params) const
     {
     case PowAlgo::SHA256D:
       if (!isMergeMined ())
-        return error ("%s: SHA256D must be merge-mined", __func__);
+        {
+          LogError ("%s: SHA256D must be merge-mined", __func__);
+          return false;
+        }
       break;
     case PowAlgo::NEOSCRYPT:
       if (isMergeMined ())
-        return error ("%s: Neoscrypt cannot be merge-mined", __func__);
+        {
+          LogError ("%s: Neoscrypt cannot be merge-mined", __func__);
+          return false;
+        }
       break;
     default:
-      return error ("%s: invalid mining algo used for PoW", __func__);
+      LogError ("%s: invalid mining algo used for PoW", __func__);
+      return false;
     }
 
   if (isMergeMined ())
     {
       if (auxpow == nullptr)
-        return error ("%s: merge-mined PoW data has no auxpow", __func__);
+        {
+          LogError ("%s: merge-mined PoW data has no auxpow", __func__);
+          return false;
+        }
       if (!checkProofOfWork (auxpow->parentBlock, params))
-        return error ("%s: auxpow PoW is invalid", __func__);
+        {
+          LogError ("%s: auxpow PoW is invalid", __func__);
+          return false;
+        }
       if (!auxpow->check (hash, params.nAuxpowChainId, params))
-        return error ("%s: auxpow is invalid", __func__);
+        {
+          LogError ("%s: auxpow is invalid", __func__);
+          return false;
+        }
     }
   else
     {
       if (fakeHeader == nullptr)
-        return error ("%s: stand-alone PoW data has no fake header", __func__);
+        {
+          LogError ("%s: stand-alone PoW data has no fake header", __func__);
+          return false;
+        }
       if (fakeHeader->hashMerkleRoot != hash)
-        return error ("%s: fake header commits to wrong hash", __func__);
+        {
+          LogError ("%s: fake header commits to wrong hash", __func__);
+          return false;
+        }
       if (!checkProofOfWork (*fakeHeader, params))
-        return error ("%s: fake header PoW is invalid", __func__);
+        {
+          LogError ("%s: fake header PoW is invalid", __func__);
+          return false;
+        }
     }
 
   return true;

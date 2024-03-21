@@ -221,12 +221,12 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
 
   if (!IsNameValid (name, state))
     {
-      error ("%s: Name is invalid: %s", __func__, state.ToString ());
+      LogError ("%s: Name is invalid: %s", __func__, state.ToString ());
       return false;
     }
   if (!IsValueValid (nameOpOut.getOpValue (), state))
     {
-      error ("%s: Value is invalid: %s", __func__, state.ToString ());
+      LogError ("%s: Value is invalid: %s", __func__, state.ToString ());
       return false;
     }
 
