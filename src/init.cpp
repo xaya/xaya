@@ -256,12 +256,8 @@ void Interrupt(NodeContext& node)
     InterruptMapPort();
     if (node.connman)
         node.connman->Interrupt();
-    if (g_txindex) {
-        g_txindex->Interrupt();
-    }
-    ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Interrupt(); });
-    if (g_coin_stats_index) {
-        g_coin_stats_index->Interrupt();
+    for (auto* index : node.indexes) {
+        index->Interrupt();
     }
 }
 
@@ -337,16 +333,11 @@ void Shutdown(NodeContext& node)
     if (node.validation_signals) node.validation_signals->FlushBackgroundCallbacks();
 
     // Stop and delete all indexes only after flushing background callbacks.
-    if (g_txindex) {
-        g_txindex->Stop();
-        g_txindex.reset();
-    }
-    if (g_coin_stats_index) {
-        g_coin_stats_index->Stop();
-        g_coin_stats_index.reset();
-    }
-    ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Stop(); });
+    for (auto* index : node.indexes) index->Stop();
+    if (g_txindex) g_txindex.reset();
+    if (g_coin_stats_index) g_coin_stats_index.reset();
     DestroyAllBlockFilterIndexes();
+    node.indexes.clear(); // all instances are nullptr now
 
     // Any future callbacks will be dropped. This should absolutely be safe - if
     // missing a callback results in an unrecoverable situation, unclean shutdown
@@ -1766,7 +1757,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         // Start indexes initial sync
         if (!StartIndexBackgroundSync(node)) {
             bilingual_str err_str = _("Failed to start indexes, shutting down..");
-            chainman.GetNotifications().fatalError(err_str.original, err_str);
+            chainman.GetNotifications().fatalError(err_str);
             return;
         }
         // Load mempool from disk
