@@ -72,6 +72,33 @@ void ConfigureNameDialog::accept()
         if(MessageBoxInvalidJSON == QMessageBox::Ok){
             QDialog::accept();
         }
+
+    } else if (!IsMinimalJSONOrEmptyString(data)) {
+        QMessageBox MessageBoxNonMinimalJSON;
+        MessageBoxNonMinimalJSON.setIcon(QMessageBox::Warning);
+        MessageBoxNonMinimalJSON.setWindowTitle(tr("Non-minimal JSON"));
+        MessageBoxNonMinimalJSON.setText(tr("Are you sure you want to continue anyway? The inputted JSON data is non-minimal, and therefore will waste space as well as incurring added transaction costs when written on the blockchain.")); 
+        MessageBoxNonMinimalJSON.addButton(QMessageBox::Ok);
+        MessageBoxNonMinimalJSON.addButton(QMessageBox::Cancel);
+        MessageBoxNonMinimalJSON.addButton(tr("Minimalise JSON"), QMessageBox::ActionRole);
+        
+        MessageBoxNonMinimalJSON.exec();
+
+        QMessageBox::ButtonRole reply = MessageBoxNonMinimalJSON.buttonRole(MessageBoxNonMinimalJSON.clickedButton());
+
+        if(reply == QMessageBox::AcceptRole){
+            QDialog::accept();
+        } else if(reply == QMessageBox::ActionRole){
+            
+            std::string minimalJSONData = GetMinimalJSON(data);
+            ui->dataEdit->setText(QString::fromStdString(minimalJSONData));
+
+            returnData = QString::fromStdString(minimalJSONData);
+            data = minimalJSONData;
+
+            QDialog::accept();
+        }
+
     } else {
         QDialog::accept();
     }
@@ -114,9 +141,11 @@ void ConfigureNameDialog::onDataEdited(const QString &name)
     ui->dataSize->resize(ui->dataSize->fontMetrics().horizontalAdvance(ui->dataSize->text()), ui->dataSize->height());
 
     std::string data = ui->dataEdit->text().toStdString();
-
-    if(IsValidJSONOrEmptyString(data)){
-        ui->labelValidJSON->setText(tr("Valid JSON text."));
+    
+    if(IsMinimalJSONOrEmptyString(data)){ 
+        ui->labelValidJSON->setText(tr("Valid and minimal JSON data."));
+    } else if(IsValidJSONOrEmptyString(data)){
+        ui->labelValidJSON->setText(tr("JSON data is not minimal."));
     } else {
         ui->labelValidJSON->setText(tr("JSON data inputted is invalid."));
     }
