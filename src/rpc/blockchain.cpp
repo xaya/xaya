@@ -143,26 +143,29 @@ static const CBlockIndex* ParseHashOrHeight(const UniValue& param, ChainstateMan
 }
 
 /** The RPC result type for "powdata" subobjects.  */
-const RPCResult POWDATA_RESULT{RPCResult::Type::OBJ, "powdata", "The block's attached PoW data",
-        {
-            {RPCResult::Type::STR, "algo", "Mining algorithm used for this block"},
-            {RPCResult::Type::BOOL, "mergemined", "Whether this block is merge mined"},
-            {RPCResult::Type::STR_HEX, "bits", "The bits"},
-            {RPCResult::Type::NUM, "difficulty", "The difficulty"},
-            {RPCResult::Type::STR_HEX, "fakeheader", /* optional */ true, "Serialised fake header if not merge mined"},
-            {RPCResult::Type::OBJ, "auxpow", /* optional */ true, "The auxpow object if merge mined",
-                {
-                    {RPCResult::Type::OBJ, "tx", "The parent chain coinbase tx of this auxpow",
-                        {{RPCResult::Type::ELISION, "", "Same format as for decoded raw transactions"}}},
-                    {RPCResult::Type::NUM, "index", "Merkle index of the parent coinbase"},
-                    {RPCResult::Type::ARR, "merklebranch", "Merkle branch of the parent coinbase",
-                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
-                    {RPCResult::Type::NUM, "chainindex", "Index in the auxpow Merkle tree"},
-                    {RPCResult::Type::ARR, "chainmerklebranch", "Branch in the auxpow Merkle tree",
-                        {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
-                    {RPCResult::Type::STR_HEX, "parentblock", "The parent block serialised as hex string"},
-                }},
-        }};
+RPCResult PowDataResult (const bool optional)
+{
+  return {RPCResult::Type::OBJ, "powdata", optional, "The block's attached PoW data",
+          {
+              {RPCResult::Type::STR, "algo", "Mining algorithm used for this block"},
+              {RPCResult::Type::BOOL, "mergemined", "Whether this block is merge mined"},
+              {RPCResult::Type::STR_HEX, "bits", "The bits"},
+              {RPCResult::Type::NUM, "difficulty", "The difficulty"},
+              {RPCResult::Type::STR_HEX, "fakeheader", /* optional */ true, "Serialised fake header if not merge mined"},
+              {RPCResult::Type::OBJ, "auxpow", /* optional */ true, "The auxpow object if merge mined",
+                  {
+                      {RPCResult::Type::OBJ, "tx", "The parent chain coinbase tx of this auxpow",
+                          {{RPCResult::Type::ELISION, "", "Same format as for decoded raw transactions"}}},
+                      {RPCResult::Type::NUM, "index", "Merkle index of the parent coinbase"},
+                      {RPCResult::Type::ARR, "merklebranch", "Merkle branch of the parent coinbase",
+                          {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
+                      {RPCResult::Type::NUM, "chainindex", "Index in the auxpow Merkle tree"},
+                      {RPCResult::Type::ARR, "chainmerklebranch", "Branch in the auxpow Merkle tree",
+                          {{RPCResult::Type::STR_HEX, "", "The Merkle branch hash"}}},
+                      {RPCResult::Type::STR_HEX, "parentblock", "The parent block serialised as hex string"},
+                  }},
+          }};
+}
 
 /** Converts the base data, excluding any contextual information,
  * in a block header to JSON.  */
@@ -669,7 +672,7 @@ static RPCHelpMan getblockheader()
                             {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
                             {RPCResult::Type::STR_HEX, "previousblockhash", /*optional=*/true, "The hash of the previous block (if available)"},
                             {RPCResult::Type::STR_HEX, "nextblockhash", /*optional=*/true, "The hash of the next block (if available)"},
-                            POWDATA_RESULT,
+                            PowDataResult(true),
                         }},
                     RPCResult{"for verbose=false",
                         RPCResult::Type::STR_HEX, "", "A string that is serialized, hex-encoded data for block 'hash'"},
@@ -701,17 +704,25 @@ static RPCHelpMan getblockheader()
     }
 
     const auto header = pblockindex->GetBlockHeader(chainman.m_blockman);
+    /* If we only have the block header but not the block data in the node,
+       then the header has been constructed from the CBlockIndex only and
+       does not contain valid powdata.  */
+    const bool hasPow = !header.pow.isNull();
 
     if (!fVerbose)
     {
         DataStream ssBlock{};
-        ssBlock << header;
+        if (hasPow)
+            ssBlock << header;
+        else
+            ssBlock << static_cast<const CPureBlockHeader&>(header);
         std::string strHex = HexStr(ssBlock);
         return strHex;
     }
 
     auto result = blockheaderToJSON(chainman.m_blockman, *tip, *pblockindex);
-    result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose, chainman.ActiveChainstate()));
+    if (hasPow)
+        result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose, chainman.ActiveChainstate()));
 
     return result;
 },
@@ -843,7 +854,7 @@ static RPCHelpMan getblock()
                     {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
                     {RPCResult::Type::STR_HEX, "previousblockhash", /*optional=*/true, "The hash of the previous block (if available)"},
                     {RPCResult::Type::STR_HEX, "nextblockhash", /*optional=*/true, "The hash of the next block (if available)"},
-                    POWDATA_RESULT,
+                    PowDataResult(false),
                     {RPCResult::Type::STR_HEX, "rngseed", "Seed value that may be used for (not fully secure) random numbers in games"},
                     {RPCResult::Type::STR_HEX, "previousblockhash", "The hash of the previous block"},
                     {RPCResult::Type::STR_HEX, "nextblockhash", "The hash of the next block"},

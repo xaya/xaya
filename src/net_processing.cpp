@@ -4314,7 +4314,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                to convert pindex to header.  This may fail if we are still
                in initial sync with assumeutxo (for instance).  In this case,
                explicitly ignore the request.  */
-            if (header.IsNull ())
+            if (header.pow.isNull ())
               {
                   LogPrint(BCLog::NET, "%s: ignoring getheaders request that we do not have on disk yet", __func__);
                   return;

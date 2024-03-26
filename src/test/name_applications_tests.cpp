@@ -38,4 +38,13 @@ BOOST_AUTO_TEST_CASE( name_description )
     BOOST_CHECK(DescFromName(playerValid, NameNamespace::Player) == "'p/wikileaks'");
 }
 
+BOOST_AUTO_TEST_CASE( valid_json )
+{
+    BOOST_CHECK_EQUAL(IsValidJSONOrEmptyString("{\"bar\": [1,2,3]}"), true);
+    
+    BOOST_CHECK_EQUAL(IsValidJSONOrEmptyString("{\foo:"), false);
+    
+    BOOST_CHECK_EQUAL(IsValidJSONOrEmptyString(""), true);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

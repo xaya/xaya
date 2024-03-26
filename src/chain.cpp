@@ -17,7 +17,16 @@ std::string CBlockFileInfo::ToString() const
 CBlockHeader CBlockIndex::GetBlockHeader(const node::BlockManager& blockman) const
 {
     CBlockHeader block;
-    blockman.ReadBlockHeaderFromDisk (block, *this);
+    if (blockman.ReadBlockHeaderFromDisk (block, *this))
+      return block;
+
+    /* If a header has been submitted to the node but the block data itself
+       is not yet known, then the block cannot be read from disk either.
+       In that case, we fall back to the data we can get from the CBlockIndex
+       itself, i.e. the pure header.  */
+    GetPureHeader(block);
+    /* block.pow.algo will be INVALID to "mark" this case.  */
+
     return block;
 }
 

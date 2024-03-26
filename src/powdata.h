@@ -126,6 +126,12 @@ public:
   }
 
   inline bool
+  isNull () const
+  {
+    return algo == PowAlgo::INVALID;
+  }
+
+  inline bool
   isMergeMined () const
   {
     return (static_cast<int> (algo) & mmFlag) != 0;
