@@ -25,4 +25,8 @@ std::string DescFromName (const valtype& name, NameNamespace ns);
 
 bool IsValidJSONOrEmptyString (const std::string& text);
 
+bool IsMinimalJSONOrEmptyString (const std::string& text);
+
+std::string GetMinimalJSON (const std::string& text);
+
 #endif // H_BITCOIN_NAMES_APPLICATIONS
