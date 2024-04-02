@@ -9,6 +9,8 @@
 
 #include <univalue.h>
 
+#include <logging.h>
+
 namespace
 {
 
@@ -114,4 +116,35 @@ IsValidJSONOrEmptyString (const std::string& text){
     UniValue v;
 
     return text.empty() || v.read(text);
+}    
+
+bool
+IsMinimalJSONOrEmptyString (const std::string& text){
+    UniValue v;
+    if(text.empty()){
+        return true;
+    } 
+
+    if(!v.read(text)){ 
+        return false;
+    } 
+
+    const std::string minimalJSON = GetMinimalJSON(text);
+    
+    const bool isMinimal = (text == minimalJSON);
+
+    if(!isMinimal){
+        LogDebug(BCLog::NAMES, "Minimalised JSON string is: %s \n", minimalJSON);
+    }
+
+    return isMinimal;
+}
+
+std::string
+GetMinimalJSON (const std::string& text){
+    UniValue v;
+
+    v.read(text);
+
+    return v.write(0,0);
 }

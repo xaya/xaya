@@ -47,4 +47,17 @@ BOOST_AUTO_TEST_CASE( valid_json )
     BOOST_CHECK_EQUAL(IsValidJSONOrEmptyString(""), true);
 }
 
+BOOST_AUTO_TEST_CASE( minimal_json )
+{
+    BOOST_CHECK_EQUAL(IsMinimalJSONOrEmptyString("{\"bar\":[1,2,3]}"), true);
+
+    BOOST_CHECK_EQUAL(IsMinimalJSONOrEmptyString("{\"bar\":  [1,2,3]}"), false);
+
+    BOOST_CHECK_EQUAL(IsMinimalJSONOrEmptyString("{\foo:"), false);
+
+    BOOST_CHECK_EQUAL(IsMinimalJSONOrEmptyString(""), true);
+
+    BOOST_CHECK_EQUAL(IsMinimalJSONOrEmptyString("{\"bar\":[1, 2, 3]}"), false);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
