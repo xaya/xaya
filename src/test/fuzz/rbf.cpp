@@ -82,17 +82,6 @@ FUZZ_TARGET(rbf, .init = initialize_rbf)
     }
 }
 
-void CheckDiagramConcave(std::vector<FeeFrac>& diagram)
-{
-    // Diagrams are in monotonically-decreasing feerate order.
-    FeeFrac last_chunk = diagram.front();
-    for (size_t i = 1; i<diagram.size(); ++i) {
-        FeeFrac next_chunk = diagram[i] - diagram[i-1];
-        assert(next_chunk <= last_chunk);
-        last_chunk = next_chunk;
-    }
-}
-
 FUZZ_TARGET(package_rbf, .init = initialize_package_rbf)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
@@ -107,6 +96,12 @@ FUZZ_TARGET(package_rbf, .init = initialize_package_rbf)
     std::vector<CTransaction> mempool_txs;
     size_t iter{0};
 
+    int32_t replacement_vsize = fuzzed_data_provider.ConsumeIntegralInRange<int32_t>(1, 1000000);
+
+    // Keep track of the total vsize of CTxMemPoolEntry's being added to the mempool to avoid overflow
+    // Add replacement_vsize since this is added to new diagram during RBF check
+    int64_t running_vsize_total{replacement_vsize};
+
     LOCK2(cs_main, pool.cs);
 
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), NUM_ITERS)
@@ -114,19 +109,33 @@ FUZZ_TARGET(package_rbf, .init = initialize_package_rbf)
         // Make sure txns only have one input, and that a unique input is given to avoid circular references
         std::optional<CMutableTransaction> parent = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider, TX_WITH_WITNESS);
         if (!parent) {
-            continue;
+            return;
         }
         assert(iter <= g_outpoints.size());
         parent->vin.resize(1);
         parent->vin[0].prevout = g_outpoints[iter++];
 
         mempool_txs.emplace_back(*parent);
-        pool.addUnchecked(ConsumeTxMemPoolEntry(fuzzed_data_provider, mempool_txs.back()));
+        const auto parent_entry = ConsumeTxMemPoolEntry(fuzzed_data_provider, mempool_txs.back());
+        running_vsize_total += parent_entry.GetTxSize();
+        if (running_vsize_total > std::numeric_limits<int32_t>::max()) {
+            // We aren't adding this final tx to mempool, so we don't want to conflict with it
+            mempool_txs.pop_back();
+            break;
+        }
+        pool.addUnchecked(parent_entry);
         if (fuzzed_data_provider.ConsumeBool() && !child->vin.empty()) {
             child->vin[0].prevout = COutPoint{mempool_txs.back().GetHash(), 0};
         }
         mempool_txs.emplace_back(*child);
-        pool.addUnchecked(ConsumeTxMemPoolEntry(fuzzed_data_provider, mempool_txs.back()));
+        const auto child_entry = ConsumeTxMemPoolEntry(fuzzed_data_provider, mempool_txs.back());
+        running_vsize_total += child_entry.GetTxSize();
+        if (running_vsize_total > std::numeric_limits<int32_t>::max()) {
+            // We aren't adding this final tx to mempool, so we don't want to conflict with it
+            mempool_txs.pop_back();
+            break;
+        }
+        pool.addUnchecked(child_entry);
 
         if (fuzzed_data_provider.ConsumeBool()) {
             pool.PrioritiseTransaction(mempool_txs.back().GetHash().ToUint256(), fuzzed_data_provider.ConsumeIntegralInRange<int32_t>(-100000, 100000));
@@ -147,33 +156,33 @@ FUZZ_TARGET(package_rbf, .init = initialize_package_rbf)
         pool.CalculateDescendants(txiter, all_conflicts);
     }
 
-    // Calculate the feerate diagrams for a replacement.
+    // Calculate the chunks for a replacement.
     CAmount replacement_fees = ConsumeMoney(fuzzed_data_provider);
-    int64_t replacement_vsize = fuzzed_data_provider.ConsumeIntegralInRange<int64_t>(1, 1000000);
-    auto calc_results{pool.CalculateFeerateDiagramsForRBF(replacement_fees, replacement_vsize, direct_conflicts, all_conflicts)};
+    auto calc_results{pool.CalculateChunksForRBF(replacement_fees, replacement_vsize, direct_conflicts, all_conflicts)};
 
     if (calc_results.has_value()) {
-        // Sanity checks on the diagrams.
+        // Sanity checks on the chunks.
 
-        // Diagrams start at 0.
-        assert(calc_results->first.front().size == 0);
-        assert(calc_results->first.front().fee == 0);
-        assert(calc_results->second.front().size == 0);
-        assert(calc_results->second.front().fee == 0);
-
-        CheckDiagramConcave(calc_results->first);
-        CheckDiagramConcave(calc_results->second);
-
-        CAmount replaced_fee{0};
-        int64_t replaced_size{0};
-        for (auto txiter : all_conflicts) {
-            replaced_fee += txiter->GetModifiedFee();
-            replaced_size += txiter->GetTxSize();
+        // Feerates are monotonically decreasing.
+        FeeFrac first_sum;
+        for (size_t i = 0; i < calc_results->first.size(); ++i) {
+            first_sum += calc_results->first[i];
+            if (i) assert(!(calc_results->first[i - 1] << calc_results->first[i]));
         }
-        // The total fee of the new diagram should be the total fee of the old
-        // diagram - replaced_fee + replacement_fees
-        assert(calc_results->first.back().fee - replaced_fee + replacement_fees == calc_results->second.back().fee);
-        assert(calc_results->first.back().size - replaced_size + replacement_vsize == calc_results->second.back().size);
+        FeeFrac second_sum;
+        for (size_t i = 0; i < calc_results->second.size(); ++i) {
+            second_sum += calc_results->second[i];
+            if (i) assert(!(calc_results->second[i - 1] << calc_results->second[i]));
+        }
+
+        FeeFrac replaced;
+        for (auto txiter : all_conflicts) {
+            replaced.fee += txiter->GetModifiedFee();
+            replaced.size += txiter->GetTxSize();
+        }
+        // The total fee & size of the new diagram minus replaced fee & size should be the total
+        // fee & size of the old diagram minus replacement fee & size.
+        assert((first_sum - replaced) == (second_sum - FeeFrac{replacement_fees, replacement_vsize}));
     }
 
     // If internals report error, wrapper should too
@@ -182,10 +191,12 @@ FUZZ_TARGET(package_rbf, .init = initialize_package_rbf)
          assert(err_tuple.value().first == DiagramCheckError::UNCALCULABLE);
     } else {
         // Diagram check succeeded
+        auto old_sum = std::accumulate(calc_results->first.begin(), calc_results->first.end(), FeeFrac{});
+        auto new_sum = std::accumulate(calc_results->second.begin(), calc_results->second.end(), FeeFrac{});
         if (!err_tuple.has_value()) {
             // New diagram's final fee should always match or exceed old diagram's
-            assert(calc_results->first.back().fee <= calc_results->second.back().fee);
-        } else if (calc_results->first.back().fee > calc_results->second.back().fee) {
+            assert(old_sum.fee <= new_sum.fee);
+        } else if (old_sum.fee > new_sum.fee) {
             // Or it failed, and if old diagram had higher fees, it should be a failure
             assert(err_tuple.value().first == DiagramCheckError::FAILURE);
         }
