@@ -8,7 +8,7 @@ You can find installation instructions in the `build-*.md` file for your platfor
 | --- | --- |
 | [Autoconf](https://www.gnu.org/software/autoconf/) | [2.69](https://github.com/bitcoin/bitcoin/pull/17769) |
 | [Automake](https://www.gnu.org/software/automake/) | [1.13](https://github.com/bitcoin/bitcoin/pull/18290) |
-| [Clang](https://clang.llvm.org) | [14.0](https://github.com/bitcoin/bitcoin/pull/29208) |
+| [Clang](https://clang.llvm.org) | [15.0](https://github.com/bitcoin/bitcoin/pull/29165) |
 | [GCC](https://gcc.gnu.org) | [11.1](https://github.com/bitcoin/bitcoin/pull/29091) |
 | [Python](https://www.python.org) (scripts, tests) | [3.9](https://github.com/bitcoin/bitcoin/pull/28211) |
 | [systemtap](https://sourceware.org/systemtap/) ([tracing](tracing.md))| N/A |
@@ -36,7 +36,7 @@ You can find installation instructions in the `build-*.md` file for your platfor
 | Dependency | Releases | Version used | Minimum required | Runtime |
 | --- | --- | --- | --- | --- |
 | [libnatpmp](../depends/packages/libnatpmp.mk) | [link](https://github.com/miniupnp/libnatpmp/) | commit [f2433be...](https://github.com/bitcoin/bitcoin/pull/29708) | | No |
-| [MiniUPnPc](../depends/packages/miniupnpc.mk) | [link](https://miniupnp.tuxfamily.org/) | [2.2.2](https://github.com/bitcoin/bitcoin/pull/20421) | 2.1 | No |
+| [MiniUPnPc](../depends/packages/miniupnpc.mk) | [link](https://miniupnp.tuxfamily.org/) | [2.2.7](https://github.com/bitcoin/bitcoin/pull/29707) | 2.1 | No |
 
 ### Notifications
 | Dependency | Releases | Version used | Minimum required | Runtime |

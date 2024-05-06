@@ -197,7 +197,6 @@ public:
     std::chrono::seconds m_last_tx_time;
     std::chrono::seconds m_last_block_time;
     std::chrono::seconds m_connected;
-    int64_t nTimeOffset;
     std::string m_addr_name;
     int nVersion;
     std::string cleanSubVer;
@@ -709,7 +708,6 @@ public:
     std::atomic<std::chrono::seconds> m_last_recv{0s};
     //! Unix epoch time at peer connection
     const std::chrono::seconds m_connected;
-    std::atomic<int64_t> nTimeOffset{0};
     // Address of this peer
     const CAddress addr;
     // Bind address of our side of the connection
@@ -1181,6 +1179,8 @@ public:
 
     void StartExtraBlockRelayPeers();
 
+    // Count the number of full-relay peer we have.
+    int GetFullOutboundConnCount() const;
     // Return the number of outbound peers we have in excess of our target (eg,
     // if we previously called SetTryNewOutboundPeer(true), and have since set
     // to false, we may have extra peers that we wish to disconnect). This may
