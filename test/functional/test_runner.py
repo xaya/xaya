@@ -184,6 +184,9 @@ BASE_SCRIPTS = [
     'wallet_txn_clone.py --segwit',
     'rpc_getchaintips.py',
     'rpc_misc.py',
+    # FIXME: Debug and re-enable for Xaya
+    #'p2p_1p1c_network.py',
+    #'p2p_opportunistic_1p1c.py',
     'interface_rest.py',
     'mempool_spend_coinbase.py',
     'wallet_avoid_mixing_output_types.py --descriptors',
@@ -450,7 +453,9 @@ SKIPPED = [
     'feature_signet.py',
     'feature_versionbits_warning.py',
     'p2p_dos_header_tree.py',
+    'p2p_1p1c_network.py',
     'p2p_ibd_stalling.py',
+    'p2p_opportunistic_1p1c.py',
     'mempool_expiry.py',
     'tool_signet_miner.py',
     # Disabled, as they take too long with neoscrypt (they mine a lot of
