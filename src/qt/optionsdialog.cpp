@@ -2,9 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <qt/optionsdialog.h>
 #include <qt/forms/ui_optionsdialog.h>
@@ -20,6 +18,7 @@
 #include <node/chainstatemanager_args.h>
 #include <netbase.h>
 #include <txdb.h>
+#include <util/strencodings.h>
 
 #include <chrono>
 
@@ -482,7 +481,10 @@ QValidator(parent)
 QValidator::State ProxyAddressValidator::validate(QString &input, int &pos) const
 {
     Q_UNUSED(pos);
-    // Validate the proxy
+    uint16_t port{0};
+    std::string hostname;
+    if (!SplitHostPort(input.toStdString(), port, hostname) || port != 0) return QValidator::Invalid;
+
     CService serv(LookupNumeric(input.toStdString(), DEFAULT_GUI_PROXY_PORT));
     Proxy addrProxy = Proxy(serv, true);
     if (addrProxy.IsValid())

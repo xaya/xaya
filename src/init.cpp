@@ -3,9 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <init.h>
 
@@ -35,6 +33,8 @@
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
 #include <interfaces/node.h>
+#include <kernel/context.h>
+#include <key.h>
 #include <logging.h>
 #include <mapport.h>
 #include <names/encoding.h>
@@ -81,6 +81,7 @@
 #include <util/fs_helpers.h>
 #include <util/moneystr.h>
 #include <util/result.h>
+#include <util/signalinterrupt.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/syserror.h>
@@ -384,6 +385,7 @@ void Shutdown(NodeContext& node)
     node.chainman.reset();
     node.validation_signals.reset();
     node.scheduler.reset();
+    node.ecc_context.reset();
     node.kernel.reset();
 
     RemovePidFile(*node.args);
@@ -1112,6 +1114,10 @@ bool AppInitSanityChecks(const kernel::Context& kernel)
     if (!result) {
         InitError(util::ErrorString(result));
         return InitError(strprintf(_("Initialization sanity check failed. %s is shutting down."), PACKAGE_NAME));
+    }
+
+    if (!ECC_InitSanityCheck()) {
+        return InitError(strprintf(_("Elliptic curve cryptography sanity check failure. %s is shutting down."), PACKAGE_NAME));
     }
 
     // Probe the data directory lock to give an early error message, if possible

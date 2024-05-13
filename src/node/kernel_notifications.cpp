@@ -4,9 +4,7 @@
 
 #include <node/kernel_notifications.h>
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <chain.h>
 #include <common/args.h>
@@ -16,6 +14,7 @@
 #include <node/abort.h>
 #include <node/interface_ui.h>
 #include <util/check.h>
+#include <util/signalinterrupt.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/translation.h>
