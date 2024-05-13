@@ -17,6 +17,7 @@
 #include <interfaces/node.h>
 #include <interfaces/wallet.h>
 #include <kernel/chain.h>
+#include <kernel/context.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <mapport.h>
@@ -47,14 +48,13 @@
 #include <util/check.h>
 #include <util/result.h>
 #include <util/signalinterrupt.h>
+#include <util/string.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <any>
 #include <memory>
@@ -91,7 +91,7 @@ public:
     explicit NodeImpl(NodeContext& context) { setContext(&context); }
     void initLogging() override { InitLogging(args()); }
     void initParameterInteraction() override { InitParameterInteraction(args()); }
-    bilingual_str getWarnings() override { return GetWarnings(true); }
+    bilingual_str getWarnings() override { return Join(GetWarnings(), Untranslated("<hr />")); }
     int getExitStatus() override { return Assert(m_context)->exit_status.load(); }
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override
@@ -100,6 +100,7 @@ public:
         if (!AppInitParameterInteraction(args())) return false;
 
         m_context->kernel = std::make_unique<kernel::Context>();
+        m_context->ecc_context = std::make_unique<ECC_Context>();
         if (!AppInitSanityChecks(*m_context->kernel)) return false;
 
         if (!AppInitLockDataDirectory()) return false;

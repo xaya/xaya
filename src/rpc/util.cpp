@@ -2,9 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <clientversion.h>
 #include <core_io.h>
@@ -18,16 +16,19 @@
 #include <script/signingprovider.h>
 #include <script/solver.h>
 #include <tinyformat.h>
+#include <univalue.h>
 #include <util/check.h>
 #include <util/result.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/translation.h>
+#include <warnings.h>
 
 #include <algorithm>
 #include <iterator>
 #include <string_view>
 #include <tuple>
+#include <utility>
 
 const std::string UNIX_EPOCH_TIME = "UNIX epoch time";
 const std::string EXAMPLE_ADDRESS[2] = {"bc1q09vm5lfy0j5reeulh4x5752q25uqqvz34hufdl", "bc1q02ad21edsxd23d32dfgqqsz4vv4nmtfzuklhy3"};
@@ -193,11 +194,14 @@ std::string HelpExampleRpcNamed(const std::string& methodname, const RPCArgList&
 CPubKey HexToPubKey(const std::string& hex_in)
 {
     if (!IsHex(hex_in)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid public key: " + hex_in);
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Pubkey \"" + hex_in + "\" must be a hex string");
+    }
+    if (hex_in.length() != 66 && hex_in.length() != 130) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Pubkey \"" + hex_in + "\" must have a length of either 33 or 65 bytes");
     }
     CPubKey vchPubKey(ParseHex(hex_in));
     if (!vchPubKey.IsFullyValid()) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid public key: " + hex_in);
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Pubkey \"" + hex_in + "\" must be cryptographically valid.");
     }
     return vchPubKey;
 }
@@ -1356,4 +1360,18 @@ void PushWarnings(const std::vector<bilingual_str>& warnings, UniValue& obj)
 {
     if (warnings.empty()) return;
     obj.pushKV("warnings", BilingualStringsToUniValue(warnings));
+}
+
+UniValue GetNodeWarnings(bool use_deprecated)
+{
+    if (use_deprecated) {
+        const auto all_warnings{GetWarnings()};
+        return all_warnings.empty() ? "" : all_warnings.back().original;
+    }
+
+    UniValue warnings{UniValue::VARR};
+    for (auto&& warning : GetWarnings()) {
+        warnings.push_back(std::move(warning.original));
+    }
+    return warnings;
 }

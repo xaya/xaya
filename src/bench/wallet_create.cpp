@@ -2,9 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or https://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <bench/bench.h>
 #include <node/context.h>
@@ -51,9 +49,14 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
 static void WalletCreatePlain(benchmark::Bench& bench) { WalletCreate(bench, /*encrypted=*/false); }
 static void WalletCreateEncrypted(benchmark::Bench& bench) { WalletCreate(bench, /*encrypted=*/true); }
 
+#ifndef _MSC_VER
+// TODO: Being built with MSVC, the fs::remove_all() call in
+// the WalletCreate() fails with the error "The process cannot
+// access the file because it is being used by another process."
 #ifdef USE_SQLITE
 BENCHMARK(WalletCreatePlain, benchmark::PriorityLevel::LOW);
 BENCHMARK(WalletCreateEncrypted, benchmark::PriorityLevel::LOW);
+#endif
 #endif
 
 } // namespace wallet

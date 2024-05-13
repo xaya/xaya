@@ -2,9 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <chainparamsbase.h>
 #include <clientversion.h>
@@ -694,21 +692,10 @@ static void MutateTxSign(CMutableTransaction& tx, const std::string& flagStr)
     tx = mergedTx;
 }
 
-class Secp256k1Init
-{
-public:
-    Secp256k1Init() {
-        ECC_Start();
-    }
-    ~Secp256k1Init() {
-        ECC_Stop();
-    }
-};
-
 static void MutateTx(CMutableTransaction& tx, const std::string& command,
                      const std::string& commandVal)
 {
-    std::unique_ptr<Secp256k1Init> ecc;
+    std::unique_ptr<ECC_Context> ecc;
 
     if (command == "nversion")
         MutateTxVersion(tx, commandVal);
@@ -728,10 +715,10 @@ static void MutateTx(CMutableTransaction& tx, const std::string& command,
     else if (command == "outaddr")
         MutateTxAddOutAddr(tx, commandVal);
     else if (command == "outpubkey") {
-        ecc.reset(new Secp256k1Init());
+        ecc.reset(new ECC_Context());
         MutateTxAddOutPubKey(tx, commandVal);
     } else if (command == "outmultisig") {
-        ecc.reset(new Secp256k1Init());
+        ecc.reset(new ECC_Context());
         MutateTxAddOutMultiSig(tx, commandVal);
     } else if (command == "outscript")
         MutateTxAddOutScript(tx, commandVal);
@@ -739,7 +726,7 @@ static void MutateTx(CMutableTransaction& tx, const std::string& command,
         MutateTxAddOutData(tx, commandVal);
 
     else if (command == "sign") {
-        ecc.reset(new Secp256k1Init());
+        ecc.reset(new ECC_Context());
         MutateTxSign(tx, commandVal);
     }
 

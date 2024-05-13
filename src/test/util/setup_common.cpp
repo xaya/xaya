@@ -2,9 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include <config/bitcoin-config.h>
-#endif
+#include <config/bitcoin-config.h> // IWYU pragma: keep
 
 #include <test/util/setup_common.h>
 
@@ -185,6 +183,7 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
     AppInitParameterInteraction(*m_node.args);
     LogInstance().StartLogging();
     m_node.kernel = std::make_unique<kernel::Context>();
+    m_node.ecc_context = std::make_unique<ECC_Context>();
     SetupEnvironment();
 
     ValidationCacheSizes validation_cache_sizes{};
@@ -202,6 +201,7 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
 
 BasicTestingSetup::~BasicTestingSetup()
 {
+    m_node.ecc_context.reset();
     m_node.kernel.reset();
     SetMockTime(0s); // Reset mocktime for following tests
     LogInstance().DisconnectTestLogger();

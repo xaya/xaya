@@ -155,6 +155,12 @@ class AssumeutxoTest(BitcoinTestFramework):
 
         self.restart_node(2, extra_args=self.extra_args[2])
 
+    def test_invalid_file_path(self):
+        self.log.info("Test bitcoind should fail when file path is invalid.")
+        node = self.nodes[0]
+        path = node.datadir_path / node.chain / "invalid" / "path"
+        assert_raises_rpc_error(-8, "Couldn't open file {} for reading.".format(path), node.loadtxoutset, path)
+
     def run_test(self):
         """
         Bring up two (disconnected) nodes, mine some new blocks on the first,
@@ -239,6 +245,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.test_invalid_mempool_state(dump_output['path'])
         self.test_invalid_snapshot_scenarios(dump_output['path'])
         self.test_invalid_chainstate_scenarios()
+        self.test_invalid_file_path()
 
         self.log.info(f"Loading snapshot into second node from {dump_output['path']}")
         loaded = n1.loadtxoutset(dump_output['path'])
@@ -398,6 +405,10 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(snapshot['blocks'], SNAPSHOT_BASE_HEIGHT)
         assert_equal(snapshot['snapshot_blockhash'], dump_output['base_hash'])
         assert_equal(snapshot['validated'], False)
+
+        self.log.info("Check that loading the snapshot again will fail because there is already an active snapshot.")
+        with n2.assert_debug_log(expected_msgs=["[snapshot] can't activate a snapshot-based chainstate more than once"]):
+            assert_raises_rpc_error(-32603, "Unable to load UTXO snapshot", n2.loadtxoutset, dump_output['path'])
 
         self.connect_nodes(0, 2)
         self.wait_until(lambda: n2.getchainstates()['chainstates'][-1]['blocks'] == FINAL_HEIGHT)
