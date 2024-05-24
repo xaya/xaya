@@ -86,7 +86,6 @@ using node::BlockManager;
 using node::BlockMap;
 using node::CBlockIndexHeightOnlyComparator;
 using node::CBlockIndexWorkComparator;
-using node::fReindex;
 using node::SnapshotMetadata;
 
 /** Time to wait between writing blocks/block index to disk. */
@@ -269,13 +268,13 @@ static void LimitMempoolSize(CTxMemPool& pool, CCoinsViewCache& coins_cache)
 {
     AssertLockHeld(::cs_main);
     AssertLockHeld(pool.cs);
-    int expired = pool.Expire(GetTime<std::chrono::seconds>() - pool.m_expiry);
+    int expired = pool.Expire(GetTime<std::chrono::seconds>() - pool.m_opts.expiry);
     if (expired != 0) {
         LogPrint(BCLog::MEMPOOL, "Expired %i transactions from the memory pool\n", expired);
     }
 
     std::vector<COutPoint> vNoSpendsRemaining;
-    pool.TrimToSize(pool.m_max_size_bytes, &vNoSpendsRemaining);
+    pool.TrimToSize(pool.m_opts.max_size_bytes, &vNoSpendsRemaining);
     for (const COutPoint& removed : vNoSpendsRemaining)
         coins_cache.Uncache(removed);
 }
@@ -696,9 +695,9 @@ private:
             return state.Invalid(TxValidationResult::TX_RECONSIDERABLE, "mempool min fee not met", strprintf("%d < %d", package_fee, mempoolRejectFee));
         }
 
-        if (package_fee < m_pool.m_min_relay_feerate.GetFee(package_size)) {
+        if (package_fee < m_pool.m_opts.min_relay_feerate.GetFee(package_size)) {
             return state.Invalid(TxValidationResult::TX_RECONSIDERABLE, "min relay fee not met",
-                                 strprintf("%d < %d", package_fee, m_pool.m_min_relay_feerate.GetFee(package_size)));
+                                 strprintf("%d < %d", package_fee, m_pool.m_opts.min_relay_feerate.GetFee(package_size)));
         }
         return true;
     }
@@ -743,7 +742,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     std::string reason;
-    if (m_pool.m_require_standard && !IsStandardTx(tx, m_pool.m_max_datacarrier_bytes, m_pool.m_permit_bare_multisig, m_pool.m_dust_relay_feerate, reason)) {
+    if (m_pool.m_opts.require_standard && !IsStandardTx(tx, m_pool.m_opts.max_datacarrier_bytes, m_pool.m_opts.permit_bare_multisig, m_pool.m_opts.dust_relay_feerate, reason)) {
         return state.Invalid(TxValidationResult::TX_NOT_STANDARD, reason);
     }
 
@@ -790,7 +789,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
                 //
                 // Replaceability signaling of the original transactions may be
                 // ignored due to node setting.
-                const bool allow_rbf{m_pool.m_full_rbf || SignalsOptInRBF(*ptxConflicting) || ptxConflicting->nVersion == 3};
+                const bool allow_rbf{m_pool.m_opts.full_rbf || SignalsOptInRBF(*ptxConflicting) || ptxConflicting->nVersion == 3};
                 if (!allow_rbf) {
                     return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "txn-mempool-conflict");
                 }
@@ -877,12 +876,12 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
         return false; // state filled in by CheckTxInputs
     }
 
-    if (m_pool.m_require_standard && !AreInputsStandard(tx, m_view)) {
+    if (m_pool.m_opts.require_standard && !AreInputsStandard(tx, m_view)) {
         return state.Invalid(TxValidationResult::TX_INPUTS_NOT_STANDARD, "bad-txns-nonstandard-inputs");
     }
 
     // Check for non-standard witnesses.
-    if (tx.HasWitness() && m_pool.m_require_standard && !IsWitnessStandard(tx, m_view)) {
+    if (tx.HasWitness() && m_pool.m_opts.require_standard && !IsWitnessStandard(tx, m_view)) {
         return state.Invalid(TxValidationResult::TX_WITNESS_MUTATED, "bad-witness-nonstandard");
     }
 
@@ -920,11 +919,11 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     // method of ensuring the tx remains bumped. For example, the fee-bumping child could disappear
     // due to a replacement.
     // The only exception is v3 transactions.
-    if (!bypass_limits && ws.m_ptx->nVersion != 3 && ws.m_modified_fees < m_pool.m_min_relay_feerate.GetFee(ws.m_vsize)) {
+    if (!bypass_limits && ws.m_ptx->nVersion != 3 && ws.m_modified_fees < m_pool.m_opts.min_relay_feerate.GetFee(ws.m_vsize)) {
         // Even though this is a fee-related failure, this result is TX_MEMPOOL_POLICY, not
         // TX_RECONSIDERABLE, because it cannot be bypassed using package validation.
         return state.Invalid(TxValidationResult::TX_MEMPOOL_POLICY, "min relay fee not met",
-                             strprintf("%d < %d", ws.m_modified_fees, m_pool.m_min_relay_feerate.GetFee(ws.m_vsize)));
+                             strprintf("%d < %d", ws.m_modified_fees, m_pool.m_opts.min_relay_feerate.GetFee(ws.m_vsize)));
     }
     // No individual transactions are allowed below the mempool min feerate except from disconnected
     // blocks and transactions in a package. Package transactions will be checked using package
@@ -935,7 +934,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     // Note that these modifications are only applicable to single transaction scenarios;
     // carve-outs and package RBF are disabled for multi-transaction evaluations.
-    CTxMemPool::Limits maybe_rbf_limits = m_pool.m_limits;
+    CTxMemPool::Limits maybe_rbf_limits = m_pool.m_opts.limits;
 
     // Calculate in-mempool ancestors, up to a limit.
     if (ws.m_conflicts.size() == 1) {
@@ -1088,7 +1087,7 @@ bool MemPoolAccept::ReplacementChecks(Workspace& ws)
         ws.m_conflicting_size += it->GetTxSize();
     }
     if (const auto err_string{PaysForRBF(ws.m_conflicting_fees, ws.m_modified_fees, ws.m_vsize,
-                                         m_pool.m_incremental_relay_feerate, hash)}) {
+                                         m_pool.m_opts.incremental_relay_feerate, hash)}) {
         // Even though this is a fee-related failure, this result is TX_MEMPOOL_POLICY, not
         // TX_RECONSIDERABLE, because it cannot be bypassed using package validation.
         // This must be changed if package RBF is enabled.
@@ -1262,7 +1261,7 @@ bool MemPoolAccept::SubmitPackage(const ATMPArgs& args, std::vector<Workspace>& 
         // Re-calculate mempool ancestors to call addUnchecked(). They may have changed since the
         // last calculation done in PreChecks, since package ancestors have already been submitted.
         {
-            auto ancestors{m_pool.CalculateMemPoolAncestors(*ws.m_entry, m_pool.m_limits)};
+            auto ancestors{m_pool.CalculateMemPoolAncestors(*ws.m_entry, m_pool.m_opts.limits)};
             if(!ancestors) {
                 results.emplace(ws.m_ptx->GetWitnessHash(), MempoolAcceptResult::Failure(ws.m_state));
                 // Since PreChecks() and PackageMempoolChecks() both enforce limits, this should never fail.
@@ -1303,14 +1302,14 @@ bool MemPoolAccept::SubmitPackage(const ATMPArgs& args, std::vector<Workspace>& 
         results.emplace(ws.m_ptx->GetWitnessHash(),
                         MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize,
                                          ws.m_base_fees, effective_feerate, effective_feerate_wtxids));
-        if (!m_pool.m_signals) continue;
+        if (!m_pool.m_opts.signals) continue;
         const CTransaction& tx = *ws.m_ptx;
         const auto tx_info = NewMempoolTransactionInfo(ws.m_ptx, ws.m_base_fees,
                                                        ws.m_vsize, ws.m_entry->GetHeight(),
                                                        args.m_bypass_limits, args.m_package_submission,
                                                        IsCurrentForFeeEstimation(m_active_chainstate),
                                                        m_pool.HasNoInputsOf(tx));
-        m_pool.m_signals->TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
+        m_pool.m_opts.signals->TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
     }
     return all_submitted;
 }
@@ -1318,7 +1317,7 @@ bool MemPoolAccept::SubmitPackage(const ATMPArgs& args, std::vector<Workspace>& 
 MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
 {
     AssertLockHeld(cs_main);
-    LOCK(m_pool.cs); // mempool "read lock" (held through m_pool.m_signals->TransactionAddedToMempool())
+    LOCK(m_pool.cs); // mempool "read lock" (held through m_pool.m_opts.signals->TransactionAddedToMempool())
 
     Workspace ws(ptx);
     const std::vector<Wtxid> single_wtxid{ws.m_ptx->GetWitnessHash()};
@@ -1359,14 +1358,14 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
         return MempoolAcceptResult::FeeFailure(ws.m_state, CFeeRate(ws.m_modified_fees, ws.m_vsize), {ws.m_ptx->GetWitnessHash()});
     }
 
-    if (m_pool.m_signals) {
+    if (m_pool.m_opts.signals) {
         const CTransaction& tx = *ws.m_ptx;
         const auto tx_info = NewMempoolTransactionInfo(ws.m_ptx, ws.m_base_fees,
                                                        ws.m_vsize, ws.m_entry->GetHeight(),
                                                        args.m_bypass_limits, args.m_package_submission,
                                                        IsCurrentForFeeEstimation(m_active_chainstate),
                                                        m_pool.HasNoInputsOf(tx));
-        m_pool.m_signals->TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
+        m_pool.m_opts.signals->TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
     }
 
     return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees,
@@ -2660,7 +2659,7 @@ CoinsCacheSizeState Chainstate::GetCoinsCacheSizeState()
     AssertLockHeld(::cs_main);
     return this->GetCoinsCacheSizeState(
         m_coinstip_cache_size_bytes,
-        m_mempool ? m_mempool->m_max_size_bytes : 0);
+        m_mempool ? m_mempool->m_opts.max_size_bytes : 0);
 }
 
 CoinsCacheSizeState Chainstate::GetCoinsCacheSizeState(
@@ -2707,7 +2706,7 @@ bool Chainstate::FlushStateToDisk(
 
         CoinsCacheSizeState cache_state = GetCoinsCacheSizeState();
         LOCK(m_blockman.cs_LastBlockFile);
-        if (m_blockman.IsPruneMode() && (m_blockman.m_check_for_pruning || nManualPruneHeight > 0) && !fReindex) {
+        if (m_blockman.IsPruneMode() && (m_blockman.m_check_for_pruning || nManualPruneHeight > 0) && !m_chainman.m_blockman.m_reindexing) {
             // make sure we don't prune above any of the prune locks bestblocks
             // pruning is height-based
             int last_prune{m_chain.Height()}; // last height we can prune
@@ -2813,8 +2812,10 @@ bool Chainstate::FlushStateToDisk(
                 return FatalError(m_chainman.GetNotifications(), state, _("Disk space is too low!"));
             }
             // Flush the chainstate (which may refer to block index entries).
-            if (!CoinsTip().Flush())
+            const auto empty_cache{(mode == FlushStateMode::ALWAYS) || fCacheLarge || fCacheCritical || fFlushForPrune};
+            if (empty_cache ? !CoinsTip().Flush() : !CoinsTip().Sync()) {
                 return FatalError(m_chainman.GetNotifications(), state, _("Failed to write to coin database."));
+            }
             m_last_flush = nNow;
             full_flush_completed = true;
             TRACE5(utxocache, flush,
@@ -3329,10 +3330,10 @@ bool Chainstate::ActivateBestChainStep(BlockValidationState& state, CBlockIndex*
     return true;
 }
 
-static SynchronizationState GetSynchronizationState(bool init)
+static SynchronizationState GetSynchronizationState(bool init, bool reindexing)
 {
     if (!init) return SynchronizationState::POST_INIT;
-    if (::fReindex) return SynchronizationState::INIT_REINDEX;
+    if (reindexing) return SynchronizationState::INIT_REINDEX;
     return SynchronizationState::INIT_DOWNLOAD;
 }
 
@@ -3354,7 +3355,7 @@ static bool NotifyHeaderTip(ChainstateManager& chainman) LOCKS_EXCLUDED(cs_main)
     }
     // Send block tip changed notifications without cs_main
     if (fNotify) {
-        chainman.GetNotifications().headerTip(GetSynchronizationState(fInitialBlockDownload), pindexHeader->nHeight, pindexHeader->nTime, false);
+        chainman.GetNotifications().headerTip(GetSynchronizationState(fInitialBlockDownload, chainman.m_blockman.m_reindexing), pindexHeader->nHeight, pindexHeader->nTime, false);
     }
     return fNotify;
 }
@@ -3473,7 +3474,7 @@ bool Chainstate::ActivateBestChain(BlockValidationState& state, std::shared_ptr<
                 }
 
                 // Always notify the UI if a new block tip was connected
-                if (kernel::IsInterrupted(m_chainman.GetNotifications().blockTip(GetSynchronizationState(still_in_ibd), *pindexNewTip))) {
+                if (kernel::IsInterrupted(m_chainman.GetNotifications().blockTip(GetSynchronizationState(still_in_ibd, m_chainman.m_blockman.m_reindexing), *pindexNewTip))) {
                     // Just breaking and returning success for now. This could
                     // be changed to bubble up the kernel::Interrupted value to
                     // the caller so the caller could distinguish between
@@ -3699,7 +3700,7 @@ bool Chainstate::InvalidateBlock(BlockValidationState& state, CBlockIndex* pinde
         // parameter indicating the source of the tip change so hooks can
         // distinguish user-initiated invalidateblock changes from other
         // changes.
-        (void)m_chainman.GetNotifications().blockTip(GetSynchronizationState(m_chainman.IsInitialBlockDownload()), *to_mark_failed->pprev);
+        (void)m_chainman.GetNotifications().blockTip(GetSynchronizationState(m_chainman.IsInitialBlockDownload(), m_chainman.m_blockman.m_reindexing), *to_mark_failed->pprev);
     }
     return true;
 }
@@ -4383,7 +4384,7 @@ void ChainstateManager::ReportHeadersPresync(const arith_uint256& work, int64_t 
         m_last_presync_update = now;
     }
     bool initial_download = IsInitialBlockDownload();
-    GetNotifications().headerTip(GetSynchronizationState(initial_download), height, timestamp, /*presync=*/true);
+    GetNotifications().headerTip(GetSynchronizationState(initial_download, m_blockman.m_reindexing), height, timestamp, /*presync=*/true);
     if (initial_download) {
         int64_t blocks_left{(NodeClock::now() - NodeSeconds{std::chrono::seconds{timestamp}}) / GetConsensus().PowTargetSpacing()};
         blocks_left = std::max<int64_t>(0, blocks_left);
@@ -4464,10 +4465,16 @@ bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock,
     // Write block to history file
     if (fNewBlock) *fNewBlock = true;
     try {
-        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, pindex->nHeight, dbp)};
-        if (blockPos.IsNull()) {
-            state.Error(strprintf("%s: Failed to find position to write new block to disk", __func__));
-            return false;
+        FlatFilePos blockPos{};
+        if (dbp) {
+            blockPos = *dbp;
+            m_blockman.UpdateBlockInfo(block, pindex->nHeight, blockPos);
+        } else {
+            blockPos = m_blockman.SaveBlockToDisk(block, pindex->nHeight);
+            if (blockPos.IsNull()) {
+                state.Error(strprintf("%s: Failed to find position to write new block to disk", __func__));
+                return false;
+            }
         }
         ReceivedBlockTransactions(block, pindex, blockPos);
     } catch (const std::runtime_error& e) {
@@ -4907,8 +4914,8 @@ bool ChainstateManager::LoadBlockIndex()
 {
     AssertLockHeld(cs_main);
     // Load block index from databases
-    bool needs_init = fReindex;
-    if (!fReindex) {
+    bool needs_init = m_blockman.m_reindexing;
+    if (!m_blockman.m_reindexing) {
         bool ret{m_blockman.LoadBlockIndexDB(SnapshotBlockhash())};
         if (!ret) return false;
 
@@ -4945,8 +4952,8 @@ bool ChainstateManager::LoadBlockIndex()
 
     if (needs_init) {
         // Everything here is for *new* reindex/DBs. Thus, though
-        // LoadBlockIndexDB may have set fReindex if we shut down
-        // mid-reindex previously, we don't check fReindex and
+        // LoadBlockIndexDB may have set m_reindexing if we shut down
+        // mid-reindex previously, we don't check m_reindexing and
         // instead only check it prior to LoadBlockIndexDB to set
         // needs_init.
 
@@ -4971,7 +4978,7 @@ bool Chainstate::LoadGenesisBlock()
 
     try {
         const CBlock& block = params.GenesisBlock();
-        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, 0, nullptr)};
+        FlatFilePos blockPos{m_blockman.SaveBlockToDisk(block, 0)};
         if (blockPos.IsNull()) {
             LogError("%s: writing genesis block to disk failed\n", __func__);
             return false;
@@ -5092,7 +5099,7 @@ void ChainstateManager::LoadExternalBlockFile(
                     }
                 }
 
-                if (m_blockman.IsPruneMode() && !fReindex && pblock) {
+                if (m_blockman.IsPruneMode() && !m_blockman.m_reindexing && pblock) {
                     // must update the tip for pruning to work while importing with -loadblock.
                     // this is a tradeoff to conserve disk space at the expense of time
                     // spent updating the tip to be able to prune.
