@@ -151,7 +151,6 @@ bool BlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, s
 } // namespace kernel
 
 namespace node {
-std::atomic_bool fReindex(false);
 
 bool CBlockIndexWorkComparator::operator()(const CBlockIndex* pa, const CBlockIndex* pb) const
 {
@@ -553,7 +552,7 @@ bool BlockManager::LoadBlockIndexDB(const std::optional<uint256>& snapshot_block
     // Check whether we need to continue reindexing
     bool fReindexing = false;
     m_block_tree_db->ReadReindexing(fReindexing);
-    if (fReindexing) fReindex = true;
+    if (fReindexing) m_reindexing = true;
 
     // Check whether we have the name history
     m_block_tree_db->ReadFlag("namehistory", fNameHistory);
@@ -853,7 +852,7 @@ fs::path BlockManager::GetBlockPosFilename(const FlatFilePos& pos) const
     return BlockFileSeq().FileName(pos);
 }
 
-bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown)
+FlatFilePos BlockManager::FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime)
 {
     LOCK(cs_LastBlockFile);
 
@@ -868,88 +867,101 @@ bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigne
     }
     const int last_blockfile = m_blockfile_cursors[chain_type]->file_num;
 
-    int nFile = fKnown ? pos.nFile : last_blockfile;
+    int nFile = last_blockfile;
     if (static_cast<int>(m_blockfile_info.size()) <= nFile) {
         m_blockfile_info.resize(nFile + 1);
     }
 
     bool finalize_undo = false;
-    if (!fKnown) {
-        unsigned int max_blockfile_size{MAX_BLOCKFILE_SIZE};
-        // Use smaller blockfiles in test-only -fastprune mode - but avoid
-        // the possibility of having a block not fit into the block file.
-        if (m_opts.fast_prune) {
-            max_blockfile_size = 0x10000; // 64kiB
-            if (nAddSize >= max_blockfile_size) {
-                // dynamically adjust the blockfile size to be larger than the added size
-                max_blockfile_size = nAddSize + 1;
-            }
+    unsigned int max_blockfile_size{MAX_BLOCKFILE_SIZE};
+    // Use smaller blockfiles in test-only -fastprune mode - but avoid
+    // the possibility of having a block not fit into the block file.
+    if (m_opts.fast_prune) {
+        max_blockfile_size = 0x10000; // 64kiB
+        if (nAddSize >= max_blockfile_size) {
+            // dynamically adjust the blockfile size to be larger than the added size
+            max_blockfile_size = nAddSize + 1;
         }
-        assert(nAddSize < max_blockfile_size);
-
-        while (m_blockfile_info[nFile].nSize + nAddSize >= max_blockfile_size) {
-            // when the undo file is keeping up with the block file, we want to flush it explicitly
-            // when it is lagging behind (more blocks arrive than are being connected), we let the
-            // undo block write case handle it
-            finalize_undo = (static_cast<int>(m_blockfile_info[nFile].nHeightLast) ==
-                    Assert(m_blockfile_cursors[chain_type])->undo_height);
-
-            // Try the next unclaimed blockfile number
-            nFile = this->MaxBlockfileNum() + 1;
-            // Set to increment MaxBlockfileNum() for next iteration
-            m_blockfile_cursors[chain_type] = BlockfileCursor{nFile};
-
-            if (static_cast<int>(m_blockfile_info.size()) <= nFile) {
-                m_blockfile_info.resize(nFile + 1);
-            }
-        }
-        pos.nFile = nFile;
-        pos.nPos = m_blockfile_info[nFile].nSize;
     }
+    assert(nAddSize < max_blockfile_size);
+
+    while (m_blockfile_info[nFile].nSize + nAddSize >= max_blockfile_size) {
+        // when the undo file is keeping up with the block file, we want to flush it explicitly
+        // when it is lagging behind (more blocks arrive than are being connected), we let the
+        // undo block write case handle it
+        finalize_undo = (static_cast<int>(m_blockfile_info[nFile].nHeightLast) ==
+                         Assert(m_blockfile_cursors[chain_type])->undo_height);
+
+        // Try the next unclaimed blockfile number
+        nFile = this->MaxBlockfileNum() + 1;
+        // Set to increment MaxBlockfileNum() for next iteration
+        m_blockfile_cursors[chain_type] = BlockfileCursor{nFile};
+
+        if (static_cast<int>(m_blockfile_info.size()) <= nFile) {
+            m_blockfile_info.resize(nFile + 1);
+        }
+    }
+    FlatFilePos pos;
+    pos.nFile = nFile;
+    pos.nPos = m_blockfile_info[nFile].nSize;
 
     if (nFile != last_blockfile) {
-        if (!fKnown) {
-            LogPrint(BCLog::BLOCKSTORAGE, "Leaving block file %i: %s (onto %i) (height %i)\n",
-                last_blockfile, m_blockfile_info[last_blockfile].ToString(), nFile, nHeight);
+        LogPrint(BCLog::BLOCKSTORAGE, "Leaving block file %i: %s (onto %i) (height %i)\n",
+                 last_blockfile, m_blockfile_info[last_blockfile].ToString(), nFile, nHeight);
 
-            // Do not propagate the return code. The flush concerns a previous block
-            // and undo file that has already been written to. If a flush fails
-            // here, and we crash, there is no expected additional block data
-            // inconsistency arising from the flush failure here. However, the undo
-            // data may be inconsistent after a crash if the flush is called during
-            // a reindex. A flush error might also leave some of the data files
-            // untrimmed.
-            if (!FlushBlockFile(last_blockfile, !fKnown, finalize_undo)) {
-                LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Warning,
-                              "Failed to flush previous block file %05i (finalize=%i, finalize_undo=%i) before opening new block file %05i\n",
-                              last_blockfile, !fKnown, finalize_undo, nFile);
-            }
+        // Do not propagate the return code. The flush concerns a previous block
+        // and undo file that has already been written to. If a flush fails
+        // here, and we crash, there is no expected additional block data
+        // inconsistency arising from the flush failure here. However, the undo
+        // data may be inconsistent after a crash if the flush is called during
+        // a reindex. A flush error might also leave some of the data files
+        // untrimmed.
+        if (!FlushBlockFile(last_blockfile, /*fFinalize=*/true, finalize_undo)) {
+            LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Warning,
+                          "Failed to flush previous block file %05i (finalize=1, finalize_undo=%i) before opening new block file %05i\n",
+                          last_blockfile, finalize_undo, nFile);
         }
         // No undo data yet in the new file, so reset our undo-height tracking.
         m_blockfile_cursors[chain_type] = BlockfileCursor{nFile};
     }
 
     m_blockfile_info[nFile].AddBlock(nHeight, nTime);
-    if (fKnown) {
-        m_blockfile_info[nFile].nSize = std::max(pos.nPos + nAddSize, m_blockfile_info[nFile].nSize);
-    } else {
-        m_blockfile_info[nFile].nSize += nAddSize;
-    }
+    m_blockfile_info[nFile].nSize += nAddSize;
 
-    if (!fKnown) {
-        bool out_of_space;
-        size_t bytes_allocated = BlockFileSeq().Allocate(pos, nAddSize, out_of_space);
-        if (out_of_space) {
-            m_opts.notifications.fatalError(_("Disk space is too low!"));
-            return false;
-        }
-        if (bytes_allocated != 0 && IsPruneMode()) {
-            m_check_for_pruning = true;
-        }
+    bool out_of_space;
+    size_t bytes_allocated = BlockFileSeq().Allocate(pos, nAddSize, out_of_space);
+    if (out_of_space) {
+        m_opts.notifications.fatalError(_("Disk space is too low!"));
+        return {};
+    }
+    if (bytes_allocated != 0 && IsPruneMode()) {
+        m_check_for_pruning = true;
     }
 
     m_dirty_fileinfo.insert(nFile);
-    return true;
+    return pos;
+}
+
+void BlockManager::UpdateBlockInfo(const CBlock& block, unsigned int nHeight, const FlatFilePos& pos)
+{
+    LOCK(cs_LastBlockFile);
+
+    // Update the cursor so it points to the last file.
+    const BlockfileType chain_type{BlockfileTypeForHeight(nHeight)};
+    auto& cursor{m_blockfile_cursors[chain_type]};
+    if (!cursor || cursor->file_num < pos.nFile) {
+        m_blockfile_cursors[chain_type] = BlockfileCursor{pos.nFile};
+    }
+
+    // Update the file information with the current block.
+    const unsigned int added_size = ::GetSerializeSize(TX_WITH_WITNESS(block));
+    const int nFile = pos.nFile;
+    if (static_cast<int>(m_blockfile_info.size()) <= nFile) {
+        m_blockfile_info.resize(nFile + 1);
+    }
+    m_blockfile_info[nFile].AddBlock(nHeight, block.GetBlockTime());
+    m_blockfile_info[nFile].nSize = std::max(pos.nPos + added_size, m_blockfile_info[nFile].nSize);
+    m_dirty_fileinfo.insert(nFile);
 }
 
 bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize)
@@ -1019,7 +1031,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
         // we want to flush the rev (undo) file once we've written the last block, which is indicated by the last height
         // in the block file info as below; note that this does not catch the case where the undo writes are keeping up
         // with the block writes (usually when a synced up node is getting newly mined blocks) -- this case is caught in
-        // the FindBlockPos function
+        // the FindNextBlockPos function
         if (_pos.nFile < cursor.file_num && static_cast<uint32_t>(block.nHeight) == m_blockfile_info[_pos.nFile].nHeightLast) {
             // Do not propagate the return code, a failed flush here should not
             // be an indication for a failed write. If it were propagated here,
@@ -1160,28 +1172,20 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
     return true;
 }
 
-FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp)
+FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight)
 {
     unsigned int nBlockSize = ::GetSerializeSize(TX_WITH_WITNESS(block));
-    FlatFilePos blockPos;
-    const auto position_known {dbp != nullptr};
-    if (position_known) {
-        blockPos = *dbp;
-    } else {
-        // when known, blockPos.nPos points at the offset of the block data in the blk file. that already accounts for
-        // the serialization header present in the file (the 4 magic message start bytes + the 4 length bytes = 8 bytes = BLOCK_SERIALIZATION_HEADER_SIZE).
-        // we add BLOCK_SERIALIZATION_HEADER_SIZE only for new blocks since they will have the serialization header added when written to disk.
-        nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
-    }
-    if (!FindBlockPos(blockPos, nBlockSize, nHeight, block.GetBlockTime(), position_known)) {
-        LogError("%s: FindBlockPos failed\n", __func__);
+    // Account for the 4 magic message start bytes + the 4 length bytes (8 bytes total,
+    // defined as BLOCK_SERIALIZATION_HEADER_SIZE)
+    nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
+    FlatFilePos blockPos{FindNextBlockPos(nBlockSize, nHeight, block.GetBlockTime())};
+    if (blockPos.IsNull()) {
+        LogError("%s: FindNextBlockPos failed\n", __func__);
         return FlatFilePos();
     }
-    if (!position_known) {
-        if (!WriteBlockToDisk(block, blockPos)) {
-            m_opts.notifications.fatalError(_("Failed to write block."));
-            return FlatFilePos();
-        }
+    if (!WriteBlockToDisk(block, blockPos)) {
+        m_opts.notifications.fatalError(_("Failed to write block."));
+        return FlatFilePos();
     }
     return blockPos;
 }
@@ -1205,69 +1209,66 @@ public:
 
 void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
 {
-    ScheduleBatchPriority();
+    ImportingNow imp{chainman.m_blockman.m_importing};
 
-    {
-        ImportingNow imp{chainman.m_blockman.m_importing};
-
-        // -reindex
-        if (fReindex) {
-            int nFile = 0;
-            // Map of disk positions for blocks with unknown parent (only used for reindex);
-            // parent hash -> child disk position, multiple children can have the same parent.
-            std::multimap<uint256, FlatFilePos> blocks_with_unknown_parent;
-            while (true) {
-                FlatFilePos pos(nFile, 0);
-                if (!fs::exists(chainman.m_blockman.GetBlockPosFilename(pos))) {
-                    break; // No block files left to reindex
-                }
-                AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
-                if (file.IsNull()) {
-                    break; // This error is logged in OpenBlockFile
-                }
-                LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
-                chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
-                if (chainman.m_interrupt) {
-                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
-                }
-                nFile++;
+    // -reindex
+    if (chainman.m_blockman.m_reindexing) {
+        int nFile = 0;
+        // Map of disk positions for blocks with unknown parent (only used for reindex);
+        // parent hash -> child disk position, multiple children can have the same parent.
+        std::multimap<uint256, FlatFilePos> blocks_with_unknown_parent;
+        while (true) {
+            FlatFilePos pos(nFile, 0);
+            if (!fs::exists(chainman.m_blockman.GetBlockPosFilename(pos))) {
+                break; // No block files left to reindex
             }
-            WITH_LOCK(::cs_main, chainman.m_blockman.m_block_tree_db->WriteReindexing(false));
-            fReindex = false;
-            LogPrintf("Reindexing finished\n");
-            // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
-            chainman.ActiveChainstate().LoadGenesisBlock();
-        }
-
-        // -loadblock=
-        for (const fs::path& path : vImportFiles) {
-            AutoFile file{fsbridge::fopen(path, "rb")};
-            if (!file.IsNull()) {
-                LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
-                chainman.LoadExternalBlockFile(file);
-                if (chainman.m_interrupt) {
-                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
-                }
-            } else {
-                LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
+            AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
+            if (file.IsNull()) {
+                break; // This error is logged in OpenBlockFile
             }
-        }
-
-        // scan for better chains in the block chain database, that are not yet connected in the active best chain
-
-        // We can't hold cs_main during ActivateBestChain even though we're accessing
-        // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
-        // the relevant pointers before the ABC call.
-        for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
-            BlockValidationState state;
-            if (!chainstate->ActivateBestChain(state, nullptr)) {
-                chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+            LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+            if (chainman.m_interrupt) {
+                LogPrintf("Interrupt requested. Exit %s\n", __func__);
                 return;
             }
+            nFile++;
         }
-    } // End scope of ImportingNow
+        WITH_LOCK(::cs_main, chainman.m_blockman.m_block_tree_db->WriteReindexing(false));
+        chainman.m_blockman.m_reindexing = false;
+        LogPrintf("Reindexing finished\n");
+        // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
+        chainman.ActiveChainstate().LoadGenesisBlock();
+    }
+
+    // -loadblock=
+    for (const fs::path& path : vImportFiles) {
+        AutoFile file{fsbridge::fopen(path, "rb")};
+        if (!file.IsNull()) {
+            LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
+            chainman.LoadExternalBlockFile(file);
+            if (chainman.m_interrupt) {
+                LogPrintf("Interrupt requested. Exit %s\n", __func__);
+                return;
+            }
+        } else {
+            LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
+        }
+    }
+
+    // scan for better chains in the block chain database, that are not yet connected in the active best chain
+
+    // We can't hold cs_main during ActivateBestChain even though we're accessing
+    // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
+    // the relevant pointers before the ABC call.
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        if (!chainstate->ActivateBestChain(state, nullptr)) {
+            chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+            return;
+        }
+    }
+    // End scope of ImportingNow
 }
 
 std::ostream& operator<<(std::ostream& os, const BlockfileType& type) {
