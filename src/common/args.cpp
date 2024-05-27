@@ -696,12 +696,19 @@ bool HasTestOption(const ArgsManager& args, const std::string& test_option)
 
 fs::path GetDefaultDataDir()
 {
-    // Windows: C:\Users\Username\AppData\Roaming\Namecoin
+    // Windows:
+    //   old: C:\Users\Username\AppData\Roaming\Namecoin
+    //   new: C:\Users\Username\AppData\Local\Namecoin
     // macOS: ~/Library/Application Support/Namecoin
     // Unix-like: ~/.namecoin
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Namecoin";
+    // Check for existence of datadir in old location and keep it there
+    fs::path legacy_path = GetSpecialFolderPath(CSIDL_APPDATA) / "Namecoin";
+    if (fs::exists(legacy_path)) return legacy_path;
+
+    // Otherwise, fresh installs can start in the new, "proper" location
+    return GetSpecialFolderPath(CSIDL_LOCAL_APPDATA) / "Namecoin";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
