@@ -75,41 +75,75 @@ class AssumeutxoTest(BitcoinTestFramework):
             with self.nodes[1].assert_debug_log([log_msg]):
                 assert_raises_rpc_error(-32603, f"Unable to load UTXO snapshot{rpc_details}", self.nodes[1].loadtxoutset, bad_snapshot_path)
 
+        self.log.info("  - snapshot file with invalid file magic")
+        parsing_error_code = -22
+        bad_magic = 0xf00f00f000
+        with open(bad_snapshot_path, 'wb') as f:
+            f.write(bad_magic.to_bytes(5, "big") + valid_snapshot_contents[5:])
+        assert_raises_rpc_error(parsing_error_code, "Unable to parse metadata: Invalid UTXO set snapshot magic bytes. Please check if this is indeed a snapshot file or if you are using an outdated snapshot format.", self.nodes[1].loadtxoutset, bad_snapshot_path)
+
+        self.log.info("  - snapshot file with unsupported version")
+        for version in [0, 2]:
+            with open(bad_snapshot_path, 'wb') as f:
+                f.write(valid_snapshot_contents[:5] + version.to_bytes(2, "little") + valid_snapshot_contents[7:])
+            assert_raises_rpc_error(parsing_error_code, f"Unable to parse metadata: Version of snapshot {version} does not match any of the supported versions.", self.nodes[1].loadtxoutset, bad_snapshot_path)
+
+        self.log.info("  - snapshot file with mismatching network magic")
+        invalid_magics = [
+            # magic, name, real
+            [0xccbeb4fe, "main", True],
+            [0xccbfb5fe, "test", True],
+            [0x0a03cf40, "signet", True],
+            [0x00000000, "", False],
+            [0xffffffff, "", False],
+        ]
+        for [magic, name, real] in invalid_magics:
+            with open(bad_snapshot_path, 'wb') as f:
+                f.write(valid_snapshot_contents[:7] + magic.to_bytes(4, 'big') + valid_snapshot_contents[11:])
+            if real:
+                assert_raises_rpc_error(parsing_error_code, f"Unable to parse metadata: The network of the snapshot ({name}) does not match the network of this node (regtest).", self.nodes[1].loadtxoutset, bad_snapshot_path)
+            else:
+                assert_raises_rpc_error(parsing_error_code, "Unable to parse metadata: This snapshot has been created for an unrecognized network. This could be a custom signet, a new testnet or possibly caused by data corruption.", self.nodes[1].loadtxoutset, bad_snapshot_path)
+
         self.log.info("  - snapshot file referring to a block that is not in the assumeutxo parameters")
         prev_block_hash = self.nodes[0].getblockhash(SNAPSHOT_BASE_HEIGHT - 1)
         bogus_block_hash = "0" * 64  # Represents any unknown block hash
+        # The height is not used for anything critical currently, so we just
+        # confirm the manipulation in the error message
+        bogus_height = 1337
         for bad_block_hash in [bogus_block_hash, prev_block_hash]:
             with open(bad_snapshot_path, 'wb') as f:
-                # block hash of the snapshot base is stored right at the start (first 32 bytes)
-                f.write(bytes.fromhex(bad_block_hash)[::-1] + valid_snapshot_contents[32:])
-            error_details = f", assumeutxo block hash in snapshot metadata not recognized ({bad_block_hash})"
+                f.write(valid_snapshot_contents[:11] + bogus_height.to_bytes(4, "little") + bytes.fromhex(bad_block_hash)[::-1] + valid_snapshot_contents[47:])
+            error_details = f", assumeutxo block hash in snapshot metadata not recognized (hash: {bad_block_hash}, height: {bogus_height}). The following snapshot heights are available: 110, 299."
             expected_error(rpc_details=error_details)
 
         self.log.info("  - snapshot file with wrong number of coins")
-        valid_num_coins = int.from_bytes(valid_snapshot_contents[32:32 + 8], "little")
+        valid_num_coins = int.from_bytes(valid_snapshot_contents[47:47 + 8], "little")
         for off in [-1, +1]:
             with open(bad_snapshot_path, 'wb') as f:
-                f.write(valid_snapshot_contents[:32])
+                f.write(valid_snapshot_contents[:47])
                 f.write((valid_num_coins + off).to_bytes(8, "little"))
-                f.write(valid_snapshot_contents[32 + 8:])
+                f.write(valid_snapshot_contents[47 + 8:])
             expected_error(log_msg=f"bad snapshot - coins left over after deserializing 299 coins" if off == -1 else f"bad snapshot format or truncated snapshot after deserializing 300 coins")
 
-        self.log.info("  - snapshot file with alternated UTXO data")
+        self.log.info("  - snapshot file with alternated but parsable UTXO data results in different hash")
         cases = [
             # (content, offset, wrong_hash, custom_message)
             [b"\xff" * 32, 0, "21eb04288321243b93d736868ad16ab29c3d1f51727eb869eb199af4380d706d", None],  # wrong outpoint hash
-            [(1).to_bytes(4, "little"), 32, "d0c3f9ce7e1bb13c5fbde7dc57ffae2cbebc917c750b8bc14ceb6d9ca307bb4a", None],  # wrong outpoint index
-            [b"\x81", 36, "3f77cfd6fc7e4febe65097fa591af5beeba512f3b59176646991d731e6556ff6", None],  # wrong coin code VARINT
-            [b"\x80", 36, "4185efc84235ebbedaa088d52825dbb1a040806fde1ca10ee650fc312d7c5abe", None],  # another wrong coin code
-            [b"\x84\x58", 36, None, "[snapshot] bad snapshot data after deserializing 0 coins"],  # wrong coin case with height 364 and coinbase 0
-            [b"\xCA\xD2\x8F\x5A", 41, None, "[snapshot] bad snapshot data after deserializing 0 coins - bad tx out value"],  # Amount exceeds MAX_MONEY
+            #[(2).to_bytes(1, "little"), 32, None, "[snapshot] bad snapshot data after deserializing 1 coins"],  # wrong outpoint hash
+            [b"\x01", 33, "d0c3f9ce7e1bb13c5fbde7dc57ffae2cbebc917c750b8bc14ceb6d9ca307bb4a", None],  # wrong outpoint index
+            [b"\x81", 34, "3f77cfd6fc7e4febe65097fa591af5beeba512f3b59176646991d731e6556ff6", None],  # wrong coin code VARINT
+            [b"\x80", 34, "4185efc84235ebbedaa088d52825dbb1a040806fde1ca10ee650fc312d7c5abe", None],  # another wrong coin code
+            [b"\x84\x58", 34, None, "[snapshot] bad snapshot data after deserializing 0 coins"],  # wrong coin case with height 364 and coinbase 0
+            [b"\xCA\xD2\x8F\x5A", 39, None, "[snapshot] bad snapshot data after deserializing 0 coins - bad tx out value"],  # Amount exceeds MAX_MONEY
         ]
 
         for content, offset, wrong_hash, custom_message in cases:
             with open(bad_snapshot_path, "wb") as f:
-                f.write(valid_snapshot_contents[:(32 + 8 + offset)])
+                # Prior to offset: Snapshot magic, snapshot version, network magic, height, hash, coins count
+                f.write(valid_snapshot_contents[:(5 + 2 + 4 + 4 + 32 + 8 + offset)])
                 f.write(content)
-                f.write(valid_snapshot_contents[(32 + 8 + offset + len(content)):])
+                f.write(valid_snapshot_contents[(5 + 2 + 4 + 4 + 32 + 8 + offset + len(content)):])
 
             log_msg = custom_message if custom_message is not None else f"[snapshot] bad snapshot content hash: expected bc222dd2a08a561ff47d77c06af1fe35127bf4840392a83475332f45ea5efa3e, got {wrong_hash}"
             expected_error(log_msg=log_msg)
