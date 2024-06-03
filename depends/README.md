@@ -38,17 +38,18 @@ Common `host-platform-triplet`s for cross compilation are:
 - `riscv32-linux-gnu` for Linux RISC-V 32 bit
 - `riscv64-linux-gnu` for Linux RISC-V 64 bit
 - `s390x-linux-gnu` for Linux S390X
-- `armv7a-linux-android` for Android ARM 32 bit
-- `aarch64-linux-android` for Android ARM 64 bit
-- `x86_64-linux-android` for Android x86 64 bit
 
-The paths are automatically configured and no other options are needed unless targeting [Android](../doc/build-android.md).
+The paths are automatically configured and no other options are needed.
 
 ### Install the required dependencies: Ubuntu & Debian
 
+#### Common
+
+    apt install automake bison cmake curl libtool make patch pkg-config python3 xz-utils
+
 #### For macOS cross compilation
 
-    sudo apt-get install curl bsdmainutils cmake zip
+    sudo apt-get install g++ zip
 
 Note: You must obtain the macOS SDK before proceeding with a cross-compile.
 Under the depends directory, create a subdirectory named `SDKs`.
@@ -63,7 +64,7 @@ For more information, see [SDK Extraction](../contrib/macdeploy/README.md#sdk-ex
 
 Common linux dependencies:
 
-    sudo apt-get install make automake cmake curl g++-multilib libtool binutils bsdmainutils pkg-config python3 patch bison
+    sudo apt-get install g++-multilib binutils
 
 For linux ARM cross compilation:
 
