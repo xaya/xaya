@@ -130,7 +130,8 @@ class AssumeutxoTest(BitcoinTestFramework):
         cases = [
             # (content, offset, wrong_hash, custom_message)
             [b"\xff" * 32, 0, "094e487229ac0cc067a38ea8554080ca4bae8db62ab71d597e570d8754235286", None],  # wrong outpoint hash
-            #[(2).to_bytes(1, "little"), 32, None, "[snapshot] bad snapshot data after deserializing 1 coins"],  # wrong outpoint hash
+            #[(2).to_bytes(1, "little"), 32, None, "[snapshot] bad snapshot data after deserializing 1 coins"],  # wrong txid coins count
+            [b"\xfd\xff\xff", 32, None, "[snapshot] mismatch in coins count in snapshot metadata and actual snapshot data"],  # txid coins count exceeds coins left
             [b"\x01", 33, "9ff1849255a1eb483395ca9de01ad9ef59f52875d303c578e533b41b8cb2de35", None],  # wrong outpoint index
             [b"\x81", 34, "b7e1315d3df9aa13e8c9dec437dbb6c0c45fc53aa2cc3efc649c880457149093", None],  # wrong coin code VARINT
             [b"\x80", 34, "e859f5f111d59fda4aae219b0185db540e7f2ca31d0858965dff678eaa8ecce5", None],  # another wrong coin code
@@ -194,6 +195,14 @@ class AssumeutxoTest(BitcoinTestFramework):
         node = self.nodes[0]
         path = node.datadir_path / node.chain / "invalid" / "path"
         assert_raises_rpc_error(-8, "Couldn't open file {} for reading.".format(path), node.loadtxoutset, path)
+
+    def test_snapshot_with_less_work(self, dump_output_path):
+        self.log.info("Test bitcoind should fail when snapshot has less accumulated work than this node.")
+        node = self.nodes[0]
+        assert_equal(node.getblockcount(), FINAL_HEIGHT)
+        with node.assert_debug_log(expected_msgs=["[snapshot] activation failed - work does not exceed active chainstate"]):
+            assert_raises_rpc_error(-32603, "Unable to load UTXO snapshot", node.loadtxoutset, dump_output_path)
+        self.restart_node(0, extra_args=self.extra_args[0])
 
     def run_test(self):
         """
@@ -276,6 +285,7 @@ class AssumeutxoTest(BitcoinTestFramework):
 
         assert_equal(n0.getblockchaininfo()["blocks"], FINAL_HEIGHT)
 
+        self.test_snapshot_with_less_work(dump_output['path'])
         self.test_invalid_mempool_state(dump_output['path'])
         self.test_invalid_snapshot_scenarios(dump_output['path'])
         self.test_invalid_chainstate_scenarios()
