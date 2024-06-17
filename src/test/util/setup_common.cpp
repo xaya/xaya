@@ -227,7 +227,9 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
     m_node.validation_signals = std::make_unique<ValidationSignals>(std::make_unique<SerialTaskRunner>(*m_node.scheduler));
 
     m_node.fee_estimator = std::make_unique<CBlockPolicyEstimator>(FeeestPath(*m_node.args), DEFAULT_ACCEPT_STALE_FEE_ESTIMATES);
-    m_node.mempool = std::make_unique<CTxMemPool>(MemPoolOptionsForTest(m_node));
+    bilingual_str error{};
+    m_node.mempool = std::make_unique<CTxMemPool>(MemPoolOptionsForTest(m_node), error);
+    Assert(error.empty());
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
@@ -236,7 +238,7 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
     const ChainstateManager::Options chainman_opts{
         .chainparams = chainparams,
         .datadir = m_args.GetDataDirNet(),
-        .check_block_index = true,
+        .check_block_index = 1,
         .notifications = *m_node.notifications,
         .signals = m_node.validation_signals.get(),
         .worker_threads_num = 2,
@@ -276,8 +278,8 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     options.mempool = Assert(m_node.mempool.get());
     options.block_tree_db_in_memory = m_block_tree_db_in_memory;
     options.coins_db_in_memory = m_coins_db_in_memory;
-    options.reindex = chainman.m_blockman.m_reindexing;
-    options.reindex_chainstate = m_args.GetBoolArg("-reindex-chainstate", false);
+    options.wipe_block_tree_db = m_args.GetBoolArg("-reindex", false);
+    options.wipe_chainstate_db = m_args.GetBoolArg("-reindex", false) || m_args.GetBoolArg("-reindex-chainstate", false);
     options.prune = chainman.m_blockman.IsPruneMode();
     options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
     options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
