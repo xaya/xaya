@@ -198,13 +198,13 @@ static constexpr TransactionSerParams TX_NO_WITNESS{.allow_witness = false};
 
 /**
  * Basic transaction serialization format:
- * - int32_t nVersion
+ * - uint32_t version
  * - std::vector<CTxIn> vin
  * - std::vector<CTxOut> vout
  * - uint32_t nLockTime
  *
  * Extended transaction serialization format:
- * - int32_t nVersion
+ * - uint32_t version
  * - unsigned char dummy = 0x00
  * - unsigned char flags (!= 0)
  * - std::vector<CTxIn> vin
@@ -218,7 +218,7 @@ void UnserializeTransaction(TxType& tx, Stream& s, const TransactionSerParams& p
 {
     const bool fAllowWitness = params.allow_witness;
 
-    s >> tx.nVersion;
+    s >> tx.version;
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
@@ -258,7 +258,7 @@ void SerializeTransaction(const TxType& tx, Stream& s, const TransactionSerParam
 {
     const bool fAllowWitness = params.allow_witness;
 
-    s << tx.nVersion;
+    s << tx.version;
     unsigned char flags = 0;
     // Consistency check
     if (fAllowWitness) {
@@ -299,8 +299,8 @@ public:
     // Default transaction version.
     // FIXME: Upstream Bitcoin has default version set to 2 already.  Do this
     // once we forked to make the tx version irrelevant for Namecoin.
-    static const int32_t CURRENT_VERSION=1;
-    static const int32_t NAMECOIN_VERSION=0x7100;
+    static const int32_t CURRENT_VERSION{1};
+    static const int32_t NAMECOIN_VERSION{0x7100};
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not
@@ -309,7 +309,7 @@ public:
     // structure, including the hash.
     const std::vector<CTxIn> vin;
     const std::vector<CTxOut> vout;
-    const int32_t nVersion;
+    const uint32_t version;
     const uint32_t nLockTime;
 
 private:
@@ -364,7 +364,7 @@ public:
 
     bool IsNamecoin() const
     {
-        return nVersion == NAMECOIN_VERSION;
+        return version == NAMECOIN_VERSION;
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
@@ -387,7 +387,7 @@ struct CMutableTransaction
 {
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
-    int32_t nVersion;
+    uint32_t version;
     uint32_t nLockTime;
 
     explicit CMutableTransaction();

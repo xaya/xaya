@@ -9,6 +9,7 @@
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <node/context.h>
+#include <node/types.h>
 #include <policy/fees.h>
 #include <primitives/transaction.h>
 #include <rpc/names.h>
@@ -37,6 +38,7 @@
 #include <utility>
 #include <vector>
 
+using common::PSBTError;
 using interfaces::Chain;
 using interfaces::FoundBlock;
 using interfaces::Handler;
@@ -394,7 +396,7 @@ public:
         }
         return {};
     }
-    TransactionError fillPSBT(int sighash_type,
+    std::optional<PSBTError> fillPSBT(int sighash_type,
         bool sign,
         bool bip32derivs,
         size_t* n_signed,

@@ -249,7 +249,7 @@ class NameMultisigTest (NameTestFramework):
     # This is expected to update the name (verifies the update script is good).
 
     tx = CTransaction ()
-    tx.nVersion = NAMECOIN_TX_VERSION
+    tx.version = NAMECOIN_TX_VERSION
     data = node.name_show (name)
     tx.vin.append (CTxIn (COutPoint (int (data['txid'], 16), data['vout'])))
     tx.vout.append (CTxOut (COIN // 100, updAndAnyoneScript))
