@@ -38,6 +38,9 @@
 
 #include <univalue.h>
 
+using util::SplitString;
+using util::ToString;
+
 typedef std::vector<unsigned char> valtype;
 
 static CFeeRate g_dust{DUST_RELAY_TX_FEE};
@@ -412,7 +415,7 @@ BOOST_AUTO_TEST_CASE(test_Get)
 static void CreateCreditAndSpend(const FillableSigningProvider& keystore, const CScript& outscript, CTransactionRef& output, CMutableTransaction& input, bool success = true)
 {
     CMutableTransaction outputm;
-    outputm.nVersion = 1;
+    outputm.version = 1;
     outputm.vin.resize(1);
     outputm.vin[0].prevout.SetNull();
     outputm.vin[0].scriptSig = CScript();
@@ -428,7 +431,7 @@ static void CreateCreditAndSpend(const FillableSigningProvider& keystore, const 
     assert(output->vout[0] == outputm.vout[0]);
 
     CMutableTransaction inputm;
-    inputm.nVersion = 1;
+    inputm.version = 1;
     inputm.vin.resize(1);
     inputm.vin[0].prevout.hash = output->GetHash();
     inputm.vin[0].prevout.n = 0;
@@ -485,7 +488,7 @@ static void ReplaceRedeemScript(CScript& script, const CScript& redeemScript)
 BOOST_AUTO_TEST_CASE(test_big_witness_transaction)
 {
     CMutableTransaction mtx;
-    mtx.nVersion = 1;
+    mtx.version = 1;
 
     CKey key = GenerateRandomKey(); // Need to use compressed keys in segwit or the signing will fail
     FillableSigningProvider keystore;
@@ -779,21 +782,21 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     t.vout[0].nValue = nDustThreshold;
     CheckIsStandard(t);
 
-    // Disallowed nVersion
-    t.nVersion = -1;
+    // Disallowed version
+    t.version = std::numeric_limits<uint32_t>::max();
     CheckIsNotStandard(t, "version");
 
-    t.nVersion = 0;
+    t.version = 0;
     CheckIsNotStandard(t, "version");
 
-    t.nVersion = TX_MAX_STANDARD_VERSION + 1;
+    t.version = TX_MAX_STANDARD_VERSION + 1;
     CheckIsNotStandard(t, "version");
 
-    // Allowed nVersion
-    t.nVersion = 1;
+    // Allowed version
+    t.version = 1;
     CheckIsStandard(t);
 
-    t.nVersion = 2;
+    t.version = 2;
     CheckIsStandard(t);
 
     // Check dust with odd relay fee to verify rounding:
@@ -897,11 +900,11 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
     t.vin.clear();
     t.vin.resize(243); // size per input (empty scriptSig): 41 bytes
     t.vout[0].scriptPubKey = CScript() << OP_RETURN << std::vector<unsigned char>(16, 0); // output size: 25 bytes
-    //  tx header:               12 bytes =>     48 vbytes
-    // 243 inputs:   243*41 =  9963 bytes =>  39852 vbytes
-    //   1 output:               25 bytes =>    100 vbytes
+    //  tx header:               12 bytes =>     48 weight units
+    // 243 inputs:   243*41 =  9963 bytes =>  39852 weight units
+    //   1 output:               25 bytes =>    100 weight units
     //                      ===============================
-    //                                total:  40000 vbytes
+    //                                total:  40000 weight units
     BOOST_CHECK_EQUAL(GetTransactionWeight(CTransaction(t)), 40000);
     CheckIsStandard(t);
 

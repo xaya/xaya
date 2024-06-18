@@ -552,11 +552,7 @@ bool BlockManager::LoadBlockIndexDB(const std::optional<uint256>& snapshot_block
     // Check whether we need to continue reindexing
     bool fReindexing = false;
     m_block_tree_db->ReadReindexing(fReindexing);
-    if (fReindexing) m_reindexing = true;
-
-    // Check whether we have the name history
-    m_block_tree_db->ReadFlag("namehistory", fNameHistory);
-    LogPrintf("LoadBlockIndexDB(): name history %s\n", fNameHistory ? "enabled" : "disabled");
+    if (fReindexing) m_blockfiles_indexed = false;
 
     return true;
 }
@@ -1212,7 +1208,7 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
     ImportingNow imp{chainman.m_blockman.m_importing};
 
     // -reindex
-    if (chainman.m_blockman.m_reindexing) {
+    if (!chainman.m_blockman.m_blockfiles_indexed) {
         int nFile = 0;
         // Map of disk positions for blocks with unknown parent (only used for reindex);
         // parent hash -> child disk position, multiple children can have the same parent.
@@ -1235,7 +1231,7 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             nFile++;
         }
         WITH_LOCK(::cs_main, chainman.m_blockman.m_block_tree_db->WriteReindexing(false));
-        chainman.m_blockman.m_reindexing = false;
+        chainman.m_blockman.m_blockfiles_indexed = true;
         LogPrintf("Reindexing finished\n");
         // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
         chainman.ActiveChainstate().LoadGenesisBlock();

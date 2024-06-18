@@ -6,11 +6,11 @@
 #include <script/script.h>
 
 #include <crypto/common.h>
+#include <crypto/hex_base.h>
 #include <hash.h>
 #include <script/names.h>
 #include <uint256.h>
 #include <util/hash_type.h>
-#include <util/strencodings.h>
 
 #include <string>
 

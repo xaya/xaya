@@ -17,6 +17,7 @@
 #include <names/main.h>
 #include <names/mempool.h>
 #include <node/context.h>
+#include <node/types.h>
 #include <net.h>
 #include <primitives/transaction.h>
 #include <random.h>
@@ -27,7 +28,6 @@
 #include <rpc/util.h>
 #include <script/names.h>
 #include <txmempool.h>
-#include <util/fees.h>
 #include <util/moneystr.h>
 #include <util/translation.h>
 #include <util/vector.h>
@@ -641,9 +641,9 @@ queuerawtransaction ()
     {
       std::string unused_err_string;
       // Don't check max fee.
-      const TransactionError err = BroadcastTransaction(node, txParsed, unused_err_string,
+      const node::TransactionError err = BroadcastTransaction(node, txParsed, unused_err_string,
         /* max_tx_fee */ 0, /* relay */ true, /* wait_callback */ false);
-      assert(err == TransactionError::OK);
+      assert(err == node::TransactionError::OK);
 
       return hashTx.GetHex();
     }

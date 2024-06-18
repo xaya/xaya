@@ -31,6 +31,7 @@
 #include <node/interface_ui.h>
 #include <node/mini_miner.h>
 #include <node/transaction.h>
+#include <node/types.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
@@ -70,6 +71,7 @@ using interfaces::Handler;
 using interfaces::MakeSignalHandler;
 using interfaces::Node;
 using interfaces::WalletLoader;
+using util::Join;
 
 namespace node {
 // All members of the classes in this namespace are intentionally public, as the
@@ -123,7 +125,7 @@ public:
     void startShutdown() override
     {
         if (!(*Assert(Assert(m_context)->shutdown))()) {
-            LogPrintf("Error: failed to send shutdown signal\n");
+            LogError("Failed to send shutdown signal\n");
         }
         // Stop RPC for clean shutdown if any of waitfor* commands is executed.
         if (args().GetBoolArg("-server", false)) {
