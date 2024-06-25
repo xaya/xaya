@@ -269,7 +269,7 @@ static OutputType GetOutputType(TxoutType type, bool is_from_p2sh)
 // Fetch and validate the coin control selected inputs.
 // Coins could be internal (from the wallet) or external.
 util::Result<PreSelectedInputs> FetchSelectedInputs(const CWallet& wallet, const CTxIn* withNameInput, const CCoinControl& coin_control,
-                                            const CoinSelectionParams& coin_selection_params) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
+                                            const CoinSelectionParams& coin_selection_params)
 {
     PreSelectedInputs result;
     std::vector<COutPoint> vPresetInputs = coin_control.ListSelected();
