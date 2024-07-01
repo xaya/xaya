@@ -19,6 +19,7 @@
 #include <init.h>
 #include <init/common.h>
 #include <interfaces/chain.h>
+#include <interfaces/mining.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <net.h>
@@ -256,12 +257,14 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
         .path = m_args.GetDataDirNet() / "blocks" / "index",
         .cache_bytes = static_cast<size_t>(m_cache_sizes.block_tree_db),
         .memory_only = true});
+    m_node.mining = interfaces::MakeMining(m_node);
 }
 
 ChainTestingSetup::~ChainTestingSetup()
 {
     if (m_node.scheduler) m_node.scheduler->stop();
     m_node.validation_signals->FlushBackgroundCallbacks();
+    m_node.mining.reset();
     m_node.connman.reset();
     m_node.banman.reset();
     m_node.addrman.reset();
@@ -382,7 +385,8 @@ CBlock TestChain100Setup::CreateBlock(
     const CScript& scriptPubKey,
     Chainstate& chainstate)
 {
-    CBlock block = BlockAssembler{chainstate, nullptr}.CreateNewBlock(scriptPubKey)->block;
+    BlockAssembler::Options options;
+    CBlock block = BlockAssembler{chainstate, nullptr, options}.CreateNewBlock(scriptPubKey)->block;
 
     Assert(block.vtx.size() == 1);
     for (const CMutableTransaction& tx : txns) {

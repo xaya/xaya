@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -203,7 +203,7 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   res.nChainIndex = auxpowChainIndex;
   res.parentBlock = parentBlock;
 
-  return std::move (res);
+  return res;
 }
 
 valtype
@@ -533,7 +533,8 @@ public:
   const CBlock*
   getCurrentBlock (const CScript& scriptPubKey, uint256& target)
   {
-    return AuxpowMiner::getCurrentBlock (*node.chainman, *node.mempool,
+    return AuxpowMiner::getCurrentBlock (*node.chainman, *node.mining,
+                                         *node.mempool,
                                          scriptPubKey, target);
   }
 
