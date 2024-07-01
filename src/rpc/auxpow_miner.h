@@ -1,10 +1,11 @@
-// Copyright (c) 2018-2023 Daniel Kraft
+// Copyright (c) 2018-2024 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_RPC_AUXPOW_MINER_H
 #define BITCOIN_RPC_AUXPOW_MINER_H
 
+#include <interfaces/mining.h>
 #include <node/miner.h>
 #include <rpc/request.h>
 #include <script/script.h>
@@ -64,7 +65,8 @@ private:
    * that should be returned to a miner for working on at the moment.  Also
    * fills in the difficulty target value.
    */
-  const CBlock* getCurrentBlock (const ChainstateManager& chainman,
+  const CBlock* getCurrentBlock (ChainstateManager& chainman,
+                                 interfaces::Mining& miner,
                                  const CTxMemPool& mempool,
                                  const CScript& scriptPubKey, uint256& target)
       EXCLUSIVE_LOCKS_REQUIRED (cs);
