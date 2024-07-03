@@ -162,7 +162,6 @@ public:
         bool test_block_validity{true};
     };
 
-    explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool);
     explicit BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool, const Options& options);
 
     /** Construct a new block template with coinbase to scriptPubKeyIn */

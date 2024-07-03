@@ -32,6 +32,7 @@
 #include <init/common.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <interfaces/mining.h>
 #include <interfaces/node.h>
 #include <kernel/context.h>
 #include <key.h>
@@ -113,7 +114,7 @@
 
 #include <boost/signals2/signal.hpp>
 
-#if ENABLE_ZMQ
+#ifdef ENABLE_ZMQ
 #include <zmq/zmqabstractnotifier.h>
 #include <zmq/zmqnotificationinterface.h>
 #include <zmq/zmqrpc.h>
@@ -375,7 +376,7 @@ void Shutdown(NodeContext& node)
         client->stop();
     }
 
-#if ENABLE_ZMQ
+#ifdef ENABLE_ZMQ
     if (g_zmq_notification_interface) {
         if (node.validation_signals) node.validation_signals->UnregisterValidationInterface(g_zmq_notification_interface.get());
         g_zmq_notification_interface.reset();
@@ -544,7 +545,7 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-maxreceivebuffer=<n>", strprintf("Maximum per-connection receive buffer, <n>*1000 bytes (default: %u)", DEFAULT_MAXRECEIVEBUFFER), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-maxsendbuffer=<n>", strprintf("Maximum per-connection memory usage for the send buffer, <n>*1000 bytes (default: %u)", DEFAULT_MAXSENDBUFFER), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-maxuploadtarget=<n>", strprintf("Tries to keep outbound traffic under the given target per 24h. Limit does not apply to peers with 'download' permission or blocks created within past week. 0 = no limit (default: %s). Optional suffix units [k|K|m|M|g|G|t|T] (default: M). Lowercase is 1000 base while uppercase is 1024 base", DEFAULT_MAX_UPLOAD_TARGET), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
-#if HAVE_SOCKADDR_UN
+#ifdef HAVE_SOCKADDR_UN
     argsman.AddArg("-onion=<ip:port|path>", "Use separate SOCKS5 proxy to reach peers via Tor onion services, set -noonion to disable (default: -proxy). May be a local file path prefixed with 'unix:'.", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
 #else
     argsman.AddArg("-onion=<ip:port>", "Use separate SOCKS5 proxy to reach peers via Tor onion services, set -noonion to disable (default: -proxy)", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -557,7 +558,7 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-peerblockfilters", strprintf("Serve compact block filters to peers per BIP 157 (default: %u)", DEFAULT_PEERBLOCKFILTERS), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-txreconciliation", strprintf("Enable transaction reconciliations per BIP 330 (default: %d)", DEFAULT_TXRECONCILIATION_ENABLE), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::CONNECTION);
     argsman.AddArg("-port=<port>", strprintf("Listen for connections on <port> (default: %u, testnet: %u, signet: %u, regtest: %u). Not relevant for I2P (see doc/i2p.md).", defaultChainParams->GetDefaultPort(), testnetChainParams->GetDefaultPort(), signetChainParams->GetDefaultPort(), regtestChainParams->GetDefaultPort()), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::CONNECTION);
-#if HAVE_SOCKADDR_UN
+#ifdef HAVE_SOCKADDR_UN
     argsman.AddArg("-proxy=<ip:port|path>", "Connect through SOCKS5 proxy, set -noproxy to disable (default: disabled). May be a local file path prefixed with 'unix:' if the proxy supports it.", ArgsManager::ALLOW_ANY | ArgsManager::DISALLOW_ELISION, OptionsCategory::CONNECTION);
 #else
     argsman.AddArg("-proxy=<ip:port>", "Connect through SOCKS5 proxy, set -noproxy to disable (default: disabled)", ArgsManager::ALLOW_ANY | ArgsManager::DISALLOW_ELISION, OptionsCategory::CONNECTION);
@@ -591,7 +592,7 @@ void SetupServerArgs(ArgsManager& argsman)
 
     g_wallet_init_interface.AddWalletOptions(argsman);
 
-#if ENABLE_ZMQ
+#ifdef ENABLE_ZMQ
     argsman.AddArg("-zmqpubhashblock=<address>", "Enable publish hash block in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
     argsman.AddArg("-zmqpubhashtx=<address>", "Enable publish hash transaction in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
     argsman.AddArg("-zmqpubrawblock=<address>", "Enable publish raw block in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
@@ -677,6 +678,7 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-rpcbind=<addr>[:port]", "Bind to given address to listen for JSON-RPC connections. Do not expose the RPC server to untrusted networks such as the public internet! This option is ignored unless -rpcallowip is also passed. Port is optional and overrides -rpcport. Use [host]:port notation for IPv6. This option can be specified multiple times (default: 127.0.0.1 and ::1 i.e., localhost)", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::RPC);
     argsman.AddArg("-rpcdoccheck", strprintf("Throw a non-fatal error at runtime if the documentation for an RPC is incorrect (default: %u)", DEFAULT_RPC_DOC_CHECK), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
     argsman.AddArg("-rpccookiefile=<loc>", "Location of the auth cookie. Relative paths will be prefixed by a net-specific datadir location. (default: data dir)", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    argsman.AddArg("-rpccookieperms=<readable-by>", strprintf("Set permissions on the RPC auth cookie file so that it is readable by [owner|group|all] (default: owner [via umask 0077])"), ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     argsman.AddArg("-rpcpassword=<pw>", "Password for JSON-RPC connections", ArgsManager::ALLOW_ANY | ArgsManager::SENSITIVE, OptionsCategory::RPC);
     argsman.AddArg("-rpcport=<port>", strprintf("Listen for JSON-RPC connections on <port> (default: %u, testnet: %u, signet: %u, regtest: %u)", defaultBaseParams->RPCPort(), testnetBaseParams->RPCPort(), signetBaseParams->RPCPort(), regtestBaseParams->RPCPort()), ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::RPC);
     argsman.AddArg("-rpcservertimeout=<n>", strprintf("Timeout during HTTP requests (default: %d)", DEFAULT_HTTP_SERVER_TIMEOUT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
@@ -1145,6 +1147,7 @@ bool AppInitLockDataDirectory()
 bool AppInitInterfaces(NodeContext& node)
 {
     node.chain = node.init->makeChain();
+    node.mining = node.init->makeMining();
     return true;
 }
 
@@ -1228,7 +1231,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     for (const auto& client : node.chain_clients) {
         client->registerRpcs();
     }
-#if ENABLE_ZMQ
+#ifdef ENABLE_ZMQ
     RegisterZMQRPCCommands(tableRPC);
 #endif
     /* A wallet, if available, also installs handlers for the name RPC commands
@@ -1358,7 +1361,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             std::string host_out;
             uint16_t port_out{0};
             if (!SplitHostPort(socket_addr, port_out, host_out)) {
-#if HAVE_SOCKADDR_UN
+#ifdef HAVE_SOCKADDR_UN
                 // Allow unix domain sockets for some options e.g. unix:/some/file/path
                 if (!unix || socket_addr.find(ADDR_PREFIX_UNIX) != 0) {
                     return InitError(InvalidPortErrMsg(arg, socket_addr));
@@ -1505,7 +1508,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             return InitError(ResolveErrMsg("externalip", strAddr));
     }
 
-#if ENABLE_ZMQ
+#ifdef ENABLE_ZMQ
     g_zmq_notification_interface = CZMQNotificationInterface::Create(
         [&chainman = node.chainman](std::vector<uint8_t>& block, const CBlockIndex& index) {
             assert(chainman);

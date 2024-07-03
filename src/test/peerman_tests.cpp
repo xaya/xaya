@@ -20,11 +20,10 @@ static void mineBlock(const node::NodeContext& node, std::chrono::seconds block_
 {
     auto curr_time = GetTime<std::chrono::seconds>();
     SetMockTime(block_time); // update time so the block is created with it
-    CBlock block = node::BlockAssembler{node.chainman->ActiveChainstate(), nullptr}.CreateNewBlock(PowAlgo::NEOSCRYPT, CScript() << OP_TRUE)->block;
+    node::BlockAssembler::Options options;
+    CBlock block = node::BlockAssembler{node.chainman->ActiveChainstate(), nullptr, options}.CreateNewBlock(PowAlgo::NEOSCRYPT, CScript() << OP_TRUE)->block;
     auto& fakeHeader = block.pow.initFakeHeader (block);
-    while (!block.pow.checkProofOfWork (fakeHeader, node.chainman->GetConsensus())) {
-        ++fakeHeader.nNonce;
-    }
+    while (!block.pow.checkProofOfWork(fakeHeader, node.chainman->GetConsensus())) ++fakeHeader.nNonce;
     block.fChecked = true; // little speedup
     SetMockTime(curr_time); // process block at current time
     Assert(node.chainman->ProcessNewBlock(std::make_shared<const CBlock>(block), /*force_processing=*/true, /*min_pow_checked=*/true, nullptr));

@@ -19,6 +19,9 @@ class BanMan;
 namespace node {
 struct NodeContext;
 } // namespace node
+namespace interfaces {
+class Mining;
+} // namespace interfaces
 
 node::NodeContext& EnsureAnyNodeContext(const JSONRPCRequest& context);
 node::NodeContext& EnsureAnyNodeContext(const std::any& context);
@@ -33,6 +36,7 @@ ChainstateManager& EnsureAnyChainman(const std::any& context);
 CBlockPolicyEstimator& EnsureFeeEstimator(const node::NodeContext& node);
 CBlockPolicyEstimator& EnsureAnyFeeEstimator(const std::any& context);
 CConnman& EnsureConnman(const node::NodeContext& node);
+interfaces::Mining& EnsureMining(const node::NodeContext& node);
 PeerManager& EnsurePeerman(const node::NodeContext& node);
 AddrMan& EnsureAddrman(const node::NodeContext& node);
 AddrMan& EnsureAnyAddrman(const std::any& context);

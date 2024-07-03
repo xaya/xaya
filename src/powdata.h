@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Xaya developers
+// Copyright (c) 2018-2024 The Xaya developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,6 +6,7 @@
 #define BITCOIN_POWDATA_H
 
 #include <auxpow.h>
+#include <interfaces/mining.h>
 #include <primitives/pureheader.h>
 #include <serialize.h>
 #include <uint256.h>
@@ -24,17 +25,6 @@ namespace powdata_tests
 {
 class PowDataForTest;
 }
-
-/** Possible PoW algorithms and their ID.  */
-enum class PowAlgo : uint8_t
-{
-  INVALID = 0,
-
-  SHA256D = 1,
-  NEOSCRYPT = 2,
-
-  FLAG_MERGE_MINED = 0x80,
-};
 
 /**
  * Returns the relative factor (actually, the binary log of it) of how much

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2023 Daniel Kraft
+// Copyright (c) 2018-2024 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,7 +25,7 @@
 namespace
 {
 
-using node::BlockAssembler;
+using interfaces::Mining;
 
 void auxMiningCheck(const node::NodeContext& node)
 {
@@ -45,7 +45,7 @@ void auxMiningCheck(const node::NodeContext& node)
 }  // anonymous namespace
 
 const CBlock*
-AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
+AuxpowMiner::getCurrentBlock (ChainstateManager& chainman, Mining& miner,
                               const CTxMemPool& mempool,
                               const PowAlgo algo,
                               const CScript& scriptPubKey, uint256& target)
@@ -75,8 +75,7 @@ AuxpowMiner::getCurrentBlock (const ChainstateManager& chainman,
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
         std::unique_ptr<node::CBlockTemplate> newBlock
-            = BlockAssembler (chainman.ActiveChainstate (), &mempool)
-                .CreateNewBlock (algo, scriptPubKey);
+            = miner.createNewBlock (algo, scriptPubKey);
         if (newBlock == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
 
@@ -137,10 +136,11 @@ AuxpowMiner::createAuxBlock (const JSONRPCRequest& request,
   const auto& node = EnsureAnyNodeContext (request);
   auxMiningCheck (node);
   const auto& mempool = EnsureMemPool (node);
-  const auto& chainman = EnsureChainman (node);
+  auto& chainman = EnsureChainman (node);
+  auto& mining = EnsureMining (node);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (chainman, mempool,
+  const CBlock* pblock = getCurrentBlock (chainman, mining, mempool,
                                           PowAlgo::SHA256D,
                                           scriptPubKey, target);
 
@@ -187,12 +187,13 @@ AuxpowMiner::createWork (const JSONRPCRequest& request,
   auto& node = EnsureAnyNodeContext (request);
   auxMiningCheck (node);
   auto& chainman = EnsureChainman (node);
+  auto& mining = EnsureMining (node);
   LOCK (cs);
 
   const auto& mempool = EnsureMemPool (node);
 
   uint256 target;
-  const CBlock* pblock = getCurrentBlock (chainman, mempool,
+  const CBlock* pblock = getCurrentBlock (chainman, mining, mempool,
                                           PowAlgo::NEOSCRYPT,
                                           scriptPubKey, target);
 
@@ -232,7 +233,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
 {
   const auto& node = EnsureAnyNodeContext (request);
   auxMiningCheck (node);
-  auto& chainman = EnsureChainman (node);
+  auto& mining = EnsureMining (node);
 
   std::shared_ptr<CBlock> shared_block;
   {
@@ -249,8 +250,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   shared_block->pow.setAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
-  return chainman.ProcessNewBlock (shared_block, /*force_processing=*/true,
-                                   /*min_pow_checked=*/true, nullptr);
+  return mining.processNewBlock (shared_block, nullptr);
 }
 
 bool
