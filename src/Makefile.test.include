@@ -174,8 +174,7 @@ BITCOIN_TESTS =\
   test/validation_flush_tests.cpp \
   test/validation_tests.cpp \
   test/validationinterface_tests.cpp \
-  test/versionbits_tests.cpp \
-  test/xoroshiro128plusplus_tests.cpp
+  test/versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
 #   base58_tests
 #   descriptor_tests.cpp: needs privkey rebranding

@@ -68,9 +68,7 @@ using kernel::CoinStatsHashType;
 using node::BlockManager;
 using node::NodeContext;
 using node::SnapshotMetadata;
-using util::Join;
 using util::MakeUnorderedList;
-using util::ToString;
 
 struct CUpdatedBlock
 {
@@ -1820,13 +1818,19 @@ static RPCHelpMan getchaintxstats()
                     RPCResult::Type::OBJ, "", "",
                     {
                         {RPCResult::Type::NUM_TIME, "time", "The timestamp for the final block in the window, expressed in " + UNIX_EPOCH_TIME},
-                        {RPCResult::Type::NUM, "txcount", "The total number of transactions in the chain up to that point"},
+                        {RPCResult::Type::NUM, "txcount", /*optional=*/true,
+                         "The total number of transactions in the chain up to that point, if known. "
+                         "It may be unknown when using assumeutxo."},
                         {RPCResult::Type::STR_HEX, "window_final_block_hash", "The hash of the final block in the window"},
                         {RPCResult::Type::NUM, "window_final_block_height", "The height of the final block in the window."},
                         {RPCResult::Type::NUM, "window_block_count", "Size of the window in number of blocks"},
-                        {RPCResult::Type::NUM, "window_tx_count", /*optional=*/true, "The number of transactions in the window. Only returned if \"window_block_count\" is > 0"},
                         {RPCResult::Type::NUM, "window_interval", /*optional=*/true, "The elapsed time in the window in seconds. Only returned if \"window_block_count\" is > 0"},
-                        {RPCResult::Type::NUM, "txrate", /*optional=*/true, "The average rate of transactions per second in the window. Only returned if \"window_interval\" is > 0"},
+                        {RPCResult::Type::NUM, "window_tx_count", /*optional=*/true,
+                         "The number of transactions in the window. "
+                         "Only returned if \"window_block_count\" is > 0 and if txcount exists for the start and end of the window."},
+                        {RPCResult::Type::NUM, "txrate", /*optional=*/true,
+                         "The average rate of transactions per second in the window. "
+                         "Only returned if \"window_interval\" is > 0 and if window_tx_count exists."},
                     }},
                 RPCExamples{
                     HelpExampleCli("getchaintxstats", "")
@@ -1867,19 +1871,25 @@ static RPCHelpMan getchaintxstats()
 
     const CBlockIndex& past_block{*CHECK_NONFATAL(pindex->GetAncestor(pindex->nHeight - blockcount))};
     const int64_t nTimeDiff{pindex->GetMedianTimePast() - past_block.GetMedianTimePast()};
-    const int nTxDiff = pindex->nChainTx - past_block.nChainTx;
+    const auto window_tx_count{
+        (pindex->nChainTx != 0 && past_block.nChainTx != 0) ? std::optional{pindex->nChainTx - past_block.nChainTx} : std::nullopt,
+    };
 
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("time", (int64_t)pindex->nTime);
-    ret.pushKV("txcount", (int64_t)pindex->nChainTx);
+    if (pindex->nChainTx) {
+        ret.pushKV("txcount", pindex->nChainTx);
+    }
     ret.pushKV("window_final_block_hash", pindex->GetBlockHash().GetHex());
     ret.pushKV("window_final_block_height", pindex->nHeight);
     ret.pushKV("window_block_count", blockcount);
     if (blockcount > 0) {
-        ret.pushKV("window_tx_count", nTxDiff);
         ret.pushKV("window_interval", nTimeDiff);
-        if (nTimeDiff > 0) {
-            ret.pushKV("txrate", ((double)nTxDiff) / nTimeDiff);
+        if (window_tx_count) {
+            ret.pushKV("window_tx_count", *window_tx_count);
+            if (nTimeDiff > 0) {
+                ret.pushKV("txrate", double(*window_tx_count) / nTimeDiff);
+            }
         }
     }
 
@@ -2996,34 +3006,15 @@ static RPCHelpMan loadtxoutset()
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, strprintf("Unable to parse metadata: %s", e.what()));
     }
 
-    uint256 base_blockhash = metadata.m_base_blockhash;
-    int base_blockheight = metadata.m_base_blockheight;
-    if (!chainman.GetParams().AssumeutxoForBlockhash(base_blockhash).has_value()) {
-        auto available_heights = chainman.GetParams().GetAvailableSnapshotHeights();
-        std::string heights_formatted = Join(available_heights, ", ", [&](const auto& i) { return ToString(i); });
-        throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Unable to load UTXO snapshot, "
-            "assumeutxo block hash in snapshot metadata not recognized (hash: %s, height: %s). The following snapshot heights are available: %s.",
-            base_blockhash.ToString(),
-            base_blockheight,
-            heights_formatted));
-    }
-    CBlockIndex* snapshot_start_block = WITH_LOCK(::cs_main,
-            return chainman.m_blockman.LookupBlockIndex(base_blockhash));
-
-    if (!snapshot_start_block) {
-        throw JSONRPCError(
-            RPC_INTERNAL_ERROR,
-            strprintf("The base block header (%s) must appear in the headers chain. Make sure all headers are syncing, and call this RPC again.",
-                      base_blockhash.ToString()));
-    }
-    if (!chainman.ActivateSnapshot(afile, metadata, false)) {
-        throw JSONRPCError(RPC_INTERNAL_ERROR, "Unable to load UTXO snapshot " + fs::PathToString(path));
+    auto activation_result{chainman.ActivateSnapshot(afile, metadata, false)};
+    if (!activation_result) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf(_("Unable to load UTXO snapshot: %s\n"), util::ErrorString(activation_result)).original);
     }
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("coins_loaded", metadata.m_coins_count);
-    result.pushKV("tip_hash", snapshot_start_block->GetBlockHash().ToString());
-    result.pushKV("base_height", snapshot_start_block->nHeight);
+    result.pushKV("tip_hash", metadata.m_base_blockhash.ToString());
+    result.pushKV("base_height", metadata.m_base_blockheight);
     result.pushKV("path", fs::PathToString(path));
     return result;
 },
