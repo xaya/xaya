@@ -114,8 +114,8 @@ class CreateTxWalletTest(BitcoinTestFramework):
         self.log.info('Check wallet does not create transactions with version=3 yet')
         wallet_rpc = self.nodes[0].get_wallet_rpc(self.default_wallet_name)
 
-        self.nodes[0].createwallet("v3")
-        wallet_v3 = self.nodes[0].get_wallet_rpc("v3")
+        self.nodes[0].createwallet("version3")
+        wallet_v3 = self.nodes[0].get_wallet_rpc("version3")
 
         tx_data = wallet_rpc.send(outputs=[{wallet_v3.getnewaddress(): 25}], options={"change_position": 0})
         wallet_tx_data = wallet_rpc.gettransaction(tx_data["txid"])
@@ -123,7 +123,7 @@ class CreateTxWalletTest(BitcoinTestFramework):
 
         # While v3 transactions are standard, the CURRENT_VERSION is 1.
         # This test can be removed if CURRENT_VERSION is changed, and replaced with tests that the
-        # wallet handles v3 rules properly.
+        # wallet handles TRUC rules properly.
         assert_equal(tx_current_version.version, 1)
         wallet_v3.unloadwallet()
 
