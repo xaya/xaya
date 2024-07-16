@@ -1112,7 +1112,7 @@ private:
     bool BlockRequestAllowed(const CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     bool AlreadyHaveBlock(const uint256& block_hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     void ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& inv)
-        EXCLUSIVE_LOCKS_REQUIRED(!m_most_recent_block_mutex);
+        EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex, !m_most_recent_block_mutex);
 
     /**
      * Validation logic for compact filters request handling.
@@ -2538,7 +2538,7 @@ void PeerManagerImpl::ProcessGetBlockData(CNode& pfrom, Peer& peer, const CInv& 
                 if (a_recent_compact_block && a_recent_compact_block->header.GetHash() == pindex->GetBlockHash()) {
                     MakeAndPushMessage(pfrom, NetMsgType::CMPCTBLOCK, *a_recent_compact_block);
                 } else {
-                    CBlockHeaderAndShortTxIDs cmpctblock{*pblock, FastRandomContext().rand64()};
+                    CBlockHeaderAndShortTxIDs cmpctblock{*pblock, m_rng.rand64()};
                     MakeAndPushMessage(pfrom, NetMsgType::CMPCTBLOCK, cmpctblock);
                 }
             } else {
@@ -3389,7 +3389,7 @@ std::optional<PeerManagerImpl::PackageToValidate> PeerManagerImpl::Find1P1CPacka
     // Create a random permutation of the indices.
     std::vector<size_t> tx_indices(cpfp_candidates_different_peer.size());
     std::iota(tx_indices.begin(), tx_indices.end(), 0);
-    Shuffle(tx_indices.begin(), tx_indices.end(), m_rng);
+    std::shuffle(tx_indices.begin(), tx_indices.end(), m_rng);
 
     for (const auto index : tx_indices) {
         // If we already tried a package and failed for any reason, the combined hash was
@@ -4156,7 +4156,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
         const bool rate_limited = !pfrom.HasPermission(NetPermissionFlags::Addr);
         uint64_t num_proc = 0;
         uint64_t num_rate_limit = 0;
-        Shuffle(vAddr.begin(), vAddr.end(), m_rng);
+        std::shuffle(vAddr.begin(), vAddr.end(), m_rng);
         for (CAddress& addr : vAddr)
         {
             if (interruptMsgProc)
@@ -6325,10 +6325,13 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
             // before the background chainstate to prioritize getting to network tip.
             FindNextBlocksToDownload(*peer, get_inflight_budget(), vToDownload, staller);
             if (m_chainman.BackgroundSyncInProgress() && !IsLimitedPeer(*peer)) {
+                // If the background tip is not an ancestor of the snapshot block,
+                // we need to start requesting blocks from their last common ancestor.
+                const CBlockIndex *from_tip = LastCommonAncestor(m_chainman.GetBackgroundSyncTip(), m_chainman.GetSnapshotBaseBlock());
                 TryDownloadingHistoricalBlocks(
                     *peer,
                     get_inflight_budget(),
-                    vToDownload, m_chainman.GetBackgroundSyncTip(),
+                    vToDownload, from_tip,
                     Assert(m_chainman.GetSnapshotBaseBlock()));
             }
             for (const CBlockIndex *pindex : vToDownload) {

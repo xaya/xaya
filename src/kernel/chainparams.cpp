@@ -629,11 +629,18 @@ public:
         };
 
         m_assumeutxo_data = {
-            {
+            {   // For use by unit tests
                 .height = 110,
                 .hash_serialized = AssumeutxoHash{uint256S("0x4dcc5ae2a45af3d11d7c4386387fdb3ee64860ef285937d730716abfce0f7020")},
                 .nChainTx = 111,
                 .blockhash = uint256S("0x31ca5e096d942b5e695c7c6a3da6eac8529f3b03f55641a789f0f973ae6ee18c")
+            },
+            {
+                // For use by fuzz target src/test/fuzz/utxo_snapshot.cpp
+                .height = 200,
+                .hash_serialized = AssumeutxoHash{uint256S("0x4f34d431c3e482f6b0d67b64609ece3964dc8d7976d02ac68dd7c9c1421738f2")},
+                .nChainTx = 201,
+                .blockhash = uint256S("0x5e93653318f294fb5aa339d00bbf8cf1c3515488ad99412c37608b139ea63b27"),
             },
             {
                 // For use by test/functional/feature_assumeutxo.py

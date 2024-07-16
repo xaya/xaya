@@ -197,7 +197,6 @@ BITCOIN_CORE_H = \
   kernel/mempool_removal_reason.h \
   kernel/messagestartchars.h \
   kernel/notifications_interface.h \
-  kernel/validation_cache_sizes.h \
   kernel/warning.h \
   key.h \
   key_io.h \
@@ -247,7 +246,6 @@ BITCOIN_CORE_H = \
   node/txreconciliation.h \
   node/types.h \
   node/utxo_snapshot.h \
-  node/validation_cache_args.h \
   node/warnings.h \
   noui.h \
   outputtype.h \
@@ -459,7 +457,6 @@ libbitcoin_node_a_SOURCES = \
   node/transaction.cpp \
   node/txreconciliation.cpp \
   node/utxo_snapshot.cpp \
-  node/validation_cache_args.cpp \
   node/warnings.cpp \
   noui.cpp \
   policy/fees.cpp \
@@ -736,7 +733,6 @@ libbitcoin_common_a_SOURCES = \
   outputtype.cpp \
   policy/feerate.cpp \
   policy/policy.cpp \
-  policy/truc_policy.cpp \
   protocol.cpp \
   psbt.cpp \
   rpc/external_signer.cpp \
