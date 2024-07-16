@@ -1068,7 +1068,7 @@ protected:
     size_t nSize{0};
 
 public:
-    SizeComputer() {}
+    SizeComputer() = default;
 
     void write(Span<const std::byte> src)
     {

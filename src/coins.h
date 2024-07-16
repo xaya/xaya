@@ -157,7 +157,7 @@ class CCoinsViewCursor
 {
 public:
     CCoinsViewCursor(const uint256 &hashBlockIn): hashBlock(hashBlockIn) {}
-    virtual ~CCoinsViewCursor() {}
+    virtual ~CCoinsViewCursor() = default;
 
     virtual bool GetKey(COutPoint &key) const = 0;
     virtual bool GetValue(Coin &coin) const = 0;
@@ -213,7 +213,7 @@ public:
     virtual bool ValidateNameDB(const Chainstate& chainState, const std::function<void()>& interruption_point) const;
 
     //! As we use CCoinsViews polymorphically, have a virtual destructor
-    virtual ~CCoinsView() {}
+    virtual ~CCoinsView() = default;
 
     //! Estimate database size (0 if not implemented)
     virtual size_t EstimateSize() const { return 0; }

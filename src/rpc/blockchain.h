@@ -22,6 +22,7 @@ class CChain;
 class Chainstate;
 class UniValue;
 namespace node {
+class BlockManager;
 struct NodeContext;
 } // namespace node
 
@@ -59,6 +60,9 @@ UniValue CreateUTXOSnapshot(
     AutoFile& afile,
     const fs::path& path,
     const fs::path& tmppath);
+
+//! Return height of highest block that has been pruned, or std::nullopt if no blocks have been pruned
+std::optional<int> GetPruneHeight(const node::BlockManager& blockman, const CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
 UniValue GetDifficultyJson(const CChain& chain);
 
