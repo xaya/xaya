@@ -5,9 +5,11 @@
 #ifndef BITCOIN_INTERFACES_MINING_H
 #define BITCOIN_INTERFACES_MINING_H
 
+#include <node/types.h>
+#include <uint256.h>
+
 #include <memory>
 #include <optional>
-#include <uint256.h>
 
 /** Possible PoW algorithms and their ID.  */
 enum class PowAlgo : uint8_t
@@ -52,10 +54,10 @@ public:
      * Construct a new block template
      *
      * @param[in] script_pub_key the coinbase output
-     * @param[in] use_mempool set false to omit mempool transactions
+     * @param[in] options options for creating the block
      * @returns a block template
      */
-    virtual std::unique_ptr<node::CBlockTemplate> createNewBlock(PowAlgo algo, const CScript& script_pub_key, bool use_mempool = true) = 0;
+    virtual std::unique_ptr<node::CBlockTemplate> createNewBlock(PowAlgo algo, const CScript& script_pub_key, const node::BlockCreateOptions& options={}) = 0;
 
     /**
      * Processes new block. A valid new block is automatically relayed to peers.

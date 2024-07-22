@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2022 The Bitcoin Core developers
+# Copyright (c) 2020-present The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test error messages for 'getaddressinfo' and 'validateaddress' RPC commands."""
@@ -12,6 +12,7 @@ from test_framework.util import (
 )
 
 BECH32_VALID = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhyn'
+BECH32_VALID_UNKNOWN_WITNESS = 'chirt1p424qsxfwvd'
 BECH32_VALID_CAPITALS = 'chirt1qtmp74ayg7p24uslctssvjm06q5phz4yrhskhyn'.upper()
 BECH32_VALID_MULTISIG = 'chirt1qdg3myrgvzw7ml9q0ejxhlkyxm7vl9r56yzkfgvzclrf4hkpx9yfqjaa7sv'
 
@@ -81,6 +82,7 @@ class InvalidAddressErrorMessageTest(BitcoinTestFramework):
 
         # Valid Bech32
         self.check_valid(BECH32_VALID)
+        self.check_valid(BECH32_VALID_UNKNOWN_WITNESS)
         self.check_valid(BECH32_VALID_CAPITALS)
         self.check_valid(BECH32_VALID_MULTISIG)
 
@@ -110,6 +112,7 @@ class InvalidAddressErrorMessageTest(BitcoinTestFramework):
         assert_raises_rpc_error(-5, "Invalid or unsupported Segwit (Bech32) or Base58 encoding.", node.getaddressinfo, BECH32_INVALID_PREFIX)
         assert_raises_rpc_error(-5, "Invalid or unsupported Base58-encoded address.", node.getaddressinfo, BASE58_INVALID_PREFIX)
         assert_raises_rpc_error(-5, "Invalid or unsupported Segwit (Bech32) or Base58 encoding.", node.getaddressinfo, INVALID_ADDRESS)
+        assert "isscript" not in node.getaddressinfo(BECH32_VALID_UNKNOWN_WITNESS)
 
     def run_test(self):
         self.test_validateaddress()

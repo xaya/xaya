@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NODE_MINER_H
 #define BITCOIN_NODE_MINER_H
 
+#include <node/types.h>
 #include <policy/policy.h>
 #include <powdata.h>
 #include <primitives/block.h>
@@ -154,7 +155,7 @@ private:
     Chainstate& m_chainstate;
 
 public:
-    struct Options {
+    struct Options : BlockCreateOptions {
         // Configuration parameters for the block size
         size_t nBlockMaxWeight{DEFAULT_BLOCK_MAX_WEIGHT};
         CFeeRate blockMinFeeRate{DEFAULT_BLOCK_MIN_TX_FEE};

@@ -884,12 +884,11 @@ public:
         return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, /*fCheckBits=*/true, check_merkle_root);
     }
 
-    std::unique_ptr<CBlockTemplate> createNewBlock(const PowAlgo algo, const CScript& script_pub_key, bool use_mempool) override
+    std::unique_ptr<CBlockTemplate> createNewBlock(const PowAlgo algo, const CScript& script_pub_key, const BlockCreateOptions& options) override
     {
-        BlockAssembler::Options options;
-        ApplyArgsManOptions(gArgs, options);
-
-        return BlockAssembler{chainman().ActiveChainstate(), use_mempool ? context()->mempool.get() : nullptr, options}.CreateNewBlock(algo, script_pub_key);
+        BlockAssembler::Options assemble_options{options};
+        ApplyArgsManOptions(*Assert(m_node.args), assemble_options);
+        return BlockAssembler{chainman().ActiveChainstate(), context()->mempool.get(), assemble_options}.CreateNewBlock(algo, script_pub_key);
     }
 
     NodeContext* context() override { return &m_node; }

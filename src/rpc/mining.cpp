@@ -444,7 +444,7 @@ static RPCHelpMan generateblock()
 
     ChainstateManager& chainman = EnsureChainman(node);
     {
-        std::unique_ptr<CBlockTemplate> blocktemplate{miner.createNewBlock(algo, coinbase_script, /*use_mempool=*/false)};
+        std::unique_ptr<CBlockTemplate> blocktemplate{miner.createNewBlock(algo, coinbase_script, {.use_mempool = false})};
         if (!blocktemplate) {
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         }
@@ -857,9 +857,7 @@ static RPCHelpMan getblocktemplate()
         }
         ENTER_CRITICAL_SECTION(cs_main);
 
-        std::optional<uint256> maybe_tip{miner.getTipHash()};
-        CHECK_NONFATAL(maybe_tip);
-        tip = maybe_tip.value();
+        tip = CHECK_NONFATAL(miner.getTipHash()).value();
 
         if (!IsRPCRunning())
             throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Shutting down");

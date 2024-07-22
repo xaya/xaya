@@ -544,6 +544,7 @@ CreatedTransactionResult FundTransaction(CWallet& wallet, const CMutableTransact
                 {"minconf", UniValueType(UniValue::VNUM)},
                 {"maxconf", UniValueType(UniValue::VNUM)},
                 {"input_weights", UniValueType(UniValue::VARR)},
+                {"max_tx_weight", UniValueType(UniValue::VNUM)},
             },
             true, true);
 
@@ -703,6 +704,10 @@ CreatedTransactionResult FundTransaction(CWallet& wallet, const CMutableTransact
         }
     }
 
+    if (options.exists("max_tx_weight")) {
+        coinControl.m_max_tx_weight = options["max_tx_weight"].getInt<int>();
+    }
+
     if (recipients.empty())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "TX must have at least one output");
 
@@ -788,6 +793,8 @@ RPCHelpMan fundrawtransaction()
                                     },
                                 },
                              },
+                            {"max_tx_weight", RPCArg::Type::NUM, RPCArg::Default{MAX_STANDARD_TX_WEIGHT}, "The maximum acceptable transaction weight.\n"
+                                                          "Transaction building will fail if this can not be satisfied."},
                         },
                         FundTxDoc()),
                         RPCArgOptions{
@@ -1251,6 +1258,8 @@ RPCHelpMan send()
                             {"vout_index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "The zero-based output index, before a change output is added."},
                         },
                     },
+                    {"max_tx_weight", RPCArg::Type::NUM, RPCArg::Default{MAX_STANDARD_TX_WEIGHT}, "The maximum acceptable transaction weight.\n"
+                                                  "Transaction building will fail if this can not be satisfied."},
                 },
                 FundTxDoc()),
                 RPCArgOptions{.oneline_description="options"}},
@@ -1298,6 +1307,9 @@ RPCHelpMan send()
             // Automatically select coins, unless at least one is manually selected. Can
             // be overridden by options.add_inputs.
             coin_control.m_allow_other_inputs = rawTx.vin.size() == 0;
+            if (options.exists("max_tx_weight")) {
+                coin_control.m_max_tx_weight = options["max_tx_weight"].getInt<int>();
+            }
             SetOptionsInputWeights(options["inputs"], options);
             // Clear tx.vout since it is not meant to be used now that we are passing outputs directly.
             // This sets us up for a future PR to completely remove tx from the function signature in favor of passing inputs directly
@@ -1708,6 +1720,8 @@ RPCHelpMan walletcreatefundedpsbt()
                                     {"vout_index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "The zero-based output index, before a change output is added."},
                                 },
                             },
+                            {"max_tx_weight", RPCArg::Type::NUM, RPCArg::Default{MAX_STANDARD_TX_WEIGHT}, "The maximum acceptable transaction weight.\n"
+                                                          "Transaction building will fail if this can not be satisfied."},
                         },
                         FundTxDoc()),
                         RPCArgOptions{.oneline_description="options"}},
