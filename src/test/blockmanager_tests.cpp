@@ -171,12 +171,12 @@ BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
     CBlock read_block;
     BOOST_CHECK_EQUAL(read_block.nVersion, 0);
     {
-        ASSERT_DEBUG_LOG("ReadBlockFromDisk: Errors in block header");
+        ASSERT_DEBUG_LOG("ReadBlockOrHeader: Errors in block header");
         BOOST_CHECK(!blockman.ReadBlockFromDisk(read_block, pos1));
         BOOST_CHECK_EQUAL(read_block.nVersion, 1);
     }
     {
-        ASSERT_DEBUG_LOG("ReadBlockFromDisk: Errors in block header");
+        ASSERT_DEBUG_LOG("ReadBlockOrHeader: Errors in block header");
         BOOST_CHECK(!blockman.ReadBlockFromDisk(read_block, pos2));
         BOOST_CHECK_EQUAL(read_block.nVersion, 2);
     }
