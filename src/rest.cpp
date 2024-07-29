@@ -268,9 +268,10 @@ static bool rest_headers(const std::any& context,
         return RESTERR(req, HTTP_BAD_REQUEST, strprintf("Header count is invalid or out of acceptable range (1-%u): %s", MAX_REST_HEADERS_RESULTS, raw_count));
     }
 
-    uint256 hash;
-    if (!ParseHashStr(hashStr, hash))
+    auto hash{uint256::FromHex(hashStr)};
+    if (!hash) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
+    }
 
     const CBlockIndex* tip = nullptr;
     std::vector<const CBlockIndex*> headers;
@@ -284,7 +285,7 @@ static bool rest_headers(const std::any& context,
         LOCK(cs_main);
         CChain& active_chain = chainman.ActiveChain();
         tip = active_chain.Tip();
-        const CBlockIndex* pindex = chainman.m_blockman.LookupBlockIndex(hash);
+        const CBlockIndex* pindex{chainman.m_blockman.LookupBlockIndex(*hash)};
         while (pindex != nullptr && active_chain.Contains(pindex)) {
             headers.push_back(pindex);
             if (headers.size() == *parsed_count) {
@@ -343,9 +344,10 @@ static bool rest_block(const std::any& context,
     std::string hashStr;
     const RESTResponseFormat rf = ParseDataFormat(hashStr, strURIPart);
 
-    uint256 hash;
-    if (!ParseHashStr(hashStr, hash))
+    auto hash{uint256::FromHex(hashStr)};
+    if (!hash) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
+    }
 
     FlatFilePos pos{};
     const CBlockIndex* pblockindex = nullptr;
@@ -356,7 +358,7 @@ static bool rest_block(const std::any& context,
     {
         LOCK(cs_main);
         tip = chainman.ActiveChain().Tip();
-        pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
+        pblockindex = chainman.m_blockman.LookupBlockIndex(*hash);
         if (!pblockindex) {
             return RESTERR(req, HTTP_NOT_FOUND, hashStr + " not found");
         }
@@ -443,8 +445,8 @@ static bool rest_filter_header(const std::any& context, HTTPRequest* req, const 
         return RESTERR(req, HTTP_BAD_REQUEST, strprintf("Header count is invalid or out of acceptable range (1-%u): %s", MAX_REST_HEADERS_RESULTS, raw_count));
     }
 
-    uint256 block_hash;
-    if (!ParseHashStr(raw_blockhash, block_hash)) {
+    auto block_hash{uint256::FromHex(raw_blockhash)};
+    if (!block_hash) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + raw_blockhash);
     }
 
@@ -466,7 +468,7 @@ static bool rest_filter_header(const std::any& context, HTTPRequest* req, const 
         ChainstateManager& chainman = *maybe_chainman;
         LOCK(cs_main);
         CChain& active_chain = chainman.ActiveChain();
-        const CBlockIndex* pindex = chainman.m_blockman.LookupBlockIndex(block_hash);
+        const CBlockIndex* pindex{chainman.m_blockman.LookupBlockIndex(*block_hash)};
         while (pindex != nullptr && active_chain.Contains(pindex)) {
             headers.push_back(pindex);
             if (headers.size() == *parsed_count)
@@ -547,8 +549,8 @@ static bool rest_block_filter(const std::any& context, HTTPRequest* req, const s
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid URI format. Expected /rest/blockfilter/<filtertype>/<blockhash>");
     }
 
-    uint256 block_hash;
-    if (!ParseHashStr(uri_parts[1], block_hash)) {
+    auto block_hash{uint256::FromHex(uri_parts[1])};
+    if (!block_hash) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + uri_parts[1]);
     }
 
@@ -569,7 +571,7 @@ static bool rest_block_filter(const std::any& context, HTTPRequest* req, const s
         if (!maybe_chainman) return false;
         ChainstateManager& chainman = *maybe_chainman;
         LOCK(cs_main);
-        block_index = chainman.m_blockman.LookupBlockIndex(block_hash);
+        block_index = chainman.m_blockman.LookupBlockIndex(*block_hash);
         if (!block_index) {
             return RESTERR(req, HTTP_NOT_FOUND, uri_parts[1] + " not found");
         }
@@ -669,14 +671,14 @@ static bool rest_deploymentinfo(const std::any& context, HTTPRequest* req, const
         jsonRequest.params = UniValue(UniValue::VARR);
 
         if (!hash_str.empty()) {
-            uint256 hash;
-            if (!ParseHashStr(hash_str, hash)) {
+            auto hash{uint256::FromHex(hash_str)};
+            if (!hash) {
                 return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hash_str);
             }
 
             const ChainstateManager* chainman = GetChainman(context, req);
             if (!chainman) return false;
-            if (!WITH_LOCK(::cs_main, return chainman->m_blockman.LookupBlockIndex(ParseHashV(hash_str, "blockhash")))) {
+            if (!WITH_LOCK(::cs_main, return chainman->m_blockman.LookupBlockIndex(*hash))) {
                 return RESTERR(req, HTTP_BAD_REQUEST, "Block not found");
             }
 
@@ -757,9 +759,10 @@ static bool rest_tx(const std::any& context, HTTPRequest* req, const std::string
     std::string hashStr;
     const RESTResponseFormat rf = ParseDataFormat(hashStr, strURIPart);
 
-    uint256 hash;
-    if (!ParseHashStr(hashStr, hash))
+    auto hash{uint256::FromHex(hashStr)};
+    if (!hash) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid hash: " + hashStr);
+    }
 
     if (g_txindex) {
         g_txindex->BlockUntilSyncedToCurrentChain();
@@ -768,7 +771,7 @@ static bool rest_tx(const std::any& context, HTTPRequest* req, const std::string
     const NodeContext* const node = GetNodeContext(context, req);
     if (!node) return false;
     uint256 hashBlock = uint256();
-    const CTransactionRef tx = GetTransaction(/*block_index=*/nullptr, node->mempool.get(), hash, hashBlock, node->chainman->m_blockman);
+    const CTransactionRef tx{GetTransaction(/*block_index=*/nullptr, node->mempool.get(), *hash, hashBlock, node->chainman->m_blockman)};
     if (!tx) {
         return RESTERR(req, HTTP_NOT_FOUND, hashStr + " not found");
     }
@@ -845,13 +848,14 @@ static bool rest_getutxos(const std::any& context, HTTPRequest* req, const std::
             if (txid_out.size() != 2) {
                 return RESTERR(req, HTTP_BAD_REQUEST, "Parse error");
             }
+            auto txid{Txid::FromHex(txid_out.at(0))};
             auto output{ToIntegral<uint32_t>(txid_out.at(1))};
 
-            if (!output || !IsHex(txid_out.at(0))) {
+            if (!txid || !output) {
                 return RESTERR(req, HTTP_BAD_REQUEST, "Parse error");
             }
 
-            vOutPoints.emplace_back(TxidFromString(txid_out.at(0)), *output);
+            vOutPoints.emplace_back(*txid, *output);
         }
 
         if (vOutPoints.size() > 0)

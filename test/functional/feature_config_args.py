@@ -432,4 +432,4 @@ class ConfArgsTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    ConfArgsTest().main()
+    ConfArgsTest(__file__).main()

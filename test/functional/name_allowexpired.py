@@ -77,4 +77,4 @@ class NameExpirationTest(NameTestFramework):
             node_disallow.name_show, "d/expired", {"allowExpired": False})
 
 if __name__ == '__main__':
-    NameExpirationTest ().main ()
+    NameExpirationTest (__file__).main ()

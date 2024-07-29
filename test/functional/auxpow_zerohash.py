@@ -129,4 +129,4 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-  AuxpowZeroHashTest ().main ()
+  AuxpowZeroHashTest (__file__).main ()

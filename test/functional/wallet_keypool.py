@@ -263,4 +263,4 @@ class KeyPoolTest(BitcoinTestFramework):
         assert_raises_rpc_error(-12, 'Keypool ran out', nodes[0].getauxblock)
 
 if __name__ == '__main__':
-    KeyPoolTest().main()
+    KeyPoolTest(__file__).main()

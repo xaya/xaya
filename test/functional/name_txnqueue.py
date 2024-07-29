@@ -91,4 +91,4 @@ class NameTransactionQueueTest(NameTestFramework):
         assert dummy_txid in node.getrawmempool()
 
 if __name__ == '__main__':
-    NameTransactionQueueTest ().main ()
+    NameTransactionQueueTest (__file__).main ()

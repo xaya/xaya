@@ -76,4 +76,4 @@ class NameByHashTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameByHashTest ().main ()
+  NameByHashTest (__file__).main ()

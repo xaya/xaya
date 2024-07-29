@@ -66,4 +66,4 @@ class NameUtxoTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameUtxoTest ().main ()
+  NameUtxoTest (__file__).main ()

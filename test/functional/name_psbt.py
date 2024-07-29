@@ -126,4 +126,4 @@ class NamePsbtTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NamePsbtTest ().main ()
+  NamePsbtTest (__file__).main ()

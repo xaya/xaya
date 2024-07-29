@@ -196,4 +196,4 @@ class NotificationsTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    NotificationsTest().main()
+    NotificationsTest(__file__).main()

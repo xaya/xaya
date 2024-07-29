@@ -112,4 +112,4 @@ class NameLongSaltTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameLongSaltTest ().main ()
+  NameLongSaltTest (__file__).main ()

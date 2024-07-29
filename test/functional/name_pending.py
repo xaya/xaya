@@ -112,4 +112,4 @@ class NamePendingTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NamePendingTest ().main ()
+  NamePendingTest (__file__).main ()

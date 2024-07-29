@@ -57,4 +57,4 @@ class NameNovalueTest(NameTestFramework):
 
 
 if __name__ == '__main__':
-    NameNovalueTest ().main ()
+    NameNovalueTest (__file__).main ()

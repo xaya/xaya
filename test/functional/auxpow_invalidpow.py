@@ -95,4 +95,4 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
     return block
 
 if __name__ == '__main__':
-  AuxpowInvalidPoWTest ().main ()
+  AuxpowInvalidPoWTest (__file__).main ()

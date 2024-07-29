@@ -84,4 +84,4 @@ class NameListTest (NameTestFramework):
     assert_equal (data['ismine'], mine)
 
 if __name__ == '__main__':
-  NameListTest ().main ()
+  NameListTest (__file__).main ()

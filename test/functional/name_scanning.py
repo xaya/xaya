@@ -138,4 +138,4 @@ class NameScanningTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameScanningTest ().main ()
+  NameScanningTest (__file__).main ()

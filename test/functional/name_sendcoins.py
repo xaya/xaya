@@ -95,4 +95,4 @@ class NameSendCoinsTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameSendCoinsTest ().main ()
+  NameSendCoinsTest (__file__).main ()

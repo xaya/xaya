@@ -194,4 +194,4 @@ class NameRegistrationTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameRegistrationTest ().main ()
+  NameRegistrationTest (__file__).main ()

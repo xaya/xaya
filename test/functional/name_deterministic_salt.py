@@ -66,4 +66,4 @@ class NameDeterministicSaltTest(NameTestFramework):
 
 
 if __name__ == '__main__':
-    NameDeterministicSaltTest().main()
+    NameDeterministicSaltTest(__file__).main()

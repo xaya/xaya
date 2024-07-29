@@ -72,4 +72,4 @@ class NameMultiUpdateTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameMultiUpdateTest ().main ()
+  NameMultiUpdateTest (__file__).main ()

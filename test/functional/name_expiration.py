@@ -159,4 +159,4 @@ class NameExpirationTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameExpirationTest ().main ()
+  NameExpirationTest (__file__).main ()

@@ -1361,4 +1361,4 @@ class FullBlockTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    FullBlockTest().main()
+    FullBlockTest(__file__).main()

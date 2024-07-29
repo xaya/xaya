@@ -85,4 +85,4 @@ class NameIsMineTest (NameTestFramework):
       assert_equal (extraRpc.name_show (nm)['ismine'], False)
 
 if __name__ == '__main__':
-  NameIsMineTest ().main ()
+  NameIsMineTest (__file__).main ()

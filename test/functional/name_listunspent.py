@@ -136,4 +136,4 @@ class NameListUnspentTest (NameTestFramework):
     assert self.lookupName (1, "testname", includeNames=True) is None
 
 if __name__ == '__main__':
-  NameListUnspentTest ().main ()
+  NameListUnspentTest (__file__).main ()

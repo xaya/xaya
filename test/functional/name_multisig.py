@@ -324,4 +324,4 @@ class NameMultisigTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameMultisigTest ().main ()
+  NameMultisigTest (__file__).main ()
