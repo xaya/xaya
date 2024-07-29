@@ -124,10 +124,11 @@ AuxpowMiner::lookupSavedBlock (const std::string& hashHex) const
 {
   AssertLockHeld (cs);
 
-  uint256 hash;
-  hash.SetHex (hashHex);
+  const auto hash = uint256::FromHex (hashHex);
+  if (!hash)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid block hash hex");
 
-  const auto iter = blocks.find (hash);
+  const auto iter = blocks.find (*hash);
   if (iter == blocks.end ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "block hash unknown");
 

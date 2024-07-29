@@ -24,6 +24,7 @@
 #include <type_traits>
 #include <vector>
 
+class arith_uint256;
 class CFeeRate;
 class Chainstate;
 class FastRandomContext;
@@ -52,6 +53,8 @@ struct TestOpts {
     std::vector<const char*> extra_args{};
     bool coins_db_in_memory{true};
     bool block_tree_db_in_memory{true};
+    bool setup_net{true};
+    bool setup_validation_interface{true};
 };
 
 /** Basic testing setup.
@@ -236,7 +239,9 @@ std::unique_ptr<T> MakeNoLogFileContext(const ChainType chain_type = ChainType::
 
 CBlock getBlock13b8a();
 
-// define an implicit conversion here so that uint256 may be used directly in BOOST_CHECK_*
+// Make types usable in BOOST_CHECK_*
+std::ostream& operator<<(std::ostream& os, const arith_uint256& num);
+std::ostream& operator<<(std::ostream& os, const uint160& num);
 std::ostream& operator<<(std::ostream& os, const uint256& num);
 
 /**

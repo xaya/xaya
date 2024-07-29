@@ -210,6 +210,8 @@ class RESTTest (BitcoinTestFramework):
         self.test_rest_request(f"/getutxos/{spending[0]}_+1", ret_type=RetType.OBJ, status=400)
         self.test_rest_request(f"/getutxos/{spending[0]}-+1", ret_type=RetType.OBJ, status=400)
         self.test_rest_request(f"/getutxos/{spending[0]}--1", ret_type=RetType.OBJ, status=400)
+        self.test_rest_request(f"/getutxos/{spending[0]}aa-1234", ret_type=RetType.OBJ, status=400)
+        self.test_rest_request(f"/getutxos/aa-1234", ret_type=RetType.OBJ, status=400)
 
         # Test limits
         long_uri = '/'.join([f"{txid}-{n_}" for n_ in range(20)])
@@ -445,4 +447,4 @@ class RESTTest (BitcoinTestFramework):
         assert_equal(resp.read().decode('utf-8').rstrip(), f"Invalid hash: {INVALID_PARAM}")
 
 if __name__ == '__main__':
-    RESTTest().main()
+    RESTTest(__file__).main()

@@ -966,4 +966,4 @@ class CompactBlocksTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    CompactBlocksTest().main()
+    CompactBlocksTest(__file__).main()

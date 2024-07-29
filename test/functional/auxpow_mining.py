@@ -207,4 +207,4 @@ class AuxpowMiningTest (BitcoinTestFramework):
     assert auxblock1['hash'] != auxblock2['hash']
 
 if __name__ == '__main__':
-  AuxpowMiningTest ().main ()
+  AuxpowMiningTest (__file__).main ()
