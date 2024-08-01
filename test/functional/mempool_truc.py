@@ -646,4 +646,4 @@ class MempoolTRUC(BitcoinTestFramework):
 
 
 if __name__ == "__main__":
-    MempoolTRUC().main()
+    MempoolTRUC(__file__).main()

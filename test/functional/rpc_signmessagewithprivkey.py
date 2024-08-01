@@ -75,4 +75,4 @@ class SignMessagesWithPrivTest(BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-    SignMessagesWithPrivTest().main()
+    SignMessagesWithPrivTest(__file__).main()

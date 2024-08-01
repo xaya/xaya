@@ -105,4 +105,4 @@ class DualAlgoTest (BitcoinTestFramework):
         raise AssertionError ("rng seed was never high for algo %s" % algo)
 
 if __name__ == '__main__':
-  DualAlgoTest ().main ()
+  DualAlgoTest (__file__).main ()

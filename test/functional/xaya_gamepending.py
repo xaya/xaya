@@ -239,4 +239,4 @@ class GamePendingTest (XayaZmqTest):
 
 
 if __name__ == '__main__':
-    GamePendingTest ().main ()
+    GamePendingTest (__file__).main ()

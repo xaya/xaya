@@ -27,14 +27,12 @@
 #include <vector>
 
 namespace {
-const TestingSetup* g_setup;
 const Coin EMPTY_COIN{};
 } // namespace
 
 void initialize_coins_view()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
-    g_setup = testing_setup.get();
+    static const auto testing_setup = MakeNoLogFileContext<>();
 }
 
 FUZZ_TARGET(coins_view, .init = initialize_coins_view)

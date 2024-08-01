@@ -99,4 +99,4 @@ class NameListUnspentTest (NameTestFramework):
     assert_equal (unspent['nameOp']['name'], 'x/testname')
 
 if __name__ == '__main__':
-  NameListUnspentTest ().main ()
+  NameListUnspentTest (__file__).main ()

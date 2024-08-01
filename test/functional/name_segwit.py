@@ -175,4 +175,4 @@ class NameSegwitTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameSegwitTest ().main ()
+  NameSegwitTest (__file__).main ()

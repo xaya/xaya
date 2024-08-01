@@ -150,4 +150,4 @@ class BtxidTest (BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-  BtxidTest ().main ()
+  BtxidTest (__file__).main ()

@@ -238,15 +238,6 @@ bool DecodeHexPureHeader(CPureBlockHeader& hdr, const std::string& hex_header)
     return DecodeHexObject(hdr, hex_header);
 }
 
-bool ParseHashStr(const std::string& strHex, uint256& result)
-{
-    if ((strHex.size() != 64) || !IsHex(strHex))
-        return false;
-
-    result.SetHex(strHex);
-    return true;
-}
-
 util::Result<int> SighashFromStr(const std::string& sighash)
 {
     static const std::map<std::string, int> map_sighash_values = {

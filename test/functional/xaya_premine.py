@@ -105,4 +105,4 @@ class PremineTest(BitcoinTestFramework):
     assert_equal (node.gettransaction (sendId)['confirmations'], 1)
 
 if __name__ == '__main__':
-  PremineTest().main()
+  PremineTest(__file__).main()

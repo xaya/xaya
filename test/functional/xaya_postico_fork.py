@@ -67,4 +67,4 @@ class PostIcoForkTest (BitcoinTestFramework):
     return self.node.submitblock (block.serialize (True).hex ())
 
 if __name__ == '__main__':
-  PostIcoForkTest ().main ()
+  PostIcoForkTest (__file__).main ()

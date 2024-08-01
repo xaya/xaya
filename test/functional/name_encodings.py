@@ -559,4 +559,4 @@ class NameEncodingsTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameEncodingsTest ().main ()
+  NameEncodingsTest (__file__).main ()

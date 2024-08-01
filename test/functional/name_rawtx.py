@@ -183,4 +183,4 @@ class NameRawTxTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameRawTxTest ().main ()
+  NameRawTxTest (__file__).main ()

@@ -212,4 +212,4 @@ class NameWalletTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameWalletTest ().main ()
+  NameWalletTest (__file__).main ()

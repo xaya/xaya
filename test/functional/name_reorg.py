@@ -77,4 +77,4 @@ class NameReorgTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameReorgTest ().main ()
+  NameReorgTest (__file__).main ()

@@ -85,4 +85,4 @@ class XayaRngSeedTest (BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-  XayaRngSeedTest ().main ()
+  XayaRngSeedTest (__file__).main ()

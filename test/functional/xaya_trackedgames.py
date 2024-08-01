@@ -90,4 +90,4 @@ class TrackedGamesTest (XayaZmqTest):
 
 
 if __name__ == '__main__':
-    TrackedGamesTest ().main ()
+    TrackedGamesTest (__file__).main ()

@@ -100,4 +100,4 @@ class XayaCreateBurnsTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  XayaCreateBurnsTest ().main ()
+  XayaCreateBurnsTest (__file__).main ()

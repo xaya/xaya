@@ -340,4 +340,4 @@ class AtomicTradingTest (BitcoinTestFramework):
 
 
 if __name__ == '__main__':
-  AtomicTradingTest ().main ()
+  AtomicTradingTest (__file__).main ()

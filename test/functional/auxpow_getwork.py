@@ -168,4 +168,4 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     mineWorkBlockWithMethods (self.nodes[0], create, submitOnlyData)
 
 if __name__ == '__main__':
-  AuxpowGetworkTest ().main ()
+  AuxpowGetworkTest (__file__).main ()

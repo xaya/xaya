@@ -59,4 +59,4 @@ class NameImmatureInputsTest (NameTestFramework):
     self.checkName (0, "x/d", val ("new value"))
 
 if __name__ == '__main__':
-  NameImmatureInputsTest ().main ()
+  NameImmatureInputsTest (__file__).main ()

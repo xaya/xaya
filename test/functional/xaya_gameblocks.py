@@ -782,4 +782,4 @@ class GameBlocksTest (XayaZmqTest):
 
 
 if __name__ == '__main__':
-    GameBlocksTest ().main ()
+    GameBlocksTest (__file__).main ()

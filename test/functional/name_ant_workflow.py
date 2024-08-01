@@ -73,4 +73,4 @@ class NameAntWorkflowTest (NameTestFramework):
 
 
 if __name__ == '__main__':
-  NameAntWorkflowTest ().main ()
+  NameAntWorkflowTest (__file__).main ()
