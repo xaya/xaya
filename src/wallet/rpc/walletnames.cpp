@@ -29,6 +29,7 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/moneystr.h>
+#include <util/transaction_identifier.h>
 #include <util/translation.h>
 #include <util/vector.h>
 #include <validation.h>
@@ -604,7 +605,10 @@ name_firstupdate ()
   prevTxid.SetNull (); // if it can't find a txid, force an error
   if (fixedTxid)
     {
-      prevTxid = TxidFromString (request.params[2].get_str ());
+      const auto id = Txid::FromHex (request.params[2].get_str ());
+      if (!id)
+        throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid txid");
+      prevTxid = *id;
     }
   else
     {
