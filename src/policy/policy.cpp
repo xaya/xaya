@@ -223,6 +223,11 @@ bool IsWitnessStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
         // get the scriptPubKey corresponding to this input:
         CScript prevScript = prev.scriptPubKey;
 
+        // witness stuffing detected
+        if (prevScript.IsPayToAnchor()) {
+            return false;
+        }
+
         bool p2sh = false;
         if (prevScript.IsPayToScriptHash(true)) {
             std::vector <std::vector<unsigned char> > stack;

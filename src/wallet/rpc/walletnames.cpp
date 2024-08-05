@@ -29,6 +29,7 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/moneystr.h>
+#include <util/transaction_identifier.h>
 #include <util/translation.h>
 #include <util/vector.h>
 #include <validation.h>
