@@ -57,7 +57,7 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
             int base_blockheight{fuzzed_data_provider.ConsumeIntegralInRange<int>(1, 2 * COINBASE_MATURITY)};
             uint256 base_blockhash{g_chain->at(base_blockheight - 1)->GetHash()};
             uint64_t m_coins_count{fuzzed_data_provider.ConsumeIntegralInRange<uint64_t>(1, 3 * COINBASE_MATURITY)};
-            SnapshotMetadata metadata{msg_start, base_blockhash, base_blockheight, m_coins_count};
+            SnapshotMetadata metadata{msg_start, base_blockhash, m_coins_count};
             outfile << metadata;
         }
         // Coins
@@ -113,9 +113,9 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
             if (index->nHeight == chainman.GetSnapshotBaseHeight()) {
                 auto params{chainman.GetParams().AssumeutxoForHeight(index->nHeight)};
                 Assert(params.has_value());
-                Assert(params.value().nChainTx == index->nChainTx);
+                Assert(params.value().m_chain_tx_count == index->m_chain_tx_count);
             } else {
-                Assert(index->nChainTx == 0);
+                Assert(index->m_chain_tx_count == 0);
             }
         }
         Assert(g_chain->size() == coinscache.GetCacheSize());
