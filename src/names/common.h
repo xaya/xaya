@@ -383,7 +383,7 @@ public:
   inline bool
   isDeleted (const valtype& name) const
   {
-    return (deleted.count (name) > 0); 
+    return (deleted.count (name) > 0);
   }
 
   /* Try to get a name's associated data.  This looks only
