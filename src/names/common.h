@@ -281,7 +281,7 @@ public:
       Serialize (Stream& s) const
     {
       /* Flip the byte order of nHeight to big endian.  */
-      const uint32_t nHeightFlipped = htobe32 (nHeight);
+      const uint32_t nHeightFlipped = htobe32_internal (nHeight);
 
       ::Serialize (s, nHeightFlipped);
       ::Serialize (s, name);
@@ -297,7 +297,7 @@ public:
       ::Unserialize (s, name);
 
       /* Unflip the byte order.  */
-      nHeight = be32toh (nHeightFlipped);
+      nHeight = be32toh_internal (nHeightFlipped);
     }
 
     friend inline bool
