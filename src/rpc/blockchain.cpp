@@ -1900,16 +1900,16 @@ static RPCHelpMan getchaintxstats()
 
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("time", (int64_t)pindex->nTime);
-    if (pindex->nChainTx) {
-        ret.pushKV("txcount", pindex->nChainTx);
+    if (pindex->m_chain_tx_count) {
+        ret.pushKV("txcount", pindex->m_chain_tx_count);
     }
     ret.pushKV("window_final_block_hash", pindex->GetBlockHash().GetHex());
     ret.pushKV("window_final_block_height", pindex->nHeight);
     ret.pushKV("window_block_count", blockcount);
     if (blockcount > 0) {
         ret.pushKV("window_interval", nTimeDiff);
-        if (pindex->nChainTx != 0 && past_block.nChainTx != 0) {
-            const auto window_tx_count = pindex->nChainTx - past_block.nChainTx;
+        if (pindex->m_chain_tx_count != 0 && past_block.m_chain_tx_count != 0) {
+            const auto window_tx_count = pindex->m_chain_tx_count - past_block.m_chain_tx_count;
             ret.pushKV("window_tx_count", window_tx_count);
             if (nTimeDiff > 0) {
                 ret.pushKV("txrate", double(window_tx_count) / nTimeDiff);
@@ -2916,7 +2916,7 @@ UniValue CreateUTXOSnapshot(
         tip->nHeight, tip->GetBlockHash().ToString(),
         fs::PathToString(path), fs::PathToString(temppath)));
 
-    SnapshotMetadata metadata{chainstate.m_chainman.GetParams().MessageStart(), tip->GetBlockHash(), tip->nHeight, maybe_stats->coins_count};
+    SnapshotMetadata metadata{chainstate.m_chainman.GetParams().MessageStart(), tip->GetBlockHash(), maybe_stats->coins_count};
 
     afile << metadata;
 
@@ -2974,7 +2974,7 @@ UniValue CreateUTXOSnapshot(
     result.pushKV("base_height", tip->nHeight);
     result.pushKV("path", path.utf8string());
     result.pushKV("txoutset_hash", maybe_stats->hashSerialized.ToString());
-    result.pushKV("nchaintx", tip->nChainTx);
+    result.pushKV("nchaintx", tip->m_chain_tx_count);
     return result;
 }
 
@@ -3040,10 +3040,12 @@ static RPCHelpMan loadtxoutset()
         throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Unable to load UTXO snapshot: %s. (%s)", util::ErrorString(activation_result).original, path.utf8string()));
     }
 
+    CBlockIndex& snapshot_index{*CHECK_NONFATAL(*activation_result)};
+
     UniValue result(UniValue::VOBJ);
     result.pushKV("coins_loaded", metadata.m_coins_count);
-    result.pushKV("tip_hash", metadata.m_base_blockhash.ToString());
-    result.pushKV("base_height", metadata.m_base_blockheight);
+    result.pushKV("tip_hash", snapshot_index.GetBlockHash().ToString());
+    result.pushKV("base_height", snapshot_index.nHeight);
     result.pushKV("path", fs::PathToString(path));
     return result;
 },

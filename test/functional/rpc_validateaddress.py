@@ -167,6 +167,11 @@ VALID_DATA = [
         "chi1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqth5r46",
         "512079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
     ),
+    # PayToAnchor(P2A)
+    (
+        "chi1pfeestdp5h9",
+        "51024e73",
+    ),
 ]
 
 

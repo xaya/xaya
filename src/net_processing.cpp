@@ -32,7 +32,6 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <random.h>
-#include <reverse_iterator.h>
 #include <scheduler.h>
 #include <streams.h>
 #include <sync.h>
@@ -51,6 +50,7 @@
 #include <future>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <typeinfo>
 #include <utility>
 
@@ -1534,9 +1534,20 @@ void PeerManagerImpl::FindNextBlocksToDownload(const Peer& peer, unsigned int co
         return;
     }
 
-    if (state->pindexLastCommonBlock == nullptr) {
-        // Bootstrap quickly by guessing a parent of our best tip is the forking point.
-        // Guessing wrong in either direction is not a problem.
+    // When we sync with AssumeUtxo and discover the snapshot is not in the peer's best chain, abort:
+    // We can't reorg to this chain due to missing undo data until the background sync has finished,
+    // so downloading blocks from it would be futile.
+    const CBlockIndex* snap_base{m_chainman.GetSnapshotBaseBlock()};
+    if (snap_base && state->pindexBestKnownBlock->GetAncestor(snap_base->nHeight) != snap_base) {
+        LogDebug(BCLog::NET, "Not downloading blocks from peer=%d, which doesn't have the snapshot block in its best chain.\n", peer.m_id);
+        return;
+    }
+
+    // Bootstrap quickly by guessing a parent of our best tip is the forking point.
+    // Guessing wrong in either direction is not a problem.
+    // Also reset pindexLastCommonBlock after a snapshot was loaded, so that blocks after the snapshot will be prioritised for download.
+    if (state->pindexLastCommonBlock == nullptr ||
+        (snap_base && state->pindexLastCommonBlock->nHeight < snap_base->nHeight)) {
         state->pindexLastCommonBlock = m_chainman.ActiveChain()[std::min(state->pindexBestKnownBlock->nHeight, m_chainman.ActiveChain().Height())];
     }
 
@@ -2275,7 +2286,7 @@ void PeerManagerImpl::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlock
         for (auto& it : m_peer_map) {
             Peer& peer = *it.second;
             LOCK(peer.m_block_inv_mutex);
-            for (const uint256& hash : reverse_iterate(vHashes)) {
+            for (const uint256& hash : vHashes | std::views::reverse) {
                 peer.m_blocks_for_headers_relay.push_back(hash);
             }
         }
@@ -2997,7 +3008,7 @@ void PeerManagerImpl::HeadersDirectFetchBlocks(CNode& pfrom, const Peer& peer, c
         } else {
             std::vector<CInv> vGetData;
             // Download as much as possible, from earliest to latest.
-            for (const CBlockIndex *pindex : reverse_iterate(vToFetch)) {
+            for (const CBlockIndex* pindex : vToFetch | std::views::reverse) {
                 if (nodestate->vBlocksInFlight.size() >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                     // Can't download any more from this peer
                     break;

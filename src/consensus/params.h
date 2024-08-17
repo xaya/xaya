@@ -243,6 +243,7 @@ struct Params {
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
     uint256 powLimitNeoscrypt;
+    bool enforce_BIP94;
     bool fPowNoRetargeting;
     /** The best chain should have at least this much work */
     uint256 nMinimumChainWork;
