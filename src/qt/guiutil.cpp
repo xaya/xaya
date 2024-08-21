@@ -407,19 +407,26 @@ bool isObscured(QWidget *w)
 
 void bringToFront(QWidget* w)
 {
-#ifdef Q_OS_MACOS
-    ForceActivation();
-#endif
-
     if (w) {
-        // activateWindow() (sometimes) helps with keyboard focus on Windows
-        if (w->isMinimized()) {
-            w->showNormal();
-        } else {
+        if (QGuiApplication::platformName() == "wayland") {
+            auto flags = w->windowFlags();
+            w->setWindowFlags(flags|Qt::WindowStaysOnTopHint);
             w->show();
+            w->setWindowFlags(flags);
+            w->show();
+        } else {
+#ifdef Q_OS_MACOS
+            ForceActivation();
+#endif
+            // activateWindow() (sometimes) helps with keyboard focus on Windows
+            if (w->isMinimized()) {
+                w->showNormal();
+            } else {
+                w->show();
+            }
+            w->activateWindow();
+            w->raise();
         }
-        w->activateWindow();
-        w->raise();
     }
 }
 
@@ -1003,4 +1010,13 @@ void ShowModalDialogAsynchronously(QDialog* dialog)
     dialog->show();
 }
 
+QString WalletDisplayName(const QString& name)
+{
+    return name.isEmpty() ? "[" + QObject::tr("default wallet") + "]" : name;
+}
+
+QString WalletDisplayName(const std::string& name)
+{
+    return WalletDisplayName(QString::fromStdString(name));
+}
 } // namespace GUIUtil
