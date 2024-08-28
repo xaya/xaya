@@ -1244,8 +1244,13 @@ std::string RPCArg::ToStringObj(const bool oneline) const
     case Type::OBJ:
     case Type::OBJ_NAMED_PARAMS:
     case Type::OBJ_USER_KEYS:
-        // Currently unused, so avoid writing dead code
-        NONFATAL_UNREACHABLE();
+        // NOLINTNEXTLINE(misc-no-recursion)
+        const std::string resInner = Join(m_inner, ",", [&](const RPCArg& i) { return i.ToStringObj(oneline); });
+        if (m_type == Type::OBJ) {
+            return res + "{" + resInner + "}";
+        } else {
+            return res + "{" + resInner + ",...}";
+        }
     } // no default case, so the compiler can warn about missing cases
     NONFATAL_UNREACHABLE();
 }
