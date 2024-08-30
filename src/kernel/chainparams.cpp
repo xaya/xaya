@@ -210,10 +210,10 @@ public:
 
         // The best chain should have at least this much work.
         // The value is the chain work of the Xaya mainnet chain at height
-        // 5'650'000, with best block hash:
-        // 2a3dc10e67db47a6171d967cd8c11e0c6fed47b6a20280bd1d1e8965ecd28380
-        consensus.nMinimumChainWork = uint256{"000000000000000000000000000000000000000006ff94414d49b7d0269284df"};
-        consensus.defaultAssumeValid = uint256{"2a3dc10e67db47a6171d967cd8c11e0c6fed47b6a20280bd1d1e8965ecd28380"}; // 5'650'000
+        // 6'140'000, with best block hash:
+        // e7e2e42a07146e80bc64279daefbba6580f1fc40945cdb8defaafde349e9b8d8
+        consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000087d01af5f5d07ac7504ad09"};
+        consensus.defaultAssumeValid = uint256{"e7e2e42a07146e80bc64279daefbba6580f1fc40945cdb8defaafde349e9b8d8"}; // 6'140'000
 
         consensus.nAuxpowChainId = 1829;
 
@@ -266,14 +266,19 @@ public:
         };
 
         m_assumeutxo_data = {
-            // TODO to be specified in a future patch.
+            {
+                .height = 840'000,
+                .hash_serialized = AssumeutxoHash{uint256{"a2a5521b1b5ab65f67818e5e8eccabb7171a517f9e2382208f77687310768f96"}},
+                .m_chain_tx_count = 991032194,
+                .blockhash = consteval_ctor(uint256{"0000000000000000000320283a032748cef8227873ff4872689bf23f1cda83a5"}),
+            }
         };
 
         chainTxData = ChainTxData{
-            // Data from RPC: getchaintxstats 4096 2a3dc10e67db47a6171d967cd8c11e0c6fed47b6a20280bd1d1e8965ecd28380
-            .nTime    = 1709586236,
-            .tx_count = 7854923,
-            .dTxRate  = 0.05630403402300278,
+            // Data from RPC: getchaintxstats 4096 e7e2e42a07146e80bc64279daefbba6580f1fc40945cdb8defaafde349e9b8d8
+            .nTime    = 1725025292,
+            .tx_count = 8594116,
+            .dTxRate  = 0.03238473620992331,
         };
     }
 
@@ -428,8 +433,8 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0; // No activation delay
 
-        consensus.nMinimumChainWork = uint256{"000000000000000000000000000000000000000000000056faca98a0cd9bdf5f"};
-        consensus.defaultAssumeValid = uint256{};
+        consensus.nMinimumChainWork = uint256{"00000000000000000000000000000000000000000000005faa15d02e6202f3ba"};
+        consensus.defaultAssumeValid = uint256{"000000005be348057db991fa5d89fe7c4695b667cfb311391a8db374b6f681fd"}; // 39550
 
         pchMessageStart[0] = 0x1c;
         pchMessageStart[1] = 0x16;
@@ -437,7 +442,7 @@ public:
         pchMessageStart[3] = 0x28;
         nDefaultPort = 48333;
         nPruneAfterHeight = 1000;
-        m_assumed_blockchain_size = 0;
+        m_assumed_blockchain_size = 1;
         m_assumed_chain_state_size = 0;
 
         /* FIXME: Update below and in general testnet4 */
@@ -478,9 +483,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            .nTime    = 0,
-            .tx_count = 0,
-            .dTxRate  = 0,
+            // Data from RPC: getchaintxstats 4096 000000005be348057db991fa5d89fe7c4695b667cfb311391a8db374b6f681fd
+            .nTime    = 1723651702,
+            .tx_count = 757229,
+            .dTxRate  = 0.01570402633472492,
         };
     }
 
@@ -506,15 +512,15 @@ public:
             bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
             //vSeeds.emplace_back("178.128.221.177");
 
-            consensus.nMinimumChainWork = uint256{"00000000000000000000000000000000000000000000000000000206e86f08e8"};
-            consensus.defaultAssumeValid = uint256{"0000000870f15246ba23c16e370a7ffb1fc8a3dcf8cb4492882ed4b0e3d4cd26"}; // 180000
-            m_assumed_blockchain_size = 1;
+            consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000000000000025dbd66e58f"};
+            consensus.defaultAssumeValid = uint256{"0000014aad1d58dddcb964dd749b073374c6306e716b22f573a2efe68d414539"}; // 208800
+            m_assumed_blockchain_size = 2;
             m_assumed_chain_state_size = 0;
             chainTxData = ChainTxData{
-                // Data from RPC: getchaintxstats 4096 0000000870f15246ba23c16e370a7ffb1fc8a3dcf8cb4492882ed4b0e3d4cd26
-                .nTime    = 1706331472,
-                .tx_count = 2425380,
-                .dTxRate  = 0.008277759863833788,
+                // Data from RPC: getchaintxstats 4096 0000014aad1d58dddcb964dd749b073374c6306e716b22f573a2efe68d414539
+                .nTime    = 1723655233,
+                .tx_count = 5507045,
+                .dTxRate  = 0.06271073277261494,
             };
         } else {
             bin = *options.challenge;
@@ -634,7 +640,7 @@ public:
         consensus.SegwitHeight = 0; // Always active unless overridden
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimitNeoscrypt = uint256{"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
-        consensus.enforce_BIP94 = false;
+        consensus.enforce_BIP94 = true;
         consensus.fPowNoRetargeting = true;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)
@@ -798,6 +804,7 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
 {
     const auto mainnet_msg = CChainParams::Main()->MessageStart();
     const auto testnet_msg = CChainParams::TestNet()->MessageStart();
+    const auto testnet4_msg = CChainParams::TestNet4()->MessageStart();
     const auto regtest_msg = CChainParams::RegTest({})->MessageStart();
     const auto signet_msg = CChainParams::SigNet({})->MessageStart();
 
@@ -805,6 +812,8 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
         return ChainType::MAIN;
     } else if (std::equal(message.begin(), message.end(), testnet_msg.data())) {
         return ChainType::TESTNET;
+    } else if (std::equal(message.begin(), message.end(), testnet4_msg.data())) {
+        return ChainType::TESTNET4;
     } else if (std::equal(message.begin(), message.end(), regtest_msg.data())) {
         return ChainType::REGTEST;
     } else if (std::equal(message.begin(), message.end(), signet_msg.data())) {

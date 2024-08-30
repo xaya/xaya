@@ -110,21 +110,6 @@ const std::vector<std::string> CHECKLEVEL_DOC {
  * */
 static constexpr int PRUNE_LOCK_BUFFER{10};
 
-/**
- * Maximum number of seconds that the timestamp of the first
- * block of a difficulty adjustment period is allowed to
- * be earlier than the last block of the previous period (BIP94).
- */
-static constexpr int64_t MAX_TIMEWARP{MAX_FUTURE_BLOCK_TIME};
-
-/**
- * If the timestamp of the last block in a difficulty period is set
- * MAX_FUTURE_BLOCK_TIME seconds in the future, an honest miner should
- * be able to mine the first block using the current time. This is not
- * a consensus rule, but changing MAX_TIMEWARP should be done with caution.
- */
-static_assert(MAX_FUTURE_BLOCK_TIME <= MAX_TIMEWARP);
-
 GlobalMutex g_best_block_mutex;
 std::condition_variable g_best_block_cv;
 uint256 g_best_block;
@@ -4157,7 +4142,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidatio
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(BlockValidationResult::BLOCK_INVALID_HEADER, "time-too-old", "block's timestamp is too early");
 
-    // Testnet4 only: Check timestamp against prev for difficulty-adjustment
+    // Testnet4 and regtest only: Check timestamp against prev for difficulty-adjustment
     // blocks to prevent timewarp attacks (see https://github.com/bitcoin/bitcoin/pull/15482).
     /*
     FIXME: Consider if we need to adapt this for Xaya.
@@ -5363,7 +5348,7 @@ void ChainstateManager::CheckBlockIndex()
                     // and the transactions were not pruned (pindexFirstMissing
                     // is null), it is a potential candidate. The check
                     // excludes pruned blocks, because if any blocks were
-                    // pruned between pindex the current chain tip, pindex will
+                    // pruned between pindex and the current chain tip, pindex will
                     // only temporarily be added to setBlockIndexCandidates,
                     // before being moved to m_blocks_unlinked. This check
                     // could be improved to verify that if all blocks between

@@ -287,6 +287,7 @@ BASE_SCRIPTS = [
     'mempool_package_rbf.py',
     # FIXME: Reenable and possibly fix once the BIP9 mining is activated.
     #'feature_versionbits_warning.py',
+    'feature_blocksxor.py',
     'rpc_preciousblock.py',
     'wallet_importprunedfunds.py --legacy-wallet',
     'wallet_importprunedfunds.py --descriptors',

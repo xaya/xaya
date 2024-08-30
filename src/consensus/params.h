@@ -243,6 +243,10 @@ struct Params {
     BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];
     /** Proof of work parameters */
     uint256 powLimitNeoscrypt;
+    /**
+      * Enfore BIP94 timewarp attack mitigation. On testnet4 this also enforces
+      * the block storm mitigation.
+      */
     bool enforce_BIP94;
     bool fPowNoRetargeting;
     /** The best chain should have at least this much work */
