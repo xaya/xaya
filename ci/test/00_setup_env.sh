@@ -61,12 +61,10 @@ export CCACHE_COMPRESS=${CCACHE_COMPRESS:-1}
 export CCACHE_DIR=${CCACHE_DIR:-$BASE_SCRATCH_DIR/.ccache}
 # Folder where the build result is put (bin and lib).
 export BASE_OUTDIR=${BASE_OUTDIR:-$BASE_SCRATCH_DIR/out}
-# Folder where the build is done (dist and out-of-tree build).
-export BASE_BUILD_DIR=${BASE_BUILD_DIR:-$BASE_SCRATCH_DIR/build}
 # The folder for previous release binaries.
 # This folder exists only on the ci guest, and on the ci host as a volume.
 export PREVIOUS_RELEASES_DIR=${PREVIOUS_RELEASES_DIR:-$BASE_ROOT_DIR/prev_releases}
-export CI_BASE_PACKAGES=${CI_BASE_PACKAGES:-build-essential libtool autotools-dev automake pkg-config bsdmainutils curl ca-certificates ccache python3 rsync git procps bison e2fsprogs cmake}
+export CI_BASE_PACKAGES=${CI_BASE_PACKAGES:-build-essential libtool autotools-dev automake pkg-config curl ca-certificates ccache python3 rsync git procps bison e2fsprogs cmake}
 export GOAL=${GOAL:-install}
 export DIR_QA_ASSETS=${DIR_QA_ASSETS:-${BASE_SCRATCH_DIR}/qa-assets}
 export CI_RETRY_EXE=${CI_RETRY_EXE:-"retry --"}

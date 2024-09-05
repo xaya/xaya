@@ -9,6 +9,7 @@
 #include <crypto/common.h>
 #include <span.h>
 #include <util/strencodings.h>
+#include <util/string.h>
 
 #include <algorithm>
 #include <array>
@@ -17,6 +18,7 @@
 #include <cstring>
 #include <optional>
 #include <string>
+#include <string_view>
 
 /** Template base class for fixed-sized opaque blobs. */
 template<unsigned int BITS>
@@ -125,20 +127,11 @@ public:
 template <unsigned int BITS>
 consteval base_blob<BITS>::base_blob(std::string_view hex_str)
 {
-    // Non-lookup table version of HexDigit().
-    auto from_hex = [](const char c) -> int8_t {
-        if (c >= '0' && c <= '9') return c - '0';
-        if (c >= 'a' && c <= 'f') return c - 'a' + 0xA;
-        if (c >= 'A' && c <= 'F') return c - 'A' + 0xA;
-
-        assert(false); // Reached if ctor is called with an invalid hex digit.
-    };
-
-    assert(hex_str.length() == m_data.size() * 2); // 2 hex digits per byte.
+    if (hex_str.length() != m_data.size() * 2) throw "Hex string must fit exactly";
     auto str_it = hex_str.rbegin();
     for (auto& elem : m_data) {
-        auto lo = from_hex(*(str_it++));
-        elem = (from_hex(*(str_it++)) << 4) | lo;
+        auto lo = util::ConstevalHexDigit(*(str_it++));
+        elem = (util::ConstevalHexDigit(*(str_it++)) << 4) | lo;
     }
 }
 
@@ -156,6 +149,25 @@ std::optional<uintN_t> FromHex(std::string_view str)
     uintN_t rv;
     rv.SetHexDeprecated(str);
     return rv;
+}
+/**
+ * @brief Like FromHex(std::string_view str), but allows an "0x" prefix
+ *        and pads the input with leading zeroes if it is shorter than
+ *        the expected length of uintN_t::size()*2.
+ *
+ *        Designed to be used when dealing with user input.
+ */
+template <class uintN_t>
+std::optional<uintN_t> FromUserHex(std::string_view input)
+{
+    input = util::RemovePrefixView(input, "0x");
+    constexpr auto expected_size{uintN_t::size() * 2};
+    if (input.size() < expected_size) {
+        auto padded = std::string(expected_size, '0');
+        std::copy(input.begin(), input.end(), padded.begin() + expected_size - input.size());
+        return FromHex<uintN_t>(padded);
+    }
+    return FromHex<uintN_t>(input);
 }
 } // namespace detail
 
@@ -178,6 +190,7 @@ public:
 class uint256 : public base_blob<256> {
 public:
     static std::optional<uint256> FromHex(std::string_view str) { return detail::FromHex<uint256>(str); }
+    static std::optional<uint256> FromUserHex(std::string_view str) { return detail::FromUserHex<uint256>(str); }
     constexpr uint256() = default;
     consteval explicit uint256(std::string_view hex_str) : base_blob<256>(hex_str) {}
     constexpr explicit uint256(uint8_t v) : base_blob<256>(v) {}

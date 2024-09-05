@@ -26,6 +26,8 @@
 #include <cstring>
 #include <type_traits>
 
+using namespace util::hex_literals;
+
 // Workaround MSVC bug triggering C7595 when calling consteval constructors in
 // initializer lists.
 // A fix may be on the way:
@@ -93,7 +95,7 @@ static CBlock CreateTestnetGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_
 {
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     const CScript genesisInputScript = CScript() << 0x1d00ffff << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    const CScript genesisOutputScript = CScript() << "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"_hex_v_u8 << OP_CHECKSIG;
     return CreateGenesisBlock(genesisInputScript, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
@@ -432,7 +434,7 @@ public:
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
-        consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit = uint256{"00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -525,7 +527,7 @@ public:
         if (!options.challenge) {
             /* FIXME: Adjust the default signet challenge to something else if
                we want to use signet for Namecoin.  */
-            bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
+            bin = "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae"_hex_v_u8;
             //vSeeds.emplace_back("178.128.221.177");
 
             consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000000000000025dbd66e58f"};
@@ -833,15 +835,15 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
     const auto regtest_msg = CChainParams::RegTest({})->MessageStart();
     const auto signet_msg = CChainParams::SigNet({})->MessageStart();
 
-    if (std::equal(message.begin(), message.end(), mainnet_msg.data())) {
+    if (std::ranges::equal(message, mainnet_msg)) {
         return ChainType::MAIN;
-    } else if (std::equal(message.begin(), message.end(), testnet_msg.data())) {
+    } else if (std::ranges::equal(message, testnet_msg)) {
         return ChainType::TESTNET;
-    } else if (std::equal(message.begin(), message.end(), testnet4_msg.data())) {
+    } else if (std::ranges::equal(message, testnet4_msg)) {
         return ChainType::TESTNET4;
-    } else if (std::equal(message.begin(), message.end(), regtest_msg.data())) {
+    } else if (std::ranges::equal(message, regtest_msg)) {
         return ChainType::REGTEST;
-    } else if (std::equal(message.begin(), message.end(), signet_msg.data())) {
+    } else if (std::ranges::equal(message, signet_msg)) {
         return ChainType::SIGNET;
     }
     return std::nullopt;

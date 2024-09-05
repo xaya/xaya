@@ -393,6 +393,35 @@ BOOST_AUTO_TEST_CASE(from_hex)
     TestFromHex<Wtxid>();
 }
 
+BOOST_AUTO_TEST_CASE(from_user_hex)
+{
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("").value(), uint256::ZERO);
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("0x").value(), uint256::ZERO);
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("0").value(), uint256::ZERO);
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("00").value(), uint256::ZERO);
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("1").value(), uint256::ONE);
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("0x10").value(), uint256{0x10});
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("10").value(), uint256{0x10});
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("0xFf").value(), uint256{0xff});
+    BOOST_CHECK_EQUAL(uint256::FromUserHex("Ff").value(), uint256{0xff});
+    const std::string valid_hex_64{"0x0123456789abcdef0123456789abcdef0123456789ABDCEF0123456789ABCDEF"};
+    BOOST_REQUIRE_EQUAL(valid_hex_64.size(), 2 + 64); // 0x prefix and 64 hex digits
+    BOOST_CHECK_EQUAL(uint256::FromUserHex(valid_hex_64.substr(2)).value().ToString(), ToLower(valid_hex_64.substr(2)));
+    BOOST_CHECK_EQUAL(uint256::FromUserHex(valid_hex_64.substr(0)).value().ToString(), ToLower(valid_hex_64.substr(2)));
+
+    BOOST_CHECK(!uint256::FromUserHex("0x0 "));                       // no spaces at end,
+    BOOST_CHECK(!uint256::FromUserHex(" 0x0"));                       // or beginning,
+    BOOST_CHECK(!uint256::FromUserHex("0x 0"));                       // or middle,
+    BOOST_CHECK(!uint256::FromUserHex(" "));                          // etc.
+    BOOST_CHECK(!uint256::FromUserHex("0x0ga"));                      // invalid character
+    BOOST_CHECK(!uint256::FromUserHex("x0"));                         // broken prefix
+    BOOST_CHECK(!uint256::FromUserHex("0x0x00"));                     // two prefixes not allowed
+    BOOST_CHECK(!uint256::FromUserHex(valid_hex_64.substr(2) + "0")); // 1 hex digit too many
+    BOOST_CHECK(!uint256::FromUserHex(valid_hex_64 + "a"));           // 1 hex digit too many
+    BOOST_CHECK(!uint256::FromUserHex(valid_hex_64 + " "));           // whitespace after max length
+    BOOST_CHECK(!uint256::FromUserHex(valid_hex_64 + "z"));           // invalid character after max length
+}
+
 BOOST_AUTO_TEST_CASE( check_ONE )
 {
     uint256 one = uint256{"0000000000000000000000000000000000000000000000000000000000000001"};
@@ -402,7 +431,7 @@ BOOST_AUTO_TEST_CASE( check_ONE )
 BOOST_AUTO_TEST_CASE(FromHex_vs_uint256)
 {
     auto runtime_uint{uint256::FromHex("4A5E1E4BAAB89F3A32518A88C31BC87F618f76673e2cc77ab2127b7afdeda33b").value()};
-    constexpr uint256 consteval_uint{  "4a5e1e4baab89f3a32518a88c31bc87f618F76673E2CC77AB2127B7AFDEDA33B"};
+    constexpr uint256 consteval_uint{  "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"};
     BOOST_CHECK_EQUAL(consteval_uint, runtime_uint);
 }
 

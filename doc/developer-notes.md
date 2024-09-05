@@ -214,14 +214,14 @@ int main()
 To run clang-tidy on Ubuntu/Debian, install the dependencies:
 
 ```sh
-apt install clang-tidy bear clang
+apt install clang-tidy clang
 ```
 
-Then, pass clang as compiler to configure, and use bear to produce the `compile_commands.json`:
+Configure with clang as the compiler:
 
 ```sh
-./autogen.sh && ./configure CC=clang CXX=clang++
-make clean && bear --config src/.bear-tidy-config -- make -j $(nproc)
+cmake -B build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build build -j $(nproc)
 ```
 
 The output is denoised of errors from external dependencies.
@@ -229,13 +229,13 @@ The output is denoised of errors from external dependencies.
 To run clang-tidy on all source files:
 
 ```sh
-( cd ./src/ && run-clang-tidy  -j $(nproc) )
+( cd ./src/ && run-clang-tidy -p ../build -j $(nproc) )
 ```
 
 To run clang-tidy on the changed source lines:
 
 ```sh
-git diff | ( cd ./src/ && clang-tidy-diff -p2 -j $(nproc) )
+git diff | ( cd ./src/ && clang-tidy-diff -p2 -path ../build -j $(nproc) )
 ```
 
 Coding Style (Python)
@@ -338,11 +338,11 @@ Recommendations:
 
 ### Generating Documentation
 
-The documentation can be generated with `make docs` and cleaned up with `make
-clean-docs`. The resulting files are located in `doc/doxygen/html`; open
+The documentation can be generated with `cmake --build <build_dir> --target docs`.
+The resulting files are located in `<build_dir>/doc/doxygen/html`; open
 `index.html` in that directory to view the homepage.
 
-Before running `make docs`, you'll need to install these dependencies:
+Before building the `docs` target, you'll need to install these dependencies:
 
 Linux: `sudo apt install doxygen graphviz`
 
@@ -476,25 +476,34 @@ $ ./test/functional/test_runner.py --valgrind
 
 ### Compiling for test coverage
 
-LCOV can be used to generate a test coverage report based upon `make check`
+LCOV can be used to generate a test coverage report based upon `ctest`
 execution. LCOV must be installed on your system (e.g. the `lcov` package
 on Debian/Ubuntu).
 
 To enable LCOV report generation during test runs:
 
 ```shell
-./configure --enable-lcov
-make
-make cov
+cmake -B build -DCMAKE_BUILD_TYPE=Coverage
+cmake --build build
+cmake -P build/Coverage.cmake
 
-# A coverage report will now be accessible at `./test_bitcoin.coverage/index.html`,
-# which covers unit tests, and `./total.coverage/index.html`, which covers
+# A coverage report will now be accessible at `./build/test_bitcoin.coverage/index.html`,
+# which covers unit tests, and `./build/total.coverage/index.html`, which covers
 # unit and functional tests.
 ```
 
 Additional LCOV options can be specified using `LCOV_OPTS`, but may be dependent
 on the version of LCOV. For example, when using LCOV `2.x`, branch coverage can be
-enabled by setting `LCOV_OPTS="--rc branch_coverage=1"`, when configuring.
+enabled by setting `LCOV_OPTS="--rc branch_coverage=1"`:
+
+```
+cmake -DLCOV_OPTS="--rc branch_coverage=1" -P build/Coverage.cmake
+```
+
+To enable test parallelism:
+```
+cmake -DJOBS=$(nproc) -P build/Coverage.cmake
+```
 
 ### Performance profiling with perf
 
