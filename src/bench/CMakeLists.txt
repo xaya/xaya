@@ -5,7 +5,7 @@
 include(GenerateHeaders)
 generate_header_from_raw(data/block413567.raw)
 
-add_executable(bench_bitcoin
+add_executable(bench_namecoin
   bench_bitcoin.cpp
   bench.cpp
   data.cpp
@@ -56,7 +56,7 @@ add_executable(bench_bitcoin
   xor.cpp
 )
 
-target_link_libraries(bench_bitcoin
+target_link_libraries(bench_namecoin
   core_interface
   test_util
   bitcoin_node
@@ -64,7 +64,7 @@ target_link_libraries(bench_bitcoin
 )
 
 if(ENABLE_WALLET)
-  target_sources(bench_bitcoin
+  target_sources(bench_namecoin
     PRIVATE
       coin_selection.cpp
       wallet_balance.cpp
@@ -73,13 +73,13 @@ if(ENABLE_WALLET)
       wallet_loading.cpp
       wallet_ismine.cpp
   )
-  target_link_libraries(bench_bitcoin bitcoin_wallet)
+  target_link_libraries(bench_namecoin bitcoin_wallet)
 endif()
 
 add_test(NAME bench_sanity_check_high_priority
-  COMMAND bench_bitcoin -sanity-check -priority-level=high
+  COMMAND bench_namecoin -sanity-check -priority-level=high
 )
 
-install(TARGETS bench_bitcoin
+install(TARGETS bench_namecoin
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

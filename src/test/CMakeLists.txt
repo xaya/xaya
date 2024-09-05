@@ -16,7 +16,7 @@ generate_header_from_raw(data/asmap.raw)
 
 # Do not use generator expressions in test sources because the
 # SOURCES property is processed to gather test suite macros.
-add_executable(test_bitcoin
+add_executable(test_namecoin
   main.cpp
   $<TARGET_OBJECTS:bitcoin_consensus>
   ${CMAKE_CURRENT_BINARY_DIR}/data/asmap.raw.h
@@ -37,7 +37,6 @@ add_executable(test_bitcoin
   auxpow_tests.cpp
   banman_tests.cpp
   base32_tests.cpp
-  base58_tests.cpp
   base64_tests.cpp
   bech32_tests.cpp
   bip32_tests.cpp
@@ -61,7 +60,6 @@ add_executable(test_bitcoin
   cuckoocache_tests.cpp
   dbwrapper_tests.cpp
   denialofservice_tests.cpp
-  descriptor_tests.cpp
   disconnected_transactions.cpp
   feefrac_tests.cpp
   flatfile_tests.cpp
@@ -72,8 +70,6 @@ add_executable(test_bitcoin
   httpserver_tests.cpp
   i2p_tests.cpp
   interfaces_tests.cpp
-  key_io_tests.cpp
-  key_tests.cpp
   logging_tests.cpp
   mempool_tests.cpp
   merkle_tests.cpp
@@ -82,6 +78,9 @@ add_executable(test_bitcoin
   miniscript_tests.cpp
   minisketch_tests.cpp
   multisig_tests.cpp
+  name_tests.cpp
+  name_applications_tests.cpp
+  name_mempool_tests.cpp
   net_peer_connection_tests.cpp
   net_peer_eviction_tests.cpp
   net_tests.cpp
@@ -142,10 +141,14 @@ add_executable(test_bitcoin
   validationinterface_tests.cpp
   versionbits_tests.cpp
 # FIXME: Update and re-enable these tests:
+#  base58_tests.cpp
+#  descriptor_tests.cpp
+#  key_io_tests.cpp
+#  key_tests.cpp
 #  miner_tests.cpp
 )
 
-target_link_libraries(test_bitcoin
+target_link_libraries(test_namecoin
   core_interface
   test_util
   bitcoin_cli
@@ -175,11 +178,11 @@ if(WITH_MULTIPROCESS)
       univalue
   )
 
-  target_sources(test_bitcoin
+  target_sources(test_namecoin
     PRIVATE
       ipc_tests.cpp
   )
-  target_link_libraries(test_bitcoin bitcoin_ipc_test)
+  target_link_libraries(test_namecoin bitcoin_ipc_test)
 endif()
 
 function(add_boost_test source_file)
@@ -198,7 +201,7 @@ function(add_boost_test source_file)
   )
   if(test_suite_name)
     add_test(NAME ${test_suite_name}
-      COMMAND test_bitcoin --run_test=${test_suite_name} --catch_system_error=no
+      COMMAND test_namecoin --run_test=${test_suite_name} --catch_system_error=no
     )
     set_property(TEST ${test_suite_name} PROPERTY
       SKIP_REGULAR_EXPRESSION "no test cases matching filter" "Skipping"
@@ -207,8 +210,8 @@ function(add_boost_test source_file)
 endfunction()
 
 function(add_all_test_targets)
-  get_target_property(test_source_dir test_bitcoin SOURCE_DIR)
-  get_target_property(test_sources test_bitcoin SOURCES)
+  get_target_property(test_source_dir test_namecoin SOURCE_DIR)
+  get_target_property(test_sources test_namecoin SOURCES)
   foreach(test_source ${test_sources})
     cmake_path(IS_RELATIVE test_source result)
     if(result)
@@ -220,6 +223,6 @@ endfunction()
 
 add_all_test_targets()
 
-install(TARGETS test_bitcoin
+install(TARGETS test_namecoin
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

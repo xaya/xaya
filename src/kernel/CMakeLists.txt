@@ -6,7 +6,7 @@
 #       library, as more and more modules are decoupled from the
 #       consensus engine, this list will shrink to only those
 #       which are absolutely necessary.
-add_library(bitcoinkernel
+add_library(namecoinkernel
   bitcoinkernel.cpp
   chain.cpp
   checks.cpp
@@ -30,6 +30,10 @@ add_library(bitcoinkernel
   ../flatfile.cpp
   ../hash.cpp
   ../logging.cpp
+  ../names/common.cpp
+  ../names/encoding.cpp
+  ../names/main.cpp
+  ../names/mempool.cpp
   ../node/blockstorage.cpp
   ../node/chainstate.cpp
   ../node/utxo_snapshot.cpp
@@ -46,6 +50,7 @@ add_library(bitcoinkernel
   ../random.cpp
   ../randomenv.cpp
   ../script/interpreter.cpp
+  ../script/names.cpp
   ../script/script.cpp
   ../script/script_error.cpp
   ../script/sigcache.cpp
@@ -77,7 +82,7 @@ add_library(bitcoinkernel
   ../validationinterface.cpp
   ../versionbits.cpp
 )
-target_link_libraries(bitcoinkernel
+target_link_libraries(namecoinkernel
   PRIVATE
     core_interface
     bitcoin_clientversion
@@ -94,12 +99,12 @@ target_link_libraries(bitcoinkernel
 #
 # Note this is a quick hack that will be removed as we
 # incrementally define what to export from the library.
-set_target_properties(bitcoinkernel PROPERTIES
+set_target_properties(namecoinkernel PROPERTIES
   CXX_VISIBILITY_PRESET default
 )
 
 include(GNUInstallDirs)
-install(TARGETS bitcoinkernel
+install(TARGETS namecoinkernel
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

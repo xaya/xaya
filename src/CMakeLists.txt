@@ -86,6 +86,7 @@ add_library(bitcoin_consensus STATIC EXCLUDE_FROM_ALL
   primitives/transaction.cpp
   pubkey.cpp
   script/interpreter.cpp
+  script/names.cpp
   script/script.cpp
   script/script_error.cpp
   uint256.cpp
@@ -132,6 +133,9 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   key.cpp
   key_io.cpp
   merkleblock.cpp
+  names/applications.cpp
+  names/common.cpp
+  names/encoding.cpp
   net_permissions.cpp
   net_types.cpp
   netaddress.cpp
@@ -171,20 +175,20 @@ if(ENABLE_WALLET)
   add_subdirectory(wallet)
 
   if(BUILD_WALLET_TOOL)
-    add_executable(bitcoin-wallet
+    add_executable(namecoin-wallet
       bitcoin-wallet.cpp
       init/bitcoin-wallet.cpp
       wallet/wallettool.cpp
     )
-    add_windows_resources(bitcoin-wallet bitcoin-wallet-res.rc)
-    target_link_libraries(bitcoin-wallet
+    add_windows_resources(namecoin-wallet bitcoin-wallet-res.rc)
+    target_link_libraries(namecoin-wallet
       core_interface
       bitcoin_wallet
       bitcoin_common
       bitcoin_util
       Boost::headers
     )
-    list(APPEND installable_targets bitcoin-wallet)
+    list(APPEND installable_targets namecoin-wallet)
   endif()
 endif()
 
@@ -209,6 +213,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   index/base.cpp
   index/blockfilterindex.cpp
   index/coinstatsindex.cpp
+  index/namehash.cpp
   index/txindex.cpp
   init.cpp
   kernel/chain.cpp
@@ -219,6 +224,8 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   kernel/disconnected_transactions.cpp
   kernel/mempool_removal_reason.cpp
   mapport.cpp
+  names/main.cpp
+  names/mempool.cpp
   net.cpp
   net_processing.cpp
   netgroup.cpp
@@ -264,6 +271,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   rpc/fees.cpp
   rpc/mempool.cpp
   rpc/mining.cpp
+  rpc/names.cpp
   rpc/net.cpp
   rpc/node.cpp
   rpc/output_script.cpp
@@ -305,30 +313,30 @@ target_link_libraries(bitcoin_node
 
 # Bitcoin Core bitcoind.
 if(BUILD_DAEMON)
-  add_executable(bitcoind
+  add_executable(namecoind
     bitcoind.cpp
     init/bitcoind.cpp
   )
-  add_windows_resources(bitcoind bitcoind-res.rc)
-  target_link_libraries(bitcoind
+  add_windows_resources(namecoind bitcoind-res.rc)
+  target_link_libraries(namecoind
     core_interface
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  list(APPEND installable_targets bitcoind)
+  list(APPEND installable_targets namecoind)
 endif()
 if(WITH_MULTIPROCESS)
-  add_executable(bitcoin-node
+  add_executable(namecoin-node
     bitcoind.cpp
     init/bitcoin-node.cpp
   )
-  target_link_libraries(bitcoin-node
+  target_link_libraries(namecoin-node
     core_interface
     bitcoin_node
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  list(APPEND installable_targets bitcoin-node)
+  list(APPEND installable_targets namecoin-node)
 endif()
 
 
@@ -345,41 +353,41 @@ target_link_libraries(bitcoin_cli
 
 # Bitcoin Core RPC client
 if(BUILD_CLI)
-  add_executable(bitcoin-cli bitcoin-cli.cpp)
-  add_windows_resources(bitcoin-cli bitcoin-cli-res.rc)
-  target_link_libraries(bitcoin-cli
+  add_executable(namecoin-cli bitcoin-cli.cpp)
+  add_windows_resources(namecoin-cli bitcoin-cli-res.rc)
+  target_link_libraries(namecoin-cli
     core_interface
     bitcoin_cli
     bitcoin_common
     bitcoin_util
     $<TARGET_NAME_IF_EXISTS:libevent::libevent>
   )
-  list(APPEND installable_targets bitcoin-cli)
+  list(APPEND installable_targets namecoin-cli)
 endif()
 
 
 if(BUILD_TX)
-  add_executable(bitcoin-tx bitcoin-tx.cpp)
-  add_windows_resources(bitcoin-tx bitcoin-tx-res.rc)
-  target_link_libraries(bitcoin-tx
+  add_executable(namecoin-tx bitcoin-tx.cpp)
+  add_windows_resources(namecoin-tx bitcoin-tx-res.rc)
+  target_link_libraries(namecoin-tx
     core_interface
     bitcoin_common
     bitcoin_util
     univalue
   )
-  list(APPEND installable_targets bitcoin-tx)
+  list(APPEND installable_targets namecoin-tx)
 endif()
 
 
 if(BUILD_UTIL)
-  add_executable(bitcoin-util bitcoin-util.cpp)
-  add_windows_resources(bitcoin-util bitcoin-util-res.rc)
-  target_link_libraries(bitcoin-util
+  add_executable(namecoin-util bitcoin-util.cpp)
+  add_windows_resources(namecoin-util bitcoin-util-res.rc)
+  target_link_libraries(namecoin-util
     core_interface
     bitcoin_common
     bitcoin_util
   )
-  list(APPEND installable_targets bitcoin-util)
+  list(APPEND installable_targets namecoin-util)
 endif()
 
 
@@ -393,7 +401,7 @@ if(BUILD_KERNEL_LIB)
 endif()
 
 if(BUILD_UTIL_CHAINSTATE)
-  add_executable(bitcoin-chainstate
+  add_executable(namecoin-chainstate
     bitcoin-chainstate.cpp
   )
   # TODO: The `SKIP_BUILD_RPATH` property setting can be deleted
@@ -402,13 +410,13 @@ if(BUILD_UTIL_CHAINSTATE)
   # Relevant discussions:
   # - https://github.com/hebasto/bitcoin/pull/236#issuecomment-2183120953
   # - https://github.com/bitcoin/bitcoin/pull/30312#issuecomment-2191235833
-  set_target_properties(bitcoin-chainstate PROPERTIES
+  set_target_properties(namecoin-chainstate PROPERTIES
     SKIP_BUILD_RPATH OFF
   )
-  target_link_libraries(bitcoin-chainstate
+  target_link_libraries(namecoin-chainstate
     PRIVATE
       core_interface
-      bitcoinkernel
+      namecoinkernel
   )
 endif()
 

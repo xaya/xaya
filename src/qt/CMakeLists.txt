@@ -152,14 +152,22 @@ if(ENABLE_WALLET)
       addresstablemodel.h
       askpassphrasedialog.cpp
       askpassphrasedialog.h
+      buynamespage.h
+      buynamespage.cpp
       coincontroldialog.cpp
       coincontroldialog.h
       coincontroltreewidget.cpp
       coincontroltreewidget.h
+      configurenamedialog.h
+      configurenamedialog.cpp
       createwalletdialog.cpp
       createwalletdialog.h
       editaddressdialog.cpp
       editaddressdialog.h
+      managenamespage.h
+      managenamespage.cpp
+      nametablemodel.h
+      nametablemodel.cpp
       openuridialog.cpp
       openuridialog.h
       overviewpage.cpp
@@ -226,40 +234,40 @@ if(qt_lib_type STREQUAL "STATIC_LIBRARY")
   )
 endif()
 
-add_executable(bitcoin-qt
+add_executable(namecoin-qt
   main.cpp
   ../init/bitcoin-qt.cpp
 )
 
-add_windows_resources(bitcoin-qt res/bitcoin-qt-res.rc)
+add_windows_resources(namecoin-qt res/bitcoin-qt-res.rc)
 
-target_link_libraries(bitcoin-qt
+target_link_libraries(namecoin-qt
   core_interface
   bitcoinqt
   bitcoin_node
 )
 
-import_plugins(bitcoin-qt)
-set(installable_targets bitcoin-qt)
+import_plugins(namecoin-qt)
+set(installable_targets namecoin-qt)
 if(WIN32)
-  set_target_properties(bitcoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
+  set_target_properties(namecoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 if(WITH_MULTIPROCESS)
-  add_executable(bitcoin-gui
+  add_executable(namecoin-gui
     main.cpp
     ../init/bitcoin-gui.cpp
   )
-  target_link_libraries(bitcoin-gui
+  target_link_libraries(namecoin-gui
     core_interface
     bitcoinqt
     bitcoin_node
     bitcoin_ipc
   )
-  import_plugins(bitcoin-gui)
-  list(APPEND installable_targets bitcoin-gui)
+  import_plugins(namecoin-gui)
+  list(APPEND installable_targets namecoin-gui)
   if(WIN32)
-    set_target_properties(bitcoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
+    set_target_properties(namecoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
 

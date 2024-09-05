@@ -4,7 +4,7 @@
 
 # Do not use generator expressions in test sources because the
 # SOURCES property is processed to gather test suite macros.
-target_sources(test_bitcoin
+target_sources(test_namecoin
   PRIVATE
     init_test_fixture.cpp
     wallet_test_fixture.cpp
@@ -15,6 +15,7 @@ target_sources(test_bitcoin
     ismine_tests.cpp
     psbt_wallet_tests.cpp
     rpc_util_tests.cpp
+    rpcnames_tests.cpp
     scriptpubkeyman_tests.cpp
     spend_tests.cpp
     wallet_crypto_tests.cpp
@@ -24,9 +25,9 @@ target_sources(test_bitcoin
     walletload_tests.cpp
 )
 if(USE_BDB)
-  target_sources(test_bitcoin
+  target_sources(test_namecoin
     PRIVATE
       db_tests.cpp
   )
 endif()
-target_link_libraries(test_bitcoin bitcoin_wallet)
+target_link_libraries(test_namecoin bitcoin_wallet)

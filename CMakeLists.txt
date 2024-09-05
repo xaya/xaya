@@ -22,7 +22,7 @@ endif()
 #=============================
 # Project / Package metadata
 #=============================
-set(PACKAGE_NAME "Bitcoin Core")
+set(PACKAGE_NAME "Namecoin Core")
 set(CLIENT_VERSION_MAJOR 28)
 set(CLIENT_VERSION_MINOR 99)
 set(CLIENT_VERSION_BUILD 0)
@@ -46,10 +46,10 @@ set(CMAKE_TRY_COMPILE_PLATFORM_VARIABLES
   CMAKE_CXX_LINK_EXECUTABLE
 )
 
-project(BitcoinCore
+project(NamecoinCore
   VERSION ${CLIENT_VERSION_MAJOR}.${CLIENT_VERSION_MINOR}.${CLIENT_VERSION_BUILD}
-  DESCRIPTION "Bitcoin client software"
-  HOMEPAGE_URL "https://bitcoincore.org/"
+  DESCRIPTION "Namecoin client software"
+  HOMEPAGE_URL "https://namecoin.org/"
   LANGUAGES NONE
 )
 
@@ -60,7 +60,7 @@ endif()
 
 set(COPYRIGHT_HOLDERS "The %s developers")
 set(COPYRIGHT_HOLDERS_FINAL "The ${PACKAGE_NAME} developers")
-set(PACKAGE_BUGREPORT "https://github.com/bitcoin/bitcoin/issues")
+set(PACKAGE_BUGREPORT "https://github.com/namecoin/namecoin-core/issues")
 
 #=============================
 # Language setup
@@ -82,16 +82,16 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/module)
 #=============================
 include(CMakeDependentOption)
 # When adding a new option, end the <help_text> with a full stop for consistency.
-option(BUILD_DAEMON "Build bitcoind executable." ON)
-option(BUILD_GUI "Build bitcoin-qt executable." OFF)
-option(BUILD_CLI "Build bitcoin-cli executable." ON)
+option(BUILD_DAEMON "Build namecoind executable." ON)
+option(BUILD_GUI "Build namecoin-qt executable." OFF)
+option(BUILD_CLI "Build namecoin-cli executable." ON)
 
-option(BUILD_TESTS "Build test_bitcoin executable." ON)
-option(BUILD_TX "Build bitcoin-tx executable." ${BUILD_TESTS})
-option(BUILD_UTIL "Build bitcoin-util executable." ${BUILD_TESTS})
+option(BUILD_TESTS "Build test_namecoin executable." ON)
+option(BUILD_TX "Build namecoin-tx executable." ${BUILD_TESTS})
+option(BUILD_UTIL "Build namecoin-util executable." ${BUILD_TESTS})
 
-option(BUILD_UTIL_CHAINSTATE "Build experimental bitcoin-chainstate executable." OFF)
-option(BUILD_KERNEL_LIB "Build experimental bitcoinkernel library." ${BUILD_UTIL_CHAINSTATE})
+option(BUILD_UTIL_CHAINSTATE "Build experimental namecoin-chainstate executable." OFF)
+option(BUILD_KERNEL_LIB "Build experimental namecoinkernel library." ${BUILD_UTIL_CHAINSTATE})
 
 option(ENABLE_WALLET "Enable wallet." ON)
 option(WITH_SQLITE "Enable SQLite wallet support." ${ENABLE_WALLET})
@@ -122,7 +122,7 @@ if(WITH_BDB)
     endif()
   endif()
 endif()
-cmake_dependent_option(BUILD_WALLET_TOOL "Build bitcoin-wallet tool." ${BUILD_TESTS} "ENABLE_WALLET" OFF)
+cmake_dependent_option(BUILD_WALLET_TOOL "Build namecoin-wallet tool." ${BUILD_TESTS} "ENABLE_WALLET" OFF)
 
 option(ENABLE_HARDENING "Attempt to harden the resulting executables." ON)
 option(REDUCE_EXPORTS "Attempt to reduce exported symbols in the resulting executables." OFF)
@@ -167,7 +167,7 @@ endif()
 
 cmake_dependent_option(WITH_DBUS "Enable DBus support." ON "CMAKE_SYSTEM_NAME STREQUAL \"Linux\" AND BUILD_GUI" OFF)
 
-option(WITH_MULTIPROCESS "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
+option(WITH_MULTIPROCESS "Build multiprocess namecoin-node and namecoin-gui executables in addition to monolithic namecoind and namecoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
 if(WITH_MULTIPROCESS)
   find_package(Libmultiprocess COMPONENTS Lib)
   find_package(LibmultiprocessNative COMPONENTS Bin
@@ -175,7 +175,7 @@ if(WITH_MULTIPROCESS)
   )
 endif()
 
-cmake_dependent_option(BUILD_GUI_TESTS "Build test_bitcoin-qt executable." ON "BUILD_GUI;BUILD_TESTS" OFF)
+cmake_dependent_option(BUILD_GUI_TESTS "Build test_namecoin-qt executable." ON "BUILD_GUI;BUILD_TESTS" OFF)
 if(BUILD_GUI)
   set(qt_components Core Gui Widgets LinguistTools)
   if(ENABLE_WALLET)
@@ -194,7 +194,7 @@ if(BUILD_GUI)
   unset(qt_components)
 endif()
 
-option(BUILD_BENCH "Build bench_bitcoin executable." OFF)
+option(BUILD_BENCH "Build bench_namecoin executable." OFF)
 option(BUILD_FUZZ_BINARY "Build fuzz binary." OFF)
 cmake_dependent_option(BUILD_FOR_FUZZING "Build for fuzzing. Enabling this will disable all other targets and override BUILD_FUZZ_BINARY." OFF "NOT MSVC" OFF)
 
@@ -597,21 +597,21 @@ message("\n")
 message("Configure summary")
 message("=================")
 message("Executables:")
-message("  bitcoind ............................ ${BUILD_DAEMON}")
-message("  bitcoin-node (multiprocess) ......... ${WITH_MULTIPROCESS}")
-message("  bitcoin-qt (GUI) .................... ${BUILD_GUI}")
+message("  namecoind ............................ ${BUILD_DAEMON}")
+message("  namecoin-node (multiprocess) ......... ${WITH_MULTIPROCESS}")
+message("  namecoin-qt (GUI) .................... ${BUILD_GUI}")
 if(BUILD_GUI AND WITH_MULTIPROCESS)
   set(bitcoin_gui_status ON)
 else()
   set(bitcoin_gui_status OFF)
 endif()
-message("  bitcoin-gui (GUI, multiprocess) ..... ${bitcoin_gui_status}")
-message("  bitcoin-cli ......................... ${BUILD_CLI}")
-message("  bitcoin-tx .......................... ${BUILD_TX}")
-message("  bitcoin-util ........................ ${BUILD_UTIL}")
-message("  bitcoin-wallet ...................... ${BUILD_WALLET_TOOL}")
-message("  bitcoin-chainstate (experimental) ... ${BUILD_UTIL_CHAINSTATE}")
-message("  libbitcoinkernel (experimental) ..... ${BUILD_KERNEL_LIB}")
+message("  namecoin-gui (GUI, multiprocess) ..... ${bitcoin_gui_status}")
+message("  namecoin-cli ......................... ${BUILD_CLI}")
+message("  namecoin-tx .......................... ${BUILD_TX}")
+message("  namecoin-util ........................ ${BUILD_UTIL}")
+message("  namecoin-wallet ...................... ${BUILD_WALLET_TOOL}")
+message("  namecoin-chainstate (experimental) ... ${BUILD_UTIL_CHAINSTATE}")
+message("  libnamecoinkernel (experimental) ..... ${BUILD_KERNEL_LIB}")
 message("Optional features:")
 message("  wallet support ...................... ${ENABLE_WALLET}")
 if(ENABLE_WALLET)
@@ -627,9 +627,9 @@ message("  USDT tracing ........................ ${WITH_USDT}")
 message("  QR code (GUI) ....................... ${WITH_QRENCODE}")
 message("  DBus (GUI, Linux only) .............. ${WITH_DBUS}")
 message("Tests:")
-message("  test_bitcoin ........................ ${BUILD_TESTS}")
-message("  test_bitcoin-qt ..................... ${BUILD_GUI_TESTS}")
-message("  bench_bitcoin ....................... ${BUILD_BENCH}")
+message("  test_namecoin ........................ ${BUILD_TESTS}")
+message("  test_namecoin-qt ..................... ${BUILD_GUI_TESTS}")
+message("  bench_namecoin ....................... ${BUILD_BENCH}")
 message("  fuzz binary ......................... ${BUILD_FUZZ_BINARY}")
 message("")
 if(CMAKE_CROSSCOMPILING)
