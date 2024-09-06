@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE (difficulty_retargeting)
             }
 
           CBlockIndex indexNew;
-          if (InsecureRandBool ())
+          if (m_rng.randbool ())
             indexNew.algo = PowAlgo::SHA256D;
           else
             indexNew.algo = PowAlgo::NEOSCRYPT;
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE (difficulty_retargeting)
           const int64_t targetSpacing
               = Ticks<std::chrono::seconds>(AvgTargetSpacing (params, mixedChain.height () + 1));
           indexNew.nTime = lastTime
-                            + InsecureRandRange (targetSpacing)
+                            + m_rng.randrange (targetSpacing)
                             - 10;
           lastTime = indexNew.nTime;
 

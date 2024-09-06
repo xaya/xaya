@@ -27,6 +27,8 @@
 #include <cstring>
 #include <type_traits>
 
+using namespace util::hex_literals;
+
 // Workaround MSVC bug triggering C7595 when calling consteval constructors in
 // initializer lists.
 // A fix may be on the way:
@@ -509,7 +511,7 @@ public:
         if (!options.challenge) {
             /* FIXME: Adjust the default signet challenge to something else if
                we want to use signet for Namecoin.  */
-            bin = ParseHex("512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae");
+            bin = "512103ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430210359ef5021964fe22d6f8e05b2463c9540ce96883fe3b278760f048f5189f2e6c452ae"_hex_v_u8;
             //vSeeds.emplace_back("178.128.221.177");
 
             consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000000000000025dbd66e58f"};
@@ -808,15 +810,15 @@ std::optional<ChainType> GetNetworkForMagic(const MessageStartChars& message)
     const auto regtest_msg = CChainParams::RegTest({})->MessageStart();
     const auto signet_msg = CChainParams::SigNet({})->MessageStart();
 
-    if (std::equal(message.begin(), message.end(), mainnet_msg.data())) {
+    if (std::ranges::equal(message, mainnet_msg)) {
         return ChainType::MAIN;
-    } else if (std::equal(message.begin(), message.end(), testnet_msg.data())) {
+    } else if (std::ranges::equal(message, testnet_msg)) {
         return ChainType::TESTNET;
-    } else if (std::equal(message.begin(), message.end(), testnet4_msg.data())) {
+    } else if (std::ranges::equal(message, testnet4_msg)) {
         return ChainType::TESTNET4;
-    } else if (std::equal(message.begin(), message.end(), regtest_msg.data())) {
+    } else if (std::ranges::equal(message, regtest_msg)) {
         return ChainType::REGTEST;
-    } else if (std::equal(message.begin(), message.end(), signet_msg.data())) {
+    } else if (std::ranges::equal(message, signet_msg)) {
         return ChainType::SIGNET;
     }
     return std::nullopt;

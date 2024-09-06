@@ -163,9 +163,9 @@ BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)
     }
 
     for (int j = 0; j < 1000; j++) {
-        CBlockIndex *p1 = &blocks[InsecureRandRange(10000)];
-        CBlockIndex *p2 = &blocks[InsecureRandRange(10000)];
-        CBlockIndex *p3 = &blocks[InsecureRandRange(10000)];
+        CBlockIndex *p1 = &blocks[m_rng.randrange(10000)];
+        CBlockIndex *p2 = &blocks[m_rng.randrange(10000)];
+        CBlockIndex *p3 = &blocks[m_rng.randrange(10000)];
 
         const int64_t wdiff = GetBlockProofEquivalentTime(*p1, *p2, *p3, chainParams->GetConsensus());
         const int64_t tdiff = p1->GetBlockTime() - p2->GetBlockTime();

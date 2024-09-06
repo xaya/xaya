@@ -244,7 +244,7 @@ struct Params {
     /** Proof of work parameters */
     uint256 powLimitNeoscrypt;
     /**
-      * Enfore BIP94 timewarp attack mitigation. On testnet4 this also enforces
+      * Enforce BIP94 timewarp attack mitigation. On testnet4 this also enforces
       * the block storm mitigation.
       */
     bool enforce_BIP94;

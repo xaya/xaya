@@ -1,6 +1,6 @@
 # macOS Build Guide
 
-**Updated for MacOS [11.2](https://www.apple.com/macos/big-sur/)**
+**Updated for MacOS [14](https://www.apple.com/macos/sonoma/)**
 
 This guide describes how to build xayad, command-line utilities, and GUI on macOS
 
@@ -48,7 +48,7 @@ See [dependencies.md](dependencies.md) for a complete overview.
 To install, run the following from your terminal:
 
 ``` bash
-brew install automake libtool boost pkg-config libevent
+brew install cmake boost pkg-config libevent
 ```
 
 ### 4. Clone Xaya repository
@@ -88,9 +88,8 @@ brew install berkeley-db@4
 
 ###### Qt
 
-Xaya Core includes a GUI built with the cross-platform Qt Framework.
-To compile the GUI, we need to install `qt@5`.
-Skip if you don't intend to use the GUI.
+Xaya Core includes a GUI built with the cross-platform Qt Framework. To compile the GUI, we need to install
+Qt, libqrencode and pass `-DBUILD_GUI=ON`. Skip if you don't intend to use the GUI.
 
 ``` bash
 brew install qt@5
@@ -99,14 +98,16 @@ brew install qt@5
 Note: Building with Qt binaries downloaded from the Qt website is not officially supported.
 See the notes in [#7714](https://github.com/bitcoin/bitcoin/issues/7714).
 
-###### qrencode
+###### libqrencode
 
-The GUI can encode addresses in a QR Code. To build in QR support for the GUI, install `qrencode`.
-Skip if not using the GUI or don't want QR code functionality.
+The GUI will be able to encode addresses in QR codes unless this feature is explicitly disabled. To install libqrencode, run:
 
 ``` bash
 brew install qrencode
 ```
+
+Otherwise, if you don't need QR encoding support, you can pass `-DWITH_QRENCODE=OFF` to disable this feature.
+
 ---
 
 #### Port Mapping Dependencies
@@ -129,7 +130,6 @@ Skip if you do not need this functionality.
 brew install libnatpmp
 ```
 
-Note: UPnP and NAT-PMP support will be compiled in and disabled by default.
 Check out the [further configuration](#further-configuration) section for more information.
 
 ---
@@ -143,7 +143,6 @@ Skip if you do not need ZMQ functionality.
 brew install zeromq
 ```
 
-ZMQ is automatically compiled in and enabled if the dependency is detected.
 Check out the [further configuration](#further-configuration) section for more information.
 
 For more information on ZMQ, see: [zmq.md](zmq.md)
@@ -178,32 +177,25 @@ It is required that you have `python` installed.
 
     Configure and build the headless xaya binaries as well as the GUI (if Qt is found).
 
-If `berkeley-db@4` is installed, then legacy wallet support will be built.
-If `sqlite` is installed, then descriptor wallet support will also be built.
-Additionally, this explicitly disables the GUI.
+If `berkeley-db@4` or `sqlite` are not installed, this will throw an error.
 
 ``` bash
-./autogen.sh
-./configure --with-gui=no
+cmake -B build -DWITH_BDB=ON
 ```
 
 ##### Wallet (only SQlite) and GUI Support:
 
-This explicitly enables the GUI and disables legacy wallet support.
-If `qt` is not installed, this will throw an error.
-If `sqlite` is installed then descriptor wallet functionality will be built.
-If `sqlite` is not installed, then wallet functionality will be disabled.
+This enables the GUI.
+If `sqlite` or `qt` are not installed, this will throw an error.
 
 ``` bash
-./autogen.sh
-./configure --without-bdb --with-gui=yes
+cmake -B build -DBUILD_GUI=ON
 ```
 
 ##### No Wallet or GUI
 
 ``` bash
-./autogen.sh
-./configure --without-wallet --with-gui=no
+cmake -B build -DENABLE_WALLET=OFF
 ```
 
 ##### Further Configuration
@@ -212,7 +204,7 @@ You may want to dig deeper into the configuration options to achieve your desire
 Examine the output of the following command for a full list of configuration options:
 
 ``` bash
-./configure -help
+cmake -B build -LH
 ```
 
 ### 2. Compile
@@ -221,8 +213,8 @@ After configuration, you are ready to compile.
 Run the following in your terminal to compile Xaya Core:
 
 ``` bash
-make        # use "-j N" here for N parallel jobs
-make check  # Run tests if Python 3 is available
+cmake --build build     # Use "-j N" here for N parallel jobs.
+ctest --test-dir build  # Use "-j N" for N parallel tests. Some tests are disabled if Python 3 is not available.
 ```
 
 ### 3. Deploy (optional)
@@ -230,13 +222,13 @@ make check  # Run tests if Python 3 is available
 You can also create a  `.zip` containing the `.app` bundle by running the following command:
 
 ``` bash
-make deploy
+cmake --build build --target deploy
 ```
 
 ## Running Xaya Core
 
-Xaya Core should now be available at `./src/xayad`.
-If you compiled support for the GUI, it should be available at `./src/qt/xaya-qt`.
+Xaya Core should now be available at `./build/src/xayad`.
+If you compiled support for the GUI, it should be available at `./build/src/qt/xaya-qt`.
 
 The first time you run `xayad` or `xaya-qt`, it will start downloading the blockchain.
 This process could take many hours, or even days on slower than average systems.
@@ -269,8 +261,8 @@ tail -f $HOME/Library/Application\ Support/Xaya/debug.log
 ## Other commands:
 
 ```shell
-./src/xayad -daemon      # Starts the Xaya daemon.
-./src/xaya-cli --help    # Outputs a list of command-line options.
-./src/xaya-cli help      # Outputs a list of RPC commands when the daemon is running.
-./src/qt/xaya-qt -server # Starts the xaya-qt server mode, allows xaya-cli control
+./build/src/xayad -daemon      # Starts the Xaya daemon.
+./build/src/xaya-cli --help    # Outputs a list of command-line options.
+./build/src/xaya-cli help      # Outputs a list of RPC commands when the daemon is running.
+./build/src/qt/xaya-qt -server # Starts the xaya-qt server mode, allows xaya-cli control
 ```
