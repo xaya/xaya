@@ -6,7 +6,7 @@
 #       library, as more and more modules are decoupled from the
 #       consensus engine, this list will shrink to only those
 #       which are absolutely necessary.
-add_library(namecoinkernel
+add_library(xayaernel
   bitcoinkernel.cpp
   chain.cpp
   checks.cpp
@@ -44,6 +44,7 @@ add_library(namecoinkernel
   ../policy/settings.cpp
   ../policy/truc_policy.cpp
   ../pow.cpp
+  ../powdata.cpp
   ../primitives/block.cpp
   ../primitives/transaction.cpp
   ../pubkey.cpp
@@ -82,7 +83,7 @@ add_library(namecoinkernel
   ../validationinterface.cpp
   ../versionbits.cpp
 )
-target_link_libraries(namecoinkernel
+target_link_libraries(xayakernel
   PRIVATE
     core_interface
     bitcoin_clientversion
@@ -99,12 +100,12 @@ target_link_libraries(namecoinkernel
 #
 # Note this is a quick hack that will be removed as we
 # incrementally define what to export from the library.
-set_target_properties(namecoinkernel PROPERTIES
+set_target_properties(xayakernel PROPERTIES
   CXX_VISIBILITY_PRESET default
 )
 
 include(GNUInstallDirs)
-install(TARGETS namecoinkernel
+install(TARGETS xayakernel
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -234,40 +234,40 @@ if(qt_lib_type STREQUAL "STATIC_LIBRARY")
   )
 endif()
 
-add_executable(namecoin-qt
+add_executable(xaya-qt
   main.cpp
   ../init/bitcoin-qt.cpp
 )
 
-add_windows_resources(namecoin-qt res/bitcoin-qt-res.rc)
+add_windows_resources(xaya-qt res/bitcoin-qt-res.rc)
 
-target_link_libraries(namecoin-qt
+target_link_libraries(xaya-qt
   core_interface
   bitcoinqt
   bitcoin_node
 )
 
-import_plugins(namecoin-qt)
-set(installable_targets namecoin-qt)
+import_plugins(xaya-qt)
+set(installable_targets xaya-qt)
 if(WIN32)
-  set_target_properties(namecoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
+  set_target_properties(xaya-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
 if(WITH_MULTIPROCESS)
-  add_executable(namecoin-gui
+  add_executable(xaya-gui
     main.cpp
     ../init/bitcoin-gui.cpp
   )
-  target_link_libraries(namecoin-gui
+  target_link_libraries(xaya-gui
     core_interface
     bitcoinqt
     bitcoin_node
     bitcoin_ipc
   )
-  import_plugins(namecoin-gui)
-  list(APPEND installable_targets namecoin-gui)
+  import_plugins(xaya-gui)
+  list(APPEND installable_targets xaya-gui)
   if(WIN32)
-    set_target_properties(namecoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
+    set_target_properties(xaya-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
 

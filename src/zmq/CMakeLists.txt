@@ -4,6 +4,7 @@
 
 add_library(bitcoin_zmq STATIC EXCLUDE_FROM_ALL
   zmqabstractnotifier.cpp
+  zmqgames.cpp
   zmqnotificationinterface.cpp
   zmqpublishnotifier.cpp
   zmqrpc.cpp

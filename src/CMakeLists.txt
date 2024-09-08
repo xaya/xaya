@@ -143,6 +143,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   outputtype.cpp
   policy/feerate.cpp
   policy/policy.cpp
+  powdata.cpp
   protocol.cpp
   psbt.cpp
   rpc/external_signer.cpp
@@ -175,20 +176,20 @@ if(ENABLE_WALLET)
   add_subdirectory(wallet)
 
   if(BUILD_WALLET_TOOL)
-    add_executable(namecoin-wallet
+    add_executable(xaya-wallet
       bitcoin-wallet.cpp
       init/bitcoin-wallet.cpp
       wallet/wallettool.cpp
     )
-    add_windows_resources(namecoin-wallet bitcoin-wallet-res.rc)
-    target_link_libraries(namecoin-wallet
+    add_windows_resources(xaya-wallet bitcoin-wallet-res.rc)
+    target_link_libraries(xaya-wallet
       core_interface
       bitcoin_wallet
       bitcoin_common
       bitcoin_util
       Boost::headers
     )
-    list(APPEND installable_targets namecoin-wallet)
+    list(APPEND installable_targets xaya-wallet)
   endif()
 endif()
 
@@ -269,6 +270,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   rpc/auxpow_miner.cpp
   rpc/blockchain.cpp
   rpc/fees.cpp
+  rpc/game.cpp
   rpc/mempool.cpp
   rpc/mining.cpp
   rpc/names.cpp
@@ -313,30 +315,30 @@ target_link_libraries(bitcoin_node
 
 # Bitcoin Core bitcoind.
 if(BUILD_DAEMON)
-  add_executable(namecoind
+  add_executable(xayad
     bitcoind.cpp
     init/bitcoind.cpp
   )
-  add_windows_resources(namecoind bitcoind-res.rc)
-  target_link_libraries(namecoind
+  add_windows_resources(xayad bitcoind-res.rc)
+  target_link_libraries(xayad
     core_interface
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  list(APPEND installable_targets namecoind)
+  list(APPEND installable_targets xayad)
 endif()
 if(WITH_MULTIPROCESS)
-  add_executable(namecoin-node
+  add_executable(xaya-node
     bitcoind.cpp
     init/bitcoin-node.cpp
   )
-  target_link_libraries(namecoin-node
+  target_link_libraries(xaya-node
     core_interface
     bitcoin_node
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  list(APPEND installable_targets namecoin-node)
+  list(APPEND installable_targets xaya-node)
 endif()
 
 
@@ -353,41 +355,41 @@ target_link_libraries(bitcoin_cli
 
 # Bitcoin Core RPC client
 if(BUILD_CLI)
-  add_executable(namecoin-cli bitcoin-cli.cpp)
-  add_windows_resources(namecoin-cli bitcoin-cli-res.rc)
-  target_link_libraries(namecoin-cli
+  add_executable(xaya-cli bitcoin-cli.cpp)
+  add_windows_resources(xaya-cli bitcoin-cli-res.rc)
+  target_link_libraries(xaya-cli
     core_interface
     bitcoin_cli
     bitcoin_common
     bitcoin_util
     $<TARGET_NAME_IF_EXISTS:libevent::libevent>
   )
-  list(APPEND installable_targets namecoin-cli)
+  list(APPEND installable_targets xaya-cli)
 endif()
 
 
 if(BUILD_TX)
-  add_executable(namecoin-tx bitcoin-tx.cpp)
-  add_windows_resources(namecoin-tx bitcoin-tx-res.rc)
-  target_link_libraries(namecoin-tx
+  add_executable(xaya-tx bitcoin-tx.cpp)
+  add_windows_resources(xaya-tx bitcoin-tx-res.rc)
+  target_link_libraries(xaya-tx
     core_interface
     bitcoin_common
     bitcoin_util
     univalue
   )
-  list(APPEND installable_targets namecoin-tx)
+  list(APPEND installable_targets xaya-tx)
 endif()
 
 
 if(BUILD_UTIL)
-  add_executable(namecoin-util bitcoin-util.cpp)
-  add_windows_resources(namecoin-util bitcoin-util-res.rc)
-  target_link_libraries(namecoin-util
+  add_executable(xaya-util bitcoin-util.cpp)
+  add_windows_resources(xaya-util bitcoin-util-res.rc)
+  target_link_libraries(xaya-util
     core_interface
     bitcoin_common
     bitcoin_util
   )
-  list(APPEND installable_targets namecoin-util)
+  list(APPEND installable_targets xaya-util)
 endif()
 
 
@@ -401,7 +403,7 @@ if(BUILD_KERNEL_LIB)
 endif()
 
 if(BUILD_UTIL_CHAINSTATE)
-  add_executable(namecoin-chainstate
+  add_executable(xaya-chainstate
     bitcoin-chainstate.cpp
   )
   # TODO: The `SKIP_BUILD_RPATH` property setting can be deleted
@@ -410,13 +412,13 @@ if(BUILD_UTIL_CHAINSTATE)
   # Relevant discussions:
   # - https://github.com/hebasto/bitcoin/pull/236#issuecomment-2183120953
   # - https://github.com/bitcoin/bitcoin/pull/30312#issuecomment-2191235833
-  set_target_properties(namecoin-chainstate PROPERTIES
+  set_target_properties(xaya-chainstate PROPERTIES
     SKIP_BUILD_RPATH OFF
   )
-  target_link_libraries(namecoin-chainstate
+  target_link_libraries(xaya-chainstate
     PRIVATE
       core_interface
-      namecoinkernel
+      xayakernel
   )
 endif()
 

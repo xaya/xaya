@@ -16,7 +16,7 @@ generate_header_from_raw(data/asmap.raw)
 
 # Do not use generator expressions in test sources because the
 # SOURCES property is processed to gather test suite macros.
-add_executable(test_namecoin
+add_executable(test_xaya
   main.cpp
   $<TARGET_OBJECTS:bitcoin_consensus>
   ${CMAKE_CURRENT_BINARY_DIR}/data/asmap.raw.h
@@ -61,6 +61,7 @@ add_executable(test_namecoin
   dbwrapper_tests.cpp
   denialofservice_tests.cpp
   disconnected_transactions.cpp
+  dualalgo_tests.cpp
   feefrac_tests.cpp
   flatfile_tests.cpp
   fs_tests.cpp
@@ -93,6 +94,7 @@ add_executable(test_namecoin
   policyestimator_tests.cpp
   pool_tests.cpp
   pow_tests.cpp
+  powdata_tests.cpp
   prevector_tests.cpp
   raii_event_tests.cpp
   random_tests.cpp
@@ -148,7 +150,7 @@ add_executable(test_namecoin
 #  miner_tests.cpp
 )
 
-target_link_libraries(test_namecoin
+target_link_libraries(test_xaya
   core_interface
   test_util
   bitcoin_cli
@@ -178,11 +180,11 @@ if(WITH_MULTIPROCESS)
       univalue
   )
 
-  target_sources(test_namecoin
+  target_sources(test_xaya
     PRIVATE
       ipc_tests.cpp
   )
-  target_link_libraries(test_namecoin bitcoin_ipc_test)
+  target_link_libraries(test_xaya bitcoin_ipc_test)
 endif()
 
 function(add_boost_test source_file)
@@ -201,7 +203,7 @@ function(add_boost_test source_file)
   )
   if(test_suite_name)
     add_test(NAME ${test_suite_name}
-      COMMAND test_namecoin --run_test=${test_suite_name} --catch_system_error=no
+      COMMAND test_xaya --run_test=${test_suite_name} --catch_system_error=no
     )
     set_property(TEST ${test_suite_name} PROPERTY
       SKIP_REGULAR_EXPRESSION "no test cases matching filter" "Skipping"
@@ -210,8 +212,8 @@ function(add_boost_test source_file)
 endfunction()
 
 function(add_all_test_targets)
-  get_target_property(test_source_dir test_namecoin SOURCE_DIR)
-  get_target_property(test_sources test_namecoin SOURCES)
+  get_target_property(test_source_dir test_xaya SOURCE_DIR)
+  get_target_property(test_sources test_xaya SOURCES)
   foreach(test_source ${test_sources})
     cmake_path(IS_RELATIVE test_source result)
     if(result)
@@ -223,6 +225,6 @@ endfunction()
 
 add_all_test_targets()
 
-install(TARGETS test_namecoin
+install(TARGETS test_xaya
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
