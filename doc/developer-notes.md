@@ -338,9 +338,10 @@ Recommendations:
 
 ### Generating Documentation
 
-The documentation can be generated with `cmake --build <build_dir> --target docs`.
-The resulting files are located in `<build_dir>/doc/doxygen/html`; open
-`index.html` in that directory to view the homepage.
+Assuming the build directory is named `build`,
+the documentation can be generated with `cmake --build build --target docs`.
+The resulting files will be located in `build/doc/doxygen/html`;
+open `index.html` in that directory to view the homepage.
 
 Before building the `docs` target, you'll need to install these dependencies:
 
@@ -467,11 +468,11 @@ which includes known Valgrind warnings in our dependencies that cannot be fixed
 in-tree. Example use:
 
 ```shell
-$ valgrind --suppressions=contrib/valgrind.supp src/test/test_bitcoin
+$ valgrind --suppressions=contrib/valgrind.supp build/src/test/test_bitcoin
 $ valgrind --suppressions=contrib/valgrind.supp --leak-check=full \
-      --show-leak-kinds=all src/test/test_bitcoin --log_level=test_suite
-$ valgrind -v --leak-check=full src/bitcoind -printtoconsole
-$ ./test/functional/test_runner.py --valgrind
+      --show-leak-kinds=all build/src/test/test_bitcoin --log_level=test_suite
+$ valgrind -v --leak-check=full build/src/bitcoind -printtoconsole
+$ ./build/test/functional/test_runner.py --valgrind
 ```
 
 ### Compiling for test coverage
@@ -741,8 +742,6 @@ logging messages. They should be used as follows:
   useful for debugging and can reasonably be enabled on a production
   system (that has sufficient free storage space). They will be logged
   if the program is started with `-debug=category` or `-debug=1`.
-  Note that `LogPrint(BCLog::CATEGORY, fmt, params...)` is a deprecated
-  alias for `LogDebug`.
 
 - `LogInfo(fmt, params...)` should only be used rarely, e.g. for startup
   messages or for infrequent and important events such as a new block tip

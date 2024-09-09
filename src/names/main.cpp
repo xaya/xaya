@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -331,7 +331,7 @@ ApplyNameTransaction (const CTransaction& tx, unsigned nHeight,
       if (op.isNameOp () && op.isAnyUpdate ())
         {
           const valtype& name = op.getOpName ();
-          LogPrint (BCLog::NAMES, "Updating name at height %d: %s\n",
+          LogDebug (BCLog::NAMES, "Updating name at height %d: %s\n",
                     nHeight, EncodeNameForMessage (name));
 
           CNameTxUndo opUndo;

@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2023 Daniel Kraft
+// Copyright (c) 2014-2024 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -194,7 +194,7 @@ CNameMemPool::removeUnexpireConflicts (const std::set<valtype>& unexpired)
 
   for (const auto& name : unexpired)
     {
-      LogPrint (BCLog::NAMES, "unexpired: %s, mempool: %u\n",
+      LogDebug (BCLog::NAMES, "unexpired: %s, mempool: %u\n",
                 EncodeNameForMessage (name), mapNameRegs.count (name));
 
       const auto mit = mapNameRegs.find (name);
@@ -215,7 +215,7 @@ CNameMemPool::removeExpireConflicts (const std::set<valtype>& expired)
 
   for (const auto& name : expired)
     {
-      LogPrint (BCLog::NAMES, "expired: %s\n", EncodeNameForMessage (name));
+      LogDebug (BCLog::NAMES, "expired: %s\n", EncodeNameForMessage (name));
 
       const auto mit = updates.find (name);
       if (mit == updates.end ())

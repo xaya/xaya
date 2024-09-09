@@ -107,7 +107,7 @@ void BuyNamesPage::onRegisterNameAction()
 QString BuyNamesPage::name_available(const QString &name) const
 {
     const std::string strName = name.toStdString();
-    LogPrint(BCLog::QT, "wallet attempting name_show: name=%s\n", strName);
+    LogDebug(BCLog::QT, "wallet attempting name_show: name=%s\n", strName);
 
     UniValue params(UniValue::VOBJ);
     params.pushKV ("name", strName);
@@ -130,7 +130,7 @@ QString BuyNamesPage::name_available(const QString &name) const
 
         const UniValue message = e.find_value("message");
         const std::string errorStr = message.get_str();
-        LogPrint(BCLog::QT, "name_show error: %s\n", errorStr);
+        LogDebug(BCLog::QT, "name_show error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
     }
 
@@ -140,7 +140,7 @@ QString BuyNamesPage::name_available(const QString &name) const
 QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QString> &value, const std::optional<QString> &transferTo) const
 {
     const std::string strName = name.toStdString();
-    LogPrint(BCLog::QT, "wallet attempting name_firstupdate: name=%s\n", strName);
+    LogDebug(BCLog::QT, "wallet attempting name_firstupdate: name=%s\n", strName);
 
     UniValue params(UniValue::VOBJ);
     params.pushKV ("name", strName);
@@ -165,7 +165,7 @@ QString BuyNamesPage::firstupdate(const QString &name, const std::optional<QStri
     catch (const UniValue& e) {
         const UniValue message = e.find_value("message");
         const std::string errorStr = message.get_str();
-        LogPrint(BCLog::QT, "name_firstupdate error: %s\n", errorStr);
+        LogDebug(BCLog::QT, "name_firstupdate error: %s\n", errorStr);
         return QString::fromStdString(errorStr);
     }
     return tr ("");
