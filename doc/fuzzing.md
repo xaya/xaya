@@ -80,7 +80,7 @@ of the test. Just make sure to use double-dash to distinguish them from the
 fuzzer's own arguments:
 
 ```sh
-$ FUZZ=address_deserialize_v2 build_fuzz/src/test/fuzz/fuzz -runs=1 fuzz_seed_corpus/address_deserialize_v2 --checkaddrman=5 --printtoconsole=1
+$ FUZZ=address_deserialize_v2 build_fuzz/src/test/fuzz/fuzz -runs=1 fuzz_corpora/address_deserialize_v2 --checkaddrman=5 --printtoconsole=1
 ```
 
 ## Fuzzing corpora
@@ -91,11 +91,11 @@ To fuzz `process_message` using the [`bitcoin-core/qa-assets`](https://github.co
 
 ```sh
 $ git clone https://github.com/bitcoin-core/qa-assets
-$ FUZZ=process_message build_fuzz/src/test/fuzz/fuzz qa-assets/fuzz_seed_corpus/process_message/
+$ FUZZ=process_message build_fuzz/src/test/fuzz/fuzz qa-assets/fuzz_corpora/process_message/
 INFO: Seed: 1346407872
 INFO: Loaded 1 modules   (424174 inline 8-bit counters): 424174 [0x55d8a9004ab8, 0x55d8a906c3a6),
 INFO: Loaded 1 PC tables (424174 PCs): 424174 [0x55d8a906c3a8,0x55d8a96e5288),
-INFO:      991 files found in qa-assets/fuzz_seed_corpus/process_message/
+INFO:      991 files found in qa-assets/fuzz_corpora/process_message/
 INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
 INFO: seed corpus: files: 991 min: 1b max: 1858b total: 288291b rss: 150Mb
 #993    INITED cov: 7063 ft: 8236 corp: 25/3821b exec/s: 0 rss: 181Mb
@@ -124,7 +124,7 @@ Patience is useful; even with improved throughput, libFuzzer may need days and
   quickly from a crash case)
 - run the fuzzer with the case number appended to the seed corpus path:
   `FUZZ=process_message build_fuzz/src/test/fuzz/fuzz
-  qa-assets/fuzz_seed_corpus/process_message/1bc91feec9fc00b107d97dc225a9f2cdaa078eb6`
+  qa-assets/fuzz_corpora/process_message/1bc91feec9fc00b107d97dc225a9f2cdaa078eb6`
 
 ## Submit improved coverage
 
@@ -257,7 +257,7 @@ index 7601a6ea84..702d0f56ce 100644
      // Check start string, network magic
 -    if (memcmp(hdr.pchMessageStart, m_chain_params.MessageStart(), CMessageHeader::MESSAGE_START_SIZE) != 0) {
 +    if (false && memcmp(hdr.pchMessageStart, m_chain_params.MessageStart(), CMessageHeader::MESSAGE_START_SIZE) != 0) { // skip network magic checking
-         LogPrint(BCLog::NET, "Header error: Wrong MessageStart %s received, peer=%d\n", HexStr(hdr.pchMessageStart), m_node_id);
+         LogDebug(BCLog::NET, "Header error: Wrong MessageStart %s received, peer=%d\n", HexStr(hdr.pchMessageStart), m_node_id);
          return -1;
      }
 @@ -788,7 +788,7 @@ CNetMessage V1TransportDeserializer::GetMessage(const std::chrono::microseconds
@@ -266,7 +266,7 @@ index 7601a6ea84..702d0f56ce 100644
      // Check checksum and header message type string
 -    if (memcmp(hash.begin(), hdr.pchChecksum, CMessageHeader::CHECKSUM_SIZE) != 0) {
 +    if (false && memcmp(hash.begin(), hdr.pchChecksum, CMessageHeader::CHECKSUM_SIZE) != 0) { // skip checksum checking
-         LogPrint(BCLog::NET, "Header error: Wrong checksum (%s, %u bytes), expected %s was %s, peer=%d\n",
+         LogDebug(BCLog::NET, "Header error: Wrong checksum (%s, %u bytes), expected %s was %s, peer=%d\n",
                   SanitizeString(msg.m_type), msg.m_message_size,
                   HexStr(Span{hash}.first(CMessageHeader::CHECKSUM_SIZE)),
 EOF
@@ -340,7 +340,7 @@ Fuzzing with Eclipser will likely be much more effective if using an existing co
 
 ```sh
 $ git clone https://github.com/bitcoin-core/qa-assets
-$ FUZZ=bech32 dotnet Eclipser/build/Eclipser.dll fuzz -p build_fuzz/src/test/fuzz/fuzz -t 36000 -i qa-assets/fuzz_seed_corpus/bech32 outputs --src stdin
+$ FUZZ=bech32 dotnet Eclipser/build/Eclipser.dll fuzz -p build_fuzz/src/test/fuzz/fuzz -t 36000 -i qa-assets/fuzz_corpora/bech32 outputs --src stdin
 ```
 
 Note that fuzzing with Eclipser on certain targets (those that create 'full nodes', e.g. `process_message*`) will,
