@@ -5,9 +5,12 @@
 use std::env;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, ExitCode, Stdio};
 
+/// A possible error returned by any of the linters.
+///
+/// The error string should explain the failure type and list all violations.
 type LintError = String;
 type LintResult = Result<(), LintError>;
 type LintFn = fn() -> LintResult;
@@ -36,14 +39,19 @@ fn get_linter_list() -> Vec<&'static Linter> {
             lint_fn: lint_markdown
         },
         &Linter {
-            description: "Check the default arguments in python",
-            name: "py_mut_arg_default",
-            lint_fn: lint_py_mut_arg_default,
+            description: "Lint Python code",
+            name: "py_lint",
+            lint_fn: lint_py_lint,
         },
         &Linter {
             description: "Check that std::filesystem is not used directly",
             name: "std_filesystem",
             lint_fn: lint_std_filesystem
+        },
+        &Linter {
+            description: "Check that release note snippets are in the right folder",
+            name: "doc_release_note_snippets",
+            lint_fn: lint_doc_release_note_snippets
         },
         &Linter {
             description: "Check that subtrees are pure subtrees",
@@ -125,20 +133,27 @@ fn parse_lint_args(args: &[String]) -> Vec<&'static Linter> {
 }
 
 /// Return the git command
+///
+/// Lint functions should use this command, so that only files tracked by git are considered and
+/// temporary and untracked files are ignored. For example, instead of 'grep', 'git grep' should be
+/// used.
 fn git() -> Command {
     let mut git = Command::new("git");
     git.arg("--no-pager");
     git
 }
 
-/// Return stdout
+/// Return stdout on success and a LintError on failure, when invalid UTF8 was detected or the
+/// command did not succeed.
 fn check_output(cmd: &mut std::process::Command) -> Result<String, LintError> {
     let out = cmd.output().expect("command error");
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).to_string());
     }
     Ok(String::from_utf8(out.stdout)
-        .map_err(|e| format!("{e}"))?
+        .map_err(|e| {
+            format!("All path names, source code, messages, and output must be valid UTF8!\n{e}")
+        })?
         .trim()
         .to_string())
 }
@@ -185,12 +200,50 @@ fn lint_subtree() -> LintResult {
     }
 }
 
-fn lint_py_mut_arg_default() -> LintResult {
+fn lint_py_lint() -> LintResult {
     let bin_name = "ruff";
-    let checks = ["B006", "B008"]
-        .iter()
-        .map(|c| format!("--select={}", c))
-        .collect::<Vec<_>>();
+    let checks = format!(
+        "--select={}",
+        [
+            "B006", // mutable-argument-default
+            "B008", // function-call-in-default-argument
+            "E101", // indentation contains mixed spaces and tabs
+            "E401", // multiple imports on one line
+            "E402", // module level import not at top of file
+            "E701", // multiple statements on one line (colon)
+            "E702", // multiple statements on one line (semicolon)
+            "E703", // statement ends with a semicolon
+            "E711", // comparison to None should be 'if cond is None:'
+            "E714", // test for object identity should be "is not"
+            "E721", // do not compare types, use "isinstance()"
+            "E722", // do not use bare 'except'
+            "E742", // do not define classes named "l", "O", or "I"
+            "E743", // do not define functions named "l", "O", or "I"
+            "F401", // module imported but unused
+            "F402", // import module from line N shadowed by loop variable
+            "F403", // 'from foo_module import *' used; unable to detect undefined names
+            "F404", // future import(s) name after other statements
+            "F405", // foo_function may be undefined, or defined from star imports: bar_module
+            "F406", // "from module import *" only allowed at module level
+            "F407", // an undefined __future__ feature name was imported
+            "F601", // dictionary key name repeated with different values
+            "F602", // dictionary key variable name repeated with different values
+            "F621", // too many expressions in an assignment with star-unpacking
+            "F631", // assertion test is a tuple, which are always True
+            "F632", // use ==/!= to compare str, bytes, and int literals
+            "F811", // redefinition of unused name from line N
+            "F821", // undefined name 'Foo'
+            "F822", // undefined name name in __all__
+            "F823", // local variable name … referenced before assignment
+            "F841", // local variable 'foo' is assigned to but never used
+            "W191", // indentation contains tabs
+            "W291", // trailing whitespace
+            "W292", // no newline at end of file
+            "W293", // blank line contains whitespace
+            "W605", // invalid escape sequence "x"
+        ]
+        .join(",")
+    );
     let files = check_output(
         git()
             .args(["ls-files", "--", "*.py"])
@@ -198,7 +251,7 @@ fn lint_py_mut_arg_default() -> LintResult {
     )?;
 
     let mut cmd = Command::new(bin_name);
-    cmd.arg("check").args(checks).args(files.lines());
+    cmd.args(["check", &checks]).args(files.lines());
 
     match cmd.status() {
         Ok(status) if status.success() => Ok(()),
@@ -235,6 +288,30 @@ fs:: namespace, which has unsafe filesystem functions marked as deleted.
         .to_string())
     } else {
         Ok(())
+    }
+}
+
+fn lint_doc_release_note_snippets() -> LintResult {
+    let non_release_notes = check_output(git().args([
+        "ls-files",
+        "--",
+        "doc/release-notes/",
+        ":(exclude)doc/release-notes/*.*.md", // Assume that at least one dot implies a proper release note
+    ]))?;
+    if non_release_notes.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            r#"
+{}
+^^^
+Release note snippets and other docs must be put into the doc/ folder directly.
+
+The doc/release-notes/ folder is for archived release notes of previous releases only. Snippets are
+expected to follow the naming "/doc/release-notes-<PR number>.md".
+            "#,
+            non_release_notes
+        ))
     }
 }
 

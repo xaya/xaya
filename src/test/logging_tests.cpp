@@ -111,13 +111,11 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintf_, LogSetup)
 BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacrosDeprecated, LogSetup)
 {
     LogPrintf("foo5: %s\n", "bar5");
-    LogPrint(BCLog::NET, "foo6: %s\n", "bar6");
     LogPrintLevel(BCLog::NET, BCLog::Level::Trace, "foo4: %s\n", "bar4"); // not logged
     LogPrintLevel(BCLog::NET, BCLog::Level::Debug, "foo7: %s\n", "bar7");
     LogPrintLevel(BCLog::NET, BCLog::Level::Info, "foo8: %s\n", "bar8");
     LogPrintLevel(BCLog::NET, BCLog::Level::Warning, "foo9: %s\n", "bar9");
     LogPrintLevel(BCLog::NET, BCLog::Level::Error, "foo10: %s\n", "bar10");
-    LogPrintfCategory(BCLog::VALIDATION, "foo11: %s\n", "bar11");
     std::ifstream file{tmp_log_path};
     std::vector<std::string> log_lines;
     for (std::string log; std::getline(file, log);) {
@@ -125,12 +123,10 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacrosDeprecated, LogSetup)
     }
     std::vector<std::string> expected = {
         "foo5: bar5",
-        "[net] foo6: bar6",
         "[net] foo7: bar7",
         "[net:info] foo8: bar8",
         "[net:warning] foo9: bar9",
         "[net:error] foo10: bar10",
-        "[validation:info] foo11: bar11",
     };
     BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
 }
@@ -171,7 +167,7 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros_CategoryName, LogSetup)
 
     std::vector<std::string> expected;
     for (const auto& [category, name] : expected_category_names) {
-        LogPrint(category, "foo: %s\n", "bar");
+        LogDebug(category, "foo: %s\n", "bar");
         std::string expected_log = "[";
         expected_log += name;
         expected_log += "] foo: bar";
