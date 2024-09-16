@@ -132,6 +132,7 @@ add_executable(test_bitcoin
   txvalidation_tests.cpp
   txvalidationcache_tests.cpp
   uint256_tests.cpp
+  util_string_tests.cpp
   util_tests.cpp
   util_threadnames_tests.cpp
   validation_block_tests.cpp
@@ -179,7 +180,7 @@ if(WITH_MULTIPROCESS)
     PRIVATE
       ipc_tests.cpp
   )
-  target_link_libraries(test_bitcoin bitcoin_ipc_test)
+  target_link_libraries(test_bitcoin bitcoin_ipc_test bitcoin_ipc)
 endif()
 
 function(add_boost_test source_file)
@@ -198,10 +199,10 @@ function(add_boost_test source_file)
   )
   if(test_suite_name)
     add_test(NAME ${test_suite_name}
-      COMMAND test_bitcoin --run_test=${test_suite_name} --catch_system_error=no
+      COMMAND test_bitcoin --run_test=${test_suite_name} --catch_system_error=no --log_level=test_suite -- DEBUG_LOG_OUT
     )
     set_property(TEST ${test_suite_name} PROPERTY
-      SKIP_REGULAR_EXPRESSION "no test cases matching filter" "Skipping"
+      SKIP_REGULAR_EXPRESSION "no test cases matching filter"
     )
   endif()
 endfunction()

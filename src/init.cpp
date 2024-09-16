@@ -29,6 +29,7 @@
 #include <init/common.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <interfaces/mining.h>
 #include <interfaces/node.h>
 #include <kernel/context.h>
@@ -147,11 +148,12 @@ static constexpr bool DEFAULT_STOPAFTERBLOCKIMPORT{false};
 // Win32 LevelDB doesn't use filedescriptors, and the ones used for
 // accessing block files don't count towards the fd_set size limit
 // anyway.
-#define MIN_CORE_FILEDESCRIPTORS 0
+#define MIN_LEVELDB_FDS 0
 #else
-#define MIN_CORE_FILEDESCRIPTORS 150
+#define MIN_LEVELDB_FDS 150
 #endif
 
+static constexpr int MIN_CORE_FDS = MIN_LEVELDB_FDS + NUM_FDS_MESSAGE_CAPTURE;
 static const char* DEFAULT_ASMAP_FILENAME="ip_asn.map";
 
 /**
@@ -296,7 +298,7 @@ void Shutdown(NodeContext& node)
 
     StopTorControl();
 
-    if (node.chainman && node.chainman->m_thread_load.joinable()) node.chainman->m_thread_load.join();
+    if (node.background_init_thread.joinable()) node.background_init_thread.join();
     // After everything has been shut down, but before things get flushed, stop the
     // the scheduler. After this point, SyncWithValidationInterfaceQueue() should not be called anymore
     // as this would prevent the shutdown from completing.
@@ -441,7 +443,7 @@ static void OnRPCStopped()
     LogDebug(BCLog::RPC, "RPC stopped.\n");
 }
 
-void SetupServerArgs(ArgsManager& argsman)
+void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc)
 {
     SetupHelpOptions(argsman);
     argsman.AddArg("-help-debug", "Print help message with debugging options and exit", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST); // server-only for now
@@ -676,6 +678,9 @@ void SetupServerArgs(ArgsManager& argsman)
     argsman.AddArg("-rpcwhitelistdefault", "Sets default behavior for rpc whitelisting. Unless rpcwhitelistdefault is set to 0, if any -rpcwhitelist is set, the rpc server acts as if all rpc users are subject to empty-unless-otherwise-specified whitelists. If rpcwhitelistdefault is set to 1 and no -rpcwhitelist is set, rpc server acts as if all rpc users are subject to empty whitelists.", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     argsman.AddArg("-rpcworkqueue=<n>", strprintf("Set the depth of the work queue to service RPC calls (default: %d)", DEFAULT_HTTP_WORKQUEUE), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
     argsman.AddArg("-server", "Accept command line and JSON-RPC commands", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+    if (can_listen_ipc) {
+        argsman.AddArg("-ipcbind=<address>", "Bind to Unix socket address and listen for incoming connections. Valid address values are \"unix\" to listen on the default path, <datadir>/node.sock, or \"unix:/custom/path\" to specify a custom path. Can be specified multiple times to listen on multiple paths. Default behavior is not to listen on any path. If relative paths are specified, they are interpreted relative to the network data directory. If paths include any parent directory components and the parent directories do not exist, they will be created.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+    }
 
 #if HAVE_DECL_FORK
     argsman.AddArg("-daemon", strprintf("Run in the background as a daemon and accept commands (default: %d)", DEFAULT_DAEMON), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
@@ -834,8 +839,7 @@ void InitLogging(const ArgsManager& args)
 namespace { // Variables internal to initialization process only
 
 int nMaxConnections;
-int nUserMaxConnections;
-int nFD;
+int available_fds;
 ServiceFlags nLocalServices = ServiceFlags(NODE_NETWORK_LIMITED | NODE_WITNESS);
 int64_t peer_connect_timeout;
 std::set<BlockFilterType> g_enabled_filter_types;
@@ -987,27 +991,33 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(Untranslated("Cannot set -listen=0 together with -listenonion=1"));
     }
 
-    // Make sure enough file descriptors are available
+    // Make sure enough file descriptors are available. We need to reserve enough FDs to account for the bare minimum,
+    // plus all manual connections and all bound interfaces. Any remainder will be available for connection sockets
+
+    // Number of bound interfaces (we have at least one)
     int nBind = std::max(nUserBind, size_t(1));
-    nUserMaxConnections = args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS);
-    nMaxConnections = std::max(nUserMaxConnections, 0);
+    // Maximum number of connections with other nodes, this accounts for all types of outbounds and inbounds except for manual
+    int user_max_connection = args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS);
+    if (user_max_connection < 0) {
+        return InitError(Untranslated("-maxconnections must be greater or equal than zero"));
+    }
+    // Reserve enough FDs to account for the bare minimum, plus any manual connections, plus the bound interfaces
+    int min_required_fds = MIN_CORE_FDS + MAX_ADDNODE_CONNECTIONS + nBind;
 
-    nFD = RaiseFileDescriptorLimit(nMaxConnections + MIN_CORE_FILEDESCRIPTORS + MAX_ADDNODE_CONNECTIONS + nBind + NUM_FDS_MESSAGE_CAPTURE);
-
-#ifdef USE_POLL
-    int fd_max = nFD;
-#else
-    int fd_max = FD_SETSIZE;
+    // Try raising the FD limit to what we need (available_fds may be smaller than the requested amount if this fails)
+    available_fds = RaiseFileDescriptorLimit(user_max_connection + min_required_fds);
+    // If we are using select instead of poll, our actual limit may be even smaller
+#ifndef USE_POLL
+    available_fds = std::min(FD_SETSIZE, available_fds);
 #endif
-    // Trim requested connection counts, to fit into system limitations
-    // <int> in std::min<int>(...) to work around FreeBSD compilation issue described in #2695
-    nMaxConnections = std::max(std::min<int>(nMaxConnections, fd_max - nBind - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS - NUM_FDS_MESSAGE_CAPTURE), 0);
-    if (nFD < MIN_CORE_FILEDESCRIPTORS)
-        return InitError(_("Not enough file descriptors available."));
-    nMaxConnections = std::min(nFD - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS - NUM_FDS_MESSAGE_CAPTURE, nMaxConnections);
+    if (available_fds < min_required_fds)
+        return InitError(strprintf(_("Not enough file descriptors available. %d available, %d required."), available_fds, min_required_fds));
 
-    if (nMaxConnections < nUserMaxConnections)
-        InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
+    // Trim requested connection counts, to fit into system limitations
+    nMaxConnections = std::min(available_fds - min_required_fds, user_max_connection);
+
+    if (nMaxConnections < user_max_connection)
+        InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), user_max_connection, nMaxConnections));
 
     // ********************************************************* Step 3: parameter-to-internal-flags
     if (auto result{init::SetLoggingCategories(args)}; !result) return InitError(util::ErrorString(result));
@@ -1155,7 +1165,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         return false;
     }
 
-    LogPrintf("Using at most %i automatic connections (%i file descriptors available)\n", nMaxConnections, nFD);
+    LogPrintf("Using at most %i automatic connections (%i file descriptors available)\n", nMaxConnections, available_fds);
 
     // Warn about relative -datadir path.
     if (args.IsArgSet("-datadir") && !args.GetPathArg("-datadir").is_absolute()) {
@@ -1199,6 +1209,17 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // when load() and start() interface methods are called below.
     g_wallet_init_interface.Construct(node);
     uiInterface.InitWallet();
+
+    if (interfaces::Ipc* ipc = node.init->ipc()) {
+        for (std::string address : gArgs.GetArgs("-ipcbind")) {
+            try {
+                ipc->listenAddress(address);
+            } catch (const std::exception& e) {
+                return InitError(strprintf(Untranslated("Unable to bind to IPC address '%s'. %s"), address, e.what()));
+            }
+            LogPrintf("Listening for IPC requests on address %s\n", address);
+        }
+    }
 
     /* Register RPC commands regardless of -server setting so they will be
      * available in the GUI RPC console even if external calls are disabled.
@@ -1558,7 +1579,12 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         // This is defined and set here instead of inline in validation.h to avoid a hard
         // dependency between validation and index/base, since the latter is not in
         // libbitcoinkernel.
-        chainman.restart_indexes = [&node]() {
+        chainman.snapshot_download_completed = [&node]() {
+            if (!node.chainman->m_blockman.IsPruneMode()) {
+                LogPrintf("[snapshot] re-enabling NODE_NETWORK services\n");
+                node.connman->AddLocalServices(NODE_NETWORK);
+            }
+
             LogPrintf("[snapshot] restarting indexes\n");
 
             // Drain the validation interface queue to ensure that the old indexes
@@ -1695,8 +1721,13 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             }
         }
     } else {
-        LogPrintf("Setting NODE_NETWORK on non-prune mode\n");
-        nLocalServices = ServiceFlags(nLocalServices | NODE_NETWORK);
+        // Prior to setting NODE_NETWORK, check if we can provide historical blocks.
+        if (!WITH_LOCK(chainman.GetMutex(), return chainman.BackgroundSyncInProgress())) {
+            LogPrintf("Setting NODE_NETWORK on non-prune mode\n");
+            nLocalServices = ServiceFlags(nLocalServices | NODE_NETWORK);
+        } else {
+            LogPrintf("Running node in NODE_NETWORK_LIMITED mode until snapshot background sync completes\n");
+        }
     }
 
     // ********************************************************* Step 11: import blocks
@@ -1758,7 +1789,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         vImportFiles.push_back(fs::PathFromString(strFile));
     }
 
-    chainman.m_thread_load = std::thread(&util::TraceThread, "initload", [=, &chainman, &args, &node] {
+    node.background_init_thread = std::thread(&util::TraceThread, "initload", [=, &chainman, &args, &node] {
         ScheduleBatchPriority();
         // Import blocks
         ImportBlocks(chainman, vImportFiles);
