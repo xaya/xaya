@@ -71,8 +71,7 @@ The constant below is the HASH160 of the redeem script.  In other words, the
 final premine script will be:
   OP_HASH160 hexPremineAddress OP_EQUAL
 */
-constexpr const char hexPremineAddressRegtest[]
-    = "2b6defe41aa3aa47795b702c893c73e716d485ab";
+constexpr uint160 premineAddressRegtest{"2b6defe41aa3aa47795b702c893c73e716d485ab"};
 
 /*
 The premine on testnet and mainnet is sent to a 2-of-4 multisig address.  The
@@ -85,8 +84,7 @@ The hash of the redeem script is the constant below.  With it, the final
 premine script is:
   OP_HASH160 hexPremineAddress OP_EQUAL
 */
-constexpr const char hexPremineAddressMainnet[]
-    = "8cb1c236d34c74221fe4163bbba739b52e95f484";
+constexpr uint160 premineAddressMainnet{"8cb1c236d34c74221fe4163bbba739b52e95f484"};
 
 CBlock CreateGenesisBlock(const CScript& genesisInputScript, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
@@ -237,7 +235,7 @@ public:
 
         genesis = CreateGenesisBlock (1531470713, 482087, 0x1e0ffff0,
                                       pszTimestampMainnet,
-                                      uint160S (hexPremineAddressMainnet));
+                                      premineAddressMainnet);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651"});
         assert(genesis.hashMerkleRoot == uint256{"0827901b75ab43978c3cf20a78baf040faeb0e2eeff3a2c58ab6521a6d46f8fd"});
@@ -345,7 +343,7 @@ public:
 
         genesis = CreateGenesisBlock (1530623291, 343829, 0x1e0ffff0,
                                       pszTimestampTestnet,
-                                      uint160S (hexPremineAddressMainnet));
+                                      premineAddressMainnet);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"5195fc01d0e23d70d1f929f21ec55f47e1c6ea1e66fae98ee44cbbc994509bba"});
         assert(genesis.hashMerkleRoot == uint256{"59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"});
@@ -450,7 +448,7 @@ public:
         /* FIXME: Update below and in general testnet4 */
         genesis = CreateGenesisBlock (1530623291, 343829, 0x1e0ffff0,
                                       pszTimestampTestnet,
-                                      uint160S (hexPremineAddressMainnet));
+                                      premineAddressMainnet);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"5195fc01d0e23d70d1f929f21ec55f47e1c6ea1e66fae98ee44cbbc994509bba"});
         assert(genesis.hashMerkleRoot == uint256{"59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"});
@@ -584,7 +582,7 @@ public:
 
         genesis = CreateGenesisBlock (1601286749, 534547, 0x1e0ffff0,
                                       pszTimestampTestnet,
-                                      uint160S (hexPremineAddressMainnet));
+                                      premineAddressMainnet);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"8d5223e215a03970bb3d3bc511a0d9a003e03cbc973289611ca6e0e617f57ccf"});
         assert(genesis.hashMerkleRoot == uint256{"59d1a23342282179e810dff9238a97d07bd8602e3a1ba0efb5f519008541f257"});
@@ -704,7 +702,7 @@ public:
 
         genesis = CreateGenesisBlock (1300000000, 0, 0x207fffff,
                                       pszTimestampTestnet,
-                                      uint160S (hexPremineAddressRegtest));
+                                      premineAddressRegtest);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256{"6f750b36d22f1dc3d0a6e483af45301022646dfc3b3ba2187865f5a7d6d83ab1"});
         assert(genesis.hashMerkleRoot == uint256{"9f96a4c275320aaf6386652444be5baade11e2f9f40221a98b968ae5c32dd55a"});

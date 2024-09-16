@@ -753,12 +753,15 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
         [] (CWallet* pwallet, DataStream& key, DataStream& value, std::string& err) {
         std::string strTxid;
         key >> strTxid;
-        uint256 u256Txid = uint256S(strTxid);
+
+        const auto u256Txid = uint256::FromHex(strTxid);
+        if (!u256Txid)
+            return DBErrors::CORRUPT;
 
         CMutableTransaction pending;
         value >> TX_WITH_WITNESS (pending);
 
-        pwallet->queuedTransactionMap[u256Txid] = pending;
+        pwallet->queuedTransactionMap[*u256Txid] = pending;
 
         return DBErrors::LOAD_OK;
     });

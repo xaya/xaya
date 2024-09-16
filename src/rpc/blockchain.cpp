@@ -62,6 +62,7 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 using kernel::CCoinsStats;
 using kernel::CoinStatsHashType;
@@ -2961,8 +2962,8 @@ static RPCHelpMan dumptxoutset()
 
     CConnman& connman = EnsureConnman(node);
     const CBlockIndex* invalidate_index{nullptr};
-    std::unique_ptr<NetworkDisable> disable_network;
-    std::unique_ptr<TemporaryRollback> temporary_rollback;
+    std::optional<NetworkDisable> disable_network;
+    std::optional<TemporaryRollback> temporary_rollback;
 
     // If the user wants to dump the txoutset of the current tip, we don't have
     // to roll back at all
@@ -2987,18 +2988,16 @@ static RPCHelpMan dumptxoutset()
         // automatically re-enables the network activity at the end of the
         // process which may not be what the user wants.
         if (connman.GetNetworkActive()) {
-            disable_network = std::make_unique<NetworkDisable>(connman);
+            disable_network.emplace(connman);
         }
 
         invalidate_index = WITH_LOCK(::cs_main, return node.chainman->ActiveChain().Next(target_index));
-        temporary_rollback = std::make_unique<TemporaryRollback>(*node.chainman, *invalidate_index);
+        temporary_rollback.emplace(*node.chainman, *invalidate_index);
     }
 
     Chainstate* chainstate;
     std::unique_ptr<CCoinsViewCursor> cursor;
     CCoinsStats stats;
-    UniValue result;
-    UniValue error;
     {
         // Lock the chainstate before calling PrepareUtxoSnapshot, to be able
         // to get a UTXO database cursor while the chain is pointing at the
@@ -3022,7 +3021,7 @@ static RPCHelpMan dumptxoutset()
         }
     }
 
-    result = WriteUTXOSnapshot(*chainstate, cursor.get(), &stats, tip, afile, path, temppath, node.rpc_interruption_point);
+    UniValue result = WriteUTXOSnapshot(*chainstate, cursor.get(), &stats, tip, afile, path, temppath, node.rpc_interruption_point);
     fs::rename(temppath, path);
 
     result.pushKV("path", path.utf8string());
@@ -3217,6 +3216,13 @@ static RPCHelpMan loadtxoutset()
     if (!activation_result) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Unable to load UTXO snapshot: %s. (%s)", util::ErrorString(activation_result).original, path.utf8string()));
     }
+
+    // Because we can't provide historical blocks during tip or background sync.
+    // Update local services to reflect we are a limited peer until we are fully sync.
+    node.connman->RemoveLocalServices(NODE_NETWORK);
+    // Setting the limited state is usually redundant because the node can always
+    // provide the last 288 blocks, but it doesn't hurt to set it.
+    node.connman->AddLocalServices(NODE_NETWORK_LIMITED);
 
     CBlockIndex& snapshot_index{*CHECK_NONFATAL(*activation_result)};
 

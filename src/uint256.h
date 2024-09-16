@@ -179,6 +179,7 @@ class uint160 : public base_blob<160> {
 public:
     static std::optional<uint160> FromHex(std::string_view str) { return detail::FromHex<uint160>(str); }
     constexpr uint160() = default;
+    consteval explicit uint160(std::string_view hex_str) : base_blob<160>(hex_str) {}
     constexpr explicit uint160(Span<const unsigned char> vch) : base_blob<160>(vch) {}
 };
 
@@ -198,23 +199,5 @@ public:
     static const uint256 ZERO;
     static const uint256 ONE;
 };
-
-/* uint256 from std::string_view, containing byte-reversed hex encoding.
- * DEPRECATED. Unlike FromHex this accepts any invalid input, thus it is fragile and deprecated!
- */
-inline uint256 uint256S(std::string_view str)
-{
-    uint256 rv;
-    rv.SetHexDeprecated(str);
-    return rv;
-}
-
-inline
-uint160 uint160S (const char* str)
-{
-  uint160 rv;
-  rv.SetHexDeprecated (str);
-  return rv;
-}
 
 #endif // BITCOIN_UINT256_H
