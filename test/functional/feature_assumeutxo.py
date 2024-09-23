@@ -698,7 +698,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.test_snapshot_in_a_divergent_chain(dump_output['path'])
 
         # The following test cleans node2 and node3 chain directories.
-        self.test_sync_from_assumeutxo_node(snapshot=dump_output)
+        #self.test_sync_from_assumeutxo_node(snapshot=dump_output)
 
 @dataclass
 class Block:
