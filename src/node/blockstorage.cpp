@@ -683,11 +683,7 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
     fileout << GetParams().MessageStart() << nSize;
 
     // Write undo data
-    long fileOutPos = ftell(fileout.Get());
-    if (fileOutPos < 0) {
-        LogError("%s: ftell failed\n", __func__);
-        return false;
-    }
+    long fileOutPos = fileout.tell();
     pos.nPos = (unsigned int)fileOutPos;
     fileout << blockundo;
 
@@ -981,11 +977,7 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     fileout << GetParams().MessageStart() << nSize;
 
     // Write block
-    long fileOutPos = ftell(fileout.Get());
-    if (fileOutPos < 0) {
-        LogError("%s: ftell failed\n", __func__);
-        return false;
-    }
+    long fileOutPos = fileout.tell();
     pos.nPos = (unsigned int)fileOutPos;
     fileout << TX_WITH_WITNESS(block);
 

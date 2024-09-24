@@ -390,9 +390,10 @@ class AutoFile
 protected:
     std::FILE* m_file;
     std::vector<std::byte> m_xor;
+    std::optional<int64_t> m_position;
 
 public:
-    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor={}) : m_file{file}, m_xor{std::move(data_xor)} {}
+    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor={});
 
     ~AutoFile() { fclose(); }
 
@@ -419,12 +420,6 @@ public:
         return ret;
     }
 
-    /** Get wrapped FILE* without transfer of ownership.
-     * @note Ownership of the FILE* will remain with this class. Use this only if the scope of the
-     * AutoFile outlives use of the passed pointer.
-     */
-    std::FILE* Get() const { return m_file; }
-
     /** Return true if the wrapped FILE* is nullptr, false otherwise.
      */
     bool IsNull() const { return m_file == nullptr; }
@@ -435,8 +430,17 @@ public:
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);
 
+    /** Wrapper around fseek(). Will throw if seeking is not possible. */
     void seek(int64_t offset, int origin);
+
+    /** Find position within the file. Will throw if unknown. */
     int64_t tell();
+
+    /** Wrapper around FileCommit(). */
+    bool Commit();
+
+    /** Wrapper around TruncateFile(). */
+    bool Truncate(unsigned size);
 
     //
     // Stream subset

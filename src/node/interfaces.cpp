@@ -67,6 +67,7 @@
 
 #include <boost/signals2/signal.hpp>
 
+using interfaces::BlockTemplate;
 using interfaces::BlockTip;
 using interfaces::Chain;
 using interfaces::FoundBlock;
@@ -819,29 +820,29 @@ public:
     {
         std::optional<interfaces::SettingsAction> action;
         args().LockSettings([&](common::Settings& settings) {
-            auto* ptr_value = common::FindKey(settings.rw_settings, name);
-            // Create value if it doesn't exist
-            auto& value = ptr_value ? *ptr_value : settings.rw_settings[name];
-            action = update_settings_func(value);
+            if (auto* value = common::FindKey(settings.rw_settings, name)) {
+                action = update_settings_func(*value);
+                if (value->isNull()) settings.rw_settings.erase(name);
+            } else {
+                UniValue new_value;
+                action = update_settings_func(new_value);
+                if (!new_value.isNull()) settings.rw_settings[name] = std::move(new_value);
+            }
         });
         if (!action) return false;
         // Now dump value to disk if requested
-        return *action == interfaces::SettingsAction::SKIP_WRITE || args().WriteSettingsFile();
+        return *action != interfaces::SettingsAction::WRITE || args().WriteSettingsFile();
     }
-    bool overwriteRwSetting(const std::string& name, common::SettingsValue& value, bool write) override
+    bool overwriteRwSetting(const std::string& name, common::SettingsValue value, interfaces::SettingsAction action) override
     {
-        if (value.isNull()) return deleteRwSettings(name, write);
         return updateRwSetting(name, [&](common::SettingsValue& settings) {
             settings = std::move(value);
-            return write ? interfaces::SettingsAction::WRITE : interfaces::SettingsAction::SKIP_WRITE;
+            return action;
         });
     }
-    bool deleteRwSettings(const std::string& name, bool write) override
+    bool deleteRwSettings(const std::string& name, interfaces::SettingsAction action) override
     {
-        args().LockSettings([&](common::Settings& settings) {
-            settings.rw_settings.erase(name);
-        });
-        return !write || args().WriteSettingsFile();
+        return overwriteRwSetting(name, {}, action);
     }
     void requestMempoolTransactions(Notifications& notifications) override
     {
@@ -861,6 +862,52 @@ public:
     ChainstateManager& chainman() { return *Assert(m_node.chainman); }
     ValidationSignals& validation_signals() { return *Assert(m_node.validation_signals); }
     NodeContext& m_node;
+};
+
+class BlockTemplateImpl : public BlockTemplate
+{
+public:
+    explicit BlockTemplateImpl(std::unique_ptr<CBlockTemplate> block_template) : m_block_template(std::move(block_template))
+    {
+        assert(m_block_template);
+    }
+
+    CBlockHeader getBlockHeader() override
+    {
+        return m_block_template->block;
+    }
+
+    CBlock getBlock() override
+    {
+        return m_block_template->block;
+    }
+
+    std::vector<CAmount> getTxFees() override
+    {
+        return m_block_template->vTxFees;
+    }
+
+    std::vector<int64_t> getTxSigops() override
+    {
+        return m_block_template->vTxSigOpsCost;
+    }
+
+    CTransactionRef getCoinbaseTx() override
+    {
+        return m_block_template->block.vtx[0];
+    }
+
+    std::vector<unsigned char> getCoinbaseCommitment() override
+    {
+        return m_block_template->vchCoinbaseCommitment;
+    }
+
+    int getWitnessCommitmentIndex() override
+    {
+        return GetWitnessCommitmentIndex(m_block_template->block);
+    }
+
+    const std::unique_ptr<CBlockTemplate> m_block_template;
 };
 
 class MinerImpl : public Mining
@@ -909,11 +956,11 @@ public:
         return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, check_merkle_root);
     }
 
-    std::unique_ptr<CBlockTemplate> createNewBlock(const CScript& script_pub_key, const BlockCreateOptions& options) override
+    std::unique_ptr<BlockTemplate> createNewBlock(const CScript& script_pub_key, const BlockCreateOptions& options) override
     {
         BlockAssembler::Options assemble_options{options};
         ApplyArgsManOptions(*Assert(m_node.args), assemble_options);
-        return BlockAssembler{chainman().ActiveChainstate(), context()->mempool.get(), assemble_options}.CreateNewBlock(script_pub_key);
+        return std::make_unique<BlockTemplateImpl>(BlockAssembler{chainman().ActiveChainstate(), context()->mempool.get(), assemble_options}.CreateNewBlock(script_pub_key));
     }
 
     NodeContext* context() override { return &m_node; }
