@@ -73,8 +73,8 @@ public:
   ~CCacheNameIterator ();
 
   /* Implement iterator methods.  */
-  void seek (const valtype& name);
-  bool next (valtype& name, CNameData& data);
+  void seek (const valtype& name) override;
+  bool next (valtype& name, CNameData& data) override;
 
 };
 

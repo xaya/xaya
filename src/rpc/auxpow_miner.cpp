@@ -75,15 +75,17 @@ AuxpowMiner::getCurrentBlock (ChainstateManager& chainman, Mining& miner,
           {
             /* Clear old blocks since they're obsolete now.  */
             blocks.clear ();
-            templates.clear ();
+            mapBlocks.clear ();
             curBlocks.clear ();
           }
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
-        std::unique_ptr<node::CBlockTemplate> newBlock
+        std::unique_ptr<interfaces::BlockTemplate> newTemplate
             = miner.createNewBlock (scriptPubKey);
-        if (newBlock == nullptr)
+        if (newTemplate == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
+        blocks.push_back (std::make_unique<CBlock> (newTemplate->getBlock ()));
+        CBlock& newBlock = *blocks.back ();
 
         /* Update state only when CreateNewBlock succeeded.  */
         txUpdatedLast = mempool.GetTransactionsUpdated ();
@@ -91,14 +93,13 @@ AuxpowMiner::getCurrentBlock (ChainstateManager& chainman, Mining& miner,
         startTime = GetTime ();
 
         /* Finalise it by setting the version and building the merkle root.  */
-        newBlock->block.hashMerkleRoot = BlockMerkleRoot (newBlock->block);
-        newBlock->block.SetAuxpowVersion (true);
+        newBlock.hashMerkleRoot = BlockMerkleRoot (newBlock);
+        newBlock.SetAuxpowVersion (true);
 
         /* Save in our map of constructed blocks.  */
-        pblockCur = &newBlock->block;
+        pblockCur = &newBlock;
         curBlocks.emplace(scriptID, pblockCur);
-        blocks[pblockCur->GetHash ()] = pblockCur;
-        templates.push_back (std::move (newBlock));
+        mapBlocks[pblockCur->GetHash ()] = pblockCur;
       }
   }
 
@@ -128,8 +129,8 @@ AuxpowMiner::lookupSavedBlock (const std::string& hashHex) const
   if (!hash)
     throw JSONRPCError (RPC_INVALID_PARAMETER, "invalid block hash hex");
 
-  const auto iter = blocks.find (*hash);
-  if (iter == blocks.end ())
+  const auto iter = mapBlocks.find (*hash);
+  if (iter == mapBlocks.end ())
     throw JSONRPCError (RPC_INVALID_PARAMETER, "block hash unknown");
 
   return iter->second;

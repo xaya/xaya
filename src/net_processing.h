@@ -31,6 +31,19 @@ static const bool DEFAULT_PEERBLOOMFILTERS = false;
 static const bool DEFAULT_PEERBLOCKFILTERS = false;
 /** Maximum number of outstanding CMPCTBLOCK requests for the same block. */
 static const unsigned int MAX_CMPCTBLOCKS_INFLIGHT_PER_BLOCK = 3;
+/** Number of headers sent in one getheaders result. We rely on the assumption that if a peer sends
+ *  less than this number, we reached its tip. Changing this value is a protocol upgrade. */
+static const unsigned int MAX_HEADERS_RESULTS = 2000;
+/** Maximum size of a "headers" message.  This is enforced starting with
+ *  SIZE_HEADERS_LIMIT_VERSION peers and prevents overloading if we have
+ *  very large headers (due to auxpow).
+ */
+static const unsigned int MAX_HEADERS_SIZE = (6 << 20); // 6 MiB
+/** Size of a headers message that is the threshold for assuming that the
+ *  peer has more headers (even if we have less than MAX_HEADERS_RESULTS).
+ *  This is used starting with SIZE_HEADERS_LIMIT_VERSION peers.
+ */
+static const unsigned int THRESHOLD_HEADERS_SIZE = (4 << 20); // 4 MiB
 
 struct CNodeStateStats {
     int nSyncHeight = -1;
@@ -71,6 +84,14 @@ public:
         //! Whether or not the internal RNG behaves deterministically (this is
         //! a test-only option).
         bool deterministic_rng{false};
+        //! Number of headers sent in one getheaders message result (this is
+        //! a test-only option).
+        uint32_t max_headers_result{MAX_HEADERS_RESULTS};
+        //! Maximum size of a headers message (this is a test-only option).
+        uint32_t max_headers_size{MAX_HEADERS_SIZE};
+        //! Size of a headers message as threshold for assuming that
+        //! the peer has more (this is a test-only option).
+        uint32_t threshold_headers_size{THRESHOLD_HEADERS_SIZE};
     };
 
     static std::unique_ptr<PeerManager> make(CConnman& connman, AddrMan& addrman,
