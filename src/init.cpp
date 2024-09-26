@@ -501,7 +501,7 @@ void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc)
     argsman.AddArg("-conf=<file>", strprintf("Specify path to read-only configuration file. Relative paths will be prefixed by datadir location (only useable from command line, not configuration file) (default: %s)", BITCOIN_CONF_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-datadir=<dir>", "Specify data directory", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-dbbatchsize", strprintf("Maximum database write batch size in bytes (default: %u)", nDefaultDbBatchSize), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::OPTIONS);
-    argsman.AddArg("-dbcache=<n>", strprintf("Maximum database cache size <n> MiB (%d to %d, default: %d). In addition, unused mempool memory is shared for this cache (see -maxmempool).", nMinDbCache, nMaxDbCache, nDefaultDbCache), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    argsman.AddArg("-dbcache=<n>", strprintf("Maximum database cache size <n> MiB (minimum %d, default: %d). Make sure you have enough RAM. In addition, unused memory allocated to the mempool is shared with this cache (see -maxmempool).", nMinDbCache, nDefaultDbCache), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-includeconf=<file>", "Specify additional configuration file, relative to the -datadir path (only useable from configuration file, not command line)", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-allowignoredconf", strprintf("For backwards compatibility, treat an unused %s file in the datadir as a warning, not an error.", BITCOIN_CONF_FILENAME), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-loadblock=<file>", "Imports blocks from external file on startup", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
@@ -1173,6 +1173,53 @@ bool AppInitInterfaces(NodeContext& node)
     return true;
 }
 
+bool CheckHostPortOptions(const ArgsManager& args) {
+    for (const std::string port_option : {
+        "-port",
+        "-rpcport",
+    }) {
+        if (args.IsArgSet(port_option)) {
+            const std::string port = args.GetArg(port_option, "");
+            uint16_t n;
+            if (!ParseUInt16(port, &n) || n == 0) {
+                return InitError(InvalidPortErrMsg(port_option, port));
+            }
+        }
+    }
+
+    for ([[maybe_unused]] const auto& [arg, unix] : std::vector<std::pair<std::string, bool>>{
+        // arg name            UNIX socket support
+        {"-i2psam",                 false},
+        {"-onion",                  true},
+        {"-proxy",                  true},
+        {"-rpcbind",                false},
+        {"-torcontrol",             false},
+        {"-whitebind",              false},
+        {"-zmqpubhashblock",        true},
+        {"-zmqpubhashtx",           true},
+        {"-zmqpubrawblock",         true},
+        {"-zmqpubrawtx",            true},
+        {"-zmqpubsequence",         true},
+    }) {
+        for (const std::string& socket_addr : args.GetArgs(arg)) {
+            std::string host_out;
+            uint16_t port_out{0};
+            if (!SplitHostPort(socket_addr, port_out, host_out)) {
+#ifdef HAVE_SOCKADDR_UN
+                // Allow unix domain sockets for some options e.g. unix:/some/file/path
+                if (!unix || !socket_addr.starts_with(ADDR_PREFIX_UNIX)) {
+                    return InitError(InvalidPortErrMsg(arg, socket_addr));
+                }
+#else
+                return InitError(InvalidPortErrMsg(arg, socket_addr));
+#endif
+            }
+        }
+    }
+
+    return true;
+}
+
 bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 {
     const ArgsManager& args = *Assert(node.args);
@@ -1265,6 +1312,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
        fallback only.  */
     RegisterNameRPCCommands(tableRPC);
 
+    // Check port numbers
+    if (!CheckHostPortOptions(args)) return false;
+
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections
      * that the server is there and will be ready later).  Warmup mode will
@@ -1353,50 +1403,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         CBlockPolicyEstimator* fee_estimator = node.fee_estimator.get();
         scheduler.scheduleEvery([fee_estimator] { fee_estimator->FlushFeeEstimates(); }, FEE_FLUSH_INTERVAL);
         validation_signals.RegisterValidationInterface(fee_estimator);
-    }
-
-    // Check port numbers
-    for (const std::string port_option : {
-        "-port",
-        "-rpcport",
-    }) {
-        if (args.IsArgSet(port_option)) {
-            const std::string port = args.GetArg(port_option, "");
-            uint16_t n;
-            if (!ParseUInt16(port, &n) || n == 0) {
-                return InitError(InvalidPortErrMsg(port_option, port));
-            }
-        }
-    }
-
-    for ([[maybe_unused]] const auto& [arg, unix] : std::vector<std::pair<std::string, bool>>{
-        // arg name            UNIX socket support
-        {"-i2psam",                 false},
-        {"-onion",                  true},
-        {"-proxy",                  true},
-        {"-rpcbind",                false},
-        {"-torcontrol",             false},
-        {"-whitebind",              false},
-        {"-zmqpubhashblock",        true},
-        {"-zmqpubhashtx",           true},
-        {"-zmqpubrawblock",         true},
-        {"-zmqpubrawtx",            true},
-        {"-zmqpubsequence",         true},
-    }) {
-        for (const std::string& socket_addr : args.GetArgs(arg)) {
-            std::string host_out;
-            uint16_t port_out{0};
-            if (!SplitHostPort(socket_addr, port_out, host_out)) {
-#ifdef HAVE_SOCKADDR_UN
-                // Allow unix domain sockets for some options e.g. unix:/some/file/path
-                if (!unix || socket_addr.find(ADDR_PREFIX_UNIX) != 0) {
-                    return InitError(InvalidPortErrMsg(arg, socket_addr));
-                }
-#else
-                return InitError(InvalidPortErrMsg(arg, socket_addr));
-#endif
-            }
-        }
     }
 
     for (const std::string& socket_addr : args.GetArgs("-bind")) {

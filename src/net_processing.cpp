@@ -113,25 +113,6 @@ static const int MAX_BLOCKS_IN_TRANSIT_PER_PEER = 16;
 static constexpr auto BLOCK_STALLING_TIMEOUT_DEFAULT{2s};
 /** Maximum timeout for stalling block download. */
 static constexpr auto BLOCK_STALLING_TIMEOUT_MAX{64s};
-/** Number of headers sent in one getheaders result. We rely on the assumption that if a peer sends
- *  less than this number, we reached its tip. Changing this value is a protocol upgrade.
- *
- *  With a protocol upgrade, we now enforce an additional restriction on the
- *  total size of a "headers" message (see below).  The absolute limit
- *  on the number of headers still applies as well, so that we do not get
- *  overloaded both with small and large headers.
- */
-static const unsigned int MAX_HEADERS_RESULTS = 2000;
-/** Maximum size of a "headers" message.  This is enforced starting with
- *  SIZE_HEADERS_LIMIT_VERSION peers and prevents overloading if we have
- *  very large headers (due to auxpow).
- */
-static const unsigned int MAX_HEADERS_SIZE = (6 << 20); // 6 MiB
-/** Size of a headers message that is the threshold for assuming that the
- *  peer has more headers (even if we have less than MAX_HEADERS_RESULTS).
- *  This is used starting with SIZE_HEADERS_LIMIT_VERSION peers.
- */
-static const unsigned int THRESHOLD_HEADERS_SIZE = (4 << 20); // 4 MiB
 /** Maximum depth of blocks we're willing to serve as compact blocks to peers
  *  when requested. For older blocks, a regular BLOCK response will be sent. */
 static const int MAX_CMPCTBLOCK_DEPTH = 5;
@@ -777,6 +758,10 @@ private:
 
     /** Send `feefilter` message. */
     void MaybeSendFeefilter(CNode& node, Peer& peer, std::chrono::microseconds current_time) EXCLUSIVE_LOCKS_REQUIRED(g_msgproc_mutex);
+
+    /** Returns true if the list of headers is to be considered "max" (i.e.
+     *  there may be more), either by number of elements or size.  */
+    bool IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& headers) const;
 
     FastRandomContext m_rng GUARDED_BY(NetEventsInterface::g_msgproc_mutex);
 
@@ -2793,14 +2778,9 @@ bool PeerManagerImpl::CheckHeadersAreContinuous(const std::vector<CBlockHeader>&
     return true;
 }
 
-namespace
+bool PeerManagerImpl::IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& headers) const
 {
-
-/** Returns true if the list of headers is to be considered "max" (i.e.
- *  there may be more), either by number of elements or size.  */
-bool IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& headers)
-{
-    if (headers.size() == MAX_HEADERS_RESULTS)
+    if (headers.size() == m_opts.max_headers_result)
         return true;
 
     if (pfrom.nVersion < SIZE_HEADERS_LIMIT_VERSION)
@@ -2811,10 +2791,8 @@ bool IsHeadersListMax(const CNode& pfrom, const std::vector<CBlockHeader>& heade
         nSize += GetSerializeSize(header);
     }
 
-    return nSize >= THRESHOLD_HEADERS_SIZE;
+    return nSize >= m_opts.threshold_headers_size;
 }
-
-} // anonymous namespace
 
 bool PeerManagerImpl::IsContinuationOfLowWorkHeadersSync(Peer& peer, CNode& pfrom, std::vector<CBlockHeader>& headers)
 {
@@ -2913,7 +2891,7 @@ bool PeerManagerImpl::TryLowWorkHeadersSync(Peer& peer, CNode& pfrom, const CBlo
         // Only try to sync with this peer if their headers message was full;
         // otherwise they don't have more headers after this so no point in
         // trying to sync their too-little-work chain.
-        if (headers.size() == MAX_HEADERS_RESULTS) {
+        if (headers.size() == m_opts.max_headers_result) {
             // Note: we could advance to the last header in this set that is
             // known to us, rather than starting at the first header (which we
             // may already have); however this is unlikely to matter much since
@@ -3130,7 +3108,7 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
     for (const auto& header : headers) {
         nSize += GetSerializeSize(header);
         if (pfrom.nVersion >= SIZE_HEADERS_LIMIT_VERSION
-              && nSize > MAX_HEADERS_SIZE) {
+              && nSize > m_opts.max_headers_size) {
             LOCK(cs_main);
             Misbehaving(peer, strprintf("headers message size = %u", nSize));
             return;
@@ -3244,7 +3222,7 @@ void PeerManagerImpl::ProcessHeadersMessage(CNode& pfrom, Peer& peer,
         }
     }
 
-    UpdatePeerStateForReceivedHeaders(pfrom, peer, *pindexLast, received_new_header, nCount == MAX_HEADERS_RESULTS);
+    UpdatePeerStateForReceivedHeaders(pfrom, peer, *pindexLast, received_new_header, nCount == m_opts.max_headers_result);
 
     // Consider immediately downloading blocks.
     HeadersDirectFetchBlocks(pfrom, peer, *pindexLast);
@@ -4581,11 +4559,11 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             ++nCount;
             nSize += GetSerializeSize(header);
             vHeaders.emplace_back(header);
-            if (nCount >= MAX_HEADERS_RESULTS
+            if (nCount >= m_opts.max_headers_result
                   || pindex->GetBlockHash() == hashStop)
                 break;
             if (pfrom.nVersion >= SIZE_HEADERS_LIMIT_VERSION
-                  && nSize >= THRESHOLD_HEADERS_SIZE)
+                  && nSize >= m_opts.threshold_headers_size)
                 break;
         }
 
@@ -4595,7 +4573,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
            should be small enough in comparison to the hard max size.
            Do it nevertheless to be sure.  */
         if (pfrom.nVersion >= SIZE_HEADERS_LIMIT_VERSION
-              && nSize > MAX_HEADERS_SIZE)
+              && nSize > m_opts.max_headers_size)
             LogPrintf("ERROR: not pushing 'headers', too large\n");
         else
         {
@@ -5077,7 +5055,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
 
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
         unsigned int nCount = ReadCompactSize(vRecv);
-        if (nCount > MAX_HEADERS_RESULTS) {
+        if (nCount > m_opts.max_headers_result) {
             Misbehaving(*peer, strprintf("headers message size = %u", nCount));
             return;
         }

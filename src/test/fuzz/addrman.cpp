@@ -186,7 +186,7 @@ public:
             return false;
         }
 
-        auto IdsReferToSameAddress = [&](int id, int other_id) EXCLUSIVE_LOCKS_REQUIRED(m_impl->cs, other.m_impl->cs) {
+        auto IdsReferToSameAddress = [&](nid_type id, nid_type other_id) EXCLUSIVE_LOCKS_REQUIRED(m_impl->cs, other.m_impl->cs) {
             if (id == -1 && other_id == -1) {
                 return true;
             }
@@ -285,7 +285,15 @@ FUZZ_TARGET(addrman, .init = initialize_addrman)
     auto max_pct = fuzzed_data_provider.ConsumeIntegralInRange<size_t>(0, 4096);
     auto filtered = fuzzed_data_provider.ConsumeBool();
     (void)const_addr_man.GetAddr(max_addresses, max_pct, network, filtered);
-    (void)const_addr_man.Select(fuzzed_data_provider.ConsumeBool(), network);
+
+    std::unordered_set<Network> nets;
+    for (const auto& net : ALL_NETWORKS) {
+        if (fuzzed_data_provider.ConsumeBool()) {
+            nets.insert(net);
+        }
+    }
+    (void)const_addr_man.Select(fuzzed_data_provider.ConsumeBool(), nets);
+
     std::optional<bool> in_new;
     if (fuzzed_data_provider.ConsumeBool()) {
         in_new = fuzzed_data_provider.ConsumeBool();
