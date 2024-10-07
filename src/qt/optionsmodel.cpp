@@ -320,10 +320,15 @@ static ProxySetting ParseProxyString(const QString& proxy)
     if (proxy.isEmpty()) {
         return default_val;
     }
-    // contains IP at index 0 and port at index 1
-    QStringList ip_port = GUIUtil::SplitSkipEmptyParts(proxy, ":");
-    if (ip_port.size() == 2) {
-        return {true, ip_port.at(0), ip_port.at(1)};
+    uint16_t port{0};
+    std::string hostname;
+    if (SplitHostPort(proxy.toStdString(), port, hostname) && port != 0) {
+        // Valid and port within the valid range
+        // Check if the hostname contains a colon, indicating an IPv6 address
+        if (hostname.find(':') != std::string::npos) {
+            hostname = "[" + hostname + "]"; // Wrap IPv6 address in brackets
+        }
+        return {true, QString::fromStdString(hostname), QString::number(port)};
     } else { // Invalid: return default
         return default_val;
     }
@@ -414,11 +419,7 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return false;
 #endif // USE_UPNP
     case MapPortNatpmp:
-#ifdef USE_NATPMP
         return SettingToBool(setting(), DEFAULT_NATPMP);
-#else
-        return false;
-#endif // USE_NATPMP
     case MinimizeOnClose:
         return fMinimizeOnClose;
 
