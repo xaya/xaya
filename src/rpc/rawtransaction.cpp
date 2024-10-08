@@ -336,15 +336,7 @@ static RPCHelpMan getrawtransaction()
     uint256 hash = ParseHashV(request.params[0], "parameter 1");
     const CBlockIndex* blockindex = nullptr;
 
-    // Accept either a bool (true) or a num (>=0) to indicate verbosity.
-    int verbosity{0};
-    if (!request.params[1].isNull()) {
-        if (request.params[1].isBool()) {
-            verbosity = request.params[1].get_bool();
-        } else {
-            verbosity = request.params[1].getInt<int>();
-        }
-    }
+    int verbosity{ParseVerbosity(request.params[1], /*default_verbosity=*/0)};
 
     if (!request.params[2].isNull()) {
         LOCK(cs_main);
