@@ -90,6 +90,7 @@ target_link_libraries(xayakernel
     bitcoin_crypto
     leveldb
     secp256k1
+    $<TARGET_NAME_IF_EXISTS:USDT::headers>
   PUBLIC
     Boost::headers
 )

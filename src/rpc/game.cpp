@@ -4,10 +4,11 @@
 
 #include <rpc/game.h>
 
+#include <bitcoin-build-config.h>
+
 #include <chain.h>
 #include <chainparams.h>
 #include <common/args.h>
-#include <config/bitcoin-config.h>
 #include <logging.h>
 #include <node/blockstorage.h>
 #include <random.h>
