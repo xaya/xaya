@@ -306,11 +306,8 @@ private:
 class CCoinsView
 {
 public:
-    /** Retrieve the Coin (unspent transaction output) for a given outpoint.
-     *  Returns true only when an unspent coin was found, which is returned in coin.
-     *  When false is returned, coin's value is unspecified.
-     */
-    virtual bool GetCoin(const COutPoint &outpoint, Coin &coin) const;
+    //! Retrieve the Coin (unspent transaction output) for a given outpoint.
+    virtual std::optional<Coin> GetCoin(const COutPoint& outpoint) const;
 
     //! Just check whether a given outpoint is unspent.
     virtual bool HaveCoin(const COutPoint &outpoint) const;
@@ -359,7 +356,7 @@ protected:
 
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
-    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
@@ -407,7 +404,7 @@ public:
     CCoinsViewCache(const CCoinsViewCache &) = delete;
 
     // Standard CCoinsView methods
-    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
@@ -544,7 +541,7 @@ public:
         m_err_callbacks.emplace_back(std::move(f));
     }
 
-    bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
 
 private:

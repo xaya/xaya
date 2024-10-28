@@ -15,12 +15,22 @@ if [ -z "$DANGER_RUN_CI_ON_HOST" ]; then
   python3 -c 'import os; [print(f"{key}={value}") for key, value in os.environ.items() if "\n" not in value and "HOME" != key and "PATH" != key and "USER" != key]' | tee "/tmp/env-$USER-$CONTAINER_NAME"
   # System-dependent env vars must be kept as is. So read them from the container.
   docker run --rm "${CI_IMAGE_NAME_TAG}" bash -c "env | grep --extended-regexp '^(HOME|PATH|USER)='" | tee --append "/tmp/env-$USER-$CONTAINER_NAME"
+
+  # Env vars during the build can not be changed. For example, a modified
+  # $MAKEJOBS is ignored in the build process. Use --cpuset-cpus as an
+  # approximation to respect $MAKEJOBS somewhat, if cpuset is available.
+  MAYBE_CPUSET=""
+  if [ "$HAVE_CGROUP_CPUSET" ]; then
+    MAYBE_CPUSET="--cpuset-cpus=$( python3 -c "import random;P=$( nproc );M=min(P,int('$MAKEJOBS'.lstrip('-j')));print(','.join(map(str,sorted(random.sample(range(P),M)))))" )"
+  fi
   echo "Creating $CI_IMAGE_NAME_TAG container to run in"
 
+  # shellcheck disable=SC2086
   DOCKER_BUILDKIT=1 docker build \
       --file "${BASE_READ_ONLY_DIR}/ci/test_imagefile" \
       --build-arg "CI_IMAGE_NAME_TAG=${CI_IMAGE_NAME_TAG}" \
       --build-arg "FILE_ENV=${FILE_ENV}" \
+      $MAYBE_CPUSET \
       --label="${CI_IMAGE_LABEL}" \
       --tag="${CONTAINER_NAME}" \
       "${BASE_READ_ONLY_DIR}"
@@ -49,11 +59,16 @@ if [ -z "$DANGER_RUN_CI_ON_HOST" ]; then
   fi
 
   if [ "$DANGER_CI_ON_HOST_CCACHE_FOLDER" ]; then
+   # Temporary exclusion for https://github.com/bitcoin/bitcoin/issues/31108
+   # to allow CI configs and envs generated in the past to work for a bit longer.
+   # Can be removed in March 2025.
+   if [ "${CCACHE_DIR}" != "/tmp/ccache_dir" ]; then
     if [ ! -d "${CCACHE_DIR}" ]; then
       echo "Error: Directory '${CCACHE_DIR}' must be created in advance."
       exit 1
     fi
     CI_CCACHE_MOUNT="type=bind,src=${CCACHE_DIR},dst=${CCACHE_DIR}"
+   fi # End temporary exclusion
   fi
 
   docker network create --ipv6 --subnet 1111:1111::/112 ci-ip6net || true

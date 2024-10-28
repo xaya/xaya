@@ -149,13 +149,13 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
   for (unsigned i = 0; i < tx.vin.size (); ++i)
     {
       const COutPoint& prevout = tx.vin[i].prevout;
-      Coin coin;
-      if (!view.GetCoin (prevout, coin))
+      const auto coin = view.GetCoin (prevout);
+      if (!coin)
         return state.Invalid (TxValidationResult::TX_MISSING_INPUTS,
                               "bad-txns-inputs-missingorspent",
                               "Failed to fetch name input coin");
 
-      const CNameScript op(coin.out.scriptPubKey);
+      const CNameScript op(coin->out.scriptPubKey);
       if (op.isNameOp ())
         {
           if (nameIn != -1)
@@ -164,7 +164,7 @@ CheckNameTransaction (const CTransaction& tx, unsigned nHeight,
                                   "Multiple name inputs");
           nameIn = i;
           nameOpIn = op;
-          coinIn = coin;
+          coinIn = *coin;
         }
     }
 
