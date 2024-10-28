@@ -875,45 +875,49 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
   BOOST_CHECK (view.GetNamesForHeight (100010, setExpired));
   BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name2);
 
-  Coin coin1, coin2;
-  BOOST_CHECK (view.GetCoin (coinId1, coin1));
-  BOOST_CHECK (view.GetCoin (coinId2, coin2));
+  const auto coin1 = view.GetCoin (coinId1);
+  const auto coin2 = view.GetCoin (coinId2);
+  BOOST_CHECK (coin1);
+  BOOST_CHECK (coin2);
 
   CBlockUndo undo1, undo2;
-  Coin coin;
 
   /* None of the two names should be expired.  */
   BOOST_CHECK (ExpireNames (135999, view, undo1, setExpired));
   BOOST_CHECK (undo1.vexpired.empty ());
   BOOST_CHECK (setExpired.empty ());
-  BOOST_CHECK (view.GetCoin (coinId1, coin));
-  BOOST_CHECK (coin == coin1);
-  BOOST_CHECK (view.GetCoin (coinId2, coin));
-  BOOST_CHECK (coin == coin2);
+  auto coin = view.GetCoin (coinId1);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin1);
+  coin = view.GetCoin (coinId2);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin2);
 
   /* The first name expires.  */
   BOOST_CHECK (ExpireNames (136000, view, undo1, setExpired));
   BOOST_CHECK (undo1.vexpired.size () == 1);
   BOOST_CHECK (undo1.vexpired[0] == coin1);
   BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name1);
-  BOOST_CHECK (!view.GetCoin (coinId1, coin));
-  BOOST_CHECK (view.GetCoin (coinId2, coin));
-  BOOST_CHECK (coin == coin2);
+  BOOST_CHECK (!view.GetCoin (coinId1));
+  coin = view.GetCoin (coinId2);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin2);
 
   /* Also the second name expires.  */
   BOOST_CHECK (ExpireNames (136010, view, undo2, setExpired));
   BOOST_CHECK (undo2.vexpired.size () == 1);
   BOOST_CHECK (undo2.vexpired[0] == coin2);
   BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name2);
-  BOOST_CHECK (!view.GetCoin (coinId1, coin));
-  BOOST_CHECK (!view.GetCoin (coinId2, coin));
+  BOOST_CHECK (!view.GetCoin (coinId1));
+  BOOST_CHECK (!view.GetCoin (coinId2));
 
   /* Undo the second expiration.  */
   BOOST_CHECK (UnexpireNames (136010, undo2, view, setExpired));
   BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name2);
-  BOOST_CHECK (!view.GetCoin (coinId1, coin));
-  BOOST_CHECK (view.GetCoin (coinId2, coin));
-  BOOST_CHECK (coin == coin2);
+  BOOST_CHECK (!view.GetCoin (coinId1));
+  coin = view.GetCoin (coinId2);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin2);
 
   /* Undoing at the wrong height should fail.  */
   BOOST_CHECK (!UnexpireNames (136001, undo1, view, setExpired));
@@ -922,10 +926,12 @@ BOOST_AUTO_TEST_CASE (name_expire_utxo)
   /* Undo the first expiration.  */
   BOOST_CHECK (UnexpireNames (136000, undo1, view, setExpired));
   BOOST_CHECK (setExpired.size () == 1 && *setExpired.begin () == name1);
-  BOOST_CHECK (view.GetCoin (coinId1, coin));
-  BOOST_CHECK (coin == coin1);
-  BOOST_CHECK (view.GetCoin (coinId2, coin));
-  BOOST_CHECK (coin == coin2);
+  coin = view.GetCoin (coinId1);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin1);
+  coin = view.GetCoin (coinId2);
+  BOOST_CHECK (coin);
+  BOOST_CHECK (*coin == *coin2);
 }
 
 /* ************************************************************************** */

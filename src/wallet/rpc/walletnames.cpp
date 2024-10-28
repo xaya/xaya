@@ -497,14 +497,14 @@ getNamePrevout (Chainstate& chainState, const Txid& txid,
     {
       const COutPoint outp(txid, i);
 
-      Coin coin;
-      if (!chainState.CoinsTip ().GetCoin (outp, coin))
+      const auto coin = chainState.CoinsTip ().GetCoin (outp);
+      if (!coin)
         continue;
 
-      if (!coin.out.IsNull ()
-          && CNameScript::isNameScript (coin.out.scriptPubKey))
+      if (!coin->out.IsNull ()
+          && CNameScript::isNameScript (coin->out.scriptPubKey))
         {
-          txOut = coin.out;
+          txOut = coin->out;
           txIn = CTxIn (outp);
           return true;
         }

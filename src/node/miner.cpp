@@ -253,14 +253,14 @@ BlockAssembler::TxAllowedForNamecoin (const CTransaction& tx) const
       const auto& coinsTip = m_chainstate.CoinsTip ();
       for (const auto& txIn : tx.vin)
         {
-          Coin coin;
-          if (!coinsTip.GetCoin (txIn.prevout, coin))
+          const auto coin = coinsTip.GetCoin (txIn.prevout);
+          if (!coin)
             continue;
 
-          const CNameScript op(coin.out.scriptPubKey);
+          const CNameScript op(coin->out.scriptPubKey);
           if (op.isNameOp () && op.getNameOp () == OP_NAME_NEW)
             {
-              const int minHeight = coin.nHeight + MIN_FIRSTUPDATE_DEPTH;
+              const int minHeight = coin->nHeight + MIN_FIRSTUPDATE_DEPTH;
               if (minHeight > nHeight)
                 return false;
               nameNewFound = true;
