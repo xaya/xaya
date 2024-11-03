@@ -355,7 +355,6 @@ public:
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
         vSeeds.emplace_back("dnsseed.test.namecoin.webbtc.com."); // Marius Hanne
-        vSeeds.emplace_back("ncts.roanapur.info."); // Yanmaani
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
