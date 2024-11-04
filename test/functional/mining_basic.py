@@ -124,6 +124,7 @@ class MiningTest(BitcoinTestFramework):
     def test_timewarp(self):
         self.log.info("Test timewarp attack mitigation (BIP94)")
         node = self.nodes[0]
+        self.restart_node(0, extra_args=['-test=bip94'])
 
         self.log.info("Mine until the last block of the retarget period")
         blockchain_info = self.nodes[0].getblockchaininfo()
