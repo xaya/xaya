@@ -16,13 +16,13 @@ BEGIN
         BEGIN
             VALUE "CompanyName",        "Namecoin"
             VALUE "FileDescription",    "namecoind (Namecoin node with a JSON-RPC server)"
-            VALUE "FileVersion",        PACKAGE_VERSION
+            VALUE "FileVersion",        CLIENT_VERSION_STRING
             VALUE "InternalName",       "namecoind"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
             VALUE "OriginalFilename",   "namecoind.exe"
             VALUE "ProductName",        "namecoind"
-            VALUE "ProductVersion",     PACKAGE_VERSION
+            VALUE "ProductVersion",     CLIENT_VERSION_STRING
         END
     END
 
