@@ -9,6 +9,7 @@
 #include <chain.h>
 #include <powdata.h>
 #include <uint256.h>
+#include <util/check.h>
 
 unsigned int
 GetNextWorkRequired (const PowAlgo algo, const CBlockIndex* pindexLast,
