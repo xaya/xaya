@@ -126,8 +126,11 @@ static int AppInitRawTx(int argc, char* argv[])
             strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n"
-                "Usage:  xaya-tx [options] <hex-tx> [commands]  Update hex-encoded transaction\n"
-                "or:     xaya-tx [options] -create [commands]   Create hex-encoded transaction\n"
+                "The xaya-tx tool is used for creating and modifying transactions.\n\n"
+                "xaya-tx can be used with \"<hex-tx> [commands]\" to update a hex-encoded transaction, or with \"-create [commands]\" to create a hex-encoded transaction.\n"
+                "\n"
+                "Usage: xaya-tx [options] <hex-tx> [commands]\n"
+                "or:    xaya-tx [options] -create [commands]\n"
                 "\n";
             strUsage += gArgs.GetHelpMessage();
         }
