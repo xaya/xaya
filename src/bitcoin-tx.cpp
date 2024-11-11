@@ -130,8 +130,11 @@ static int AppInitRawTx(int argc, char* argv[])
             strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n"
-                "Usage:  namecoin-tx [options] <hex-tx> [commands]  Update hex-encoded transaction\n"
-                "or:     namecoin-tx [options] -create [commands]   Create hex-encoded transaction\n"
+                "The namecoin-tx tool is used for creating and modifying transactions.\n\n"
+                "namecoin-tx can be used with \"<hex-tx> [commands]\" to update a hex-encoded transaction, or with \"-create [commands]\" to create a hex-encoded transaction.\n"
+                "\n"
+                "Usage: namecoin-tx [options] <hex-tx> [commands]\n"
+                "or:    namecoin-tx [options] -create [commands]\n"
                 "\n";
             strUsage += gArgs.GetHelpMessage();
         }
