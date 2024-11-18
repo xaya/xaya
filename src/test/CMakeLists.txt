@@ -135,6 +135,7 @@ add_executable(test_namecoin
   util_string_tests.cpp
   util_tests.cpp
   util_threadnames_tests.cpp
+  util_trace_tests.cpp
   validation_block_tests.cpp
   validation_chainstate_tests.cpp
   validation_chainstatemanager_tests.cpp
@@ -158,7 +159,7 @@ target_link_libraries(test_namecoin
   minisketch
   secp256k1
   Boost::headers
-  $<TARGET_NAME_IF_EXISTS:libevent::libevent>
+  libevent::extra
 )
 
 if(ENABLE_WALLET)
