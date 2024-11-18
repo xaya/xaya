@@ -57,6 +57,8 @@
 
 using namespace util::hex_literals;
 
+TRACEPOINT_SEMAPHORE(net, inbound_message);
+
 /** Headers download timeout.
  *  Timeout = base + per_header * (expected number of headers) */
 static constexpr auto HEADERS_DOWNLOAD_TIMEOUT_BASE = 15min;
@@ -1794,7 +1796,6 @@ void PeerManagerImpl::MaybePunishNodeForBlock(NodeId nodeid, const BlockValidati
     case BlockValidationResult::BLOCK_MISSING_PREV:
         if (peer) Misbehaving(*peer, message);
         return;
-    case BlockValidationResult::BLOCK_RECENT_CONSENSUS_CHANGE:
     case BlockValidationResult::BLOCK_TIME_FUTURE:
         break;
     }
@@ -1814,7 +1815,6 @@ void PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationStat
         if (peer) Misbehaving(*peer, "");
         return;
     // Conflicting (but not necessarily invalid) data or different policy:
-    case TxValidationResult::TX_RECENT_CONSENSUS_CHANGE:
     case TxValidationResult::TX_INPUTS_NOT_STANDARD:
     case TxValidationResult::TX_NOT_STANDARD:
     case TxValidationResult::TX_MISSING_INPUTS:
@@ -5031,7 +5031,7 @@ bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt
     CNetMessage& msg{poll_result->first};
     bool fMoreWork = poll_result->second;
 
-    TRACE6(net, inbound_message,
+    TRACEPOINT(net, inbound_message,
         pfrom->GetId(),
         pfrom->m_addr_name.c_str(),
         pfrom->ConnectionTypeAsString().c_str(),

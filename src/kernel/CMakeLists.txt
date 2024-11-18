@@ -37,6 +37,7 @@ add_library(xayaernel
   ../node/blockstorage.cpp
   ../node/chainstate.cpp
   ../node/utxo_snapshot.cpp
+  ../policy/ephemeral_policy.cpp
   ../policy/feerate.cpp
   ../policy/packages.cpp
   ../policy/policy.cpp
