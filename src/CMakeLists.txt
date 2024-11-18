@@ -254,6 +254,7 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   node/utxo_snapshot.cpp
   node/warnings.cpp
   noui.cpp
+  policy/ephemeral_policy.cpp
   policy/fees.cpp
   policy/fees_args.cpp
   policy/packages.cpp
@@ -293,13 +294,14 @@ target_link_libraries(bitcoin_node
     core_interface
     bitcoin_common
     bitcoin_util
+    $<TARGET_NAME_IF_EXISTS:bitcoin_zmq>
     leveldb
     minisketch
     univalue
     Boost::headers
-    $<TARGET_NAME_IF_EXISTS:libevent::libevent>
+    libevent::core
+    libevent::extra
     $<TARGET_NAME_IF_EXISTS:libevent::pthreads>
-    $<TARGET_NAME_IF_EXISTS:bitcoin_zmq>
     $<TARGET_NAME_IF_EXISTS:USDT::headers>
 )
 
@@ -369,7 +371,8 @@ if(BUILD_CLI)
     bitcoin_cli
     bitcoin_common
     bitcoin_util
-    $<TARGET_NAME_IF_EXISTS:libevent::libevent>
+    libevent::core
+    libevent::extra
   )
   list(APPEND installable_targets bitcoin-cli)
 endif()
