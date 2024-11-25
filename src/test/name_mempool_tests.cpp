@@ -156,8 +156,8 @@ BOOST_FIXTURE_TEST_CASE (pendingChainLength_lastNameOutput,
   const auto txReg = Tx (RegisterScript (ADDR, "reg", "x"));
   const auto txUpd = Tx (UpdateScript (ADDR, "upd", "y"));
 
-  mempool.addUnchecked (Entry (txReg));
-  mempool.addUnchecked (Entry (txUpd));
+  AddToMempool (mempool, Entry (txReg));
+  AddToMempool (mempool, Entry (txUpd));
 
   /* For testing chained name updates, we have to build a "real" chain of
      transactions with matching inputs and outputs.  */
@@ -167,14 +167,14 @@ BOOST_FIXTURE_TEST_CASE (pendingChainLength_lastNameOutput,
   mtx.vout.push_back (CTxOut (COIN, ADDR));
   mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
   const CTransaction chain1(mtx);
-  mempool.addUnchecked (Entry (chain1));
+  AddToMempool (mempool, Entry (chain1));
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, ADDR));
   mtx.vout.push_back (CTxOut (COIN, UpdateScript (ADDR, "chain", "y")));
   mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 0)));
   const CTransaction chain2(mtx);
-  mempool.addUnchecked (Entry (chain2));
+  AddToMempool (mempool, Entry (chain2));
 
   mtx.vout.clear ();
   mtx.vout.push_back (CTxOut (COIN, OTHER_ADDR));
@@ -182,12 +182,12 @@ BOOST_FIXTURE_TEST_CASE (pendingChainLength_lastNameOutput,
   mtx.vin.push_back (CTxIn (COutPoint (chain2.GetHash (), 0)));
   mtx.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 1)));
   const CTransaction chain3(mtx);
-  mempool.addUnchecked (Entry (chain3));
+  AddToMempool (mempool, Entry (chain3));
 
   CMutableTransaction mtxCurrency;
   mtxCurrency.vin.push_back (CTxIn (COutPoint (chain1.GetHash (), 2)));
   mtxCurrency.vin.push_back (CTxIn (COutPoint (chain3.GetHash (), 0)));
-  mempool.addUnchecked (Entry (CTransaction (mtxCurrency)));
+  AddToMempool (mempool, Entry (CTransaction (mtxCurrency)));
 
   BOOST_CHECK (mempool.lastNameOutput (Name ("reg"))
                   == COutPoint (txReg.GetHash (), 0));
@@ -211,7 +211,7 @@ BOOST_FIXTURE_TEST_CASE (name_register, NameMempoolTestSetup)
   BOOST_CHECK (e.isNameRegistration () && !e.isNameUpdate ());
   BOOST_CHECK (e.getName () == Name ("foo"));
 
-  mempool.addUnchecked (e);
+  AddToMempool (mempool, e);
   BOOST_CHECK (mempool.registersName (Name ("foo")));
   BOOST_CHECK (!mempool.updatesName (Name ("foo")));
   BOOST_CHECK (!mempool.checkNameOps (tx2));
@@ -234,9 +234,9 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
   BOOST_CHECK (!e1.isNameRegistration () && e1.isNameUpdate ());
   BOOST_CHECK (e1.getName () == Name ("foo"));
 
-  mempool.addUnchecked (e1);
-  mempool.addUnchecked (e2);
-  mempool.addUnchecked (e3);
+  AddToMempool (mempool, e1);
+  AddToMempool (mempool, e2);
+  AddToMempool (mempool, e3);
   BOOST_CHECK (!mempool.registersName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("foo")));
   BOOST_CHECK (mempool.updatesName (Name ("bar")));
@@ -256,11 +256,11 @@ BOOST_FIXTURE_TEST_CASE (name_update, NameMempoolTestSetup)
 
 BOOST_FIXTURE_TEST_CASE (mempool_sanity_check, NameMempoolTestSetup)
 {
-  mempool.addUnchecked (Entry (Tx (RegisterScript (ADDR, "reg", "x"))));
-  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "reg", "n"))));
+  AddToMempool (mempool, Entry (Tx (RegisterScript (ADDR, "reg", "x"))));
+  AddToMempool (mempool, Entry (Tx (UpdateScript (ADDR, "reg", "n"))));
 
-  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
-  mempool.addUnchecked (Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
+  AddToMempool (mempool, Entry (Tx (UpdateScript (ADDR, "upd", "x"))));
+  AddToMempool (mempool, Entry (Tx (UpdateScript (ADDR, "upd", "y"))));
 
   LOCK (cs_main);
   auto& chainState = m_node.chainman->ActiveChainstate ();
@@ -335,7 +335,7 @@ BOOST_FIXTURE_TEST_CASE (registration_conflicts, NameMempoolTestSetup)
   const auto tx2 = Tx (RegisterScript (ADDR, "foo", "b"));
   const auto e = Entry (tx1);
 
-  mempool.addUnchecked (e);
+  AddToMempool (mempool, e);
   BOOST_CHECK (mempool.registersName (Name ("foo")));
   BOOST_CHECK (!mempool.checkNameOps (tx2));
 
