@@ -277,6 +277,9 @@ CExtKey DecodeExtKey(const std::string& str)
             key.Decode(data.data() + prefix.size());
         }
     }
+    if (!data.empty()) {
+        memory_cleanse(data.data(), data.size());
+    }
     return key;
 }
 
