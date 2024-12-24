@@ -1807,7 +1807,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     {
         WAIT_LOCK(kernel_notifications.m_tip_block_mutex, lock);
         kernel_notifications.m_tip_block_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(kernel_notifications.m_tip_block_mutex) {
-            return !kernel_notifications.m_tip_block.IsNull() || ShutdownRequested(node);
+            return kernel_notifications.TipBlock() || ShutdownRequested(node);
         });
     }
 
@@ -1827,7 +1827,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         if (tip_info) {
             tip_info->block_height = chain_active_height;
             tip_info->block_time = best_block_time;
-            tip_info->verification_progress = GuessVerificationProgress(chainman.GetParams().TxData(), &tip);
+            tip_info->verification_progress = chainman.GuessVerificationProgress(&tip);
         }
         if (tip_info && chainman.m_best_header) {
             tip_info->header_height = chainman.m_best_header->nHeight;
