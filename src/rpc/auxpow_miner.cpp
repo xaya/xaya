@@ -80,8 +80,10 @@ AuxpowMiner::getCurrentBlock (ChainstateManager& chainman, Mining& miner,
           }
 
         /* Create new block with nonce = 0 and extraNonce = 1.  */
+        node::BlockCreateOptions opt;
+        opt.coinbase_output_script = scriptPubKey;
         std::unique_ptr<interfaces::BlockTemplate> newTemplate
-            = miner.createNewBlock (scriptPubKey);
+            = miner.createNewBlock (opt);
         if (newTemplate == nullptr)
           throw JSONRPCError (RPC_OUT_OF_MEMORY, "out of memory");
         blocks.push_back (std::make_unique<CBlock> (newTemplate->getBlock ()));
@@ -172,7 +174,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
 {
   const auto& node = EnsureAnyNodeContext (request);
   auxMiningCheck (node);
-  auto& mining = EnsureMining (node);
+  auto& chainman = EnsureChainman (node);
 
   std::shared_ptr<CBlock> shared_block;
   {
@@ -188,7 +190,7 @@ AuxpowMiner::submitAuxBlock (const JSONRPCRequest& request,
   shared_block->SetAuxpow (std::move (pow));
   assert (shared_block->GetHash ().GetHex () == hashHex);
 
-  return mining.processNewBlock (shared_block, nullptr);
+  return chainman.ProcessNewBlock (shared_block, true, true, nullptr);
 }
 
 AuxpowMiner&
