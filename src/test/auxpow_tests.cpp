@@ -193,7 +193,7 @@ CAuxpowBuilder::get (const CTransactionRef tx) const
   LOCK(cs_main);
 
   CAuxPowForTest res(tx);
-  res.vMerkleBranch = BlockMerkleBranch (parentBlock, 0);
+  res.vMerkleBranch = TransactionMerklePath (parentBlock, 0);
 
   res.vChainMerkleBranch = auxpowChainMerkleBranch;
   res.nChainIndex = auxpowChainIndex;
