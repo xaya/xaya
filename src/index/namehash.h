@@ -15,7 +15,7 @@
 static constexpr bool DEFAULT_NAMEHASHINDEX = false;
 
 /** Maximum size of the DB cache for the name-hash index.  */
-static constexpr int64_t MAX_NAMEHASH_CACHE = 1024;
+static constexpr size_t MAX_NAMEHASH_CACHE = 1024;
 
 /**
  * This keeps an index of SHA-256d hashes of names to the corresponding preimage

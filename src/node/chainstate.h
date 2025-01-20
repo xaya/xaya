@@ -14,9 +14,11 @@
 
 class CTxMemPool;
 
-namespace node {
-
+namespace kernel {
 struct CacheSizes;
+} // namespace kernel
+
+namespace node {
 
 struct ChainstateLoadOptions {
     CTxMemPool* mempool{nullptr};
@@ -70,7 +72,7 @@ using ChainstateLoadResult = std::tuple<ChainstateLoadStatus, bilingual_str>;
  *
  *  LoadChainstate returns a (status code, error string) tuple.
  */
-ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const kernel::CacheSizes& cache_sizes,
                                     const ChainstateLoadOptions& options);
 ChainstateLoadResult VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
 } // namespace node
