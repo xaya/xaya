@@ -4,6 +4,7 @@
 
 #include <bitcoin-build-config.h> // IWYU pragma: keep
 
+#include <chain.h>
 #include <clientversion.h>
 #include <common/args.h>
 #include <common/messages.h>
@@ -13,6 +14,7 @@
 #include <key_io.h>
 #include <node/types.h>
 #include <outputtype.h>
+#include <pow.h>
 #include <rpc/names.h>
 #include <rpc/util.h>
 #include <script/descriptor.h>
@@ -1424,4 +1426,10 @@ std::vector<RPCResult> ScriptPubKeyDoc() {
              {RPCResult::Type::STR, "type", "The type (one of: " + GetAllOutputTypes() + ")"},
              NameOpResult,
          };
+}
+
+uint256 GetTarget(const CBlockIndex& blockindex, const uint256 pow_limit)
+{
+    arith_uint256 target{*CHECK_NONFATAL(DeriveTarget(blockindex.nBits, pow_limit))};
+    return ArithToUint256(target);
 }
