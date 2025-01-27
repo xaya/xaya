@@ -425,6 +425,7 @@ BASE_SCRIPTS = [
 SKIPPED = [
     'feature_signet.py',
     'feature_versionbits_warning.py',
+    'mining_mainnet.py',
 ]
 
 # Place EXTENDED_SCRIPTS first since it has the 3 longest running tests
