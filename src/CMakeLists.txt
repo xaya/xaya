@@ -112,6 +112,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   auxpow.cpp
   base58.cpp
   bech32.cpp
+  chain.cpp
   chainparams.cpp
   chainparamsbase.cpp
   coins.cpp
@@ -148,6 +149,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   outputtype.cpp
   policy/feerate.cpp
   policy/policy.cpp
+  pow.cpp
   powdata.cpp
   protocol.cpp
   psbt.cpp
@@ -207,7 +209,6 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   bip324.cpp
   blockencodings.cpp
   blockfilter.cpp
-  chain.cpp
   consensus/tx_verify.cpp
   dbwrapper.cpp
   deploymentstatus.cpp
@@ -272,7 +273,6 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   policy/rbf.cpp
   policy/settings.cpp
   policy/truc_policy.cpp
-  pow.cpp
   rest.cpp
   rpc/auxpow_miner.cpp
   rpc/blockchain.cpp
@@ -397,6 +397,7 @@ if(BUILD_TX)
   target_link_libraries(xaya-tx
     core_interface
     bitcoin_common
+    bitcoin_node
     bitcoin_util
     univalue
   )
@@ -410,6 +411,7 @@ if(BUILD_UTIL)
   target_link_libraries(xaya-util
     core_interface
     bitcoin_common
+    bitcoin_node
     bitcoin_util
   )
   list(APPEND installable_targets xaya-util)

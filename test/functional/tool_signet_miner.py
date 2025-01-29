@@ -10,6 +10,7 @@ import sys
 import time
 
 from test_framework import powhash
+from test_framework.blocktools import DIFF_1_N_BITS
 from test_framework.key import ECKey
 from test_framework.script_util import key_to_p2wpkh_script
 from test_framework.test_framework import BitcoinTestFramework
@@ -57,7 +58,7 @@ class SignetMinerTest(BitcoinTestFramework):
                 'generate',
                 f'--address={node.getnewaddress()}',
                 f'--grind-cmd={self.options.bitcoinutil} grind',
-                '--nbits=1d00ffff',
+                f'--nbits={DIFF_1_N_BITS:08x}',
                 f'--set-block-time={int(time.time())}',
                 '--poolnum=99',
             ], check=True, stderr=subprocess.STDOUT)

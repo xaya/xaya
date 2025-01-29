@@ -113,7 +113,7 @@ SendUpdatesOneBlock (const std::set<std::string>& trackedGames,
                      const node::BlockManager& blockman)
 {
   CBlock blk;
-  if (!blockman.ReadBlockFromDisk (blk, *pindex))
+  if (!blockman.ReadBlock (blk, *pindex))
     {
       LogDebug (BCLog::GAME, "Reading block %s failed, ignoring\n",
                 pindex->GetBlockHash ().GetHex ());

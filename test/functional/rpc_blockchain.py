@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 The Bitcoin Core developers
+# Copyright (c) 2014-present The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test RPCs related to blockchainstate.
@@ -30,9 +30,13 @@ import textwrap
 from test_framework.blocktools import (
     MAX_FUTURE_BLOCK_TIME,
     TIME_GENESIS_BLOCK,
+    REGTEST_N_BITS,
+    REGTEST_TARGET,
     create_block,
     create_coinbase,
     create_tx_with_script,
+    nbits_str,
+    target_str,
 )
 from test_framework.messages import (
     CBlockHeader,

@@ -16,6 +16,10 @@ from test_framework.blocktools import (
     get_witness_script,
     NORMAL_GBT_REQUEST_PARAMS,
     TIME_GENESIS_BLOCK,
+    REGTEST_N_BITS,
+    REGTEST_TARGET,
+    nbits_str,
+    target_str,
 )
 from test_framework.messages import (
     BLOCK_HEADER_SIZE,
@@ -182,6 +186,9 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(mining_info['difficulty'], {
             'sha256d': Decimal('4.656542373906925E-10'),
             'neoscrypt': Decimal('4.656542373906925E-10'),
+        })
+        assert_equal(mining_info['next'], {
+            'height': 201,
         })
         assert_equal(mining_info['networkhashps']['neoscrypt'], Decimal('0.003333333333333334'))
         assert_equal(mining_info['networkhashps']['sha256d'], Decimal('0'))

@@ -164,6 +164,7 @@ RPCResult PowDataResult (const bool optional)
               {RPCResult::Type::BOOL, "mergemined", "Whether this block is merge mined"},
               {RPCResult::Type::STR_HEX, "bits", "The bits"},
               {RPCResult::Type::NUM, "difficulty", "The difficulty"},
+              {RPCResult::Type::STR_HEX, "target", "The difficulty target"},
               {RPCResult::Type::STR_HEX, "fakeheader", /* optional */ true, "Serialised fake header if not merge mined"},
               {RPCResult::Type::OBJ, "auxpow", /* optional */ true, "The auxpow object if merge mined",
                   {
@@ -204,13 +205,14 @@ namespace
 {
 
 UniValue
-PowDataToJSON (const PowData& pow, const bool verbose, Chainstate& active_chainstate)
+PowDataToJSON (const PowData& pow, const bool verbose, Chainstate& active_chainstate, const uint256 pow_limit)
 {
   UniValue result(UniValue::VOBJ);
   result.pushKV ("algo", PowAlgoToString (pow.getCoreAlgo ()));
   result.pushKV ("mergemined", pow.isMergeMined ());
   result.pushKV ("bits", strprintf ("%08x", pow.getBits ()));
   result.pushKV ("difficulty", GetDifficultyForBits (pow.getBits ()));
+  result.pushKV ("target", GetTarget(pow, pow_limit).GetHex());
 
   if (pow.isMergeMined ())
     result.pushKV ("auxpow", AuxpowToJSON (pow.getAuxpow (), verbose, active_chainstate));
@@ -237,7 +239,7 @@ UniValue blockheaderToJSON(const BlockManager& blockman, const CBlockIndex& tip,
     int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
     result.pushKV("confirmations", confirmations);
     result.pushKV("height", blockindex.nHeight);
-    result.pushKV("mediantime", (int64_t)blockindex.GetMedianTimePast());
+    result.pushKV("mediantime", blockindex.GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)blockindex.nNonce);
     result.pushKV("chainwork", blockindex.nChainWork.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex.nTx);
@@ -268,7 +270,7 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
             CBlockUndo blockUndo;
             const bool is_not_pruned{WITH_LOCK(::cs_main, return !blockman.IsBlockPruned(blockindex))};
             bool have_undo{is_not_pruned && WITH_LOCK(::cs_main, return blockindex.nStatus & BLOCK_HAVE_UNDO)};
-            if (have_undo && !blockman.UndoReadFromDisk(blockUndo, blockindex)) {
+            if (have_undo && !blockman.ReadBlockUndo(blockUndo, blockindex)) {
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Undo data expected but can't be read. This could be due to disk corruption or a conflict with a pruning event.");
             }
             for (size_t i = 0; i < block.vtx.size(); ++i) {
@@ -690,7 +692,7 @@ static RPCHelpMan getblockheader()
                             {RPCResult::Type::NUM_TIME, "time", "The block time expressed in " + UNIX_EPOCH_TIME},
                             {RPCResult::Type::NUM_TIME, "mediantime", "The median block time expressed in " + UNIX_EPOCH_TIME},
                             {RPCResult::Type::NUM, "nonce", "The nonce"},
-                            {RPCResult::Type::STR_HEX, "bits", "The bits"},
+                            {RPCResult::Type::STR_HEX, "bits", "nBits: compact representation of the block difficulty target"},
                             {RPCResult::Type::NUM, "difficulty", "The difficulty"},
                             {RPCResult::Type::STR_HEX, "chainwork", "Expected number of hashes required to produce the current chain"},
                             {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
@@ -746,7 +748,7 @@ static RPCHelpMan getblockheader()
 
     auto result = blockheaderToJSON(chainman.m_blockman, *tip, *pblockindex);
     if (hasPow)
-        result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose, chainman.ActiveChainstate()));
+        result.pushKV("powdata", PowDataToJSON(header.pow, fVerbose, chainman.ActiveChainstate(), powLimitForAlgo (header.pow.getCoreAlgo(), chainman.GetParams().GetConsensus())));
 
     return result;
 },
@@ -776,7 +778,7 @@ static CBlock GetBlockChecked(BlockManager& blockman, const CBlockIndex& blockin
         CheckBlockDataAvailability(blockman, blockindex, /*check_for_undo=*/false);
     }
 
-    if (!blockman.ReadBlockFromDisk(block, blockindex)) {
+    if (!blockman.ReadBlock(block, blockindex)) {
         // Block not found on disk. This shouldn't normally happen unless the block was
         // pruned right after we released the lock above.
         throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
@@ -795,7 +797,7 @@ static std::vector<uint8_t> GetRawBlockChecked(BlockManager& blockman, const CBl
         pos = blockindex.GetBlockPos();
     }
 
-    if (!blockman.ReadRawBlockFromDisk(data, pos)) {
+    if (!blockman.ReadRawBlock(data, pos)) {
         // Block not found on disk. This shouldn't normally happen unless the block was
         // pruned right after we released the lock above.
         throw JSONRPCError(RPC_MISC_ERROR, "Block not found on disk");
@@ -816,7 +818,7 @@ static CBlockUndo GetUndoChecked(BlockManager& blockman, const CBlockIndex& bloc
         CheckBlockDataAvailability(blockman, blockindex, /*check_for_undo=*/true);
     }
 
-    if (!blockman.UndoReadFromDisk(blockUndo, blockindex)) {
+    if (!blockman.ReadBlockUndo(blockUndo, blockindex)) {
         throw JSONRPCError(RPC_MISC_ERROR, "Can't read undo data from disk");
     }
 
@@ -879,7 +881,7 @@ static RPCHelpMan getblock()
                     {RPCResult::Type::NUM_TIME, "time",       "The block time expressed in " + UNIX_EPOCH_TIME},
                     {RPCResult::Type::NUM_TIME, "mediantime", "The median block time expressed in " + UNIX_EPOCH_TIME},
                     {RPCResult::Type::NUM, "nonce", "The nonce"},
-                    {RPCResult::Type::STR_HEX, "bits", "The bits"},
+                    {RPCResult::Type::STR_HEX, "bits", "nBits: compact representation of the block difficulty target"},
                     {RPCResult::Type::NUM, "difficulty", "The difficulty"},
                     {RPCResult::Type::STR_HEX, "chainwork", "Expected number of hashes required to produce the chain up to this block (in hex)"},
                     {RPCResult::Type::NUM, "nTx", "The number of transactions in the block"},
@@ -959,7 +961,7 @@ static RPCHelpMan getblock()
     }
 
     auto result = blockToJSON(chainman.m_blockman, block, *tip, *pblockindex, tx_verbosity);
-    result.pushKV("powdata", PowDataToJSON(block.pow, verbosity >= 1, chainman.ActiveChainstate()));
+    result.pushKV("powdata", PowDataToJSON(block.pow, verbosity >= 1, chainman.ActiveChainstate(), powLimitForAlgo (block.pow.getCoreAlgo(), chainman.GetParams().GetConsensus())));
 
     return result;
 },

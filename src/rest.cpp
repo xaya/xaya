@@ -276,12 +276,11 @@ static bool rest_headers(const std::any& context,
     const CBlockIndex* tip = nullptr;
     std::vector<const CBlockIndex*> headers;
     headers.reserve(*parsed_count);
-    const node::BlockManager* blockman = nullptr;
+    ChainstateManager* maybe_chainman = GetChainman(context, req);
+    if (!maybe_chainman) return false;
+    ChainstateManager& chainman = *maybe_chainman;
+    const node::BlockManager& blockman = chainman.m_blockman;
     {
-        ChainstateManager* maybe_chainman = GetChainman(context, req);
-        if (!maybe_chainman) return false;
-        ChainstateManager& chainman = *maybe_chainman;
-        blockman = &chainman.m_blockman;
         LOCK(cs_main);
         CChain& active_chain = chainman.ActiveChain();
         tip = active_chain.Tip();
@@ -299,7 +298,7 @@ static bool rest_headers(const std::any& context,
     case RESTResponseFormat::BINARY: {
         DataStream ssHeader{};
         for (const CBlockIndex *pindex : headers) {
-            ssHeader << pindex->GetBlockHeader(*blockman);
+            ssHeader << pindex->GetBlockHeader(blockman);
         }
 
         req->WriteHeader("Content-Type", "application/octet-stream");
@@ -310,7 +309,7 @@ static bool rest_headers(const std::any& context,
     case RESTResponseFormat::HEX: {
         DataStream ssHeader{};
         for (const CBlockIndex *pindex : headers) {
-            ssHeader << pindex->GetBlockHeader(*blockman);
+            ssHeader << pindex->GetBlockHeader(blockman);
         }
 
         std::string strHex = HexStr(ssHeader) + "\n";
@@ -321,7 +320,7 @@ static bool rest_headers(const std::any& context,
     case RESTResponseFormat::JSON: {
         UniValue jsonHeaders(UniValue::VARR);
         for (const CBlockIndex *pindex : headers) {
-            jsonHeaders.push_back(blockheaderToJSON(*blockman, *tip, *pindex));
+            jsonHeaders.push_back(blockheaderToJSON(blockman, *tip, *pindex));
         }
         std::string strJSON = jsonHeaders.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
@@ -372,7 +371,7 @@ static bool rest_block(const std::any& context,
     }
 
     std::vector<uint8_t> block_data{};
-    if (!chainman.m_blockman.ReadRawBlockFromDisk(block_data, pos)) {
+    if (!chainman.m_blockman.ReadRawBlock(block_data, pos)) {
         return RESTERR(req, HTTP_NOT_FOUND, hashStr + " not found");
     }
 

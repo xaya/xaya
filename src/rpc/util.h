@@ -9,6 +9,7 @@
 #include <consensus/amount.h>
 #include <node/transaction.h>
 #include <outputtype.h>
+#include <powdata.h>
 #include <pubkey.h>
 #include <rpc/protocol.h>
 #include <rpc/request.h>
@@ -515,5 +516,15 @@ void PushWarnings(const UniValue& warnings, UniValue& obj);
 void PushWarnings(const std::vector<bilingual_str>& warnings, UniValue& obj);
 
 std::vector<RPCResult> ScriptPubKeyDoc();
+
+/***
+ * Get the target for a given PowData instance.
+ *
+ * @param[in] powData       the PowData
+ * @param[in] pow_limit     PoW limit (consensus parameter)
+ *
+ * @return  the target
+ */
+uint256 GetTarget(const PowData& powData, const uint256 pow_limit);
 
 #endif // BITCOIN_RPC_UTIL_H

@@ -17,7 +17,7 @@ std::string CBlockFileInfo::ToString() const
 CBlockHeader CBlockIndex::GetBlockHeader(const node::BlockManager& blockman) const
 {
     CBlockHeader block;
-    if (blockman.ReadBlockHeaderFromDisk (block, *this))
+    if (blockman.ReadBlockHeader (block, *this))
       return block;
 
     /* If a header has been submitted to the node but the block data itself

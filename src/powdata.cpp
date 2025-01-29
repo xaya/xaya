@@ -7,6 +7,7 @@
 #include <arith_uint256.h>
 #include <consensus/params.h>
 #include <logging.h>
+#include <pow.h>
 
 #include <sstream>
 #include <stdexcept>
@@ -202,19 +203,12 @@ PowData::checkProofOfWork (const PowAlgo algo,
                            const uint256& hash, const unsigned nBits,
                            const Consensus::Params& params)
 {
-  bool fNegative;
-  bool fOverflow;
-  arith_uint256 bnTarget;
-
-  bnTarget.SetCompact (nBits, &fNegative, &fOverflow);
-
-  // Check range
-  if (fNegative || bnTarget == 0 || fOverflow
-          || bnTarget > UintToArith256 (powLimitForAlgo (algo, params)))
+  auto target = DeriveTarget (nBits, powLimitForAlgo (algo, params));
+  if (!target)
     return false;
 
   // Check proof of work matches claimed amount
-  if (UintToArith256 (hash) > bnTarget)
+  if (UintToArith256 (hash) > *target)
     return false;
 
   return true;

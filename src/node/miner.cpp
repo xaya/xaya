@@ -37,12 +37,10 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
     /*
     FIXME: The corresponding validation check has been disabled for Xaya in
     validation.cpp, so we don't need it here, either.
-    if (consensusParams.enforce_BIP94) {
-        // Height of block to be mined.
-        const int height{pindexPrev->nHeight + 1};
-        if (height % consensusParams.DifficultyAdjustmentInterval() == 0) {
-            nNewTime = std::max<int64_t>(nNewTime, pindexPrev->GetBlockTime() - MAX_TIMEWARP);
-        }
+    // Height of block to be mined.
+    const int height{pindexPrev->nHeight + 1};
+    if (height % consensusParams.DifficultyAdjustmentInterval() == 0) {
+        nNewTime = std::max<int64_t>(nNewTime, pindexPrev->GetBlockTime() - MAX_TIMEWARP);
     }
     */
 

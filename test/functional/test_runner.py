@@ -473,6 +473,7 @@ BASE_SCRIPTS = [
 SKIPPED = [
     'feature_signet.py',
     'feature_versionbits_warning.py',
+    'mining_mainnet.py',
     'p2p_dos_header_tree.py',
     'p2p_1p1c_network.py',
     'p2p_ibd_stalling.py',
