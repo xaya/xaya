@@ -244,7 +244,7 @@ target_link_libraries(namecoin-qt
 )
 
 import_plugins(namecoin-qt)
-set(installable_targets namecoin-qt)
+install_binary_component(namecoin-qt HAS_MANPAGE)
 if(WIN32)
   set_target_properties(namecoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
@@ -261,16 +261,11 @@ if(WITH_MULTIPROCESS)
     bitcoin_ipc
   )
   import_plugins(namecoin-gui)
-  list(APPEND installable_targets namecoin-gui)
+  install_binary_component(namecoin-gui)
   if(WIN32)
     set_target_properties(namecoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
-
-install(TARGETS ${installable_targets}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  COMPONENT GUI
-)
 
 if(BUILD_GUI_TESTS)
   add_subdirectory(test)
