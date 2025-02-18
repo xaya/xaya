@@ -244,7 +244,7 @@ target_link_libraries(xaya-qt
 )
 
 import_plugins(xaya-qt)
-set(installable_targets xaya-qt)
+install_binary_component(xaya-qt HAS_MANPAGE)
 if(WIN32)
   set_target_properties(xaya-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
@@ -261,16 +261,11 @@ if(WITH_MULTIPROCESS)
     bitcoin_ipc
   )
   import_plugins(xaya-gui)
-  list(APPEND installable_targets xaya-gui)
+  install_binary_component(xaya-gui)
   if(WIN32)
     set_target_properties(xaya-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
-
-install(TARGETS ${installable_targets}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  COMPONENT GUI
-)
 
 if(BUILD_GUI_TESTS)
   add_subdirectory(test)
