@@ -495,6 +495,14 @@ class ConfArgsTest(BitcoinTestFramework):
         self.nodes[0].replace_in_config([('testnet=', 'testnet4='), ('[test]', '[testnet4]')])
         with self.nodes[0].assert_debug_log([], unexpected_msgs=[t3_warning_log]):
             self.start_node(0)
+        # Some CI environments will have limited space and some others won't
+        # so we need to handle both cases as a valid result.
+        self.nodes[0].stderr.seek(0)
+        err = self.nodes[0].stdout.read()
+        self.nodes[0].stderr.seek(0)
+        self.nodes[0].stderr.truncate()
+        if err != b'' and err != warning_msg(self.nodes[0], 42):
+            raise AssertionError("Unexpected stderr after shutdown of Testnet3 node")
         self.stop_node(0)
 
         # Reset to regtest
