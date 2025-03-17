@@ -205,8 +205,8 @@ cmake --build build --target deploy
 
 ## Running Namecoin Core
 
-Namecoin Core should now be available at `./build/src/namecoind`.
-If you compiled support for the GUI, it should be available at `./build/src/qt/namecoin-qt`.
+Namecoin Core should now be available at `./build/bin/namecoind`.
+If you compiled support for the GUI, it should be available at `./build/bin/namecoin-qt`.
 
 The first time you run `namecoind` or `namecoin-qt`, it will start downloading the blockchain.
 This process could take many hours, or even days on slower than average systems.
@@ -239,8 +239,8 @@ tail -f $HOME/Library/Application\ Support/Namecoin/debug.log
 ## Other commands:
 
 ```shell
-./build/src/namecoind -daemon      # Starts the namecoin daemon.
-./build/src/namecoin-cli --help    # Outputs a list of command-line options.
-./build/src/namecoin-cli help      # Outputs a list of RPC commands when the daemon is running.
-./build/src/qt/namecoin-qt -server # Starts the namecoin-qt server mode, allows namecoin-cli control
+./build/bin/namecoind -daemon      # Starts the namecoin daemon.
+./build/bin/namecoin-cli --help    # Outputs a list of command-line options.
+./build/bin/namecoin-cli help      # Outputs a list of RPC commands when the daemon is running.
+./build/bin/namecoin-qt -server # Starts the namecoin-qt server mode, allows namecoin-cli control
 ```
