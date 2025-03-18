@@ -24,11 +24,11 @@ endif()
 #=============================
 set(CLIENT_NAME "Xaya Core")
 set(CLIENT_VERSION_MAJOR 1)
-set(CLIENT_VERSION_MINOR 12)
-set(CLIENT_VERSION_REVISION 99)
+set(CLIENT_VERSION_MINOR 13)
+set(CLIENT_VERSION_REVISION 0)
 set(CLIENT_VERSION_BUILD 0)
-set(CLIENT_VERSION_RC 0)
-set(CLIENT_VERSION_IS_RELEASE "false")
+set(CLIENT_VERSION_RC 1)
+set(CLIENT_VERSION_IS_RELEASE "true")
 set(COPYRIGHT_YEAR "2025")
 
 # During the enabling of the CXX and CXXOBJ languages, we modify
