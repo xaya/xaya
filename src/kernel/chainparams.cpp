@@ -257,14 +257,6 @@ public:
         fDefaultConsistencyChecks = false;
         m_is_mockable_chain = false;
 
-        checkpointData = {
-            {
-                {      0, uint256{"ce46f5f898b38e9c8c5e9ae4047ef5bccc42ec8eca0142202813a625e6dc2656"}},
-                { 340000, uint256{"e685ccaa62025c5c5075cfee80e498589bd4788614dcbe397e12bf2b8e887e47"}},
-                {1234000, uint256{"a853c0581c3637726a769b77cadf185e09666742757ef2df00058e876cf25897"}},
-            }
-        };
-
         m_assumeutxo_data = {};
 
         chainTxData = ChainTxData{
@@ -363,14 +355,6 @@ public:
         fDefaultConsistencyChecks = false;
         m_is_mockable_chain = false;
 
-        checkpointData = {
-            {
-                {     0, uint256{"3bcc29e821e7fbd374c7460306eb893725d69dbee87c4774cdcd618059b6a578"}},
-                { 11000, uint256{"57670b799b6645c7776e9fdbd6abff510aaed9790625dd28072d0e87a7fafcf4"}},
-                { 70000, uint256{"e2c154dc8e223cef271b54174c9d66eaf718378b30977c3df115ded629f3edb1"}},
-            }
-        };
-
         m_assumeutxo_data = {
             {
                 .height = 2'500'000,
@@ -464,12 +448,6 @@ public:
 
         fDefaultConsistencyChecks = false;
         m_is_mockable_chain = false;
-
-        checkpointData = {
-            {
-                {},
-            }
-        };
 
         m_assumeutxo_data = {
             {}
@@ -707,12 +685,6 @@ public:
 
         fDefaultConsistencyChecks = true;
         m_is_mockable_chain = true;
-
-        checkpointData = {
-            {
-                {0, uint256{"18042820e8a9f538e77e93c500768e5be76720383cd17e9b419916d8f356c619"}},
-            }
-        };
 
         m_assumeutxo_data = {
             {   // For use by unit tests

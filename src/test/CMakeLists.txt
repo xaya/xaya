@@ -129,6 +129,7 @@ add_executable(test_xaya
 #  key_io_tests.cpp
 #  key_tests.cpp
 #  miner_tests.cpp
+#  testnet4_miner_tests.cpp
 )
 
 include(TargetDataSources)

@@ -5,7 +5,6 @@
 """Test bitcoin-wallet."""
 
 import os
-import platform
 import random
 import stat
 import string
@@ -367,8 +366,7 @@ class ToolWalletTest(BitcoinTestFramework):
         self.do_tool_createfromdump("load", "wallet.dump")
         if self.is_bdb_compiled():
             self.do_tool_createfromdump("load-bdb", "wallet.dump", "bdb")
-        if self.is_sqlite_compiled():
-            self.do_tool_createfromdump("load-sqlite", "wallet.dump", "sqlite")
+        self.do_tool_createfromdump("load-sqlite", "wallet.dump", "sqlite")
 
         self.log.info('Checking createfromdump handling of magic and versions')
         bad_ver_wallet_dump = self.nodes[0].datadir_path / "wallet-bad_ver1.dump"
@@ -537,9 +535,7 @@ class ToolWalletTest(BitcoinTestFramework):
         # Next cause a bunch of writes by filling the keypool
         wallet.keypoolrefill(wallet.getwalletinfo()["keypoolsize"] + 100)
         # Lastly kill bitcoind so that the LSNs don't get reset
-        self.nodes[0].process.kill()
-        self.nodes[0].wait_until_stopped(expected_ret_code=1 if platform.system() == "Windows" else -9)
-        assert self.nodes[0].is_node_stopped()
+        self.nodes[0].kill_process()
 
         wallet_dump = self.nodes[0].datadir_path / "unclean_lsn.dump"
         self.assert_raises_tool_error("LSNs are not reset, this database is not completely flushed. Please reopen then close the database with a version that has BDB support", "-wallet=unclean_lsn", f"-dumpfile={wallet_dump}", "dump")

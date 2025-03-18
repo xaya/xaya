@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019 Daniel Kraft
+# Copyright (c) 2019-2025 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -45,7 +45,7 @@ class P2PBlockGetter (P2PInterface):
   def getBlock (self, blkHash):
     self.block = None
     inv = CInv (t=2, h=int (blkHash, 16))
-    self.send_message (msg_getdata (inv=[inv]))
+    self.send_without_ping (msg_getdata (inv=[inv]))
     self.wait_until (lambda: self.block is not None)
     return self.block
 

@@ -367,8 +367,6 @@ BASE_SCRIPTS = [
     'feature_filelock.py',
     'feature_loadblock.py',
     'wallet_assumeutxo.py --descriptors',
-    # FIXME: Reenable with data created for Namecoin.
-    #'p2p_dos_header_tree.py',
     'p2p_add_connections.py',
     'feature_bind_port_discover.py',
     'p2p_unrequested_blocks.py',
@@ -476,7 +474,6 @@ SKIPPED = [
     'feature_signet.py',
     'feature_versionbits_warning.py',
     'mining_mainnet.py',
-    'p2p_dos_header_tree.py',
     'p2p_1p1c_network.py',
     'p2p_ibd_stalling.py',
     'p2p_opportunistic_1p1c.py',
