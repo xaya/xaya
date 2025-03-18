@@ -50,7 +50,7 @@ const std::string EXAMPLE_ADDRESS[2] = {"nc1qkunnuwx82hj7pf48x88c7u78g7jf6dc9uyq
 std::string GetAllOutputTypes()
 {
     std::vector<std::string> ret;
-    using U = std::underlying_type<TxoutType>::type;
+    using U = std::underlying_type_t<TxoutType>;
     for (U i = (U)TxoutType::NONSTANDARD; i <= (U)TxoutType::WITNESS_UNKNOWN; ++i) {
         ret.emplace_back(GetTxnOutputType(static_cast<TxoutType>(i)));
     }

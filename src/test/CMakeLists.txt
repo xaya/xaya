@@ -127,6 +127,7 @@ add_executable(test_namecoin
 #  key_io_tests.cpp
 #  key_tests.cpp
 #  miner_tests.cpp
+#  testnet4_miner_tests.cpp
 )
 
 include(TargetDataSources)

@@ -16,11 +16,16 @@ from test_framework.blocktools import (
         create_block,
         create_coinbase
 )
+from test_framework.compressor import (
+    compress_amount,
+)
 from test_framework.messages import (
     CBlockHeader,
     from_hex,
     msg_headers,
-    tx_from_hex
+    tx_from_hex,
+    ser_varint,
+    MAX_MONEY,
 )
 from test_framework.p2p import (
     P2PInterface,
@@ -139,7 +144,14 @@ class AssumeutxoTest(BitcoinTestFramework):
             [b"\x81", 34, "b7e1315d3df9aa13e8c9dec437dbb6c0c45fc53aa2cc3efc649c880457149093", None],  # wrong coin code VARINT
             [b"\x80", 34, "e859f5f111d59fda4aae219b0185db540e7f2ca31d0858965dff678eaa8ecce5", None],  # another wrong coin code
             [b"\x84\x58", 34, None, "Bad snapshot data after deserializing 0 coins"],  # wrong coin case with height 364 and coinbase 0
-            [b"\xCA\xD2\x8F\x5A", 39, None, "Bad snapshot data after deserializing 0 coins - bad tx out value"],  # Amount exceeds MAX_MONEY
+            [
+                # compressed txout value + scriptpubkey
+                ser_varint(compress_amount(MAX_MONEY + 1)) + ser_varint(0),
+                # txid + coins per txid + vout + coin height
+                32 + 1 + 1 + 2,
+                None,
+                "Bad snapshot data after deserializing 0 coins - bad tx out value"
+            ],  # Amount exceeds MAX_MONEY
         ]
 
         for content, offset, wrong_hash, custom_message in cases:
@@ -297,7 +309,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         msg = msg_headers()
         for block_num in range(1, miner.getblockcount()+1):
             msg.headers.append(from_hex(CBlockHeader(), miner.getblockheader(miner.getblockhash(block_num), verbose=False)))
-        headers_provider_conn.send_message(msg)
+        headers_provider_conn.send_without_ping(msg)
 
         # Ensure headers arrived
         default_value = {'status': ''}  # No status
