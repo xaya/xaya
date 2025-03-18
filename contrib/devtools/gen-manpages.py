@@ -9,12 +9,12 @@ import tempfile
 import argparse
 
 BINARIES = [
-'src/xayad',
-'src/xaya-cli',
-'src/xaya-tx',
-'src/xaya-wallet',
-'src/xaya-util',
-'src/qt/xaya-qt',
+'bin/xayad',
+'bin/xaya-cli',
+'bin/xaya-tx',
+'bin/xaya-wallet',
+'bin/xaya-util',
+'bin/xaya-qt',
 ]
 
 parser = argparse.ArgumentParser(

@@ -205,8 +205,8 @@ cmake --build build --target deploy
 
 ## Running Xaya Core
 
-Xaya Core should now be available at `./build/src/xayad`.
-If you compiled support for the GUI, it should be available at `./build/src/qt/xaya-qt`.
+Xaya Core should now be available at `./build/bin/xayad`.
+If you compiled support for the GUI, it should be available at `./build/bin/xaya-qt`.
 
 The first time you run `xayad` or `xaya-qt`, it will start downloading the blockchain.
 This process could take many hours, or even days on slower than average systems.
@@ -239,8 +239,8 @@ tail -f $HOME/Library/Application\ Support/Xaya/debug.log
 ## Other commands:
 
 ```shell
-./build/src/xayad -daemon      # Starts the Xaya daemon.
-./build/src/xaya-cli --help    # Outputs a list of command-line options.
-./build/src/xaya-cli help      # Outputs a list of RPC commands when the daemon is running.
-./build/src/qt/xaya-qt -server # Starts the xaya-qt server mode, allows xaya-cli control
+./build/bin/xayad -daemon      # Starts the xaya daemon.
+./build/bin/xaya-cli --help    # Outputs a list of command-line options.
+./build/bin/xaya-cli help      # Outputs a list of RPC commands when the daemon is running.
+./build/bin/xaya-qt -server # Starts the xaya-qt server mode, allows xaya-cli control
 ```
