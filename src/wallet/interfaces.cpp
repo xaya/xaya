@@ -580,7 +580,7 @@ public:
     ~WalletLoaderImpl() override { UnloadWallets(m_context); }
 
     //! ChainClient methods
-    void registerRpcs(Span<const CRPCCommand> commands)
+    void registerRpcs(std::span<const CRPCCommand> commands)
     {
         for (const CRPCCommand& command : commands) {
             m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {

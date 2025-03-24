@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 Daniel Kraft
+// Copyright (c) 2014-2025 Daniel Kraft
 // Copyright (c) 2020 yanmaani
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -1023,7 +1023,7 @@ name_checkdb ()
 } // namespace
 /* ************************************************************************** */
 
-Span<const CRPCCommand> GetNameRPCCommands()
+std::span<const CRPCCommand> GetNameRPCCommands()
 {
 static const CRPCCommand commands[] =
 { //  category               actor (function)
@@ -1037,7 +1037,7 @@ static const CRPCCommand commands[] =
     { "rawtransactions",     &namepsbt,                },
 };
 
-  return Span {commands};
+  return std::span {commands};
 }
 
 void RegisterNameRPCCommands(CRPCTable &t)

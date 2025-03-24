@@ -140,8 +140,8 @@ brew install python
 
 #### Deploy Dependencies
 
-You can deploy a `.zip` containing the Xaya Core application using `make deploy`.
-It is required that you have `python` installed.
+You can [deploy](#3-deploy-optional) a `.zip` containing the Xaya Core application.
+It is required that you have `python` and `zip` installed.
 
 ## Build Xaya
 
