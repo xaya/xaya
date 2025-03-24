@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 Daniel Kraft
+// Copyright (c) 2014-2025 Daniel Kraft
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -34,7 +34,7 @@ UniValue getNameInfo (const ChainstateManager& chainman,
 void addExpirationInfo (const ChainstateManager& chainman,
                         int height, UniValue& data);
 
-Span<const CRPCCommand> GetNameRPCCommands ();
+std::span<const CRPCCommand> GetNameRPCCommands ();
 
 #ifdef ENABLE_WALLET
 namespace wallet {

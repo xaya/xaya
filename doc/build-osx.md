@@ -141,7 +141,7 @@ brew install python
 #### Deploy Dependencies
 
 You can [deploy](#3-deploy-optional) a `.zip` containing the Namecoin Core application.
->>>>>>> auxpow
+It is required that you have `python` and `zip` installed.
 
 ## Build Namecoin Core
 
