@@ -88,6 +88,10 @@ class Binaries:
         "Return argv array that should be used to invoke bitcoin-wallet"
         return self._argv(self.paths.bitcoinwallet)
 
+    def chainstate_argv(self):
+        "Return argv array that should be used to invoke bitcoin-chainstate"
+        return self._argv(self.paths.bitcoinchainstate)
+
     def _argv(self, bin_path):
         """Return argv array that should be used to invoke the command.
         Normally this will return binary paths directly from the paths object,
@@ -291,6 +295,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             "bitcoind": ("bitcoind", "BITCOIND"),
             "bitcoin-cli": ("bitcoincli", "BITCOINCLI"),
             "bitcoin-util": ("bitcoinutil", "BITCOINUTIL"),
+            "bitcoin-chainstate": ("bitcoinchainstate", "BITCOINCHAINSTATE"),
             "bitcoin-wallet": ("bitcoinwallet", "BITCOINWALLET"),
         }
         for binary, [attribute_name, env_variable_name] in binaries.items():
@@ -641,9 +646,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             # Wait for nodes to stop
             node.wait_until_stopped()
 
-    def restart_node(self, i, extra_args=None, clear_addrman=False):
+    def restart_node(self, i, extra_args=None, clear_addrman=False, *, expected_stderr=''):
         """Stop and start a test node"""
-        self.stop_node(i)
+        self.stop_node(i, expected_stderr=expected_stderr)
         if clear_addrman:
             peers_dat = self.nodes[i].chain_path / "peers.dat"
             os.remove(peers_dat)
@@ -1022,6 +1027,11 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if not self.is_bitcoin_util_compiled():
             raise SkipTest("bitcoin-util has not been compiled")
 
+    def skip_if_no_bitcoin_chainstate(self):
+        """Skip the running test if bitcoin-chainstate has not been compiled."""
+        if not self.is_bitcoin_chainstate_compiled():
+            raise SkipTest("bitcoin-chainstate has not been compiled")
+
     def skip_if_no_cli(self):
         """Skip the running test if bitcoin-cli has not been compiled."""
         if not self.is_cli_compiled():
@@ -1072,6 +1082,10 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
     def is_bitcoin_util_compiled(self):
         """Checks whether bitcoin-util was compiled."""
         return self.config["components"].getboolean("ENABLE_BITCOIN_UTIL")
+
+    def is_bitcoin_chainstate_compiled(self):
+        """Checks whether bitcoin-chainstate was compiled."""
+        return self.config["components"].getboolean("ENABLE_BITCOIN_CHAINSTATE")
 
     def is_zmq_compiled(self):
         """Checks whether the zmq module was compiled."""
