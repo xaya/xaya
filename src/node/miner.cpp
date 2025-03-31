@@ -119,10 +119,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const PowAlgo alg
     pblocktemplate.reset(new CBlockTemplate());
     CBlock* const pblock = &pblocktemplate->block; // pointer for convenience
 
-    // Add dummy coinbase tx as first transaction
+    // Add dummy coinbase tx as first transaction. It is skipped by the
+    // getblocktemplate RPC and mining interface consumers must not use it.
     pblock->vtx.emplace_back();
-    pblocktemplate->vTxFees.push_back(-1); // updated at end
-    pblocktemplate->vTxSigOpsCost.push_back(-1); // updated at end
 
     LOCK(::cs_main);
     CBlockIndex* pindexPrev = m_chainstate.m_chain.Tip();
@@ -160,7 +159,6 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const PowAlgo alg
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = m_chainstate.m_chainman.GenerateCoinbaseCommitment(*pblock, pindexPrev);
-    pblocktemplate->vTxFees[0] = -nFees;
 
     /* Set an empty fake header in the PoW data, because that is expected when
        serialising the block for the size computation.  If auxpow is used
@@ -177,7 +175,6 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const PowAlgo alg
     pblock->nNonce         = 0;
     pblock->pow.setCoreAlgo(algo);
     pblock->pow.setBits(GetNextWorkRequired(algo, pindexPrev, chainparams.GetConsensus()));
-    pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     BlockValidationState state;
     if (m_options.test_block_validity && !TestBlockValidity(state, chainparams, m_chainstate, *pblock, pindexPrev,

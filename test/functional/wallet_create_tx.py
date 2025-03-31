@@ -23,6 +23,7 @@ class CreateTxWalletTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 1
+        self.extra_args = [["-deprecatedrpc=settxfee"]]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -59,11 +60,11 @@ class CreateTxWalletTest(BitcoinTestFramework):
         # -maxtxfee to a smaller value.
         outputs = {self.nodes[0].getnewaddress(address_type='bech32'): 0.000025 for _ in range(200)}
         raw_tx = self.nodes[0].createrawtransaction(inputs=[], outputs=outputs)
-        maxtxfeearg = '-maxtxfee=0.05'
+        baseArgs = ['-maxtxfee=0.05', '-deprecatedrpc=settxfee']
 
         for fee_setting in ['-minrelaytxfee=0.01', '-mintxfee=0.01', '-paytxfee=0.01']:
             self.log.info('Check maxtxfee in combination with {}'.format(fee_setting))
-            self.restart_node(0, extra_args=[maxtxfeearg, fee_setting])
+            self.restart_node(0, extra_args=baseArgs + [fee_setting])
             assert_raises_rpc_error(
                 -6,
                 "Fee exceeds maximum configured by user (e.g. -maxtxfee, maxfeerate)",
@@ -76,7 +77,7 @@ class CreateTxWalletTest(BitcoinTestFramework):
             )
 
         self.log.info('Check maxtxfee in combination with settxfee')
-        self.restart_node(0, extra_args=[maxtxfeearg])
+        self.restart_node(0, extra_args=baseArgs, expected_stderr='Warning: -paytxfee is deprecated and will be fully removed in v31.0.')
         self.nodes[0].settxfee(0.01)
         assert_raises_rpc_error(
             -6,
