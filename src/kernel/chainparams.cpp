@@ -177,7 +177,6 @@ public:
         // This is fine at runtime as we'll fall back to using them as an addrfetch if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("seed.namecoin.libreisp.se."); // Jonas Ostman
         vSeeds.emplace_back("nmc.seed.quisquis.de."); // Peter Conrad
         vSeeds.emplace_back("seed.nmc.markasoftware.com."); // Mark Polyakov
         vSeeds.emplace_back("dnsseed1.nmc.dotbit.zone."); // Stefan Stere
