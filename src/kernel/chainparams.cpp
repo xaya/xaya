@@ -182,6 +182,7 @@ public:
         vSeeds.emplace_back("dnsseed1.nmc.dotbit.zone."); // Stefan Stere
         vSeeds.emplace_back("dnsseed2.nmc.dotbit.zone."); // Stefan Stere
         vSeeds.emplace_back("dnsseed.nmc.testls.space."); // mjgill89
+        vSeeds.emplace_back("namecoin.seed.cypherstack.com."); // Dan Miller
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,52);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,13);
