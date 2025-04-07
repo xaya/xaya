@@ -20,7 +20,7 @@ target_link_libraries(test_namecoin-qt
   test_util
   bitcoin_node
   Boost::headers
-  Qt5::Test
+  Qt6::Test
 )
 
 import_plugins(test_namecoin-qt)
