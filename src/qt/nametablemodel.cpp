@@ -481,7 +481,7 @@ QVariant NameTableModel::headerData(int section, Qt::Orientation orientation, in
 Qt::ItemFlags NameTableModel::flags(const QModelIndex &index) const
 {
     if(!index.isValid())
-        return 0;
+        return Qt::NoItemFlags;
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled;
 }

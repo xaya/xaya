@@ -240,6 +240,11 @@ public:
         assert(consensus.hashGenesisBlock == uint256{"e5062d76e5f50c42f493826ac9920b63a8def2626fd70a5cec707ec47a4c4651"});
         assert(genesis.hashMerkleRoot == uint256{"0827901b75ab43978c3cf20a78baf040faeb0e2eeff3a2c58ab6521a6d46f8fd"});
 
+        // Note that of those which support the service bits prefix, most only support a subset of
+        // possible options.
+        // This is fine at runtime as we'll fall back to using them as an addrfetch if they don't support the
+        // service bits we want, but we should get them updated to support all service bits wanted by any
+        // release ASAP to avoid it where possible.
         vSeeds.emplace_back("seed.xaya.io.");
         vSeeds.emplace_back("seed.xaya.domob.eu.");
 

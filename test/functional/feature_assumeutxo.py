@@ -23,10 +23,11 @@ from test_framework.compressor import (
 from test_framework.messages import (
     CBlockHeader,
     from_hex,
-    msg_headers,
-    tx_from_hex,
-    ser_varint,
+    MAGIC_BYTES,
     MAX_MONEY,
+    msg_headers,
+    ser_varint,
+    tx_from_hex,
 )
 from test_framework.p2p import (
     P2PInterface,
@@ -35,6 +36,7 @@ from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_approx,
     assert_equal,
+    assert_not_equal,
     assert_raises_rpc_error,
     ensure_for,
     sha256sum_file,
@@ -102,15 +104,15 @@ class AssumeutxoTest(BitcoinTestFramework):
         self.log.info("  - snapshot file with mismatching network magic")
         invalid_magics = [
             # magic, name, real
-            [0xccbeb4fe, "main", True],
-            [0xccbfb5fe, "test", True],
-            [0x0a03cf40, "signet", True],
-            [0x00000000, "", False],
-            [0xffffffff, "", False],
+            [MAGIC_BYTES["mainnet"], "main", True],
+            [MAGIC_BYTES["test"], "test", True],
+            [MAGIC_BYTES["signet"], "signet", True],
+            [0x00000000.to_bytes(4, 'big'), "", False],
+            [0xffffffff.to_bytes(4, 'big'), "", False],
         ]
         for [magic, name, real] in invalid_magics:
             with open(bad_snapshot_path, 'wb') as f:
-                f.write(valid_snapshot_contents[:7] + magic.to_bytes(4, 'big') + valid_snapshot_contents[11:])
+                f.write(valid_snapshot_contents[:7] + magic + valid_snapshot_contents[11:])
             if real:
                 assert_raises_rpc_error(parsing_error_code, f"Unable to parse metadata: The network of the snapshot ({name}) does not match the network of this node (regtest).", node.loadtxoutset, bad_snapshot_path)
             else:
@@ -469,7 +471,7 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(
             dump_output4['txoutset_hash'],
             "d8e72a5e7232343cfce865b62e0fc96bc128d7c5c45f7413783cbb75e3090275")
-        assert sha256sum_file(dump_output['path']) != sha256sum_file(dump_output4['path'])
+        assert_not_equal(sha256sum_file(dump_output['path']), sha256sum_file(dump_output4['path']))
 
         # Use a hash instead of a height
         prev_snap_hash = n0.getblockhash(prev_snap_height)
