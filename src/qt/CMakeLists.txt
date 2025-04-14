@@ -277,7 +277,7 @@ if(WIN32)
   set_target_properties(namecoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-if(WITH_MULTIPROCESS)
+if(ENABLE_IPC)
   add_executable(namecoin-gui
     main.cpp
     ../init/bitcoin-gui.cpp
