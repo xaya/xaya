@@ -31,7 +31,6 @@ class AuxpowMiningTest (BitcoinTestFramework):
     self.skip_if_no_wallet ()
 
   def add_options (self, parser):
-    self.add_wallet_options (parser)
     parser.add_argument ("--segwit", dest="segwit", default=False,
                          action="store_true",
                          help="Test behaviour with SegWit active")

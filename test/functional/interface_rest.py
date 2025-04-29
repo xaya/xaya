@@ -60,8 +60,8 @@ class RESTTest (BitcoinTestFramework):
         self.noban_tx_relay = True
         self.supports_cli = False
 
-    def add_options(self, parser):
-        self.add_wallet_options(parser)
+    def skip_test_if_missing_module(self):
+        self.skip_if_no_wallet()
 
     def test_rest_request(
             self,
@@ -459,14 +459,6 @@ class RESTTest (BitcoinTestFramework):
         """
         Run REST tests specific to names.
         """
-
-        # We need a wallet to register a test name.
-        self.nodes[0].createwallet ("")
-        addr = self.nodes[0].getnewaddress ()
-        info = self.nodes[0].getaddressinfo (addr)
-        pubKey = CScript (binascii.unhexlify (info["scriptPubKey"]))
-        self.wallet.send_to (from_node=self.nodes[0], scriptPubKey=pubKey, amount=COIN)
-        self.generate (self.nodes[0], 1)
 
         # Start by registering a test name.
         name = "d/some weird.name++"
