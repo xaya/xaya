@@ -40,9 +40,6 @@ class AtomicTradingTest (BitcoinTestFramework):
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 
-  def add_options (self, parser):
-    self.add_wallet_options (parser)
-
   def generate (self, n, ind = 0):
     """
     Mines n blocks with rewards sent to an address that is in the wallet

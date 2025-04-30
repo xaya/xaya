@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2022 The Xaya developers
+# Copyright (c) 2018-2025 The Xaya developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test spendability of premine and that P2SH is enforced correctly for it."""
@@ -24,20 +24,19 @@ class PremineTest(BitcoinTestFramework):
     self.setup_clean_chain = True
     self.num_nodes = 1
 
-  def add_wallet_options (self, parser):
-    # Make sure we only allow (and use as default) legacy wallets,
-    # as otherwise the hdseed setting won't work.
-    super ().add_wallet_options (parser, descriptors=False, legacy=True)
-
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 
-  def add_options (self, parser):
-    self.add_wallet_options (parser)
-
   def run_test(self):
     node = self.nodes[0]
-    node.importaddress (PREMINE_ADDRESS)
+
+    # To import the multisig address as watch-only, we need a wallet
+    # that has private keys disabled.
+    node.createwallet (wallet_name="watchonly", disable_private_keys=True)
+    rpcWatchonly = node.get_wallet_rpc ("watchonly")
+    rpcWatchonly.importaddress (PREMINE_ADDRESS)
+    node.createwallet (wallet_name="privkeys")
+    rpcKeys = node.get_wallet_rpc ("privkeys")
 
     # Find basic data about the genesis coinbase tx.
     genesis = node.getblock (node.getblockhash (0), 2)
@@ -52,7 +51,7 @@ class PremineTest(BitcoinTestFramework):
     # Accessing it should work normally (upstream Bitcoin/Namecoin have a
     # special check that disallows the genesis coinbase with getrawtransaction,
     # as it is not spendable).
-    node.gettransaction (txid)
+    rpcWatchonly.gettransaction (txid)
     assert_equal (node.getrawtransaction (txid, False, genesis['hash']),
                   tx['hex'])
 
@@ -62,22 +61,27 @@ class PremineTest(BitcoinTestFramework):
 
     # Check balance of node and then import the keys for the premine
     # and check again.  It should be available as spendable.
-    assert_equal (node.getbalance (), 0)
-    for key in PREMINE_PRIVKEYS:
-      node.importprivkey (key, 'premine') 
-    pubkeys = []
-    for addr in node.getaddressesbylabel ('premine'):
-      data = node.getaddressinfo (addr)
-      if (not data['isscript']) and (not data['iswitness']):
-        pubkeys.append (data['pubkey'])
+    assert rpcWatchonly.getbalance () > 0
+    assert_equal (rpcKeys.getbalance (), 0)
+    keys = ",".join (PREMINE_PRIVKEYS)
+    desc = f"sh(multi(1,{keys}))"
+    info = rpcKeys.getdescriptorinfo (desc)
+    desc = f"{desc}#{info['checksum']}"
+    [imp] = rpcKeys.importdescriptors ([
+      {
+        "desc": desc,
+        "timestamp": "now",
+      }
+    ])
+    [addr] = rpcKeys.deriveaddresses (desc)
+    assert_equal (addr, PREMINE_ADDRESS)
+    assert imp["success"]
+    pubkeys = rpcKeys.getaddressinfo (PREMINE_ADDRESS)["pubkeys"]
     assert_equal (set (pubkeys), set (PREMINE_PUBKEYS))
-    p2sh = node.addmultisigaddress (1, PREMINE_PUBKEYS)
-    assert_equal (p2sh['address'], PREMINE_ADDRESS)
-    node.rescanblockchain ()
-    assert_equal (node.getbalance (), PREMINE_VALUE)
+    assert_equal (rpcKeys.getbalance (), PREMINE_VALUE)
 
     # Construct a raw tx spending the premine.
-    addr = node.getnewaddress ()
+    addr = rpcKeys.getnewaddress ()
     inputs = [{"txid": txid, "vout": 0}]
     outputs = {addr: Decimal ('123456')}
     rawTx = node.createrawtransaction (inputs, outputs)
@@ -85,24 +89,24 @@ class PremineTest(BitcoinTestFramework):
     # Try to "sign" it by just adding the redeem script, which would have been
     # valid before the P2SH softfork.  Doing so should fail, which verifies that
     # P2SH is enforced right from the start and thus that the premine is safe.
-    data = node.getaddressinfo (PREMINE_ADDRESS)
-    redeemScript = data['hex']
+    data = rpcWatchonly.getaddressinfo (PREMINE_ADDRESS)
+    redeemScript = data["scriptPubKey"]
     # Prepend script size, so that it will correctly push the script hash
     # to the stack.
     redeemScript = ("%02x" % (len (redeemScript) // 2)) + redeemScript
     forgedTx = tx_from_hex (rawTx)
     forgedTx.vin[0].scriptSig = codecs.decode (redeemScript, 'hex_codec')
     forgedTx = forgedTx.serialize ().hex ()
-    assert_raises_rpc_error (-26, "not valid",
+    assert_raises_rpc_error (-26, "mandatory-script-verify-flag-failed",
                              node.sendrawtransaction, forgedTx, 0)
 
     # Sign and send the raw tx, should succeed.
-    signed = node.signrawtransactionwithwallet (rawTx)
+    signed = rpcKeys.signrawtransactionwithwallet (rawTx)
     assert signed['complete']
     signedTx = signed['hex']
     sendId = node.sendrawtransaction (signedTx, 0)
     self.generate (node, 1)
-    assert_equal (node.gettransaction (sendId)['confirmations'], 1)
+    assert_equal (rpcWatchonly.gettransaction (sendId)['confirmations'], 1)
 
 if __name__ == '__main__':
   PremineTest(__file__).main()

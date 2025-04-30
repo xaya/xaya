@@ -43,9 +43,6 @@ class GamePendingTest (XayaZmqTest):
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 
-  def add_options (self, parser):
-    self.add_wallet_options (parser)
-
   def setup_nodes (self):
     self.address = "tcp://127.0.0.1:%d" % zmq_port (1)
 

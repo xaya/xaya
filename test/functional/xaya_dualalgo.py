@@ -15,9 +15,6 @@ class DualAlgoTest (BitcoinTestFramework):
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 
-  def add_options (self, parser):
-    self.add_wallet_options (parser)
-
   def assertBlocksNeoscrypt (self, hashes):
     """
     Verifies that the blocks with the given hashes are mined using Neoscrypt,

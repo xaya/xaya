@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2022 Daniel Kraft
+# Copyright (c) 2014-2025 Daniel Kraft
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -41,7 +41,9 @@ class NameMultisigTest (NameTestFramework):
     # Since Segwit assumes that BIP16 is active and we do not need Segwit
     # for this test at all, just disable it always.
     self.node_args = ["-acceptnonstdtxn=1", "-testactivationheight=segwit@1000000"]
-    self.setup_name_test ([self.node_args] * 2)
+    # Nodes 0 and 1 hold the two keys for the 2-of-2 multisig, and node 2
+    # has a watch-only wallet with the actual multisig address in it.
+    self.setup_name_test ([self.node_args] * 3)
 
   def add_wallet_options (self, parser):
     # Make sure we only allow (and use as default) legacy wallets,
@@ -139,9 +141,9 @@ class NameMultisigTest (NameTestFramework):
     # Construct a 2-of-2 multisig address shared between two nodes.
     pubkeyA = self.getNewPubkey (0)
     pubkeyB = self.getNewPubkey (1)
-    multisig = self.nodes[0].addmultisigaddress (2, [pubkeyA, pubkeyB])
-    multisig_ = self.nodes[1].addmultisigaddress (2, [pubkeyA, pubkeyB])
-    assert_equal (multisig["address"], multisig_["address"])
+    self.nodes[2].createwallet (wallet_name="multisig", disable_private_keys=True)
+    multisigRpc = self.nodes[2].get_wallet_rpc ("multisig")
+    multisig = multisigRpc.addmultisigaddress (2, [pubkeyA, pubkeyB])
     p2sh = multisig['address']
 
     # Register a new name to that address.
@@ -175,16 +177,21 @@ class NameMultisigTest (NameTestFramework):
     nameInd = self.rawtxOutputIndex (0, txRaw, addr)
     txRaw = self.nodes[0].namerawtransaction (txRaw, nameInd, op)
 
+    # Convert to PSBT and process it with the watch-only wallet to add
+    # data about the script.
+    psbt = self.nodes[0].converttopsbt (txRaw['hex'])
+    psbt = multisigRpc.walletprocesspsbt (psbt)
+
     # Sign it partially.
-    partial = self.nodes[0].signrawtransactionwithwallet (txRaw['hex'])
-    assert not partial['complete']
-    assert_raises_rpc_error (-26, None,
-                             self.nodes[0].sendrawtransaction, partial['hex'])
+    psbt = self.nodes[0].walletprocesspsbt (psbt['psbt'])
+    assert not psbt['complete']
 
     # Sign it fully.
-    signed = self.nodes[1].signrawtransactionwithwallet (partial['hex'])
-    assert signed['complete']
-    tx = signed['hex']
+    psbt = self.nodes[1].walletprocesspsbt (psbt['psbt'])
+    assert psbt['complete']
+    tx = self.nodes[1].finalizepsbt (psbt['psbt'])
+    assert tx['complete']
+    tx = tx['hex']
 
     # Manipulate the signature to invalidate it.  This checks whether or
     # not the OP_MULTISIG is actually verified (vs just the script hash
@@ -307,9 +314,11 @@ class NameMultisigTest (NameTestFramework):
     if not self.options.activated:
       self.log.info ("Disabling BIP16 for the test")
       self.node_args.append ("-testactivationheight=bip16@1000000")
-      for i in range (2):
+      for i in range (3):
         self.restart_node (i, extra_args=self.node_args)
       self.connect_nodes (0, 1)
+      self.connect_nodes (0, 2)
+      self.connect_nodes (1, 2)
 
     assert_equal (softfork_active (self.nodes[0], "bip16"),
                   self.options.activated)

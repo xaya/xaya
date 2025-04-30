@@ -24,7 +24,6 @@ class GetblockstatsTest(BitcoinTestFramework):
     max_stat_pos = 2
 
     def add_options(self, parser):
-        self.add_wallet_options (parser)
         parser.add_argument('--gen-test-data', dest='gen_test_data',
                             default=False, action='store_true',
                             help='Generate test data')

@@ -24,9 +24,6 @@ class BtxidTest (BitcoinTestFramework):
   def skip_test_if_missing_module (self):
     self.skip_if_no_wallet ()
 
-  def add_options (self, parser):
-    self.add_wallet_options (parser)
-
   def setup_nodes (self):
     # One of our nodes is using legacy (non-segwit) addresses, and the other
     # is using segwit.  This way, the test transaction will have both segwit

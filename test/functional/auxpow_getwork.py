@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2022 Daniel Kraft
+# Copyright (c) 2018-2025 Daniel Kraft
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,7 +26,6 @@ class AuxpowGetworkTest (BitcoinTestFramework):
     self.skip_if_no_wallet ()
 
   def add_options (self, parser):
-    self.add_wallet_options (parser)
     parser.add_argument ("--segwit", dest="segwit", default=False,
                          action="store_true",
                          help="Test behaviour with SegWit active")
