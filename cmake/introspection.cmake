@@ -4,13 +4,6 @@
 
 include(CheckCXXSourceCompiles)
 include(CheckCXXSymbolExists)
-include(CheckIncludeFileCXX)
-
-# The following HAVE_{HEADER}_H variables go to the bitcoin-build-config.h header.
-check_include_file_cxx(sys/prctl.h HAVE_SYS_PRCTL_H)
-check_include_file_cxx(sys/resources.h HAVE_SYS_RESOURCES_H)
-check_include_file_cxx(sys/vmmeter.h HAVE_SYS_VMMETER_H)
-check_include_file_cxx(vm/vm_param.h HAVE_VM_VM_PARAM_H)
 
 check_cxx_symbol_exists(O_CLOEXEC "fcntl.h" HAVE_O_CLOEXEC)
 check_cxx_symbol_exists(fdatasync "unistd.h" HAVE_FDATASYNC)
@@ -18,9 +11,7 @@ check_cxx_symbol_exists(fork "unistd.h" HAVE_DECL_FORK)
 check_cxx_symbol_exists(pipe2 "unistd.h" HAVE_DECL_PIPE2)
 check_cxx_symbol_exists(setsid "unistd.h" HAVE_DECL_SETSID)
 
-check_include_file_cxx(sys/types.h HAVE_SYS_TYPES_H)
-check_include_file_cxx(ifaddrs.h HAVE_IFADDRS_H)
-if(HAVE_SYS_TYPES_H AND HAVE_IFADDRS_H)
+if(NOT WIN32)
   include(TestAppendRequiredLibraries)
   test_append_socket_library(core_interface)
 endif()

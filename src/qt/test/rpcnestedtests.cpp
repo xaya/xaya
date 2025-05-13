@@ -85,8 +85,6 @@ void RPCNestedTests::rpcNestedTests()
     QVERIFY(result == "41c62dbd9068c89a449525e3cd5ac61b20ece28c3c38b3f35b2161f0e6d3cb0d");
     QVERIFY(filtered == "getblock(getbestblockhash())[tx][0]");
 
-    RPCConsole::RPCParseCommandLine(nullptr, result, "importprivkey", false, &filtered);
-    QVERIFY(filtered == "importprivkey(…)");
     RPCConsole::RPCParseCommandLine(nullptr, result, "signmessagewithprivkey abc", false, &filtered);
     QVERIFY(filtered == "signmessagewithprivkey(…)");
     RPCConsole::RPCParseCommandLine(nullptr, result, "signmessagewithprivkey abc,def", false, &filtered);
@@ -99,12 +97,6 @@ void RPCNestedTests::rpcNestedTests()
     QVERIFY(filtered == "walletpassphrasechange(…)");
     RPCConsole::RPCParseCommandLine(nullptr, result, "help(encryptwallet(abc, def))", false, &filtered);
     QVERIFY(filtered == "help(encryptwallet(…))");
-    RPCConsole::RPCParseCommandLine(nullptr, result, "help(importprivkey())", false, &filtered);
-    QVERIFY(filtered == "help(importprivkey(…))");
-    RPCConsole::RPCParseCommandLine(nullptr, result, "help(importprivkey(help()))", false, &filtered);
-    QVERIFY(filtered == "help(importprivkey(…))");
-    RPCConsole::RPCParseCommandLine(nullptr, result, "help(importprivkey(abc), walletpassphrase(def))", false, &filtered);
-    QVERIFY(filtered == "help(importprivkey(…), walletpassphrase(…))");
 
     RPCConsole::RPCExecuteCommandLine(m_node, result, "rpcNestedTest");
     QVERIFY(result == "[]");
