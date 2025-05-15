@@ -305,9 +305,6 @@ void Shutdown(NodeContext& node)
     StopREST();
     StopRPC();
     StopHTTPServer();
-    for (const auto& client : node.chain_clients) {
-        client->flush();
-    }
     StopMapPort();
     if (g_send_updates_worker != nullptr) {
         g_send_updates_worker.reset ();

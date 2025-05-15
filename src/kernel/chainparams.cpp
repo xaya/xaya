@@ -702,23 +702,23 @@ public:
         m_assumeutxo_data = {
             {   // For use by unit tests
                 .height = 110,
-                .hash_serialized = AssumeutxoHash{uint256{"c7b1cf5103d6dd47a4feddb01f0fc951d109ed88f9b406f720a8a7f9942689e4"}},
+                .hash_serialized = AssumeutxoHash{uint256{"fa71af3b21922090ac49cbbd756f2c9ee0918be3f9b42ec7f1c6d16004442db9"}},
                 .m_chain_tx_count = 111,
-                .blockhash = consteval_ctor(uint256{"b5b31111b3ee8c91956ffb9b248950dd26a878eb72ab7d9e9286bb27603c1ba2"}),
+                .blockhash = consteval_ctor(uint256{"64a6414abd7390e34eb05773e8deb293fe3b136e5e5c4612edf78b084ebb87e5"}),
             },
             {
                 // For use by fuzz target src/test/fuzz/utxo_snapshot.cpp
                 .height = 200,
-                .hash_serialized = AssumeutxoHash{uint256{"7e3b7780fbd2fa479a01f66950dc8f728dc1b11f03d06d5bf223168520df3a48"}},
+                .hash_serialized = AssumeutxoHash{uint256{"17dcc016d188d16068907cdeb38b75691a118d43053b8cd6a25969419381d13a"}},
                 .m_chain_tx_count = 201,
-                .blockhash = consteval_ctor(uint256{"5e93653318f294fb5aa339d00bbf8cf1c3515488ad99412c37608b139ea63b27"}),
+                .blockhash = consteval_ctor(uint256{"385901ccbd69dff6bbd00065d01fb8a9e464dede7cfe0372443884f9b1dcf6b9"}),
             },
             {
                 // For use by test/functional/feature_assumeutxo.py
                 .height = 299,
-                .hash_serialized = AssumeutxoHash{uint256{"bc222dd2a08a561ff47d77c06af1fe35127bf4840392a83475332f45ea5efa3e"}},
+                .hash_serialized = AssumeutxoHash{uint256{"cacbaf3ecfe053dddffe0edd6a8907680d912e33b376ad390b3778c449fac720"}},
                 .m_chain_tx_count = 334,
-                .blockhash = consteval_ctor(uint256{"cb3e6696a6e1713994cf6daf8c0c874e51d04a9f7ef5a19595639f0293002f70"}),
+                .blockhash = consteval_ctor(uint256{"b278c92e0a27cf929931ae73f4098fcdd0c241726dd5a5f1bc4d3002fbcca5ce"}),
             },
         };
 

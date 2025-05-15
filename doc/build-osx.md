@@ -74,14 +74,6 @@ It is not necessary to build wallet functionality to run `xayad` or  `xaya-qt`.
 macOS ships with a useable `sqlite` package, meaning you don't need to
 install anything.
 
-###### Legacy Wallet Support
-
-`berkeley-db@4` is only required to support for legacy wallets.
-Skip if you don't intend to use legacy wallets.
-
-``` bash
-brew install berkeley-db@4
-```
 ---
 
 #### GUI Dependencies
@@ -163,14 +155,6 @@ It is required that you have `python` and `zip` installed.
     ```
 
 2.  Build xaya:
-
-    Configure and build the headless xaya binaries as well as the GUI (if Qt is found).
-
-If `berkeley-db@4` or `sqlite` are not installed, this will throw an error.
-
-``` bash
-cmake -B build -DWITH_BDB=ON
-```
 
 ##### Wallet (only SQlite) and GUI Support:
 
