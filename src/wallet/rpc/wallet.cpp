@@ -9,17 +9,16 @@
 #include <key_io.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+#include <univalue.h>
 #include <util/translation.h>
 #include <wallet/context.h>
 #include <wallet/receive.h>
-#include <wallet/rpc/wallet.h>
 #include <wallet/rpc/util.h>
+#include <wallet/rpc/wallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
 
 #include <optional>
-
-#include <univalue.h>
 
 
 namespace wallet {
@@ -30,14 +29,6 @@ static const std::map<uint64_t, std::string> WALLET_FLAG_CAVEATS{
      "destinations in the past. Until this is done, some destinations may "
      "be considered unused, even if the opposite is the case."},
 };
-
-/** Checks if a CKey is in the given CWallet compressed or otherwise*/
-bool HaveKey(const SigningProvider& wallet, const CKey& key)
-{
-    CKey key2;
-    key2.Set(key.begin(), key.end(), !key.IsCompressed());
-    return wallet.HaveKey(key.GetPubKey().GetID()) || wallet.HaveKey(key2.GetPubKey().GetID());
-}
 
 static RPCHelpMan getwalletinfo()
 {
@@ -206,8 +197,9 @@ static RPCHelpMan listwallets()
 
 static RPCHelpMan loadwallet()
 {
-    return RPCHelpMan{"loadwallet",
-                "\nLoads a wallet from a wallet file or directory."
+    return RPCHelpMan{
+        "loadwallet",
+        "Loads a wallet from a wallet file or directory."
                 "\nNote that all wallet command-line options used when starting bitcoind will be"
                 "\napplied to the new wallet.\n",
                 {
@@ -275,8 +267,9 @@ static RPCHelpMan setwalletflag()
                 if (it.second & MUTABLE_WALLET_FLAGS)
                     flags += (flags == "" ? "" : ", ") + it.first;
 
-    return RPCHelpMan{"setwalletflag",
-                "\nChange the state of the given wallet flag for a wallet.\n",
+    return RPCHelpMan{
+        "setwalletflag",
+        "Change the state of the given wallet flag for a wallet.\n",
                 {
                     {"flag", RPCArg::Type::STR, RPCArg::Optional::NO, "The name of the flag to change. Current available flags: " + flags},
                     {"value", RPCArg::Type::BOOL, RPCArg::Default{true}, "The new state."},
@@ -339,7 +332,7 @@ static RPCHelpMan createwallet()
 {
     return RPCHelpMan{
         "createwallet",
-        "\nCreates and loads a new wallet.\n",
+        "Creates and loads a new wallet.\n",
         {
             {"wallet_name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name for the new wallet. If this is a path, the wallet will be created at the path location."},
             {"disable_private_keys", RPCArg::Type::BOOL, RPCArg::Default{false}, "Disable the possibility of private keys (only watchonlys are possible in this mode)."},
@@ -490,8 +483,9 @@ static RPCHelpMan unloadwallet()
 
 static RPCHelpMan upgradewallet()
 {
-    return RPCHelpMan{"upgradewallet",
-        "\nUpgrade the wallet. Upgrades to the latest version if no version number is specified.\n"
+    return RPCHelpMan{
+        "upgradewallet",
+        "Upgrade the wallet. Upgrades to the latest version if no version number is specified.\n"
         "New keys may be generated and a new wallet backup will need to be made.",
         {
             {"version", RPCArg::Type::NUM, RPCArg::Default{int{FEATURE_LATEST}}, "The version number to upgrade to. Default is the latest wallet version."}
@@ -552,8 +546,9 @@ static RPCHelpMan upgradewallet()
 
 RPCHelpMan simulaterawtransaction()
 {
-    return RPCHelpMan{"simulaterawtransaction",
-        "\nCalculate the balance change resulting in the signing and broadcasting of the given transaction(s).\n",
+    return RPCHelpMan{
+        "simulaterawtransaction",
+        "Calculate the balance change resulting in the signing and broadcasting of the given transaction(s).\n",
         {
             {"rawtxs", RPCArg::Type::ARR, RPCArg::Optional::OMITTED, "An array of hex strings of raw transactions.\n",
                 {
@@ -661,8 +656,9 @@ RPCHelpMan simulaterawtransaction()
 
 static RPCHelpMan migratewallet()
 {
-    return RPCHelpMan{"migratewallet",
-        "\nMigrate the wallet to a descriptor wallet.\n"
+    return RPCHelpMan{
+        "migratewallet",
+        "Migrate the wallet to a descriptor wallet.\n"
         "A new wallet backup will need to be made.\n"
         "\nThe migration process will create a backup of the wallet before migrating. This backup\n"
         "file will be named <wallet name>-<timestamp>.legacy.bak and can be found in the directory\n"
@@ -731,7 +727,7 @@ RPCHelpMan gethdkeys()
 {
     return RPCHelpMan{
         "gethdkeys",
-        "\nList all BIP 32 HD keys in the wallet and which descriptors use them.\n",
+        "List all BIP 32 HD keys in the wallet and which descriptors use them.\n",
         {
             {"options", RPCArg::Type::OBJ_NAMED_PARAMS, RPCArg::Optional::OMITTED, "", {
                 {"active_only", RPCArg::Type::BOOL, RPCArg::Default{false}, "Show the keys for only active descriptors"},
