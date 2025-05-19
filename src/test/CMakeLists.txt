@@ -147,6 +147,8 @@ target_raw_data_sources(test_namecoin NAMESPACE test::data
   data/asmap.raw
 )
 
+add_windows_application_manifest(test_namecoin)
+
 target_link_libraries(test_namecoin
   core_interface
   test_util

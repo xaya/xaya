@@ -212,6 +212,7 @@ if(ENABLE_WALLET)
       wallet/wallettool.cpp
     )
     add_windows_resources(namecoin-wallet bitcoin-wallet-res.rc)
+    add_windows_application_manifest(namecoin-wallet)
     target_link_libraries(namecoin-wallet
       core_interface
       bitcoin_wallet
@@ -350,6 +351,7 @@ if(BUILD_DAEMON)
     init/bitcoind.cpp
   )
   add_windows_resources(namecoind bitcoind-res.rc)
+  add_windows_application_manifest(namecoind)
   target_link_libraries(namecoind
     core_interface
     bitcoin_node
@@ -403,6 +405,7 @@ target_link_libraries(bitcoin_cli
 if(BUILD_CLI)
   add_executable(namecoin-cli bitcoin-cli.cpp)
   add_windows_resources(namecoin-cli bitcoin-cli-res.rc)
+  add_windows_application_manifest(namecoin-cli)
   target_link_libraries(namecoin-cli
     core_interface
     bitcoin_cli
@@ -418,6 +421,7 @@ endif()
 if(BUILD_TX)
   add_executable(namecoin-tx bitcoin-tx.cpp)
   add_windows_resources(namecoin-tx bitcoin-tx-res.rc)
+  add_windows_application_manifest(namecoin-tx)
   target_link_libraries(namecoin-tx
     core_interface
     bitcoin_common
@@ -431,6 +435,7 @@ endif()
 if(BUILD_UTIL)
   add_executable(namecoin-util bitcoin-util.cpp)
   add_windows_resources(namecoin-util bitcoin-util-res.rc)
+  add_windows_application_manifest(namecoin-util)
   target_link_libraries(namecoin-util
     core_interface
     bitcoin_common

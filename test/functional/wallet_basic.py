@@ -604,6 +604,8 @@ class WalletTest(BitcoinTestFramework):
         txid_a = self.nodes[0].sendtoaddress(addr_a, 0.01)
         txid_b = self.nodes[0].sendtoaddress(addr_b, 0.01)
         self.generate(self.nodes[0], 1, sync_fun=self.no_op)
+        # Prevent race of listunspent with outstanding TxAddedToMempool notifications
+        self.nodes[0].syncwithvalidationinterfacequeue()
         # Now import the descriptors, make sure we can identify on which descriptor each coin was received.
         self.nodes[0].createwallet(wallet_name="wo", descriptors=True, disable_private_keys=True)
         wo_wallet = self.nodes[0].get_wallet_rpc("wo")
@@ -655,6 +657,9 @@ class WalletTest(BitcoinTestFramework):
 
         # check that it works again with -spendzeroconfchange set (=default)
         self.restart_node(0, ["-spendzeroconfchange=1"])
+        # Make sure the wallet knows the tx in the mempool
+        self.nodes[0].syncwithvalidationinterfacequeue()
+
         zeroconf_wallet = self.nodes[0].get_wallet_rpc("zeroconf")
         utxos = zeroconf_wallet.listunspent(minconf=0)
         assert_equal(len(utxos), 1)
@@ -674,7 +679,8 @@ class WalletTest(BitcoinTestFramework):
         self.generate(self.wallet, 1, sync_fun=self.no_op)
         self.nodes[0].createwallet("watch_wallet", disable_private_keys=True)
         watch_wallet = self.nodes[0].get_wallet_rpc("watch_wallet")
-        watch_wallet.importaddress(self.wallet.get_address())
+        import_res = watch_wallet.importdescriptors([{"desc": self.wallet.get_descriptor(), "timestamp": "now"}])
+        assert_equal(import_res[0]["success"], True)
 
         # DEFAULT_ANCESTOR_LIMIT transactions off a confirmed tx should be fine
         chain = self.wallet.create_self_transfer_chain(chain_length=DEFAULT_ANCESTOR_LIMIT)

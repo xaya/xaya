@@ -264,6 +264,7 @@ add_executable(namecoin-qt
 )
 
 add_windows_resources(namecoin-qt res/bitcoin-qt-res.rc)
+add_windows_application_manifest(namecoin-qt)
 
 target_link_libraries(namecoin-qt
   core_interface
