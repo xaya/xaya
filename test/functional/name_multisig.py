@@ -45,11 +45,6 @@ class NameMultisigTest (NameTestFramework):
     # has a watch-only wallet with the actual multisig address in it.
     self.setup_name_test ([self.node_args] * 3)
 
-  def add_wallet_options (self, parser):
-    # Make sure we only allow (and use as default) legacy wallets,
-    # as otherwise the addmultisig does not work as used in the test.
-    super ().add_wallet_options (parser, descriptors=False, legacy=True)
-
   def add_options (self, parser):
     super ().add_options (parser)
     parser.add_argument ("--bip16-active", dest="activated", default=False,
@@ -143,8 +138,11 @@ class NameMultisigTest (NameTestFramework):
     pubkeyB = self.getNewPubkey (1)
     self.nodes[2].createwallet (wallet_name="multisig", disable_private_keys=True)
     multisigRpc = self.nodes[2].get_wallet_rpc ("multisig")
-    multisig = multisigRpc.addmultisigaddress (2, [pubkeyA, pubkeyB])
-    p2sh = multisig['address']
+    desc = f"sh(multi(2,{pubkeyA},{pubkeyB}))"
+    info = self.nodes[2].getdescriptorinfo (desc)
+    desc = f"{desc}#{info['checksum']}"
+    multisigRpc.importdescriptors ([{"desc": desc, "timestamp": "now"}])
+    [p2sh] = self.nodes[2].deriveaddresses (desc)
 
     # Register a new name to that address.
     self.nodes[0].name_register ("x/name", val ("value"), {"destAddress": p2sh})

@@ -53,7 +53,7 @@ MessageVerificationResult MessageVerify(
 
     /* Handle the case of address recovery.  */
     if (address.empty()) {
-        address = EncodeDestination(GetDestinationForKey(pubkey, OutputType::LEGACY));
+        address = EncodeDestination(PKHash(pubkey));
         return MessageVerificationResult::OK;
     }
 

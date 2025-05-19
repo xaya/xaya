@@ -213,6 +213,7 @@ if(ENABLE_WALLET)
       wallet/wallettool.cpp
     )
     add_windows_resources(xaya-wallet bitcoin-wallet-res.rc)
+    add_windows_application_manifest(xaya-wallet)
     target_link_libraries(xaya-wallet
       core_interface
       bitcoin_wallet
@@ -352,6 +353,7 @@ if(BUILD_DAEMON)
     init/bitcoind.cpp
   )
   add_windows_resources(xayad bitcoind-res.rc)
+  add_windows_application_manifest(xayad)
   target_link_libraries(xayad
     core_interface
     bitcoin_node
@@ -405,6 +407,7 @@ target_link_libraries(bitcoin_cli
 if(BUILD_CLI)
   add_executable(xaya-cli bitcoin-cli.cpp)
   add_windows_resources(xaya-cli bitcoin-cli-res.rc)
+  add_windows_application_manifest(xaya-cli)
   target_link_libraries(xaya-cli
     core_interface
     bitcoin_cli
@@ -420,6 +423,7 @@ endif()
 if(BUILD_TX)
   add_executable(xaya-tx bitcoin-tx.cpp)
   add_windows_resources(xaya-tx bitcoin-tx-res.rc)
+  add_windows_application_manifest(xaya-tx)
   target_link_libraries(xaya-tx
     core_interface
     bitcoin_common
@@ -434,6 +438,7 @@ endif()
 if(BUILD_UTIL)
   add_executable(xaya-util bitcoin-util.cpp)
   add_windows_resources(xaya-util bitcoin-util-res.rc)
+  add_windows_application_manifest(xaya-util)
   target_link_libraries(xaya-util
     core_interface
     bitcoin_common

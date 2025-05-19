@@ -264,6 +264,7 @@ add_executable(xaya-qt
 )
 
 add_windows_resources(xaya-qt res/bitcoin-qt-res.rc)
+add_windows_application_manifest(xaya-qt)
 
 target_link_libraries(xaya-qt
   core_interface

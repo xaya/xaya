@@ -33,8 +33,12 @@ class PremineTest(BitcoinTestFramework):
     # To import the multisig address as watch-only, we need a wallet
     # that has private keys disabled.
     node.createwallet (wallet_name="watchonly", disable_private_keys=True)
+    desc = f"addr({PREMINE_ADDRESS})"
+    info = node.getdescriptorinfo (desc)
+    desc = f"{desc}#{info['checksum']}"
     rpcWatchonly = node.get_wallet_rpc ("watchonly")
-    rpcWatchonly.importaddress (PREMINE_ADDRESS)
+    rpcWatchonly.importdescriptors ([{"desc": desc, "timestamp": "now"}])
+    rpcWatchonly.rescanblockchain ()
     node.createwallet (wallet_name="privkeys")
     rpcKeys = node.get_wallet_rpc ("privkeys")
 

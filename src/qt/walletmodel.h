@@ -12,6 +12,7 @@
 
 #include <interfaces/wallet.h>
 #include <support/allocators/secure.h>
+#include <util/transaction_identifier.h>
 
 #include <vector>
 
@@ -132,7 +133,7 @@ public:
 
     UnlockContext requestUnlock();
 
-    bool bumpFee(uint256 hash, uint256& new_hash);
+    bool bumpFee(Txid hash, Txid& new_hash);
     void displayAddress(std::string sAddress) const;
 
     static bool isWalletEnabled();

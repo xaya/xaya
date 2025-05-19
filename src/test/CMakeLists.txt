@@ -149,6 +149,8 @@ target_raw_data_sources(test_xaya NAMESPACE test::data
   data/asmap.raw
 )
 
+add_windows_application_manifest(test_xaya)
+
 target_link_libraries(test_xaya
   core_interface
   test_util

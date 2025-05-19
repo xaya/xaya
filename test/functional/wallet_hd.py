@@ -10,6 +10,7 @@ from test_framework.blocktools import COINBASE_MATURITY
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
+    wallet_importprivkey,
 )
 
 
@@ -42,7 +43,7 @@ class WalletHDTest(BitcoinTestFramework):
         # Import a non-HD private key in the HD wallet
         non_hd_add = 'chirt1qmevj8zfx0wdvp05cqwkmr6mxkfx60yezl7c0v5'
         non_hd_key = 'b6wEcuuqXDy88mNdevCd4VkjJZSTnfMyth6E31347m2EBRoDDYH3'
-        self.nodes[1].importprivkey(non_hd_key)
+        wallet_importprivkey(self.nodes[1], non_hd_key, "now")
 
         # This should be enough to keep the master key and the non-HD key
         self.nodes[1].backupwallet(self.nodes[1].datadir_path / "hd.bak")
