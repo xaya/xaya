@@ -228,35 +228,33 @@ static CAmount ExtractAndValidateValue(const std::string& strValue)
 
 static void MutateTxVersion(CMutableTransaction& tx, const std::string& cmdVal)
 {
-    uint32_t newVersion;
-    if (!ParseUInt32(cmdVal, &newVersion) || newVersion < 1 || newVersion > TX_MAX_STANDARD_VERSION) {
+    const auto ver{ToIntegral<uint32_t>(cmdVal)};
+    if (!ver || *ver < 1 || *ver > TX_MAX_STANDARD_VERSION) {
         throw std::runtime_error("Invalid TX version requested: '" + cmdVal + "'");
     }
-
-    tx.version = newVersion;
+    tx.version = *ver;
 }
 
 static void MutateTxLocktime(CMutableTransaction& tx, const std::string& cmdVal)
 {
-    int64_t newLocktime;
-    if (!ParseInt64(cmdVal, &newLocktime) || newLocktime < 0LL || newLocktime > 0xffffffffLL)
+    const auto locktime{ToIntegral<uint32_t>(cmdVal)};
+    if (!locktime) {
         throw std::runtime_error("Invalid TX locktime requested: '" + cmdVal + "'");
-
-    tx.nLockTime = (unsigned int) newLocktime;
+    }
+    tx.nLockTime = *locktime;
 }
 
 static void MutateTxRBFOptIn(CMutableTransaction& tx, const std::string& strInIdx)
 {
-    // parse requested index
-    int64_t inIdx = -1;
-    if (strInIdx != "" && (!ParseInt64(strInIdx, &inIdx) || inIdx < 0 || inIdx >= static_cast<int64_t>(tx.vin.size()))) {
+    const auto idx{ToIntegral<uint32_t>(strInIdx)};
+    if (strInIdx != "" && (!idx || *idx >= tx.vin.size())) {
         throw std::runtime_error("Invalid TX input index '" + strInIdx + "'");
     }
 
     // set the nSequence to MAX_INT - 2 (= RBF opt in flag)
-    int cnt = 0;
+    uint32_t cnt{0};
     for (CTxIn& txin : tx.vin) {
-        if (strInIdx == "" || cnt == inIdx) {
+        if (strInIdx == "" || cnt == *idx) {
             if (txin.nSequence > MAX_BIP125_RBF_SEQUENCE) {
                 txin.nSequence = MAX_BIP125_RBF_SEQUENCE;
             }
@@ -294,9 +292,10 @@ static void MutateTxAddInput(CMutableTransaction& tx, const std::string& strInpu
 
     // extract and validate vout
     const std::string& strVout = vStrInputParts[1];
-    int64_t vout;
-    if (!ParseInt64(strVout, &vout) || vout < 0 || vout > static_cast<int64_t>(maxVout))
+    const auto vout{ToIntegral<uint32_t>(strVout)};
+    if (!vout || *vout > maxVout) {
         throw std::runtime_error("invalid TX input vout '" + strVout + "'");
+    }
 
     // extract the optional sequence number
     uint32_t nSequenceIn = CTxIn::SEQUENCE_FINAL;
@@ -305,7 +304,7 @@ static void MutateTxAddInput(CMutableTransaction& tx, const std::string& strInpu
     }
 
     // append to transaction input list
-    CTxIn txin(*txid, vout, CScript(), nSequenceIn);
+    CTxIn txin{*txid, *vout, CScript{}, nSequenceIn};
     tx.vin.push_back(txin);
 }
 
@@ -543,16 +542,10 @@ MutateTxNameOutput (CMutableTransaction& tx, const std::string& command,
   if (valueParts.size () < 1)
     throw std::runtime_error ("name operation missing output index");
 
-  int64_t index;
-  if (!ParseInt64 (valueParts[0], &index)
-        || index < 0
-        || index >= static_cast<int> (tx.vout.size ()))
-    {
-      std::ostringstream msg;
-      msg << "invalid tx output index '" << valueParts[0] << "'"
-          << " for name operation";
-      throw std::runtime_error (msg.str ());
-    }
+  const auto idx{ToIntegral<uint32_t>(valueParts[0])};
+  if (!idx || idx >= tx.vout.size()) {
+      throw std::runtime_error("Invalid TX output index '" + valueParts[0] + "' for name operation");
+  }
 
   std::vector<valtype> data;
   for (size_t i = 1; i < valueParts.size (); ++i)
@@ -568,7 +561,7 @@ MutateTxNameOutput (CMutableTransaction& tx, const std::string& command,
     }
 
   /* Next, fetch the output script we want to modify.  */
-  const CScript& addr = tx.vout[index].scriptPubKey;
+  const CScript& addr = tx.vout[*idx].scriptPubKey;
 
   /* Build the name script according to the command.  */
   CScript nameOp;
@@ -595,33 +588,27 @@ MutateTxNameOutput (CMutableTransaction& tx, const std::string& command,
     assert (false);
 
   /* Update the transaction.  */
-  tx.vout[index].scriptPubKey = nameOp;
+  tx.vout[*idx].scriptPubKey = nameOp;
 }
 
 } // anonymous namespace
 
 static void MutateTxDelInput(CMutableTransaction& tx, const std::string& strInIdx)
 {
-    // parse requested deletion index
-    int64_t inIdx;
-    if (!ParseInt64(strInIdx, &inIdx) || inIdx < 0 || inIdx >= static_cast<int64_t>(tx.vin.size())) {
+    const auto idx{ToIntegral<uint32_t>(strInIdx)};
+    if (!idx || idx >= tx.vin.size()) {
         throw std::runtime_error("Invalid TX input index '" + strInIdx + "'");
     }
-
-    // delete input from transaction
-    tx.vin.erase(tx.vin.begin() + inIdx);
+    tx.vin.erase(tx.vin.begin() + *idx);
 }
 
 static void MutateTxDelOutput(CMutableTransaction& tx, const std::string& strOutIdx)
 {
-    // parse requested deletion index
-    int64_t outIdx;
-    if (!ParseInt64(strOutIdx, &outIdx) || outIdx < 0 || outIdx >= static_cast<int64_t>(tx.vout.size())) {
+    const auto idx{ToIntegral<uint32_t>(strOutIdx)};
+    if (!idx || idx >= tx.vout.size()) {
         throw std::runtime_error("Invalid TX output index '" + strOutIdx + "'");
     }
-
-    // delete output from transaction
-    tx.vout.erase(tx.vout.begin() + outIdx);
+    tx.vout.erase(tx.vout.begin() + *idx);
 }
 
 static const unsigned int N_SIGHASH_OPTS = 7;

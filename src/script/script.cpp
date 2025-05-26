@@ -249,6 +249,13 @@ bool CScript::IsPayToWitnessScriptHash(bool allowNames) const
     return nameOp.getAddress().IsPayToWitnessScriptHash(false);
 }
 
+bool CScript::IsPayToTaproot() const
+{
+    return (this->size() == 34 &&
+            (*this)[0] == OP_1 &&
+            (*this)[1] == 0x20);
+}
+
 // A witness program is any valid CScript that consists of a 1-byte push opcode
 // followed by a data push between 2 and 40 bytes.
 bool CScript::IsWitnessProgram(const bool allowNames, int& version, std::vector<unsigned char>& program) const
