@@ -17,6 +17,9 @@ Unpack the files into a directory and run:
 
 - `bin/namecoin-qt` (GUI) or
 - `bin/namecoind` (headless)
+- `bin/namecoin` (wrapper command)
+
+The `namecoin` command supports subcommands like `namecoin gui`, `namecoin node`, and `namecoin rpc` exposing different functionality. Subcommands can be listed with `namecoin help`.
 
 ### Windows
 

@@ -415,8 +415,8 @@ public:
     void UnlinkPrunedFiles(const std::set<int>& setFilesToPrune) const;
 
     /** Functions for disk access for blocks */
-    bool ReadBlock(CBlock& block, const FlatFilePos& pos) const;
-    bool ReadBlock(CBlock& block, const CBlockIndex& pindex) const;
+    bool ReadBlock(CBlock& block, const FlatFilePos& pos, const std::optional<uint256>& expected_hash = {}) const;
+    bool ReadBlock(CBlock& block, const CBlockIndex& index) const;
     bool ReadRawBlock(std::vector<uint8_t>& block, const FlatFilePos& pos) const;
     bool ReadBlockHeader(CBlockHeader& block, const CBlockIndex& pindex) const;
 

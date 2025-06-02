@@ -203,7 +203,11 @@ cmake --build build --target deploy
 Namecoin Core should now be available at `./build/bin/namecoind`.
 If you compiled support for the GUI, it should be available at `./build/bin/namecoin-qt`.
 
-The first time you run `namecoind` or `namecoin-qt`, it will start downloading the blockchain.
+There is also a multifunction command line interface at `./build/bin/namecoin`
+supporting subcommands like `namecoin node`, `bitcoin gui`, `bitcoin rpc`, and
+others that can be listed with `namecoin help`.
+
+The first time you run `namecoind` or `bitcoin-qt`, it will start downloading the blockchain.
 This process could take many hours, or even days on slower than average systems.
 
 By default, blockchain and wallet data files will be stored in:

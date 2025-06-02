@@ -38,6 +38,7 @@
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <unordered_map>
 
 namespace kernel {
@@ -996,7 +997,7 @@ namespace
    both a block and its header.  */
 
 template<typename T>
-bool ReadBlockOrHeader(T& block, const FlatFilePos& pos, const BlockManager& blockman)
+bool ReadBlockOrHeader(T& block, const FlatFilePos& pos, const BlockManager& blockman, const std::optional<uint256>& expected_hash)
 {
     block.SetNull();
 
@@ -1014,6 +1015,8 @@ bool ReadBlockOrHeader(T& block, const FlatFilePos& pos, const BlockManager& blo
         return false;
     }
 
+    const auto block_hash{block.GetHash()};
+
     // Check the header
     if (!CheckProofOfWork(block, blockman.GetConsensus())) {
         LogError("Errors in block header at %s while reading block", pos.ToString());
@@ -1026,6 +1029,12 @@ bool ReadBlockOrHeader(T& block, const FlatFilePos& pos, const BlockManager& blo
         return false;
     }
 
+    if (expected_hash && block_hash != *expected_hash) {
+        LogError("GetHash() doesn't match index at %s while reading block (%s != %s)",
+                 pos.ToString(), block_hash.ToString(), expected_hash->ToString());
+        return false;
+    }
+
     return true;
 }
 
@@ -1033,22 +1042,14 @@ template<typename T>
 bool ReadBlockOrHeader(T& block, const CBlockIndex& index, const BlockManager& blockman)
 {
     const FlatFilePos block_pos{WITH_LOCK(cs_main, return index.GetBlockPos())};
-
-    if (!ReadBlockOrHeader(block, block_pos, blockman)) {
-        return false;
-    }
-    if (block.GetHash() != index.GetBlockHash()) {
-        LogError("GetHash() doesn't match index for %s at %s while reading block", index.ToString(), block_pos.ToString());
-        return false;
-    }
-    return true;
+    return ReadBlockOrHeader(block, block_pos, blockman, index.GetBlockHash());
 }
 
 } // anonymous namespace
 
-bool BlockManager::ReadBlock(CBlock& block, const FlatFilePos& pos) const
+bool BlockManager::ReadBlock(CBlock& block, const FlatFilePos& pos, const std::optional<uint256>& expected_hash) const
 {
-    return ReadBlockOrHeader(block, pos, *this);
+    return ReadBlockOrHeader(block, pos, *this, expected_hash);
 }
 
 bool BlockManager::ReadBlock(CBlock& block, const CBlockIndex& index) const
