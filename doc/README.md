@@ -17,6 +17,9 @@ Unpack the files into a directory and run:
 
 - `bin/xaya-qt` (GUI) or
 - `bin/xayad` (headless)
+- `bin/xaya` (wrapper command)
+
+The `xaya` command supports subcommands like `xaya gui`, `xaya node`, and `xaya rpc` exposing different functionality. Subcommands can be listed with `xaya help`.
 
 ### Windows
 

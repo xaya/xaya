@@ -203,6 +203,10 @@ cmake --build build --target deploy
 Xaya Core should now be available at `./build/bin/xayad`.
 If you compiled support for the GUI, it should be available at `./build/bin/xaya-qt`.
 
+There is also a multifunction command line interface at `./build/bin/xaya`
+supporting subcommands like `xaya node`, `bitcoin gui`, `bitcoin rpc`, and
+others that can be listed with `xaya help`.
+
 The first time you run `xayad` or `xaya-qt`, it will start downloading the blockchain.
 This process could take many hours, or even days on slower than average systems.
 
