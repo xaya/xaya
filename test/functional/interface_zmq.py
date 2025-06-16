@@ -212,8 +212,7 @@ class ZMQTest (BitcoinTestFramework):
 
             # Should receive the coinbase raw transaction.
             tx = tx_from_hex(rawtx.receive().hex())
-            tx.calc_sha256()
-            assert_equal(tx.hash, txid.hex())
+            assert_equal(tx.txid_hex, txid.hex())
 
             # Should receive the generated raw block.
             hex = rawblock.receive()
@@ -225,7 +224,7 @@ class ZMQTest (BitcoinTestFramework):
             # the hashes, though.
             block.calc_sha256()
             block.calc_merkle_root()
-            assert_equal(block.vtx[0].hash, tx.hash)
+            assert_equal(block.vtx[0].txid_hex, tx.txid_hex)
             assert_equal(len(block.vtx), 1)
             assert_equal(genhashes[x], hash256_reversed(hex[:80]).hex())
 
