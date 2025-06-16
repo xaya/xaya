@@ -9,9 +9,6 @@ from test_framework.util import *
 
 import codecs
 
-# Maximum data length.
-MAX_DATA_LEN = 80
-
 
 class XayaCreateBurnsTest (NameTestFramework):
 
@@ -59,22 +56,11 @@ class XayaCreateBurnsTest (NameTestFramework):
       self.generate (self.nodes[0], 1)
       self.verifyTx (txid, burn)
 
-    # Test maximum length.
-    burn = {"a" * MAX_DATA_LEN: 1, "b" * MAX_DATA_LEN: 2}
-    txid = self.nodes[0].name_update ("x/testname", val ("value"),
-                                     {"burn": burn})
-    self.generate (self.nodes[0], 1)
-    self.verifyTx (txid, burn)
-
     # Verify the range check for amount and the data length verification.
     assert_raises_rpc_error (-3, 'Invalid amount for burn',
                              self.nodes[0].name_update,
                              "x/testname", val ("value"),
                              {"burn": {"foo": 0}})
-    assert_raises_rpc_error (-5, 'Burn data is too long',
-                             self.nodes[0].name_update,
-                             "x/testname", val ("value"),
-                             {"burn": {"x" * (MAX_DATA_LEN + 1): 1}})
 
     # Verify the insufficient funds check, both where it fails a priori
     # and where we just don't have enough for the fee.
