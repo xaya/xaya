@@ -28,7 +28,7 @@ public:
 
     std::list<const CZMQAbstractNotifier*> GetActiveNotifiers() const;
 
-    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(std::vector<uint8_t>&, const CBlockIndex&)> get_block_by_index, std::function<const CBlockIndex*(const uint256&)> get_index_by_hash);
+    static std::unique_ptr<CZMQNotificationInterface> Create(std::function<bool(std::vector<std::byte>&, const CBlockIndex&)> get_block_by_index, std::function<const CBlockIndex*(const uint256&)> get_index_by_hash);
 
     inline TrackedGames* GetTrackedGames() {
         return trackedGames.get();
