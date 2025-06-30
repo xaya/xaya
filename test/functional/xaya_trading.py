@@ -229,8 +229,8 @@ class AtomicTradingTest (BitcoinTestFramework):
     # Make sure everything is as expected.
     self.sync_blocks ()
     for node in self.nodes:
-      info = node.getwalletinfo ()
-      assert_equal (info["immature_balance"], 0)
+      bal = node.getbalances ()
+      assert_equal (bal["mine"]["immature"], 0)
 
     # Run individual tests.
     self.testBidOffer ()
