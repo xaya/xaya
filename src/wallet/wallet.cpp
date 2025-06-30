@@ -726,7 +726,6 @@ void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> ran
         if (!copyFrom->IsEquivalentTo(*copyTo)) continue;
         copyTo->mapValue = copyFrom->mapValue;
         copyTo->vOrderForm = copyFrom->vOrderForm;
-        // fTimeReceivedIsTxTime not copied on purpose
         // nTimeReceived not copied on purpose
         copyTo->nTimeSmart = copyFrom->nTimeSmart;
         // nOrderPos not copied on purpose
@@ -1712,6 +1711,11 @@ void CWallet::InitWalletFlags(uint64_t flags)
     if (!LoadWalletFlags(flags)) assert(false);
 }
 
+uint64_t CWallet::GetWalletFlags() const
+{
+    return m_wallet_flags;
+}
+
 void CWallet::MaybeUpdateBirthTime(int64_t time)
 {
     int64_t birthtime = m_birth_time.load();
@@ -2227,7 +2231,6 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
         CHECK_NONFATAL(wtx.vOrderForm.empty());
         wtx.mapValue = std::move(mapValue);
         wtx.vOrderForm = std::move(orderForm);
-        wtx.fTimeReceivedIsTxTime = true;
         return true;
     });
 
@@ -2864,7 +2867,9 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
         // ensure this wallet.dat can only be opened by clients supporting HD with chain split and expects no default key
         walletInstance->SetMinVersion(FEATURE_LATEST);
 
-        walletInstance->InitWalletFlags(wallet_creation_flags);
+        // Init with passed flags.
+        // Always set the cache upgrade flag as this feature is supported from the beginning.
+        walletInstance->InitWalletFlags(wallet_creation_flags | WALLET_FLAG_LAST_HARDENED_XPUB_CACHED);
 
         // Only descriptor wallets can be created
         assert(walletInstance->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
