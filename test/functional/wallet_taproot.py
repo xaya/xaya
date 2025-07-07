@@ -192,7 +192,6 @@ class WalletTaprootTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         base = ["-addresstype=bech32"]
         self.extra_args = [base + ['-keypool=100'], base + ['-keypool=100']]
-        self.supports_cli = False
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()

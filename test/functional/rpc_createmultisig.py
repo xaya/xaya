@@ -31,7 +31,6 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
         self.extra_args = [
           ["-addresstype=bech32", "-changetype=bech32"],
         ] * self.num_nodes
-        self.supports_cli = False
 
     def create_keys(self, num_keys):
         self.pub = []
