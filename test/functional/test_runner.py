@@ -171,6 +171,7 @@ BASE_SCRIPTS = [
     'wallet_txn_doublespend.py --mineblock',
     'tool_bitcoin_chainstate.py',
     'tool_wallet.py',
+    'tool_utils.py',
     # FIXME: Re-enable once the signet miner supports powdata
     #'tool_signet_miner.py',
     'wallet_txn_clone.py',
