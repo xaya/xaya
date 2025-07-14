@@ -230,7 +230,7 @@ RPCHelpMan
 game_sendupdates ()
 {
   return RPCHelpMan ("game_sendupdates",
-      "\nRequests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
+      "Requests on-demand block attach/detach notifications to be sent through the game ZMQ interface.\n"
       "\nIf toblock is not given, it defaults to the current chain tip.\n",
       {
           {"gameid", RPCArg::Type::STR, RPCArg::Optional::NO, "The game ID for which to send notifications"},
@@ -357,7 +357,7 @@ RPCHelpMan
 trackedgames ()
 {
   return RPCHelpMan ("trackedgames",
-      "\nReturns or modifies the list of tracked games for the game ZMQ interface.\n"
+      "Returns or modifies the list of tracked games for the game ZMQ interface.\n"
       "\nIf called without arguments, the list of tracked games is returned.  Otherwise, the given game is added or removed from the list.\n",
       {
           {"command", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Can be \"add\" or \"remove\""},

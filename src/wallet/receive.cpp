@@ -315,13 +315,10 @@ Balance GetBalance(const CWallet& wallet, const int min_depth, bool avoid_reuse)
                 continue;
 
             if (!wallet.IsSpent(outpoint) && (allow_used_addresses || !wallet.IsSpentKey(txo.GetTxOut().scriptPubKey))) {
-                // Get the amounts for mine and watchonly
+                // Get the amounts for mine
                 CAmount credit_mine = 0;
-                CAmount credit_watchonly = 0;
                 if (txo.GetIsMine() == ISMINE_SPENDABLE) {
                     credit_mine = txo.GetTxOut().nValue;
-                } else if (txo.GetIsMine() == ISMINE_WATCH_ONLY) {
-                    credit_watchonly = txo.GetTxOut().nValue;
                 } else {
                     // We shouldn't see any other isminetypes
                     Assume(false);
@@ -330,13 +327,10 @@ Balance GetBalance(const CWallet& wallet, const int min_depth, bool avoid_reuse)
                 // Set the amounts in the return object
                 if (wallet.IsTxImmatureCoinBase(wtx) && wtx.isConfirmed()) {
                     ret.m_mine_immature += credit_mine;
-                    ret.m_watchonly_immature += credit_watchonly;
                 } else if (is_trusted && tx_depth >= min_depth) {
                     ret.m_mine_trusted += credit_mine;
-                    ret.m_watchonly_trusted += credit_watchonly;
                 } else if (!is_trusted && wtx.InMempool()) {
                     ret.m_mine_untrusted_pending += credit_mine;
-                    ret.m_watchonly_untrusted_pending += credit_watchonly;
                 }
             }
         }

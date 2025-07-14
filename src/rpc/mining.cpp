@@ -1203,7 +1203,7 @@ static RPCHelpMan submitheader()
 static RPCHelpMan createauxblock()
 {
     return RPCHelpMan{"createauxblock",
-        "\nCreates a new block and returns information required to"
+        "Creates a new block and returns information required to"
         " merge-mine it.\n",
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Payout address for the coinbase transaction"},
@@ -1245,7 +1245,7 @@ static RPCHelpMan createauxblock()
 static RPCHelpMan submitauxblock()
 {
     return RPCHelpMan{"submitauxblock",
-        "\nSubmits a solved auxpow for a block that was previously"
+        "Submits a solved auxpow for a block that was previously"
         " created by 'createauxblock'.\n",
         {
             {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "Hash of the block to submit"},
@@ -1270,7 +1270,7 @@ static RPCHelpMan submitauxblock()
 static RPCHelpMan creatework()
 {
     return RPCHelpMan{"creatework",
-        "\nCreates a new block and returns information required to mine it stand-alone.\n",
+        "Creates a new block and returns information required to mine it stand-alone.\n",
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Payout address for the coinbase transaction"},
         },
@@ -1310,7 +1310,7 @@ static RPCHelpMan creatework()
 static RPCHelpMan submitwork()
 {
     return RPCHelpMan{"submitwork",
-        "\nSubmits a solved PoW for a block that was previously created by 'creatework'.\n"
+        "Submits a solved PoW for a block that was previously created by 'creatework'.\n"
         "\nDEPRECATED: If no hash is given, it will be deduced from the data.  Prefer to add an explicit hash.\n",
         {
             {"hash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "Hash of the block to submit"},

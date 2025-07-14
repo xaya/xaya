@@ -132,7 +132,7 @@ ReservedKeysForMining g_mining_keys;
 RPCHelpMan getauxblock()
 {
     return RPCHelpMan{"getauxblock",
-                "\nCreates or submits a merge-mined block.\n"
+                "Creates or submits a merge-mined block.\n"
                 "\nWithout arguments, creates a new block and returns information\n"
                 "required to merge-mine it.  With arguments, submits a solved\n"
                 "auxpow for a previously returned block.\n",
@@ -202,7 +202,7 @@ RPCHelpMan getauxblock()
 RPCHelpMan getwork()
 {
     return RPCHelpMan{"getwork",
-        "\nCreates or submits a stand-alone mined block.\n"
+        "Creates or submits a stand-alone mined block.\n"
         "\nWithout arguments, creates a new block and returns information required to solve it.\n"
         "\nWith arguments, submits a solved PoW for a previously-returned block.\n"
         "\nDEPRECATED: If hash is not given, it will be deduced from data.  Prefer to add an explicit hash.\n",
