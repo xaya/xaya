@@ -132,7 +132,7 @@ ReservedKeysForMining g_mining_keys;
 RPCHelpMan getauxblock()
 {
     return RPCHelpMan{"getauxblock",
-                "\nCreates or submits a merge-mined block.\n"
+                "Creates or submits a merge-mined block.\n"
                 "\nWithout arguments, creates a new block and returns information\n"
                 "required to merge-mine it.  With arguments, submits a solved\n"
                 "auxpow for a previously returned block.\n",
