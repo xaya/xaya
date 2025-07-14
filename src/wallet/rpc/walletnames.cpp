@@ -190,7 +190,7 @@ name_list ()
       .withValueEncoding ();
 
   return RPCHelpMan ("name_list",
-      "\nShows the status of all names in the wallet.\n",
+      "Shows the status of all names in the wallet.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Only include this name"},
           optHelp.buildRpcArg (),
@@ -379,7 +379,7 @@ name_new ()
                 "If set, then the name_new is sent even if the name exists already");
 
   return RPCHelpMan ("name_new",
-      "\nStarts registration of the given name.  Must be followed up with name_firstupdate to finish the registration."
+      "Starts registration of the given name.  Must be followed up with name_firstupdate to finish the registration."
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
@@ -531,7 +531,7 @@ name_firstupdate ()
       .withWriteOptions ();
 
   return RPCHelpMan ("name_firstupdate",
-            "\nFinishes the registration of a name.  Depends on name_new being already issued."
+            "Finishes the registration of a name.  Depends on name_new being already issued."
                 + HELP_REQUIRING_PASSPHRASE,
             {
                 {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to register"},
@@ -731,7 +731,7 @@ name_update ()
       .withWriteOptions ();
 
   return RPCHelpMan ("name_update",
-      "\nUpdates a name and possibly transfers it."
+      "Updates a name and possibly transfers it."
           + HELP_REQUIRING_PASSPHRASE,
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to update"},
@@ -848,7 +848,7 @@ RPCHelpMan
 queuerawtransaction ()
 {
   return RPCHelpMan ("queuerawtransaction",
-      "\nQueue a transaction for future broadcast.",
+      "Queue a transaction for future broadcast.",
       {
           {"hexstring", RPCArg::Type::STR, RPCArg::Optional::NO, "The hex string of the raw transaction"},
       },
@@ -917,7 +917,7 @@ RPCHelpMan
 dequeuetransaction ()
 {
   return RPCHelpMan ("dequeuetransaction",
-      "\nRemove a transaction from the queue.",
+      "Remove a transaction from the queue.",
       {
           {"txid", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction ID of the transaction to be dequeued"},
       },
@@ -951,7 +951,7 @@ RPCHelpMan
 listqueuedtransactions ()
 {
   return RPCHelpMan{"listqueuedtransactions",
-      "\nList the transactions that are queued for future broadcast.\n",
+      "List the transactions that are queued for future broadcast.\n",
       {
       },
       RPCResult{
@@ -1000,7 +1000,7 @@ RPCHelpMan
 sendtoname ()
 {
   return RPCHelpMan{"sendtoname",
-      "\nSend an amount to the owner of a name.\n"
+      "Send an amount to the owner of a name.\n"
       "\nIt is an error if the name is expired."
           + HELP_REQUIRING_PASSPHRASE,
       {

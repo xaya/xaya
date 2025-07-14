@@ -507,7 +507,7 @@ name_show ()
                 "Whether to throw error for expired names");
 
   return RPCHelpMan ("name_show",
-      "\nLooks up the current data for the given name.  Fails if the name doesn't exist.\n",
+      "Looks up the current data for the given name.  Fails if the name doesn't exist.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
           optHelp.buildRpcArg (),
@@ -584,7 +584,7 @@ name_history ()
       .withByHash ();
 
   return RPCHelpMan ("name_history",
-      "\nLooks up the current and all past data for the given name.  -namehistory must be enabled.\n",
+      "Looks up the current and all past data for the given name.  -namehistory must be enabled.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::NO, "The name to query for"},
           optHelp.buildRpcArg (),
@@ -667,7 +667,7 @@ name_scan ()
                 "Filter for names matching the regexp");
 
   return RPCHelpMan ("name_scan",
-      "\nLists names in the database.\n",
+      "Lists names in the database.\n",
       {
           {"start", RPCArg::Type::STR, RPCArg::Default{""}, "Skip initially to this name"},
           {"count", RPCArg::Type::NUM, RPCArg::Default{500}, "Stop after this many names"},
@@ -808,7 +808,7 @@ name_pending ()
       .withValueEncoding ();
 
   return RPCHelpMan ("name_pending",
-      "\nLists unconfirmed name operations in the mempool.\n"
+      "Lists unconfirmed name operations in the mempool.\n"
       "\nIf a name is given, only check for operations on this name.\n",
       {
           {"name", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Only look for this name"},
@@ -998,7 +998,7 @@ RPCHelpMan
 namerawtransaction ()
 {
   return RPCHelpMan ("namerawtransaction",
-      "\nAdds a name operation to an existing raw transaction.\n"
+      "Adds a name operation to an existing raw transaction.\n"
       "\nUse createrawtransaction first to create the basic transaction, including the required inputs and outputs also for the name.\n",
       {
           {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
@@ -1045,7 +1045,7 @@ RPCHelpMan
 namepsbt ()
 {
   return RPCHelpMan ("namepsbt",
-      "\nAdds a name operation to an existing PSBT.\n"
+      "Adds a name operation to an existing PSBT.\n"
       "\nUse createpsbt first to create the basic transaction, including the required inputs and outputs also for the name.\n",
       {
           {"psbt", RPCArg::Type::STR, RPCArg::Optional::NO, "A base64 string of a PSBT"},
@@ -1099,7 +1099,7 @@ RPCHelpMan
 name_checkdb ()
 {
   return RPCHelpMan ("name_checkdb",
-      "\nValidates the name DB's consistency.\n"
+      "Validates the name DB's consistency.\n"
       "\nRoughly between blocks 139,000 and 180,000, this call is expected to fail due to the historic 'name stealing' bug.\n",
       {},
       RPCResult {RPCResult::Type::BOOL, "", "whether the state is valid"},
