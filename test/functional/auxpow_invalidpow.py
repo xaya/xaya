@@ -75,8 +75,7 @@ class AuxpowInvalidPoWTest (BitcoinTestFramework):
 
     block = create_block (tip, create_coinbase (height), time)
     block.mark_auxpow ()
-    block.rehash ()
-    newHash = "%064x" % block.sha256
+    newHash = block.hash_hex
 
     return block, newHash
 
