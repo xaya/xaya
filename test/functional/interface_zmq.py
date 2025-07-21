@@ -218,12 +218,6 @@ class ZMQTest (BitcoinTestFramework):
             hex = rawblock.receive()
             block = CBlock()
             block.deserialize(BytesIO(hex))
-            # Upstream checks block.is_valid() here, but that is not
-            # implemented for auxpow blocks.  It doesn't matter for the
-            # test, so ignore it.  We need to explicitly calculate
-            # the hashes, though.
-            block.calc_sha256()
-            block.calc_merkle_root()
             assert_equal(block.vtx[0].txid_hex, tx.txid_hex)
             assert_equal(len(block.vtx), 1)
             assert_equal(genhashes[x], hash256_reversed(hex[:80]).hex())
@@ -429,7 +423,7 @@ class ZMQTest (BitcoinTestFramework):
         block.solve()
         assert_equal(self.nodes[0].submitblock(block.serialize().hex()), None)
         tip = self.nodes[0].getbestblockhash()
-        assert_equal(int(tip, 16), block.sha256)
+        assert_equal(int(tip, 16), block.hash_int)
         orig_txid_2 = self.wallet.send_self_transfer(from_node=self.nodes[0])['txid']
 
         # Flush old notifications until evicted tx original entry

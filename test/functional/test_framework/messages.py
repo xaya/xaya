@@ -724,10 +724,6 @@ class CPureBlockHeader():
             self.nTime = header.nTime
             self.nBits = header.nBits
             self.nNonce = header.nNonce
-            self.sha256 = header.sha256
-            self.powHash = header.powHash
-            self.hash = header.hash
-            self.calc_sha256()
 
     def set_null(self):
         self.nVersion = 4
@@ -736,9 +732,6 @@ class CPureBlockHeader():
         self.nTime = 0
         self.nBits = 0
         self.nNonce = 0
-        self.sha256 = None
-        self.powHash = None
-        self.hash = None
 
     def deserialize(self, f):
         self.nVersion = int.from_bytes(f.read(4), "little", signed=True)
@@ -747,11 +740,11 @@ class CPureBlockHeader():
         self.nTime = int.from_bytes(f.read(4), "little")
         self.nBits = int.from_bytes(f.read(4), "little")
         self.nNonce = int.from_bytes(f.read(4), "little")
-        self.sha256 = None
-        self.powHash = None
-        self.hash = None
 
     def serialize(self):
+        return self._serialize_pure_header()
+
+    def _serialize_pure_header(self):
         r = b""
         r += self.nVersion.to_bytes(4, "little", signed=True)
         r += ser_uint256(self.hashPrevBlock)
@@ -761,23 +754,25 @@ class CPureBlockHeader():
         r += self.nNonce.to_bytes(4, "little")
         return r
 
-    def calc_sha256(self):
-        if self.sha256 is None or self.powHash is None:
-            r = b""
-            r += self.nVersion.to_bytes(4, "little", signed=True)
-            r += ser_uint256(self.hashPrevBlock)
-            r += ser_uint256(self.hashMerkleRoot)
-            r += self.nTime.to_bytes(4, "little")
-            r += self.nBits.to_bytes(4, "little")
-            r += self.nNonce.to_bytes(4, "little")
-            self.sha256 = uint256_from_str(hash256(r))
-            self.powHash = uint256_from_str(powhash.forHeader('neoscrypt', r))
-            self.hash = hash256(r)[::-1].hex()
+    @property
+    def hash_hex(self):
+        """Return block header hash as hex string."""
+        return hash256(self._serialize_pure_header())[::-1].hex()
 
-    def rehash(self):
-        self.sha256 = None
-        self.calc_sha256()
-        return self.sha256
+    @property
+    def hash_int(self):
+        """Return block header hash as integer."""
+        return uint256_from_str(hash256(self._serialize_pure_header()))
+
+    @property
+    def powhash_hex(self):
+        """Return block header PoW hash as hex string."""
+        return powhash.forHeader('neoscrypt', self._serialize_pure_header())[::-1].hex()
+
+    @property
+    def powhash_int(self):
+        """Return block header PoW hash as integer."""
+        return uint256_from_str(powhash.forHeader('neoscrypt', self._serialize_pure_header()))
 
     def __repr__(self):
         return "CPureBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x)" \
@@ -858,12 +853,6 @@ class PowData():
             r += self.fakeHeader.serialize()
         return r
 
-    def rehash(self):
-        if self.fakeHeader is not None:
-            self.fakeHeader.rehash()
-        if self.auxpow is not None:
-            self.auxpow.parentBlock.rehash()
-
     def __repr__(self):
         return "PowData(algo=%i nBits=%08x fakeHeader=%s)" \
             % (self.algo, self.nBits, repr(self.fakeHeader))
@@ -890,10 +879,6 @@ class CBlockHeader(CPureBlockHeader):
         r += super(CBlockHeader, self).serialize()
         r += self.powData.serialize()
         return r
-
-    def rehash(self):
-        self.powData.rehash()
-        return super(CBlockHeader, self).rehash()
 
     def __repr__(self):
         return "CBlockHeader(nVersion=%i hashPrevBlock=%064x hashMerkleRoot=%064x nTime=%s nBits=%08x nNonce=%08x powData=%s)" \
@@ -954,7 +939,6 @@ class CBlock(CBlockHeader):
         return self.get_merkle_root(hashes)
 
     def is_valid(self):
-        self.calc_sha256()
         target = uint256_from_compact(self.nBits)
 
         if self.powHash > target:
@@ -967,13 +951,10 @@ class CBlock(CBlockHeader):
         return True
 
     def solve(self):
-        self.rehash()
-        self.powData.fakeHeader.hashMerkleRoot = self.sha256
-        self.powData.rehash()
+        self.powData.fakeHeader.hashMerkleRoot = self.hash_int
         target = uint256_from_compact(self.powData.nBits)
-        while self.powData.fakeHeader.powHash > target:
+        while self.powData.fakeHeader.powhash_int > target:
             self.powData.fakeHeader.nNonce += 1
-            self.powData.rehash()
 
     # Calculate the block weight using witness and non-witness
     # serialization size (does NOT use sigops).

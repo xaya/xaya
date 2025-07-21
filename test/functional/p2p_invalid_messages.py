@@ -290,25 +290,21 @@ class InvalidMessagesTest(BitcoinTestFramework):
         blockheader = CBlockHeader()
         blockheader.hashPrevBlock = int(blockheader_tip_hash, 16)
         blockheader.nTime = int(time.time())
-        blockheader.rehash()
         blockheader.powData = PowData()
         blockheader.powData.nBits = blockheader_tip.powData.nBits
-        blockheader.powData.fakeHeader.hashMerkleRoot = int (blockheader.hash, 16)
-        blockheader.rehash()
-        while not ("%064x" % blockheader.powData.fakeHeader.powHash).startswith('0'):
+        blockheader.powData.fakeHeader.hashMerkleRoot = blockheader.hash_int
+        while not (blockheader.powData.fakeHeader.powhash_hex).startswith('0'):
             blockheader.powData.fakeHeader.nNonce += 1
-            blockheader.rehash()
         peer = self.nodes[0].add_p2p_connection(P2PInterface())
         peer.send_and_ping(msg_headers([blockheader]))
         assert_equal(self.nodes[0].getblockchaininfo()['headers'], 1)
         chaintips = self.nodes[0].getchaintips()
         assert_equal(chaintips[0]['status'], 'headers-only')
-        assert_equal(chaintips[0]['hash'], blockheader.hash)
+        assert_equal(chaintips[0]['hash'], blockheader.hash_hex)
 
         # invalidate PoW
-        while not blockheader.hash.startswith('f'):
+        while not blockheader.hash_hex.startswith('f'):
             blockheader.nNonce += 1
-            blockheader.rehash()
         with self.nodes[0].assert_debug_log(['Misbehaving', 'header with invalid proof of work']):
             peer.send_without_ping(msg_headers([blockheader]))
             peer.wait_for_disconnect()

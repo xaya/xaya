@@ -116,7 +116,7 @@ class AuxpowZeroHashTest (BitcoinTestFramework):
     time = bestBlock["time"] + 1
 
     block = create_block (tip, create_coinbase (height), time)
-    newHash = "%064x" % block.sha256
+    newHash = block.hash_hex
 
     target = b"%064x" % uint256_from_compact (block.powData.nBits)
     auxpowHex = computeAuxpow (newHash, target, True)
