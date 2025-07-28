@@ -20,6 +20,7 @@ target_sources(test_namecoin
     scriptpubkeyman_tests.cpp
     spend_tests.cpp
     wallet_crypto_tests.cpp
+    wallet_rpc_tests.cpp
     wallet_tests.cpp
     wallet_transaction_tests.cpp
     walletdb_tests.cpp
