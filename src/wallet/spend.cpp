@@ -1506,7 +1506,7 @@ util::Result<CreatedTransactionResult> FundTransaction(CWallet& wallet, const CM
 
     if (lockUnspents) {
         for (const CTxIn& txin : res->tx->vin) {
-            wallet.LockCoin(txin.prevout);
+            wallet.LockCoin(txin.prevout, /*persist=*/false);
         }
     }
 
