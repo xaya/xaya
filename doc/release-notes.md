@@ -1,6 +1,6 @@
-Bitcoin Core version 29.x is now available from:
+Bitcoin Core version 29.1rc1 is now available from:
 
-  <https://bitcoincore.org/bin/bitcoin-core-29.x/>
+  <https://bitcoincore.org/bin/bitcoin-core-29.1/test.rc1/>
 
 This release includes various bug fixes and performance
 improvements, as well as updated translations.
@@ -37,6 +37,17 @@ unsupported systems.
 Notable changes
 ===============
 
+### Mempool Policy
+
+- The maximum number of potentially executed legacy signature operations in a
+  single standard transaction is now limited to 2500. Signature operations in all
+  previous output scripts, in all input scripts, as well as all P2SH redeem
+  scripts (if there are any) are counted toward the limit. The new limit is
+  assumed to not affect any known typically formed standard transactions. The
+  change was done to prepare for a possible BIP54 deployment in the future.
+
+- #32521 policy: make pathological transactions packed with legacy sigops non-standard
+
 ### Updated Settings
 
 - The `-maxmempool` and `-dbcache` startup parameters are now capped on
@@ -55,6 +66,7 @@ Notable changes
 
 ### Test
 
+- #32069 test: fix intermittent failure in wallet_reorgsrestore.py
 - #32286 test: Handle empty string returned by CLI as None in RPC tests
 - #32312 test: Fix feature_pruning test after nTime typo fix
 - #32336 test: Suppress upstream -Wduplicate-decl-specifier in bpfcc
@@ -68,6 +80,7 @@ Notable changes
 - #32841 feature_taproot: sample tx version border values more
 - #32850 test: check P2SH sigop count for coinbase tx
 - #32859 test: correctly detect nonstd TRUC tx vsize in feature_taproot
+- #33001 test: Do not pass tests on unhandled exceptions
 
 ### Util
 
@@ -130,11 +143,11 @@ Credits
 Thanks to everyone who directly contributed to this release:
 
 - achow101
+- Antoine Poinsot
 - benthecarman
 - bigspider
 - Brandon Odiwuor
 - brunoerg
-- darosior
 - davidgumberg
 - dergoegge
 - enirox001
