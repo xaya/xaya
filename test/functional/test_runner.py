@@ -292,6 +292,7 @@ BASE_SCRIPTS = [
     'wallet_listdescriptors.py',
     'p2p_leak.py',
     'wallet_encryption.py',
+    'feature_reindex_init.py',
     'rpc_uptime.py',
     'feature_discover.py',
     'wallet_resendwallettransactions.py',

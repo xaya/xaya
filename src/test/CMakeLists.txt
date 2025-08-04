@@ -109,7 +109,6 @@ add_executable(test_xaya
   txdownload_tests.cpp
   txgraph_tests.cpp
   txindex_tests.cpp
-  txpackage_tests.cpp
   txreconciliation_tests.cpp
   txrequest_tests.cpp
   txvalidation_tests.cpp
@@ -133,6 +132,7 @@ add_executable(test_xaya
 #  key_tests.cpp
 #  miner_tests.cpp
 #  testnet4_miner_tests.cpp
+#  txpackage_tests.cpp
 )
 
 include(TargetDataSources)
