@@ -25,8 +25,7 @@ ExecStart=/usr/bin/xayad -pid=/run/xayad/xayad.pid \
                              -shutdownnotify='systemd-notify --stopping'
 
 # Make sure the config directory is readable by the service user
-PermissionsStartOnly=true
-ExecStartPre=/bin/chgrp xaya /etc/xaya
+ExecStartPre=!/bin/chgrp xaya /etc/xaya
 
 # Process management
 ####################
@@ -44,7 +43,6 @@ TimeoutStopSec=600
 
 # Run as xaya:xaya
 User=xaya
-Group=xaya
 
 # /run/xayad
 RuntimeDirectory=xayad

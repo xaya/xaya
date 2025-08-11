@@ -221,4 +221,4 @@ endfunction()
 
 add_all_test_targets()
 
-install_binary_component(test_xaya)
+install_binary_component(test_xaya INTERNAL)

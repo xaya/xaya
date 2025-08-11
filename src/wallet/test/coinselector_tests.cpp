@@ -244,7 +244,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
         coin_selection_params_bnb.m_long_term_feerate = CFeeRate(3000);
 
         // Add selectable outputs, increasing their raw amounts by their input fee to make the effective value equal to the raw amount
-        CAmount input_fee = coin_selection_params_bnb.m_effective_feerate.GetFee(/*num_bytes=*/68); // bech32 input size (default test output type)
+        CAmount input_fee = coin_selection_params_bnb.m_effective_feerate.GetFee(/*virtual_bytes=*/68); // bech32 input size (default test output type)
         add_coin(available_coins, *wallet, 10 * CENT + input_fee, coin_selection_params_bnb.m_effective_feerate, 6 * 24, false, 0, true);
         add_coin(available_coins, *wallet, 9 * CENT + input_fee, coin_selection_params_bnb.m_effective_feerate, 6 * 24, false, 0, true);
         add_coin(available_coins, *wallet, 1 * CENT + input_fee, coin_selection_params_bnb.m_effective_feerate, 6 * 24, false, 0, true);
@@ -1223,7 +1223,7 @@ BOOST_AUTO_TEST_CASE(srd_tests)
 
     {
         // ################################################################################################################
-        // 3) Test selection when some coins surpass the max allowed weight while others not. --> must find a good solution
+        // 3) Test that SRD result does not exceed the max weight
         // ################################################################################################################
         CAmount target = 25.33L * COIN;
         int max_selection_weight = 10000; // WU
@@ -1238,6 +1238,7 @@ BOOST_AUTO_TEST_CASE(srd_tests)
             return available_coins;
         });
         BOOST_CHECK(res);
+        BOOST_CHECK(res->GetWeight() <= max_selection_weight);
     }
 }
 
