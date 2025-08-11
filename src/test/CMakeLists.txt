@@ -219,4 +219,4 @@ endfunction()
 
 add_all_test_targets()
 
-install_binary_component(test_namecoin)
+install_binary_component(test_namecoin INTERNAL)

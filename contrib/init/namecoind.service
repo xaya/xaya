@@ -25,8 +25,7 @@ ExecStart=/usr/bin/namecoind -pid=/run/namecoind/namecoind.pid \
                              -shutdownnotify='systemd-notify --stopping'
 
 # Make sure the config directory is readable by the service user
-PermissionsStartOnly=true
-ExecStartPre=/bin/chgrp namecoin /etc/namecoin
+ExecStartPre=!/bin/chgrp namecoin /etc/namecoin
 
 # Process management
 ####################
@@ -44,7 +43,6 @@ TimeoutStopSec=600
 
 # Run as namecoin:namecoin
 User=namecoin
-Group=namecoin
 
 # /run/namecoind
 RuntimeDirectory=namecoind

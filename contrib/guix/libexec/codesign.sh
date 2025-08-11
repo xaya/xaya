@@ -110,7 +110,7 @@ mkdir -p "$DISTSRC"
 
             # Apply detached codesignatures (in-place)
             signapple apply dist/Namecoin-Qt.app codesignatures/osx/"${HOST}"/dist/Namecoin-Qt.app
-            find "${DISTNAME}" -wholename "*/bin/*" -type f | while read -r bin
+            find "${DISTNAME}" \( -wholename "*/bin/*" -o -wholename "*/libexec/*" \) -type f | while read -r bin
             do
                 signapple apply "${bin}" "codesignatures/osx/${HOST}/${bin}.${ARCH}sign"
             done

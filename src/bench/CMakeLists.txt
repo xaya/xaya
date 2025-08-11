@@ -85,4 +85,4 @@ add_test(NAME bench_sanity_check
   COMMAND bench_namecoin -sanity-check
 )
 
-install_binary_component(bench_namecoin)
+install_binary_component(bench_namecoin INTERNAL)
