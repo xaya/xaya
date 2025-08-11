@@ -245,13 +245,7 @@ if(qt_lib_type STREQUAL "STATIC_LIBRARY")
   )
 endif()
 
-file(GLOB ts_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} locale/*.ts)
-set_source_files_properties(${ts_files} PROPERTIES OUTPUT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/locale)
-if(Qt6_VERSION VERSION_GREATER_EQUAL 6.7)
-  qt6_add_lrelease(TS_FILES ${ts_files} OPTIONS -silent)
-else()
-  qt6_add_lrelease(bitcoinqt TS_FILES ${ts_files} OPTIONS -silent)
-endif()
+add_subdirectory(locale)
 
 add_executable(bitcoin-qt
   main.cpp
@@ -285,7 +279,7 @@ if(ENABLE_IPC)
     bitcoin_ipc
   )
   import_plugins(bitcoin-gui)
-  install_binary_component(bitcoin-gui)
+  install_binary_component(bitcoin-gui INTERNAL)
   if(WIN32)
     set_target_properties(bitcoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
