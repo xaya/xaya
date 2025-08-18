@@ -41,6 +41,7 @@
 #include <test/util/coverage.h>
 #include <test/util/net.h>
 #include <test/util/random.h>
+#include <test/util/transaction_utils.h>
 #include <test/util/txmempool.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -589,6 +590,9 @@ void TestChain100Setup::MockMempoolMinFee(const CFeeRate& target_feerate)
     CMutableTransaction mtx = CMutableTransaction();
     mtx.vin.emplace_back(COutPoint{Txid::FromUint256(m_rng.rand256()), 0});
     mtx.vout.emplace_back(1 * COIN, GetScriptForDestination(WitnessV0ScriptHash(CScript() << OP_TRUE)));
+    // Set a large size so that the fee evaluated at target_feerate (which is usually in sats/kvB) is an integer.
+    // Otherwise, GetMinFee() may end up slightly different from target_feerate.
+    BulkTransaction(mtx, 4000);
     const auto tx{MakeTransactionRef(mtx)};
     LockPoints lp;
     // The new mempool min feerate is equal to the removed package's feerate + incremental feerate.
@@ -631,4 +635,12 @@ std::ostream& operator<<(std::ostream& os, const uint160& num)
 std::ostream& operator<<(std::ostream& os, const uint256& num)
 {
     return os << num.ToString();
+}
+
+std::ostream& operator<<(std::ostream& os, const Txid& txid) {
+    return os << txid.ToString();
+}
+
+std::ostream& operator<<(std::ostream& os, const Wtxid& wtxid) {
+    return os << wtxid.ToString();
 }

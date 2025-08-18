@@ -624,10 +624,13 @@ std::optional<MigrationData> LegacyDataSPKM::MigrateToDescriptor()
     for (const auto& chain_pair : m_inactive_hd_chains) {
         chains.push_back(chain_pair.second);
     }
+
+    bool can_support_hd_split_feature = m_hd_chain.nVersion >= CHDChain::VERSION_HD_CHAIN_SPLIT;
+
     for (const CHDChain& chain : chains) {
         for (int i = 0; i < 2; ++i) {
             // Skip if doing internal chain and split chain is not supported
-            if (chain.seed_id.IsNull() || (i == 1 && !m_storage.CanSupportFeature(FEATURE_HD_SPLIT))) {
+            if (chain.seed_id.IsNull() || (i == 1 && !can_support_hd_split_feature)) {
                 continue;
             }
             // Get the master xprv
@@ -995,7 +998,7 @@ bool DescriptorScriptPubKeyMan::TopUp(unsigned int size)
     WalletBatch batch(m_storage.GetDatabase());
     if (!batch.TxnBegin()) return false;
     bool res = TopUpWithDB(batch, size);
-    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during descriptors keypool top up. Cannot commit changes for wallet %s", m_storage.GetDisplayName()));
+    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during descriptors keypool top up. Cannot commit changes for wallet [%s]", m_storage.LogName()));
     return res;
 }
 
