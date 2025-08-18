@@ -20,6 +20,7 @@
 #include <node/types.h>
 #include <net.h>
 #include <primitives/transaction.h>
+#include <primitives/transaction_identifier.h>
 #include <random.h>
 #include <rpc/blockchain.h>
 #include <rpc/names.h>
@@ -29,7 +30,6 @@
 #include <script/names.h>
 #include <txmempool.h>
 #include <util/moneystr.h>
-#include <util/transaction_identifier.h>
 #include <util/translation.h>
 #include <util/vector.h>
 #include <validation.h>
@@ -867,7 +867,7 @@ queuerawtransaction ()
   if (!DecodeHexTx(mtxParsed, request.params[0].get_str(), true, true))
     throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
   CTransactionRef txParsed(MakeTransactionRef(mtxParsed));
-  const uint256& hashTx = txParsed->GetHash();
+  const Txid& hashTx = txParsed->GetHash();
 
   // Validate transaction
   node::NodeContext& node = EnsureAnyNodeContext(request);
@@ -931,7 +931,7 @@ dequeuetransaction ()
   std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest (request);
   if (!wallet) return NullUniValue;
 
-  const uint256& txid = ParseHashV (request.params[0], "txid");
+  const Txid& txid = Txid::FromUint256 (ParseHashV (request.params[0], "txid"));
 
   LOCK (wallet->cs_wallet);
 
@@ -978,7 +978,7 @@ listqueuedtransactions ()
 
   for (const auto& i : wallet->queuedTransactionMap)
   {
-    const uint256& txid = i.first;
+    const Txid& txid = i.first;
     const CMutableTransaction& tx = i.second;
 
     const std::string txStr = EncodeHexTx(CTransaction(tx));

@@ -37,9 +37,9 @@ auto consteval_ctor(auto&& input) { return input; }
 #define consteval_ctor(input) (input)
 #endif
 
-bool CChainParams::IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const
+bool CChainParams::IsHistoricBug(const Txid& txid, unsigned nHeight, BugType& type) const
 {
-    const std::pair<unsigned, uint256> key(nHeight, txid);
+    const std::pair<unsigned, uint256> key(nHeight, txid.ToUint256());
     std::map<std::pair<unsigned, uint256>, BugType>::const_iterator mi;
 
     mi = mapHistoricBugs.find (key);

@@ -10,6 +10,7 @@
 #include <common/system.h>
 #include <key_io.h>
 #include <names/common.h>
+#include <primitives/transaction_identifier.h>
 #include <protocol.h>
 #include <script/script.h>
 #include <serialize.h>
@@ -17,7 +18,6 @@
 #include <util/bip32.h>
 #include <util/check.h>
 #include <util/fs.h>
-#include <util/transaction_identifier.h>
 #include <util/time.h>
 #include <util/translation.h>
 #include <wallet/migrate.h>
@@ -201,11 +201,6 @@ bool WalletBatch::WriteOrderPosNext(int64_t nOrderPosNext)
     return WriteIC(DBKeys::ORDERPOSNEXT, nOrderPosNext);
 }
 
-bool WalletBatch::WriteMinVersion(int nVersion)
-{
-    return WriteIC(DBKeys::MINVERSION, nVersion);
-}
-
 bool WalletBatch::WriteActiveScriptPubKeyMan(uint8_t type, const uint256& id, bool internal)
 {
     std::string key = internal ? DBKeys::ACTIVEINTERNALSPK : DBKeys::ACTIVEEXTERNALSPK;
@@ -296,12 +291,12 @@ bool WalletBatch::EraseLockedUTXO(const COutPoint& output)
     return EraseIC(std::make_pair(DBKeys::LOCKED_UTXO, std::make_pair(output.hash, output.n)));
 }
 
-bool WalletBatch::WriteQueuedTransaction(const uint256& txid, const CMutableTransaction& tx)
+bool WalletBatch::WriteQueuedTransaction(const Txid& txid, const CMutableTransaction& tx)
 {
     return WriteIC(std::make_pair(DBKeys::QUEUED_TX, txid), TX_WITH_WITNESS (tx));
 }
 
-bool WalletBatch::EraseQueuedTransaction(const uint256& txid)
+bool WalletBatch::EraseQueuedTransaction(const Txid& txid)
 {
     return EraseIC(std::make_pair(DBKeys::QUEUED_TX, txid));
 }
@@ -452,19 +447,6 @@ bool LoadHDChain(CWallet* pwallet, DataStream& ssValue, std::string& strErr)
         return false;
     }
     return true;
-}
-
-static DBErrors LoadMinVersion(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
-{
-    AssertLockHeld(pwallet->cs_wallet);
-    int nMinVersion = 0;
-    if (batch.Read(DBKeys::MINVERSION, nMinVersion)) {
-        pwallet->WalletLogPrintf("Wallet file version = %d\n", nMinVersion);
-        if (nMinVersion > FEATURE_LATEST)
-            return DBErrors::TOO_NEW;
-        pwallet->LoadMinVersion(nMinVersion);
-    }
-    return DBErrors::LOAD_OK;
 }
 
 static DBErrors LoadWalletFlags(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
@@ -750,7 +732,7 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
         CMutableTransaction pending;
         value >> TX_WITH_WITNESS (pending);
 
-        pwallet->queuedTransactionMap[*u256Txid] = pending;
+        pwallet->queuedTransactionMap[Txid::FromUint256(*u256Txid)] = pending;
 
         return DBErrors::LOAD_OK;
     });
@@ -1168,8 +1150,6 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     if (has_last_client) pwallet->WalletLogPrintf("Last client version = %d\n", last_client);
 
     try {
-        if ((result = LoadMinVersion(pwallet, *m_batch)) != DBErrors::LOAD_OK) return result;
-
         // Load wallet flags, so they are known when processing other records.
         // The FLAGS key is absent during wallet creation.
         if ((result = LoadWalletFlags(pwallet, *m_batch)) != DBErrors::LOAD_OK) return result;

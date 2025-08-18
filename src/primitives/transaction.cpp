@@ -8,12 +8,12 @@
 #include <consensus/amount.h>
 #include <crypto/hex_base.h>
 #include <hash.h>
+#include <primitives/transaction_identifier.h>
 #include <script/names.h>
 #include <script/script.h>
 #include <serialize.h>
 #include <tinyformat.h>
 #include <uint256.h>
-#include <util/transaction_identifier.h>
 
 #include <algorithm>
 #include <cassert>

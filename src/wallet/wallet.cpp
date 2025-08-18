@@ -641,23 +641,6 @@ void CWallet::SetLastBlockProcessed(int block_height, uint256 block_hash)
     WriteBestBlock();
 }
 
-void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in)
-{
-    LOCK(cs_wallet);
-    if (nWalletVersion >= nVersion)
-        return;
-    WalletLogPrintf("Setting minversion to %d\n", nVersion);
-    nWalletVersion = nVersion;
-
-    {
-        WalletBatch* batch = batch_in ? batch_in : new WalletBatch(GetDatabase());
-        if (nWalletVersion > 40000)
-            batch->WriteMinVersion(nWalletVersion);
-        if (!batch_in)
-            delete batch;
-    }
-}
-
 std::set<Txid> CWallet::GetConflicts(const Txid& txid) const
 {
     std::set<Txid> result;
@@ -822,9 +805,6 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
                 assert(false);
             }
         }
-
-        // Encryption was introduced in version 0.4.0
-        SetMinVersion(FEATURE_WALLETCRYPT, encrypted_batch);
 
         if (!encrypted_batch->TxnCommit()) {
             delete encrypted_batch;
@@ -1825,7 +1805,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                     fast_rescan_filter ? "fast variant using block filters" : "slow variant inspecting all blocks");
 
     fAbortRescan = false;
-    ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), 0); // show rescan progress in GUI as dialog or on splashscreen, if rescan required on startup (e.g. due to corruption)
+    ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…")), 0); // show rescan progress in GUI as dialog or on splashscreen, if rescan required on startup (e.g. due to corruption)
     uint256 tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
     uint256 end_hash = tip_hash;
     if (max_height) chain().findAncestorByHeight(tip_hash, *max_height, FoundBlock().hash(end_hash));
@@ -1840,7 +1820,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             m_scanning_progress = 0;
         }
         if (block_height % 100 == 0 && progress_end - progress_begin > 0.0) {
-            ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
+            ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…")), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
         }
 
         bool next_interval = reserver.now() >= current_time + INTERVAL_TIME;
@@ -1874,9 +1854,13 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
         chain().findBlock(block_hash, FoundBlock().inActiveChain(block_still_active).nextBlock(FoundBlock().inActiveChain(next_block).hash(next_block_hash)));
 
         if (fetch_block) {
-            // Read block data
+            // Read block data and locator if needed (the locator is usually null unless we need to save progress)
             CBlock block;
-            chain().findBlock(block_hash, FoundBlock().data(block));
+            CBlockLocator loc;
+            // Find block
+            FoundBlock found_block{FoundBlock().data(block)};
+            if (save_progress && next_interval) found_block.locator(loc);
+            chain().findBlock(block_hash, found_block);
 
             if (!block.IsNull()) {
                 LOCK(cs_wallet);
@@ -1894,14 +1878,10 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                 result.last_scanned_block = block_hash;
                 result.last_scanned_height = block_height;
 
-                if (save_progress && next_interval) {
-                    CBlockLocator loc = m_chain->getActiveChainLocator(block_hash);
-
-                    if (!loc.IsNull()) {
-                        WalletLogPrintf("Saving scan progress %d.\n", block_height);
-                        WalletBatch batch(GetDatabase());
-                        batch.WriteBestBlock(loc);
-                    }
+                if (!loc.IsNull()) {
+                    WalletLogPrintf("Saving scan progress %d.\n", block_height);
+                    WalletBatch batch(GetDatabase());
+                    batch.WriteBestBlock(loc);
                 }
             } else {
                 // could not scan block, keep scanning but record this block as the most recent failure
@@ -1945,7 +1925,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
         WalletLogPrintf("Scanning current mempool transactions.\n");
         WITH_LOCK(cs_wallet, chain().requestMempoolTransactions(*this));
     }
-    ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), 100); // hide progress dialog in GUI
+    ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…")), 100); // hide progress dialog in GUI
     if (block_height && fAbortRescan) {
         WalletLogPrintf("Rescan aborted at block %d. Progress=%f\n", block_height, progress_current);
         result.status = ScanResult::USER_ABORT;
@@ -2356,7 +2336,7 @@ util::Result<void> CWallet::RemoveTxs(WalletBatch& batch, std::vector<Txid>& txs
             for (const auto& txin : it->second.tx->vin)
                 mapTxSpends.erase(txin.prevout);
             for (unsigned int i = 0; i < it->second.tx->vout.size(); ++i) {
-                m_txos.erase(COutPoint(Txid::FromUint256(hash), i));
+                m_txos.erase(COutPoint(hash, i));
             }
             mapWallet.erase(it);
             NotifyTransactionChanged(hash, CT_DELETED);
@@ -2908,9 +2888,6 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     {
         LOCK(walletInstance->cs_wallet);
 
-        // ensure this wallet.dat can only be opened by clients supporting HD with chain split and expects no default key
-        walletInstance->SetMinVersion(FEATURE_LATEST);
-
         // Init with passed flags.
         // Always set the cache upgrade flag as this feature is supported from the beginning.
         walletInstance->InitWalletFlags(wallet_creation_flags | WALLET_FLAG_LAST_HARDENED_XPUB_CACHED);
@@ -3247,13 +3224,13 @@ bool CWallet::BackupWallet(const std::string& strDest) const
     return GetDatabase().Backup(strDest);
 }
 
-bool CWallet::QueuedTransactionExists(const uint256& txid) const
+bool CWallet::QueuedTransactionExists(const Txid& txid) const
 {
     AssertLockHeld(cs_wallet);
     return queuedTransactionMap.count(txid) > 0;
 }
 
-bool CWallet::WriteQueuedTransaction(const uint256 &txid, const CMutableTransaction &tx)
+bool CWallet::WriteQueuedTransaction(const Txid &txid, const CMutableTransaction &tx)
 {
     AssertLockHeld(cs_wallet);
 
@@ -3264,7 +3241,7 @@ bool CWallet::WriteQueuedTransaction(const uint256 &txid, const CMutableTransact
     return success;
 }
 
-bool CWallet::EraseQueuedTransaction(const uint256& txid)
+bool CWallet::EraseQueuedTransaction(const Txid& txid)
 {
     AssertLockHeld(cs_wallet);
     const bool success = WalletBatch(GetDatabase()).EraseQueuedTransaction(txid);
@@ -3273,7 +3250,7 @@ bool CWallet::EraseQueuedTransaction(const uint256& txid)
     return success;
 }
 
-bool CWallet::GetQueuedTransaction(const uint256 &txid, CMutableTransaction *data) const
+bool CWallet::GetQueuedTransaction(const Txid &txid, CMutableTransaction *data) const
 {
     AssertLockHeld(cs_wallet);
     auto it = queuedTransactionMap.find(txid);
@@ -3290,13 +3267,13 @@ void CWallet::EffectTransactionQueue()
     if (chain().isInitialBlockDownload())
         return;
     // We only do this for fresh blocks. Otherwise, we might trigger way too early.
-    std::set<uint256> to_dequeue;
+    std::set<Txid> to_dequeue;
     // Kludge; we can't remove items in a map while iterating over it.
     AssertLockHeld(cs_wallet);
     for (const auto& i : queuedTransactionMap)
     // For each transaction in the queue...
     {
-        const uint256& txid = i.first;
+        const Txid& txid = i.first;
         const CMutableTransaction& tx = i.second;
 
         std::string unused_err_string;

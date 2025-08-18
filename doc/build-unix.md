@@ -54,7 +54,7 @@ Now, you can either build from self-compiled [depends](#dependencies) or install
 
     sudo apt-get install libevent-dev libboost-dev
 
-SQLite is required for the descriptor wallet:
+SQLite is required for the wallet:
 
     sudo apt install libsqlite3-dev
 
@@ -105,7 +105,7 @@ Now, you can either build from self-compiled [depends](#dependencies) or install
 
     sudo dnf install libevent-devel boost-devel
 
-SQLite is required for the descriptor wallet:
+SQLite is required for the wallet:
 
     sudo dnf install sqlite-devel
 
@@ -155,11 +155,11 @@ Now, you can either build from self-compiled [depends](#dependencies) or install
 
     apk add libevent-dev boost-dev
 
-SQLite is required for the descriptor wallet:
+SQLite is required for the wallet:
 
     apk add sqlite-dev
 
-To build Bitcoin Core without wallet, see [*Disable-wallet mode*](#disable-wallet-mode)
+To build Bitcoin Core without the wallet, see [*Disable-wallet mode*](#disable-wallet-mode)
 
 ZMQ dependencies (provides ZMQ API):
 

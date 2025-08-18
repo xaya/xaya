@@ -8,8 +8,8 @@
 
 #include <key.h>
 #include <names/common.h>
+#include <primitives/transaction_identifier.h>
 #include <script/sign.h>
-#include <util/transaction_identifier.h>
 #include <wallet/db.h>
 #include <wallet/walletutil.h>
 
@@ -242,8 +242,6 @@ public:
 
     bool WriteOrderPosNext(int64_t nOrderPosNext);
 
-    bool WriteMinVersion(int nVersion);
-
     bool WriteDescriptorKey(const uint256& desc_id, const CPubKey& pubkey, const CPrivKey& privkey);
     bool WriteCryptedDescriptorKey(const uint256& desc_id, const CPubKey& pubkey, const std::vector<unsigned char>& secret);
     bool WriteDescriptor(const uint256& desc_id, const WalletDescriptor& descriptor);
@@ -263,8 +261,8 @@ public:
     bool WriteActiveScriptPubKeyMan(uint8_t type, const uint256& id, bool internal);
     bool EraseActiveScriptPubKeyMan(uint8_t type, bool internal);
 
-    bool WriteQueuedTransaction(const uint256& txid, const CMutableTransaction& tx);
-    bool EraseQueuedTransaction(const uint256& txid);
+    bool WriteQueuedTransaction(const Txid& txid, const CMutableTransaction& tx);
+    bool EraseQueuedTransaction(const Txid& txid);
 
     DBErrors LoadWallet(CWallet* pwallet);
 

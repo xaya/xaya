@@ -9,6 +9,7 @@
 #include <consensus/params.h>
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
+#include <primitives/transaction_identifier.h>
 #include <uint256.h>
 #include <util/chaintype.h>
 #include <util/hash_type.h>
@@ -140,7 +141,7 @@ public:
        skip the validity check.  Return also the "type" of the bug,
        which determines further actions.  */
     /* FIXME: Move to consensus params!  */
-    bool IsHistoricBug(const uint256& txid, unsigned nHeight, BugType& type) const;
+    bool IsHistoricBug(const Txid& txid, unsigned nHeight, BugType& type) const;
     virtual ~CChainParams() {}
 
     /**

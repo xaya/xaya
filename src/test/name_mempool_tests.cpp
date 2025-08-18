@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2024 Daniel Kraft
+// Copyright (c) 2014-2025 Daniel Kraft
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -359,7 +359,7 @@ private:
   node::NodeContext& m_node;
 
   /** The txids that have been removed according to our callback.  */
-  std::vector<uint256> txids;
+  std::vector<Txid> txids;
 
 public:
 
@@ -387,7 +387,7 @@ public:
    * callbacks to be processed as needed.
    */
   void
-  ExpectTxids (const std::vector<uint256>& expected) const
+  ExpectTxids (const std::vector<Txid>& expected) const
   {
     while (m_node.validation_signals->CallbacksPending () > 0)
       UninterruptibleSleep (std::chrono::milliseconds (10));
