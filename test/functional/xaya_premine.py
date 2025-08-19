@@ -101,7 +101,7 @@ class PremineTest(BitcoinTestFramework):
     forgedTx = tx_from_hex (rawTx)
     forgedTx.vin[0].scriptSig = codecs.decode (redeemScript, 'hex_codec')
     forgedTx = forgedTx.serialize ().hex ()
-    assert_raises_rpc_error (-26, "mandatory-script-verify-flag-failed",
+    assert_raises_rpc_error (-26, "mempool-script-verify-flag-failed",
                              node.sendrawtransaction, forgedTx, 0)
 
     # Sign and send the raw tx, should succeed.

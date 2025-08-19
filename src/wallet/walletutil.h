@@ -13,27 +13,6 @@
 #include <vector>
 
 namespace wallet {
-/** (client) version numbers for particular wallet features */
-enum WalletFeature
-{
-    FEATURE_BASE = 10000, // the earliest version new wallets supports (only useful for getwalletinfo's clientversion output)
-
-    FEATURE_WALLETCRYPT = 10000, // wallet encryption
-    FEATURE_COMPRPUBKEY = 10000, // compressed public keys
-
-    FEATURE_HD = 10000, // Hierarchical key derivation after BIP32 (HD Wallet)
-
-    FEATURE_HD_SPLIT = 10000, // Wallet with HD chain split (change outputs will use m/0'/1'/k)
-
-    FEATURE_NO_DEFAULT_KEY = 10000, // Wallet without a default key written
-
-    FEATURE_PRE_SPLIT_KEYPOOL = 10000, // Upgraded to HD SPLIT and can have a pre-split keypool
-
-    FEATURE_LATEST = FEATURE_PRE_SPLIT_KEYPOOL
-};
-
-bool IsFeatureSupported(int wallet_version, int feature_version);
-WalletFeature GetClosestWalletFeature(int version);
 
 enum WalletFlags : uint64_t {
     // wallet flags in the upper section (> 1 << 31) will lead to not opening the wallet if flag is unknown

@@ -7,8 +7,8 @@
 
 #include <consensus/amount.h>
 #include <names/applications.h>
+#include <primitives/transaction_identifier.h>
 #include <uint256.h>
-#include <util/transaction_identifier.h>
 
 #include <QList>
 #include <QString>

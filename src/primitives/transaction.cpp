@@ -8,12 +8,12 @@
 #include <consensus/amount.h>
 #include <crypto/hex_base.h>
 #include <hash.h>
+#include <primitives/transaction_identifier.h>
 #include <script/names.h>
 #include <script/script.h>
 #include <serialize.h>
 #include <tinyformat.h>
 #include <uint256.h>
-#include <util/transaction_identifier.h>
 
 #include <algorithm>
 #include <cassert>
@@ -98,7 +98,7 @@ uint256 CTransaction::GetBareHash() const
     CMutableTransaction withoutSigs(*this);
     for (auto& in : withoutSigs.vin)
       in.scriptSig.clear();
-    return withoutSigs.GetHash();
+    return withoutSigs.GetHash().ToUint256();
 }
 
 CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), version{tx.version}, nLockTime{tx.nLockTime}, m_has_witness{ComputeHasWitness()}, hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}

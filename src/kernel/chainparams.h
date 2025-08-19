@@ -9,6 +9,7 @@
 #include <consensus/params.h>
 #include <kernel/messagestartchars.h>
 #include <primitives/block.h>
+#include <primitives/transaction_identifier.h>
 #include <uint256.h>
 #include <util/chaintype.h>
 #include <util/hash_type.h>

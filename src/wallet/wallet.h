@@ -16,6 +16,7 @@
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
+#include <primitives/transaction_identifier.h>
 #include <script/interpreter.h>
 #include <script/names.h>
 #include <script/script.h>
@@ -28,7 +29,6 @@
 #include <util/result.h>
 #include <util/string.h>
 #include <util/time.h>
-#include <util/transaction_identifier.h>
 #include <util/ui_change_type.h>
 #include <wallet/crypter.h>
 #include <wallet/db.h>
@@ -327,9 +327,6 @@ private:
     std::atomic<double> m_scanning_progress{0};
     friend class WalletRescanReserver;
 
-    //! the current wallet version: clients below this version are not able to load the wallet
-    int nWalletVersion GUARDED_BY(cs_wallet){FEATURE_BASE};
-
     /** The next scheduled rebroadcast of wallet transactions. */
     NodeClock::time_point m_next_resend{GetDefaultNextResend()};
     /** Whether this wallet will submit newly created transactions to the node's mempool and
@@ -564,9 +561,6 @@ public:
     int GetTxBlocksToMaturity(const CWalletTx& wtx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool IsTxImmatureCoinBase(const CWalletTx& wtx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    //! check whether we support the named feature
-    bool CanSupportFeature(enum WalletFeature wf) const override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) { AssertLockHeld(cs_wallet); return IsFeatureSupported(nWalletVersion, wf); }
-
     bool IsSpent(const COutPoint& outpoint) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     // Whether this or any known scriptPubKey with the same single key has been spent.
@@ -595,8 +589,6 @@ public:
 
     //! Upgrade DescriptorCaches
     void UpgradeDescriptorCache() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-
-    bool LoadMinVersion(int nVersion) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet) { AssertLockHeld(cs_wallet); nWalletVersion = nVersion; return true; }
 
     //! Marks destination as previously spent.
     void LoadAddressPreviouslySpent(const CTxDestination& dest) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
@@ -835,12 +827,6 @@ public:
 
     unsigned int GetKeyPoolSize() const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    //! signify that a particular wallet feature is now used.
-    void SetMinVersion(enum WalletFeature, WalletBatch* batch_in = nullptr) override;
-
-    //! get the current wallet format (the oldest client version guaranteed to understand this wallet)
-    int GetVersion() const { LOCK(cs_wallet); return nWalletVersion; }
-
     //! Get wallet transactions that conflict with given transaction (spend same outputs)
     std::set<Txid> GetConflicts(const Txid& txid) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
@@ -941,18 +927,25 @@ public:
     //! Retrieve all of the wallet's flags
     uint64_t GetWalletFlags() const;
 
-    /** Returns a bracketed wallet name for displaying in logs, will return [default wallet] if the wallet has no name */
-    std::string GetDisplayName() const override
+    /** Return wallet name for use in logs, will return "default wallet" if the wallet has no name. */
+    std::string LogName() const override
     {
-        std::string wallet_name = GetName().length() == 0 ? "default wallet" : GetName();
-        return strprintf("[%s]", wallet_name);
+        std::string name{GetName()};
+        return name.empty() ? "default wallet" : name;
+    };
+
+    /** Return wallet name for display, like LogName() but translates "default wallet" string. */
+    std::string DisplayName() const
+    {
+        std::string name{GetName()};
+        return name.empty() ? _("default wallet") : name;
     };
 
     /** Prepends the wallet name in logging output to ease debugging in multi-wallet use cases */
     template <typename... Params>
     void WalletLogPrintf(util::ConstevalFormatString<sizeof...(Params)> wallet_fmt, const Params&... params) const
     {
-        LogInfo("%s %s", GetDisplayName(), tfm::format(wallet_fmt, params...));
+        LogInfo("[%s] %s", LogName(), tfm::format(wallet_fmt, params...));
     };
 
     //! Returns all unique ScriptPubKeyMans in m_internal_spk_managers and m_external_spk_managers
@@ -1080,14 +1073,14 @@ public:
     //! Returns nullopt when no descriptor has the key or if the wallet is locked.
     std::optional<CKey> GetKey(const CKeyID& keyid) const;
 
-    std::map<uint256, CMutableTransaction> queuedTransactionMap;
+    std::map<Txid, CMutableTransaction> queuedTransactionMap;
 
-    bool QueuedTransactionExists(const uint256 &txid) const;
+    bool QueuedTransactionExists(const Txid &txid) const;
     bool WriteQueuedTransaction(
-            const uint256 &txid,
+            const Txid &txid,
             const CMutableTransaction &tx);
-    bool EraseQueuedTransaction(const uint256 &txid);
-    bool GetQueuedTransaction(const uint256 &txid, CMutableTransaction *data=nullptr) const;
+    bool EraseQueuedTransaction(const Txid &txid);
+    bool GetQueuedTransaction(const Txid &txid, CMutableTransaction *data=nullptr) const;
 };
 
 /**

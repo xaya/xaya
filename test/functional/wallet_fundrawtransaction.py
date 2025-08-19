@@ -45,6 +45,7 @@ class RawTransactionsTest(BitcoinTestFramework):
         self.extra_args = [[
             "-deprecatedrpc=settxfee",
             "-addresstype=bech32",
+            "-minrelaytxfee=0.00001000",
         ] for i in range(self.num_nodes)]
         self.setup_clean_chain = True
         # whitelist peers to speed up tx relay / mempool sync

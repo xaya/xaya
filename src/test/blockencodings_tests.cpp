@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(NonCoinbasePreforwardRTTest)
     AddToMempool(pool, entry.FromTx(block.vtx[2]));
     BOOST_CHECK_EQUAL(pool.get(block.vtx[2]->GetHash()).use_count(), SHARED_TX_OFFSET + 0);
 
-    uint256 txhash;
+    Txid txhash;
 
     // Test with pre-forwarding tx 1, but not coinbase
     {
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(SufficientPreforwardRTTest)
     AddToMempool(pool, entry.FromTx(block.vtx[1]));
     BOOST_CHECK_EQUAL(pool.get(block.vtx[1]->GetHash()).use_count(), SHARED_TX_OFFSET + 0);
 
-    uint256 txhash;
+    Txid txhash;
 
     // Test with pre-forwarding coinbase + tx 2 with tx 1 in mempool
     {

@@ -323,7 +323,7 @@ static RPCHelpMan getrawtransaction()
     const NodeContext& node = EnsureAnyNodeContext(request.context);
     ChainstateManager& chainman = EnsureChainman(node);
 
-    uint256 hash = ParseHashV(request.params[0], "parameter 1");
+    auto txid{Txid::FromUint256(ParseHashV(request.params[0], "parameter 1"))};
     const CBlockIndex* blockindex = nullptr;
 
     int verbosity{ParseVerbosity(request.params[1], /*default_verbosity=*/0, /*allow_bool=*/true)};
@@ -344,7 +344,7 @@ static RPCHelpMan getrawtransaction()
     }
 
     uint256 hash_block;
-    const CTransactionRef tx = GetTransaction(blockindex, node.mempool.get(), hash, hash_block, chainman.m_blockman);
+    const CTransactionRef tx = GetTransaction(blockindex, node.mempool.get(), txid, hash_block, chainman.m_blockman);
     if (!tx) {
         std::string errmsg;
         if (blockindex) {
