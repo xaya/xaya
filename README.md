@@ -54,4 +54,4 @@ https://github.com/bitcoin/bitcoin/blob/master/doc/build-osx.md
 
 Standard users should use the XAYA Electron Wallet which is a front end to xayad here https://github.com/xaya/xaya_electron
 
-for issues with XAYA Core you can create an issue in Github or ask on the forum https://forum.xaya.io
+For issues with XAYA Core, you can create an issue in Github or ask in the Xaya Discord server here https://discord.com/invite/FdZWZj4. 
